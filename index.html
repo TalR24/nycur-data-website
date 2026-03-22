@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CB3 Resolutions Explorer</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f9fafb; color: #111827; }
+
+    header {
+      background: #fff;
+      border-bottom: 1px solid #e5e7eb;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    header h1 { font-size: 1.2rem; font-weight: 700; color: #2563eb; white-space: nowrap; }
+    #status { font-size: 0.85rem; color: #6b7280; }
+
+    .controls {
+      background: #fff;
+      border-bottom: 1px solid #e5e7eb;
+      padding: 12px 24px;
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    #search {
+      flex: 1;
+      min-width: 200px;
+      padding: 8px 12px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      outline: none;
+    }
+    #search:focus { border-color: #2563eb; box-shadow: 0 0 0 2px #bfdbfe; }
+    #search-col {
+      padding: 8px 10px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      background: #fff;
+    }
+    #result-count { font-size: 0.85rem; color: #6b7280; white-space: nowrap; }
+
+    .table-wrap { overflow-x: auto; padding: 0 24px 16px; }
+    table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-top: 16px; }
+    th {
+      background: #f3f4f6;
+      padding: 10px 12px;
+      text-align: left;
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #374151;
+      cursor: pointer;
+      user-select: none;
+      white-space: nowrap;
+      border-bottom: 2px solid #e5e7eb;
+    }
+    th:hover { background: #e9eaf0; }
+    th .sort-icon { margin-left: 4px; color: #9ca3af; }
+    th.asc .sort-icon::after { content: " ▲"; }
+    th.desc .sort-icon::after { content: " ▼"; }
+    th:not(.asc):not(.desc) .sort-icon::after { content: " ⇅"; }
+    td {
+      padding: 9px 12px;
+      font-size: 0.85rem;
+      border-bottom: 1px solid #f3f4f6;
+      vertical-align: top;
+      color: #374151;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #f8faff; }
+
+    td.text-cell {
+      max-width: 480px;
+      min-width: 200px;
+    }
+    .cell-inner {
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      cursor: pointer;
+      line-height: 1.5;
+    }
+    .cell-inner.expanded {
+      display: block;
+      -webkit-line-clamp: unset;
+      overflow: visible;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .expand-btn {
+      font-size: 0.75rem;
+      color: #2563eb;
+      cursor: pointer;
+      margin-top: 4px;
+      display: inline-block;
+    }
+    .expand-btn:hover { text-decoration: underline; }
+
+    td.num-cell { text-align: right; font-variant-numeric: tabular-nums; }
+    td.id-cell { font-family: monospace; font-size: 0.75rem; color: #9ca3af; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    .pagination {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 16px 24px 24px;
+      flex-wrap: wrap;
+    }
+    .pagination button {
+      padding: 6px 12px;
+      border: 1px solid #d1d5db;
+      background: #fff;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      color: #374151;
+    }
+    .pagination button:hover:not(:disabled) { background: #f3f4f6; border-color: #2563eb; color: #2563eb; }
+    .pagination button.active { background: #2563eb; color: #fff; border-color: #2563eb; }
+    .pagination button:disabled { opacity: 0.4; cursor: default; }
+    .pagination .page-info { font-size: 0.85rem; color: #6b7280; }
+    #per-page {
+      padding: 6px 10px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 0.85rem;
+      background: #fff;
+    }
+
+    #loading {
+      text-align: center;
+      padding: 60px 24px;
+      color: #6b7280;
+      font-size: 1rem;
+    }
+    .spinner {
+      display: inline-block;
+      width: 24px; height: 24px;
+      border: 3px solid #e5e7eb;
+      border-top-color: #2563eb;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+      margin-right: 10px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    mark { background: #fef08a; border-radius: 2px; padding: 0 1px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>CB3 Resolutions Explorer</h1>
+  <span id="status"><span class="spinner"></span>Loading CSV…</span>
+</header>
+
+<div class="controls" id="controls" style="display:none">
+  <select id="search-col"></select>
+  <input id="search" type="search" placeholder="Search…" autocomplete="off">
+  <span id="result-count"></span>
+  <label style="font-size:0.85rem;color:#6b7280;margin-left:auto">Rows:
+    <select id="per-page">
+      <option value="25">25</option>
+      <option value="50" selected>50</option>
+      <option value="100">100</option>
+      <option value="250">250</option>
+    </select>
+  </label>
+</div>
+
+<div id="loading"><span class="spinner"></span>Parsing CSV — this may take a moment for large files…</div>
+<div class="table-wrap" id="table-wrap" style="display:none"></div>
+<div class="pagination" id="pagination" style="display:none"></div>
+
+<script>
+let allRows = [], headers = [], filtered = [], sortCol = null, sortDir = 1;
+let page = 1;
+const perPageEl = document.getElementById("per-page");
+const searchEl = document.getElementById("search");
+const searchColEl = document.getElementById("search-col");
+const resultCountEl = document.getElementById("result-count");
+const statusEl = document.getElementById("status");
+
+function perPage() { return parseInt(perPageEl.value); }
+
+Papa.parse("full_resolutions.csv", {
+  download: true,
+  header: true,
+  skipEmptyLines: true,
+  complete(results) {
+    headers = results.meta.fields;
+    allRows = results.data;
+    filtered = allRows;
+
+    // populate column selector
+    const allOpt = document.createElement("option");
+    allOpt.value = "__all__"; allOpt.textContent = "All columns";
+    searchColEl.appendChild(allOpt);
+    headers.forEach(h => {
+      const o = document.createElement("option");
+      o.value = h; o.textContent = h;
+      searchColEl.appendChild(o);
+    });
+
+    statusEl.textContent = `${allRows.length.toLocaleString()} rows loaded`;
+    document.getElementById("loading").style.display = "none";
+    document.getElementById("table-wrap").style.display = "";
+    document.getElementById("pagination").style.display = "";
+    document.getElementById("controls").style.display = "";
+
+    render();
+  },
+  error(err) {
+    document.getElementById("loading").textContent = "Error loading CSV: " + err.message;
+  }
+});
+
+function numericCol(col) {
+  return allRows.slice(0, 20).every(r => r[col] === "" || !isNaN(Number(r[col])));
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+function highlightText(text, query) {
+  if (!query) return escapeHtml(text);
+  const escaped = escapeHtml(text);
+  const re = new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"), "gi");
+  return escaped.replace(re, m => `<mark>${m}</mark>`);
+}
+
+function render() {
+  const tableWrap = document.getElementById("table-wrap");
+  const paginationEl = document.getElementById("pagination");
+  const q = searchEl.value.trim();
+  const searchColVal = searchColEl.value;
+  const pp = perPage();
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pp));
+  if (page > totalPages) page = 1;
+
+  const start = (page - 1) * pp;
+  const rows = filtered.slice(start, start + pp);
+
+  resultCountEl.textContent = `${filtered.length.toLocaleString()} of ${allRows.length.toLocaleString()} rows`;
+
+  // Build table
+  let html = "<table><thead><tr>";
+  headers.forEach(h => {
+    const cls = sortCol === h ? (sortDir === 1 ? "asc" : "desc") : "";
+    html += `<th class="${cls}" data-col="${escapeHtml(h)}">${escapeHtml(h)}<span class="sort-icon"></span></th>`;
+  });
+  html += "</tr></thead><tbody>";
+
+  rows.forEach((row, ri) => {
+    html += "<tr>";
+    headers.forEach(h => {
+      const val = row[h] ?? "";
+      const isId = h.endsWith("_id");
+      const isNum = !isId && numericCol(h);
+      if (isId) {
+        html += `<td class="id-cell" title="${escapeHtml(val)}">${escapeHtml(val)}</td>`;
+      } else if (isNum) {
+        html += `<td class="num-cell">${escapeHtml(val)}</td>`;
+      } else if (val.length > 120) {
+        const highlighted = highlightText(val, q);
+        html += `<td class="text-cell">
+          <div class="cell-inner" id="ci-${ri}-${h}">${highlighted}</div>
+          <span class="expand-btn" onclick="toggleExpand('ci-${ri}-${h}',this)">Show more</span>
+        </td>`;
+      } else {
+        html += `<td>${highlightText(val, q)}</td>`;
+      }
+    });
+    html += "</tr>";
+  });
+
+  html += "</tbody></table>";
+  tableWrap.innerHTML = html;
+
+  // Sort click handlers
+  tableWrap.querySelectorAll("th[data-col]").forEach(th => {
+    th.addEventListener("click", () => {
+      const col = th.dataset.col;
+      if (sortCol === col) sortDir *= -1;
+      else { sortCol = col; sortDir = 1; }
+      const isNum = numericCol(col);
+      filtered.sort((a, b) => {
+        const av = a[col] ?? "", bv = b[col] ?? "";
+        if (isNum) return (Number(av) - Number(bv)) * sortDir;
+        return av.localeCompare(bv) * sortDir;
+      });
+      page = 1;
+      render();
+    });
+  });
+
+  // Pagination
+  let pHtml = `<button ${page===1?"disabled":""} onclick="goPage(1)">«</button>`;
+  pHtml += `<button ${page===1?"disabled":""} onclick="goPage(${page-1})">‹</button>`;
+
+  const range = 2;
+  const pages = new Set([1, totalPages]);
+  for (let i = Math.max(1, page-range); i <= Math.min(totalPages, page+range); i++) pages.add(i);
+  const sorted = [...pages].sort((a,b)=>a-b);
+  let prev = 0;
+  sorted.forEach(p2 => {
+    if (p2 - prev > 1) pHtml += `<span class="page-info">…</span>`;
+    pHtml += `<button class="${p2===page?"active":""}" onclick="goPage(${p2})">${p2}</button>`;
+    prev = p2;
+  });
+
+  pHtml += `<button ${page===totalPages?"disabled":""} onclick="goPage(${page+1})">›</button>`;
+  pHtml += `<button ${page===totalPages?"disabled":""} onclick="goPage(${totalPages})">»</button>`;
+  pHtml += `<span class="page-info">Page ${page} of ${totalPages}</span>`;
+  paginationEl.innerHTML = pHtml;
+}
+
+function goPage(p) { page = p; render(); window.scrollTo(0,0); }
+
+function toggleExpand(id, btn) {
+  const el = document.getElementById(id);
+  if (el.classList.toggle("expanded")) btn.textContent = "Show less";
+  else btn.textContent = "Show more";
+}
+
+let searchTimeout;
+searchEl.addEventListener("input", () => {
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(applyFilter, 200);
+});
+searchColEl.addEventListener("change", applyFilter);
+perPageEl.addEventListener("change", () => { page = 1; render(); });
+
+function applyFilter() {
+  const q = searchEl.value.trim().toLowerCase();
+  const col = searchColEl.value;
+  if (!q) { filtered = allRows; }
+  else if (col === "__all__") {
+    filtered = allRows.filter(row => headers.some(h => String(row[h] ?? "").toLowerCase().includes(q)));
+  } else {
+    filtered = allRows.filter(row => String(row[col] ?? "").toLowerCase().includes(q));
+  }
+  if (sortCol) {
+    const isNum = numericCol(sortCol);
+    filtered.sort((a, b) => {
+      const av = a[sortCol] ?? "", bv = b[sortCol] ?? "";
+      if (isNum) return (Number(av) - Number(bv)) * sortDir;
+      return av.localeCompare(bv) * sortDir;
+    });
+  }
+  page = 1;
+  render();
+}
+</script>
+</body>
+</html>
