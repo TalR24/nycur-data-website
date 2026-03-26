@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Savings by Category — CSO Reports 2026 — NYCuriosity</title>
+  <meta name="description" content="How NYC's $246M in CSO savings break down by type: eligibility audits, contract termination, renegotiation, revenue, and in-housing.">
+  <meta property="og:type"        content="website">
+  <meta property="og:url"         content="https://data.nycuriosity.com/nycuriosity_substack_posts/cso_reports_2026/savings-by-category/">
+  <meta property="og:title"       content="Savings by Category — CSO Reports 2026 — NYCuriosity">
+  <meta property="og:description" content="How NYC's $246M in CSO savings break down by type: eligibility audits, contract termination, renegotiation, revenue, and in-housing.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue:       #2563eb;
+      --blue-hover: #1d4ed8;
+      --blue-light: #eff6ff;
+      --blue-mid:   #bfdbfe;
+      --text:       #111827;
+      --text-mid:   #374151;
+      --text-muted: #6b7280;
+      --text-faint: #9ca3af;
+      --bg:         #f8faff;
+      --surface:    #ffffff;
+      --border:     #e5e7eb;
+      --shadow-sm:  0 1px 3px rgba(17,24,39,0.08);
+      --shadow-md:  0 4px 16px rgba(37,99,235,0.10);
+      --radius:     10px;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── HEADER ──────────────────────────────────────────── */
+    header {
+      background: #111827;
+      border-bottom: 1px solid #1f2937;
+      padding: 0 clamp(20px, 5vw, 48px);
+    }
+    .header-inner {
+      max-width: 1100px; margin: 0 auto; height: 56px;
+      display: flex; align-items: center; gap: 16px;
+    }
+    .back-link {
+      font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600;
+      color: #9ca3af; text-decoration: none; display: flex; align-items: center; gap: 5px;
+      padding: 4px 8px 4px 4px; border-radius: 5px; transition: color 0.15s, background 0.15s; white-space: nowrap;
+    }
+    .back-link:hover { color: #60a5fa; background: rgba(96,165,250,0.1); }
+    .header-divider { width: 1px; height: 20px; background: #374151; flex-shrink: 0; }
+    header h1 {
+      font-family: 'Roboto Mono', monospace; font-size: 0.95rem; font-weight: 700;
+      color: #e5e7eb; letter-spacing: -0.02em;
+    }
+
+    /* ── PILL NAV ─────────────────────────────────────────── */
+    .pill-nav {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 10px clamp(20px, 5vw, 48px);
+      display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+    }
+    .pill-nav a {
+      font-size: 0.78rem; font-family: 'Roboto Mono', monospace; font-weight: 600;
+      padding: 4px 12px; border-radius: 20px; text-decoration: none;
+      border: 1px solid var(--border); color: var(--text-muted); background: var(--bg);
+      transition: all 0.15s; white-space: nowrap;
+    }
+    .pill-nav a:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
+    .pill-nav a.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+    .pill-label { font-size: 0.72rem; color: var(--text-faint); font-family: 'Roboto Mono', monospace; white-space: nowrap; }
+
+    /* ── HERO ────────────────────────────────────────────── */
+    .hero {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: clamp(32px, 5vw, 52px) clamp(20px, 5vw, 48px);
+    }
+    .hero-inner { max-width: 1100px; margin: 0 auto; }
+    .breadcrumb {
+      font-family: 'Roboto Mono', monospace; font-size: 0.72rem;
+      color: var(--text-faint); margin-bottom: 14px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .breadcrumb a { color: var(--blue); text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+    .hero-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .hero-tag {
+      font-family: 'Roboto Mono', monospace; font-size: 0.68rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.08em; color: var(--blue);
+      background: var(--blue-light); border: 1px solid var(--blue-mid); border-radius: 4px; padding: 3px 8px;
+    }
+    .hero-updated { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; color: var(--text-faint); }
+    .hero h1 {
+      font-family: 'Roboto Mono', monospace; font-size: clamp(1.5rem, 3.5vw, 2rem);
+      font-weight: 700; color: var(--text); letter-spacing: -0.03em; line-height: 1.2; margin-bottom: 10px;
+    }
+    .hero h1 span { color: var(--blue); }
+    .hero p { font-size: 0.975rem; color: var(--text-muted); max-width: 720px; line-height: 1.7; }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600;
+      text-decoration: none; border-radius: 7px; padding: 8px 14px;
+      transition: background 0.15s, border-color 0.15s; cursor: pointer; border: none;
+    }
+    .btn-outline { background: var(--surface); color: var(--text-muted); border: 1.5px solid var(--border); }
+    .btn-outline:hover { color: var(--blue); border-color: var(--blue-mid); background: var(--blue-light); }
+
+    /* ── MAIN ────────────────────────────────────────────── */
+    main { flex: 1; padding: clamp(28px, 4vw, 48px) clamp(20px, 5vw, 48px); }
+    .main-inner { max-width: 1100px; margin: 0 auto; }
+
+    /* ── CHART LAYOUT ─────────────────────────────────────── */
+    .chart-layout {
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 40px;
+      align-items: center;
+    }
+
+    /* ── DONUT ────────────────────────────────────────────── */
+    .donut-wrap {
+      position: relative;
+    }
+    #donut-svg {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+    .segment {
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    .segment:hover { opacity: 0.85; }
+    .segment.dimmed { opacity: 0.25; }
+
+    .center-label {
+      font-family: 'Roboto Mono', monospace;
+      pointer-events: none;
+      text-anchor: middle;
+    }
+    .center-total { font-size: 28px; font-weight: 700; fill: #111827; }
+    .center-sub   { font-size: 11px; fill: #6b7280; letter-spacing: 0.03em; }
+    .center-pct   { font-size: 20px; font-weight: 700; }
+    .center-name  { font-size: 10px; fill: #6b7280; }
+
+    /* ── LEGEND ───────────────────────────────────────────── */
+    .legend { display: flex; flex-direction: column; gap: 10px; }
+
+    .legend-item {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 18px;
+      cursor: pointer;
+      transition: border-color 0.15s, box-shadow 0.15s, transform 0.1s;
+      position: relative;
+      overflow: hidden;
+    }
+    .legend-item::before {
+      content: '';
+      position: absolute; left: 0; top: 0; bottom: 0;
+      width: 4px;
+      border-radius: 4px 0 0 4px;
+    }
+    .legend-item:hover {
+      border-color: var(--item-color, var(--blue));
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+      transform: translateX(2px);
+    }
+    .legend-item.active {
+      border-color: var(--item-color, var(--blue));
+      box-shadow: 0 2px 16px rgba(0,0,0,0.1);
+    }
+    .legend-item.dimmed { opacity: 0.4; }
+
+    .legend-top {
+      display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 4px;
+    }
+    .legend-name {
+      font-family: 'Roboto Mono', monospace; font-size: 0.82rem; font-weight: 700;
+      color: var(--text); line-height: 1.3;
+    }
+    .legend-amount {
+      font-family: 'Roboto Mono', monospace; font-size: 0.9rem; font-weight: 700;
+      white-space: nowrap; line-height: 1;
+    }
+    .legend-pct {
+      font-family: 'Roboto Mono', monospace; font-size: 0.72rem;
+      color: var(--text-faint); text-align: right; display: block; margin-top: 2px;
+    }
+
+    /* Bar track under legend item */
+    .legend-bar-track {
+      height: 4px; background: var(--border); border-radius: 2px; margin-top: 8px;
+    }
+    .legend-bar-fill {
+      height: 100%; border-radius: 2px;
+      transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+      width: 0;
+    }
+
+    .legend-agencies {
+      font-size: 0.72rem; color: var(--text-faint); margin-top: 6px;
+      line-height: 1.5; display: none;
+    }
+    .legend-item.active .legend-agencies { display: block; }
+
+    /* ── FY BREAKDOWN TABLE ───────────────────────────────── */
+    .fy-table-wrap {
+      margin-top: 36px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); overflow: hidden;
+    }
+    .fy-table-header {
+      background: var(--text);
+      padding: 10px 20px;
+      font-family: 'Roboto Mono', monospace; font-size: 0.68rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.07em; color: rgba(255,255,255,0.6);
+    }
+    .fy-table {
+      width: 100%; border-collapse: collapse;
+    }
+    .fy-table th {
+      font-family: 'Roboto Mono', monospace; font-size: 0.68rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.07em;
+      background: var(--text); color: rgba(255,255,255,0.6);
+      padding: 10px 16px; text-align: left; white-space: nowrap;
+    }
+    .fy-table th.num { text-align: right; }
+    .fy-table td {
+      padding: 11px 16px; font-size: 0.875rem; color: var(--text-mid);
+      border-bottom: 1px solid var(--border);
+    }
+    .fy-table tr:last-child td { border-bottom: none; }
+    .fy-table tr:hover td { background: var(--bg); }
+    .fy-table td.cat {
+      display: flex; align-items: center; gap: 8px;
+      font-weight: 600; color: var(--text);
+    }
+    .fy-table td.num {
+      font-family: 'Roboto Mono', monospace; font-size: 0.82rem; text-align: right; white-space: nowrap;
+    }
+    .fy-table td.num.zero { color: var(--text-faint); }
+    .fy-table tr.total-row td {
+      background: #f1f5f9; font-weight: 700;
+      border-top: 2px solid var(--border);
+    }
+    .fy-table tr.total-row td.num { color: var(--blue); }
+    .cat-dot {
+      width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+    }
+
+    /* ── FOOTNOTES ───────────────────────────────────────── */
+    .footnotes { margin-top: 20px; padding: 14px 18px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+    .footnotes p { font-size: 0.78rem; color: var(--text-muted); line-height: 1.65; }
+    .footnotes p + p { margin-top: 6px; }
+    .footnotes strong { color: var(--text-mid); }
+
+    /* ── FOOTER ──────────────────────────────────────────── */
+    footer { background: var(--surface); border-top: 1px solid var(--border); padding: 20px clamp(20px, 5vw, 48px); margin-top: auto; }
+    .footer-inner { max-width: 1100px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+    .footer-copy { font-size: 0.8rem; color: var(--text-faint); }
+    .footer-links { display: flex; gap: 20px; }
+    .footer-links a { font-size: 0.8rem; color: var(--text-faint); text-decoration: none; transition: color 0.15s; }
+    .footer-links a:hover { color: var(--blue); }
+
+    @media (max-width: 800px) {
+      .chart-layout {
+        grid-template-columns: 1fr;
+      }
+      .donut-wrap { max-width: 300px; margin: 0 auto; }
+    }
+    @media (max-width: 540px) {
+      .fy-table th.hide-sm, .fy-table td.hide-sm { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="header-inner">
+    <a href="/nycuriosity_substack_posts/cso_reports_2026/" class="back-link">← cso-reports-2026</a>
+    <div class="header-divider"></div>
+    <h1>Savings by Category</h1>
+  </div>
+</header>
+
+<!-- VISUALS NAV -->
+<div class="pill-nav">
+  <span class="pill-label">Visuals in this post:</span>
+  <a href="../agency-breakdown/">Agency Savings Breakdown</a>
+  <a href="../ibo-comparison/">CSO vs. IBO Budget Options</a>
+  <a href="../nyc-tax-rates/">NYC Tax Rates</a>
+  <a href="./" class="active">Savings by Category</a>
+</div>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-inner">
+    <div class="breadcrumb">
+      <a href="/">data.nycuriosity.com</a>
+      <span>›</span>
+      <a href="/nycuriosity_substack_posts/cso_reports_2026/">CSO Reports 2026</a>
+      <span>›</span>
+      <span>Savings by Category</span>
+    </div>
+    <div class="hero-meta">
+      <span class="hero-tag">Budget &amp; Finance</span>
+      <span class="hero-updated">March 2026</span>
+    </div>
+    <h1>Savings <span>by Category</span></h1>
+    <p>
+      How the $246M in total CSO savings break down by type of action, combining FY26 and FY27 figures across all 16 agencies.
+      Nearly half comes from a single category: eligibility audits that remove ineligible recipients from city programs.
+    </p>
+    <div class="hero-actions">
+      <a href="../data/cso_savings_by_category.csv" download class="btn btn-outline">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download CSV
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- CHART -->
+<main>
+  <div class="main-inner">
+
+    <div class="chart-layout">
+
+      <!-- DONUT -->
+      <div class="donut-wrap">
+        <svg id="donut-svg" viewBox="0 0 360 360" xmlns="http://www.w3.org/2000/svg">
+          <g id="segments"></g>
+          <!-- Center text -->
+          <text x="180" y="162" class="center-label center-total" id="ctr-total">$246M</text>
+          <text x="180" y="182" class="center-label center-sub" id="ctr-sub1">total savings</text>
+          <text x="180" y="197" class="center-label center-sub" id="ctr-sub2">FY26 + FY27</text>
+          <text x="180" y="162" class="center-label center-pct" id="ctr-pct" style="display:none"></text>
+          <text x="180" y="180" class="center-label" id="ctr-name" style="display:none;font-size:11px;fill:#374151;font-family:'Roboto Mono',monospace;font-weight:600"></text>
+          <text x="180" y="197" class="center-label" id="ctr-amt" style="display:none;font-size:11px;fill:#6b7280;font-family:'Roboto Mono',monospace"></text>
+        </svg>
+      </div>
+
+      <!-- LEGEND -->
+      <div class="legend" id="legend"></div>
+
+    </div>
+
+    <!-- FY BREAKDOWN TABLE -->
+    <div class="fy-table-wrap">
+      <table class="fy-table">
+        <thead>
+          <tr>
+            <th>Category</th>
+            <th class="num">FY26 Savings</th>
+            <th class="num">FY27 Savings</th>
+            <th class="num">Combined</th>
+            <th class="num hide-sm">Share</th>
+          </tr>
+        </thead>
+        <tbody id="fy-tbody"></tbody>
+      </table>
+    </div>
+
+    <div class="footnotes">
+      <p><strong>Categorization methodology:</strong> Each agency is assigned to its primary savings lever. DSS ($12.7M) is categorized under contract termination due to the McKinsey contract cancellation, though its plan also includes IT in-sourcing and WiFi revenue. H+H ($39.8M) is categorized under contract renegotiation (the dominant mechanism); its plan also includes staffing and revenue improvements. FDNY ($13M) is categorized under revenue &amp; billing as Medicaid billing is the largest FY27 driver.</p>
+      <p><strong>Sources:</strong> Agency CSO reports released March 20, 2026. FY26 and FY27 savings figures from NYC CSO agency submissions.</p>
+    </div>
+
+  </div>
+</main>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <span class="footer-copy">© NYCuriosity · Tal Roded</span>
+    <nav class="footer-links">
+      <a href="https://nycuriosity.substack.com" target="_blank" rel="noopener">Substack</a>
+      <a href="https://github.com/TalR24/nycur-data-website" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </div>
+</footer>
+
+<script>
+  const DATA = [
+    {
+      label: "Eligibility audits\n& verification",
+      shortLabel: "Eligibility audits",
+      value: 113000000,
+      fy26: 0,
+      fy27: 113000000,
+      color: "#2563eb",
+      colorLight: "#eff6ff",
+      agencies: [
+        { abbr: "OLR",   label: "Office of Labor Relations ($100M) — Removes ineligible dependents from city employee health plans" },
+        { abbr: "DOF",   label: "Dept. of Finance ($13M) — Strengthens co-op abatement eligibility verification" }
+      ]
+    },
+    {
+      label: "Contract termination\n& spending controls",
+      shortLabel: "Contract termination",
+      value: 70517000,
+      fy26: 28800000,
+      fy27: 41717000,
+      color: "#dc2626",
+      colorLight: "#fef2f2",
+      agencies: [
+        { abbr: "NYCPS", label: "NYC Public Schools ($57.8M) — Terminates underutilized contracts, implements spending caps" },
+        { abbr: "DSS",   label: "Social Services ($12.7M) — Terminates McKinsey contract; also includes IT in-sourcing" },
+        { abbr: "TLC",   label: "Taxi & Limousine Commission ($20K) — Cancels agency Slack subscription" }
+      ]
+    },
+    {
+      label: "Contract\nrenegotiation",
+      shortLabel: "Contract renegotiation",
+      value: 43450000,
+      fy26: 15400000,
+      fy27: 28050000,
+      color: "#7c3aed",
+      colorLight: "#f5f3ff",
+      agencies: [
+        { abbr: "H+H",   label: "Health + Hospitals ($39.8M) — Contract rebates, reduced temp staffing & overtime; also includes revenue improvements" },
+        { abbr: "OTI",   label: "Office of Technology & Innovation ($2.5M) — Renegotiates tech contracts, eliminates duplicative hardware/software" },
+        { abbr: "DOHMH", label: "Dept. of Health & Mental Hygiene ($1.15M) — Renegotiates naloxone contract" }
+      ]
+    },
+    {
+      label: "Revenue &\nbilling improvements",
+      shortLabel: "Revenue & billing",
+      value: 13000000,
+      fy26: 700000,
+      fy27: 12300000,
+      color: "#d97706",
+      colorLight: "#fffbeb",
+      agencies: [
+        { abbr: "FDNY",  label: "Fire Department ($13M) — Bills Medicaid for Treat No Transport EMS; renegotiates vendor contracts" }
+      ]
+    },
+    {
+      label: "In-housing &\noperational efficiency",
+      shortLabel: "In-housing & ops",
+      value: 6154000,
+      fy26: 4700000,
+      fy27: 1454000,
+      color: "#16a34a",
+      colorLight: "#f0fdf4",
+      agencies: [
+        { abbr: "DOC",   label: "Dept. of Correction ($4.3M) — Brings IT and consultant contracts in-house" },
+        { abbr: "EDC",   label: "Economic Development Corp. ($626K) — In-sources marketing contract" },
+        { abbr: "MONS",  label: "Mayor's Office of Nonprofit Services ($400K) — Eliminates consultant, in-sources services" },
+        { abbr: "Aging", label: "NYC Aging ($411K) — In-sources consultant contract" },
+        { abbr: "NYCEM", label: "NYC Emergency Management ($133K) — In-sources software maintenance" },
+        { abbr: "DSNY",  label: "Sanitation ($194K) — Vacates underutilized office space" },
+        { abbr: "OMB",   label: "Mayor's Office of Mgmt. & Budget ($90K) — Reduces office lease costs" }
+      ]
+    }
+  ];
+
+  const TOTAL = DATA.reduce((s, d) => s + d.value, 0);
+  const CX = 180, CY = 180, OR = 148, IR = 90;
+  const GAP_DEG = 2;
+
+  /* ── helpers ─────────────────────────────────────────── */
+  function polar(cx, cy, r, deg) {
+    const rad = (deg - 90) * Math.PI / 180;
+    return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+  }
+
+  function donutPath(cx, cy, or_, ir, startDeg, endDeg) {
+    const s = startDeg + GAP_DEG / 2;
+    const e = endDeg   - GAP_DEG / 2;
+    const o1 = polar(cx, cy, or_, s);
+    const o2 = polar(cx, cy, or_, e);
+    const i1 = polar(cx, cy, ir, s);
+    const i2 = polar(cx, cy, ir, e);
+    const large = (e - s) > 180 ? 1 : 0;
+    return `M${o1.x.toFixed(3)},${o1.y.toFixed(3)} A${or_},${or_} 0 ${large} 1 ${o2.x.toFixed(3)},${o2.y.toFixed(3)} L${i2.x.toFixed(3)},${i2.y.toFixed(3)} A${ir},${ir} 0 ${large} 0 ${i1.x.toFixed(3)},${i1.y.toFixed(3)} Z`;
+  }
+
+  function fmtM(n) {
+    if (n === 0) return '—';
+    if (n >= 1e9) return '$' + (n / 1e9).toFixed(1) + 'B';
+    if (n >= 1e6) return '$' + (n / 1e6).toFixed(1).replace(/\.0$/, '') + 'M';
+    return '$' + Math.round(n / 1e3) + 'K';
+  }
+
+  function fmtPct(v) { return (v / TOTAL * 100).toFixed(1) + '%'; }
+
+  /* ── build donut ─────────────────────────────────────── */
+  const svgG = document.getElementById('segments');
+  const paths = [];
+  let angle = 0;
+
+  DATA.forEach((d, i) => {
+    const sweep = (d.value / TOTAL) * 360;
+    const pathEl = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    pathEl.setAttribute('d', donutPath(CX, CY, OR, IR, angle, angle + sweep));
+    pathEl.setAttribute('fill', d.color);
+    pathEl.classList.add('segment');
+    pathEl.style.opacity = '0';
+    pathEl.style.transformOrigin = `${CX}px ${CY}px`;
+
+    pathEl.addEventListener('mouseenter', () => activateSlice(i));
+    pathEl.addEventListener('mouseleave', clearActive);
+
+    svgG.appendChild(pathEl);
+    paths.push({ el: pathEl, start: angle, sweep });
+    angle += sweep;
+  });
+
+  /* ── animate in ──────────────────────────────────────── */
+  DATA.forEach((_, i) => {
+    setTimeout(() => {
+      paths[i].el.style.transition = 'opacity 0.4s ease';
+      paths[i].el.style.opacity = '1';
+    }, 80 + i * 90);
+  });
+
+  /* ── center text els ─────────────────────────────────── */
+  const ctrTotal = document.getElementById('ctr-total');
+  const ctrSub1  = document.getElementById('ctr-sub1');
+  const ctrSub2  = document.getElementById('ctr-sub2');
+  const ctrPct   = document.getElementById('ctr-pct');
+  const ctrName  = document.getElementById('ctr-name');
+  const ctrAmt   = document.getElementById('ctr-amt');
+
+  function showDefault() {
+    ctrTotal.style.display = ''; ctrSub1.style.display = ''; ctrSub2.style.display = '';
+    ctrPct.style.display = 'none'; ctrName.style.display = 'none'; ctrAmt.style.display = 'none';
+  }
+  function showSlice(d) {
+    ctrTotal.style.display = 'none'; ctrSub1.style.display = 'none'; ctrSub2.style.display = 'none';
+    ctrPct.style.display = '';
+    ctrPct.setAttribute('fill', d.color);
+    ctrPct.textContent = fmtPct(d.value);
+    ctrName.style.display = '';
+    ctrName.textContent = d.shortLabel;
+    ctrAmt.style.display = '';
+    ctrAmt.textContent = fmtM(d.value);
+  }
+
+  /* ── legend ──────────────────────────────────────────── */
+  const legendEl = document.getElementById('legend');
+  const legendItems = [];
+
+  DATA.forEach((d, i) => {
+    const item = document.createElement('div');
+    item.className = 'legend-item';
+    item.style.setProperty('--item-color', d.color);
+    item.style.borderLeftColor = d.color;
+    item.innerHTML = `
+      <div class="legend-top">
+        <div class="legend-name" style="color:${d.color}">${d.shortLabel}</div>
+        <div style="text-align:right">
+          <div class="legend-amount" style="color:${d.color}">${fmtM(d.value)}</div>
+          <span class="legend-pct">${fmtPct(d.value)}</span>
+        </div>
+      </div>
+      <div class="legend-bar-track">
+        <div class="legend-bar-fill" style="background:${d.color}" data-pct="${(d.value/TOTAL*100).toFixed(2)}"></div>
+      </div>
+      <div class="legend-agencies">
+        ${d.agencies.map(a => `<div style="margin-bottom:3px">· ${a.label}</div>`).join('')}
+      </div>
+    `;
+    item.addEventListener('mouseenter', () => activateSlice(i));
+    item.addEventListener('mouseleave', clearActive);
+    legendEl.appendChild(item);
+    legendItems.push(item);
+  });
+
+  /* ── animate legend bars ─────────────────────────────── */
+  setTimeout(() => {
+    document.querySelectorAll('.legend-bar-fill').forEach(bar => {
+      bar.style.transition = 'width 0.8s cubic-bezier(0.4,0,0.2,1)';
+      bar.style.width = bar.dataset.pct + '%';
+    });
+  }, 300);
+
+  /* ── interactions ────────────────────────────────────── */
+  let activeIdx = -1;
+
+  function activateSlice(i) {
+    if (activeIdx === i) return;
+    activeIdx = i;
+    showSlice(DATA[i]);
+    paths.forEach((p, j) => p.el.classList.toggle('dimmed', j !== i));
+    legendItems.forEach((item, j) => {
+      item.classList.toggle('active', j === i);
+      item.classList.toggle('dimmed', j !== i);
+    });
+  }
+
+  function clearActive() {
+    activeIdx = -1;
+    showDefault();
+    paths.forEach(p => p.el.classList.remove('dimmed'));
+    legendItems.forEach(item => { item.classList.remove('active'); item.classList.remove('dimmed'); });
+  }
+
+  /* ── FY breakdown table ──────────────────────────────── */
+  const tbody = document.getElementById('fy-tbody');
+  DATA.forEach(d => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><span style="display:flex;align-items:center;gap:8px;font-weight:600;color:var(--text)">
+        <span style="width:10px;height:10px;border-radius:50%;background:${d.color};flex-shrink:0;display:inline-block"></span>
+        ${d.shortLabel}
+      </span></td>
+      <td class="num${d.fy26===0?' zero':''}">${fmtM(d.fy26)}</td>
+      <td class="num">${fmtM(d.fy27)}</td>
+      <td class="num" style="font-weight:600;color:${d.color}">${fmtM(d.value)}</td>
+      <td class="num hide-sm" style="color:var(--text-faint)">${fmtPct(d.value)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+  const tfoot = document.createElement('tr');
+  tfoot.className = 'total-row';
+  tfoot.innerHTML = `
+    <td style="font-weight:700">All categories</td>
+    <td class="num">${fmtM(DATA.reduce((s,d)=>s+d.fy26,0))}</td>
+    <td class="num">${fmtM(DATA.reduce((s,d)=>s+d.fy27,0))}</td>
+    <td class="num">${fmtM(TOTAL)}</td>
+    <td class="num hide-sm">100%</td>
+  `;
+  tbody.appendChild(tfoot);
+</script>
+
+</body>
+</html>
