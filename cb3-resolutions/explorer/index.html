@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CB3 Resolutions Explorer — NYCuriosity Data</title>
+  <meta name="description" content="Search and browse 6,500+ resolutions from Manhattan Community Board 3.">
+  <meta property="og:type"        content="website">
+  <meta property="og:url"         content="https://data.nycuriosity.com/cb3-resolutions/explorer/">
+  <meta property="og:title"       content="CB3 Resolutions Explorer — NYCuriosity Data">
+  <meta property="og:description" content="Search and browse 6,500+ resolutions from Manhattan Community Board 3.">
+  <meta property="og:image"       content="https://data.nycuriosity.com/website_logo.png">
+  <meta name="twitter:card"       content="summary_large_image">
+  <meta name="twitter:image"      content="https://data.nycuriosity.com/website_logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue:       #2563eb;
+      --blue-light: #eff6ff;
+      --blue-mid:   #bfdbfe;
+      --text:       #111827;
+      --text-mid:   #374151;
+      --text-muted: #6b7280;
+      --text-faint: #9ca3af;
+      --bg:         #f9fafb;
+      --surface:    #ffffff;
+      --border:     #e5e7eb;
+      --border-mid: #d1d5db;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    /* ── HEADER ─────────────────────────────────────────── */
+    header {
+      background: #111827;
+      border-bottom: 1px solid #1f2937;
+      padding: 0 24px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .header-inner {
+      max-width: 100%;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .back-link {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #9ca3af;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 8px 4px 4px;
+      border-radius: 5px;
+      transition: color 0.15s, background 0.15s;
+      white-space: nowrap;
+    }
+    .back-link:hover { color: #60a5fa; background: rgba(96,165,250,0.1); }
+    .header-divider { width: 1px; height: 20px; background: #374151; flex-shrink: 0; }
+    header h1 {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #e5e7eb;
+      white-space: nowrap;
+      letter-spacing: -0.02em;
+    }
+    #status { font-size: 0.8rem; color: #6b7280; margin-left: auto; }
+
+    /* ── PILL NAV ─────────────────────────────────────── */
+    .pill-nav {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 24px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .pill-nav a {
+      font-size: 0.78rem;
+      font-family: 'Roboto Mono', monospace;
+      font-weight: 600;
+      padding: 4px 12px;
+      border-radius: 20px;
+      text-decoration: none;
+      border: 1px solid var(--border-mid);
+      color: var(--text-muted);
+      background: var(--bg);
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .pill-nav a:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
+    .pill-nav a.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+    .pill-label { font-size: 0.72rem; color: var(--text-faint); font-family: 'Roboto Mono', monospace; white-space: nowrap; }
+
+    /* ── CONTROLS ────────────────────────────────────────── */
+    .controls {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 24px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    #search {
+      flex: 1;
+      min-width: 200px;
+      padding: 7px 12px;
+      border: 1px solid var(--border-mid);
+      border-radius: 6px;
+      font-size: 0.875rem;
+      font-family: 'Inter', sans-serif;
+      outline: none;
+      background: var(--surface);
+    }
+    #search:focus { border-color: var(--blue); box-shadow: 0 0 0 2px var(--blue-mid); }
+    #search-col {
+      padding: 7px 10px;
+      border: 1px solid var(--border-mid);
+      border-radius: 6px;
+      font-size: 0.875rem;
+      background: var(--surface);
+      font-family: 'Inter', sans-serif;
+    }
+    #result-count { font-size: 0.8rem; color: var(--text-muted); white-space: nowrap; }
+    #per-page {
+      padding: 5px 8px;
+      border: 1px solid var(--border-mid);
+      border-radius: 6px;
+      font-size: 0.8rem;
+      background: var(--surface);
+    }
+
+    /* ── TABLE ───────────────────────────────────────────── */
+    .table-wrap { overflow-x: auto; padding: 0 24px 16px; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--surface);
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+      margin-top: 16px;
+    }
+    th {
+      background: #f3f4f6;
+      padding: 9px 12px;
+      text-align: left;
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-mid);
+      cursor: pointer;
+      user-select: none;
+      white-space: nowrap;
+      border-bottom: 2px solid var(--border);
+    }
+    th:hover { background: #e8ecf5; }
+    th .sort-icon { margin-left: 4px; color: var(--text-faint); }
+    th.asc .sort-icon::after  { content: " ▲"; }
+    th.desc .sort-icon::after { content: " ▼"; }
+    th:not(.asc):not(.desc) .sort-icon::after { content: " ⇅"; }
+    td {
+      padding: 9px 12px;
+      font-size: 0.85rem;
+      border-bottom: 1px solid #f3f4f6;
+      vertical-align: top;
+      color: var(--text-mid);
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #f5f8ff; }
+    td.text-cell { max-width: 480px; min-width: 200px; }
+    .cell-inner {
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      cursor: pointer;
+      line-height: 1.55;
+    }
+    .cell-inner.expanded {
+      display: block;
+      -webkit-line-clamp: unset;
+      overflow: visible;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .expand-btn {
+      font-size: 0.72rem;
+      color: var(--blue);
+      cursor: pointer;
+      margin-top: 4px;
+      display: inline-block;
+    }
+    .expand-btn:hover { text-decoration: underline; }
+    td.num-cell { text-align: right; font-family: 'Roboto Mono', monospace; font-variant-numeric: tabular-nums; }
+    td.id-cell  { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; color: var(--text-faint); max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+    /* ── PAGINATION ──────────────────────────────────────── */
+    .pagination {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 16px 24px 28px;
+      flex-wrap: wrap;
+    }
+    .pagination button {
+      padding: 5px 11px;
+      border: 1px solid var(--border-mid);
+      background: var(--surface);
+      border-radius: 6px;
+      font-size: 0.82rem;
+      cursor: pointer;
+      color: var(--text-mid);
+      font-family: 'Inter', sans-serif;
+      transition: border-color 0.15s, color 0.15s, background 0.15s;
+    }
+    .pagination button:hover:not(:disabled) { background: var(--blue-light); border-color: var(--blue); color: var(--blue); }
+    .pagination button.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+    .pagination button:disabled { opacity: 0.35; cursor: default; }
+    .pagination .page-info { font-size: 0.8rem; color: var(--text-muted); }
+
+    /* ── LOADING ─────────────────────────────────────────── */
+    #loading {
+      text-align: center;
+      padding: 64px 24px;
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+    .spinner {
+      display: inline-block;
+      width: 20px; height: 20px;
+      border: 2.5px solid #374151;
+      border-top-color: #60a5fa;
+      border-radius: 50%;
+      animation: spin 0.65s linear infinite;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    mark { background: #fef08a; border-radius: 2px; padding: 0 1px; }
+
+    /* ── FOOTER ──────────────────────────────────────────── */
+    footer {
+      margin-top: auto;
+      padding: 24px;
+      text-align: center;
+      font-size: 0.78rem;
+      color: var(--text-faint);
+      border-top: 1px solid var(--border);
+    }
+    footer a { color: var(--text-muted); text-decoration: none; }
+    footer a:hover { color: var(--blue); }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <a href="../" class="back-link">← cb3-resolutions</a>
+    <div class="header-divider"></div>
+    <h1>Resolution Explorer</h1>
+    <span id="status"><span class="spinner"></span>Loading…</span>
+  </div>
+</header>
+
+<div class="pill-nav">
+  <span class="pill-label">Charts in this post:</span>
+  <a href="../" class="pill-nav-link">Overview</a>
+  <a href="./" class="active">Resolution Explorer</a>
+  <a href="../top-topics/">Top Topics</a>
+  <a href="../top-agencies/">Top Agencies</a>
+  <a href="../resolutions-per-year/">Resolutions Over Time</a>
+</div>
+
+<div class="controls" id="controls" style="display:none">
+  <select id="search-col"></select>
+  <input id="search" type="search" placeholder="Search resolutions…" autocomplete="off">
+  <span id="result-count"></span>
+  <label style="font-size:0.8rem;color:var(--text-muted);margin-left:auto;white-space:nowrap">Rows:
+    <select id="per-page">
+      <option value="25">25</option>
+      <option value="50" selected>50</option>
+      <option value="100">100</option>
+      <option value="250">250</option>
+    </select>
+  </label>
+</div>
+
+<div id="loading"><span class="spinner"></span>Parsing CSV — this may take a moment for large files…</div>
+<div class="table-wrap" id="table-wrap" style="display:none"></div>
+<div class="pagination" id="pagination" style="display:none"></div>
+
+<footer>
+  <a href="https://nycuriosity.substack.com/">NYCuriosity</a> · Data: NYC.gov MCB3 meeting minutes ·
+  <a href="../data/top_topics.csv">Download source data</a>
+</footer>
+
+<script>
+let allRows = [], headers = [], filtered = [], sortCol = null, sortDir = 1;
+let page = 1;
+const perPageEl = document.getElementById("per-page");
+const searchEl = document.getElementById("search");
+const searchColEl = document.getElementById("search-col");
+const resultCountEl = document.getElementById("result-count");
+const statusEl = document.getElementById("status");
+
+function perPage() { return parseInt(perPageEl.value); }
+
+Papa.parse("../../full_resolutions.csv", {
+  download: true,
+  header: true,
+  skipEmptyLines: true,
+  complete(results) {
+    headers = results.meta.fields;
+    allRows = results.data;
+    filtered = allRows;
+
+    const allOpt = document.createElement("option");
+    allOpt.value = "__all__"; allOpt.textContent = "All columns";
+    searchColEl.appendChild(allOpt);
+    headers.forEach(h => {
+      const o = document.createElement("option");
+      o.value = h; o.textContent = h;
+      searchColEl.appendChild(o);
+    });
+
+    statusEl.textContent = `${allRows.length.toLocaleString()} rows loaded`;
+    document.getElementById("loading").style.display = "none";
+    document.getElementById("table-wrap").style.display = "";
+    document.getElementById("pagination").style.display = "";
+    document.getElementById("controls").style.display = "";
+
+    render();
+  },
+  error(err) {
+    document.getElementById("loading").textContent = "Error loading CSV: " + err.message;
+  }
+});
+
+function numericCol(col) {
+  return allRows.slice(0, 20).every(r => r[col] === "" || !isNaN(Number(r[col])));
+}
+function escapeHtml(s) {
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+function highlightText(text, query) {
+  if (!query) return escapeHtml(text);
+  const escaped = escapeHtml(text);
+  const re = new RegExp(query.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"), "gi");
+  return escaped.replace(re, m => `<mark>${m}</mark>`);
+}
+
+function render() {
+  const tableWrap = document.getElementById("table-wrap");
+  const paginationEl = document.getElementById("pagination");
+  const q = searchEl.value.trim();
+  const pp = perPage();
+  const totalPages = Math.max(1, Math.ceil(filtered.length / pp));
+  if (page > totalPages) page = 1;
+
+  const start = (page - 1) * pp;
+  const rows = filtered.slice(start, start + pp);
+  resultCountEl.textContent = `${filtered.length.toLocaleString()} of ${allRows.length.toLocaleString()} rows`;
+
+  let html = "<table><thead><tr>";
+  headers.forEach(h => {
+    const cls = sortCol === h ? (sortDir === 1 ? "asc" : "desc") : "";
+    html += `<th class="${cls}" data-col="${escapeHtml(h)}">${escapeHtml(h)}<span class="sort-icon"></span></th>`;
+  });
+  html += "</tr></thead><tbody>";
+
+  rows.forEach((row, ri) => {
+    html += "<tr>";
+    headers.forEach(h => {
+      const val = row[h] ?? "";
+      const isId = h.endsWith("_id");
+      const isNum = !isId && numericCol(h);
+      if (isId) {
+        html += `<td class="id-cell" title="${escapeHtml(val)}">${escapeHtml(val)}</td>`;
+      } else if (isNum) {
+        html += `<td class="num-cell">${escapeHtml(val)}</td>`;
+      } else if (val.length > 120) {
+        const highlighted = highlightText(val, q);
+        html += `<td class="text-cell">
+          <div class="cell-inner" id="ci-${ri}-${h}">${highlighted}</div>
+          <span class="expand-btn" onclick="toggleExpand('ci-${ri}-${h}',this)">Show more</span>
+        </td>`;
+      } else {
+        html += `<td>${highlightText(val, q)}</td>`;
+      }
+    });
+    html += "</tr>";
+  });
+
+  html += "</tbody></table>";
+  tableWrap.innerHTML = html;
+
+  tableWrap.querySelectorAll("th[data-col]").forEach(th => {
+    th.addEventListener("click", () => {
+      const col = th.dataset.col;
+      if (sortCol === col) sortDir *= -1;
+      else { sortCol = col; sortDir = 1; }
+      const isNum = numericCol(col);
+      filtered.sort((a, b) => {
+        const av = a[col] ?? "", bv = b[col] ?? "";
+        if (isNum) return (Number(av) - Number(bv)) * sortDir;
+        return av.localeCompare(bv) * sortDir;
+      });
+      page = 1;
+      render();
+    });
+  });
+
+  let pHtml = `<button ${page===1?"disabled":""} onclick="goPage(1)">«</button>`;
+  pHtml += `<button ${page===1?"disabled":""} onclick="goPage(${page-1})">‹</button>`;
+  const range = 2;
+  const pages = new Set([1, totalPages]);
+  for (let i = Math.max(1, page-range); i <= Math.min(totalPages, page+range); i++) pages.add(i);
+  const sorted = [...pages].sort((a,b)=>a-b);
+  let prev = 0;
+  sorted.forEach(p2 => {
+    if (p2 - prev > 1) pHtml += `<span class="page-info">…</span>`;
+    pHtml += `<button class="${p2===page?"active":""}" onclick="goPage(${p2})">${p2}</button>`;
+    prev = p2;
+  });
+  pHtml += `<button ${page===totalPages?"disabled":""} onclick="goPage(${page+1})">›</button>`;
+  pHtml += `<button ${page===totalPages?"disabled":""} onclick="goPage(${totalPages})">»</button>`;
+  pHtml += `<span class="page-info">Page ${page} of ${totalPages}</span>`;
+  paginationEl.innerHTML = pHtml;
+}
+
+function goPage(p) { page = p; render(); window.scrollTo(0,0); }
+
+function toggleExpand(id, btn) {
+  const el = document.getElementById(id);
+  if (el.classList.toggle("expanded")) btn.textContent = "Show less";
+  else btn.textContent = "Show more";
+}
+
+let searchTimeout;
+searchEl.addEventListener("input", () => {
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(applyFilter, 200);
+});
+searchColEl.addEventListener("change", applyFilter);
+perPageEl.addEventListener("change", () => { page = 1; render(); });
+
+function applyFilter() {
+  const q = searchEl.value.trim().toLowerCase();
+  const col = searchColEl.value;
+  if (!q) { filtered = allRows; }
+  else if (col === "__all__") {
+    filtered = allRows.filter(row => headers.some(h => String(row[h] ?? "").toLowerCase().includes(q)));
+  } else {
+    filtered = allRows.filter(row => String(row[col] ?? "").toLowerCase().includes(q));
+  }
+  if (sortCol) {
+    const isNum = numericCol(sortCol);
+    filtered.sort((a, b) => {
+      const av = a[sortCol] ?? "", bv = b[sortCol] ?? "";
+      if (isNum) return (Number(av) - Number(bv)) * sortDir;
+      return av.localeCompare(bv) * sortDir;
+    });
+  }
+  page = 1;
+  render();
+}
+</script>
+</body>
+</html>
