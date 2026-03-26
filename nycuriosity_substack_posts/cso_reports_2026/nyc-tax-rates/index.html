@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NYC Tax Rates — CSO Reports 2026 — NYCuriosity</title>
+  <meta name="description" content="A breakdown of every major tax NYC imposes on residents and businesses — income, property, business, and more.">
+  <meta property="og:type"        content="website">
+  <meta property="og:url"         content="https://data.nycuriosity.com/nycuriosity_substack_posts/cso_reports_2026/nyc-tax-rates/">
+  <meta property="og:title"       content="NYC Tax Rates — CSO Reports 2026 — NYCuriosity">
+  <meta property="og:description" content="A breakdown of every major tax NYC imposes on residents and businesses — income, property, business, and more.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue:       #2563eb;
+      --blue-hover: #1d4ed8;
+      --blue-light: #eff6ff;
+      --blue-mid:   #bfdbfe;
+      --text:       #111827;
+      --text-mid:   #374151;
+      --text-muted: #6b7280;
+      --text-faint: #9ca3af;
+      --bg:         #f8faff;
+      --surface:    #ffffff;
+      --border:     #e5e7eb;
+      --shadow-sm:  0 1px 3px rgba(17,24,39,0.08);
+      --shadow-md:  0 4px 16px rgba(37,99,235,0.10);
+      --radius:     10px;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── HEADER ──────────────────────────────────────────── */
+    header {
+      background: #111827;
+      border-bottom: 1px solid #1f2937;
+      padding: 0 clamp(20px, 5vw, 48px);
+    }
+    .header-inner {
+      max-width: 1100px; margin: 0 auto; height: 56px;
+      display: flex; align-items: center; gap: 16px;
+    }
+    .back-link {
+      font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600;
+      color: #9ca3af; text-decoration: none; display: flex; align-items: center; gap: 5px;
+      padding: 4px 8px 4px 4px; border-radius: 5px; transition: color 0.15s, background 0.15s; white-space: nowrap;
+    }
+    .back-link:hover { color: #60a5fa; background: rgba(96,165,250,0.1); }
+    .header-divider { width: 1px; height: 20px; background: #374151; flex-shrink: 0; }
+    header h1 {
+      font-family: 'Roboto Mono', monospace; font-size: 0.95rem; font-weight: 700;
+      color: #e5e7eb; letter-spacing: -0.02em;
+    }
+
+    /* ── PILL NAV ─────────────────────────────────────────── */
+    .pill-nav {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 10px clamp(20px, 5vw, 48px);
+      display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+    }
+    .pill-nav a {
+      font-size: 0.78rem; font-family: 'Roboto Mono', monospace; font-weight: 600;
+      padding: 4px 12px; border-radius: 20px; text-decoration: none;
+      border: 1px solid var(--border); color: var(--text-muted); background: var(--bg);
+      transition: all 0.15s; white-space: nowrap;
+    }
+    .pill-nav a:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
+    .pill-nav a.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+    .pill-label { font-size: 0.72rem; color: var(--text-faint); font-family: 'Roboto Mono', monospace; white-space: nowrap; }
+
+    /* ── HERO ────────────────────────────────────────────── */
+    .hero {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: clamp(32px, 5vw, 52px) clamp(20px, 5vw, 48px);
+    }
+    .hero-inner { max-width: 1100px; margin: 0 auto; }
+    .breadcrumb {
+      font-family: 'Roboto Mono', monospace; font-size: 0.72rem;
+      color: var(--text-faint); margin-bottom: 14px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .breadcrumb a { color: var(--blue); text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+    .hero-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .hero-tag {
+      font-family: 'Roboto Mono', monospace; font-size: 0.68rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.08em; color: var(--blue);
+      background: var(--blue-light); border: 1px solid var(--blue-mid); border-radius: 4px; padding: 3px 8px;
+    }
+    .hero-updated { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; color: var(--text-faint); }
+    .hero h1 {
+      font-family: 'Roboto Mono', monospace; font-size: clamp(1.5rem, 3.5vw, 2rem);
+      font-weight: 700; color: var(--text); letter-spacing: -0.03em; line-height: 1.2; margin-bottom: 10px;
+    }
+    .hero h1 span { color: var(--blue); }
+    .hero p { font-size: 0.975rem; color: var(--text-muted); max-width: 720px; line-height: 1.7; }
+    .hero p a { color: var(--blue); text-decoration: none; border-bottom: 1px solid var(--blue-mid); }
+    .hero p a:hover { border-color: var(--blue); }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600;
+      text-decoration: none; border-radius: 7px; padding: 8px 14px;
+      transition: background 0.15s, border-color 0.15s; cursor: pointer; border: none;
+    }
+    .btn-outline { background: var(--surface); color: var(--text-muted); border: 1.5px solid var(--border); }
+    .btn-outline:hover { color: var(--blue); border-color: var(--blue-mid); background: var(--blue-light); }
+
+    /* ── MAIN ────────────────────────────────────────────── */
+    main { flex: 1; padding: clamp(28px, 4vw, 48px) clamp(20px, 5vw, 48px); }
+    .main-inner { max-width: 1100px; margin: 0 auto; }
+
+    /* ── CALLOUT ─────────────────────────────────────────── */
+    .callout {
+      background: #fefce8; border: 1px solid #fde68a; border-left: 4px solid #d97706;
+      border-radius: var(--radius); padding: 14px 18px; margin-bottom: 28px;
+    }
+    .callout p { font-size: 0.84rem; color: #92400e; line-height: 1.6; }
+    .callout strong { font-weight: 600; }
+
+    /* ── TAX CHART ───────────────────────────────────────── */
+    .chart-section { margin-bottom: 36px; }
+
+    .category-header {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 0 8px; margin-bottom: 4px;
+      border-bottom: 2px solid;
+    }
+    .category-swatch {
+      width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0;
+    }
+    .category-name {
+      font-family: 'Roboto Mono', monospace; font-size: 0.72rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.1em;
+    }
+    .category-note {
+      font-size: 0.75rem; color: var(--text-faint); margin-left: auto;
+      text-align: right; max-width: 340px; line-height: 1.4;
+    }
+
+    .bar-row {
+      display: grid;
+      grid-template-columns: 260px 1fr auto;
+      align-items: center;
+      gap: 12px;
+      padding: 9px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .bar-row:last-child { border-bottom: none; }
+
+    .bar-label { }
+    .bar-label-main {
+      font-size: 0.875rem; font-weight: 600; color: var(--text); line-height: 1.2;
+    }
+    .bar-label-sub {
+      font-size: 0.75rem; color: var(--text-faint); line-height: 1.3; margin-top: 2px;
+    }
+
+    .bar-track {
+      background: var(--border); border-radius: 4px; height: 22px;
+      position: relative; overflow: hidden; min-width: 40px;
+    }
+    .bar-fill {
+      height: 100%; border-radius: 4px;
+      transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+      width: 0;
+    }
+    .bar-fill.animated { /* width set by JS */ }
+
+    .bar-rate {
+      font-family: 'Roboto Mono', monospace; font-size: 0.85rem; font-weight: 700;
+      color: var(--text); white-space: nowrap; min-width: 60px; text-align: right;
+    }
+    .bar-rate.na {
+      color: var(--text-faint); font-style: italic;
+    }
+
+    /* Wealth tax special row */
+    .bar-row.na-row .bar-track { background: #f3f4f6; }
+    .bar-row.na-row .bar-label-main { color: var(--text-muted); }
+
+    /* ── FOOTNOTES ───────────────────────────────────────── */
+    .footnotes { margin-top: 24px; padding: 16px 20px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+    .footnotes p { font-size: 0.78rem; color: var(--text-muted); line-height: 1.65; }
+    .footnotes p + p { margin-top: 8px; }
+    .footnotes strong { color: var(--text-mid); }
+    .footnotes a { color: var(--blue); text-decoration: none; border-bottom: 1px solid var(--blue-mid); }
+    .footnotes a:hover { border-color: var(--blue); }
+
+    /* ── FOOTER ──────────────────────────────────────────── */
+    footer { background: var(--surface); border-top: 1px solid var(--border); padding: 20px clamp(20px, 5vw, 48px); margin-top: auto; }
+    .footer-inner { max-width: 1100px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+    .footer-copy { font-size: 0.8rem; color: var(--text-faint); }
+    .footer-links { display: flex; gap: 20px; }
+    .footer-links a { font-size: 0.8rem; color: var(--text-faint); text-decoration: none; transition: color 0.15s; }
+    .footer-links a:hover { color: var(--blue); }
+
+    @media (max-width: 700px) {
+      .bar-row { grid-template-columns: 1fr auto; }
+      .bar-track { display: none; }
+      .category-note { display: none; }
+    }
+    @media (max-width: 540px) {
+      .bar-row { grid-template-columns: 1fr auto; gap: 8px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="header-inner">
+    <a href="/nycuriosity_substack_posts/cso_reports_2026/" class="back-link">← cso-reports-2026</a>
+    <div class="header-divider"></div>
+    <h1>NYC Tax Rates</h1>
+  </div>
+</header>
+
+<!-- VISUALS NAV -->
+<div class="pill-nav">
+  <span class="pill-label">Visuals in this post:</span>
+  <a href="../agency-breakdown/">Agency Savings Breakdown</a>
+  <a href="../ibo-comparison/">CSO vs. IBO Budget Options</a>
+  <a href="./" class="active">NYC Tax Rates</a>
+</div>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-inner">
+    <div class="breadcrumb">
+      <a href="/">data.nycuriosity.com</a>
+      <span>›</span>
+      <a href="/nycuriosity_substack_posts/cso_reports_2026/">CSO Reports 2026</a>
+      <span>›</span>
+      <span>NYC Tax Rates</span>
+    </div>
+    <div class="hero-meta">
+      <span class="hero-tag">Budget &amp; Finance</span>
+      <span class="hero-updated">March 2026</span>
+    </div>
+    <h1>NYC <span>Tax Rates</span></h1>
+    <p>
+      Every major tax the City of New York currently levies on residents and businesses — personal income, property, business, commercial rent, real estate transactions, and excise taxes.
+      Rates are city-level only; New York State and federal taxes are excluded.
+      NYC does not currently impose a wealth tax.
+    </p>
+    <div class="hero-actions">
+      <a href="../data/nyc_tax_rates.csv" download class="btn btn-outline">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download CSV
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- CHART -->
+<main>
+  <div class="main-inner">
+
+    <div class="callout">
+      <p><strong>Property tax rates apply to assessed value, not market value.</strong> For Class 1 homes (1–3 family), the city typically sets assessed value at roughly 6% of market value — so a 20% rate on assessed value translates to an effective rate of about 1.2% on market value. Rates for all classes are set annually by the NYC Council and shown here at the FY2025 levy.</p>
+    </div>
+
+    <div id="chart"></div>
+
+    <div class="footnotes">
+      <p><strong>Personal Income Tax:</strong> NYC PIT brackets shown for single filers. Married filing jointly thresholds differ. Rates apply to NYC taxable income, which follows NYS taxable income with minor adjustments. Source: <a href="https://www.nyc.gov/site/finance/business/business-income-and-excise-taxes.page" target="_blank" rel="noopener">NYC Department of Finance</a>.</p>
+      <p><strong>Property Tax:</strong> FY2025 tax rates set by the NYC Council. Class 1 assessed value is capped at 6% of market value and can increase no more than 6% annually or 20% over five years. Source: <a href="https://www.nyc.gov/site/finance/taxes/property-tax-rates.page" target="_blank" rel="noopener">NYC DOF Tax Rates</a>.</p>
+      <p><strong>Business Corporation Tax:</strong> 8.85% of NYC-allocated business income or 2.35% of NYC receipts, whichever is higher (minimum $25). Banks pay a separate Banking Corporation Tax. Source: <a href="https://www.nyc.gov/site/finance/business/business-income-and-excise-taxes.page" target="_blank" rel="noopener">NYC DOF</a>.</p>
+      <p><strong>Commercial Rent Tax:</strong> 6% applies to gross rent above $250,000/year for commercial tenants in Manhattan south of 96th Street. Tenants paying under $250K/year are exempt. Small businesses with certain rent thresholds may qualify for a partial credit. Source: <a href="https://www.nyc.gov/site/finance/taxes/business-commercial-rent-tax.page" target="_blank" rel="noopener">NYC DOF</a>.</p>
+      <p><strong>Real Property Transfer Tax:</strong> Paid by the seller. Residential properties under $500K pay 1%. An additional NYS mansion tax (1%–3.9%) applies on residential sales over $1M — that is a state levy, not included here. Source: <a href="https://www.nyc.gov/site/finance/taxes/property-real-property-transfer-tax-rptt.page" target="_blank" rel="noopener">NYC DOF RPTT</a>.</p>
+      <p><strong>Wealth Tax:</strong> NYC does not currently impose a tax on accumulated wealth or net worth. Proposals for a state-level wealth tax have been introduced in Albany but none have been enacted as of March 2026.</p>
+      <p><em>Author's compilation of NYC Department of Finance published rate schedules, FY2025.</em></p>
+    </div>
+
+  </div>
+</main>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <span class="footer-copy">© NYCuriosity · Tal Roded</span>
+    <nav class="footer-links">
+      <a href="https://nycuriosity.substack.com" target="_blank" rel="noopener">Substack</a>
+      <a href="https://github.com/TalR24/nycur-data-website" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </div>
+</footer>
+
+<script>
+  const CATEGORIES = [
+    {
+      name: "Personal Income Tax",
+      color: "#2563eb",
+      borderColor: "#bfdbfe",
+      note: "Single filer brackets; MFJ thresholds differ",
+      items: [
+        { label: "Top rate", sublabel: "Taxable income over $50,000", rate: 3.876 },
+        { label: "Third bracket", sublabel: "Taxable income $25,001–$50,000", rate: 3.819 },
+        { label: "Second bracket", sublabel: "Taxable income $12,001–$25,000", rate: 3.762 },
+        { label: "Bottom bracket", sublabel: "Taxable income up to $12,000", rate: 3.078 },
+      ]
+    },
+    {
+      name: "Property Tax",
+      color: "#7c3aed",
+      borderColor: "#ddd6fe",
+      note: "Applied to assessed value, not market value",
+      items: [
+        { label: "Class 1 — 1–3 family homes", sublabel: "AV ≈ 6% of market value", rate: 20.085 },
+        { label: "Class 3 — Utility property", sublabel: "Applied to assessed value", rate: 12.755 },
+        { label: "Class 2 — Apartments, co-ops, condos", sublabel: "Applied to assessed value", rate: 12.267 },
+        { label: "Class 4 — Commercial & industrial", sublabel: "Applied to assessed value", rate: 10.694 },
+      ]
+    },
+    {
+      name: "Business Taxes",
+      color: "#d97706",
+      borderColor: "#fde68a",
+      note: "On NYC-source income",
+      items: [
+        { label: "Business Corporation Tax", sublabel: "NYC-allocated business income (or 2.35% of receipts)", rate: 8.85 },
+        { label: "Unincorporated Business Tax", sublabel: "Net income of partnerships and sole proprietors", rate: 4.0 },
+      ]
+    },
+    {
+      name: "Commercial & Excise Taxes",
+      color: "#dc2626",
+      borderColor: "#fecaca",
+      note: "Activity-based city levies",
+      items: [
+        { label: "Commercial Rent Tax", sublabel: "Gross rent, Manhattan commercial space south of 96th St", rate: 6.0 },
+        { label: "Hotel Room Occupancy Tax", sublabel: "Room rate (plus $1.50/night flat fee)", rate: 5.875 },
+      ]
+    },
+    {
+      name: "Real Estate Transaction Taxes",
+      color: "#0891b2",
+      borderColor: "#a5f3fc",
+      note: "Paid by seller on each sale",
+      items: [
+        { label: "RPTT — Commercial / 4+ units over $500K", sublabel: "Commercial or 4+ unit residential", rate: 2.625 },
+        { label: "RPTT — Residential over $500K", sublabel: "1–3 family homes, co-ops, condos", rate: 1.425 },
+        { label: "RPTT — Residential under $500K", sublabel: "1–3 family homes, co-ops, condos", rate: 1.0 },
+      ]
+    },
+    {
+      name: "Wealth Tax",
+      color: "#9ca3af",
+      borderColor: "#e5e7eb",
+      note: "Not currently in effect",
+      items: [
+        { label: "Wealth Tax", sublabel: "Not currently imposed by NYC", rate: null },
+      ]
+    }
+  ];
+
+  const MAX_RATE = 20.085;
+
+  function buildChart() {
+    const container = document.getElementById('chart');
+
+    CATEGORIES.forEach(cat => {
+      const section = document.createElement('div');
+      section.className = 'chart-section';
+
+      // Category header
+      const header = document.createElement('div');
+      header.className = 'category-header';
+      header.style.borderColor = cat.borderColor;
+      header.innerHTML = `
+        <div class="category-swatch" style="background:${cat.color}"></div>
+        <span class="category-name" style="color:${cat.color}">${cat.name}</span>
+        <span class="category-note">${cat.note}</span>
+      `;
+      section.appendChild(header);
+
+      // Bar rows
+      cat.items.forEach(item => {
+        const row = document.createElement('div');
+        row.className = 'bar-row' + (item.rate === null ? ' na-row' : '');
+
+        const pct = item.rate !== null ? (item.rate / MAX_RATE * 100).toFixed(4) : 0;
+
+        row.innerHTML = `
+          <div class="bar-label">
+            <div class="bar-label-main">${item.label}</div>
+            <div class="bar-label-sub">${item.sublabel}</div>
+          </div>
+          <div class="bar-track">
+            <div class="bar-fill" data-pct="${pct}" style="background:${item.rate !== null ? cat.color : '#d1d5db'}; width:0%"></div>
+          </div>
+          <div class="bar-rate${item.rate === null ? ' na' : ''}">${item.rate !== null ? item.rate.toFixed(3) + '%' : 'N/A'}</div>
+        `;
+
+        section.appendChild(row);
+      });
+
+      container.appendChild(section);
+    });
+
+    // Animate bars after a brief delay
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        document.querySelectorAll('.bar-fill').forEach(bar => {
+          bar.style.width = bar.dataset.pct + '%';
+        });
+      }, 120);
+    });
+  }
+
+  buildChart();
+</script>
+
+</body>
+</html>
