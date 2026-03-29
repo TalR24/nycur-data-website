@@ -136,13 +136,13 @@
 
   <div class="meta-section">
     <h3>Methodology</h3>
-    <p>Each resolution was matched against keyword lists for 10 topic categories using both the resolution title and full text where available. Full text is not available for all resolutions, particularly those before 2015. Because earlier SLA approvals were recorded with very short, generic titles, many are not captured by keyword matching and appear in "Other / Unclassified."</p>
-    <p>Resolution counts per year are derived by joining <code>resolutions.csv</code> (6,511 resolutions) with <code>meetings.csv</code> (268 meetings) via meeting ID. Where a resolution matches multiple topic categories, it is counted once per matching category.</p>
+    <p>Each resolution was matched against keyword lists for 10 topic categories using the full resolution text from <code>full_resolutions.csv</code>, which includes complete WHEREAS/THEREFORE clause text for all resolutions. This enables accurate detection of SLA resolutions recorded with short vote-only titles (e.g., "To deny renewal of license…due to nonappearance") as well as richer topic classification for policy resolutions.</p>
+    <p>Resolution counts per year are derived by joining <code>full_resolutions.csv</code> (7,134 resolutions) with <code>meetings.csv</code> (268 meetings) via meeting ID. Where a resolution matches multiple topic categories, it is counted once per matching category — so topic column sums may exceed the annual total.</p>
   </div>
 
   <div class="meta-section">
     <h3>Data</h3>
-    <p>6,511 resolutions across 268 MCB3 full board meetings, 2002–2026. Source: <a href="https://www.nyc.gov/site/manhattancb3/index.page" style="color:var(--blue)">NYC.gov MCB3 meeting minutes</a>.</p>
+    <p>7,134 resolutions across 268 MCB3 full board meetings, 2004–2025. Source: <a href="https://www.nyc.gov/site/manhattancb3/index.page" style="color:var(--blue)">NYC.gov MCB3 meeting minutes</a>.</p>
     <p style="margin-top:14px"><a class="download-btn" href="../data/topics_by_year.csv" download>⬇ Download CSV</a></p>
   </div>
 </main>
@@ -155,20 +155,20 @@
 const YEARS = [2004,2005,2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016,2017,2018,2019,2020,2021,2022,2023,2024,2025];
 
 const TOPICS = [
-  { label: 'Liquor License / SLA',           color: '#2563eb', data: [152,85,119,147,189,221,207,91,85,74,14,2,7,2,6,1,1,5,3,9,2,1] },
-  { label: 'Transportation & Streets',        color: '#16a34a', data: [13,12,10,11,10,15,19,4,8,7,4,7,7,6,3,4,2,2,9,2,3,1] },
-  { label: 'Parks & Open Space',              color: '#65a30d', data: [1,5,7,7,8,9,7,4,5,8,5,6,7,5,6,8,4,5,2,2,3,6] },
-  { label: 'Housing & Zoning',                color: '#d97706', data: [4,6,6,13,7,7,4,1,0,3,5,8,12,7,2,5,4,1,1,1,0,1] },
-  { label: 'Budget & Funding',                color: '#7c3aed', data: [0,0,1,0,6,5,10,2,3,4,4,2,1,1,1,1,0,1,0,0,0,0] },
-  { label: 'Environment & Waterfront',        color: '#0891b2', data: [0,2,0,3,0,2,4,4,0,2,0,0,1,0,1,0,0,1,0,0,0,0] },
-  { label: 'Public Safety',                   color: '#dc2626', data: [2,2,2,1,2,2,0,0,0,2,0,1,0,0,0,0,2,0,0,0,1,0] },
-  { label: 'Education & Schools',             color: '#0d9488', data: [0,1,0,1,0,0,1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,1] },
-  { label: 'City Planning',                   color: '#be185d', data: [3,3,9,5,6,2,3,2,3,2,2,3,1,1,5,7,2,4,0,1,0,1] },
-  { label: 'Landmarks & Historic Preservation', color: '#b45309', data: [0,0,1,2,0,1,0,0,0,1,0,0,0,0,3,2,1,3,0,0,0,0] },
-  { label: 'Other / Unclassified',            color: '#d1d5db', data: [430,319,282,237,225,132,137,215,219,226,265,297,204,197,188,166,112,139,119,151,152,139] },
+  { label: 'Liquor License / SLA',             color: '#2563eb', data: [202,193,223,217,218,232,254,202,214,198,160,113,106,113,126,101,72,110,87,105,103,100] },
+  { label: 'Transportation & Streets',          color: '#16a34a', data: [28,32,22,28,33,28,19,22,28,35,30,28,21,22,27,21,14,14,20,12,21,15] },
+  { label: 'Parks & Open Space',                color: '#65a30d', data: [7,12,16,27,18,20,19,15,22,27,22,24,19,16,17,23,16,11,7,6,16,14] },
+  { label: 'Housing & Zoning',                  color: '#d97706', data: [13,13,21,23,36,20,15,14,14,25,19,24,27,19,17,29,13,6,6,5,7,3] },
+  { label: 'Budget & Funding',                  color: '#7c3aed', data: [1,2,2,0,6,7,12,4,8,10,5,6,3,7,6,5,2,3,2,0,2,1] },
+  { label: 'Environment & Waterfront',          color: '#0891b2', data: [6,6,6,10,16,19,18,17,16,7,9,8,13,8,15,16,11,6,6,5,7,12] },
+  { label: 'Public Safety',                     color: '#dc2626', data: [21,21,16,19,20,23,15,18,9,17,10,4,15,14,10,11,11,4,6,5,11,12] },
+  { label: 'Education & Schools',               color: '#0d9488', data: [0,1,1,3,0,5,7,4,10,5,2,4,12,4,4,3,1,3,2,2,1,5] },
+  { label: 'City Planning',                     color: '#be185d', data: [3,6,10,14,15,6,9,3,9,5,5,12,7,5,13,12,4,5,2,2,3,4] },
+  { label: 'Landmarks & Historic Preservation', color: '#b45309', data: [0,0,1,4,2,1,0,6,5,7,4,7,4,6,10,9,4,6,0,4,2,2] },
+  { label: 'Other / Unclassified',              color: '#d1d5db', data: [434,244,159,137,150,99,84,79,57,60,91,149,79,63,47,49,39,31,41,51,38,30] },
 ];
 
-const TOTALS = [605,435,433,424,451,395,390,323,323,328,298,325,240,218,215,190,126,159,135,166,161,149];
+const TOTALS = [701,518,455,446,473,423,414,354,348,349,321,347,262,240,239,212,150,181,158,188,184,171];
 
 const OTHER_IDX = TOPICS.length - 1; // index of "Other / Unclassified"
 
