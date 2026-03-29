@@ -48,7 +48,7 @@
     .hero p { font-size:0.92rem; color:var(--text-muted); max-width:640px; line-height:1.65; }
 
     .chart-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:28px; box-shadow:var(--shadow-sm); margin-bottom:24px; }
-    .chart-wrap { position:relative; width:100%; height:400px; }
+    .chart-wrap { position:relative; width:100%; height:500px; }
     .caption { font-size:0.78rem; color:var(--text-faint); font-style:italic; margin-top:12px; line-height:1.5; }
 
     .meta-section { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:24px; box-shadow:var(--shadow-sm); margin-bottom:24px; }
@@ -88,27 +88,26 @@
     <a href="/">nycuriosity/data</a> / <a href="../">cb3-resolutions</a> / top-agencies
   </div>
   <div class="hero">
-    <h2>Top Agencies Mentioned in Resolution Titles</h2>
-    <p>Which City and State agencies does MCB3 most frequently address? Counted by agency name or acronym appearing in resolution titles across 6,511 resolutions (Jan 2002–Feb 2026).</p>
+    <h2>Top Agencies Mentioned in Resolutions</h2>
+    <p>Which City and State agencies does MCB3 most frequently address? Counted by agency name or acronym appearing in the full text of 7,134 resolutions (2004–2025).</p>
   </div>
 
   <div class="chart-card">
     <div class="chart-wrap">
       <canvas id="agenciesChart"></canvas>
     </div>
-    <p class="caption">Agency mentions in MCB3 resolution titles, 2002–2026. Counts reflect resolutions explicitly naming the agency or its acronym in the title. A resolution may name multiple agencies. Source: NYC.gov MCB3 meeting minutes. Author's analysis.</p>
+    <p class="caption">Agency mentions in MCB3 resolutions, 2004–2025. Counts reflect resolutions containing the agency name or acronym anywhere in the full resolution text. A resolution may name multiple agencies. Source: NYC.gov MCB3 meeting minutes. Author's analysis.</p>
   </div>
 
   <div class="meta-section">
     <h3>Methodology</h3>
-    <p>Each resolution title was scanned for agency names and common acronyms (e.g., "SLA," "State Liquor Authority," "Liquor Authority"). A resolution is counted once per agency regardless of how many times the agency is named. Because some resolutions name multiple agencies, counts do not sum to 6,511.</p>
-    <p>This reflects mentions in <em>titles</em> only. Full resolution text analysis would surface additional agency references embedded in whereas clauses and resolved language.</p>
-    <p>Note: The SLA's dominance reflects that liquor license applications are routinely addressed to the State Liquor Authority by name in resolution titles — a standard CB practice for SLA referral letters.</p>
+    <p>Each resolution's full text was scanned for agency names and common acronyms (e.g., "SLA," "State Liquor Authority," "Liquor Authority" for the SLA; " DOT " and "Department of Transportation" for DOT). A resolution is counted once per agency regardless of how many times the agency is named. Because some resolutions address multiple agencies, counts do not sum to 7,134.</p>
+    <p>Using full resolution text rather than titles substantially increases counts for all agencies — especially the SLA, DOT, and NYPD, whose acronyms appear frequently in WHEREAS and THEREFORE clauses but were often absent from short vote-only titles.</p>
   </div>
 
   <div class="meta-section">
     <h3>Data</h3>
-    <p>6,511 resolutions across 268 MCB3 full board meetings, January 2002 through February 2026. Source: <a href="https://www.nyc.gov/site/manhattancb3/index.page" style="color:var(--blue)">NYC.gov MCB3 meeting minutes</a>.</p>
+    <p>7,134 resolutions across 268 MCB3 full board meetings, 2004–2025. Source: <a href="https://www.nyc.gov/site/manhattancb3/index.page" style="color:var(--blue)">NYC.gov MCB3 meeting minutes</a>.</p>
     <p style="margin-top:14px"><a class="download-btn" href="../data/top_agencies.csv" download>⬇ Download CSV</a></p>
   </div>
 </main>
@@ -121,18 +120,21 @@
 const labels = [
   'SLA (State Liquor Authority)',
   'DOT (Dept of Transportation)',
-  'DEP (Dept of Environmental Protection)',
-  'DCP (Dept of City Planning)',
-  "Mayor's Office",
-  'Parks Department',
-  'NYC City Council',
-  'HPD (Housing Preservation)',
-  'MTA',
   'NYPD',
+  'NYC Council',
+  'NYC Parks',
+  'Borough President',
   'DOB (Dept of Buildings)',
-  'Borough President'
+  'DCP (Dept of City Planning)',
+  'HPD (Housing Preservation & Development)',
+  "Mayor's Office",
+  'EDC (Economic Development Corp)',
+  'MTA',
+  'LPC (Landmarks Preservation)',
+  'DEP (Dept of Environmental Protection)',
+  'FDNY'
 ];
-const values = [181, 108, 80, 30, 24, 24, 18, 17, 12, 12, 12, 9];
+const values = [2285, 440, 368, 207, 128, 107, 93, 84, 66, 61, 60, 56, 45, 31, 25];
 
 const ctx = document.getElementById('agenciesChart').getContext('2d');
 new Chart(ctx, {
@@ -140,7 +142,7 @@ new Chart(ctx, {
   data: {
     labels,
     datasets: [{
-      label: 'Resolution title mentions',
+      label: 'Resolutions mentioning agency',
       data: values,
       backgroundColor: labels.map((_, i) => {
         if (i === 0) return '#2563eb';
