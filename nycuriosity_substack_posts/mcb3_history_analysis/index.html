@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MCB3 History Analysis — NYCuriosity Data</title>
+  <meta name="description" content="Data and charts from NYCuriosity's analysis of MCB3 resolution history from 2002 to 2026 — topics, trends, and how the board's focus has shifted over time.">
+  <meta property="og:type"        content="website">
+  <meta property="og:url"         content="https://data.nycuriosity.com/nycuriosity_substack_posts/mcb3_history_analysis/">
+  <meta property="og:title"       content="MCB3 History Analysis — NYCuriosity Data">
+  <meta property="og:description" content="24 years of MCB3 resolutions: topic breakdowns, trend analysis, and comparison to citywide data.">
+  <meta property="og:image"       content="https://data.nycuriosity.com/website_logo.png">
+  <meta name="twitter:card"       content="summary_large_image">
+  <meta name="twitter:image"      content="https://data.nycuriosity.com/website_logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --blue: #2563eb; --blue-hover: #1d4ed8; --blue-light: #eff6ff; --blue-mid: #bfdbfe;
+      --text: #111827; --text-mid: #374151; --text-muted: #6b7280; --text-faint: #9ca3af;
+      --bg: #f8faff; --surface: #ffffff; --border: #e5e7eb;
+      --shadow-sm: 0 1px 3px rgba(17,24,39,0.08); --shadow-md: 0 4px 20px rgba(37,99,235,0.13);
+      --radius: 10px;
+    }
+    body { font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; display:flex; flex-direction:column; }
+
+    header { background:#111827; border-bottom:1px solid #1f2937; padding:0 clamp(20px,5vw,48px); }
+    .header-inner { max-width:1100px; margin:0 auto; height:56px; display:flex; align-items:center; gap:16px; }
+    .back-link { font-family:'Roboto Mono',monospace; font-size:0.75rem; font-weight:600; color:#9ca3af; text-decoration:none; display:flex; align-items:center; gap:5px; padding:4px 8px 4px 4px; border-radius:5px; transition:color 0.15s,background 0.15s; white-space:nowrap; }
+    .back-link:hover { color:#60a5fa; background:rgba(96,165,250,0.1); }
+    .header-divider { width:1px; height:20px; background:#374151; flex-shrink:0; }
+    header h1 { font-family:'Roboto Mono',monospace; font-size:0.95rem; font-weight:700; color:#e5e7eb; letter-spacing:-0.02em; }
+
+    .hero { background:var(--surface); border-bottom:1px solid var(--border); padding:clamp(32px,5vw,52px) clamp(20px,5vw,48px); }
+    .hero-inner { max-width:1100px; margin:0 auto; }
+    .breadcrumb { font-family:'Roboto Mono',monospace; font-size:0.72rem; color:var(--text-faint); margin-bottom:14px; display:flex; align-items:center; gap:6px; }
+    .breadcrumb a { color:var(--blue); text-decoration:none; }
+    .breadcrumb a:hover { text-decoration:underline; }
+    .hero-meta { display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin-bottom:14px; }
+    .hero-tag { font-family:'Roboto Mono',monospace; font-size:0.68rem; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; color:var(--blue); background:var(--blue-light); border:1px solid var(--blue-mid); border-radius:4px; padding:3px 8px; }
+    .hero-updated { font-family:'Roboto Mono',monospace; font-size:0.72rem; color:var(--text-faint); }
+    .hero h1 { font-family:'Roboto Mono',monospace; font-size:clamp(1.4rem,3vw,1.9rem); font-weight:700; color:var(--text); letter-spacing:-0.03em; line-height:1.2; margin-bottom:10px; }
+    .hero h1 span { color:var(--blue); }
+    .hero p { font-size:0.975rem; color:var(--text-muted); max-width:680px; line-height:1.7; }
+
+    .stat-row { background:var(--surface); border-bottom:1px solid var(--border); padding:clamp(16px,3vw,24px) clamp(20px,5vw,48px); }
+    .stat-row-inner { max-width:1100px; margin:0 auto; display:flex; flex-wrap:wrap; gap:12px; }
+    .stat-pill { display:flex; flex-direction:column; gap:2px; padding:12px 18px; background:var(--bg); border:1px solid var(--border); border-radius:var(--radius); flex:1; min-width:130px; }
+    .stat-pill .sp-num { font-family:'Roboto Mono',monospace; font-size:1.3rem; font-weight:700; color:var(--text); letter-spacing:-0.03em; line-height:1; }
+    .stat-pill .sp-num.blue { color:var(--blue); }
+    .stat-pill .sp-label { font-size:0.75rem; color:var(--text-muted); line-height:1.3; }
+
+    .charts-section { flex:1; padding:clamp(32px,5vw,56px) clamp(20px,5vw,48px); }
+    .charts-inner { max-width:1100px; margin:0 auto; }
+    .section-label { font-family:'Roboto Mono',monospace; font-size:0.7rem; font-weight:600; text-transform:uppercase; letter-spacing:0.1em; color:var(--text-faint); margin-bottom:20px; }
+    .charts-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:20px; }
+
+    .chart-card { background:var(--surface); border:1.5px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow-sm); text-decoration:none; color:inherit; display:flex; flex-direction:column; overflow:hidden; transition:border-color 0.2s,box-shadow 0.2s,transform 0.15s; }
+    .chart-card:hover { border-color:var(--blue); box-shadow:var(--shadow-md); transform:translateY(-3px); }
+
+    .chart-card-icon { height:100px; background:var(--text); display:flex; align-items:center; justify-content:center; gap:10px; padding:0 24px; flex-shrink:0; }
+    .icon-stacked { display:flex; align-items:flex-end; gap:5px; height:56px; }
+    .icon-stacked-bar { border-radius:3px 3px 0 0; width:16px; display:flex; flex-direction:column; justify-content:flex-end; overflow:hidden; }
+    .icon-stacked-seg { width:100%; flex-shrink:0; }
+
+    .chart-card-body { padding:20px 24px 24px; flex:1; display:flex; flex-direction:column; }
+    .chart-card-label { font-family:'Roboto Mono',monospace; font-size:0.68rem; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; color:var(--blue); margin-bottom:8px; }
+    .chart-card-title { font-family:'Roboto Mono',monospace; font-size:1.05rem; font-weight:700; color:var(--text); letter-spacing:-0.02em; line-height:1.25; margin-bottom:10px; }
+    .chart-card-desc { font-size:0.875rem; color:var(--text-muted); line-height:1.6; flex:1; margin-bottom:20px; }
+    .chart-card-meta { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .chart-card-stat { font-family:'Roboto Mono',monospace; font-size:0.72rem; color:var(--text-faint); }
+    .chart-card-cta { font-family:'Roboto Mono',monospace; font-size:0.78rem; font-weight:700; color:var(--blue); display:flex; align-items:center; gap:5px; transition:gap 0.15s; }
+    .chart-card:hover .chart-card-cta { gap:9px; }
+
+    footer { background:var(--surface); border-top:1px solid var(--border); padding:20px clamp(20px,5vw,48px); }
+    .footer-inner { max-width:1100px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; }
+    .footer-copy { font-size:0.8rem; color:var(--text-faint); }
+    .footer-links { display:flex; gap:20px; }
+    .footer-links a { font-size:0.8rem; color:var(--text-muted); text-decoration:none; }
+    .footer-links a:hover { color:var(--blue); }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <a href="/" class="back-link">← nycuriosity/data</a>
+    <div class="header-divider"></div>
+    <h1>MCB3 History Analysis</h1>
+  </div>
+</header>
+
+<div class="hero">
+  <div class="hero-inner">
+    <div class="breadcrumb">
+      <a href="/">nycuriosity/data</a> <span>/</span> <span>mcb3-history-analysis</span>
+    </div>
+    <div class="hero-meta">
+      <span class="hero-tag">Community Board</span>
+      <span class="hero-tag">NYC Policy</span>
+      <span class="hero-updated">Updated March 2026</span>
+    </div>
+    <h1>CB Knowledge Base Case Study:<br><span>What has MCB3 focused on over time?</span></h1>
+    <p>An analysis of 6,511 MCB3 full board resolutions from January 2002 through February 2026 — examining how the board's topical focus has shifted, how SLA processing changes reshaped the resolution landscape, and how MCB3's agenda compares to broader community priorities.</p>
+  </div>
+</div>
+
+<div class="stat-row">
+  <div class="stat-row-inner">
+    <div class="stat-pill">
+      <span class="sp-num blue">6,511</span>
+      <span class="sp-label">total resolutions</span>
+    </div>
+    <div class="stat-pill">
+      <span class="sp-num">268</span>
+      <span class="sp-label">full board meetings</span>
+    </div>
+    <div class="stat-pill">
+      <span class="sp-num">24</span>
+      <span class="sp-label">years covered (2002–2026)</span>
+    </div>
+    <div class="stat-pill">
+      <span class="sp-num">10</span>
+      <span class="sp-label">topic categories analyzed</span>
+    </div>
+    <div class="stat-pill">
+      <span class="sp-num blue">605</span>
+      <span class="sp-label">peak year (2004)</span>
+    </div>
+  </div>
+</div>
+
+<div class="charts-section">
+  <div class="charts-inner">
+    <div class="section-label">Charts in this post</div>
+    <div class="charts-grid">
+
+      <a href="./topics-over-time/" class="chart-card">
+        <div class="chart-card-icon">
+          <div class="icon-stacked">
+            <div class="icon-stacked-bar" style="height:90%">
+              <div class="icon-stacked-seg" style="height:60%;background:#d1d5db"></div>
+              <div class="icon-stacked-seg" style="height:10%;background:#16a34a"></div>
+              <div class="icon-stacked-seg" style="height:10%;background:#d97706"></div>
+              <div class="icon-stacked-seg" style="height:20%;background:#2563eb"></div>
+            </div>
+            <div class="icon-stacked-bar" style="height:72%">
+              <div class="icon-stacked-seg" style="height:45%;background:#d1d5db"></div>
+              <div class="icon-stacked-seg" style="height:12%;background:#16a34a"></div>
+              <div class="icon-stacked-seg" style="height:8%;background:#d97706"></div>
+              <div class="icon-stacked-seg" style="height:35%;background:#2563eb"></div>
+            </div>
+            <div class="icon-stacked-bar" style="height:58%">
+              <div class="icon-stacked-seg" style="height:72%;background:#d1d5db"></div>
+              <div class="icon-stacked-seg" style="height:10%;background:#16a34a"></div>
+              <div class="icon-stacked-seg" style="height:9%;background:#d97706"></div>
+              <div class="icon-stacked-seg" style="height:9%;background:#2563eb"></div>
+            </div>
+            <div class="icon-stacked-bar" style="height:42%">
+              <div class="icon-stacked-seg" style="height:82%;background:#d1d5db"></div>
+              <div class="icon-stacked-seg" style="height:9%;background:#16a34a"></div>
+              <div class="icon-stacked-seg" style="height:9%;background:#d97706"></div>
+            </div>
+            <div class="icon-stacked-bar" style="height:38%">
+              <div class="icon-stacked-seg" style="height:88%;background:#d1d5db"></div>
+              <div class="icon-stacked-seg" style="height:7%;background:#16a34a"></div>
+              <div class="icon-stacked-seg" style="height:5%;background:#d97706"></div>
+            </div>
+          </div>
+        </div>
+        <div class="chart-card-body">
+          <div class="chart-card-label">Stacked Bar Chart</div>
+          <div class="chart-card-title">Resolution Topics Over Time</div>
+          <div class="chart-card-desc">Annual resolution counts broken down by topic category, 2004–2025. Toggle between absolute counts and percentage view to see how SLA's dominance has shifted relative to substantive policy topics.</div>
+          <div class="chart-card-meta">
+            <span class="chart-card-stat">22 years × 10 categories</span>
+            <span class="chart-card-cta">Explore →</span>
+          </div>
+        </div>
+      </a>
+
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-inner">
+    <span class="footer-copy">NYCuriosity Data · Source: NYC.gov MCB3 meeting minutes</span>
+    <div class="footer-links">
+      <a href="https://nycuriosity.substack.com/">Subscribe</a>
+      <a href="https://github.com/TalR24/nycur-data-website">GitHub</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
