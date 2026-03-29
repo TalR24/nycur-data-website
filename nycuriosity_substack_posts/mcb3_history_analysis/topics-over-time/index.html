@@ -49,10 +49,17 @@
 
     .chart-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:28px; box-shadow:var(--shadow-sm); margin-bottom:24px; }
 
-    .view-toggle { display:flex; gap:8px; margin-bottom:20px; }
+    .controls-row { display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin-bottom:20px; }
+    .view-toggle { display:flex; gap:8px; }
     .toggle-btn { font-family:'Roboto Mono',monospace; font-size:0.75rem; font-weight:600; padding:5px 14px; border-radius:20px; border:1px solid var(--border-mid); background:var(--bg); color:var(--text-muted); cursor:pointer; transition:all 0.15s; }
     .toggle-btn:hover { border-color:var(--blue); color:var(--blue); background:var(--blue-light); }
     .toggle-btn.active { background:var(--blue); color:#fff; border-color:var(--blue); }
+    .checkbox-label { display:flex; align-items:center; gap:8px; font-family:'Roboto Mono',monospace; font-size:0.75rem; font-weight:600; color:var(--text-muted); cursor:pointer; user-select:none; padding:5px 12px; border-radius:20px; border:1px solid var(--border-mid); background:var(--bg); transition:all 0.15s; }
+    .checkbox-label:hover { border-color:var(--blue); color:var(--blue); background:var(--blue-light); }
+    .checkbox-label input[type=checkbox] { position:absolute; opacity:0; width:0; height:0; }
+    .checkbox-box { width:14px; height:14px; border:1.5px solid var(--border-mid); border-radius:3px; background:var(--surface); display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all 0.15s; }
+    .checkbox-label input:checked ~ .checkbox-box { background:var(--blue); border-color:var(--blue); }
+    .checkbox-label input:checked ~ .checkbox-box::after { content:''; display:block; width:8px; height:5px; border-left:2px solid #fff; border-bottom:2px solid #fff; transform:rotate(-45deg) translate(1px,-1px); }
 
     .chart-wrap { position:relative; width:100%; height:460px; }
 
@@ -102,9 +109,16 @@
   </div>
 
   <div class="chart-card">
-    <div class="view-toggle">
-      <button class="toggle-btn active" id="btnAbsolute" onclick="setView('absolute')">Absolute count</button>
-      <button class="toggle-btn" id="btnPercent" onclick="setView('percent')">% of annual resolutions</button>
+    <div class="controls-row">
+      <div class="view-toggle">
+        <button class="toggle-btn active" id="btnAbsolute" onclick="setView('absolute')">Absolute count</button>
+        <button class="toggle-btn" id="btnPercent" onclick="setView('percent')">% of annual resolutions</button>
+      </div>
+      <label class="checkbox-label" id="excludeOtherLabel">
+        <input type="checkbox" id="excludeOther" onchange="updateChart()">
+        <span class="checkbox-box"></span>
+        Exclude Other / Unclassified
+      </label>
     </div>
     <div class="chart-wrap">
       <canvas id="topicsChart"></canvas>
@@ -156,14 +170,29 @@ const TOPICS = [
 
 const TOTALS = [605,435,433,424,451,395,390,323,323,328,298,325,240,218,215,190,126,159,135,166,161,149];
 
+const OTHER_IDX = TOPICS.length - 1; // index of "Other / Unclassified"
+
+// Per-year totals for classified-only (excluding Other)
+const CLASSIFIED_TOTALS = YEARS.map((_, i) =>
+  TOPICS.slice(0, OTHER_IDX).reduce((s, t) => s + t.data[i], 0)
+);
+
 let currentView = 'absolute';
 let chart;
 
-function buildDatasets(view) {
-  return TOPICS.map(t => ({
+function isExcludeOther() {
+  return document.getElementById('excludeOther').checked;
+}
+
+function buildDatasets() {
+  const excludeOther = isExcludeOther();
+  const topics = excludeOther ? TOPICS.slice(0, OTHER_IDX) : TOPICS;
+  const denom = excludeOther ? CLASSIFIED_TOTALS : TOTALS;
+
+  return topics.map(t => ({
     label: t.label,
-    data: view === 'percent'
-      ? t.data.map((v, i) => TOTALS[i] > 0 ? Math.round(v / TOTALS[i] * 1000) / 10 : 0)
+    data: currentView === 'percent'
+      ? t.data.map((v, i) => denom[i] > 0 ? Math.round(v / denom[i] * 1000) / 10 : 0)
       : t.data,
     backgroundColor: t.color,
     borderWidth: 0,
@@ -175,10 +204,7 @@ function initChart() {
   const ctx = document.getElementById('topicsChart').getContext('2d');
   chart = new Chart(ctx, {
     type: 'bar',
-    data: {
-      labels: YEARS,
-      datasets: buildDatasets('absolute'),
-    },
+    data: { labels: YEARS, datasets: buildDatasets() },
     options: {
       responsive: true,
       maintainAspectRatio: false,
@@ -196,10 +222,13 @@ function initChart() {
               return ` ${item.dataset.label}: ${val}${suffix}`;
             },
             footer: items => {
-              const yr = items[0].dataIndex;
-              if (currentView === 'percent') return `Total: ${TOTALS[yr]} resolutions`;
-              const shown = items.reduce((s, i) => s + i.parsed.y, 0);
-              return `Total (all): ${TOTALS[yr]}`;
+              const i = items[0].dataIndex;
+              if (isExcludeOther()) {
+                return currentView === 'percent'
+                  ? `Classified total: ${CLASSIFIED_TOTALS[i]} | All resolutions: ${TOTALS[i]}`
+                  : `Classified total: ${CLASSIFIED_TOTALS[i]} | All resolutions: ${TOTALS[i]}`;
+              }
+              return `Total: ${TOTALS[i]} resolutions`;
             }
           }
         }
@@ -208,11 +237,7 @@ function initChart() {
         x: {
           stacked: true,
           grid: { display: false },
-          ticks: {
-            font: { family: "'Roboto Mono', monospace", size: 11 },
-            color: '#6b7280',
-            maxRotation: 45,
-          },
+          ticks: { font: { family: "'Roboto Mono', monospace", size: 11 }, color: '#6b7280', maxRotation: 45 },
           border: { display: false }
         },
         y: {
@@ -235,9 +260,21 @@ function setView(view) {
   currentView = view;
   document.getElementById('btnAbsolute').classList.toggle('active', view === 'absolute');
   document.getElementById('btnPercent').classList.toggle('active', view === 'percent');
-  chart.data.datasets = buildDatasets(view);
-  chart.options.scales.y.max = view === 'percent' ? 100 : undefined;
-  chart.options.scales.y.ticks.callback = v => view === 'percent' ? v + '%' : v.toLocaleString();
+  updateChart();
+}
+
+function updateChart() {
+  const excludeOther = isExcludeOther();
+  chart.data.datasets = buildDatasets();
+  chart.options.scales.y.max = currentView === 'percent' ? 100 : undefined;
+  chart.options.scales.y.ticks.callback = v => currentView === 'percent' ? v + '%' : v.toLocaleString();
+
+  // Sync legend item visibility
+  const legendItems = document.querySelectorAll('#legend .legend-item');
+  legendItems.forEach((item, i) => {
+    item.style.display = (excludeOther && i === OTHER_IDX) ? 'none' : '';
+  });
+
   chart.update();
 }
 
