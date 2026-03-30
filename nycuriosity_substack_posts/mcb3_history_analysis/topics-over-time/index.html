@@ -411,32 +411,86 @@ function downloadChart() {
   const src = chart.canvas;
   const captionText = document.querySelector('.caption').textContent.trim();
   const scale = window.devicePixelRatio || 1;
-  const padH = Math.round(16 * scale);
-  const fontSize = Math.round(11 * scale);
-  const lineH = Math.round(17 * scale);
+  const pad = Math.round(16 * scale);
+  const capFontSize = Math.round(11 * scale);
+  const capLineH = Math.round(17 * scale);
+  const legFontSize = Math.round(12 * scale);
+  const dotSize = Math.round(10 * scale);
+  const dotGap = Math.round(6 * scale);
+  const itemGapX = Math.round(20 * scale);
+  const itemGapY = Math.round(10 * scale);
+  const itemRowH = Math.round(16 * scale);
+  const maxW = src.width - pad * 2;
+
   const tmp = document.createElement('canvas');
   const tmpCtx = tmp.getContext('2d');
-  tmpCtx.font = `italic ${fontSize}px Inter, -apple-system, sans-serif`;
-  const maxW = src.width - padH * 2;
-  const lines = [];
+
+  // ── Caption word-wrap ──────────────────────────────────────
+  const capFont = `italic ${capFontSize}px Inter, -apple-system, sans-serif`;
+  tmpCtx.font = capFont;
+  const capLines = [];
   let line = '';
   for (const word of captionText.split(' ')) {
     const test = line ? line + ' ' + word : word;
-    if (line && tmpCtx.measureText(test).width > maxW) { lines.push(line); line = word; }
+    if (line && tmpCtx.measureText(test).width > maxW) { capLines.push(line); line = word; }
     else line = test;
   }
-  if (line) lines.push(line);
+  if (line) capLines.push(line);
+
+  // ── Legend layout ──────────────────────────────────────────
+  const legFont = `${legFontSize}px Inter, -apple-system, sans-serif`;
+  tmpCtx.font = legFont;
+  const activeTopics = TOPICS.filter((_, i) => selected[i]);
+  const itemMetas = activeTopics.map(t => ({
+    t,
+    w: dotSize + dotGap + tmpCtx.measureText(t.label).width
+  }));
+  const legRows = [];
+  let curRow = [], curRowW = 0;
+  for (const meta of itemMetas) {
+    const needed = curRow.length ? curRowW + itemGapX + meta.w : meta.w;
+    if (curRow.length && needed > maxW) { legRows.push(curRow); curRow = [meta]; curRowW = meta.w; }
+    else { curRow.push(meta); curRowW = needed; }
+  }
+  if (curRow.length) legRows.push(curRow);
+
+  const legBlockH = legRows.length
+    ? pad + legRows.length * itemRowH + (legRows.length - 1) * itemGapY
+    : 0;
+  const capBlockH = capLines.length * capLineH + pad * 2;
+
+  // ── Build output canvas ────────────────────────────────────
   const out = document.createElement('canvas');
   out.width = src.width;
-  out.height = src.height + lines.length * lineH + padH * 2;
+  out.height = src.height + legBlockH + capBlockH;
   const ctx = out.getContext('2d');
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, out.width, out.height);
   ctx.drawImage(src, 0, 0);
-  ctx.font = `italic ${fontSize}px Inter, -apple-system, sans-serif`;
+
+  // Draw legend
+  ctx.font = legFont;
+  ctx.textBaseline = 'middle';
+  let legY = src.height + pad;
+  for (const row of legRows) {
+    let x = pad;
+    for (const { t, w } of row) {
+      ctx.fillStyle = t.color;
+      ctx.fillRect(x, legY + (itemRowH - dotSize) / 2, dotSize, dotSize);
+      ctx.fillStyle = '#374151';
+      ctx.fillText(t.label, x + dotSize + dotGap, legY + itemRowH / 2);
+      x += w + itemGapX;
+    }
+    legY += itemRowH + itemGapY;
+  }
+
+  // Draw caption
+  ctx.font = capFont;
   ctx.fillStyle = '#9ca3af';
   ctx.textBaseline = 'top';
-  lines.forEach((l, i) => ctx.fillText(l, padH, src.height + padH + i * lineH));
+  const capY = src.height + legBlockH + pad;
+  capLines.forEach((l, i) => ctx.fillText(l, pad, capY + i * capLineH));
+
   const a = document.createElement('a');
   a.download = 'mcb3-topics-over-time.png';
   a.href = out.toDataURL('image/png');
