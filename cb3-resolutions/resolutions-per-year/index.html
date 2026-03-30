@@ -59,6 +59,20 @@
     .download-btn { display:inline-flex; align-items:center; gap:6px; background:var(--blue); color:#fff; font-size:0.82rem; font-weight:600; padding:8px 18px; border-radius:6px; text-decoration:none; transition:background 0.15s; }
     .download-btn:hover { background:#1d4ed8; }
 
+    .chart-actions { display:flex; gap:8px; margin-top:14px; }
+    .action-btn { display:inline-flex; align-items:center; gap:6px; background:var(--surface); color:var(--text-muted); font-family:'Roboto Mono',monospace; font-size:0.75rem; font-weight:600; padding:6px 14px; border-radius:6px; border:1px solid var(--border-mid); cursor:pointer; transition:all 0.15s; }
+    .action-btn:hover { border-color:var(--blue); color:var(--blue); background:var(--blue-light); }
+    .embed-modal { position:fixed; inset:0; background:rgba(0,0,0,0.45); display:flex; align-items:center; justify-content:center; z-index:1000; }
+    .embed-modal-box { background:var(--surface); border-radius:10px; padding:24px; max-width:540px; width:90%; box-shadow:0 8px 32px rgba(0,0,0,0.18); }
+    .embed-modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+    .embed-modal-title { font-family:'Roboto Mono',monospace; font-weight:700; font-size:0.9rem; color:var(--text); }
+    .embed-close { background:none; border:none; font-size:1.1rem; color:var(--text-muted); cursor:pointer; padding:2px 6px; border-radius:4px; }
+    .embed-close:hover { color:var(--text); background:var(--bg); }
+    .embed-modal-box > p { font-size:0.83rem; color:var(--text-muted); margin-bottom:10px; }
+    .embed-textarea { width:100%; height:80px; font-family:'Roboto Mono',monospace; font-size:0.72rem; border:1px solid var(--border-mid); border-radius:6px; padding:10px; resize:none; color:var(--text-mid); background:var(--bg); margin-bottom:12px; }
+    .embed-copy-btn { background:var(--blue); color:#fff; font-family:'Roboto Mono',monospace; font-size:0.8rem; font-weight:600; padding:7px 18px; border:none; border-radius:6px; cursor:pointer; transition:background 0.15s; }
+    .embed-copy-btn:hover { background:#1d4ed8; }
+
     footer { padding:24px clamp(20px,5vw,48px); text-align:center; font-size:0.78rem; color:var(--text-faint); border-top:1px solid var(--border); }
     footer a { color:var(--text-muted); text-decoration:none; }
     footer a:hover { color:var(--blue); }
@@ -96,6 +110,10 @@
     <div class="chart-wrap">
       <canvas id="yearChart"></canvas>
     </div>
+    <div class="chart-actions">
+      <button class="action-btn" onclick="downloadChart()">⬇ Download PNG</button>
+      <button class="action-btn" onclick="showEmbed()">&#60;/&#62; Embed</button>
+    </div>
     <p class="caption">MCB3 resolutions per year, 2004–2025. 2026 excluded (year in progress). Source: NYC.gov MCB3 meeting minutes. Author's analysis.</p>
   </div>
 
@@ -112,6 +130,18 @@
   </div>
 </main>
 
+<div id="embedModal" class="embed-modal" style="display:none">
+  <div class="embed-modal-box">
+    <div class="embed-modal-header">
+      <span class="embed-modal-title">Embed this chart</span>
+      <button class="embed-close" onclick="closeEmbed()">✕</button>
+    </div>
+    <p>Copy and paste into your webpage:</p>
+    <textarea id="embedCode" class="embed-textarea" readonly></textarea>
+    <button class="embed-copy-btn" onclick="copyEmbed()">Copy code</button>
+  </div>
+</div>
+
 <footer>
   <a href="https://nycuriosity.substack.com/">NYCuriosity</a> · Data: NYC.gov MCB3 meeting minutes · Analysis: Author's calculations
 </footer>
@@ -120,8 +150,22 @@
 const years = [2004,2005,2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016,2017,2018,2019,2020,2021,2022,2023,2024,2025];
 const values = [701,518,455,446,473,423,414,354,348,349,321,347,262,240,239,212,150,181,158,188,184,171];
 
+const attributionPlugin = {
+  id: 'attribution',
+  afterDraw(ch) {
+    const c = ch.ctx;
+    c.save();
+    c.font = '500 11px "Inter", -apple-system, sans-serif';
+    c.fillStyle = 'rgba(156,163,175,0.85)';
+    c.textAlign = 'right';
+    c.textBaseline = 'bottom';
+    c.fillText('Created by Tal Roded · NYCuriosity', ch.width - 10, ch.height - 8);
+    c.restore();
+  }
+};
+
 const ctx = document.getElementById('yearChart').getContext('2d');
-new Chart(ctx, {
+const chart = new Chart(ctx, {
   type: 'line',
   data: {
     labels: years,
@@ -139,6 +183,7 @@ new Chart(ctx, {
       tension: 0.3,
     }]
   },
+  plugins: [attributionPlugin],
   options: {
     responsive: true,
     maintainAspectRatio: false,
@@ -165,6 +210,29 @@ new Chart(ctx, {
     }
   }
 });
+
+function downloadChart() {
+  const a = document.createElement('a');
+  a.download = 'mcb3-resolutions-per-year.png';
+  a.href = chart.toBase64Image('image/png', 1.0);
+  a.click();
+}
+function showEmbed() {
+  const url = location.origin + location.pathname;
+  document.getElementById('embedCode').value =
+    `<iframe src="${url}" width="800" height="500" frameborder="0" style="border:1px solid #e5e7eb; border-radius:8px;" loading="lazy"></iframe>`;
+  document.getElementById('embedModal').style.display = 'flex';
+}
+function closeEmbed() { document.getElementById('embedModal').style.display = 'none'; }
+function copyEmbed() {
+  const ta = document.getElementById('embedCode');
+  ta.select();
+  navigator.clipboard.writeText(ta.value).then(() => {
+    const btn = document.querySelector('.embed-copy-btn');
+    btn.textContent = '✓ Copied!';
+    setTimeout(() => btn.textContent = 'Copy code', 2000);
+  });
+}
 </script>
 </body>
 </html>
