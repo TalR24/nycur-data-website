@@ -54,12 +54,22 @@
     .toggle-btn { font-family:'Roboto Mono',monospace; font-size:0.75rem; font-weight:600; padding:5px 14px; border-radius:20px; border:1px solid var(--border-mid); background:var(--bg); color:var(--text-muted); cursor:pointer; transition:all 0.15s; }
     .toggle-btn:hover { border-color:var(--blue); color:var(--blue); background:var(--blue-light); }
     .toggle-btn.active { background:var(--blue); color:#fff; border-color:var(--blue); }
-    .checkbox-label { display:flex; align-items:center; gap:8px; font-family:'Roboto Mono',monospace; font-size:0.75rem; font-weight:600; color:var(--text-muted); cursor:pointer; user-select:none; padding:5px 12px; border-radius:20px; border:1px solid var(--border-mid); background:var(--bg); transition:all 0.15s; }
-    .checkbox-label:hover { border-color:var(--blue); color:var(--blue); background:var(--blue-light); }
-    .checkbox-label input[type=checkbox] { position:absolute; opacity:0; width:0; height:0; }
-    .checkbox-box { width:14px; height:14px; border:1.5px solid var(--border-mid); border-radius:3px; background:var(--surface); display:flex; align-items:center; justify-content:center; flex-shrink:0; transition:all 0.15s; }
-    .checkbox-label input:checked ~ .checkbox-box { background:var(--blue); border-color:var(--blue); }
-    .checkbox-label input:checked ~ .checkbox-box::after { content:''; display:block; width:8px; height:5px; border-left:2px solid #fff; border-bottom:2px solid #fff; transform:rotate(-45deg) translate(1px,-1px); }
+    .category-filter { position:relative; }
+    .category-trigger { font-family:'Roboto Mono',monospace; font-size:0.75rem; font-weight:600; padding:5px 14px; border-radius:20px; border:1px solid var(--border-mid); background:var(--bg); color:var(--text-muted); cursor:pointer; transition:all 0.15s; display:flex; align-items:center; gap:8px; white-space:nowrap; }
+    .category-trigger:hover, .category-trigger.open { border-color:var(--blue); color:var(--blue); background:var(--blue-light); }
+    .trigger-arrow { font-size:0.6rem; transition:transform 0.15s; display:inline-block; }
+    .category-trigger.open .trigger-arrow { transform:rotate(180deg); }
+    .category-dropdown { position:absolute; top:calc(100% + 6px); left:0; background:var(--surface); border:1px solid var(--border-mid); border-radius:8px; box-shadow:0 4px 20px rgba(0,0,0,0.12); z-index:200; min-width:250px; padding:6px 0 8px; }
+    .dropdown-header { display:flex; justify-content:space-between; align-items:center; padding:4px 14px 8px; border-bottom:1px solid var(--border); margin-bottom:4px; }
+    .dropdown-header-label { font-family:'Roboto Mono',monospace; font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-faint); }
+    .dropdown-actions-row { display:flex; gap:10px; }
+    .dropdown-action-btn { font-family:'Roboto Mono',monospace; font-size:0.7rem; font-weight:600; color:var(--blue); background:none; border:none; cursor:pointer; padding:0; }
+    .dropdown-action-btn:hover { text-decoration:underline; }
+    .dropdown-item { display:flex; align-items:center; gap:9px; padding:5px 14px; cursor:pointer; transition:background 0.1s; }
+    .dropdown-item:hover { background:var(--bg); }
+    .dropdown-item input[type=checkbox] { width:13px; height:13px; accent-color:var(--blue); cursor:pointer; flex-shrink:0; margin:0; }
+    .dropdown-dot { width:10px; height:10px; border-radius:2px; flex-shrink:0; }
+    .dropdown-item-label { font-size:0.81rem; color:var(--text-mid); }
 
     .chart-wrap { position:relative; width:100%; height:460px; }
 
@@ -132,11 +142,22 @@
         <button class="toggle-btn active" id="btnAbsolute" onclick="setView('absolute')">Absolute count</button>
         <button class="toggle-btn" id="btnPercent" onclick="setView('percent')">% of annual resolutions</button>
       </div>
-      <label class="checkbox-label" id="excludeOtherLabel">
-        <input type="checkbox" id="excludeOther" onchange="updateChart()">
-        <span class="checkbox-box"></span>
-        Exclude Other / Unclassified
-      </label>
+      <div class="category-filter">
+        <button class="category-trigger" id="categoryTrigger" onclick="toggleDropdown(event)">
+          <span id="triggerLabel">All categories</span>
+          <span class="trigger-arrow">▼</span>
+        </button>
+        <div class="category-dropdown" id="categoryDropdown" style="display:none">
+          <div class="dropdown-header">
+            <span class="dropdown-header-label">Categories</span>
+            <div class="dropdown-actions-row">
+              <button class="dropdown-action-btn" onclick="selectAllCategories()">Select all</button>
+              <button class="dropdown-action-btn" onclick="clearAllCategories()">Clear all</button>
+            </div>
+          </div>
+          <div id="dropdownItems"></div>
+        </div>
+      </div>
     </div>
     <div class="chart-wrap">
       <canvas id="topicsChart"></canvas>
@@ -199,35 +220,96 @@ const TOPICS = [
 ];
 
 const TOTALS = [701,518,455,446,473,423,414,354,348,349,321,347,262,240,239,212,150,181,158,188,184,171];
-
-const OTHER_IDX = TOPICS.length - 1; // index of "Other / Unclassified"
-
-// Per-year totals for classified-only (excluding Other)
+const OTHER_IDX = TOPICS.length - 1;
 const CLASSIFIED_TOTALS = YEARS.map((_, i) =>
   TOPICS.slice(0, OTHER_IDX).reduce((s, t) => s + t.data[i], 0)
 );
 
 let currentView = 'absolute';
+let selected = new Array(TOPICS.length).fill(true); // which topics are checked
 let chart;
 
-function isExcludeOther() {
-  return document.getElementById('excludeOther').checked;
+// ── Dropdown ──────────────────────────────────────────────────
+function buildDropdown() {
+  const container = document.getElementById('dropdownItems');
+  TOPICS.forEach((t, i) => {
+    const id = `cat-${i}`;
+    const row = document.createElement('label');
+    row.className = 'dropdown-item';
+    row.htmlFor = id;
+    row.innerHTML = `
+      <input type="checkbox" id="${id}" checked>
+      <span class="dropdown-dot" style="background:${t.color}"></span>
+      <span class="dropdown-item-label">${t.label}</span>`;
+    row.querySelector('input').addEventListener('change', e => {
+      selected[i] = e.target.checked;
+      updateTriggerLabel();
+      updateChart();
+    });
+    container.appendChild(row);
+  });
 }
 
+function toggleDropdown(e) {
+  e.stopPropagation();
+  const dd = document.getElementById('categoryDropdown');
+  const btn = document.getElementById('categoryTrigger');
+  const isOpen = dd.style.display !== 'none';
+  dd.style.display = isOpen ? 'none' : 'block';
+  btn.classList.toggle('open', !isOpen);
+}
+
+function closeDropdown() {
+  document.getElementById('categoryDropdown').style.display = 'none';
+  document.getElementById('categoryTrigger').classList.remove('open');
+}
+
+document.addEventListener('click', e => {
+  if (!document.getElementById('categoryTrigger').contains(e.target) &&
+      !document.getElementById('categoryDropdown').contains(e.target)) {
+    closeDropdown();
+  }
+});
+
+function selectAllCategories() {
+  selected.fill(true);
+  document.querySelectorAll('#dropdownItems input[type=checkbox]').forEach(cb => cb.checked = true);
+  updateTriggerLabel();
+  updateChart();
+}
+
+function clearAllCategories() {
+  selected.fill(false);
+  document.querySelectorAll('#dropdownItems input[type=checkbox]').forEach(cb => cb.checked = false);
+  updateTriggerLabel();
+  updateChart();
+}
+
+function updateTriggerLabel() {
+  const n = selected.filter(Boolean).length;
+  document.getElementById('triggerLabel').textContent =
+    n === TOPICS.length ? 'All categories' :
+    n === 0 ? 'No categories' :
+    `${n} of ${TOPICS.length} selected`;
+}
+
+// ── Chart ─────────────────────────────────────────────────────
 function buildDatasets() {
-  const excludeOther = isExcludeOther();
-  const topics = excludeOther ? TOPICS.slice(0, OTHER_IDX) : TOPICS;
+  // % denominator: if Other/Unclassified is excluded, use classified-only totals
+  const excludeOther = !selected[OTHER_IDX];
   const denom = excludeOther ? CLASSIFIED_TOTALS : TOTALS;
 
-  return topics.map(t => ({
-    label: t.label,
-    data: currentView === 'percent'
-      ? t.data.map((v, i) => denom[i] > 0 ? Math.round(v / denom[i] * 1000) / 10 : 0)
-      : t.data,
-    backgroundColor: t.color,
-    borderWidth: 0,
-    borderRadius: 0,
-  }));
+  return TOPICS
+    .filter((_, i) => selected[i])
+    .map(t => ({
+      label: t.label,
+      data: currentView === 'percent'
+        ? t.data.map((v, i) => denom[i] > 0 ? Math.round(v / denom[i] * 1000) / 10 : 0)
+        : t.data,
+      backgroundColor: t.color,
+      borderWidth: 0,
+      borderRadius: 0,
+    }));
 }
 
 function initChart() {
@@ -253,10 +335,9 @@ function initChart() {
             },
             footer: items => {
               const i = items[0].dataIndex;
-              if (isExcludeOther()) {
-                return currentView === 'percent'
-                  ? `Classified total: ${CLASSIFIED_TOTALS[i]} | All resolutions: ${TOTALS[i]}`
-                  : `Classified total: ${CLASSIFIED_TOTALS[i]} | All resolutions: ${TOTALS[i]}`;
+              const excludeOther = !selected[OTHER_IDX];
+              if (excludeOther) {
+                return `Classified total: ${CLASSIFIED_TOTALS[i]} | All resolutions: ${TOTALS[i]}`;
               }
               return `Total: ${TOTALS[i]} resolutions`;
             }
@@ -294,17 +375,10 @@ function setView(view) {
 }
 
 function updateChart() {
-  const excludeOther = isExcludeOther();
   chart.data.datasets = buildDatasets();
   chart.options.scales.y.max = currentView === 'percent' ? 100 : undefined;
   chart.options.scales.y.ticks.callback = v => currentView === 'percent' ? v + '%' : v.toLocaleString();
-
-  // Sync legend item visibility
-  const legendItems = document.querySelectorAll('#legend .legend-item');
-  legendItems.forEach((item, i) => {
-    item.style.display = (excludeOther && i === OTHER_IDX) ? 'none' : '';
-  });
-
+  syncLegend();
   chart.update();
 }
 
@@ -313,17 +387,25 @@ function buildLegend() {
   TOPICS.forEach((t, i) => {
     const item = document.createElement('div');
     item.className = 'legend-item';
+    item.dataset.idx = i;
     item.innerHTML = `<span class="legend-dot" style="background:${t.color}"></span><span>${t.label}</span>`;
     item.addEventListener('click', () => {
-      const meta = chart.getDatasetMeta(i);
-      meta.hidden = !meta.hidden;
-      item.classList.toggle('dimmed', meta.hidden);
-      chart.update();
+      selected[i] = !selected[i];
+      document.querySelector(`#dropdownItems input[id="cat-${i}"]`).checked = selected[i];
+      updateTriggerLabel();
+      updateChart();
     });
     container.appendChild(item);
   });
 }
 
+function syncLegend() {
+  document.querySelectorAll('#legend .legend-item').forEach((item, i) => {
+    item.classList.toggle('dimmed', !selected[i]);
+  });
+}
+
+buildDropdown();
 initChart();
 buildLegend();
 
