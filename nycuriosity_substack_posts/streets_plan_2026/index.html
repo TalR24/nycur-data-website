@@ -9,474 +9,92 @@
   <meta property="og:url"         content="https://data.nycuriosity.com/nycuriosity_substack_posts/streets_plan_2026/">
   <meta property="og:title"       content="Local Law 195 Data — NYCuriosity">
   <meta property="og:description" content="Fiscal impact, compliance tracking, and program breakdowns from NYC's 10-year streets plan.">
+  <meta property="og:image"       content="https://data.nycuriosity.com/website_logo.png">
+  <meta name="twitter:card"       content="summary_large_image">
+  <meta name="twitter:image"      content="https://data.nycuriosity.com/website_logo.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
     :root {
-      --blue:       #2563eb;
-      --blue-hover: #1d4ed8;
-      --blue-light: #eff6ff;
-      --blue-mid:   #bfdbfe;
-      --text:       #111827;
-      --text-mid:   #374151;
-      --text-muted: #6b7280;
-      --text-faint: #9ca3af;
-      --bg:         #f8faff;
-      --surface:    #ffffff;
-      --border:     #e5e7eb;
-      --shadow-sm:  0 1px 3px rgba(17,24,39,0.08);
-      --shadow-md:  0 4px 16px rgba(37,99,235,0.10);
-      --radius:     10px;
-      --green:      #16a34a;
-      --green-light:#dcfce7;
-      --red:        #dc2626;
-      --red-light:  #fee2e2;
-      --amber:      #d97706;
-      --amber-light:#fef3c7;
+      --blue:#2563eb; --blue-hover:#1d4ed8; --blue-light:#eff6ff; --blue-mid:#bfdbfe;
+      --text:#111827; --text-mid:#374151; --text-muted:#6b7280; --text-faint:#9ca3af;
+      --bg:#f8faff; --surface:#ffffff; --border:#e5e7eb; --border-mid:#d1d5db;
+      --shadow-sm:0 1px 3px rgba(17,24,39,0.08); --shadow-md:0 4px 20px rgba(37,99,235,0.13);
+      --green:#16a34a; --green-light:#dcfce7; --red:#dc2626; --red-light:#fee2e2;
+      --amber:#d97706; --amber-light:#fef3c7; --radius:10px;
     }
+    body { font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; display:flex; flex-direction:column; }
 
-    body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
+    header { background:#111827; border-bottom:1px solid #1f2937; padding:0 clamp(20px,5vw,48px); }
+    .header-inner { max-width:1100px; margin:0 auto; height:56px; display:flex; align-items:center; gap:16px; }
+    .back-link { font-family:'Roboto Mono',monospace; font-size:0.75rem; font-weight:600; color:#9ca3af; text-decoration:none; display:flex; align-items:center; gap:5px; padding:4px 8px 4px 4px; border-radius:5px; transition:color 0.15s,background 0.15s; white-space:nowrap; }
+    .back-link:hover { color:#60a5fa; background:rgba(96,165,250,0.1); }
+    .header-divider { width:1px; height:20px; background:#374151; flex-shrink:0; }
+    header h1 { font-family:'Roboto Mono',monospace; font-size:0.95rem; font-weight:700; color:#e5e7eb; letter-spacing:-0.02em; }
 
-    /* ── HEADER ──────────────────────────────────────────── */
-    header {
-      background: #111827;
-      border-bottom: 1px solid #1f2937;
-      padding: 0 clamp(20px, 5vw, 48px);
-    }
-    .header-inner {
-      max-width: 1100px;
-      margin: 0 auto;
-      height: 56px;
-      display: flex;
-      align-items: center;
-      gap: 16px;
-    }
-    .back-link {
-      font-family: 'Roboto Mono', monospace;
-      font-size: 0.75rem;
-      font-weight: 600;
-      color: #9ca3af;
-      text-decoration: none;
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      padding: 4px 8px 4px 4px;
-      border-radius: 5px;
-      transition: color 0.15s, background 0.15s;
-      white-space: nowrap;
-    }
-    .back-link:hover { color: #60a5fa; background: rgba(96,165,250,0.1); }
-    .header-divider { width: 1px; height: 20px; background: #374151; flex-shrink: 0; }
-    header h1 {
-      font-family: 'Roboto Mono', monospace;
-      font-size: 0.95rem;
-      font-weight: 700;
-      color: #e5e7eb;
-      letter-spacing: -0.02em;
-    }
+    .hero { background:var(--surface); border-bottom:1px solid var(--border); padding:clamp(32px,5vw,52px) clamp(20px,5vw,48px); }
+    .hero-inner { max-width:1100px; margin:0 auto; }
+    .breadcrumb { font-family:'Roboto Mono',monospace; font-size:0.72rem; color:var(--text-faint); margin-bottom:14px; display:flex; align-items:center; gap:6px; }
+    .breadcrumb a { color:var(--blue); text-decoration:none; }
+    .breadcrumb a:hover { text-decoration:underline; }
+    .hero-meta { display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin-bottom:14px; }
+    .hero-tag { font-family:'Roboto Mono',monospace; font-size:0.68rem; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; color:var(--blue); background:var(--blue-light); border:1px solid var(--blue-mid); border-radius:4px; padding:3px 8px; }
+    .hero-updated { font-family:'Roboto Mono',monospace; font-size:0.72rem; color:var(--text-faint); }
+    .hero h1 { font-family:'Roboto Mono',monospace; font-size:clamp(1.4rem,3vw,1.9rem); font-weight:700; color:var(--text); letter-spacing:-0.03em; line-height:1.2; margin-bottom:10px; }
+    .hero h1 span { color:var(--blue); }
+    .hero p { font-size:0.975rem; color:var(--text-muted); max-width:680px; line-height:1.7; }
+    .hero p a { color:var(--blue); text-decoration:none; border-bottom:1px solid var(--blue-mid); }
+    .hero p a:hover { border-color:var(--blue); }
+    .hero-actions { display:flex; flex-wrap:wrap; gap:10px; margin-top:20px; }
+    .btn { display:inline-flex; align-items:center; gap:6px; font-family:'Roboto Mono',monospace; font-size:0.75rem; font-weight:600; text-decoration:none; border-radius:7px; padding:8px 14px; transition:background 0.15s,border-color 0.15s; cursor:pointer; border:none; }
+    .btn-outline { background:var(--surface); color:var(--text-muted); border:1.5px solid var(--border); }
+    .btn-outline:hover { color:var(--blue); border-color:var(--blue-mid); background:var(--blue-light); }
 
-    /* ── PILL NAV ─────────────────────────────────────────── */
-    .pill-nav {
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      padding: 10px clamp(20px, 5vw, 48px);
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      align-items: center;
-    }
-    .pill-nav a {
-      font-size: 0.78rem;
-      font-family: 'Roboto Mono', monospace;
-      font-weight: 600;
-      padding: 4px 12px;
-      border-radius: 20px;
-      text-decoration: none;
-      border: 1px solid var(--border-mid);
-      color: var(--text-muted);
-      background: var(--bg);
-      transition: all 0.15s;
-      white-space: nowrap;
-    }
-    .pill-nav a:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
-    .pill-nav a.active { background: var(--blue); color: #fff; border-color: var(--blue); }
-    .pill-label { font-size: 0.72rem; color: var(--text-faint); font-family: 'Roboto Mono', monospace; white-space: nowrap; }
+    .stat-row { background:var(--surface); border-bottom:1px solid var(--border); padding:clamp(16px,3vw,24px) clamp(20px,5vw,48px); }
+    .stat-row-inner { max-width:1100px; margin:0 auto; display:flex; flex-wrap:wrap; gap:12px; }
+    .stat-pill { display:flex; flex-direction:column; gap:2px; padding:12px 18px; background:var(--bg); border:1px solid var(--border); border-radius:var(--radius); flex:1; min-width:140px; }
+    .stat-pill .sp-num { font-family:'Roboto Mono',monospace; font-size:1.3rem; font-weight:700; color:var(--text); letter-spacing:-0.03em; line-height:1; }
+    .stat-pill .sp-label { font-size:0.75rem; color:var(--text-muted); line-height:1.3; }
 
-    /* ── HERO ────────────────────────────────────────────── */
-    .hero {
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-      padding: clamp(32px, 5vw, 52px) clamp(20px, 5vw, 48px);
-    }
-    .hero-inner { max-width: 1100px; margin: 0 auto; }
-    .breadcrumb {
-      font-family: 'Roboto Mono', monospace;
-      font-size: 0.72rem;
-      color: var(--text-faint);
-      margin-bottom: 14px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .breadcrumb a { color: var(--blue); text-decoration: none; }
-    .breadcrumb a:hover { text-decoration: underline; }
-    .hero h1 {
-      font-family: 'Roboto Mono', monospace;
-      font-size: clamp(1.5rem, 3.5vw, 2rem);
-      font-weight: 700;
-      color: var(--text);
-      letter-spacing: -0.03em;
-      line-height: 1.2;
-      margin-bottom: 10px;
-    }
-    .hero h1 span { color: var(--blue); }
-    .hero-meta {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 16px;
-      margin-bottom: 14px;
-    }
-    .hero-tag {
-      font-family: 'Roboto Mono', monospace;
-      font-size: 0.68rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--blue);
-      background: var(--blue-light);
-      border: 1px solid var(--blue-mid);
-      border-radius: 4px;
-      padding: 3px 8px;
-    }
-    .hero-updated {
-      font-family: 'Roboto Mono', monospace;
-      font-size: 0.72rem;
-      color: var(--text-faint);
-    }
-    .hero p {
-      font-size: 0.975rem;
-      color: var(--text-muted);
-      max-width: 680px;
-      line-height: 1.7;
-    }
-    .hero p a { color: var(--blue); text-decoration: none; border-bottom: 1px solid var(--blue-mid); }
-    .hero p a:hover { border-color: var(--blue); }
-    .hero-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-top: 20px;
-    }
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-family: 'Roboto Mono', monospace;
-      font-size: 0.75rem;
-      font-weight: 600;
-      text-decoration: none;
-      border-radius: 7px;
-      padding: 8px 14px;
-      transition: background 0.15s, border-color 0.15s;
-      cursor: pointer;
-      border: none;
-    }
-    .btn-primary { background: var(--blue); color: #fff; }
-    .btn-primary:hover { background: var(--blue-hover); }
-    .btn-outline { background: var(--surface); color: var(--text-muted); border: 1.5px solid var(--border); }
-    .btn-outline:hover { color: var(--blue); border-color: var(--blue-mid); background: var(--blue-light); }
+    .charts-section { flex:1; padding:clamp(32px,5vw,52px) clamp(20px,5vw,48px); }
+    .charts-inner { max-width:1100px; margin:0 auto; }
+    .section-label { font-family:'Roboto Mono',monospace; font-size:0.7rem; font-weight:600; text-transform:uppercase; letter-spacing:0.1em; color:var(--text-faint); margin-bottom:20px; }
+    .charts-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:20px; margin-bottom:48px; }
 
-    /* ── STAT PILLS ──────────────────────────────────────── */
-    .stat-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      padding: clamp(16px, 3vw, 24px) clamp(20px, 5vw, 48px);
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
-    }
-    .stat-row-inner { max-width: 1100px; margin: 0 auto; width: 100%; display: flex; flex-wrap: wrap; gap: 12px; }
-    .stat-pill {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-      padding: 12px 18px;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      flex: 1;
-      min-width: 140px;
-    }
-    .stat-pill .sp-num {
-      font-family: 'Roboto Mono', monospace;
-      font-size: 1.3rem;
-      font-weight: 700;
-      color: var(--text);
-      letter-spacing: -0.03em;
-      line-height: 1;
-    }
-    .stat-pill .sp-label {
-      font-size: 0.75rem;
-      color: var(--text-muted);
-      line-height: 1.3;
-    }
+    .chart-card { background:var(--surface); border:1.5px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow-sm); text-decoration:none; color:inherit; display:flex; flex-direction:column; overflow:hidden; transition:border-color 0.2s,box-shadow 0.2s,transform 0.15s; }
+    .chart-card:hover { border-color:var(--blue); box-shadow:var(--shadow-md); transform:translateY(-3px); }
+    .chart-card-icon { height:80px; background:var(--text); display:flex; align-items:center; justify-content:center; padding:0 24px; flex-shrink:0; }
+    .chart-card-body { padding:18px 22px 22px; flex:1; display:flex; flex-direction:column; }
+    .chart-card-label { font-family:'Roboto Mono',monospace; font-size:0.68rem; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; color:var(--blue); margin-bottom:6px; }
+    .chart-card-title { font-family:'Roboto Mono',monospace; font-size:0.95rem; font-weight:700; color:var(--text); letter-spacing:-0.02em; line-height:1.25; margin-bottom:8px; }
+    .chart-card-desc { font-size:0.85rem; color:var(--text-muted); line-height:1.6; flex:1; margin-bottom:16px; }
+    .chart-card-meta { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .chart-card-stat { font-family:'Roboto Mono',monospace; font-size:0.72rem; color:var(--text-faint); }
+    .chart-card-cta { font-family:'Roboto Mono',monospace; font-size:0.78rem; font-weight:700; color:var(--blue); display:flex; align-items:center; gap:5px; transition:gap 0.15s; }
+    .chart-card:hover .chart-card-cta { gap:9px; }
 
-    /* ── MAIN ────────────────────────────────────────────── */
-    main {
-      flex: 1;
-      padding: clamp(28px, 4vw, 48px) clamp(20px, 5vw, 48px);
-    }
-    .main-inner { max-width: 1100px; margin: 0 auto; }
+    .source-section { margin-bottom:24px; }
+    .source-label { font-family:'Roboto Mono',monospace; font-size:0.7rem; font-weight:600; text-transform:uppercase; letter-spacing:0.1em; color:var(--text-faint); margin-bottom:14px; }
+    .source-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:12px; }
+    .source-card { display:flex; align-items:flex-start; gap:12px; padding:14px 16px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); text-decoration:none; color:inherit; box-shadow:var(--shadow-sm); transition:border-color 0.2s,box-shadow 0.2s; }
+    .source-card:hover { border-color:var(--blue-mid); box-shadow:var(--shadow-md); }
+    .source-icon { width:32px; height:32px; border-radius:7px; background:var(--blue-light); border:1px solid var(--blue-mid); display:flex; align-items:center; justify-content:center; flex-shrink:0; color:var(--blue); }
+    .source-body { flex:1; min-width:0; }
+    .source-title { font-size:0.85rem; font-weight:600; color:var(--text); line-height:1.3; margin-bottom:3px; }
+    .source-meta { font-size:0.76rem; color:var(--text-muted); }
 
-    /* ── SECTION ─────────────────────────────────────────── */
-    .data-section { margin-bottom: 52px; }
-    .section-header {
-      display: flex;
-      align-items: flex-end;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 12px;
-      margin-bottom: 6px;
-    }
-    .section-title {
-      font-family: 'Roboto Mono', monospace;
-      font-size: 1rem;
-      font-weight: 700;
-      color: var(--text);
-      letter-spacing: -0.02em;
-    }
-    .section-desc {
-      font-size: 0.875rem;
-      color: var(--text-muted);
-      line-height: 1.6;
-      max-width: 700px;
-      margin-bottom: 16px;
-    }
-    .section-label-row {
-      font-family: 'Roboto Mono', monospace;
-      font-size: 0.65rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.12em;
-      color: var(--text-faint);
-      margin-bottom: 12px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .section-label-row::after { content: ''; flex: 1; height: 1px; background: var(--border); }
-
-    /* ── TABLE WRAPPER ───────────────────────────────────── */
-    .table-wrap {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow-sm);
-      overflow-x: auto;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.875rem;
-    }
-    thead tr {
-      background: var(--text);
-    }
-    thead th {
-      font-family: 'Roboto Mono', monospace;
-      font-size: 0.68rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.07em;
-      color: rgba(255,255,255,0.65);
-      padding: 12px 16px;
-      text-align: left;
-      white-space: nowrap;
-    }
-    thead th.num { text-align: right; }
-    tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
-    tbody tr:last-child { border-bottom: none; }
-    tbody tr:hover { background: var(--bg); }
-    tbody td {
-      padding: 11px 16px;
-      color: var(--text-mid);
-      line-height: 1.45;
-      vertical-align: middle;
-    }
-    tbody td.num {
-      font-family: 'Roboto Mono', monospace;
-      font-size: 0.82rem;
-      text-align: right;
-      color: var(--text);
-    }
-    tbody td.label { font-weight: 600; color: var(--text); }
-    tbody td.muted { color: var(--text-muted); font-size: 0.82rem; }
-    tbody tr.total-row { background: var(--blue-light); }
-    tbody tr.total-row td { font-weight: 600; color: var(--text); }
-    tbody tr.total-row td.num { color: var(--blue); }
-    tbody tr.subhead td {
-      background: var(--bg);
-      font-family: 'Roboto Mono', monospace;
-      font-size: 0.65rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--text-faint);
-      padding: 8px 16px;
-    }
-
-    /* compliance badges */
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      font-family: 'Roboto Mono', monospace;
-      font-size: 0.72rem;
-      font-weight: 700;
-      border-radius: 5px;
-      padding: 3px 8px;
-      white-space: nowrap;
-    }
-    .badge-green { background: var(--green-light); color: var(--green); }
-    .badge-amber { background: var(--amber-light); color: var(--amber); }
-    .badge-red   { background: var(--red-light);   color: var(--red); }
-
-    /* compliance bar */
-    .bar-wrap { display: flex; align-items: center; gap: 8px; }
-    .bar-track {
-      flex: 1;
-      min-width: 60px;
-      height: 6px;
-      background: var(--border);
-      border-radius: 3px;
-      overflow: hidden;
-    }
-    .bar-fill { height: 100%; border-radius: 3px; }
-    .bar-pct {
-      font-family: 'Roboto Mono', monospace;
-      font-size: 0.75rem;
-      font-weight: 600;
-      white-space: nowrap;
-      min-width: 34px;
-      text-align: right;
-    }
-
-    /* ── CAPTION ─────────────────────────────────────────── */
-    .caption {
-      font-size: 0.78rem;
-      color: var(--text-faint);
-      font-style: italic;
-      margin-top: 8px;
-      line-height: 1.5;
-    }
-    .caption a { color: var(--text-faint); text-decoration: underline; }
-
-    /* ── METHODOLOGY BOX ─────────────────────────────────── */
-    .method-box {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-left: 4px solid var(--blue-mid);
-      border-radius: 0 var(--radius) var(--radius) 0;
-      padding: 20px 24px;
-      box-shadow: var(--shadow-sm);
-    }
-    .method-box h3 {
-      font-family: 'Roboto Mono', monospace;
-      font-size: 0.82rem;
-      font-weight: 700;
-      color: var(--text);
-      margin-bottom: 10px;
-      letter-spacing: -0.01em;
-    }
-    .method-box ul {
-      list-style: none;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-    .method-box li {
-      font-size: 0.875rem;
-      color: var(--text-muted);
-      line-height: 1.6;
-      padding-left: 16px;
-      position: relative;
-    }
-    .method-box li::before {
-      content: '—';
-      position: absolute;
-      left: 0;
-      color: var(--blue-mid);
-      font-weight: 700;
-    }
-    .method-box li strong { color: var(--text); font-weight: 600; }
-    .method-box li a { color: var(--blue); text-decoration: none; border-bottom: 1px solid var(--blue-mid); }
-
-    /* ── SOURCE LINKS ────────────────────────────────────── */
-    .source-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 12px;
-    }
-    .source-card {
-      display: flex;
-      align-items: flex-start;
-      gap: 12px;
-      padding: 14px 16px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      text-decoration: none;
-      color: inherit;
-      box-shadow: var(--shadow-sm);
-      transition: border-color 0.2s, box-shadow 0.2s;
-    }
-    .source-card:hover { border-color: var(--blue-mid); box-shadow: var(--shadow-md); }
-    .source-icon {
-      width: 32px; height: 32px; border-radius: 7px;
-      background: var(--blue-light); border: 1px solid var(--blue-mid);
-      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-      color: var(--blue);
-    }
-    .source-body { flex: 1; min-width: 0; }
-    .source-title { font-size: 0.85rem; font-weight: 600; color: var(--text); line-height: 1.3; margin-bottom: 3px; }
-    .source-meta { font-size: 0.76rem; color: var(--text-muted); }
-
-    /* ── FOOTER ──────────────────────────────────────────── */
-    footer {
-      background: var(--surface);
-      border-top: 1px solid var(--border);
-      padding: 20px clamp(20px, 5vw, 48px);
-    }
-    .footer-inner {
-      max-width: 1100px; margin: 0 auto;
-      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
-    }
-    .footer-copy { font-size: 0.78rem; color: var(--text-faint); font-family: 'Roboto Mono', monospace; }
-    .footer-links { display: flex; gap: 20px; }
-    .footer-links a { font-size: 0.78rem; color: var(--text-faint); text-decoration: none; transition: color 0.15s; }
-    .footer-links a:hover { color: var(--blue); }
-
-    @media (max-width: 600px) {
-      .stat-row-inner { gap: 8px; }
-      .stat-pill { min-width: 120px; }
-      thead th, tbody td { padding: 10px 12px; }
-    }
+    footer { background:var(--surface); border-top:1px solid var(--border); padding:20px clamp(20px,5vw,48px); }
+    .footer-inner { max-width:1100px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; }
+    .footer-copy { font-size:0.78rem; color:var(--text-faint); font-family:'Roboto Mono',monospace; }
+    .footer-links { display:flex; gap:20px; }
+    .footer-links a { font-size:0.78rem; color:var(--text-faint); text-decoration:none; transition:color 0.15s; }
+    .footer-links a:hover { color:var(--blue); }
   </style>
 </head>
 <body>
 
-<!-- HEADER -->
 <header>
   <div class="header-inner">
     <a href="/" class="back-link">← nycuriosity/data</a>
@@ -485,41 +103,25 @@
   </div>
 </header>
 
-<!-- VISUALS NAV -->
-<div class="pill-nav">
-  <span class="pill-label">Visuals in this post:</span>
-  <a href="#compliance">Compliance Tracker</a>
-  <a href="#fiscal">Fiscal Impact</a>
-  <a href="#programs">Program Breakdown</a>
-</div>
-
-<!-- HERO -->
 <div class="hero">
   <div class="hero-inner">
     <div class="breadcrumb">
-      <a href="/">nycuriosity/data</a>
-      <span>›</span>
-      <span>streets-plan-2026</span>
+      <a href="/">nycuriosity/data</a> <span>›</span> <span>streets-plan-2026</span>
     </div>
-    <h1>Local Law 195 — <span>Streets Plan Data</span></h1>
     <div class="hero-meta">
       <span class="hero-tag">Streets Plan 2026</span>
       <span class="hero-updated">Source: NYC Council Finance Division · Oct 2019</span>
     </div>
+    <h1>Local Law 195 — <span>Streets Plan Data</span></h1>
     <p>
       Fiscal impact estimates, compliance tracking, and program-level cost breakdowns for
       <a href="https://legistar.council.nyc.gov/LegislationDetail.aspx?ID=3954291" target="_blank" rel="noopener">Local Law 195 of 2019</a>
       (Intro 1557-A), NYC's mandate for a 10-year master plan for streets, bike lanes, bus lanes,
-      and pedestrian infrastructure. Data sourced from the
-      <a href="/" target="_blank" rel="noopener">NYC Council Finance Division fiscal impact statement</a>
+      and pedestrian infrastructure. Data sourced from the NYC Council Finance Division fiscal impact statement
       and DOT Streets Plan progress reports. Compiled for
       <a href="https://www.nycuriosity.com/p/nycs-streets-are-getting-better-just" target="_blank" rel="noopener">NYCuriosity's Streets Plan analysis</a>.
     </p>
     <div class="hero-actions">
-      <button class="btn btn-primary" onclick="downloadAll()">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        Download all CSVs
-      </button>
       <a href="https://www.nycuriosity.com/p/nycs-streets-are-getting-better-just" target="_blank" rel="noopener" class="btn btn-outline">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v4H4z"/><path d="M4 10h16v10l-8-4-8 4z"/></svg>
         Read the article
@@ -528,7 +130,6 @@
   </div>
 </div>
 
-<!-- STAT PILLS -->
 <div class="stat-row">
   <div class="stat-row-inner">
     <div class="stat-pill">
@@ -554,534 +155,163 @@
   </div>
 </div>
 
-<!-- MAIN -->
-<main>
-  <div class="main-inner">
+<div class="charts-section">
+  <div class="charts-inner">
+    <div class="section-label">Tables in this post</div>
+    <div class="charts-grid">
 
-    <!-- TABLE 1: COMPLIANCE TRACKER -->
-    <div class="data-section" id="compliance">
-      <p class="section-label-row">Compliance tracker</p>
-      <div class="section-header">
-        <div>
-          <div class="section-title">Plan 1 Progress vs. Annual Mandates</div>
+      <a href="./compliance/" class="chart-card">
+        <div class="chart-card-icon">
+          <svg viewBox="0 0 200 60" xmlns="http://www.w3.org/2000/svg" width="160" height="60">
+            <text x="0" y="12" font-family="'Roboto Mono',monospace" font-size="7" fill="#9ca3af">BUS LANES</text>
+            <rect x="80" y="5" width="45" height="6" rx="1.5" fill="#d97706"/>
+            <text x="128" y="11" font-family="'Roboto Mono',monospace" font-size="6.5" fill="#d97706">45%</text>
+            <text x="0" y="26" font-family="'Roboto Mono',monospace" font-size="7" fill="#9ca3af">BIKE LANES</text>
+            <rect x="80" y="19" width="36" height="6" rx="1.5" fill="#dc2626"/>
+            <text x="119" y="25" font-family="'Roboto Mono',monospace" font-size="6.5" fill="#dc2626">36%</text>
+            <text x="0" y="40" font-family="'Roboto Mono',monospace" font-size="7" fill="#9ca3af">BUS STOPS</text>
+            <rect x="80" y="33" width="4" height="6" rx="1.5" fill="#dc2626"/>
+            <text x="87" y="39" font-family="'Roboto Mono',monospace" font-size="6.5" fill="#dc2626">4%</text>
+            <text x="0" y="54" font-family="'Roboto Mono',monospace" font-size="7" fill="#9ca3af">TSP</text>
+            <rect x="80" y="47" width="77" height="6" rx="1.5" fill="#16a34a"/>
+            <text x="160" y="53" font-family="'Roboto Mono',monospace" font-size="6.5" fill="#16a34a">77%</text>
+          </svg>
         </div>
-        <button class="btn btn-outline" onclick="downloadCSV('compliance')">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Download CSV
-        </button>
-      </div>
-      <p class="section-desc">
-        How NYC DOT's actual annual delivery compared to the minimum benchmarks required by Local Law 195's first five-year plan. Performance data from DOT Streets Plan progress reports; requirements from LL195 legislation.
-      </p>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Metric</th>
-              <th>LL195 annual minimum</th>
-              <th class="num">2024–2025 actual</th>
-              <th>Compliance</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td class="label">Protected bus lanes</td>
-              <td>30 miles / year</td>
-              <td class="num">13.5 mi</td>
-              <td>
-                <div class="bar-wrap">
-                  <div class="bar-track"><div class="bar-fill" style="width:45%;background:#d97706"></div></div>
-                  <span class="bar-pct" style="color:#d97706">45%</span>
-                </div>
-              </td>
-            </tr>
-            <tr>
-              <td class="label">Protected bike lanes</td>
-              <td>50 miles / year</td>
-              <td class="num">18.2 mi</td>
-              <td>
-                <div class="bar-wrap">
-                  <div class="bar-track"><div class="bar-fill" style="width:36%;background:#dc2626"></div></div>
-                  <span class="bar-pct" style="color:#dc2626">36%</span>
-                </div>
-              </td>
-            </tr>
-            <tr>
-              <td class="label">Bus stop upgrades</td>
-              <td>500 stops / year</td>
-              <td class="num">~20 stops</td>
-              <td>
-                <div class="bar-wrap">
-                  <div class="bar-track"><div class="bar-fill" style="width:4%;background:#dc2626"></div></div>
-                  <span class="bar-pct" style="color:#dc2626">4%</span>
-                </div>
-              </td>
-            </tr>
-            <tr>
-              <td class="label">Transit signal priority</td>
-              <td>1,000 intersections / year</td>
-              <td class="num">770</td>
-              <td>
-                <div class="bar-wrap">
-                  <div class="bar-track"><div class="bar-fill" style="width:77%;background:#16a34a"></div></div>
-                  <span class="bar-pct" style="color:#16a34a">77%</span>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <p class="caption">Performance vs. LL195 Plan 1 annual minimums. Source: NYC DOT Streets Plan progress reports, 2024–2025; Local Law 195 of 2019.</p>
-    </div>
-
-    <!-- TABLE 2: FISCAL SUMMARY -->
-    <div class="data-section" id="fiscal">
-      <p class="section-label-row">Fiscal impact summary</p>
-      <div class="section-header">
-        <div>
-          <div class="section-title">10-Year Fiscal Impact by Plan Period</div>
-        </div>
-        <button class="btn btn-outline" onclick="downloadCSV('fiscal')">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Download CSV
-        </button>
-      </div>
-      <p class="section-desc">
-        All figures represent <strong>additional costs above the existing DOT baseline</strong> — they are the marginal legislative cost of LL195 mandates, not the full DOT program budget. Figures are from the NYC Council Finance Division's official fiscal impact statement (Oct 2019).
-      </p>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Cost category</th>
-              <th class="num">FY22 (year 1)</th>
-              <th class="num">Plan 1: FY22–26</th>
-              <th class="num">Plan 2: FY27–31</th>
-              <th class="num">10-year total</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td class="label">Expense costs</td>
-              <td class="num">$53,506,828</td>
-              <td class="num">$376,725,018</td>
-              <td class="num">$367,425,418</td>
-              <td class="num">$744,150,435</td>
-            </tr>
-            <tr>
-              <td class="label">Capital costs</td>
-              <td class="num">$61,017,147</td>
-              <td class="num">$251,612,715</td>
-              <td class="num">$545,484,480</td>
-              <td class="num">$997,097,195</td>
-            </tr>
-            <tr>
-              <td class="label">Revenue impact</td>
-              <td class="num">$0</td>
-              <td class="num">$0</td>
-              <td class="num">$0</td>
-              <td class="num">$0</td>
-            </tr>
-            <tr class="total-row">
-              <td class="label">Net fiscal impact</td>
-              <td class="num">$114,523,975</td>
-              <td class="num">$628,337,733</td>
-              <td class="num">$912,909,898</td>
-              <td class="num">$1,741,247,630</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <p class="caption">Costs are additional above DOT's existing budget baseline; they are not total program costs. Source: NYC Council Finance Division, Fiscal Impact Statement for Proposed Intro. No. 1557-A, Oct 25, 2019.</p>
-    </div>
-
-    <!-- TABLE 3: PROGRAM BREAKDOWN -->
-    <div class="data-section" id="programs">
-      <p class="section-label-row">Program breakdown</p>
-      <div class="section-header">
-        <div>
-          <div class="section-title">Cost by Program (10-Year, Additional Above Baseline)</div>
-        </div>
-        <button class="btn btn-outline" onclick="downloadCSV('programs')">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Download CSV
-        </button>
-      </div>
-      <p class="section-desc">
-        Program-by-program cost breakdown from highest to lowest. Where the fiscal impact statement cited offsets from existing DOT commitments, those are noted — these figures reflect the <em>net additional</em> cost of the mandate.
-      </p>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Program</th>
-              <th>Cost type</th>
-              <th class="num">10-year cost</th>
-              <th>Mandate scale</th>
-              <th>Notes</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr class="subhead"><td colspan="5">Capital programs</td></tr>
-            <tr>
-              <td class="label">Bus stop real-time passenger info (RTPI)</td>
-              <td><span class="badge badge-amber">Capital</span></td>
-              <td class="num">$658,400,000</td>
-              <td class="muted">14,580 stops lacking RTPI</td>
-              <td class="muted">Largest single item; spans FY22–31</td>
-            </tr>
-            <tr>
-              <td class="label">Intersection redesign</td>
-              <td><span class="badge badge-amber">Capital</span></td>
-              <td class="num">$400,000,000</td>
-              <td class="muted">4,000 intersections (2,000/plan)</td>
-              <td class="muted">$40M/yr additional; other benchmarks may offset</td>
-            </tr>
-            <tr>
-              <td class="label">Bus stop shelters &amp; benches</td>
-              <td><span class="badge badge-amber">Capital</span></td>
-              <td class="num">$65,900,000</td>
-              <td class="muted">11,556 stops needing upgrades</td>
-              <td class="muted">$14.3M plan 1; $51.7M plan 2</td>
-            </tr>
-            <tr class="subhead"><td colspan="5">Expense programs</td></tr>
-            <tr>
-              <td class="label">Accessible pedestrian signals (APS)</td>
-              <td><span class="badge badge-blue" style="background:#dbeafe;color:#1d4ed8">Expense</span></td>
-              <td class="num">$224,000,000</td>
-              <td class="muted">5,000 signals (FY22–31)</td>
-              <td class="muted">Net of 1,450-unit existing DOT commitment</td>
-            </tr>
-            <tr>
-              <td class="label">Protected bus lanes</td>
-              <td><span class="badge badge-blue" style="background:#dbeafe;color:#1d4ed8">Expense</span></td>
-              <td class="num">$245,600,000</td>
-              <td class="muted">~300 miles total (FY22–31)</td>
-              <td class="muted">$122.8M each plan; 30 mi/yr</td>
-            </tr>
-            <tr>
-              <td class="label">DOT support staff</td>
-              <td><span class="badge badge-blue" style="background:#dbeafe;color:#1d4ed8">Expense</span></td>
-              <td class="num">$54,900,000</td>
-              <td class="muted">40 new positions</td>
-              <td class="muted">$5.5M/yr (PS + OTPS)</td>
-            </tr>
-            <tr>
-              <td class="label">Master plan unit</td>
-              <td><span class="badge badge-blue" style="background:#dbeafe;color:#1d4ed8">Expense</span></td>
-              <td class="num">$50,000,000</td>
-              <td class="muted">2 new headcount positions</td>
-              <td class="muted">$5M/yr (PS + OTPS)</td>
-            </tr>
-            <tr>
-              <td class="label">Transit signal priority (TSP)</td>
-              <td><span class="badge badge-blue" style="background:#dbeafe;color:#1d4ed8">Expense</span></td>
-              <td class="num">$55,100,000</td>
-              <td class="muted">750 (yr 1); 1,000/yr thereafter</td>
-              <td class="muted">Net of $26.6M existing offset; plan 1 only</td>
-            </tr>
-            <tr>
-              <td class="label">Commercial loading &amp; truck routes</td>
-              <td><span class="badge badge-blue" style="background:#dbeafe;color:#1d4ed8">Expense</span></td>
-              <td class="num">$19,600,000</td>
-              <td class="muted">Citywide assessment &amp; amendments</td>
-              <td class="muted">$10.5M plan 1; $9.1M plan 2</td>
-            </tr>
-            <tr>
-              <td class="label">Protected bike lanes</td>
-              <td><span class="badge badge-blue" style="background:#dbeafe;color:#1d4ed8">Expense</span></td>
-              <td class="num">$11,800,000</td>
-              <td class="muted">250 mi plan 1; connected network plan 2</td>
-              <td class="muted">Net of existing DOT commitment ($59.2M/yr baseline)</td>
-            </tr>
-            <tr>
-              <td class="label">Parking policies</td>
-              <td><span class="badge badge-blue" style="background:#dbeafe;color:#1d4ed8">Expense</span></td>
-              <td class="num">$8,900,000</td>
-              <td class="muted">Policy development &amp; implementation</td>
-              <td class="muted"></td>
-            </tr>
-            <tr class="subhead"><td colspan="5">Zero-cost / offset items</td></tr>
-            <tr>
-              <td class="label">Pedestrian ramps</td>
-              <td class="muted">—</td>
-              <td class="num" style="color:var(--text-muted)">$0</td>
-              <td class="muted">3,000 corner ramps by FY31</td>
-              <td class="muted">Fully offset by existing ADA court settlement</td>
-            </tr>
-            <tr>
-              <td class="label">Pedestrian space</td>
-              <td class="muted">—</td>
-              <td class="num" style="color:var(--green)">−$73,300,000</td>
-              <td class="muted">1M sq ft within 2 years</td>
-              <td class="muted">Surplus — DOT already committed to 1.5M sq ft; offsets other costs</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <p class="caption">All figures are additional costs above DOT's existing baseline. Negative value for pedestrian space reflects a surplus offset available to fund other mandates. Source: NYC Council Finance Division, Fiscal Impact Statement for Intro. 1557-A, Oct 25, 2019.</p>
-    </div>
-
-    <!-- TABLE 4: LL195 MANDATES -->
-    <div class="data-section" id="mandates">
-      <p class="section-label-row">Legislative mandates</p>
-      <div class="section-header">
-        <div>
-          <div class="section-title">LL195 Benchmarks: Plan 1 vs. Plan 2</div>
-        </div>
-        <button class="btn btn-outline" onclick="downloadCSV('mandates')">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Download CSV
-        </button>
-      </div>
-      <p class="section-desc">Minimum benchmarks set by Local Law 195 for each five-year plan period. Plan 1 was due December 1, 2021; Plan 2 is due December 1, 2026.</p>
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Benchmark</th>
-              <th>Plan 1 (FY22–26, due Dec 2021)</th>
-              <th>Plan 2 (FY27–31, due Dec 2026)</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td class="label">Protected bus lanes</td>
-              <td>150 miles total (20 mi yr 1; 30 mi/yr after)</td>
-              <td>Protected lanes on all bus routes where feasible</td>
-            </tr>
-            <tr>
-              <td class="label">Protected bike lanes</td>
-              <td>250 miles total (30 mi yr 1; 50 mi/yr after)</td>
-              <td>Complete connected network; coverage index 100%</td>
-            </tr>
-            <tr>
-              <td class="label">Transit signal priority (TSP)</td>
-              <td>750 intersections yr 1; 1,000/yr thereafter</td>
-              <td>TSP at all feasible intersections</td>
-            </tr>
-            <tr>
-              <td class="label">Bus stop upgrades</td>
-              <td>2,500 stops (500/yr)</td>
-              <td>All stops where feasible</td>
-            </tr>
-            <tr>
-              <td class="label">Intersection redesigns</td>
-              <td>2,000 intersections</td>
-              <td>2,000 additional intersections</td>
-            </tr>
-            <tr>
-              <td class="label">Accessible pedestrian signals (APS)</td>
-              <td>2,500 signals (500/yr min)</td>
-              <td>2,500 additional signals</td>
-            </tr>
-            <tr>
-              <td class="label">Pedestrian space</td>
-              <td>1,000,000 sq ft within 2 years</td>
-              <td>—</td>
-            </tr>
-            <tr>
-              <td class="label">Pedestrian ramps</td>
-              <td>—</td>
-              <td>3,000 ramps at intersection corners</td>
-            </tr>
-            <tr>
-              <td class="label">Commercial loading / truck routes</td>
-              <td colspan="2">Assess and amend citywide to support freight movement and curb access</td>
-            </tr>
-            <tr>
-              <td class="label">Parking policies</td>
-              <td colspan="2">Develop policies prioritizing safety, transit, emissions reduction, and disability access</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-      <p class="caption">Source: Local Law 195 of 2019 (Intro. 1557-A); NYC Council Finance Division fiscal impact statement, Oct 2019.</p>
-    </div>
-
-    <!-- METHODOLOGY -->
-    <div class="data-section" id="methodology">
-      <p class="section-label-row">Methodology</p>
-      <div class="method-box">
-        <h3>About this data</h3>
-        <ul>
-          <li>
-            <strong>Fiscal figures are "additional above baseline."</strong>
-            The fiscal impact statement estimates the <em>marginal cost</em> of LL195 mandates —
-            what NYC must spend beyond existing DOT commitments. They do not represent total DOT program budgets.
-            For example, DOT had already committed to $59.2M/yr for 50 miles of bike lanes; the $11.8M
-            figure in this dataset is only the additional cost above that.
-          </li>
-          <li>
-            <strong>Fiscal impact statement date:</strong> October 25, 2019 — prepared before the law took effect.
-            Actual costs may differ from estimates as scope, inflation, and DOT priorities have changed since.
-          </li>
-          <li>
-            <strong>Compliance data</strong> is drawn from DOT Streets Plan annual progress reports (2024–2025)
-            and from reporting in <a href="https://www.nycuriosity.com/p/nycs-streets-are-getting-better-just" target="_blank" rel="noopener">NYCuriosity's Streets Plan article</a>.
-            Bus stop upgrade figure (~20) is approximate based on DOT reporting.
-          </li>
-          <li>
-            <strong>Program costs do not sum exactly to fiscal summary totals.</strong>
-            The fiscal impact statement lists programs in narrative form; not all items are broken into plan-1/plan-2
-            sub-totals. The summary table is taken directly from the official fiscal impact statement;
-            program breakdown figures are extracted from individual program narrative paragraphs.
-          </li>
-          <li>
-            <strong>Pedestrian space surplus (−$73.3M)</strong> is a cost offset, not a revenue item.
-            DOT's existing commitment exceeds the LL195 mandate, freeing up funds for other programs.
-          </li>
-          <li>
-            <strong>Source code and raw CSV files</strong> are available on
-            <a href="https://github.com/TalR24/nycur-data-website" target="_blank" rel="noopener">GitHub</a>.
-          </li>
-        </ul>
-      </div>
-    </div>
-
-    <!-- SOURCES -->
-    <div class="data-section" id="sources">
-      <p class="section-label-row">Sources &amp; further reading</p>
-      <div class="source-grid">
-
-        <a class="source-card" href="https://www.nycuriosity.com/p/nycs-streets-are-getting-better-just" target="_blank" rel="noopener">
-          <div class="source-icon">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v4H4z"/><path d="M4 10h16v10l-8-4-8 4z"/></svg>
+        <div class="chart-card-body">
+          <div class="chart-card-label">Table</div>
+          <div class="chart-card-title">Compliance Tracker</div>
+          <div class="chart-card-desc">How NYC DOT's actual 2024–2025 delivery compared to the annual minimums required by LL195's first five-year plan, across 4 metrics.</div>
+          <div class="chart-card-meta">
+            <span class="chart-card-stat">4 metrics · 2024–2025</span>
+            <span class="chart-card-cta">Explore →</span>
           </div>
+        </div>
+      </a>
+
+      <a href="./fiscal-impact/" class="chart-card">
+        <div class="chart-card-icon">
+          <svg viewBox="0 0 200 60" xmlns="http://www.w3.org/2000/svg" width="160" height="60">
+            <text x="0" y="12" font-family="'Roboto Mono',monospace" font-size="7" fill="#9ca3af">EXPENSE</text>
+            <rect x="60" y="5" width="90" height="6" rx="1.5" fill="#6b7280"/>
+            <text x="0" y="26" font-family="'Roboto Mono',monospace" font-size="7" fill="#9ca3af">CAPITAL</text>
+            <rect x="60" y="19" width="130" height="6" rx="1.5" fill="#6b7280"/>
+            <text x="0" y="40" font-family="'Roboto Mono',monospace" font-size="7" fill="#9ca3af">NET TOTAL</text>
+            <rect x="60" y="33" width="140" height="6" rx="1.5" fill="#2563eb"/>
+            <text x="0" y="54" font-family="'Roboto Mono',monospace" font-size="8" font-weight="700" fill="#e5e7eb">$1.74B over 10 years</text>
+          </svg>
+        </div>
+        <div class="chart-card-body">
+          <div class="chart-card-label">Table</div>
+          <div class="chart-card-title">Fiscal Impact Summary</div>
+          <div class="chart-card-desc">10-year fiscal impact of LL195 by plan period, broken down by expense, capital, and net cost — all figures additional above the existing DOT baseline.</div>
+          <div class="chart-card-meta">
+            <span class="chart-card-stat">FY22–31 · above baseline</span>
+            <span class="chart-card-cta">Explore →</span>
+          </div>
+        </div>
+      </a>
+
+      <a href="./program-breakdown/" class="chart-card">
+        <div class="chart-card-icon">
+          <svg viewBox="0 0 200 60" xmlns="http://www.w3.org/2000/svg" width="160" height="60">
+            <text x="0" y="12" font-family="'Roboto Mono',monospace" font-size="6.5" fill="#9ca3af">BUS STOP RTPI</text>
+            <rect x="80" y="5" width="100" height="6" rx="1.5" fill="#d97706"/>
+            <text x="0" y="26" font-family="'Roboto Mono',monospace" font-size="6.5" fill="#9ca3af">INTERSECTION</text>
+            <rect x="80" y="19" width="61" height="6" rx="1.5" fill="#d97706"/>
+            <text x="0" y="40" font-family="'Roboto Mono',monospace" font-size="6.5" fill="#9ca3af">BUS LANES</text>
+            <rect x="80" y="33" width="37" height="6" rx="1.5" fill="#2563eb"/>
+            <text x="0" y="54" font-family="'Roboto Mono',monospace" font-size="6.5" fill="#9ca3af">APS</text>
+            <rect x="80" y="47" width="34" height="6" rx="1.5" fill="#2563eb"/>
+          </svg>
+        </div>
+        <div class="chart-card-body">
+          <div class="chart-card-label">Table</div>
+          <div class="chart-card-title">Program Breakdown</div>
+          <div class="chart-card-desc">Program-by-program 10-year cost breakdown, from RTPI ($658M) to pedestrian space (−$73M offset), with mandate scale and methodology notes.</div>
+          <div class="chart-card-meta">
+            <span class="chart-card-stat">13 programs · FY22–31</span>
+            <span class="chart-card-cta">Explore →</span>
+          </div>
+        </div>
+      </a>
+
+      <a href="./ll195-mandates/" class="chart-card">
+        <div class="chart-card-icon">
+          <svg viewBox="0 0 200 60" xmlns="http://www.w3.org/2000/svg" width="160" height="60">
+            <text x="0" y="11" font-family="'Roboto Mono',monospace" font-size="7" font-weight="700" fill="#9ca3af">PLAN 1 (DUE DEC 2021)</text>
+            <text x="0" y="24" font-family="Inter,sans-serif" font-size="7.5" fill="#e5e7eb">Bus lanes: 150 mi total</text>
+            <text x="0" y="36" font-family="Inter,sans-serif" font-size="7.5" fill="#e5e7eb">Bike lanes: 250 mi total</text>
+            <text x="0" y="48" font-family="Inter,sans-serif" font-size="7.5" fill="#e5e7eb">TSP: 1,000 intersections/yr</text>
+            <text x="0" y="60" font-family="'Roboto Mono',monospace" font-size="7" font-weight="700" fill="#2563eb">Plan 2 due Dec 2026</text>
+          </svg>
+        </div>
+        <div class="chart-card-body">
+          <div class="chart-card-label">Table</div>
+          <div class="chart-card-title">LL195 Mandates</div>
+          <div class="chart-card-desc">Minimum benchmarks set by Local Law 195 for each five-year plan period. Plan 1 due Dec 2021; Plan 2 due Dec 2026.</div>
+          <div class="chart-card-meta">
+            <span class="chart-card-stat">10 benchmarks · 2 plan periods</span>
+            <span class="chart-card-cta">Explore →</span>
+          </div>
+        </div>
+      </a>
+
+    </div>
+
+    <div class="source-section">
+      <div class="source-label">Sources &amp; further reading</div>
+      <div class="source-grid">
+        <a class="source-card" href="https://www.nycuriosity.com/p/nycs-streets-are-getting-better-just" target="_blank" rel="noopener">
+          <div class="source-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v4H4z"/><path d="M4 10h16v10l-8-4-8 4z"/></svg></div>
           <div class="source-body">
             <div class="source-title">NYC's Streets Are Getting Better. Just Not Fast Enough.</div>
             <div class="source-meta">NYCuriosity · Tal Roded · 2025</div>
           </div>
         </a>
-
         <a class="source-card" href="https://legistar.council.nyc.gov/LegislationDetail.aspx?ID=3954291" target="_blank" rel="noopener">
-          <div class="source-icon">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-          </div>
+          <div class="source-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
           <div class="source-body">
             <div class="source-title">Intro. 1557-A — Local Law 195 Legislation</div>
             <div class="source-meta">NYC Council Legistar · Enacted 2019</div>
           </div>
         </a>
-
         <a class="source-card" href="https://www.nyc.gov/html/dot/downloads/pdf/nyc-streets-plan-update.pdf" target="_blank" rel="noopener">
-          <div class="source-icon">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-          </div>
+          <div class="source-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
           <div class="source-body">
             <div class="source-title">NYC Streets Plan Update</div>
             <div class="source-meta">NYC DOT · Annual progress report</div>
           </div>
         </a>
-
-        <a class="source-card" href="https://www.nyc.gov/html/dot/html/about/streetsmasterplan.shtml" target="_blank" rel="noopener">
-          <div class="source-icon">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-          </div>
-          <div class="source-body">
-            <div class="source-title">NYC DOT Streets Master Plan</div>
-            <div class="source-meta">NYC DOT · Official plan page</div>
-          </div>
-        </a>
-
         <a class="source-card" href="https://council.nyc.gov/budget/wp-content/uploads/sites/54/2019/10/1557-A-Streets-Plan.pdf" target="_blank" rel="noopener">
-          <div class="source-icon">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-          </div>
+          <div class="source-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
           <div class="source-body">
             <div class="source-title">Fiscal Impact Statement — Intro. 1557-A</div>
             <div class="source-meta">NYC Council Finance Division · Oct 25, 2019</div>
           </div>
         </a>
-
         <a class="source-card" href="https://github.com/TalR24/nycur-data-website" target="_blank" rel="noopener">
-          <div class="source-icon">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg>
-          </div>
+          <div class="source-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/></svg></div>
           <div class="source-body">
             <div class="source-title">Raw data &amp; source code</div>
             <div class="source-meta">GitHub · TalR24/nycur-data-website</div>
           </div>
         </a>
-
       </div>
     </div>
 
   </div>
-</main>
+</div>
 
-<!-- FOOTER -->
 <footer>
   <div class="footer-inner">
     <span class="footer-copy">© NYCuriosity · Tal Roded</span>
     <nav class="footer-links">
       <a href="https://nycuriosity.substack.com" target="_blank" rel="noopener">Substack</a>
-      <a href="/" >All datasets</a>
+      <a href="/">All datasets</a>
       <a href="https://github.com/TalR24/nycur-data-website" target="_blank" rel="noopener">GitHub</a>
     </nav>
   </div>
 </footer>
-
-<script>
-  // ── CSV DATA ──────────────────────────────────────────────
-  const csvData = {
-
-    compliance: `Metric,LL195 Annual Minimum,2024-2025 Actual,Compliance Pct
-Protected bus lanes,30 miles/year,13.5 miles,45
-Protected bike lanes,50 miles/year,18.2 miles,36
-Bus stop upgrades,500 stops/year,~20 stops,4
-Transit signal priority,1000 intersections/year,770 intersections,77`,
-
-    fiscal: `Cost Category,FY22 Year 1,Plan 1 FY22-26,Plan 2 FY27-31,10-Year Total
-Expense costs,53506828,376725018,367425418,744150435
-Capital costs,61017147,251612715,545484480,997097195
-Revenue impact,0,0,0,0
-Net fiscal impact,114523975,628337733,912909898,1741247630`,
-
-    programs: `Program,Cost Type,10-Year Cost (dollars),Mandate Scale,Notes
-Bus stop real-time passenger info (RTPI),Capital,658400000,14580 stops lacking RTPI,Largest single item; spans FY22-31
-Intersection redesign,Capital,400000000,4000 intersections (2000 per plan),$40M/yr additional; other benchmarks may offset
-Bus stop shelters and benches,Capital,65900000,11556 stops needing upgrades,$14.3M plan 1; $51.7M plan 2
-Protected bus lanes,Expense,245600000,~300 miles total (FY22-31),$122.8M each plan; 30 mi/yr
-Accessible pedestrian signals (APS),Expense,224000000,5000 signals (FY22-31),Net of 1450-unit existing DOT commitment
-Transit signal priority (TSP),Expense,55100000,"750 (yr 1); 1000/yr thereafter",Net of $26.6M existing offset; plan 1 only
-DOT support staff,Expense,54900000,40 new positions,$5.5M/yr (PS + OTPS)
-Master plan unit,Expense,50000000,2 new headcount positions,$5M/yr (PS + OTPS)
-Commercial loading and truck routes,Expense,19600000,Citywide assessment and amendments,$10.5M plan 1; $9.1M plan 2
-Protected bike lanes,Expense,11800000,"250 mi plan 1; connected network plan 2",Net of existing DOT commitment ($59.2M/yr baseline)
-Parking policies,Expense,8900000,Policy development and implementation,
-Pedestrian ramps,Offset,0,3000 corner ramps by FY31,Fully offset by existing ADA court settlement
-Pedestrian space,Offset,-73300000,1M sq ft within 2 years,Surplus — DOT committed to 1.5M sq ft; offsets other costs`,
-
-    mandates: `Benchmark,Plan 1 (FY22-26 due Dec 2021),Plan 2 (FY27-31 due Dec 2026)
-Protected bus lanes,150 miles total (20 mi yr 1; 30 mi/yr after),Protected lanes on all bus routes where feasible
-Protected bike lanes,250 miles total (30 mi yr 1; 50 mi/yr after),Complete connected network; coverage index 100%
-Transit signal priority,750 intersections yr 1; 1000/yr thereafter,TSP at all feasible intersections
-Bus stop upgrades,2500 stops (500/yr),All stops where feasible
-Intersection redesigns,2000 intersections,2000 additional intersections
-Accessible pedestrian signals,2500 signals (500/yr min),2500 additional signals
-Pedestrian space,1000000 sq ft within 2 years,—
-Pedestrian ramps,—,3000 ramps at intersection corners
-Commercial loading / truck routes,Assess and amend citywide,Assess and amend citywide
-Parking policies,Develop policies prioritizing safety transit emissions and access,Develop policies prioritizing safety transit emissions and access`
-  };
-
-  function downloadCSV(key) {
-    const blob = new Blob([csvData[key]], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `ll195_${key}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
-  function downloadAll() {
-    Object.keys(csvData).forEach((key, i) => {
-      setTimeout(() => downloadCSV(key), i * 200);
-    });
-  }
-</script>
 
 </body>
 </html>
