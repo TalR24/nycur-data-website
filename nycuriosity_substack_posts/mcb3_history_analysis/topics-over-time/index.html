@@ -138,12 +138,12 @@
       <canvas id="topicsChart"></canvas>
     </div>
     <div class="legend-grid" id="legend"></div>
-    <div class="chart-actions">
-      <button class="action-btn" onclick="downloadChart()">⬇ Download PNG</button>
-      <button class="action-btn" onclick="showEmbed()">&#60;/&#62; Embed</button>
-    </div>
-    <p class="caption" id="captionText">Annual resolution counts by topic category, 2004–2025. Classification is keyword-based; some resolutions match multiple categories. "Other / Unclassified" includes resolutions not matched to a named category — in earlier years this includes many individual SLA approvals recorded with generic titles ("To approve."). Source: NYC.gov MCB3 meeting minutes. Author's analysis.</p>
   </div>
+  <div class="chart-actions">
+    <button class="action-btn" onclick="downloadChart()">⬇ Download PNG</button>
+    <button class="action-btn" onclick="showEmbed()">&#60;/&#62; Embed</button>
+  </div>
+  <p class="caption" id="captionText">Annual resolution counts by topic category, 2004–2025. Classification is keyword-based; some resolutions match multiple categories. "Other / Unclassified" includes resolutions not matched to a named category — in earlier years this includes many individual SLA approvals recorded with generic titles ("To approve."). Source: NYC.gov MCB3 meeting minutes. Author's analysis. Created by Tal Roded · NYCuriosity</p>
 
   <div class="meta-section">
     <h3>Key Observations</h3>
@@ -207,20 +207,6 @@ const CLASSIFIED_TOTALS = YEARS.map((_, i) =>
   TOPICS.slice(0, OTHER_IDX).reduce((s, t) => s + t.data[i], 0)
 );
 
-const attributionPlugin = {
-  id: 'attribution',
-  afterDraw(ch) {
-    const c = ch.ctx;
-    c.save();
-    c.font = '500 11px "Inter", -apple-system, sans-serif';
-    c.fillStyle = 'rgba(156,163,175,0.85)';
-    c.textAlign = 'right';
-    c.textBaseline = 'bottom';
-    c.fillText('Created by Tal Roded · NYCuriosity', ch.width - 10, ch.height - 8);
-    c.restore();
-  }
-};
-
 let currentView = 'absolute';
 let chart;
 
@@ -249,7 +235,6 @@ function initChart() {
   chart = new Chart(ctx, {
     type: 'bar',
     data: { labels: YEARS, datasets: buildDatasets() },
-    plugins: [attributionPlugin],
     options: {
       responsive: true,
       maintainAspectRatio: false,
