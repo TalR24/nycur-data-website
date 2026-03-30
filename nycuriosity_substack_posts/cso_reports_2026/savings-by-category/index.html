@@ -285,7 +285,25 @@
     @media (max-width: 540px) {
       .fy-table th.hide-sm, .fy-table td.hide-sm { display: none; }
     }
+
+    /* ── CHART ACTIONS ─────────────────────────────────────── */
+    .chart-actions { display:flex; gap:8px; margin-bottom:20px; }
+    .action-btn { display:inline-flex; align-items:center; gap:6px; background:var(--surface); color:var(--text-muted); font-family:'Roboto Mono',monospace; font-size:0.75rem; font-weight:600; padding:6px 14px; border-radius:6px; border:1px solid var(--border); cursor:pointer; transition:all 0.15s; }
+    .action-btn:hover { border-color:var(--blue); color:var(--blue); background:var(--blue-light); }
+    .action-btn:disabled { opacity:0.6; cursor:not-allowed; }
+    /* ── EMBED MODAL ───────────────────────────────────────── */
+    .embed-modal { position:fixed; inset:0; background:rgba(0,0,0,0.45); display:flex; align-items:center; justify-content:center; z-index:1000; }
+    .embed-modal-box { background:var(--surface); border-radius:10px; padding:24px; max-width:540px; width:90%; box-shadow:0 8px 32px rgba(0,0,0,0.18); }
+    .embed-modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+    .embed-modal-title { font-family:'Roboto Mono',monospace; font-weight:700; font-size:0.9rem; color:var(--text); }
+    .embed-close { background:none; border:none; font-size:1.1rem; color:var(--text-muted); cursor:pointer; padding:2px 6px; border-radius:4px; }
+    .embed-close:hover { color:var(--text); background:var(--bg); }
+    .embed-modal-box > p { font-size:0.83rem; color:var(--text-muted); margin-bottom:10px; }
+    .embed-textarea { width:100%; height:80px; font-family:'Roboto Mono',monospace; font-size:0.72rem; border:1px solid var(--border); border-radius:6px; padding:10px; resize:none; color:var(--text-mid); background:var(--bg); margin-bottom:12px; }
+    .embed-copy-btn { background:var(--blue); color:#fff; font-family:'Roboto Mono',monospace; font-size:0.8rem; font-weight:600; padding:7px 18px; border:none; border-radius:6px; cursor:pointer; transition:background 0.15s; }
+    .embed-copy-btn:hover { background:#1d4ed8; }
   </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
 
@@ -339,6 +357,11 @@
 <main>
   <div class="main-inner">
 
+    <div class="chart-actions">
+      <button class="action-btn" onclick="downloadChart(this)">&#11015; Download PNG</button>
+      <button class="action-btn" onclick="showEmbed()">&#60;/&#62; Embed</button>
+    </div>
+
     <div class="chart-layout">
 
       <!-- DONUT -->
@@ -378,11 +401,24 @@
 
     <div class="footnotes">
       <p><strong>Categorization methodology:</strong> Each agency is assigned to its primary savings lever. DSS ($12.7M) is categorized under contract termination due to the McKinsey contract cancellation, though its plan also includes IT in-sourcing and WiFi revenue. H+H ($39.8M) is categorized under contract renegotiation (the dominant mechanism); its plan also includes staffing and revenue improvements. FDNY ($13M) is categorized under revenue &amp; billing as Medicaid billing is the largest FY27 driver.</p>
-      <p><strong>Sources:</strong> Agency CSO reports released March 20, 2026. FY26 and FY27 savings figures from NYC CSO agency submissions.</p>
+      <p><strong>Sources:</strong> Agency CSO reports released March 20, 2026. FY26 and FY27 savings figures from NYC CSO agency submissions. <em>Created by Tal Roded · NYCuriosity</em></p>
     </div>
 
   </div>
 </main>
+
+<!-- EMBED MODAL -->
+<div id="embedModal" class="embed-modal" style="display:none">
+  <div class="embed-modal-box">
+    <div class="embed-modal-header">
+      <span class="embed-modal-title">Embed this chart</span>
+      <button class="embed-close" onclick="closeEmbed()">✕</button>
+    </div>
+    <p>Copy and paste into your webpage:</p>
+    <textarea id="embedCode" class="embed-textarea" readonly></textarea>
+    <button class="embed-copy-btn" onclick="copyEmbed()">Copy code</button>
+  </div>
+</div>
 
 <!-- FOOTER -->
 <footer>
@@ -610,6 +646,34 @@
     showDefault();
     paths.forEach(p => p.el.classList.remove('dimmed'));
     legendItems.forEach(item => { item.classList.remove('active'); item.classList.remove('dimmed'); });
+  }
+
+  /* ── export / embed ──────────────────────────────────── */
+  async function downloadChart(btn) {
+    const orig = btn.innerHTML;
+    btn.innerHTML = '⏳ Capturing…'; btn.disabled = true;
+    try {
+      const el = document.querySelector('.chart-layout');
+      const canvas = await html2canvas(el, { backgroundColor:'#ffffff', scale:2, useCORS:true, logging:false });
+      const a = document.createElement('a');
+      a.download = 'cso-savings-by-category.png';
+      a.href = canvas.toDataURL('image/png'); a.click();
+    } finally { btn.innerHTML = orig; btn.disabled = false; }
+  }
+  function showEmbed() {
+    const url = location.origin + location.pathname;
+    document.getElementById('embedCode').value =
+      `<iframe src="${url}" width="900" height="720" frameborder="0" style="border:1px solid #e5e7eb; border-radius:8px;" loading="lazy"></iframe>`;
+    document.getElementById('embedModal').style.display = 'flex';
+  }
+  function closeEmbed() { document.getElementById('embedModal').style.display = 'none'; }
+  function copyEmbed() {
+    const ta = document.getElementById('embedCode'); ta.select();
+    navigator.clipboard.writeText(ta.value).then(() => {
+      const btn = document.querySelector('.embed-copy-btn');
+      btn.textContent = '✓ Copied!';
+      setTimeout(() => btn.textContent = 'Copy code', 2000);
+    });
   }
 
   /* ── FY breakdown table ──────────────────────────────── */
