@@ -197,9 +197,38 @@ const chart = new Chart(ctx, {
 });
 
 function downloadChart() {
+  const src = chart.canvas;
+  const captionText = document.querySelector('.caption').textContent.trim();
+  const scale = window.devicePixelRatio || 1;
+  const padH = Math.round(16 * scale);
+  const fontSize = Math.round(11 * scale);
+  const lineH = Math.round(17 * scale);
+  const tmp = document.createElement('canvas');
+  const tmpCtx = tmp.getContext('2d');
+  tmpCtx.font = `italic ${fontSize}px Inter, -apple-system, sans-serif`;
+  const maxW = src.width - padH * 2;
+  const lines = [];
+  let line = '';
+  for (const word of captionText.split(' ')) {
+    const test = line ? line + ' ' + word : word;
+    if (line && tmpCtx.measureText(test).width > maxW) { lines.push(line); line = word; }
+    else line = test;
+  }
+  if (line) lines.push(line);
+  const out = document.createElement('canvas');
+  out.width = src.width;
+  out.height = src.height + lines.length * lineH + padH * 2;
+  const ctx = out.getContext('2d');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, out.width, out.height);
+  ctx.drawImage(src, 0, 0);
+  ctx.font = `italic ${fontSize}px Inter, -apple-system, sans-serif`;
+  ctx.fillStyle = '#9ca3af';
+  ctx.textBaseline = 'top';
+  lines.forEach((l, i) => ctx.fillText(l, padH, src.height + padH + i * lineH));
   const a = document.createElement('a');
   a.download = 'mcb3-resolutions-per-year.png';
-  a.href = chart.toBase64Image('image/png', 1.0);
+  a.href = out.toDataURL('image/png');
   a.click();
 }
 function showEmbed() {
