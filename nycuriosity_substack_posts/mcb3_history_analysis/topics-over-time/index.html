@@ -295,21 +295,19 @@ function updateTriggerLabel() {
 
 // ── Chart ─────────────────────────────────────────────────────
 function buildDatasets() {
-  // % denominator: if Other/Unclassified is excluded, use classified-only totals
-  const excludeOther = !selected[OTHER_IDX];
-  const denom = excludeOther ? CLASSIFIED_TOTALS : TOTALS;
+  const activeTopics = TOPICS.filter((_, i) => selected[i]);
+  // denominator = sum of selected topics per year, so % always sums to 100%
+  const denom = YEARS.map((_, i) => activeTopics.reduce((s, t) => s + t.data[i], 0));
 
-  return TOPICS
-    .filter((_, i) => selected[i])
-    .map(t => ({
-      label: t.label,
-      data: currentView === 'percent'
-        ? t.data.map((v, i) => denom[i] > 0 ? Math.round(v / denom[i] * 1000) / 10 : 0)
-        : t.data,
-      backgroundColor: t.color,
-      borderWidth: 0,
-      borderRadius: 0,
-    }));
+  return activeTopics.map(t => ({
+    label: t.label,
+    data: currentView === 'percent'
+      ? t.data.map((v, i) => denom[i] > 0 ? Math.round(v / denom[i] * 1000) / 10 : 0)
+      : t.data,
+    backgroundColor: t.color,
+    borderWidth: 0,
+    borderRadius: 0,
+  }));
 }
 
 function initChart() {
@@ -335,9 +333,9 @@ function initChart() {
             },
             footer: items => {
               const i = items[0].dataIndex;
-              const excludeOther = !selected[OTHER_IDX];
-              if (excludeOther) {
-                return `Classified total: ${CLASSIFIED_TOTALS[i]} | All resolutions: ${TOTALS[i]}`;
+              const selTotal = TOPICS.filter((_, j) => selected[j]).reduce((s, t) => s + t.data[i], 0);
+              if (selTotal !== TOTALS[i]) {
+                return `Selected total: ${selTotal} | All resolutions: ${TOTALS[i]}`;
               }
               return `Total: ${TOTALS[i]} resolutions`;
             }
