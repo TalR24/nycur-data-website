@@ -51,6 +51,22 @@
     .action-btn:hover { border-color:var(--blue); color:var(--blue); background:var(--blue-light); }
 
     .chart-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:24px; box-shadow:var(--shadow-sm); margin-bottom:24px; }
+    .controls-row { display:flex; justify-content:flex-end; margin-bottom:16px; }
+    .category-filter { position:relative; }
+    .category-trigger { font-family:'Roboto Mono',monospace; font-size:0.75rem; font-weight:600; padding:5px 14px; border-radius:20px; border:1px solid var(--border-mid); background:var(--bg); color:var(--text-muted); cursor:pointer; transition:all 0.15s; display:flex; align-items:center; gap:8px; white-space:nowrap; }
+    .category-trigger:hover, .category-trigger.open { border-color:var(--blue); color:var(--blue); background:var(--blue-light); }
+    .trigger-arrow { font-size:0.6rem; transition:transform 0.15s; display:inline-block; }
+    .category-trigger.open .trigger-arrow { transform:rotate(180deg); }
+    .category-dropdown { position:absolute; top:calc(100% + 6px); right:0; background:var(--surface); border:1px solid var(--border-mid); border-radius:8px; box-shadow:0 4px 20px rgba(0,0,0,0.12); z-index:200; min-width:250px; padding:6px 0 8px; }
+    .dropdown-header { display:flex; justify-content:space-between; align-items:center; padding:4px 14px 8px; border-bottom:1px solid var(--border); margin-bottom:4px; }
+    .dropdown-header-label { font-family:'Roboto Mono',monospace; font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-faint); }
+    .dropdown-actions-row { display:flex; gap:10px; }
+    .dropdown-action-btn { font-family:'Roboto Mono',monospace; font-size:0.7rem; font-weight:600; color:var(--blue); background:none; border:none; cursor:pointer; padding:0; }
+    .dropdown-action-btn:hover { text-decoration:underline; }
+    .dropdown-item { display:flex; align-items:center; gap:9px; padding:5px 14px; cursor:pointer; transition:background 0.1s; }
+    .dropdown-item:hover { background:var(--bg); }
+    .dropdown-item input[type=checkbox] { width:13px; height:13px; accent-color:var(--blue); cursor:pointer; flex-shrink:0; margin:0; }
+    .dropdown-item-label { font-size:0.81rem; color:var(--text-mid); }
     .chart-wrap { position:relative; width:100%; }
     .caption { font-size:0.78rem; color:var(--text-faint); line-height:1.6; margin-top:16px; font-style:italic; }
 
@@ -110,6 +126,24 @@
   </div>
 
   <div class="chart-card">
+    <div class="controls-row">
+      <div class="category-filter">
+        <button class="category-trigger" id="categoryTrigger" onclick="toggleDropdown(event)">
+          <span id="triggerLabel">All categories</span>
+          <span class="trigger-arrow">▼</span>
+        </button>
+        <div class="category-dropdown" id="categoryDropdown" style="display:none">
+          <div class="dropdown-header">
+            <span class="dropdown-header-label">Categories</span>
+            <div class="dropdown-actions-row">
+              <button class="dropdown-action-btn" onclick="selectAllCategories()">Select all</button>
+              <button class="dropdown-action-btn" onclick="clearAllCategories()">Clear all</button>
+            </div>
+          </div>
+          <div id="dropdownItems"></div>
+        </div>
+      </div>
+    </div>
     <div class="chart-wrap">
       <canvas id="myChart"></canvas>
     </div>
@@ -143,47 +177,126 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 <script>
+  // Data sorted by MCB3 % descending
   const TOPICS = [
-    'Liquor License / SLA',
-    'Transportation & Streets',
-    'Parks & Open Space',
-    'Housing & Zoning',
-    'Public Safety',
-    'Environment & Waterfront',
-    'City Planning',
-    'Budget & Funding',
-    'Landmarks & Historic Preservation',
-    'Education & Schools',
+    { label: 'Liquor License / SLA',             mcb3Pct: 48.3, pct311:  0.0, mcb3Abs: 3449,   abs311:      0 },
+    { label: 'Transportation & Streets',          mcb3Pct:  7.3, pct311: 19.2, mcb3Abs:  520,   abs311:  72504 },
+    { label: 'Parks & Open Space',                mcb3Pct:  5.2, pct311:  2.7, mcb3Abs:  374,   abs311:  10185 },
+    { label: 'Housing & Zoning',                  mcb3Pct:  5.2, pct311: 14.3, mcb3Abs:  369,   abs311:  54112 },
+    { label: 'Public Safety',                     mcb3Pct:  4.1, pct311: 44.7, mcb3Abs:  292,   abs311: 168712 },
+    { label: 'Environment & Waterfront',          mcb3Pct:  3.3, pct311: 13.5, mcb3Abs:  237,   abs311:  50837 },
+    { label: 'City Planning',                     mcb3Pct:  2.2, pct311:  0.0, mcb3Abs:  154,   abs311:      0 },
+    { label: 'Budget & Funding',                  mcb3Pct:  1.3, pct311:  0.0, mcb3Abs:   94,   abs311:      0 },
+    { label: 'Landmarks & Historic Preservation', mcb3Pct:  1.2, pct311:  0.0, mcb3Abs:   84,   abs311:      0 },
+    { label: 'Education & Schools',               mcb3Pct:  1.1, pct311:  0.0, mcb3Abs:   79,   abs311:      0 },
   ];
 
-  const MCB3_PCT  = [48.3, 7.3, 5.2, 5.2, 4.1, 3.3, 2.2, 1.3, 1.2, 1.1];
-  const PCT_311   = [0.0, 19.2, 2.7, 14.3, 44.7, 13.5, 0.0, 0.0, 0.0, 0.0];
-  const MCB3_ABS  = [3449, 520, 374, 369, 292, 237, 154, 94, 84, 79];
-  const ABS_311   = [0, 72504, 10185, 54112, 168712, 50837, 0, 0, 0, 0];
+  let selected = new Array(TOPICS.length).fill(true);
 
-  // Sort by MCB3 % descending — already sorted in data; reverse for horizontal bar (Chart.js draws bottom-up)
-  const labels = [...TOPICS].reverse();
-  const mcb3Data = [...MCB3_PCT].reverse();
-  const data311  = [...PCT_311].reverse();
-  const mcb3Abs  = [...MCB3_ABS].reverse();
-  const abs311   = [...ABS_311].reverse();
+  // Returns chart-ready arrays (reversed so highest MCB3% is at top of horizontal chart)
+  function getActiveData() {
+    const active = TOPICS.map((t, i) => selected[i] ? t : null).filter(Boolean);
+    const rev = [...active].reverse();
+    return {
+      labels:   rev.map(t => t.label),
+      mcb3Data: rev.map(t => t.mcb3Pct),
+      data311:  rev.map(t => t.pct311),
+      mcb3Abs:  rev.map(t => t.mcb3Abs),
+      abs311:   rev.map(t => t.abs311),
+    };
+  }
 
+  function calcXMax(mcb3Data, data311) {
+    const peak = Math.max(...mcb3Data, ...data311);
+    return Math.ceil(peak / 5) * 5 + 5;
+  }
+
+  function setCanvasHeight(n) {
+    document.getElementById('myChart').parentElement.style.height = Math.max(n * 48 + 80, 120) + 'px';
+  }
+
+  // ── Dropdown ──────────────────────────────────────────────────
+  function buildDropdown() {
+    const container = document.getElementById('dropdownItems');
+    TOPICS.forEach((t, i) => {
+      const id = `cat-${i}`;
+      const row = document.createElement('label');
+      row.className = 'dropdown-item';
+      row.htmlFor = id;
+      row.innerHTML = `
+        <input type="checkbox" id="${id}" checked>
+        <span class="dropdown-item-label">${t.label}</span>`;
+      row.querySelector('input').addEventListener('change', e => {
+        selected[i] = e.target.checked;
+        updateTriggerLabel();
+        updateChart();
+      });
+      container.appendChild(row);
+    });
+  }
+
+  function toggleDropdown(e) {
+    e.stopPropagation();
+    const dd = document.getElementById('categoryDropdown');
+    const btn = document.getElementById('categoryTrigger');
+    const isOpen = dd.style.display !== 'none';
+    dd.style.display = isOpen ? 'none' : 'block';
+    btn.classList.toggle('open', !isOpen);
+  }
+
+  function closeDropdown() {
+    document.getElementById('categoryDropdown').style.display = 'none';
+    document.getElementById('categoryTrigger').classList.remove('open');
+  }
+
+  document.addEventListener('click', e => {
+    if (!document.getElementById('categoryTrigger').contains(e.target) &&
+        !document.getElementById('categoryDropdown').contains(e.target)) {
+      closeDropdown();
+    }
+  });
+
+  function selectAllCategories() {
+    selected.fill(true);
+    document.querySelectorAll('#dropdownItems input[type=checkbox]').forEach(cb => cb.checked = true);
+    updateTriggerLabel();
+    updateChart();
+  }
+
+  function clearAllCategories() {
+    selected.fill(false);
+    document.querySelectorAll('#dropdownItems input[type=checkbox]').forEach(cb => cb.checked = false);
+    updateTriggerLabel();
+    updateChart();
+  }
+
+  function updateTriggerLabel() {
+    const n = selected.filter(Boolean).length;
+    document.getElementById('triggerLabel').textContent =
+      n === TOPICS.length ? 'All categories' :
+      n === 0 ? 'No categories' :
+      `${n} of ${TOPICS.length} selected`;
+  }
+
+  // ── Chart ─────────────────────────────────────────────────────
   const ctx = document.getElementById('myChart').getContext('2d');
+  const initData = getActiveData();
+
   const chart = new Chart(ctx, {
     type: 'bar',
     data: {
-      labels,
+      labels: initData.labels,
       datasets: [
         {
           label: 'MCB3 Resolutions',
-          data: mcb3Data,
+          data: initData.mcb3Data,
           backgroundColor: '#2563eb',
           borderWidth: 0,
           borderRadius: 3,
         },
         {
           label: '311 Complaints',
-          data: data311,
+          data: initData.data311,
           backgroundColor: '#f59e0b',
           borderWidth: 0,
           borderRadius: 3,
@@ -197,7 +310,7 @@
       layout: { padding: { top: 8, right: 24, bottom: 8, left: 8 } },
       scales: {
         x: {
-          max: 52,
+          max: calcXMax(initData.mcb3Data, initData.data311),
           ticks: {
             font: { family: "'Roboto Mono', monospace", size: 11 },
             color: '#6b7280',
@@ -229,10 +342,10 @@
         tooltip: {
           callbacks: {
             label: item => {
+              const d = getActiveData();
               const pct = item.raw;
-              const abs = item.datasetIndex === 0 ? mcb3Abs[item.dataIndex] : abs311[item.dataIndex];
-              const label = item.dataset.label;
-              return ` ${label}: ${pct}%${abs > 0 ? ' (' + abs.toLocaleString() + ')' : ''}`;
+              const abs = item.datasetIndex === 0 ? d.mcb3Abs[item.dataIndex] : d.abs311[item.dataIndex];
+              return ` ${item.dataset.label}: ${pct}%${abs > 0 ? ' (' + abs.toLocaleString() + ')' : ''}`;
             },
           },
         },
@@ -240,9 +353,21 @@
     },
   });
 
-  // Set canvas height based on number of categories
-  document.getElementById('myChart').parentElement.style.height = '480px';
+  setCanvasHeight(TOPICS.length);
 
+  function updateChart() {
+    const d = getActiveData();
+    chart.data.labels = d.labels;
+    chart.data.datasets[0].data = d.mcb3Data;
+    chart.data.datasets[1].data = d.data311;
+    chart.options.scales.x.max = calcXMax(d.mcb3Data, d.data311);
+    setCanvasHeight(d.labels.length);
+    chart.update();
+  }
+
+  buildDropdown();
+
+  // ── Download / Embed ──────────────────────────────────────────
   function downloadChart() {
     const src = chart.canvas;
     const captionText = document.querySelector('.caption').textContent.trim();
