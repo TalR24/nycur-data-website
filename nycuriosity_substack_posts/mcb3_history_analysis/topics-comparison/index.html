@@ -194,13 +194,17 @@
   let selected = new Array(TOPICS.length).fill(true);
 
   // Returns chart-ready arrays (reversed so highest MCB3% is at top of horizontal chart)
+  // Percentages are recomputed from absolute counts among selected topics only,
+  // so each dataset sums to 100% regardless of which categories are selected.
   function getActiveData() {
     const active = TOPICS.map((t, i) => selected[i] ? t : null).filter(Boolean);
+    const mcb3Total = active.reduce((s, t) => s + t.mcb3Abs, 0);
+    const total311  = active.reduce((s, t) => s + t.abs311,  0);
     const rev = [...active].reverse();
     return {
       labels:   rev.map(t => t.label),
-      mcb3Data: rev.map(t => t.mcb3Pct),
-      data311:  rev.map(t => t.pct311),
+      mcb3Data: rev.map(t => mcb3Total > 0 ? Math.round(t.mcb3Abs / mcb3Total * 1000) / 10 : 0),
+      data311:  rev.map(t => total311  > 0 ? Math.round(t.abs311  / total311  * 1000) / 10 : 0),
       mcb3Abs:  rev.map(t => t.mcb3Abs),
       abs311:   rev.map(t => t.abs311),
     };
