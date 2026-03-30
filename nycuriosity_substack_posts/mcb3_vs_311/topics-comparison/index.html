@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MCB3 Resolution Topics vs. 311 Complaints — NYCuriosity Data</title>
+  <meta name="description" content="Side-by-side comparison of MCB3 resolution topics and CB3 311 complaint categories, revealing where board attention aligns with — and diverges from — resident concerns.">
+  <meta property="og:type"        content="website">
+  <meta property="og:url"         content="https://data.nycuriosity.com/nycuriosity_substack_posts/mcb3_vs_311/topics-comparison/">
+  <meta property="og:title"       content="MCB3 Resolution Topics vs. 311 Complaints — NYCuriosity Data">
+  <meta property="og:description" content="Side-by-side comparison of MCB3 resolution topics and CB3 311 complaints across 10 categories.">
+  <meta property="og:image"       content="https://data.nycuriosity.com/website_logo.png">
+  <meta name="twitter:card"       content="summary_large_image">
+  <meta name="twitter:image"      content="https://data.nycuriosity.com/website_logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --blue:#2563eb; --blue-light:#eff6ff; --blue-mid:#bfdbfe;
+      --amber:#f59e0b; --amber-light:#fffbeb;
+      --text:#111827; --text-mid:#374151; --text-muted:#6b7280; --text-faint:#9ca3af;
+      --bg:#f8faff; --surface:#ffffff; --border:#e5e7eb; --border-mid:#d1d5db;
+      --shadow-sm:0 1px 3px rgba(17,24,39,0.08);
+    }
+    body { font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; display:flex; flex-direction:column; }
+
+    header { background:#111827; border-bottom:1px solid #1f2937; padding:0 clamp(20px,5vw,48px); }
+    .header-inner { max-width:1100px; margin:0 auto; height:56px; display:flex; align-items:center; gap:16px; }
+    .back-link { font-family:'Roboto Mono',monospace; font-size:0.75rem; font-weight:600; color:#9ca3af; text-decoration:none; display:flex; align-items:center; gap:5px; padding:4px 8px 4px 4px; border-radius:5px; transition:color 0.15s,background 0.15s; }
+    .back-link:hover { color:#60a5fa; background:rgba(96,165,250,0.1); }
+    .header-divider { width:1px; height:20px; background:#374151; flex-shrink:0; }
+    header h1 { font-family:'Roboto Mono',monospace; font-size:0.95rem; font-weight:700; color:#e5e7eb; letter-spacing:-0.02em; }
+
+    main { flex:1; max-width:1100px; margin:0 auto; padding:clamp(28px,5vw,48px) clamp(20px,5vw,48px); width:100%; }
+    .breadcrumb { font-family:'Roboto Mono',monospace; font-size:0.72rem; color:var(--text-faint); margin-bottom:12px; letter-spacing:0.04em; }
+    .breadcrumb a { color:var(--text-muted); text-decoration:none; }
+    .breadcrumb a:hover { color:var(--blue); }
+    .hero { margin-bottom:20px; }
+    .hero h2 { font-size:clamp(1.3rem,2.6vw,1.9rem); font-weight:700; letter-spacing:-0.03em; margin-bottom:10px; line-height:1.2; }
+    .hero p { font-size:0.92rem; color:var(--text-muted); max-width:720px; line-height:1.7; }
+
+    .pill-nav { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:28px; }
+    .pill-nav a { font-family:'Roboto Mono',monospace; font-size:0.72rem; font-weight:600; padding:5px 12px; border-radius:6px; text-decoration:none; border:1px solid var(--border-mid); color:var(--text-muted); background:var(--surface); transition:all 0.15s; }
+    .pill-nav a:hover { border-color:var(--blue); color:var(--blue); background:var(--blue-light); }
+    .pill-nav a.active { background:var(--blue); color:#fff; border-color:var(--blue); }
+
+    .chart-actions { display:flex; gap:8px; margin-bottom:14px; }
+    .action-btn { display:inline-flex; align-items:center; gap:6px; background:var(--surface); color:var(--text-muted); font-family:'Roboto Mono',monospace; font-size:0.75rem; font-weight:600; padding:6px 14px; border-radius:6px; border:1px solid var(--border-mid); cursor:pointer; transition:all 0.15s; }
+    .action-btn:hover { border-color:var(--blue); color:var(--blue); background:var(--blue-light); }
+
+    .chart-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:24px; box-shadow:var(--shadow-sm); margin-bottom:24px; }
+    .chart-wrap { position:relative; width:100%; }
+    .caption { font-size:0.78rem; color:var(--text-faint); line-height:1.6; margin-top:16px; font-style:italic; }
+
+    .methodology { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:24px; margin-bottom:24px; }
+    .methodology h3 { font-family:'Roboto Mono',monospace; font-size:0.8rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-faint); margin-bottom:16px; }
+    .methodology p { font-size:0.85rem; color:var(--text-muted); line-height:1.7; margin-bottom:12px; }
+    .methodology p:last-child { margin-bottom:0; }
+    .methodology a { color:var(--blue); text-decoration:none; }
+    .methodology a:hover { text-decoration:underline; }
+    .download-csv { font-family:'Roboto Mono',monospace; font-size:0.72rem; font-weight:600; color:var(--blue); text-decoration:none; display:inline-flex; align-items:center; gap:5px; padding:5px 10px; border:1px solid var(--blue-mid); border-radius:5px; background:var(--blue-light); transition:all 0.15s; }
+    .download-csv:hover { background:var(--blue); color:#fff; }
+
+    .embed-modal { position:fixed; inset:0; background:rgba(0,0,0,0.45); display:flex; align-items:center; justify-content:center; z-index:1000; }
+    .embed-modal-box { background:var(--surface); border-radius:10px; padding:24px; max-width:540px; width:90%; box-shadow:0 8px 32px rgba(0,0,0,0.18); }
+    .embed-modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+    .embed-modal-title { font-family:'Roboto Mono',monospace; font-weight:700; font-size:0.9rem; color:var(--text); }
+    .embed-close { background:none; border:none; font-size:1.1rem; color:var(--text-muted); cursor:pointer; padding:2px 6px; border-radius:4px; }
+    .embed-close:hover { color:var(--text); background:var(--bg); }
+    .embed-modal-box > p { font-size:0.83rem; color:var(--text-muted); margin-bottom:10px; }
+    .embed-textarea { width:100%; height:80px; font-family:'Roboto Mono',monospace; font-size:0.72rem; border:1px solid var(--border-mid); border-radius:6px; padding:10px; resize:none; color:var(--text-mid); background:var(--bg); margin-bottom:12px; }
+    .embed-copy-btn { background:var(--blue); color:#fff; font-family:'Roboto Mono',monospace; font-size:0.8rem; font-weight:600; padding:7px 18px; border:none; border-radius:6px; cursor:pointer; transition:background 0.15s; }
+    .embed-copy-btn:hover { background:#1d4ed8; }
+
+    footer { padding:24px clamp(20px,5vw,48px); text-align:center; font-size:0.78rem; color:var(--text-faint); border-top:1px solid var(--border); }
+    footer a { color:var(--text-muted); text-decoration:none; }
+    footer a:hover { color:var(--blue); }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <a href="/nycuriosity_substack_posts/mcb3_vs_311/" class="back-link">← mcb3-vs-311</a>
+    <div class="header-divider"></div>
+    <h1>Resolution Topics vs. 311 Complaints</h1>
+  </div>
+</header>
+
+<main>
+  <div class="breadcrumb">
+    <a href="/">nycuriosity/data</a> / <a href="/nycuriosity_substack_posts/mcb3_vs_311/">mcb3-vs-311</a> / topics-comparison
+  </div>
+  <div class="hero">
+    <h2>Resolution Topics vs. 311 Complaint Categories</h2>
+    <p>Side-by-side percentage comparison of MCB3 resolution topics and CB3 311 complaint categories, revealing where board attention aligns with — and diverges from — what residents actually report. Nearly half of MCB3 resolutions involve liquor licensing, a category that generates zero 311 calls. Public safety drives 45% of resident complaints but only 4% of board resolutions.</p>
+  </div>
+
+  <nav class="pill-nav">
+    <a href="#" class="active">Topics Comparison</a>
+  </nav>
+
+  <div class="chart-actions">
+    <button class="action-btn" onclick="downloadChart()">⬇ Download PNG</button>
+    <button class="action-btn" onclick="showEmbed()">&#60;/&#62; Embed</button>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-wrap">
+      <canvas id="myChart"></canvas>
+    </div>
+    <p class="caption">MCB3 resolution topics vs. CB3 311 complaint categories, as a percentage of each dataset's total. MCB3: 7,134 resolutions, 2004–2025. 311: 377,536 service requests from Manhattan Community District 3, 2020–2026. Categories with no 311 equivalent (City Planning, Budget &amp; Funding, Landmarks, Education) show 0% for 311. Source: NYC.gov MCB3 meeting minutes; NYC Open Data 311 Service Requests (dataset erm2-nwe9). Author's analysis. Created by Tal Roded · NYCuriosity</p>
+  </div>
+
+  <div class="methodology">
+    <h3>Methodology &amp; Data Sources</h3>
+    <p>MCB3 resolutions (7,134 total, 2004–2025) were classified into 10 topic categories based on resolution text and agenda type. Liquor License / SLA includes all State Liquor Authority applications and renewals. The remaining 1,479 resolutions (20.7%) are not shown as they fell outside the 10 classified categories.</p>
+    <p>311 data covers all service requests originating in Manhattan Community District 3 from January 2020 through March 2026 (377,536 total). Complaint types were mapped to the same 10 MCB3 topic categories: noise complaints, illegal fireworks, and graffiti to Public Safety; street/sidewalk conditions, parking, and traffic to Transportation &amp; Streets; heat/water/pest complaints to Housing &amp; Zoning; air/water quality to Environment &amp; Waterfront; park conditions to Parks &amp; Open Space. Four categories — City Planning, Budget &amp; Funding, Landmarks, and Education — have no 311 equivalent and show 0%.</p>
+    <p>Percentages for each dataset are computed independently. MCB3 % = resolutions in category ÷ 7,134. 311 % = complaints in category ÷ 377,536. The datasets cover different time periods and measure fundamentally different things: formal board action vs. resident-initiated service requests.</p>
+    <p><a href="../data/mcb3_vs_311_topics.csv" class="download-csv">⬇ Download CSV</a></p>
+  </div>
+</main>
+
+<div id="embedModal" class="embed-modal" style="display:none">
+  <div class="embed-modal-box">
+    <div class="embed-modal-header">
+      <span class="embed-modal-title">Embed this chart</span>
+      <button class="embed-close" onclick="closeEmbed()">✕</button>
+    </div>
+    <p>Copy and paste into your webpage:</p>
+    <textarea id="embedCode" class="embed-textarea" readonly></textarea>
+    <button class="embed-copy-btn" onclick="copyEmbed()">Copy code</button>
+  </div>
+</div>
+
+<footer>
+  <a href="https://nycuriosity.substack.com/">NYCuriosity</a> · MCB3 data: NYC.gov meeting minutes · 311 data: NYC Open Data · Analysis: Author's calculations
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+<script>
+  const TOPICS = [
+    'Liquor License / SLA',
+    'Transportation & Streets',
+    'Parks & Open Space',
+    'Housing & Zoning',
+    'Public Safety',
+    'Environment & Waterfront',
+    'City Planning',
+    'Budget & Funding',
+    'Landmarks & Historic Preservation',
+    'Education & Schools',
+  ];
+
+  const MCB3_PCT  = [48.3, 7.3, 5.2, 5.2, 4.1, 3.3, 2.2, 1.3, 1.2, 1.1];
+  const PCT_311   = [0.0, 19.2, 2.7, 14.3, 44.7, 13.5, 0.0, 0.0, 0.0, 0.0];
+  const MCB3_ABS  = [3449, 520, 374, 369, 292, 237, 154, 94, 84, 79];
+  const ABS_311   = [0, 72504, 10185, 54112, 168712, 50837, 0, 0, 0, 0];
+
+  // Sort by MCB3 % descending — already sorted in data; reverse for horizontal bar (Chart.js draws bottom-up)
+  const labels = [...TOPICS].reverse();
+  const mcb3Data = [...MCB3_PCT].reverse();
+  const data311  = [...PCT_311].reverse();
+  const mcb3Abs  = [...MCB3_ABS].reverse();
+  const abs311   = [...ABS_311].reverse();
+
+  const ctx = document.getElementById('myChart').getContext('2d');
+  const chart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'MCB3 Resolutions',
+          data: mcb3Data,
+          backgroundColor: '#2563eb',
+          borderWidth: 0,
+          borderRadius: 3,
+        },
+        {
+          label: '311 Complaints',
+          data: data311,
+          backgroundColor: '#f59e0b',
+          borderWidth: 0,
+          borderRadius: 3,
+        },
+      ],
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      layout: { padding: { top: 8, right: 24, bottom: 8, left: 8 } },
+      scales: {
+        x: {
+          max: 52,
+          ticks: {
+            font: { family: "'Roboto Mono', monospace", size: 11 },
+            color: '#6b7280',
+            callback: v => v + '%',
+          },
+          grid: { color: '#e5e7eb' },
+          border: { dash: [3, 3] },
+        },
+        y: {
+          ticks: {
+            font: { family: 'Inter, sans-serif', size: 12 },
+            color: '#374151',
+          },
+          grid: { display: false },
+        },
+      },
+      plugins: {
+        legend: {
+          position: 'top',
+          align: 'start',
+          labels: {
+            font: { family: 'Inter, sans-serif', size: 12 },
+            color: '#374151',
+            boxWidth: 14,
+            boxHeight: 14,
+            padding: 16,
+          },
+        },
+        tooltip: {
+          callbacks: {
+            label: item => {
+              const pct = item.raw;
+              const abs = item.datasetIndex === 0 ? mcb3Abs[item.dataIndex] : abs311[item.dataIndex];
+              const label = item.dataset.label;
+              return ` ${label}: ${pct}%${abs > 0 ? ' (' + abs.toLocaleString() + ')' : ''}`;
+            },
+          },
+        },
+      },
+    },
+  });
+
+  // Set canvas height based on number of categories
+  document.getElementById('myChart').parentElement.style.height = '480px';
+
+  function downloadChart() {
+    const src = chart.canvas;
+    const captionText = document.querySelector('.caption').textContent.trim();
+    const scale = window.devicePixelRatio || 1;
+    const padH = Math.round(16 * scale);
+    const fontSize = Math.round(11 * scale);
+    const lineH = Math.round(17 * scale);
+    const tmp = document.createElement('canvas');
+    const tmpCtx = tmp.getContext('2d');
+    tmpCtx.font = `italic ${fontSize}px Inter, -apple-system, sans-serif`;
+    const maxW = src.width - padH * 2;
+    const lines = [];
+    let line = '';
+    for (const word of captionText.split(' ')) {
+      const test = line ? line + ' ' + word : word;
+      if (line && tmpCtx.measureText(test).width > maxW) { lines.push(line); line = word; }
+      else line = test;
+    }
+    if (line) lines.push(line);
+    const out = document.createElement('canvas');
+    out.width = src.width;
+    out.height = src.height + lines.length * lineH + padH * 2;
+    const outCtx = out.getContext('2d');
+    outCtx.fillStyle = '#ffffff';
+    outCtx.fillRect(0, 0, out.width, out.height);
+    outCtx.drawImage(src, 0, 0);
+    outCtx.font = `italic ${fontSize}px Inter, -apple-system, sans-serif`;
+    outCtx.fillStyle = '#9ca3af';
+    outCtx.textBaseline = 'top';
+    lines.forEach((l, i) => outCtx.fillText(l, padH, src.height + padH + i * lineH));
+    const a = document.createElement('a');
+    a.download = 'mcb3-vs-311-topics.png';
+    a.href = out.toDataURL('image/png');
+    a.click();
+  }
+
+  function showEmbed() {
+    const url = location.origin + location.pathname;
+    document.getElementById('embedCode').value =
+      `<iframe src="${url}" width="800" height="620" frameborder="0" style="border:1px solid #e5e7eb; border-radius:8px;" loading="lazy"></iframe>`;
+    document.getElementById('embedModal').style.display = 'flex';
+  }
+  function closeEmbed() { document.getElementById('embedModal').style.display = 'none'; }
+  function copyEmbed() {
+    const ta = document.getElementById('embedCode');
+    ta.select();
+    navigator.clipboard.writeText(ta.value).then(() => {
+      const btn = document.querySelector('.embed-copy-btn');
+      btn.textContent = '✓ Copied!';
+      setTimeout(() => btn.textContent = 'Copy code', 2000);
+    });
+  }
+</script>
+
+</body>
+</html>

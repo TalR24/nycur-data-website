@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MCB3 Resolutions vs. 311 Complaints — NYCuriosity Data</title>
+  <meta name="description" content="Does MCB3's formal agenda reflect what CB3 residents actually report? Comparing 7,134 board resolutions to 377,536 311 complaints by topic category.">
+  <meta property="og:type"        content="website">
+  <meta property="og:url"         content="https://data.nycuriosity.com/nycuriosity_substack_posts/mcb3_vs_311/">
+  <meta property="og:title"       content="MCB3 Resolutions vs. 311 Complaints — NYCuriosity Data">
+  <meta property="og:description" content="Does MCB3's formal agenda reflect what CB3 residents actually report? Comparing 7,134 board resolutions to 377,536 311 complaints by topic.">
+  <meta property="og:image"       content="https://data.nycuriosity.com/website_logo.png">
+  <meta name="twitter:card"       content="summary_large_image">
+  <meta name="twitter:image"      content="https://data.nycuriosity.com/website_logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --blue:#2563eb; --blue-light:#eff6ff; --blue-mid:#bfdbfe;
+      --amber:#f59e0b; --amber-light:#fffbeb;
+      --text:#111827; --text-mid:#374151; --text-muted:#6b7280; --text-faint:#9ca3af;
+      --bg:#f8faff; --surface:#ffffff; --border:#e5e7eb; --border-mid:#d1d5db;
+      --shadow-sm:0 1px 3px rgba(17,24,39,0.08);
+    }
+    body { font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; display:flex; flex-direction:column; }
+
+    header { background:#111827; border-bottom:1px solid #1f2937; padding:0 clamp(20px,5vw,48px); }
+    .header-inner { max-width:1100px; margin:0 auto; height:56px; display:flex; align-items:center; gap:16px; }
+    .back-link { font-family:'Roboto Mono',monospace; font-size:0.75rem; font-weight:600; color:#9ca3af; text-decoration:none; display:flex; align-items:center; gap:5px; padding:4px 8px 4px 4px; border-radius:5px; transition:color 0.15s,background 0.15s; }
+    .back-link:hover { color:#60a5fa; background:rgba(96,165,250,0.1); }
+    .header-divider { width:1px; height:20px; background:#374151; flex-shrink:0; }
+    header h1 { font-family:'Roboto Mono',monospace; font-size:0.95rem; font-weight:700; color:#e5e7eb; letter-spacing:-0.02em; }
+
+    main { flex:1; max-width:1100px; margin:0 auto; padding:clamp(28px,5vw,48px) clamp(20px,5vw,48px); width:100%; }
+    .breadcrumb { font-family:'Roboto Mono',monospace; font-size:0.72rem; color:var(--text-faint); margin-bottom:12px; letter-spacing:0.04em; }
+    .breadcrumb a { color:var(--text-muted); text-decoration:none; }
+    .breadcrumb a:hover { color:var(--blue); }
+    .hero { margin-bottom:32px; }
+    .hero h2 { font-size:clamp(1.4rem,2.8vw,2rem); font-weight:700; letter-spacing:-0.03em; margin-bottom:10px; line-height:1.2; }
+    .hero p { font-size:0.92rem; color:var(--text-muted); max-width:680px; line-height:1.7; }
+
+    .stat-pills { display:flex; flex-wrap:wrap; gap:10px; margin-bottom:36px; }
+    .pill { background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:12px 18px; }
+    .pill-value { font-family:'Roboto Mono',monospace; font-size:1.2rem; font-weight:700; color:var(--blue); display:block; line-height:1; margin-bottom:4px; }
+    .pill-value.amber { color:var(--amber); }
+    .pill-label { font-size:0.75rem; color:var(--text-muted); }
+
+    .section-label { font-family:'Roboto Mono',monospace; font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.1em; color:var(--text-faint); margin-bottom:16px; }
+    .chart-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:20px; margin-bottom:36px; }
+    .chart-card-link { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:24px; text-decoration:none; display:flex; flex-direction:column; gap:12px; transition:box-shadow 0.15s,border-color 0.15s; box-shadow:var(--shadow-sm); }
+    .chart-card-link:hover { border-color:var(--blue); box-shadow:0 4px 16px rgba(37,99,235,0.12); }
+    .chart-icon { width:100%; height:100px; background:var(--bg); border-radius:6px; display:flex; align-items:center; justify-content:center; overflow:hidden; }
+    .chart-icon svg { width:100%; height:100%; }
+    .chart-type-tag { font-family:'Roboto Mono',monospace; font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-faint); }
+    .chart-card-title { font-size:0.95rem; font-weight:600; color:var(--text); line-height:1.35; }
+    .chart-card-desc { font-size:0.82rem; color:var(--text-muted); line-height:1.6; }
+    .chart-card-footer { display:flex; justify-content:space-between; align-items:center; margin-top:auto; padding-top:8px; border-top:1px solid var(--border); }
+    .chart-dataset-stat { font-family:'Roboto Mono',monospace; font-size:0.7rem; color:var(--text-faint); }
+    .chart-cta { font-family:'Roboto Mono',monospace; font-size:0.75rem; font-weight:700; color:var(--blue); }
+
+    footer { padding:24px clamp(20px,5vw,48px); text-align:center; font-size:0.78rem; color:var(--text-faint); border-top:1px solid var(--border); }
+    footer a { color:var(--text-muted); text-decoration:none; }
+    footer a:hover { color:var(--blue); }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <a href="/" class="back-link">← nycuriosity/data</a>
+    <div class="header-divider"></div>
+    <h1>MCB3 vs. 311</h1>
+  </div>
+</header>
+
+<main>
+  <div class="breadcrumb">
+    <a href="/">nycuriosity/data</a> / mcb3-vs-311
+  </div>
+  <div class="hero">
+    <h2>Does MCB3 Address What Residents Actually Report?</h2>
+    <p>MCB3 passes formal resolutions on everything from liquor license applications to land-use reviews. Residents call 311 about noise, housing conditions, parking, and rodents. Are these two datasets pointing at the same problems — or talking past each other?</p>
+    <p style="margin-top:10px">This analysis compares the topic composition of 7,134 MCB3 full-board resolutions (2004–2025) against 377,536 311 service requests from Community District 3 (2020–2026), mapped to the same 10 topic categories.</p>
+  </div>
+
+  <div class="stat-pills">
+    <div class="pill">
+      <span class="pill-value">48%</span>
+      <span class="pill-label">of MCB3 resolutions involve SLA / liquor licensing</span>
+    </div>
+    <div class="pill">
+      <span class="pill-value amber">0%</span>
+      <span class="pill-label">of CB3 311 complaints involve SLA / liquor licensing</span>
+    </div>
+    <div class="pill">
+      <span class="pill-value amber">45%</span>
+      <span class="pill-label">of 311 complaints are noise or public safety</span>
+    </div>
+    <div class="pill">
+      <span class="pill-value">4%</span>
+      <span class="pill-label">of MCB3 resolutions address public safety</span>
+    </div>
+  </div>
+
+  <p class="section-label">Charts in this post</p>
+  <div class="chart-grid">
+    <a class="chart-card-link" href="topics-comparison/">
+      <div class="chart-icon">
+        <svg viewBox="0 0 280 100" xmlns="http://www.w3.org/2000/svg">
+          <rect width="280" height="100" fill="#f8faff"/>
+          <!-- SLA row -->
+          <text x="8" y="16" font-family="Inter,sans-serif" font-size="7" fill="#6b7280">SLA</text>
+          <rect x="52" y="9"  width="134" height="5" rx="1" fill="#2563eb"/>
+          <rect x="52" y="16" width="1"   height="5" rx="1" fill="#f59e0b"/>
+          <!-- Safety row -->
+          <text x="8" y="32" font-family="Inter,sans-serif" font-size="7" fill="#6b7280">Safety</text>
+          <rect x="52" y="25" width="11"  height="5" rx="1" fill="#2563eb"/>
+          <rect x="52" y="32" width="124" height="5" rx="1" fill="#f59e0b"/>
+          <!-- Transport row -->
+          <text x="8" y="48" font-family="Inter,sans-serif" font-size="7" fill="#6b7280">Transit</text>
+          <rect x="52" y="41" width="20"  height="5" rx="1" fill="#2563eb"/>
+          <rect x="52" y="48" width="53"  height="5" rx="1" fill="#f59e0b"/>
+          <!-- Housing row -->
+          <text x="8" y="64" font-family="Inter,sans-serif" font-size="7" fill="#6b7280">Housing</text>
+          <rect x="52" y="57" width="14"  height="5" rx="1" fill="#2563eb"/>
+          <rect x="52" y="64" width="39"  height="5" rx="1" fill="#f59e0b"/>
+          <!-- Environment row -->
+          <text x="8" y="80" font-family="Inter,sans-serif" font-size="7" fill="#6b7280">Environ.</text>
+          <rect x="52" y="73" width="9"   height="5" rx="1" fill="#2563eb"/>
+          <rect x="52" y="80" width="37"  height="5" rx="1" fill="#f59e0b"/>
+          <!-- legend -->
+          <rect x="52" y="91" width="7" height="5" rx="1" fill="#2563eb"/>
+          <text x="62" y="96" font-family="Inter,sans-serif" font-size="6.5" fill="#374151">MCB3</text>
+          <rect x="96" y="91" width="7" height="5" rx="1" fill="#f59e0b"/>
+          <text x="106" y="96" font-family="Inter,sans-serif" font-size="6.5" fill="#374151">311</text>
+        </svg>
+      </div>
+      <div class="chart-type-tag">Grouped Bar Chart</div>
+      <div class="chart-card-title">Resolution Topics vs. 311 Complaint Categories</div>
+      <div class="chart-card-desc">Side-by-side percentage comparison of MCB3 resolution topics and CB3 311 complaint categories, revealing where board attention aligns with — and diverges from — resident concerns.</div>
+      <div class="chart-card-footer">
+        <span class="chart-dataset-stat">7,134 resolutions · 377,536 complaints</span>
+        <span class="chart-cta">Explore →</span>
+      </div>
+    </a>
+  </div>
+</main>
+
+<footer>
+  <a href="https://nycuriosity.substack.com/">NYCuriosity</a> · MCB3 data: NYC.gov meeting minutes · 311 data: NYC Open Data · Analysis: Author's calculations
+</footer>
+
+</body>
+</html>
