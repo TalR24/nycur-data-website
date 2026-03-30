@@ -51,7 +51,10 @@
     .action-btn:hover { border-color:var(--blue); color:var(--blue); background:var(--blue-light); }
 
     .chart-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:24px; box-shadow:var(--shadow-sm); margin-bottom:24px; }
-    .controls-row { display:flex; justify-content:flex-end; margin-bottom:16px; }
+    .controls-row { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:16px; flex-wrap:wrap; }
+    .toggle-btn { font-family:'Roboto Mono',monospace; font-size:0.75rem; font-weight:600; padding:5px 14px; border-radius:20px; border:1px solid var(--border-mid); background:var(--bg); color:var(--text-muted); cursor:pointer; transition:all 0.15s; white-space:nowrap; }
+    .toggle-btn:hover { border-color:var(--blue); color:var(--blue); background:var(--blue-light); }
+    .toggle-btn.active { background:var(--blue); color:#fff; border-color:var(--blue); }
     .category-filter { position:relative; }
     .category-trigger { font-family:'Roboto Mono',monospace; font-size:0.75rem; font-weight:600; padding:5px 14px; border-radius:20px; border:1px solid var(--border-mid); background:var(--bg); color:var(--text-muted); cursor:pointer; transition:all 0.15s; display:flex; align-items:center; gap:8px; white-space:nowrap; }
     .category-trigger:hover, .category-trigger.open { border-color:var(--blue); color:var(--blue); background:var(--blue-light); }
@@ -127,6 +130,7 @@
 
   <div class="chart-card">
     <div class="controls-row">
+      <button class="toggle-btn" id="sharedToggle" onclick="toggleSharedOnly()">Both datasets only</button>
       <div class="category-filter">
         <button class="category-trigger" id="categoryTrigger" onclick="toggleDropdown(event)">
           <span id="triggerLabel">All categories</span>
@@ -192,6 +196,8 @@
   ];
 
   let selected = new Array(TOPICS.length).fill(true);
+  // Indices of categories that have data in BOTH datasets
+  const SHARED_IDX = TOPICS.map((t, i) => (t.mcb3Abs > 0 && t.abs311 > 0) ? i : -1).filter(i => i >= 0);
 
   // Returns chart-ready arrays (reversed so highest MCB3% is at top of horizontal chart)
   // Percentages are recomputed from absolute counts among selected topics only,
@@ -233,6 +239,7 @@
       row.querySelector('input').addEventListener('change', e => {
         selected[i] = e.target.checked;
         updateTriggerLabel();
+        syncSharedToggle();
         updateChart();
       });
       container.appendChild(row);
@@ -264,6 +271,7 @@
     selected.fill(true);
     document.querySelectorAll('#dropdownItems input[type=checkbox]').forEach(cb => cb.checked = true);
     updateTriggerLabel();
+    syncSharedToggle();
     updateChart();
   }
 
@@ -271,6 +279,7 @@
     selected.fill(false);
     document.querySelectorAll('#dropdownItems input[type=checkbox]').forEach(cb => cb.checked = false);
     updateTriggerLabel();
+    syncSharedToggle();
     updateChart();
   }
 
@@ -280,6 +289,31 @@
       n === TOPICS.length ? 'All categories' :
       n === 0 ? 'No categories' :
       `${n} of ${TOPICS.length} selected`;
+  }
+
+  function isSharedOnlyActive() {
+    return TOPICS.every((_, i) => selected[i] === SHARED_IDX.includes(i));
+  }
+
+  function syncSharedToggle() {
+    document.getElementById('sharedToggle').classList.toggle('active', isSharedOnlyActive());
+  }
+
+  function toggleSharedOnly() {
+    if (isSharedOnlyActive()) {
+      // Turn off: restore all categories
+      selected.fill(true);
+      document.querySelectorAll('#dropdownItems input[type=checkbox]').forEach(cb => cb.checked = true);
+    } else {
+      // Turn on: select only shared categories
+      selected = TOPICS.map((_, i) => SHARED_IDX.includes(i));
+      document.querySelectorAll('#dropdownItems input[type=checkbox]').forEach((cb, i) => {
+        cb.checked = SHARED_IDX.includes(i);
+      });
+    }
+    updateTriggerLabel();
+    syncSharedToggle();
+    updateChart();
   }
 
   // ── Chart ─────────────────────────────────────────────────────
