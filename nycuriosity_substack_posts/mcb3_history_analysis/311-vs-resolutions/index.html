@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>311 Noise Spikes vs. MCB3 Resolutions — NYCuriosity Data</title>
+  <meta name="description" content="Did MCB3 resolutions lead or lag the 311 noise complaint explosion of 2020? A month-by-month look at the pandemic noise surge and the board's formal response.">
+  <meta property="og:type"        content="website">
+  <meta property="og:url"         content="https://data.nycuriosity.com/nycuriosity_substack_posts/mcb3_history_analysis/311-vs-resolutions/">
+  <meta property="og:title"       content="311 Noise Spikes vs. MCB3 Resolutions — NYCuriosity Data">
+  <meta property="og:description" content="The 311 noise complaint explosion of 2020 and how MCB3 responded — month by month.">
+  <meta property="og:image"       content="https://data.nycuriosity.com/website_logo.png">
+  <meta name="twitter:card"       content="summary_large_image">
+  <meta name="twitter:image"      content="https://data.nycuriosity.com/website_logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --blue:#2563eb; --blue-light:#eff6ff; --blue-mid:#bfdbfe;
+      --red:#dc2626; --red-light:#fef2f2;
+      --amber:#f59e0b; --amber-light:#fffbeb;
+      --green:#16a34a;
+      --text:#111827; --text-mid:#374151; --text-muted:#6b7280; --text-faint:#9ca3af;
+      --bg:#f8faff; --surface:#ffffff; --border:#e5e7eb; --border-mid:#d1d5db;
+      --shadow-sm:0 1px 3px rgba(17,24,39,0.08);
+    }
+    body { font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; display:flex; flex-direction:column; }
+
+    header { background:#111827; border-bottom:1px solid #1f2937; padding:0 clamp(20px,5vw,48px); }
+    .header-inner { max-width:1100px; margin:0 auto; height:56px; display:flex; align-items:center; gap:16px; }
+    .back-link { font-family:'Roboto Mono',monospace; font-size:0.75rem; font-weight:600; color:#9ca3af; text-decoration:none; display:flex; align-items:center; gap:5px; padding:4px 8px 4px 4px; border-radius:5px; transition:color 0.15s,background 0.15s; white-space:nowrap; }
+    .back-link:hover { color:#60a5fa; background:rgba(96,165,250,0.1); }
+    .header-divider { width:1px; height:20px; background:#374151; flex-shrink:0; }
+    header h1 { font-family:'Roboto Mono',monospace; font-size:0.95rem; font-weight:700; color:#e5e7eb; letter-spacing:-0.02em; }
+
+    .pill-nav { background:var(--surface); border-bottom:1px solid var(--border); padding:10px clamp(20px,5vw,48px); display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+    .pill-nav a { font-size:0.78rem; font-family:'Roboto Mono',monospace; font-weight:600; padding:4px 12px; border-radius:20px; text-decoration:none; border:1px solid var(--border-mid); color:var(--text-muted); background:var(--bg); transition:all 0.15s; white-space:nowrap; }
+    .pill-nav a:hover { border-color:var(--blue); color:var(--blue); background:var(--blue-light); }
+    .pill-nav a.active { background:var(--blue); color:#fff; border-color:var(--blue); }
+    .pill-label { font-size:0.72rem; color:var(--text-faint); font-family:'Roboto Mono',monospace; white-space:nowrap; }
+
+    main { flex:1; max-width:1100px; margin:0 auto; padding:clamp(28px,5vw,48px) clamp(20px,5vw,48px); width:100%; }
+    .breadcrumb { font-family:'Roboto Mono',monospace; font-size:0.72rem; color:var(--text-faint); margin-bottom:12px; letter-spacing:0.04em; }
+    .breadcrumb a { color:var(--text-muted); text-decoration:none; }
+    .breadcrumb a:hover { color:var(--blue); }
+    .hero { margin-bottom:32px; }
+    .hero h2 { font-size:clamp(1.3rem,2.5vw,1.8rem); font-weight:700; letter-spacing:-0.03em; margin-bottom:8px; line-height:1.2; }
+    .hero p { font-size:0.92rem; color:var(--text-muted); max-width:720px; line-height:1.65; }
+
+    .insight-strip { display:flex; flex-wrap:wrap; gap:10px; margin-bottom:28px; }
+    .insight-pill { display:flex; flex-direction:column; gap:2px; padding:10px 16px; background:var(--surface); border:1px solid var(--border); border-radius:8px; flex:1; min-width:140px; }
+    .insight-pill .ip-num { font-family:'Roboto Mono',monospace; font-size:1.15rem; font-weight:700; letter-spacing:-0.02em; line-height:1; }
+    .insight-pill .ip-num.red { color:var(--red); }
+    .insight-pill .ip-num.blue { color:var(--blue); }
+    .insight-pill .ip-num.green { color:var(--green); }
+    .insight-pill .ip-label { font-size:0.73rem; color:var(--text-muted); line-height:1.3; }
+
+    .chart-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:28px; box-shadow:var(--shadow-sm); margin-bottom:24px; }
+    .chart-title-row { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:18px; flex-wrap:wrap; }
+    .chart-title { font-family:'Roboto Mono',monospace; font-size:0.95rem; font-weight:700; color:var(--text); }
+    .chart-subtitle { font-size:0.8rem; color:var(--text-muted); margin-top:4px; }
+    .chart-actions { display:flex; gap:8px; flex-shrink:0; }
+    .action-btn { font-family:'Roboto Mono',monospace; font-size:0.72rem; font-weight:600; padding:5px 12px; border-radius:6px; border:1px solid var(--border-mid); background:var(--bg); color:var(--text-muted); cursor:pointer; transition:all 0.15s; }
+    .action-btn:hover { border-color:var(--blue); color:var(--blue); background:var(--blue-light); }
+
+    .chart-wrap { position:relative; width:100%; height:400px; }
+
+    .resolution-legend { margin-top:20px; display:flex; flex-direction:column; gap:10px; }
+    .res-legend-label { font-family:'Roboto Mono',monospace; font-size:0.68rem; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-faint); margin-bottom:4px; }
+    .res-entry { display:flex; align-items:flex-start; gap:10px; padding:10px 14px; border:1px solid var(--border); border-radius:8px; background:var(--bg); }
+    .res-badge { font-family:'Roboto Mono',monospace; font-size:0.68rem; font-weight:700; padding:2px 8px; border-radius:4px; white-space:nowrap; flex-shrink:0; margin-top:1px; }
+    .res-badge.r1 { background:#fee2e2; color:#991b1b; }
+    .res-badge.r2 { background:#fef3c7; color:#92400e; }
+    .res-badge.r3 { background:#e0e7ff; color:#3730a3; }
+    .res-text { font-size:0.82rem; color:var(--text-mid); line-height:1.5; }
+    .res-text strong { color:var(--text); }
+    .res-lag { font-family:'Roboto Mono',monospace; font-size:0.72rem; color:var(--text-faint); margin-top:3px; display:block; }
+
+    .caption { font-size:0.78rem; color:var(--text-faint); line-height:1.6; margin-top:12px; }
+
+    .methodology { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:24px 28px; }
+    .methodology h3 { font-family:'Roboto Mono',monospace; font-size:0.82rem; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-faint); margin-bottom:14px; }
+    .methodology p { font-size:0.84rem; color:var(--text-muted); line-height:1.7; margin-bottom:10px; }
+    .methodology p:last-child { margin-bottom:0; }
+    .methodology a { color:var(--blue); text-decoration:none; }
+    .methodology a:hover { text-decoration:underline; }
+
+    footer { background:var(--surface); border-top:1px solid var(--border); padding:20px clamp(20px,5vw,48px); margin-top:auto; }
+    .footer-inner { max-width:1100px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; }
+    .footer-copy { font-size:0.8rem; color:var(--text-faint); }
+    .footer-links { display:flex; gap:20px; }
+    .footer-links a { font-size:0.8rem; color:var(--text-muted); text-decoration:none; }
+    .footer-links a:hover { color:var(--blue); }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <a href="../" class="back-link">← MCB3 History Analysis</a>
+    <div class="header-divider"></div>
+    <h1>311 Spikes vs. Resolutions</h1>
+  </div>
+</header>
+
+<div class="pill-nav">
+  <span class="pill-label">Charts in this post:</span>
+  <a href="../">Overview</a>
+  <a href="../topics-over-time/">Topics Over Time</a>
+  <a href="../topics-comparison/">MCB3 vs. 311</a>
+  <a href="./" class="active">311 Spikes vs. Resolutions</a>
+</div>
+
+<main>
+  <div class="breadcrumb">
+    <a href="/">nycuriosity/data</a> / <a href="../">mcb3-history-analysis</a> / 311-vs-resolutions
+  </div>
+
+  <div class="hero">
+    <h2>311 Noise Spikes vs. MCB3 Resolutions</h2>
+    <p>When 311 noise complaints explode, does MCB3 respond with a formal resolution? And if so — how long does it take? This chart overlays monthly 311 "Noise – Street/Sidewalk" complaint counts in Community District 3 with the dates of corresponding MCB3 board resolutions, revealing a consistent pattern: the board lags residents by 1 to 13 months.</p>
+  </div>
+
+  <div class="insight-strip">
+    <div class="insight-pill">
+      <span class="ip-num red">21×</span>
+      <span class="ip-label">spike ratio — Jun 2020 vs. Jan–Feb baseline</span>
+    </div>
+    <div class="insight-pill">
+      <span class="ip-num blue">7,314</span>
+      <span class="ip-label">complaints in peak month (Jun 2020)</span>
+    </div>
+    <div class="insight-pill">
+      <span class="ip-num">1–13 mo</span>
+      <span class="ip-label">lag between 311 spike and MCB3 formal response</span>
+    </div>
+    <div class="insight-pill">
+      <span class="ip-num green">3</span>
+      <span class="ip-label">related resolutions passed after the spike</span>
+    </div>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-title-row">
+      <div>
+        <div class="chart-title">Noise – Street/Sidewalk complaints in CD3, Jan 2020 – Dec 2025</div>
+        <div class="chart-subtitle">Monthly 311 complaint counts · dashed lines mark MCB3 resolutions on the same topic</div>
+      </div>
+      <div class="chart-actions">
+        <button class="action-btn" onclick="downloadPNG()">↓ PNG</button>
+        <button class="action-btn" onclick="toggleEmbed()">Embed</button>
+      </div>
+    </div>
+
+    <div class="chart-wrap">
+      <canvas id="mainChart"></canvas>
+    </div>
+
+    <div class="resolution-legend">
+      <div class="res-legend-label">MCB3 Resolutions (dashed lines)</div>
+      <div class="res-entry">
+        <span class="res-badge r1">① Jul 2020</span>
+        <div class="res-text">
+          <strong>Avenue B Open Street / FDNY Access</strong> — Board resolved to support improving FDNY access to the Avenue B Open Street corridor after DOT designated the street without CB3 consultation, causing delayed emergency response times.
+          <span class="res-lag">Passed 1 month after the Jun 2020 peak (7,314 complaints)</span>
+        </div>
+      </div>
+      <div class="res-entry">
+        <span class="res-badge r2">② Aug 2020</span>
+        <div class="res-text">
+          <strong>Pier 35 Noise Enforcement</strong> — Board cited 276 311 noise complaints in the previous three months around Pier 35, calling for enforcement of late-night outdoor gatherings, car clubs, and amplified music on the waterfront.
+          <span class="res-lag">Passed 2 months after the Jun 2020 peak · resolution explicitly cited 311 data as evidence</span>
+        </div>
+      </div>
+      <div class="res-entry">
+        <span class="res-badge r3">③ Jul 2021</span>
+        <div class="res-text">
+          <strong>Quality of Life Letter to Mayor de Blasio</strong> — Board demanded NYPD cabaret enforcement, a midnight curfew for Open Restaurants, and additional Park Enforcement Police in Tompkins Square Park and East River Park, citing "roving DJs," "instant mobs," and ongoing loud street noise across CB3.
+          <span class="res-lag">Passed 13 months after the Jun 2020 peak — responding to the sustained elevated plateau (2021 summer: ~3,300–3,600/month)</span>
+        </div>
+      </div>
+    </div>
+
+    <p class="caption">Noise – Street/Sidewalk 311 complaints in Manhattan Community District 3, January 2020 – December 2025. Dashed vertical lines mark MCB3 board resolution dates on corresponding noise and open-streets issues. Source: <a href="https://data.cityofnewyork.us/Social-Services/311-Service-Requests-from-2010-to-Present/erm2-nwe9" style="color:var(--blue);text-decoration:none">NYC Open Data 311 Service Requests (erm2-nwe9)</a>; MCB3 meeting minutes via NYC.gov.</p>
+  </div>
+
+  <div id="embedModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:999;align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:10px;padding:28px;max-width:560px;width:90%;position:relative;">
+      <div style="font-family:'Roboto Mono',monospace;font-size:0.82rem;font-weight:700;margin-bottom:12px;">Embed this chart</div>
+      <textarea id="embedCode" readonly style="width:100%;height:90px;font-family:'Roboto Mono',monospace;font-size:0.7rem;border:1px solid #e5e7eb;border-radius:6px;padding:10px;resize:none;background:#f8faff;color:#374151;"></textarea>
+      <div style="display:flex;gap:8px;margin-top:10px;">
+        <button onclick="copyEmbed()" style="font-family:'Roboto Mono',monospace;font-size:0.72rem;font-weight:600;padding:6px 14px;border-radius:6px;border:1px solid #2563eb;background:#2563eb;color:#fff;cursor:pointer;">Copy</button>
+        <button onclick="document.getElementById('embedModal').style.display='none'" style="font-family:'Roboto Mono',monospace;font-size:0.72rem;font-weight:600;padding:6px 14px;border-radius:6px;border:1px solid #d1d5db;background:#fff;color:#6b7280;cursor:pointer;">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="methodology">
+    <h3>Methodology &amp; Data Notes</h3>
+    <p><strong>311 data:</strong> Complaint counts are queried from the NYC Open Data 311 Service Requests dataset (dataset ID: <code>erm2-nwe9</code>), filtered to community board <code>12 MANHATTAN</code> (Manhattan Community District 3) and complaint type <code>Noise - Street/Sidewalk</code>. Counts are aggregated by calendar month.</p>
+    <p><strong>Complaint type selection:</strong> "Noise – Street/Sidewalk" was selected because it showed the sharpest pandemic-era spike with the most direct policy connection. The June 2020 peak of 7,314 complaints represents a 21× increase from the January–February 2020 baseline of ~340/month. "Illegal Fireworks" showed a higher spike ratio (213×) but had no corresponding MCB3 resolutions and was a shorter-lived phenomenon.</p>
+    <p><strong>Resolution identification:</strong> MCB3 full-board resolutions were searched for keywords related to noise, open streets, outdoor dining, and quality of life. Resolutions were matched to the spike by relevance of text, not automated keyword matching. Three distinct resolutions were found across the 2020–2021 response window. Resolution dates are the full-board meeting dates from MCB3 meeting records.</p>
+    <p><strong>Lag calculation:</strong> Lag is measured from the spike peak month (June 2020) to the resolution date. The July 2021 resolution is also compared against the 2021 secondary peak (June–July 2021: ~3,300–3,600/month).</p>
+  </div>
+</main>
+
+<footer>
+  <div class="footer-inner">
+    <span class="footer-copy">NYCuriosity Data · Source: NYC Open Data 311, NYC.gov MCB3 records</span>
+    <div class="footer-links">
+      <a href="https://nycuriosity.substack.com/">Subscribe</a>
+      <a href="https://github.com/TalR24/nycur-data-website">GitHub</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+const MONTHS = [
+  "Jan '20","Feb '20","Mar '20","Apr '20","May '20","Jun '20","Jul '20","Aug '20","Sep '20","Oct '20","Nov '20","Dec '20",
+  "Jan '21","Feb '21","Mar '21","Apr '21","May '21","Jun '21","Jul '21","Aug '21","Sep '21","Oct '21","Nov '21","Dec '21",
+  "Jan '22","Feb '22","Mar '22","Apr '22","May '22","Jun '22","Jul '22","Aug '22","Sep '22","Oct '22","Nov '22","Dec '22",
+  "Jan '23","Feb '23","Mar '23","Apr '23","May '23","Jun '23","Jul '23","Aug '23","Sep '23","Oct '23","Nov '23","Dec '23",
+  "Jan '24","Feb '24","Mar '24","Apr '24","May '24","Jun '24","Jul '24","Aug '24","Sep '24","Oct '24","Nov '24","Dec '24",
+  "Jan '25","Feb '25","Mar '25","Apr '25","May '25","Jun '25","Jul '25","Aug '25","Sep '25","Oct '25","Nov '25","Dec '25"
+];
+
+const DATA = [
+  354,330,654,659,3078,7314,5218,4742,3324,2324,1492,650,
+  435,432,1155,1885,3153,3633,3074,2603,2342,1968,659,631,
+  298,372,695,1083,2405,2503,2870,2148,1978,1223,963,620,
+  490,668,630,1205,1598,1392,1902,1761,1378,1211,614,449,
+  271,331,528,759,1239,2058,1880,1942,1625,1500,741,500,
+  256,410,548,912,1500,2299,2373,2450,1829,1291,802,413
+];
+
+// Resolution annotation events: { index (0-based), label, color, dash }
+const RESOLUTIONS = [
+  { index: 6,  label: "①", color: "#dc2626", dash: [6, 3] },  // Jul 2020
+  { index: 7,  label: "②", color: "#d97706", dash: [4, 4] },  // Aug 2020
+  { index: 18, label: "③", color: "#4f46e5", dash: [8, 3] },  // Jul 2021
+];
+
+const PEAK_INDEX = 5; // Jun 2020
+
+// Custom plugin: draw vertical annotation lines + peak marker
+const annotationPlugin = {
+  id: 'annotationLines',
+  afterDraw(chart) {
+    const ctx = chart.ctx;
+    const xAxis = chart.scales.x;
+    const yAxis = chart.scales.y;
+
+    // Draw peak shaded region
+    const peakX = xAxis.getPixelForValue(PEAK_INDEX);
+    const peakBand = xAxis.width / MONTHS.length;
+    ctx.save();
+    ctx.fillStyle = 'rgba(37,99,235,0.06)';
+    ctx.fillRect(peakX - peakBand / 2, yAxis.top, peakBand, yAxis.bottom - yAxis.top);
+    ctx.restore();
+
+    // Draw resolution lines
+    RESOLUTIONS.forEach(res => {
+      const xPos = xAxis.getPixelForValue(res.index);
+      ctx.save();
+      ctx.setLineDash(res.dash);
+      ctx.strokeStyle = res.color;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(xPos, yAxis.top);
+      ctx.lineTo(xPos, yAxis.bottom);
+      ctx.stroke();
+
+      // Label at top
+      ctx.setLineDash([]);
+      ctx.fillStyle = res.color;
+      ctx.font = "bold 11px 'Roboto Mono', monospace";
+      ctx.textAlign = 'center';
+      ctx.fillText(res.label, xPos, yAxis.top + 14);
+      ctx.restore();
+    });
+
+    // Peak label
+    ctx.save();
+    ctx.fillStyle = '#2563eb';
+    ctx.font = "bold 10px 'Roboto Mono', monospace";
+    ctx.textAlign = 'center';
+    ctx.fillText("PEAK", peakX, yAxis.top + 26);
+    ctx.restore();
+  }
+};
+
+Chart.register(annotationPlugin);
+
+const ctx = document.getElementById('mainChart').getContext('2d');
+
+// Build point colors: blue at peak, transparent elsewhere
+const pointBg = DATA.map((_, i) => i === PEAK_INDEX ? '#2563eb' : 'rgba(0,0,0,0)');
+const pointBorder = DATA.map((_, i) => i === PEAK_INDEX ? '#2563eb' : 'rgba(0,0,0,0)');
+const pointRadius = DATA.map((_, i) => i === PEAK_INDEX ? 5 : 0);
+const pointHover = DATA.map(() => 5);
+
+const chart = new Chart(ctx, {
+  type: 'line',
+  data: {
+    labels: MONTHS,
+    datasets: [{
+      label: 'Noise – Street/Sidewalk (monthly 311 complaints)',
+      data: DATA,
+      borderColor: '#2563eb',
+      backgroundColor: 'rgba(37,99,235,0.07)',
+      fill: true,
+      tension: 0.35,
+      borderWidth: 2,
+      pointBackgroundColor: pointBg,
+      pointBorderColor: pointBorder,
+      pointRadius: pointRadius,
+      pointHoverRadius: pointHover,
+      pointHoverBackgroundColor: '#2563eb',
+    }]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          title(items) {
+            const i = items[0].dataIndex;
+            const res = RESOLUTIONS.find(r => r.index === i);
+            return res ? `${MONTHS[i]} · MCB3 Resolution ${res.label}` : MONTHS[i];
+          },
+          label(item) {
+            return `  ${item.raw.toLocaleString()} complaints`;
+          },
+          afterLabel(item) {
+            const i = item.dataIndex;
+            const notes = {
+              6:  '  → ① Avenue B Open Street / FDNY Access',
+              7:  '  → ② Pier 35 Noise Enforcement',
+              18: '  → ③ Quality of Life Letter to Mayor',
+              5:  '  ↑ Peak: 21× pre-COVID baseline',
+            };
+            return notes[i] || null;
+          }
+        },
+        backgroundColor: 'rgba(17,24,39,0.92)',
+        titleFont: { family: "'Roboto Mono', monospace", size: 11, weight: '700' },
+        bodyFont: { family: "'Roboto Mono', monospace", size: 11 },
+        padding: 10,
+        cornerRadius: 6,
+      }
+    },
+    scales: {
+      x: {
+        grid: { color: '#f3f4f6', drawTicks: false },
+        border: { display: false },
+        ticks: {
+          font: { family: "'Roboto Mono', monospace", size: 10 },
+          color: '#9ca3af',
+          maxRotation: 45,
+          autoSkip: true,
+          maxTicksLimit: 18,
+        }
+      },
+      y: {
+        grid: { color: '#f3f4f6' },
+        border: { display: false },
+        ticks: {
+          font: { family: "'Roboto Mono', monospace", size: 10 },
+          color: '#9ca3af',
+          callback: v => v >= 1000 ? (v/1000).toFixed(1) + 'k' : v,
+        },
+        title: {
+          display: true,
+          text: 'Monthly 311 complaints',
+          font: { family: "'Roboto Mono', monospace", size: 10 },
+          color: '#9ca3af',
+          padding: { bottom: 6 }
+        }
+      }
+    }
+  }
+});
+
+function downloadPNG() {
+  const srcCanvas = chart.canvas;
+  const caption = 'Noise – Street/Sidewalk complaints in Manhattan Community District 3, Jan 2020 – Dec 2025. Dashed lines mark MCB3 resolutions. Source: NYC Open Data 311 (erm2-nwe9); MCB3 meeting minutes.';
+  const scale = 2;
+  const margin = 16 * scale;
+  const capH = 40 * scale;
+  const off = document.createElement('canvas');
+  off.width  = (srcCanvas.width  + margin * 2) * scale / window.devicePixelRatio;
+  off.height = (srcCanvas.height + capH + margin * 2) * scale / window.devicePixelRatio;
+  const octx = off.getContext('2d');
+  octx.fillStyle = '#ffffff';
+  octx.fillRect(0, 0, off.width, off.height);
+  const dpr = window.devicePixelRatio || 1;
+  const dw = srcCanvas.width / dpr;
+  const dh = srcCanvas.height / dpr;
+  octx.drawImage(srcCanvas, margin / scale, margin / scale, dw, dh);
+  octx.font = `${10 * scale / dpr}px 'Roboto Mono', monospace`;
+  octx.fillStyle = '#9ca3af';
+  octx.textAlign = 'left';
+  const maxW = off.width - margin * 2 / dpr;
+  const words = caption.split(' ');
+  let line = '';
+  let y = (margin + dh + 14) / dpr * scale;
+  words.forEach(w => {
+    const test = line ? line + ' ' + w : w;
+    if (octx.measureText(test).width > maxW) {
+      octx.fillText(line, margin / dpr, y);
+      y += 14;
+      line = w;
+    } else {
+      line = test;
+    }
+  });
+  if (line) octx.fillText(line, margin / dpr, y);
+  const a = document.createElement('a');
+  a.download = '311-noise-vs-mcb3-resolutions.png';
+  a.href = off.toDataURL('image/png');
+  a.click();
+}
+
+function toggleEmbed() {
+  const modal = document.getElementById('embedModal');
+  const code = `<iframe src="https://data.nycuriosity.com/nycuriosity_substack_posts/mcb3_history_analysis/311-vs-resolutions/" width="100%" height="640" frameborder="0" scrolling="no" style="border:1px solid #e5e7eb;border-radius:8px;"></iframe>`;
+  document.getElementById('embedCode').value = code;
+  modal.style.display = 'flex';
+}
+function copyEmbed() {
+  const ta = document.getElementById('embedCode');
+  ta.select();
+  document.execCommand('copy');
+}
+document.getElementById('embedModal').addEventListener('click', function(e) {
+  if (e.target === this) this.style.display = 'none';
+});
+</script>
+</body>
+</html>
