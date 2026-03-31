@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MCB3 Resolutions vs. 311 Complaints by Agency — NYCuriosity Data</title>
+  <meta name="description" content="Which city agencies does MCB3 formally address vs. which agencies residents actually complain to? A side-by-side percentage comparison revealing where board attention and resident grievances diverge.">
+  <meta property="og:type"        content="website">
+  <meta property="og:url"         content="https://data.nycuriosity.com/nycuriosity_substack_posts/mcb3_history_analysis/agencies-comparison/">
+  <meta property="og:title"       content="MCB3 Resolutions vs. 311 Complaints by Agency — NYCuriosity Data">
+  <meta property="og:description" content="Side-by-side agency comparison: MCB3 resolution targets vs. 311 complaint recipients in Community District 3.">
+  <meta property="og:image"       content="https://data.nycuriosity.com/website_logo.png">
+  <meta name="twitter:card"       content="summary_large_image">
+  <meta name="twitter:image"      content="https://data.nycuriosity.com/website_logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --blue:#2563eb; --blue-light:#eff6ff; --blue-mid:#bfdbfe;
+      --amber:#f59e0b; --amber-light:#fffbeb;
+      --text:#111827; --text-mid:#374151; --text-muted:#6b7280; --text-faint:#9ca3af;
+      --bg:#f8faff; --surface:#ffffff; --border:#e5e7eb; --border-mid:#d1d5db;
+      --shadow-sm:0 1px 3px rgba(17,24,39,0.08);
+    }
+    body { font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; display:flex; flex-direction:column; }
+
+    header { background:#111827; border-bottom:1px solid #1f2937; padding:0 clamp(20px,5vw,48px); }
+    .header-inner { max-width:1100px; margin:0 auto; height:56px; display:flex; align-items:center; gap:16px; }
+    .back-link { font-family:'Roboto Mono',monospace; font-size:0.75rem; font-weight:600; color:#9ca3af; text-decoration:none; display:flex; align-items:center; gap:5px; padding:4px 8px 4px 4px; border-radius:5px; transition:color 0.15s,background 0.15s; white-space:nowrap; }
+    .back-link:hover { color:#60a5fa; background:rgba(96,165,250,0.1); }
+    .header-divider { width:1px; height:20px; background:#374151; flex-shrink:0; }
+    header h1 { font-family:'Roboto Mono',monospace; font-size:0.95rem; font-weight:700; color:#e5e7eb; letter-spacing:-0.02em; }
+
+    .pill-nav { background:var(--surface); border-bottom:1px solid var(--border); padding:10px clamp(20px,5vw,48px); display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+    .pill-nav a { font-size:0.78rem; font-family:'Roboto Mono',monospace; font-weight:600; padding:4px 12px; border-radius:20px; text-decoration:none; border:1px solid var(--border-mid); color:var(--text-muted); background:var(--bg); transition:all 0.15s; white-space:nowrap; }
+    .pill-nav a:hover { border-color:var(--blue); color:var(--blue); background:var(--blue-light); }
+    .pill-nav a.active { background:var(--blue); color:#fff; border-color:var(--blue); }
+    .pill-label { font-size:0.72rem; color:var(--text-faint); font-family:'Roboto Mono',monospace; white-space:nowrap; }
+
+    main { flex:1; max-width:1100px; margin:0 auto; padding:clamp(28px,5vw,48px) clamp(20px,5vw,48px); width:100%; }
+    .breadcrumb { font-family:'Roboto Mono',monospace; font-size:0.72rem; color:var(--text-faint); margin-bottom:12px; letter-spacing:0.04em; }
+    .breadcrumb a { color:var(--text-muted); text-decoration:none; }
+    .breadcrumb a:hover { color:var(--blue); }
+    .hero { margin-bottom:32px; }
+    .hero h2 { font-size:clamp(1.3rem,2.6vw,1.9rem); font-weight:700; letter-spacing:-0.03em; margin-bottom:10px; line-height:1.2; }
+    .hero p { font-size:0.92rem; color:var(--text-muted); max-width:720px; line-height:1.7; }
+
+    .chart-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:28px; box-shadow:var(--shadow-sm); margin-bottom:24px; }
+
+    .chart-actions { display:flex; gap:8px; margin-bottom:14px; justify-content:flex-end; }
+    .action-btn { font-family:'Roboto Mono',monospace; font-size:0.72rem; font-weight:600; padding:5px 12px; border-radius:6px; border:1px solid var(--border-mid); background:var(--bg); color:var(--text-muted); cursor:pointer; transition:all 0.15s; }
+    .action-btn:hover { border-color:var(--blue); color:var(--blue); background:var(--blue-light); }
+
+    .controls-row { display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin-bottom:20px; justify-content:space-between; }
+    .controls-left { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+    .toggle-btn { font-family:'Roboto Mono',monospace; font-size:0.75rem; font-weight:600; padding:5px 14px; border-radius:20px; border:1px solid var(--border-mid); background:var(--bg); color:var(--text-muted); cursor:pointer; transition:all 0.15s; }
+    .toggle-btn:hover { border-color:var(--blue); color:var(--blue); background:var(--blue-light); }
+    .toggle-btn.active { background:var(--blue); color:#fff; border-color:var(--blue); }
+
+    .category-filter { position:relative; }
+    .category-trigger { font-family:'Roboto Mono',monospace; font-size:0.75rem; font-weight:600; padding:5px 14px; border-radius:20px; border:1px solid var(--border-mid); background:var(--bg); color:var(--text-muted); cursor:pointer; transition:all 0.15s; display:flex; align-items:center; gap:8px; white-space:nowrap; }
+    .category-trigger:hover, .category-trigger.open { border-color:var(--blue); color:var(--blue); background:var(--blue-light); }
+    .trigger-arrow { font-size:0.6rem; transition:transform 0.15s; display:inline-block; }
+    .category-trigger.open .trigger-arrow { transform:rotate(180deg); }
+    .category-dropdown { position:absolute; top:calc(100% + 6px); right:0; background:var(--surface); border:1px solid var(--border-mid); border-radius:8px; box-shadow:0 4px 20px rgba(0,0,0,0.12); z-index:200; min-width:270px; padding:6px 0 8px; }
+    .dropdown-header { display:flex; justify-content:space-between; align-items:center; padding:4px 14px 8px; border-bottom:1px solid var(--border); margin-bottom:4px; }
+    .dropdown-header-label { font-family:'Roboto Mono',monospace; font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-faint); }
+    .dropdown-actions-row { display:flex; gap:10px; }
+    .dropdown-action-btn { font-family:'Roboto Mono',monospace; font-size:0.7rem; font-weight:600; color:var(--blue); background:none; border:none; cursor:pointer; padding:0; }
+    .dropdown-action-btn:hover { text-decoration:underline; }
+    .dropdown-item { display:flex; align-items:center; gap:9px; padding:5px 14px; cursor:pointer; transition:background 0.1s; }
+    .dropdown-item:hover { background:var(--bg); }
+    .dropdown-item input[type=checkbox] { width:13px; height:13px; accent-color:var(--blue); cursor:pointer; flex-shrink:0; margin:0; }
+    .dropdown-dot { width:10px; height:10px; border-radius:2px; flex-shrink:0; }
+    .dropdown-item-label { font-size:0.81rem; color:var(--text-mid); }
+
+    .chart-wrap { position:relative; width:100%; }
+
+    .legend-grid { display:flex; flex-wrap:wrap; gap:10px 24px; margin-top:18px; }
+    .legend-item { display:flex; align-items:center; gap:8px; font-size:0.8rem; color:var(--text-mid); }
+    .legend-swatch { width:20px; height:10px; border-radius:2px; flex-shrink:0; }
+
+    .caption { font-size:0.78rem; color:var(--text-faint); line-height:1.6; margin-top:14px; }
+    .caption a { color:var(--blue); text-decoration:none; }
+    .caption a:hover { text-decoration:underline; }
+
+    .methodology { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:24px 28px; }
+    .methodology h3 { font-family:'Roboto Mono',monospace; font-size:0.82rem; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-faint); margin-bottom:14px; }
+    .methodology p { font-size:0.84rem; color:var(--text-muted); line-height:1.7; margin-bottom:10px; }
+    .methodology p:last-child { margin-bottom:0; }
+    .methodology a { color:var(--blue); text-decoration:none; }
+    .methodology a:hover { text-decoration:underline; }
+
+    footer { background:var(--surface); border-top:1px solid var(--border); padding:20px clamp(20px,5vw,48px); margin-top:auto; }
+    .footer-inner { max-width:1100px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; }
+    .footer-copy { font-size:0.8rem; color:var(--text-faint); }
+    .footer-links { display:flex; gap:20px; }
+    .footer-links a { font-size:0.8rem; color:var(--text-muted); text-decoration:none; }
+    .footer-links a:hover { color:var(--blue); }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <a href="../" class="back-link">← MCB3 History Analysis</a>
+    <div class="header-divider"></div>
+    <h1>Agencies: MCB3 vs. 311</h1>
+  </div>
+</header>
+
+<div class="pill-nav">
+  <span class="pill-label">Charts in this post:</span>
+  <a href="../">Overview</a>
+  <a href="../topics-over-time/">Topics Over Time</a>
+  <a href="../topics-comparison/">Topics: MCB3 vs. 311</a>
+  <a href="../311-vs-resolutions/">311 Spikes vs. Resolutions</a>
+  <a href="./" class="active">Agencies: MCB3 vs. 311</a>
+</div>
+
+<main>
+  <div class="breadcrumb">
+    <a href="/">nycuriosity/data</a> / <a href="../">mcb3-history-analysis</a> / agencies-comparison
+  </div>
+
+  <div class="hero">
+    <h2>MCB3 Resolution Targets vs. 311 Complaint Recipients by Agency</h2>
+    <p>Which city agencies does MCB3 formally address in its resolutions — and which agencies are residents actually directing their 311 complaints to? The SLA commands 60% of MCB3's agency attention but receives zero 311 complaints. NYPD and HPD together handle 86% of resident complaints but appear in fewer than 12% of resolutions combined.</p>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-actions">
+      <button class="action-btn" id="csvBtn" onclick="downloadCSV()">↓ CSV</button>
+      <button class="action-btn" onclick="downloadPNG()">↓ PNG</button>
+      <button class="action-btn" onclick="toggleEmbed()">Embed</button>
+    </div>
+
+    <div class="controls-row">
+      <div class="controls-left">
+        <button class="toggle-btn" id="sharedToggle" onclick="toggleSharedOnly()">Both datasets only</button>
+      </div>
+      <div class="category-filter">
+        <button class="category-trigger" id="dropdownTrigger" onclick="toggleDropdown()">
+          <span id="triggerLabel">All agencies</span>
+          <span class="trigger-arrow">▼</span>
+        </button>
+        <div class="category-dropdown" id="agencyDropdown" style="display:none;">
+          <div class="dropdown-header">
+            <span class="dropdown-header-label">Filter agencies</span>
+            <div class="dropdown-actions-row">
+              <button class="dropdown-action-btn" onclick="selectAll()">Select all</button>
+              <button class="dropdown-action-btn" onclick="clearAll()">Clear all</button>
+            </div>
+          </div>
+          <div id="dropdownItems"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="chart-wrap">
+      <canvas id="mainChart"></canvas>
+    </div>
+
+    <div class="legend-grid">
+      <div class="legend-item">
+        <div class="legend-swatch" style="background:#2563eb;"></div>
+        <span>MCB3 resolutions (% of agency mentions)</span>
+      </div>
+      <div class="legend-item">
+        <div class="legend-swatch" style="background:#f59e0b;"></div>
+        <span>311 complaints (% of CD3 complaints)</span>
+      </div>
+    </div>
+
+    <p class="caption">Percentage share of agency mentions in MCB3 full-board resolutions (2002–2025) vs. percentage share of 311 service requests routed to each agency for Manhattan Community District 3 (all years). MCB3 percentages are computed among displayed agencies only; 311 percentages are computed among displayed agencies only. An MCB3 resolution may mention multiple agencies, so MCB3 counts do not sum to total resolutions. Source: NYC.gov MCB3 meeting minutes; <a href="https://data.cityofnewyork.us/Social-Services/311-Service-Requests-from-2010-to-Present/erm2-nwe9">NYC Open Data 311 Service Requests (erm2-nwe9)</a>.</p>
+  </div>
+
+  <div id="embedModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:999;align-items:center;justify-content:center;">
+    <div style="background:#fff;border-radius:10px;padding:28px;max-width:560px;width:90%;position:relative;">
+      <div style="font-family:'Roboto Mono',monospace;font-size:0.82rem;font-weight:700;margin-bottom:12px;">Embed this chart</div>
+      <textarea id="embedCode" readonly style="width:100%;height:90px;font-family:'Roboto Mono',monospace;font-size:0.7rem;border:1px solid #e5e7eb;border-radius:6px;padding:10px;resize:none;background:#f8faff;color:#374151;"></textarea>
+      <div style="display:flex;gap:8px;margin-top:10px;">
+        <button onclick="copyEmbed()" style="font-family:'Roboto Mono',monospace;font-size:0.72rem;font-weight:600;padding:6px 14px;border-radius:6px;border:1px solid #2563eb;background:#2563eb;color:#fff;cursor:pointer;">Copy</button>
+        <button onclick="document.getElementById('embedModal').style.display='none'" style="font-family:'Roboto Mono',monospace;font-size:0.72rem;font-weight:600;padding:6px 14px;border-radius:6px;border:1px solid #d1d5db;background:#fff;color:#6b7280;cursor:pointer;">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="methodology">
+    <h3>Methodology &amp; Data Notes</h3>
+    <p><strong>MCB3 agency counts:</strong> Each resolution's full text (7,134 resolutions, 2002–2025) was scanned for agency names and common acronyms. A resolution is counted once per agency regardless of how many times the agency appears; a single resolution may count toward multiple agencies. Total agency mentions across all 15 agencies shown: 3,828. Agencies not shown because they appear in neither or fewer than 25 resolutions and have no 311 presence include Borough President (107), Mayor's Office (61), and EDC (60).</p>
+    <p><strong>311 complaint counts:</strong> Routed to <code>community_board = '12 MANHATTAN'</code> (Manhattan CD3) across all available years in the NYC Open Data 311 dataset. Total complaints across all 15 agencies shown: 652,684. The dataset does not include FDNY incident reports, MTA complaints, or SLA/LPC proceedings — these agencies are not 311 complaint recipients.</p>
+    <p><strong>"Both datasets only" toggle:</strong> Filters to the six agencies that appear in both MCB3 resolutions and 311 data: NYPD, DOT, DOB, HPD, DEP, and NYC Parks. Percentages recalculate using only these six agencies as the denominator for each dataset.</p>
+    <p><strong>Percentage calculation:</strong> For each dataset, percentages are computed independently among the currently displayed agencies. Selecting fewer agencies raises each remaining agency's share proportionally — the denominators are the sums of the selected agencies only, not all-agency totals.</p>
+  </div>
+</main>
+
+<footer>
+  <div class="footer-inner">
+    <span class="footer-copy">NYCuriosity Data · Source: NYC.gov MCB3 meeting minutes; NYC Open Data 311</span>
+    <div class="footer-links">
+      <a href="https://nycuriosity.substack.com/">Subscribe</a>
+      <a href="https://github.com/TalR24/nycur-data-website">GitHub</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+// Agency data: sorted by MCB3 abs count descending
+const AGENCIES = [
+  { label: "SLA (State Liquor Authority)", short: "SLA",       mcb3Abs: 2285, abs311: 0,      color: "#2563eb" },
+  { label: "DOT (Transportation)",         short: "DOT",       mcb3Abs: 440,  abs311: 14682,  color: "#7c3aed" },
+  { label: "NYPD",                         short: "NYPD",      mcb3Abs: 368,  abs311: 320833, color: "#0891b2" },
+  { label: "NYC Council",                  short: "Council",   mcb3Abs: 207,  abs311: 0,      color: "#16a34a" },
+  { label: "NYC Parks",                    short: "Parks",     mcb3Abs: 128,  abs311: 9759,   color: "#65a30d" },
+  { label: "DCP (City Planning)",          short: "DCP",       mcb3Abs: 84,   abs311: 0,      color: "#d97706" },
+  { label: "DOB (Buildings)",              short: "DOB",       mcb3Abs: 93,   abs311: 10683,  color: "#dc2626" },
+  { label: "HPD (Housing)",                short: "HPD",       mcb3Abs: 66,   abs311: 230114, color: "#db2777" },
+  { label: "MTA",                          short: "MTA",       mcb3Abs: 56,   abs311: 0,      color: "#7c3aed" },
+  { label: "LPC (Landmarks)",              short: "LPC",       mcb3Abs: 45,   abs311: 0,      color: "#0d9488" },
+  { label: "DEP (Environment)",            short: "DEP",       mcb3Abs: 31,   abs311: 28196,  color: "#059669" },
+  { label: "FDNY",                         short: "FDNY",      mcb3Abs: 25,   abs311: 0,      color: "#ea580c" },
+  { label: "Sanitation (DSNY)",            short: "DSNY",      mcb3Abs: 0,    abs311: 23715,  color: "#78716c" },
+  { label: "Health (DOHMH)",               short: "DOHMH",     mcb3Abs: 0,    abs311: 11880,  color: "#6b7280" },
+  { label: "Homeless Services (DHS)",      short: "DHS",       mcb3Abs: 0,    abs311: 2822,   color: "#9ca3af" },
+];
+
+// Indices of agencies present in BOTH datasets
+const SHARED_IDX = AGENCIES.map((a, i) => (a.mcb3Abs > 0 && a.abs311 > 0) ? i : -1).filter(i => i >= 0);
+// SHARED_IDX = [1 (DOT), 2 (NYPD), 4 (Parks), 6 (DOB), 7 (HPD), 10 (DEP)]
+
+let selected = new Array(AGENCIES.length).fill(true);
+
+// Build dropdown items
+const itemsEl = document.getElementById('dropdownItems');
+AGENCIES.forEach((a, i) => {
+  const div = document.createElement('div');
+  div.className = 'dropdown-item';
+  div.innerHTML = `
+    <input type="checkbox" id="cb_${i}" checked>
+    <span class="dropdown-dot" style="background:${a.color}"></span>
+    <span class="dropdown-item-label">${a.label}</span>
+  `;
+  div.querySelector('input').addEventListener('change', e => {
+    selected[i] = e.target.checked;
+    updateTriggerLabel();
+    syncSharedToggle();
+    updateChart();
+  });
+  itemsEl.appendChild(div);
+});
+
+function updateTriggerLabel() {
+  const n = selected.filter(Boolean).length;
+  document.getElementById('triggerLabel').textContent =
+    n === AGENCIES.length ? 'All agencies' :
+    n === 0 ? 'None selected' :
+    `${n} of ${AGENCIES.length} agencies`;
+}
+
+function isSharedOnlyActive() {
+  return AGENCIES.every((_, i) => selected[i] === SHARED_IDX.includes(i));
+}
+
+function syncSharedToggle() {
+  document.getElementById('sharedToggle').classList.toggle('active', isSharedOnlyActive());
+}
+
+function toggleSharedOnly() {
+  if (isSharedOnlyActive()) {
+    selected.fill(true);
+    document.querySelectorAll('#dropdownItems input[type=checkbox]').forEach(cb => cb.checked = true);
+  } else {
+    selected = AGENCIES.map((_, i) => SHARED_IDX.includes(i));
+    document.querySelectorAll('#dropdownItems input[type=checkbox]').forEach((cb, i) => {
+      cb.checked = SHARED_IDX.includes(i);
+    });
+  }
+  updateTriggerLabel();
+  syncSharedToggle();
+  updateChart();
+}
+
+function toggleDropdown() {
+  const dd = document.getElementById('agencyDropdown');
+  const trigger = document.getElementById('dropdownTrigger');
+  const open = dd.style.display !== 'none';
+  dd.style.display = open ? 'none' : 'block';
+  trigger.classList.toggle('open', !open);
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('.category-filter')) {
+    document.getElementById('agencyDropdown').style.display = 'none';
+    document.getElementById('dropdownTrigger').classList.remove('open');
+  }
+});
+
+function selectAll() {
+  selected.fill(true);
+  document.querySelectorAll('#dropdownItems input[type=checkbox]').forEach(cb => cb.checked = true);
+  updateTriggerLabel(); syncSharedToggle(); updateChart();
+}
+function clearAll() {
+  selected.fill(false);
+  document.querySelectorAll('#dropdownItems input[type=checkbox]').forEach(cb => cb.checked = false);
+  updateTriggerLabel(); syncSharedToggle(); updateChart();
+}
+
+function getActiveData() {
+  const active = AGENCIES.map((a, i) => selected[i] ? a : null).filter(Boolean);
+  const mcb3Total = active.reduce((s, a) => s + a.mcb3Abs, 0);
+  const total311  = active.reduce((s, a) => s + a.abs311,  0);
+  const rev = [...active].reverse();
+  return {
+    labels:    rev.map(a => a.label),
+    mcb3Data:  rev.map(a => mcb3Total > 0 ? Math.round(a.mcb3Abs / mcb3Total * 1000) / 10 : 0),
+    data311:   rev.map(a => total311  > 0 ? Math.round(a.abs311  / total311  * 1000) / 10 : 0),
+    mcb3Abs:   rev.map(a => a.mcb3Abs),
+    abs311:    rev.map(a => a.abs311),
+  };
+}
+
+const CANVAS_BASE_H = 48;
+const ctx = document.getElementById('mainChart').getContext('2d');
+
+function computeHeight(n) {
+  return Math.max(n * CANVAS_BASE_H + 80, 120) + 'px';
+}
+
+let ad = getActiveData();
+document.querySelector('.chart-wrap').style.height = computeHeight(ad.labels.length);
+
+const chart = new Chart(ctx, {
+  type: 'bar',
+  data: {
+    labels: ad.labels,
+    datasets: [
+      {
+        label: 'MCB3 resolutions %',
+        data: ad.mcb3Data,
+        backgroundColor: '#2563eb',
+        borderRadius: 3,
+        barPercentage: 0.65,
+        categoryPercentage: 0.85,
+      },
+      {
+        label: '311 complaints %',
+        data: ad.data311,
+        backgroundColor: '#f59e0b',
+        borderRadius: 3,
+        barPercentage: 0.65,
+        categoryPercentage: 0.85,
+      }
+    ]
+  },
+  options: {
+    indexAxis: 'y',
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          title: items => items[0].label,
+          label(item) {
+            const d = chart.data.datasets[item.datasetIndex];
+            const rawArr = item.datasetIndex === 0 ? chart._absData.mcb3Abs : chart._absData.abs311;
+            const raw = rawArr[item.dataIndex];
+            const label = item.datasetIndex === 0 ? 'MCB3' : '311';
+            return `  ${label}: ${item.raw}%  (${raw.toLocaleString()} ${item.datasetIndex === 0 ? 'resolutions' : 'complaints'})`;
+          }
+        },
+        backgroundColor: 'rgba(17,24,39,0.92)',
+        titleFont: { family: "'Roboto Mono', monospace", size: 11, weight: '700' },
+        bodyFont:  { family: "'Roboto Mono', monospace", size: 11 },
+        padding: 10,
+        cornerRadius: 6,
+      }
+    },
+    scales: {
+      x: {
+        grid: { color: '#f3f4f6', drawTicks: false },
+        border: { display: false },
+        ticks: {
+          font: { family: "'Roboto Mono', monospace", size: 10 },
+          color: '#9ca3af',
+          callback: v => v + '%',
+        },
+        max: 65,
+      },
+      y: {
+        grid: { display: false },
+        border: { display: false },
+        ticks: {
+          font: { family: "'Roboto Mono', monospace", size: 11 },
+          color: '#374151',
+        }
+      }
+    }
+  }
+});
+// Store abs data for tooltip access
+chart._absData = { mcb3Abs: ad.mcb3Abs, abs311: ad.abs311 };
+
+function updateChart() {
+  ad = getActiveData();
+  const n = ad.labels.length;
+  document.querySelector('.chart-wrap').style.height = computeHeight(n);
+  chart.data.labels = ad.labels;
+  chart.data.datasets[0].data = ad.mcb3Data;
+  chart.data.datasets[1].data = ad.data311;
+  chart._absData = { mcb3Abs: ad.mcb3Abs, abs311: ad.abs311 };
+  // Recompute x max
+  const peak = Math.max(...ad.mcb3Data, ...ad.data311, 1);
+  chart.options.scales.x.max = Math.ceil(peak / 5) * 5 + 5;
+  chart.resize();
+  chart.update();
+}
+
+// Initial x max
+const peak0 = Math.max(...ad.mcb3Data, ...ad.data311, 1);
+chart.options.scales.x.max = Math.ceil(peak0 / 5) * 5 + 5;
+chart.update();
+
+function downloadCSV() {
+  const rows = [['Agency', 'MCB3 Resolutions', 'MCB3 %', '311 Complaints', '311 %']];
+  const activeFull = AGENCIES.filter((_, i) => selected[i]);
+  const m = activeFull.reduce((s, a) => s + a.mcb3Abs, 0);
+  const t = activeFull.reduce((s, a) => s + a.abs311,  0);
+  activeFull.forEach(a => {
+    rows.push([
+      a.label,
+      a.mcb3Abs,
+      m > 0 ? (Math.round(a.mcb3Abs / m * 1000) / 10) + '%' : '0%',
+      a.abs311,
+      t > 0 ? (Math.round(a.abs311  / t * 1000) / 10) + '%' : '0%',
+    ]);
+  });
+  const csv = rows.map(r => r.join(',')).join('\n');
+  const a = document.createElement('a'); a.download = 'mcb3-vs-311-agencies.csv';
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv); a.click();
+}
+
+function downloadPNG() {
+  const srcCanvas = chart.canvas;
+  const caption = 'MCB3 resolution agency mentions vs. 311 complaint recipients, Manhattan CD3. Source: NYC.gov MCB3 records; NYC Open Data 311 (erm2-nwe9). Created by Tal Roded · NYCuriosity';
+  const scale = 2;
+  const margin = 16 * scale;
+  const capH = 44 * scale;
+  const dpr = window.devicePixelRatio || 1;
+  const dw = srcCanvas.width / dpr;
+  const dh = srcCanvas.height / dpr;
+  const off = document.createElement('canvas');
+  off.width  = dw * scale + margin * 2;
+  off.height = dh * scale + capH + margin * 2;
+  const octx = off.getContext('2d');
+  octx.fillStyle = '#ffffff';
+  octx.fillRect(0, 0, off.width, off.height);
+  octx.save();
+  octx.scale(scale, scale);
+  octx.drawImage(srcCanvas, margin / scale, margin / scale, dw, dh);
+  octx.restore();
+  octx.font = `${10 * scale}px 'Roboto Mono', monospace`;
+  octx.fillStyle = '#9ca3af';
+  octx.textAlign = 'left';
+  const maxW = off.width - margin * 2;
+  const words = caption.split(' ');
+  let line = '';
+  let y = dh * scale + margin * 2 + 10;
+  words.forEach(w => {
+    const test = line ? line + ' ' + w : w;
+    if (octx.measureText(test).width > maxW) { octx.fillText(line, margin, y); y += 14 * scale; line = w; }
+    else { line = test; }
+  });
+  if (line) octx.fillText(line, margin, y);
+  const a = document.createElement('a');
+  a.download = 'mcb3-vs-311-agencies.png';
+  a.href = off.toDataURL('image/png');
+  a.click();
+}
+
+function toggleEmbed() {
+  const modal = document.getElementById('embedModal');
+  const code = `<iframe src="https://data.nycuriosity.com/nycuriosity_substack_posts/mcb3_history_analysis/agencies-comparison/" width="100%" height="700" frameborder="0" scrolling="no" style="border:1px solid #e5e7eb;border-radius:8px;"></iframe>`;
+  document.getElementById('embedCode').value = code;
+  modal.style.display = 'flex';
+}
+function copyEmbed() { const ta = document.getElementById('embedCode'); ta.select(); document.execCommand('copy'); }
+document.getElementById('embedModal').addEventListener('click', function(e) { if (e.target === this) this.style.display = 'none'; });
+</script>
+</body>
+</html>
