@@ -435,6 +435,34 @@
       transition: gap 0.15s;
     }
     .agency-expand-link:hover { gap: 7px; text-decoration: underline; }
+    .agency-expand-head {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      margin-bottom: 12px;
+      padding-bottom: 11px;
+      border-bottom: 1px solid rgba(37,99,235,0.12);
+      flex-wrap: wrap;
+    }
+    .agency-expand-head-label {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.63rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-faint);
+      flex-shrink: 0;
+    }
+    .agency-expand-head-val {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .agency-expand-head-note {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      font-style: italic;
+    }
 
     /* ── NO RESULTS ─────────────────────────────────────── */
     .no-results {
@@ -786,6 +814,7 @@
         <span class="hero-stat-label">sectors</span>
       </div>
     </div>
+    <p style="margin-top:14px;font-size:0.75rem;color:var(--text-faint);"><span style="font-family:'Roboto Mono',monospace;font-weight:600;">Last updated:</span> Jun 2024 &nbsp;·&nbsp; Budget figures from NYC FY2025 Adopted Budget; leadership as of June 2024</p>
   </div>
 </div>
 
@@ -978,6 +1007,80 @@ const AGENCIES = [
   { id:"cchr",   abbr:"CCHR",   name:"Commission on Human Rights",          sector:"Elected & Legal",              budget_m:20,   headcount:190,   desc:"Enforces the NYC Human Rights Law — one of the most expansive anti-discrimination laws in the nation — covering employment, housing, and public accommodations.", programs:["Law Enforcement","Education & Outreach","Mediation","Legal Services","Bias Response"], url:"https://www.nyc.gov/cchr" },
 ];
 
+// ── AGENCY LEADERSHIP (as of June 2024) ──────────────────────────────────────
+const AGENCY_HEADS = {
+  // Public Safety
+  "nypd":  { title:"Commissioner",         name:"Jessica Tisch" },
+  "fdny":  { title:"Commissioner",         name:"Robert Tucker" },
+  "doc":   { title:"Commissioner",         name:"Lynelle Maginley-Liddie" },
+  "prob":  { title:"Commissioner",         name:"Ana Bermúdez" },
+  "ccrb":  { title:"Chair",               name:"Arva Rice" },
+  "oath":  { title:"Commissioner",         name:"Asher Garay" },
+  "doi":   { title:"Commissioner",         name:"Jocelyn Strauber" },
+  "coib":  { title:"Chair",               name:"Brooke Menschel" },
+  "oem":   { title:"Commissioner",         name:"Zach Iscol" },
+  // Education
+  "doe":   { title:"Chancellor",           name:"David Banks" },
+  "cuny":  { title:"Chancellor",           name:"Félix V. Matos Rodríguez" },
+  "sca":   { title:"President",            name:"Thomas Corsino" },
+  "nypl":  { title:"President & CEO",      name:"Anthony Marx" },
+  "bpl":   { title:"President & CEO",      name:"Linda Johnson" },
+  "qpl":   { title:"President & CEO",      name:"Dennis Walcott" },
+  // Health & Human Services
+  "hha":   { title:"Administrator",        name:"Gary Jenkins" },
+  "dhs":   { title:"Commissioner",         name:"Molly Park" },
+  "hhc":   { title:"President & CEO",      name:"Mitchell Katz" },
+  "acs":   { title:"Commissioner",         name:"Jess Dannhauser" },
+  "dohmh": { title:"Commissioner",         name:"Ashwin Vasan" },
+  "dfta":  { title:"Commissioner",         name:"Lorraine Cortés-Vázquez" },
+  "dycd":  { title:"Commissioner",         name:"Keith Howard" },
+  // Housing & Development
+  "hpd":   { title:"Commissioner",         name:"Adolfo Carrión Jr." },
+  "nycha": { title:"CEO",                  name:"Lisa Bova-Hiatt" },
+  "dcp":   { title:"Director",             name:"Dan Garodnick" },
+  "lpc":   { title:"Chair",               name:"Sarah Carroll" },
+  // Transportation & Infrastructure
+  "dot":   { title:"Commissioner",         name:"Ydanis Rodriguez" },
+  "dep":   { title:"Commissioner",         name:"Rohit Aggarwala" },
+  "ddc":   { title:"Commissioner",         name:"Thomas Foley" },
+  "dsny":  { title:"Commissioner",         name:"Javier Lojan" },
+  // Finance & Administration
+  "dcas":  { title:"Commissioner",         name:"Dawn Pinnock" },
+  "dof":   { title:"Commissioner",         name:"Preston Niblack" },
+  "omb":   { title:"Director",             name:"Jacques Jiha" },
+  "oti":   { title:"Chief Technology Officer", name:"Matt Fraser" },
+  "law":   { title:"Corporation Counsel",  name:"Sylvia Hinds-Radix" },
+  "opa":   { title:"Director",             name:"Wendy Donahue" },
+  "mocs":  { title:"Director",             name:"Lisa Flores" },
+  "doris": { title:"Commissioner",         name:"Pauline Toole" },
+  // Parks & Culture
+  "dpr":   { title:"Commissioner",         name:"Sue Donoghue" },
+  "dcla":  { title:"Commissioner",         name:"Laurie Cumbo" },
+  // Economic Development
+  "sbs":   { title:"Commissioner",         name:"Kevin Kim" },
+  "edc":   { title:"President & CEO",      name:"Andrew Kimball" },
+  "dob":   { title:"Commissioner",         name:"Kazimir Vilenchik" },
+  "dcwp":  { title:"Commissioner",         name:"Vilda Vera Mayuga" },
+  "tlc":   { title:"Chair",               name:"David Do" },
+  "bic":   { title:"Chair",               name:"Daniel Brownell" },
+  // Elected & Legal
+  "comp":  { title:"Comptroller",          name:"Brad Lander" },
+  "pa":    { title:"Public Advocate",      name:"Jumaane Williams" },
+  "cc":    { title:"Speaker",              name:"Adrienne Adams", note:"51-member Council" },
+  "bp-mn": { title:"Borough President",    name:"Mark Levine" },
+  "bp-bk": { title:"Borough President",    name:"Antonio Reynoso" },
+  "bp-qns":{ title:"Borough President",    name:"Donovan Richards" },
+  "bp-bx": { title:"Borough President",    name:"Vanessa Gibson" },
+  "bp-si": { title:"Borough President",    name:"Vito Fossella" },
+  "da-mn": { title:"District Attorney",    name:"Alvin Bragg" },
+  "da-bk": { title:"District Attorney",    name:"Eric Gonzalez" },
+  "da-qns":{ title:"District Attorney",    name:"Melinda Katz" },
+  "da-bx": { title:"District Attorney",    name:"Darcel Clark" },
+  "da-si": { title:"District Attorney",    name:"Michael McMahon" },
+  "boe":   { title:"Executive Director",   name:"Michael Ryan" },
+  "cchr":  { title:"Commissioner",         name:"Annabel Palma" },
+};
+
 // ── SECTOR COLORS ─────────────────────────────────────────────────────────────
 const SECTOR_COLORS = {
   "Public Safety":                  "#1e40af",
@@ -1039,7 +1142,9 @@ function renderCards(filtered) {
     return;
   }
 
-  filtered.forEach(agency => {
+  const sorted = [...filtered].sort((a, b) => b.budget_m - a.budget_m);
+
+  sorted.forEach(agency => {
     const color   = SECTOR_COLORS[agency.sector] || '#374151';
     const bgColor = SECTOR_COLORS_LIGHT[agency.sector] || '#f3f4f6';
     const txtColor= SECTOR_TEXT[agency.sector] || '#111827';
@@ -1052,6 +1157,14 @@ function renderCards(filtered) {
     card.setAttribute('aria-expanded', 'false');
 
     const programsHtml = agency.programs.map(p => `<li>${p}</li>`).join('');
+    const head = AGENCY_HEADS[agency.id];
+    const headHtml = head
+      ? `<div class="agency-expand-head">
+           <span class="agency-expand-head-label">Head</span>
+           <span class="agency-expand-head-val">${head.title} ${head.name}</span>
+           ${head.note ? `<span class="agency-expand-head-note">${head.note}</span>` : ''}
+         </div>`
+      : '';
 
     card.innerHTML = `
       <div class="agency-card-header">
@@ -1077,6 +1190,7 @@ function renderCards(filtered) {
         </div>
       </div>
       <div class="agency-expand">
+        ${headHtml}
         <p class="agency-expand-desc">${agency.desc}</p>
         <div class="agency-expand-programs">
           <div class="agency-expand-programs-label">Key programs</div>
