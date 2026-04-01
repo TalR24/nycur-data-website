@@ -559,6 +559,123 @@
     .tt-stat-label { color: #9ca3af; }
     .tt-stat-val { font-family: 'Roboto Mono', monospace; font-weight: 600; color: #f9fafb; }
 
+    /* ── TREEMAP FILTER PANEL ──────────────────────────────── */
+    .filter-toggle-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 14px;
+      border: 1px solid var(--border-mid);
+      border-radius: 8px;
+      background: var(--surface);
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s, background 0.15s;
+      white-space: nowrap;
+    }
+    .filter-toggle-btn:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
+    .filter-toggle-btn.active { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
+    .filter-toggle-btn .arrow { transition: transform 0.2s; flex-shrink: 0; }
+    .filter-toggle-btn.active .arrow { transform: rotate(180deg); }
+
+    .filter-panel {
+      display: none;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 14px;
+      overflow: hidden;
+    }
+    .filter-panel.open { display: block; }
+
+    .filter-panel-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg);
+      flex-wrap: wrap;
+    }
+    .filter-global-btn {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.68rem;
+      font-weight: 600;
+      padding: 4px 10px;
+      border: 1px solid var(--border-mid);
+      border-radius: 5px;
+      background: var(--surface);
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .filter-global-btn:hover { border-color: var(--blue); color: var(--blue); }
+    .filter-panel-count {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.68rem;
+      color: var(--text-faint);
+      margin-left: auto;
+    }
+    .filter-panel-count strong { color: var(--text); }
+
+    .filter-panel-body {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      max-height: 320px;
+      overflow-y: auto;
+    }
+    .filter-sector-group { border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+    .filter-sector-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      user-select: none;
+    }
+    .filter-sector-header input[type="checkbox"] { cursor: pointer; accent-color: var(--blue); }
+    .filter-sector-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
+    .filter-sector-name { font-family: 'Roboto Mono', monospace; font-size: 0.68rem; font-weight: 700; color: var(--text); flex: 1; }
+    .filter-sector-count { font-family: 'Roboto Mono', monospace; font-size: 0.63rem; color: var(--text-faint); }
+    .filter-agencies-list { padding: 6px 0; }
+    .filter-agency-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 14px;
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+    .filter-agency-row:hover { background: var(--blue-light); }
+    .filter-agency-row input[type="checkbox"] { cursor: pointer; accent-color: var(--blue); flex-shrink: 0; }
+    .filter-agency-abbr {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.62rem;
+      font-weight: 700;
+      color: var(--blue);
+      background: var(--blue-light);
+      border-radius: 3px;
+      padding: 1px 5px;
+      flex-shrink: 0;
+    }
+    .filter-agency-name { font-size: 0.78rem; color: var(--text-mid); line-height: 1.3; }
+    .treemap-empty {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      flex-direction: column;
+      gap: 8px;
+      color: var(--text-faint);
+      font-size: 0.9rem;
+    }
+    .treemap-empty strong { font-family: 'Roboto Mono', monospace; font-size: 1rem; color: var(--text-muted); }
+
     /* ── METHODOLOGY LINK ───────────────────────────────── */
     .methodology-link-row {
       margin-top: 28px;
@@ -727,8 +844,28 @@
           <button class="metric-btn active" id="btn-budget" onclick="setMetric('budget')">Budget</button>
           <button class="metric-btn" id="btn-headcount" onclick="setMetric('headcount')">Headcount</button>
         </div>
-        <span class="treemap-hint">Hover over a block to see agency details</span>
+        <button class="filter-toggle-btn" id="filter-toggle-btn" onclick="toggleFilterPanel()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+          </svg>
+          <span id="filter-btn-label">Filter agencies</span>
+          <svg class="arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="6 9 12 15 18 9"/>
+          </svg>
+        </button>
+        <span class="treemap-hint">Hover a block for details</span>
       </div>
+
+      <!-- FILTER PANEL -->
+      <div class="filter-panel" id="filter-panel">
+        <div class="filter-panel-header">
+          <button class="filter-global-btn" onclick="selectAllAgencies()">Select all</button>
+          <button class="filter-global-btn" onclick="clearAllAgencies()">Clear all</button>
+          <span class="filter-panel-count" id="filter-panel-count"><strong>80</strong> of 80 agencies shown</span>
+        </div>
+        <div class="filter-panel-body" id="filter-panel-body"></div>
+      </div>
+
       <div class="treemap-legend" id="treemap-legend"></div>
       <div id="treemap-container"></div>
     </div>
@@ -1026,7 +1163,8 @@ function switchView(view) {
 
 // ── TREEMAP ───────────────────────────────────────────────────────────────────
 let currentMetric = 'budget';
-let treemapRendered = false;
+let selectedIds = new Set(AGENCIES.map(a => a.id));
+let filterPanelOpen = false;
 
 function setMetric(metric) {
   currentMetric = metric;
@@ -1035,24 +1173,158 @@ function setMetric(metric) {
   renderTreemap(metric);
 }
 
+// ── FILTER PANEL ──────────────────────────────────────────────────────────────
+function toggleFilterPanel() {
+  filterPanelOpen = !filterPanelOpen;
+  document.getElementById('filter-panel').classList.toggle('open', filterPanelOpen);
+  document.getElementById('filter-toggle-btn').classList.toggle('active', filterPanelOpen);
+}
+
+function initFilterPanel() {
+  const body = document.getElementById('filter-panel-body');
+  const sectors = [...new Set(AGENCIES.map(a => a.sector))];
+  body.innerHTML = '';
+
+  sectors.forEach(sector => {
+    const agenciesInSector = AGENCIES.filter(a => a.sector === sector);
+    const color = SECTOR_COLORS[sector] || '#374151';
+
+    const group = document.createElement('div');
+    group.className = 'filter-sector-group';
+
+    const sectorHeader = document.createElement('div');
+    sectorHeader.className = 'filter-sector-header';
+    sectorHeader.innerHTML = `
+      <input type="checkbox" class="filter-sector-cb" data-sector="${sector}" checked>
+      <span class="filter-sector-dot" style="background:${color}"></span>
+      <span class="filter-sector-name">${sector}</span>
+      <span class="filter-sector-count" data-sector-count="${sector}">${agenciesInSector.length}/${agenciesInSector.length}</span>
+    `;
+    group.appendChild(sectorHeader);
+
+    const list = document.createElement('div');
+    list.className = 'filter-agencies-list';
+    agenciesInSector.forEach(agency => {
+      const row = document.createElement('label');
+      row.className = 'filter-agency-row';
+      row.innerHTML = `
+        <input type="checkbox" class="filter-agency-cb" data-id="${agency.id}" checked>
+        <span class="filter-agency-abbr">${agency.abbr}</span>
+        <span class="filter-agency-name">${agency.name}</span>
+      `;
+      list.appendChild(row);
+    });
+    group.appendChild(list);
+    body.appendChild(group);
+  });
+
+  // Individual agency checkbox events
+  body.querySelectorAll('.filter-agency-cb').forEach(cb => {
+    cb.addEventListener('change', function () {
+      if (this.checked) selectedIds.add(this.dataset.id);
+      else selectedIds.delete(this.dataset.id);
+      syncSectorCheckbox(this.closest('.filter-sector-group'));
+      updateFilterUI();
+      renderTreemap(currentMetric);
+    });
+  });
+
+  // Sector checkbox events
+  body.querySelectorAll('.filter-sector-cb').forEach(cb => {
+    cb.addEventListener('change', function () {
+      const sector = this.dataset.sector;
+      const group = this.closest('.filter-sector-group');
+      group.querySelectorAll('.filter-agency-cb').forEach(agCb => {
+        agCb.checked = this.checked;
+        if (this.checked) selectedIds.add(agCb.dataset.id);
+        else selectedIds.delete(agCb.dataset.id);
+      });
+      this.indeterminate = false;
+      updateFilterUI();
+      renderTreemap(currentMetric);
+    });
+  });
+}
+
+function syncSectorCheckbox(group) {
+  const all = group.querySelectorAll('.filter-agency-cb');
+  const checked = group.querySelectorAll('.filter-agency-cb:checked');
+  const cb = group.querySelector('.filter-sector-cb');
+  cb.checked = checked.length === all.length;
+  cb.indeterminate = checked.length > 0 && checked.length < all.length;
+}
+
+function updateFilterUI() {
+  const total = AGENCIES.length;
+  const selected = selectedIds.size;
+
+  // Update button label
+  document.getElementById('filter-btn-label').textContent =
+    selected === total ? 'Filter agencies' : `Filter (${selected}/${total})`;
+
+  // Update panel count
+  document.getElementById('filter-panel-count').innerHTML =
+    `<strong>${selected}</strong> of ${total} agencies shown`;
+
+  // Update per-sector counts
+  const body = document.getElementById('filter-panel-body');
+  const sectors = [...new Set(AGENCIES.map(a => a.sector))];
+  sectors.forEach(sector => {
+    const agenciesInSector = AGENCIES.filter(a => a.sector === sector);
+    const visibleCount = agenciesInSector.filter(a => selectedIds.has(a.id)).length;
+    const el = body.querySelector(`[data-sector-count="${sector}"]`);
+    if (el) el.textContent = `${visibleCount}/${agenciesInSector.length}`;
+  });
+
+  renderLegend();
+}
+
+function selectAllAgencies() {
+  AGENCIES.forEach(a => selectedIds.add(a.id));
+  document.getElementById('filter-panel-body').querySelectorAll('.filter-agency-cb, .filter-sector-cb').forEach(cb => {
+    cb.checked = true;
+    cb.indeterminate = false;
+  });
+  updateFilterUI();
+  renderTreemap(currentMetric);
+}
+
+function clearAllAgencies() {
+  selectedIds.clear();
+  document.getElementById('filter-panel-body').querySelectorAll('.filter-agency-cb, .filter-sector-cb').forEach(cb => {
+    cb.checked = false;
+    cb.indeterminate = false;
+  });
+  updateFilterUI();
+  renderTreemap(currentMetric);
+}
+
+// ── RENDER TREEMAP ────────────────────────────────────────────────────────────
 function renderTreemap(metric) {
   const container = document.getElementById('treemap-container');
   container.innerHTML = '';
 
+  const visible = AGENCIES.filter(a => selectedIds.has(a.id));
+
+  if (visible.length === 0) {
+    container.innerHTML = `<div class="treemap-empty"><strong>No agencies selected</strong>Use the filter to add agencies back.</div>`;
+    return;
+  }
+
   const W = container.clientWidth;
   const H = container.clientHeight;
 
-  // Build hierarchy: root → sectors → agencies
-  const sectors = [...new Set(AGENCIES.map(a => a.sector))];
+  // Build hierarchy: root → sectors → agencies (only visible)
+  const sectors = [...new Set(visible.map(a => a.sector))];
   const data = {
     name: 'NYC Agencies',
     children: sectors.map(sector => ({
       name: sector,
-      children: AGENCIES.filter(a => a.sector === sector).map(a => ({
+      children: visible.filter(a => a.sector === sector).map(a => ({
         ...a,
         value: metric === 'budget' ? a.budget_m : a.headcount
       }))
-    }))
+    })).filter(s => s.children.length > 0)
   };
 
   const root = d3.hierarchy(data)
@@ -1072,105 +1344,77 @@ function renderTreemap(metric) {
 
   const tooltip = document.getElementById('tooltip');
 
-  // Draw sector groups (parent nodes)
-  const sectorNodes = root.children;
-  sectorNodes.forEach(sNode => {
+  // Draw sector group headers
+  root.children.forEach(sNode => {
     const color = SECTOR_COLORS[sNode.data.name] || '#374151';
-    // Sector label background
     svg.append('rect')
-      .attr('x', sNode.x0)
-      .attr('y', sNode.y0)
-      .attr('width', sNode.x1 - sNode.x0)
-      .attr('height', 20)
-      .attr('fill', color)
-      .attr('rx', 3);
-    // Sector label text
+      .attr('x', sNode.x0).attr('y', sNode.y0)
+      .attr('width', sNode.x1 - sNode.x0).attr('height', 20)
+      .attr('fill', color).attr('rx', 3);
     const labelW = sNode.x1 - sNode.x0;
     if (labelW > 60) {
       svg.append('text')
-        .attr('x', sNode.x0 + 5)
-        .attr('y', sNode.y0 + 14)
+        .attr('x', sNode.x0 + 5).attr('y', sNode.y0 + 14)
         .attr('fill', '#fff')
         .attr('font-family', "'Roboto Mono', monospace")
-        .attr('font-size', '9px')
-        .attr('font-weight', '700')
-        .attr('letter-spacing', '0.04em')
-        .text(sNode.data.name.length > labelW / 7 ? sNode.data.name.substring(0, Math.floor(labelW / 7) - 1) + '…' : sNode.data.name);
+        .attr('font-size', '9px').attr('font-weight', '700').attr('letter-spacing', '0.04em')
+        .text(sNode.data.name.length > labelW / 7
+          ? sNode.data.name.substring(0, Math.floor(labelW / 7) - 1) + '…'
+          : sNode.data.name);
     }
   });
 
-  // Draw leaf nodes (agencies)
-  const leaves = root.leaves();
+  // Draw leaf nodes
   const cell = svg.selectAll('g.cell')
-    .data(leaves)
-    .enter()
-    .append('g')
+    .data(root.leaves())
+    .enter().append('g')
     .attr('class', 'cell')
     .attr('transform', d => `translate(${d.x0},${d.y0})`);
 
   cell.append('rect')
-    .attr('width', d => Math.max(0, d.x1 - d.x0))
+    .attr('width',  d => Math.max(0, d.x1 - d.x0))
     .attr('height', d => Math.max(0, d.y1 - d.y0))
-    .attr('fill', d => {
-      const color = SECTOR_COLORS[d.data.sector] || '#374151';
-      return color + 'cc'; // slightly transparent
-    })
-    .attr('stroke', '#fff')
-    .attr('stroke-width', 1)
-    .attr('rx', 2)
+    .attr('fill', d => (SECTOR_COLORS[d.data.sector] || '#374151') + 'cc')
+    .attr('stroke', '#fff').attr('stroke-width', 1).attr('rx', 2)
     .style('cursor', 'pointer')
     .on('mousemove', function(event, d) {
-      document.getElementById('tt-name').textContent = d.data.abbr + ' — ' + d.data.name;
+      document.getElementById('tt-name').textContent   = d.data.abbr + ' — ' + d.data.name;
       document.getElementById('tt-sector').textContent = d.data.sector;
       document.getElementById('tt-budget').textContent = fmtBudget(d.data.budget_m);
-      document.getElementById('tt-head').textContent = d.data.headcount.toLocaleString();
+      document.getElementById('tt-head').textContent   = d.data.headcount.toLocaleString();
       tooltip.classList.add('visible');
       tooltip.style.left = (event.clientX + 14) + 'px';
       tooltip.style.top  = (event.clientY - 10) + 'px';
     })
-    .on('mouseleave', function() {
-      tooltip.classList.remove('visible');
-    });
+    .on('mouseleave', () => tooltip.classList.remove('visible'));
 
-  // Agency labels
   cell.append('text')
-    .attr('x', 5)
-    .attr('y', 13)
+    .attr('x', 5).attr('y', 13)
     .attr('fill', '#fff')
     .attr('font-family', "'Roboto Mono', monospace")
-    .attr('font-size', '9px')
-    .attr('font-weight', '700')
+    .attr('font-size', '9px').attr('font-weight', '700')
     .attr('pointer-events', 'none')
-    .text(d => {
-      const w = d.x1 - d.x0;
-      const h = d.y1 - d.y0;
-      if (w < 36 || h < 20) return '';
-      return d.data.abbr;
-    });
+    .text(d => (d.x1-d.x0 < 36 || d.y1-d.y0 < 20) ? '' : d.data.abbr);
 
   cell.append('text')
-    .attr('x', 5)
-    .attr('y', 24)
+    .attr('x', 5).attr('y', 24)
     .attr('fill', 'rgba(255,255,255,0.85)')
     .attr('font-family', "'Inter', sans-serif")
-    .attr('font-size', '8px')
-    .attr('pointer-events', 'none')
+    .attr('font-size', '8px').attr('pointer-events', 'none')
     .text(d => {
-      const w = d.x1 - d.x0;
-      const h = d.y1 - d.y0;
-      if (w < 50 || h < 34) return '';
-      const val = metric === 'budget' ? fmtBudget(d.data.budget_m) : fmtHeadcount(d.data.headcount);
-      return val;
+      if (d.x1-d.x0 < 50 || d.y1-d.y0 < 34) return '';
+      return metric === 'budget' ? fmtBudget(d.data.budget_m) : fmtHeadcount(d.data.headcount);
     });
 
-  // Render legend
   renderLegend();
 }
 
 function renderLegend() {
+  const visibleSectors = new Set(AGENCIES.filter(a => selectedIds.has(a.id)).map(a => a.sector));
   const legend = document.getElementById('treemap-legend');
   legend.innerHTML = '';
   Object.entries(SECTOR_COLORS).forEach(([sector, color]) => {
+    if (!visibleSectors.has(sector)) return;
     const item = document.createElement('div');
     item.className = 'legend-item';
     item.innerHTML = `<span class="legend-dot" style="background:${color}"></span><span>${sector}</span>`;
@@ -1181,6 +1425,7 @@ function renderLegend() {
 // ── INIT ─────────────────────────────────────────────────────────────────────
 renderCards(AGENCIES);
 document.getElementById('results-count').textContent = `${AGENCIES.length} agencies`;
+initFilterPanel();
 </script>
 
 </body>
