@@ -591,6 +591,7 @@
     }
     .tt-stat-label { color: #9ca3af; }
     .tt-stat-val { font-family: 'Roboto Mono', monospace; font-weight: 600; color: #f9fafb; }
+    .tt-stat-pct { font-family: 'Roboto Mono', monospace; font-size: 0.68rem; color: #6b7280; margin-left: 4px; }
 
     /* ── TREEMAP FILTER PANEL ──────────────────────────────── */
     .filter-toggle-btn {
@@ -828,8 +829,8 @@
   <div class="tt-name" id="tt-name"></div>
   <div class="tt-sector" id="tt-sector"></div>
   <div class="tt-stats">
-    <div class="tt-stat"><span class="tt-stat-label">Budget (FY25)</span><span class="tt-stat-val" id="tt-budget"></span></div>
-    <div class="tt-stat"><span class="tt-stat-label">Headcount</span><span class="tt-stat-val" id="tt-head"></span></div>
+    <div class="tt-stat"><span class="tt-stat-label">Budget (FY25)</span><span class="tt-stat-val" id="tt-budget"></span><span class="tt-stat-pct" id="tt-budget-pct"></span></div>
+    <div class="tt-stat"><span class="tt-stat-label">Headcount</span><span class="tt-stat-val" id="tt-head"></span><span class="tt-stat-pct" id="tt-head-pct"></span></div>
   </div>
 </div>
 
@@ -1426,6 +1427,8 @@ function renderTreemap(metric) {
   container.innerHTML = '';
 
   const visible = AGENCIES.filter(a => selectedIds.has(a.id));
+  const totalBudget   = visible.reduce((s, a) => s + a.budget_m, 0);
+  const totalHeadcount = visible.reduce((s, a) => s + a.headcount, 0);
 
   if (visible.length === 0) {
     container.innerHTML = `<div class="treemap-empty"><strong>No agencies selected</strong>Use the filter to add agencies back.</div>`;
@@ -1503,6 +1506,8 @@ function renderTreemap(metric) {
       document.getElementById('tt-sector').textContent = d.data.sector;
       document.getElementById('tt-budget').textContent = fmtBudget(d.data.budget_m);
       document.getElementById('tt-head').textContent   = d.data.headcount.toLocaleString();
+      document.getElementById('tt-budget-pct').textContent = totalBudget > 0 ? `(${(d.data.budget_m / totalBudget * 100).toFixed(1)}%)` : '';
+      document.getElementById('tt-head-pct').textContent   = totalHeadcount > 0 ? `(${(d.data.headcount / totalHeadcount * 100).toFixed(1)}%)` : '';
       tooltip.classList.add('visible');
       tooltip.style.left = (event.clientX + 14) + 'px';
       tooltip.style.top  = (event.clientY - 10) + 'px';
