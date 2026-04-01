@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Methodology — NYC Agency Explorer — NYCuriosity Data</title>
+  <meta name="description" content="How budget figures, headcount data, and agency categorizations were compiled for the NYC Agency Explorer.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue:       #2563eb;
+      --blue-hover: #1d4ed8;
+      --blue-light: #eff6ff;
+      --text:       #111827;
+      --text-mid:   #374151;
+      --text-muted: #6b7280;
+      --text-faint: #9ca3af;
+      --bg:         #f8faff;
+      --surface:    #ffffff;
+      --border:     #e5e7eb;
+      --shadow-sm:  0 1px 3px rgba(17,24,39,0.08);
+      --radius:     10px;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── HEADER ─────────────────────────────────────────── */
+    header {
+      background: #111827;
+      border-bottom: 1px solid #1f2937;
+      padding: 0 clamp(20px, 5vw, 48px);
+    }
+    .header-inner {
+      max-width: 900px;
+      margin: 0 auto;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .brand { display: flex; align-items: baseline; gap: 6px; text-decoration: none; }
+    .brand-name { font-family: 'Roboto Mono', monospace; font-size: 1rem; font-weight: 700; color: #60a5fa; letter-spacing: -0.02em; }
+    .brand-slash { font-family: 'Roboto Mono', monospace; font-size: 1rem; font-weight: 400; color: #4b5563; }
+    .brand-section { font-family: 'Roboto Mono', monospace; font-size: 1rem; font-weight: 600; color: #e5e7eb; }
+    .header-link {
+      font-size: 0.8rem; font-weight: 500; color: #9ca3af;
+      text-decoration: none; display: flex; align-items: center; gap: 5px; transition: color 0.15s;
+    }
+    .header-link:hover { color: #60a5fa; }
+
+    /* ── BREADCRUMB ─────────────────────────────────────── */
+    .breadcrumb {
+      padding: 14px clamp(20px, 5vw, 48px);
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+    }
+    .breadcrumb-inner {
+      max-width: 900px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--text-faint);
+    }
+    .breadcrumb a { color: var(--blue); text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+
+    /* ── CONTENT ─────────────────────────────────────────── */
+    .content {
+      flex: 1;
+      padding: clamp(32px, 5vw, 56px) clamp(20px, 5vw, 48px) clamp(48px, 6vw, 72px);
+    }
+    .content-inner {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .page-label {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.68rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--blue);
+      margin-bottom: 10px;
+    }
+    h1 {
+      font-family: 'Roboto Mono', monospace;
+      font-size: clamp(1.4rem, 3.5vw, 2rem);
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.03em;
+      line-height: 1.2;
+      margin-bottom: 8px;
+    }
+    .page-sub {
+      font-size: 1rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin-bottom: 40px;
+      padding-bottom: 28px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .section {
+      margin-bottom: 36px;
+    }
+    h2 {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.01em;
+      margin-bottom: 10px;
+    }
+    p {
+      font-size: 0.9rem;
+      color: var(--text-mid);
+      line-height: 1.7;
+      margin-bottom: 10px;
+    }
+    p:last-child { margin-bottom: 0; }
+    ul {
+      list-style: none;
+      margin-bottom: 10px;
+    }
+    ul li {
+      font-size: 0.9rem;
+      color: var(--text-mid);
+      line-height: 1.7;
+      padding: 4px 0 4px 20px;
+      position: relative;
+    }
+    ul li::before {
+      content: '→';
+      position: absolute;
+      left: 0;
+      color: var(--blue);
+      font-weight: 700;
+      font-size: 0.8rem;
+    }
+    a { color: var(--blue); }
+    a:hover { text-decoration: underline; }
+
+    .table-wrap {
+      overflow-x: auto;
+      margin-bottom: 10px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+    th {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      text-align: left;
+      padding: 8px 12px;
+      background: var(--bg);
+      border-bottom: 2px solid var(--border);
+    }
+    td {
+      padding: 8px 12px;
+      color: var(--text-mid);
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+    tr:last-child td { border-bottom: none; }
+
+    .callout {
+      background: var(--blue-light);
+      border-left: 3px solid var(--blue);
+      border-radius: 0 6px 6px 0;
+      padding: 14px 16px;
+      margin-bottom: 16px;
+    }
+    .callout p {
+      font-size: 0.875rem;
+      color: #1e40af;
+      margin-bottom: 0;
+    }
+
+    .back-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--blue);
+      text-decoration: none;
+      margin-top: 32px;
+      transition: gap 0.15s;
+    }
+    .back-link:hover { gap: 9px; text-decoration: none; }
+
+    /* ── FOOTER ──────────────────────────────────────────── */
+    footer {
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      padding: 20px clamp(20px, 5vw, 48px);
+    }
+    .footer-inner {
+      max-width: 900px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .footer-copy { font-size: 0.8rem; color: var(--text-faint); }
+    .footer-links { display: flex; gap: 20px; }
+    .footer-links a { font-size: 0.8rem; color: var(--text-faint); text-decoration: none; transition: color 0.15s; }
+    .footer-links a:hover { color: var(--blue); }
+
+    @media (max-width: 540px) {
+      .brand-slash, .brand-section { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="header-inner">
+    <a href="/" class="brand" aria-label="NYCuriosity Data home">
+      <span class="brand-name">nycuriosity</span>
+      <span class="brand-slash">/</span>
+      <span class="brand-section">data</span>
+    </a>
+    <a href="https://nycuriosity.substack.com" class="header-link" target="_blank" rel="noopener">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 4h16v4H4z"/><path d="M4 10h16v10l-8-4-8 4z"/>
+      </svg>
+      Read on Substack
+    </a>
+  </div>
+</header>
+
+<!-- BREADCRUMB -->
+<div class="breadcrumb">
+  <div class="breadcrumb-inner">
+    <a href="/">data.nycuriosity.com</a>
+    <span>/</span>
+    <a href="/nyc-agencies/">NYC Agency Explorer</a>
+    <span>/</span>
+    <span>Methodology</span>
+  </div>
+</div>
+
+<!-- CONTENT -->
+<div class="content">
+  <div class="content-inner">
+
+    <p class="page-label">Civic Reference · Methodology</p>
+    <h1>How This Data Was Compiled</h1>
+    <p class="page-sub">Budget figures, headcount data, and agency classifications for the NYC Agency Explorer — sources, definitions, and known limitations.</p>
+
+    <div class="section">
+      <h2>Budget Figures</h2>
+      <p>All budget figures reflect the <strong>NYC FY2025 Adopted Budget</strong>, published by the NYC Office of Management & Budget (OMB) in June 2024. These are the appropriations approved by the City Council at the start of the fiscal year (July 1, 2024 – June 30, 2025).</p>
+      <p>The figures shown are <strong>total budget</strong> for each agency — they include city funds, state funds, federal funds, and intra-city funds, but not all sources are broken out individually. For very large agencies (DOE, HRA, H+H), the city-funded share may be substantially smaller than the total shown.</p>
+      <div class="callout">
+        <p>The NYC Executive Budget and supporting schedules are published at <a href="https://www.nyc.gov/site/omb/publications/publications.page" target="_blank" rel="noopener">nyc.gov/omb</a>. Agency detail tables (the "MMRs" — Mayor's Management Reports) provide program-level spending.</p>
+      </div>
+      <p>For off-budget or independently-financed entities (e.g., NYCHA, NYC Health + Hospitals, EDC), the figures shown represent city subsidy and operating budget as reported in the Adopted Budget overview. These organizations have separate revenue streams (rent, patient fees, grants) that are not fully captured here.</p>
+    </div>
+
+    <div class="section">
+      <h2>Headcount Figures</h2>
+      <p>Headcount reflects planned <strong>full-time equivalent (FTE) positions</strong> for FY2025 as reported in the Adopted Budget. This includes both full-time and part-time positions converted to full-time equivalents.</p>
+      <p>Headcount does not include:</p>
+      <ul>
+        <li>Contracted workers (e.g., security guards, janitorial staff, social service providers under contract)</li>
+        <li>Seasonal or temporary workers at agencies like Parks or Sanitation (which see large headcount spikes in summer)</li>
+        <li>CUNY or library staff funded entirely through non-city grants</li>
+      </ul>
+      <p>For public authorities like NYCHA (~10,900) and NYC Health + Hospitals (~42,000), headcount reflects total employees of those entities, not only those paid by city funds.</p>
+    </div>
+
+    <div class="section">
+      <h2>Agency Selection</h2>
+      <p>This explorer includes approximately 80 distinct operating agencies, authorities, and major elected offices. The following types of entities are <em>excluded</em>:</p>
+      <ul>
+        <li>Debt service (a large budget line, not an agency)</li>
+        <li>Pension contributions (managed by TRS, NYCERS, BERS, Police Pension, Fire Pension — these are tracked separately)</li>
+        <li>Miscellaneous appropriations and reserve funds</li>
+        <li>Interagency programs (energy, fringe benefits, citywide overhead)</li>
+        <li>Water and sewer funds (shown separately from DEP's expense budget)</li>
+      </ul>
+      <p>Some agencies that share a headcount or budget line in the official budget are shown separately here for clarity (e.g., the five DA offices appear individually).</p>
+    </div>
+
+    <div class="section">
+      <h2>Sector Classifications</h2>
+      <p>Agencies are grouped into nine sectors for the treemap view. These are editorial categorizations by NYCuriosity — they do not correspond to official NYC budget categories, which use a different grouping system.</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Sector</th>
+              <th>Included agencies (examples)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Public Safety</td><td>NYPD, FDNY, DOC, Probation, CCRB, DOI, OEM, OATH, COIB</td></tr>
+            <tr><td>Education</td><td>DOE, CUNY, SCA, NYPL, BPL, QPL</td></tr>
+            <tr><td>Health &amp; Human Services</td><td>HRA, DHS, H+H, ACS, DOHMH, DFTA, DYCD</td></tr>
+            <tr><td>Housing &amp; Development</td><td>HPD, NYCHA, DCP, LPC</td></tr>
+            <tr><td>Transportation &amp; Infrastructure</td><td>DOT, DEP, DDC, DSNY</td></tr>
+            <tr><td>Finance &amp; Administration</td><td>DCAS, DOF, OMB, OTI, Law Dept, OPA, MOCS, DORIS</td></tr>
+            <tr><td>Parks &amp; Culture</td><td>DPR, DCLA</td></tr>
+            <tr><td>Economic Development</td><td>SBS, EDC, DOB, DCWP, TLC, BIC</td></tr>
+            <tr><td>Elected &amp; Legal</td><td>Comptroller, Public Advocate, City Council, Borough Presidents (5), DAs (5), BOE, CCHR</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="section">
+      <h2>Known Limitations</h2>
+      <ul>
+        <li>Budget figures are from the <em>Adopted</em> budget, not the Modified or Final budget. Actual spending in FY2025 may differ due to mid-year modifications, emergency appropriations, or savings actions.</li>
+        <li>Multi-agency programs (e.g., the DSS umbrella covering both HRA and DHS) may lead to some double-counting in aggregate sector totals if you add individual lines.</li>
+        <li>The libraries (NYPL, BPL, QPL) receive city subsidies but are legally independent nonprofits; total organization revenue is larger than the city contribution shown.</li>
+        <li>NYC Health + Hospitals runs on a revolving fund with significant Medicaid and commercial insurance revenue; the $10.3B figure here reflects total operating revenue, not city subsidy alone.</li>
+        <li>Data was compiled by hand from public budget documents; small rounding differences from official published totals are possible.</li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h2>Primary Sources</h2>
+      <ul>
+        <li><a href="https://www.nyc.gov/site/omb/publications/publications.page" target="_blank" rel="noopener">NYC FY2025 Adopted Budget — NYC OMB</a></li>
+        <li><a href="https://www.nyc.gov/site/operations/performance/mmr.page" target="_blank" rel="noopener">Mayor's Management Report (FY2024) — NYC Office of Operations</a></li>
+        <li><a href="https://opendata.cityofnewyork.us/" target="_blank" rel="noopener">NYC Open Data — cityofnewyork.us</a></li>
+        <li>Individual agency websites for programmatic descriptions</li>
+      </ul>
+    </div>
+
+    <a class="back-link" href="/nyc-agencies/">← Back to Agency Explorer</a>
+
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <span class="footer-copy">© NYCuriosity · Tal Roded</span>
+    <nav class="footer-links">
+      <a href="https://nycuriosity.substack.com" target="_blank" rel="noopener">Substack</a>
+      <a href="https://github.com/TalR24/nycur-data-website" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </div>
+</footer>
+
+</body>
+</html>

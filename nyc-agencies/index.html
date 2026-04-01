@@ -1,0 +1,1187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NYC Agency Explorer — NYCuriosity Data</title>
+  <meta name="description" content="Explore all ~80 NYC city agencies by budget and headcount. Interactive treemap and searchable card grid — FY2025 data.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://data.nycuriosity.com/nyc-agencies/">
+  <meta property="og:title" content="NYC Agency Explorer — NYCuriosity Data">
+  <meta property="og:description" content="Explore all ~80 NYC city agencies by budget and headcount. Interactive treemap and searchable card grid — FY2025 data.">
+  <meta property="og:image" content="https://data.nycuriosity.com/website_logo.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue:       #2563eb;
+      --blue-hover: #1d4ed8;
+      --blue-light: #eff6ff;
+      --blue-mid:   #bfdbfe;
+      --text:       #111827;
+      --text-mid:   #374151;
+      --text-muted: #6b7280;
+      --text-faint: #9ca3af;
+      --bg:         #f8faff;
+      --surface:    #ffffff;
+      --border:     #e5e7eb;
+      --border-mid: #d1d5db;
+      --shadow-sm:  0 1px 3px rgba(17,24,39,0.08);
+      --shadow-md:  0 4px 16px rgba(37,99,235,0.12);
+      --radius:     10px;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── HEADER ─────────────────────────────────────────── */
+    header {
+      background: #111827;
+      border-bottom: 1px solid #1f2937;
+      padding: 0 clamp(20px, 5vw, 48px);
+    }
+    .header-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .brand {
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+      text-decoration: none;
+    }
+    .brand-name {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 1rem;
+      font-weight: 700;
+      color: #60a5fa;
+      letter-spacing: -0.02em;
+    }
+    .brand-slash { font-family: 'Roboto Mono', monospace; font-size: 1rem; font-weight: 400; color: #4b5563; }
+    .brand-section { font-family: 'Roboto Mono', monospace; font-size: 1rem; font-weight: 600; color: #e5e7eb; }
+    .header-link {
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: #9ca3af;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: color 0.15s;
+    }
+    .header-link:hover { color: #60a5fa; }
+
+    /* ── BREADCRUMB ─────────────────────────────────────── */
+    .breadcrumb {
+      padding: 14px clamp(20px, 5vw, 48px);
+      border-bottom: 1px solid var(--border);
+      background: var(--surface);
+    }
+    .breadcrumb-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--text-faint);
+    }
+    .breadcrumb a { color: var(--blue); text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+    .breadcrumb span { color: var(--text-faint); }
+
+    /* ── HERO ────────────────────────────────────────────── */
+    .hero {
+      padding: clamp(28px, 5vw, 48px) clamp(20px, 5vw, 48px) 0;
+    }
+    .hero-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding-bottom: clamp(24px, 4vw, 36px);
+      border-bottom: 1px solid var(--border);
+    }
+    .hero-label {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.68rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--blue);
+      margin-bottom: 10px;
+    }
+    .hero h1 {
+      font-family: 'Roboto Mono', monospace;
+      font-size: clamp(1.6rem, 4vw, 2.2rem);
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.03em;
+      line-height: 1.2;
+      margin-bottom: 10px;
+    }
+    .hero h1 span { color: var(--blue); }
+    .hero-desc {
+      font-size: 1rem;
+      color: var(--text-muted);
+      max-width: 620px;
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+    .hero-stats {
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+    .hero-stat {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .hero-stat-num {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.02em;
+    }
+    .hero-stat-label {
+      font-size: 0.75rem;
+      color: var(--text-faint);
+      font-weight: 500;
+    }
+    .hero-stat-divider {
+      width: 1px;
+      background: var(--border);
+      align-self: stretch;
+      margin: 0 4px;
+    }
+
+    /* ── MAIN CONTENT ───────────────────────────────────── */
+    .main {
+      flex: 1;
+      padding: clamp(24px, 4vw, 40px) clamp(20px, 5vw, 48px) clamp(40px, 6vw, 64px);
+    }
+    .main-inner { max-width: 1200px; margin: 0 auto; }
+
+    /* ── VIEW TOGGLE ────────────────────────────────────── */
+    .view-controls {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+    .pill-nav {
+      display: flex;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 4px;
+      gap: 2px;
+    }
+    .pill-btn {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 6px 16px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      background: transparent;
+      color: var(--text-muted);
+      transition: background 0.15s, color 0.15s;
+      letter-spacing: 0.02em;
+    }
+    .pill-btn.active {
+      background: var(--blue);
+      color: #fff;
+    }
+    .pill-btn:not(.active):hover {
+      background: var(--blue-light);
+      color: var(--blue);
+    }
+
+    /* ── SEARCH / FILTER ────────────────────────────────── */
+    .search-bar {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .search-input-wrap {
+      position: relative;
+      flex: 1;
+      min-width: 220px;
+      max-width: 360px;
+    }
+    .search-input-wrap svg {
+      position: absolute;
+      left: 11px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-faint);
+      pointer-events: none;
+    }
+    .search-input {
+      width: 100%;
+      padding: 8px 12px 8px 34px;
+      border: 1px solid var(--border-mid);
+      border-radius: 8px;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.875rem;
+      color: var(--text);
+      background: var(--surface);
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .search-input:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+    }
+    .sector-filter {
+      padding: 8px 12px;
+      border: 1px solid var(--border-mid);
+      border-radius: 8px;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.875rem;
+      color: var(--text);
+      background: var(--surface);
+      cursor: pointer;
+      outline: none;
+    }
+    .sector-filter:focus { border-color: var(--blue); }
+    .results-count {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--text-faint);
+      white-space: nowrap;
+      margin-left: auto;
+    }
+
+    /* ── CARD GRID VIEW ─────────────────────────────────── */
+    #grid-view { display: block; }
+    #treemap-view { display: none; }
+
+    .agency-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 14px;
+    }
+    .agency-card {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      cursor: pointer;
+      transition: border-color 0.18s, box-shadow 0.18s, transform 0.15s;
+    }
+    .agency-card:hover {
+      border-color: var(--blue-mid);
+      box-shadow: var(--shadow-md);
+      transform: translateY(-1px);
+    }
+    .agency-card.expanded {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(37,99,235,0.12), var(--shadow-md);
+    }
+    .agency-card-header {
+      padding: 16px 18px 14px;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+    .agency-acronym {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.72rem;
+      font-weight: 700;
+      background: var(--blue-light);
+      color: var(--blue);
+      border-radius: 5px;
+      padding: 4px 8px;
+      flex-shrink: 0;
+      letter-spacing: 0.04em;
+      line-height: 1;
+      margin-top: 2px;
+    }
+    .agency-name-block { flex: 1; min-width: 0; }
+    .agency-name {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.3;
+      letter-spacing: -0.01em;
+      margin-bottom: 2px;
+    }
+    .agency-full-name {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+    .expand-arrow {
+      color: var(--text-faint);
+      flex-shrink: 0;
+      transition: transform 0.2s, color 0.15s;
+      margin-top: 2px;
+    }
+    .agency-card.expanded .expand-arrow { transform: rotate(180deg); color: var(--blue); }
+    .agency-card-meta {
+      padding: 0 18px 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .sector-badge {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.62rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      padding: 3px 8px;
+      border-radius: 4px;
+      flex-shrink: 0;
+    }
+    .agency-numbers {
+      margin-left: auto;
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+    .agency-num {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 1px;
+    }
+    .agency-num-val {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1;
+    }
+    .agency-num-label {
+      font-size: 0.65rem;
+      color: var(--text-faint);
+      line-height: 1;
+    }
+
+    /* ── INLINE EXPAND ──────────────────────────────────── */
+    .agency-expand {
+      display: none;
+      border-top: 1px solid var(--border);
+      padding: 16px 18px 18px;
+      background: var(--blue-light);
+    }
+    .agency-card.expanded .agency-expand { display: block; }
+    .agency-expand-desc {
+      font-size: 0.83rem;
+      color: var(--text-mid);
+      line-height: 1.6;
+      margin-bottom: 12px;
+    }
+    .agency-expand-programs {
+      margin-bottom: 12px;
+    }
+    .agency-expand-programs-label {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.65rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-faint);
+      margin-bottom: 6px;
+    }
+    .agency-expand-programs ul {
+      list-style: none;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .agency-expand-programs li {
+      font-size: 0.75rem;
+      color: var(--text-mid);
+      background: rgba(37,99,235,0.08);
+      border-radius: 4px;
+      padding: 3px 8px;
+    }
+    .agency-expand-link {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: var(--blue);
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: gap 0.15s;
+    }
+    .agency-expand-link:hover { gap: 7px; text-decoration: underline; }
+
+    /* ── NO RESULTS ─────────────────────────────────────── */
+    .no-results {
+      grid-column: 1 / -1;
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-faint);
+      font-size: 0.9rem;
+    }
+    .no-results strong {
+      display: block;
+      font-family: 'Roboto Mono', monospace;
+      font-size: 1rem;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    /* ── TREEMAP VIEW ───────────────────────────────────── */
+    .treemap-controls {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .treemap-metric-toggle {
+      display: flex;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 4px;
+      gap: 2px;
+    }
+    .metric-btn {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 5px 14px;
+      border-radius: 5px;
+      border: none;
+      cursor: pointer;
+      background: transparent;
+      color: var(--text-muted);
+      transition: background 0.15s, color 0.15s;
+      letter-spacing: 0.02em;
+    }
+    .metric-btn.active {
+      background: var(--text);
+      color: #fff;
+    }
+    .metric-btn:not(.active):hover {
+      background: var(--bg);
+      color: var(--text);
+    }
+    .treemap-hint {
+      font-size: 0.75rem;
+      color: var(--text-faint);
+      font-style: italic;
+    }
+    .treemap-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+    #treemap-container {
+      width: 100%;
+      height: 560px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      position: relative;
+    }
+    #treemap-container svg { display: block; width: 100%; height: 100%; }
+
+    /* ── TREEMAP TOOLTIP ────────────────────────────────── */
+    .treemap-tooltip {
+      position: fixed;
+      background: #111827;
+      color: #f9fafb;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.15s;
+      z-index: 1000;
+      max-width: 240px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.25);
+    }
+    .treemap-tooltip.visible { opacity: 1; }
+    .tt-name {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.78rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+      line-height: 1.3;
+    }
+    .tt-sector { font-size: 0.7rem; color: #9ca3af; margin-bottom: 6px; }
+    .tt-stats { display: flex; flex-direction: column; gap: 2px; }
+    .tt-stat {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      font-size: 0.73rem;
+    }
+    .tt-stat-label { color: #9ca3af; }
+    .tt-stat-val { font-family: 'Roboto Mono', monospace; font-weight: 600; color: #f9fafb; }
+
+    /* ── METHODOLOGY LINK ───────────────────────────────── */
+    .methodology-link-row {
+      margin-top: 28px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .methodology-link-text {
+      font-size: 0.82rem;
+      color: var(--text-faint);
+    }
+    .methodology-link-text a {
+      color: var(--blue);
+      text-decoration: none;
+      font-weight: 500;
+    }
+    .methodology-link-text a:hover { text-decoration: underline; }
+
+    /* ── FOOTER ──────────────────────────────────────────── */
+    footer {
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      padding: 20px clamp(20px, 5vw, 48px);
+    }
+    .footer-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .footer-copy { font-size: 0.8rem; color: var(--text-faint); }
+    .footer-links { display: flex; gap: 20px; }
+    .footer-links a {
+      font-size: 0.8rem;
+      color: var(--text-faint);
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+    .footer-links a:hover { color: var(--blue); }
+
+    @media (max-width: 540px) {
+      .brand-slash, .brand-section { display: none; }
+      .hero-stat-divider { display: none; }
+      .view-controls { flex-direction: column; align-items: flex-start; }
+      #treemap-container { height: 420px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="header-inner">
+    <a href="/" class="brand" aria-label="NYCuriosity Data home">
+      <span class="brand-name">nycuriosity</span>
+      <span class="brand-slash">/</span>
+      <span class="brand-section">data</span>
+    </a>
+    <a href="https://nycuriosity.substack.com" class="header-link" target="_blank" rel="noopener">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M4 4h16v4H4z"/><path d="M4 10h16v10l-8-4-8 4z"/>
+      </svg>
+      Read on Substack
+    </a>
+  </div>
+</header>
+
+<!-- BREADCRUMB -->
+<div class="breadcrumb">
+  <div class="breadcrumb-inner">
+    <a href="/">data.nycuriosity.com</a>
+    <span>/</span>
+    <span>NYC Agency Explorer</span>
+  </div>
+</div>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-inner">
+    <p class="hero-label">Civic Reference</p>
+    <h1>NYC <span>Agency</span> Explorer</h1>
+    <p class="hero-desc">Browse all ~80 New York City agencies — from NYPD to the Landmarks Commission — with FY2025 budget and headcount data. Toggle between a searchable card grid and a D3 treemap to see where the money goes.</p>
+    <div class="hero-stats">
+      <div class="hero-stat">
+        <span class="hero-stat-num">80</span>
+        <span class="hero-stat-label">agencies</span>
+      </div>
+      <div class="hero-stat-divider"></div>
+      <div class="hero-stat">
+        <span class="hero-stat-num">$113B</span>
+        <span class="hero-stat-label">total FY25 budget</span>
+      </div>
+      <div class="hero-stat-divider"></div>
+      <div class="hero-stat">
+        <span class="hero-stat-num">~300K</span>
+        <span class="hero-stat-label">city employees</span>
+      </div>
+      <div class="hero-stat-divider"></div>
+      <div class="hero-stat">
+        <span class="hero-stat-num">9</span>
+        <span class="hero-stat-label">sectors</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TOOLTIP (for treemap) -->
+<div class="treemap-tooltip" id="tooltip">
+  <div class="tt-name" id="tt-name"></div>
+  <div class="tt-sector" id="tt-sector"></div>
+  <div class="tt-stats">
+    <div class="tt-stat"><span class="tt-stat-label">Budget (FY25)</span><span class="tt-stat-val" id="tt-budget"></span></div>
+    <div class="tt-stat"><span class="tt-stat-label">Headcount</span><span class="tt-stat-val" id="tt-head"></span></div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<main class="main">
+  <div class="main-inner">
+
+    <!-- VIEW TOGGLE + SEARCH -->
+    <div class="view-controls">
+      <div class="pill-nav" role="tablist" aria-label="View mode">
+        <button class="pill-btn active" id="btn-grid" role="tab" aria-selected="true" onclick="switchView('grid')">Card Grid</button>
+        <button class="pill-btn" id="btn-treemap" role="tab" aria-selected="false" onclick="switchView('treemap')">Treemap</button>
+      </div>
+      <div class="search-bar" id="grid-search">
+        <div class="search-input-wrap">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+          </svg>
+          <input type="search" class="search-input" id="search-input" placeholder="Search agencies…" oninput="filterCards()" aria-label="Search agencies">
+        </div>
+        <select class="sector-filter" id="sector-filter" onchange="filterCards()" aria-label="Filter by sector">
+          <option value="">All sectors</option>
+          <option value="Public Safety">Public Safety</option>
+          <option value="Education">Education</option>
+          <option value="Health &amp; Human Services">Health &amp; Human Services</option>
+          <option value="Housing &amp; Development">Housing &amp; Development</option>
+          <option value="Transportation &amp; Infrastructure">Transportation &amp; Infrastructure</option>
+          <option value="Finance &amp; Administration">Finance &amp; Administration</option>
+          <option value="Parks &amp; Culture">Parks &amp; Culture</option>
+          <option value="Economic Development">Economic Development</option>
+          <option value="Elected &amp; Legal">Elected &amp; Legal</option>
+        </select>
+        <span class="results-count" id="results-count"></span>
+      </div>
+    </div>
+
+    <!-- GRID VIEW -->
+    <div id="grid-view">
+      <div class="agency-grid" id="agency-grid"></div>
+    </div>
+
+    <!-- TREEMAP VIEW -->
+    <div id="treemap-view">
+      <div class="treemap-controls">
+        <div class="treemap-metric-toggle">
+          <button class="metric-btn active" id="btn-budget" onclick="setMetric('budget')">Budget</button>
+          <button class="metric-btn" id="btn-headcount" onclick="setMetric('headcount')">Headcount</button>
+        </div>
+        <span class="treemap-hint">Hover over a block to see agency details</span>
+      </div>
+      <div class="treemap-legend" id="treemap-legend"></div>
+      <div id="treemap-container"></div>
+    </div>
+
+    <!-- METHODOLOGY LINK -->
+    <div class="methodology-link-row">
+      <p class="methodology-link-text">
+        Budget figures are from the NYC FY2025 Adopted Budget (June 2024). Headcount reflects planned full-time equivalents.
+        <a href="/nyc-agencies/methodology/">Full methodology →</a>
+      </p>
+      <p class="methodology-link-text">Source: NYC OMB, NYC OpenData, agency websites</p>
+    </div>
+
+  </div>
+</main>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <span class="footer-copy">© NYCuriosity · Tal Roded</span>
+    <nav class="footer-links">
+      <a href="https://nycuriosity.substack.com" target="_blank" rel="noopener">Substack</a>
+      <a href="https://github.com/TalR24/nycur-data-website" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </div>
+</footer>
+
+<script>
+// ── AGENCY DATA ──────────────────────────────────────────────────────────────
+// budget_m = FY2025 Adopted Budget in millions of dollars
+// headcount = planned full-time equivalents (FY2025)
+const AGENCIES = [
+  // PUBLIC SAFETY
+  { id:"nypd",   abbr:"NYPD",   name:"Police Department",                  sector:"Public Safety",                budget_m:6107, headcount:35000, desc:"Patrol, detective, traffic enforcement, counterterrorism, and school safety across NYC's five boroughs. The largest municipal police force in the US.", programs:["Patrol Services","Detective Bureau","School Safety","Counterterrorism","Internal Affairs"], url:"https://www.nyc.gov/nypd" },
+  { id:"fdny",   abbr:"FDNY",   name:"Fire Department",                    sector:"Public Safety",                budget_m:2687, headcount:17200, desc:"Fire suppression, emergency medical services (EMS), hazmat response, and fire prevention inspections citywide.", programs:["Fire Suppression","EMS","Hazmat","Fire Prevention","Fire Investigation"], url:"https://www.nyc.gov/fdny" },
+  { id:"doc",    abbr:"DOC",    name:"Department of Correction",           sector:"Public Safety",                budget_m:2957, headcount:7900,  desc:"Operates the city jail system including Rikers Island and borough facilities. Responsible for the custody and care of pretrial detainees.", programs:["Facility Operations","Program Services","Healthcare (contracted)","Court Services"], url:"https://www.nyc.gov/doc" },
+  { id:"prob",   abbr:"PROB",   name:"Department of Probation",            sector:"Public Safety",                budget_m:194,  headcount:1100,  desc:"Supervises adults and juveniles on probation; operates the NeON centers providing job training and youth services in high-incarceration neighborhoods.", programs:["Adult Supervision","Juvenile Supervision","NeON Neighborhood Opportunity Network"], url:"https://www.nyc.gov/prob" },
+  { id:"ccrb",   abbr:"CCRB",   name:"Civilian Complaint Review Board",    sector:"Public Safety",                budget_m:28,   headcount:175,   desc:"Independent city agency that investigates, mediates, and prosecutes complaints against NYPD officers. Has authority to recommend discipline.", programs:["Investigations","Mediation","Board Hearings","Police Accountability"], url:"https://www.nyc.gov/ccrb" },
+  { id:"oath",   abbr:"OATH",   name:"Office of Admin Trials & Hearings",  sector:"Public Safety",                budget_m:40,   headcount:280,   desc:"Administrative court handling hearings for city agencies including DOB violations, taxi and food vendor adjudications, and employee disciplinary cases.", programs:["Agency Adjudication","Tribunal Hearings","Appeals"], url:"https://www.nyc.gov/oath" },
+  { id:"doi",    abbr:"DOI",    name:"Department of Investigation",        sector:"Public Safety",                budget_m:68,   headcount:490,   desc:"Inspector general for NYC government. Investigates corruption, fraud, and misconduct by city employees, contractors, and officials.", programs:["Investigations","Inspector General Units","Public Integrity"], url:"https://www.nyc.gov/doi" },
+  { id:"coib",   abbr:"COIB",   name:"Conflicts of Interest Board",        sector:"Public Safety",                budget_m:11,   headcount:65,    desc:"Enforces NYC's conflicts of interest laws for city employees and elected officials. Issues guidance and investigates violations.", programs:["Enforcement","Advisory Opinions","Financial Disclosure"], url:"https://www.nyc.gov/coib" },
+  { id:"oem",    abbr:"OEM",    name:"Office of Emergency Management",     sector:"Public Safety",                budget_m:97,   headcount:210,   desc:"Coordinates city agencies and community partners to prepare for, respond to, and recover from disasters and large-scale emergencies.", programs:["Emergency Operations Center","Community Preparedness","Hazard Mitigation","Recovery"], url:"https://www.nyc.gov/oem" },
+
+  // EDUCATION
+  { id:"doe",    abbr:"DOE",    name:"Department of Education",            sector:"Education",                    budget_m:38470,headcount:73000, desc:"Operates the largest school district in the US — 1,600+ schools serving over 900,000 students. Includes funding from city, state, and federal sources.", programs:["K-12 Schools","Special Education","Early Childhood (3-K/Pre-K)","English Language Learners","Community Schools"], url:"https://www.nyc.gov/doe" },
+  { id:"cuny",   abbr:"CUNY",   name:"City University of New York",        sector:"Education",                    budget_m:3541, headcount:29000, desc:"25-campus public university system serving 230,000+ degree students. Includes flagship colleges (City, Brooklyn, Hunter, Queens) and 7 community colleges.", programs:["Senior Colleges","Community Colleges","Graduate Center","Adult & Continuing Ed","Financial Aid (CUNY)"], url:"https://www.cuny.edu" },
+  { id:"sca",    abbr:"SCA",    name:"School Construction Authority",      sector:"Education",                    budget_m:2521, headcount:490,   desc:"Plans, manages, and implements construction, renovation, and modernization of NYC public schools. Oversees multi-billion-dollar capital plan.", programs:["New School Construction","Renovation & Modernization","Capital Planning","Environmental Remediation"], url:"https://www.nycsca.org" },
+  { id:"nypl",   abbr:"NYPL",   name:"New York Public Library",            sector:"Education",                    budget_m:261,  headcount:3500,  desc:"City-funded nonprofit library system serving Manhattan, the Bronx, and Staten Island. 92 branches, plus the flagship research libraries on 42nd St.", programs:["Branch Libraries","Research Libraries","Early Literacy","Digital Resources","Adult Learning"], url:"https://www.nypl.org" },
+  { id:"bpl",    abbr:"BPL",    name:"Brooklyn Public Library",            sector:"Education",                    budget_m:107,  headcount:1800,  desc:"Independent public library system serving all of Brooklyn's 2.6 million residents across 60 branches.", programs:["Branch Libraries","Literacy Programs","Digital Services","Children's Services"], url:"https://www.bklynlibrary.org" },
+  { id:"qpl",    abbr:"QPL",    name:"Queens Public Library",              sector:"Education",                    budget_m:93,   headcount:1600,  desc:"Serves Queens across 65 branches with one of the largest immigrant-serving programs of any library system in the country.", programs:["Branch Libraries","New American Programs","Workforce Development","Early Childhood"], url:"https://www.queenslibrary.org" },
+
+  // HEALTH & HUMAN SERVICES
+  { id:"hha",    abbr:"HRA",    name:"Human Resources Administration",     sector:"Health & Human Services",      budget_m:11387,headcount:14500, desc:"Administers SNAP (food stamps), Medicaid enrollment, cash assistance, domestic violence services, and adult protective services. NYC's social safety net backbone.", programs:["SNAP / Food Assistance","Medicaid Enrollment","Cash Assistance","Adult Protective Services","Domestic Violence"], url:"https://www.nyc.gov/hra" },
+  { id:"dhs",    abbr:"DHS",    name:"Department of Homeless Services",    sector:"Health & Human Services",      budget_m:3381, headcount:2700,  desc:"Provides emergency shelter for adults, families, and youth experiencing homelessness. Operates the citywide shelter system and outreach programs.", programs:["Adult Shelters","Family Shelters","Outreach & Engagement","Prevention Services","PATH Intake"], url:"https://www.nyc.gov/dhs" },
+  { id:"hhc",    abbr:"H+H",    name:"NYC Health + Hospitals",             sector:"Health & Human Services",      budget_m:10291,headcount:42000, desc:"Nation's largest municipal health system — 11 hospitals, over 70 community health centers and clinics, serving 1.1 million New Yorkers annually, regardless of ability to pay.", programs:["Acute Care Hospitals","Gotham Health (Clinics)","Correctional Health","Behavioral Health","Homelessness Health"], url:"https://www.nychealthandhospitals.org" },
+  { id:"acs",    abbr:"ACS",    name:"Administration for Children's Svcs", sector:"Health & Human Services",      budget_m:3221, headcount:7100,  desc:"Child welfare agency responsible for child protective services, foster care, preventive services, and juvenile justice programs.", programs:["Child Protective Services","Foster Care","Juvenile Justice","Early Childhood","Preventive Services"], url:"https://www.nyc.gov/acs" },
+  { id:"dohmh",  abbr:"DOHMH",  name:"Dept of Health & Mental Hygiene",    sector:"Health & Human Services",      budget_m:2090, headcount:6800,  desc:"Public health agency overseeing disease surveillance, mental health licensing, restaurant inspections, vital records, and community health initiatives.", programs:["Disease Control","Mental Health","Environmental Health","Emergency Preparedness","Vital Statistics"], url:"https://www.nyc.gov/health" },
+  { id:"dfta",   abbr:"DFTA",   name:"Department for the Aging",           sector:"Health & Human Services",      budget_m:619,  headcount:490,   desc:"Funds and oversees a network of senior centers, home-delivered meals, caregiver support, legal services, and other programs for NYC's 1.6 million older adults.", programs:["Senior Centers","Home-Delivered Meals","Caregiver Support","Case Management","Legal Services for Seniors"], url:"https://www.nyc.gov/dfta" },
+  { id:"dycd",   abbr:"DYCD",   name:"Youth & Community Development",      sector:"Health & Human Services",      budget_m:828,  headcount:310,   desc:"Funds community-based organizations providing after-school programs, summer youth jobs, adult literacy, and immigration services citywide.", programs:["After-School Programs","Summer Youth Employment","Adult Literacy","Immigrant Services","Runaway & Homeless Youth"], url:"https://www.nyc.gov/dycd" },
+
+  // HOUSING & DEVELOPMENT
+  { id:"hpd",    abbr:"HPD",    name:"Housing Preservation & Development", sector:"Housing & Development",        budget_m:5143, headcount:2800,  desc:"Finances affordable housing construction and preservation, enforces housing quality standards, and oversees tenant protection. NYC's primary affordable housing agency.", programs:["New Construction Financing","Preservation Financing","Code Enforcement","Tenant Protection","Anti-Harassment"], url:"https://www.nyc.gov/hpd" },
+  { id:"nycha",  abbr:"NYCHA",  name:"NYC Housing Authority",              sector:"Housing & Development",        budget_m:4017, headcount:10900, desc:"Operates 177,000 public housing apartments across 300+ developments, housing over 300,000 low-income New Yorkers. One of the largest public housing authorities in the US.", programs:["Property Management","Capital Repairs","NYCHA 2.0 (RAD/PACT)","Section 8","Resident Services"], url:"https://www.nycha.info" },
+  { id:"dcp",    abbr:"DCP",    name:"Department of City Planning",        sector:"Housing & Development",        budget_m:97,   headcount:620,   desc:"Prepares the city's comprehensive land use plan, manages the ULURP review process, and leads neighborhood rezonings including recent City of Yes for Housing Opportunity.", programs:["Land Use Review (ULURP)","Zoning","Census & Population","Environmental Review","Neighborhood Planning"], url:"https://www.nyc.gov/planning" },
+  { id:"lpc",    abbr:"LPC",    name:"Landmarks Preservation Commission",  sector:"Housing & Development",        budget_m:74,   headcount:80,    desc:"Designates and regulates NYC's 38,000+ landmarked properties — individual landmarks, interior landmarks, scenic landmarks, and 152 historic districts.", programs:["Landmark Designation","Permit Review","Technical Assistance","Archaeology","Historic Districts"], url:"https://www.nyc.gov/landmarks" },
+
+  // TRANSPORTATION & INFRASTRUCTURE
+  { id:"dot",    abbr:"DOT",    name:"Department of Transportation",       sector:"Transportation & Infrastructure",budget_m:1421, headcount:4900,  desc:"Maintains and improves the city's 6,300 miles of streets, 789 bridges, 12,000 intersections, and manages cycling infrastructure, parking regulation, and ferry operations.", programs:["Bridges & Tunnels","Street Design","Cycling & Pedestrian","Traffic Management","Ferry","Parking Regulation"], url:"https://www.nyc.gov/dot" },
+  { id:"dep",    abbr:"DEP",    name:"Dept of Environmental Protection",   sector:"Transportation & Infrastructure",budget_m:2309, headcount:6100,  desc:"Manages the city's water supply (1.1 billion gallons/day), wastewater treatment, 14 reservoirs, and enforces air and noise pollution regulations.", programs:["Water Supply","Wastewater Treatment","Stormwater Management","Air Quality","Noise Enforcement"], url:"https://www.nyc.gov/dep" },
+  { id:"ddc",    abbr:"DDC",    name:"Dept of Design & Construction",      sector:"Transportation & Infrastructure",budget_m:1213, headcount:1550,  desc:"City's primary capital project delivery agency — manages construction of public buildings, infrastructure, and roadways for other agencies.", programs:["Infrastructure","Public Buildings","Utilities","Project Management","Green Buildings"], url:"https://www.nyc.gov/ddc" },
+  { id:"dsny",   abbr:"DSNY",   name:"Department of Sanitation",           sector:"Transportation & Infrastructure",budget_m:2298, headcount:11800, desc:"Collects 12,000 tons of refuse daily, operates composting and recycling programs, and clears snow from 6,400 miles of streets during winter storms.", programs:["Refuse Collection","Recycling & Composting","Snow Removal","Street Cleaning","Public Education"], url:"https://www.nyc.gov/dsny" },
+
+  // FINANCE & ADMINISTRATION
+  { id:"dcas",   abbr:"DCAS",   name:"Dept of Citywide Admin Services",    sector:"Finance & Administration",     budget_m:1327, headcount:2500,  desc:"Manages city real estate, government procurement, vehicle fleet (26,000 vehicles), citywide civil service testing, and energy purchasing.", programs:["Real Property Management","Procurement","Fleet","Civil Service Testing","Energy & Sustainability"], url:"https://www.nyc.gov/dcas" },
+  { id:"dof",    abbr:"DOF",    name:"Department of Finance",              sector:"Finance & Administration",     budget_m:428,  headcount:2200,  desc:"Collects city taxes ($35B+ annually), manages property valuation for 1 million+ properties, enforces parking and camera violations, and administers tax relief programs.", programs:["Tax Collection","Property Valuation","Parking Adjudication","Treasury","Tax Relief Programs"], url:"https://www.nyc.gov/finance" },
+  { id:"omb",    abbr:"OMB",    name:"Office of Management & Budget",      sector:"Finance & Administration",     budget_m:51,   headcount:500,   desc:"Prepares and manages the city's $113B annual budget, tracks spending, and coordinates fiscal policy across all agencies.", programs:["Budget Formulation","Financial Monitoring","Capital Budget","Revenue Forecasting","Federal Grants Management"], url:"https://www.nyc.gov/omb" },
+  { id:"oti",    abbr:"OTI",    name:"Office of Technology & Innovation",  sector:"Finance & Administration",     budget_m:624,  headcount:1500,  desc:"Manages citywide IT infrastructure including NYC.gov, broadband expansion, 311 systems, and cybersecurity. Oversees broadband access initiatives.", programs:["IT Infrastructure","Cybersecurity","Broadband Access","NYC.gov","Smart Cities"], url:"https://www.nyc.gov/oti" },
+  { id:"law",    abbr:"LAW",    name:"Law Department",                     sector:"Finance & Administration",     budget_m:188,  headcount:1900,  desc:"Serves as the City's law firm — represents NYC in litigation, advises agencies on legal matters, and handles labor negotiations.", programs:["Affirmative Litigation","Defense","Legal Counsel","Labor & Employment","Land Use"], url:"https://www.nyc.gov/law" },
+  { id:"opa",    abbr:"OPA",    name:"Office of Payroll Administration",   sector:"Finance & Administration",     budget_m:36,   headcount:290,   desc:"Processes payroll for over 300,000 city employees across all agencies and pension funds.", programs:["Payroll Processing","Time & Leave","Agency Liaison","Systems Administration"], url:"https://www.nyc.gov/opa" },
+  { id:"mocs",   abbr:"MOCS",   name:"Mayor's Office of Contract Services",sector:"Finance & Administration",     budget_m:28,   headcount:150,   desc:"Oversees the city's $20B+ contracting process, administers PASSPort (city's online procurement system), and ensures compliance with procurement rules.", programs:["Procurement Policy","PASSPort System","HHS Accelerator","Vendor Certification"], url:"https://www.nyc.gov/mocs" },
+  { id:"doris",  abbr:"DORIS",  name:"Dept of Records & Info Services",    sector:"Finance & Administration",     budget_m:59,   headcount:160,   desc:"Manages the NYC Municipal Archives, the City Record (official newspaper), FOIL requests, and preservation of city records.", programs:["Municipal Archives","City Record","FOIL Administration","Records Management","Digital Preservation"], url:"https://www.nyc.gov/records" },
+
+  // PARKS & CULTURE
+  { id:"dpr",    abbr:"DPR",    name:"Department of Parks & Recreation",   sector:"Parks & Culture",              budget_m:717,  headcount:5300,  desc:"Maintains 30,000 acres of parkland, 800+ playgrounds, 14 miles of beaches, 35 recreation centers, and hundreds of ball fields across the five boroughs.", programs:["Parks Maintenance","Recreation Centers","Urban Park Rangers","GreenThumb Community Gardens","Capital Projects"], url:"https://www.nyc.gov/parks" },
+  { id:"dcla",   abbr:"DCLA",   name:"Department of Cultural Affairs",     sector:"Parks & Culture",              budget_m:219,  headcount:200,   desc:"Funds and supports 1,000+ cultural organizations citywide including museums, theaters, dance companies, and arts education programs. Manages 33 city-owned cultural buildings.", programs:["Cultural Institutions (DCLA-owned)","Cultural Development Fund grants","Materials for the Arts","Percent for Art","Cultural Plan"], url:"https://www.nyc.gov/culture" },
+
+  // ECONOMIC DEVELOPMENT
+  { id:"sbs",    abbr:"SBS",    name:"Small Business Services",            sector:"Economic Development",         budget_m:417,  headcount:730,   desc:"Supports businesses and workers through NYC Business Solutions centers, Workforce1 career centers, minority/women-owned business certification, and Industrial Business Zones.", programs:["NYC Business Solutions","Workforce1 Career Centers","M/WBE Certification","BID Support","Citi Field/Made in NY"], url:"https://www.nyc.gov/sbs" },
+  { id:"edc",    abbr:"EDC",    name:"Economic Development Corporation",   sector:"Economic Development",         budget_m:540,  headcount:540,   desc:"City's primary economic development engine — manages city-owned real estate, develops large projects (Willets Point, Sunnyside Yard), and supports industry sectors.", programs:["Real Estate Development","Industry Partnerships","Port Operations","Made in NY","Innovation Labs"], url:"https://edc.nyc" },
+  { id:"dob",    abbr:"DOB",    name:"Department of Buildings",            sector:"Economic Development",         budget_m:285,  headcount:1800,  desc:"Issues construction permits, inspects buildings for code compliance, and enforces the NYC Building Code across 1 million+ buildings.", programs:["Permits & Applications","Construction Inspections","Code Enforcement","Elevator Safety","Cranes & Derricks"], url:"https://www.nyc.gov/buildings" },
+  { id:"dcwp",   abbr:"DCWP",   name:"Consumer & Worker Protection",       sector:"Economic Development",         budget_m:75,   headcount:390,   desc:"Licenses businesses (75,000+ licenses), enforces consumer protection laws, adjudicates wage theft claims, and administers the paid safe and sick leave law.", programs:["Business Licensing","Consumer Protection","Worker Protection (Wage Theft)","Earned Safe & Sick Leave","Adjudications"], url:"https://www.nyc.gov/dcwp" },
+  { id:"tlc",    abbr:"TLC",    name:"Taxi & Limousine Commission",        sector:"Economic Development",         budget_m:74,   headcount:680,   desc:"Licenses and regulates 80,000+ for-hire vehicles — yellow and green taxis, black cars, liveries, and Uber/Lyft FHVs — plus their 200,000+ drivers.", programs:["Licensing","Driver Testing & Licensing","Vehicle Inspections","Consumer Protection","Accessibility Programs"], url:"https://www.nyc.gov/tlc" },
+  { id:"bic",    abbr:"BIC",    name:"Business Integrity Commission",      sector:"Economic Development",         budget_m:36,   headcount:130,   desc:"Regulates the commercial waste industry and public wholesale markets to prevent organized crime and ensure fair competition. Oversees 100+ trade waste companies.", programs:["Trade Waste Licensing","Wholesale Market Regulation","Investigations","Background Investigations"], url:"https://www.nyc.gov/bic" },
+
+  // ELECTED & LEGAL
+  { id:"comp",   abbr:"COMP",   name:"Office of the Comptroller",          sector:"Elected & Legal",              budget_m:104,  headcount:820,   desc:"Independent elected official who audits city agencies, manages $280B pension fund assets, approves city contracts, and investigates fiscal misconduct.", programs:["Auditing","Pension Fund Oversight","Contract Registration","Claims Bureau","Bureau of Budget"], url:"https://comptroller.nyc.gov" },
+  { id:"pa",     abbr:"PA",     name:"Public Advocate",                    sector:"Elected & Legal",              budget_m:4,    headcount:30,    desc:"Elected city ombudsman who investigates complaints about city agencies, proposes legislation, and serves as next in line to the mayor.", programs:["Constituent Services","Agency Oversight","Legislation","NYC Broadband Access Advocacy"], url:"https://www.pubadvocate.nyc.gov" },
+  { id:"cc",     abbr:"COUNCIL",name:"City Council",                       sector:"Elected & Legal",              budget_m:77,   headcount:790,   desc:"NYC's 51-member legislative body — passes the city budget, enacts local laws, and exercises oversight over the mayoral agencies. Speaker leads Council operations.", programs:["Legislation","Budget Oversight","Land Use (ULURP)","Member Item Grants","Committee Hearings"], url:"https://council.nyc.gov" },
+  { id:"bp-mn",  abbr:"BP-MN",  name:"Manhattan Borough President",        sector:"Elected & Legal",              budget_m:22,   headcount:110,   desc:"Elected official representing Manhattan's 1.6 million residents. Advises the mayor and city council on land use, capital priorities, and local policy.", programs:["Land Use Advisory","Capital Priorities","Community Boards Oversight","Policy Reports"], url:"https://www.manhattanbp.nyc.gov" },
+  { id:"bp-bk",  abbr:"BP-BK",  name:"Brooklyn Borough President",         sector:"Elected & Legal",              budget_m:23,   headcount:115,   desc:"Elected official representing Brooklyn's 2.6 million residents — the most populous borough. Coordinates land use advisory and capital needs.", programs:["Land Use Advisory","Capital Priorities","Community Boards Oversight","Policy Reports"], url:"https://www.brooklyn-usa.org" },
+  { id:"bp-qns", abbr:"BP-QNS", name:"Queens Borough President",           sector:"Elected & Legal",              budget_m:22,   headcount:100,   desc:"Elected official representing Queens' 2.3 million residents — the most ethnically diverse urban county in the world.", programs:["Land Use Advisory","Capital Priorities","Community Boards Oversight","Policy Reports"], url:"https://queensbp.org" },
+  { id:"bp-bx",  abbr:"BP-BX",  name:"Bronx Borough President",            sector:"Elected & Legal",              budget_m:21,   headcount:100,   desc:"Elected official representing the Bronx's 1.4 million residents. Focuses heavily on housing and environmental justice issues.", programs:["Land Use Advisory","Capital Priorities","Community Boards Oversight","Policy Reports"], url:"https://bronxbp.nyc.gov" },
+  { id:"bp-si",  abbr:"BP-SI",  name:"Staten Island Borough President",    sector:"Elected & Legal",              budget_m:18,   headcount:85,    desc:"Elected official representing Staten Island's 490,000 residents — NYC's least densely populated borough.", programs:["Land Use Advisory","Capital Priorities","Community Boards Oversight","Policy Reports"], url:"https://www.statenislandbp.nyc.gov" },
+  { id:"da-mn",  abbr:"DA-MN",  name:"District Attorney — Manhattan",      sector:"Elected & Legal",              budget_m:130,  headcount:920,   desc:"Elected prosecutor for New York County (Manhattan). Prosecutes felonies and misdemeanors, and investigates white-collar crime, financial fraud, and public corruption.", programs:["Felony Prosecution","Misdemeanor Prosecution","Investigation Division","Conviction Integrity Unit","Community Partnerships"], url:"https://www.manhattanda.org" },
+  { id:"da-bk",  abbr:"DA-BK",  name:"District Attorney — Brooklyn",       sector:"Elected & Legal",              budget_m:95,   headcount:790,   desc:"Elected prosecutor for Kings County (Brooklyn). Second-largest DA office in the country by caseload.", programs:["Felony Prosecution","Misdemeanor Prosecution","Investigations","Conviction Review Unit"], url:"https://www.brooklynda.org" },
+  { id:"da-qns", abbr:"DA-QNS", name:"District Attorney — Queens",         sector:"Elected & Legal",              budget_m:82,   headcount:680,   desc:"Elected prosecutor for Queens County. Handles one of the most ethnically and linguistically diverse caseloads in the country.", programs:["Felony Prosecution","Misdemeanor Prosecution","Investigations","Immigrant Affairs"], url:"https://queensda.org" },
+  { id:"da-bx",  abbr:"DA-BX",  name:"District Attorney — Bronx",          sector:"Elected & Legal",              budget_m:68,   headcount:590,   desc:"Elected prosecutor for Bronx County. Implements significant restorative justice and diversion programs.", programs:["Felony Prosecution","Misdemeanor Prosecution","Investigations","Restorative Justice"], url:"https://bronxda.nyc.gov" },
+  { id:"da-si",  abbr:"DA-SI",  name:"District Attorney — Staten Island",  sector:"Elected & Legal",              budget_m:27,   headcount:220,   desc:"Elected prosecutor for Richmond County (Staten Island).", programs:["Felony Prosecution","Misdemeanor Prosecution","Investigations"], url:"https://www.rcda.nyc.gov" },
+  { id:"boe",    abbr:"BOE",    name:"Board of Elections",                  sector:"Elected & Legal",              budget_m:105,  headcount:350,   desc:"Administers all federal, state, and local elections in NYC — including voter registration, early voting, absentee ballots, poll site operations, and candidate filings.", programs:["Voter Registration","Poll Site Operations","Early Voting","Absentee Ballots","Candidate Filing"], url:"https://www.vote.nyc" },
+  { id:"cchr",   abbr:"CCHR",   name:"Commission on Human Rights",          sector:"Elected & Legal",              budget_m:20,   headcount:190,   desc:"Enforces the NYC Human Rights Law — one of the most expansive anti-discrimination laws in the nation — covering employment, housing, and public accommodations.", programs:["Law Enforcement","Education & Outreach","Mediation","Legal Services","Bias Response"], url:"https://www.nyc.gov/cchr" },
+];
+
+// ── SECTOR COLORS ─────────────────────────────────────────────────────────────
+const SECTOR_COLORS = {
+  "Public Safety":                  "#1e40af",
+  "Education":                      "#0891b2",
+  "Health & Human Services":        "#16a34a",
+  "Housing & Development":          "#d97706",
+  "Transportation & Infrastructure":"#7c3aed",
+  "Finance & Administration":       "#64748b",
+  "Parks & Culture":                "#15803d",
+  "Economic Development":           "#b45309",
+  "Elected & Legal":                "#dc2626",
+};
+
+const SECTOR_COLORS_LIGHT = {
+  "Public Safety":                  "#dbeafe",
+  "Education":                      "#e0f2fe",
+  "Health & Human Services":        "#dcfce7",
+  "Housing & Development":          "#fef3c7",
+  "Transportation & Infrastructure":"#ede9fe",
+  "Finance & Administration":       "#f1f5f9",
+  "Parks & Culture":                "#d1fae5",
+  "Economic Development":           "#fef9c3",
+  "Elected & Legal":                "#fee2e2",
+};
+
+const SECTOR_TEXT = {
+  "Public Safety":                  "#1e3a8a",
+  "Education":                      "#075985",
+  "Health & Human Services":        "#14532d",
+  "Housing & Development":          "#92400e",
+  "Transportation & Infrastructure":"#4c1d95",
+  "Finance & Administration":       "#334155",
+  "Parks & Culture":                "#052e16",
+  "Economic Development":           "#78350f",
+  "Elected & Legal":                "#7f1d1d",
+};
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+function fmtBudget(m) {
+  if (m >= 1000) return `$${(m/1000).toFixed(m % 1000 === 0 ? 0 : 1)}B`;
+  return `$${m}M`;
+}
+function fmtHeadcount(n) {
+  if (n >= 1000) return `${(n/1000).toFixed(n % 1000 === 0 ? 0 : 1)}K`;
+  return n.toLocaleString();
+}
+
+// ── CARD GRID ─────────────────────────────────────────────────────────────────
+let expandedCard = null;
+
+function renderCards(filtered) {
+  const grid = document.getElementById('agency-grid');
+  const count = document.getElementById('results-count');
+  grid.innerHTML = '';
+  count.textContent = `${filtered.length} of ${AGENCIES.length} agencies`;
+
+  if (filtered.length === 0) {
+    grid.innerHTML = `<div class="no-results"><strong>No agencies found</strong>Try a different search or clear the filter.</div>`;
+    return;
+  }
+
+  filtered.forEach(agency => {
+    const color   = SECTOR_COLORS[agency.sector] || '#374151';
+    const bgColor = SECTOR_COLORS_LIGHT[agency.sector] || '#f3f4f6';
+    const txtColor= SECTOR_TEXT[agency.sector] || '#111827';
+
+    const card = document.createElement('div');
+    card.className = 'agency-card';
+    card.dataset.id = agency.id;
+    card.setAttribute('role', 'button');
+    card.setAttribute('tabindex', '0');
+    card.setAttribute('aria-expanded', 'false');
+
+    const programsHtml = agency.programs.map(p => `<li>${p}</li>`).join('');
+
+    card.innerHTML = `
+      <div class="agency-card-header">
+        <span class="agency-acronym">${agency.abbr}</span>
+        <div class="agency-name-block">
+          <div class="agency-name">${agency.name}</div>
+        </div>
+        <svg class="expand-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="6 9 12 15 18 9"/>
+        </svg>
+      </div>
+      <div class="agency-card-meta">
+        <span class="sector-badge" style="background:${bgColor};color:${txtColor}">${agency.sector}</span>
+        <div class="agency-numbers">
+          <div class="agency-num">
+            <span class="agency-num-val">${fmtBudget(agency.budget_m)}</span>
+            <span class="agency-num-label">budget</span>
+          </div>
+          <div class="agency-num">
+            <span class="agency-num-val">${fmtHeadcount(agency.headcount)}</span>
+            <span class="agency-num-label">headcount</span>
+          </div>
+        </div>
+      </div>
+      <div class="agency-expand">
+        <p class="agency-expand-desc">${agency.desc}</p>
+        <div class="agency-expand-programs">
+          <div class="agency-expand-programs-label">Key programs</div>
+          <ul>${programsHtml}</ul>
+        </div>
+        <a class="agency-expand-link" href="${agency.url}" target="_blank" rel="noopener">
+          Official website →
+        </a>
+      </div>
+    `;
+
+    function toggleCard() {
+      const isExpanded = card.classList.contains('expanded');
+      if (expandedCard && expandedCard !== card) {
+        expandedCard.classList.remove('expanded');
+        expandedCard.setAttribute('aria-expanded', 'false');
+      }
+      if (isExpanded) {
+        card.classList.remove('expanded');
+        card.setAttribute('aria-expanded', 'false');
+        expandedCard = null;
+      } else {
+        card.classList.add('expanded');
+        card.setAttribute('aria-expanded', 'true');
+        expandedCard = card;
+        // Smooth scroll if below viewport
+        setTimeout(() => {
+          const rect = card.getBoundingClientRect();
+          if (rect.bottom > window.innerHeight) {
+            card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+          }
+        }, 100);
+      }
+    }
+
+    card.addEventListener('click', toggleCard);
+    card.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleCard(); } });
+
+    grid.appendChild(card);
+  });
+}
+
+function filterCards() {
+  const q = document.getElementById('search-input').value.trim().toLowerCase();
+  const sector = document.getElementById('sector-filter').value;
+  expandedCard = null;
+
+  const filtered = AGENCIES.filter(a => {
+    const matchSector = !sector || a.sector === sector;
+    const matchQ = !q || a.name.toLowerCase().includes(q) || a.abbr.toLowerCase().includes(q) || a.desc.toLowerCase().includes(q) || a.sector.toLowerCase().includes(q);
+    return matchSector && matchQ;
+  });
+
+  renderCards(filtered);
+}
+
+// ── VIEW TOGGLE ───────────────────────────────────────────────────────────────
+function switchView(view) {
+  const gridView     = document.getElementById('grid-view');
+  const treemapView  = document.getElementById('treemap-view');
+  const gridSearch   = document.getElementById('grid-search');
+  const btnGrid      = document.getElementById('btn-grid');
+  const btnTreemap   = document.getElementById('btn-treemap');
+
+  if (view === 'grid') {
+    gridView.style.display = 'block';
+    treemapView.style.display = 'none';
+    gridSearch.style.display = 'flex';
+    btnGrid.classList.add('active');
+    btnGrid.setAttribute('aria-selected','true');
+    btnTreemap.classList.remove('active');
+    btnTreemap.setAttribute('aria-selected','false');
+  } else {
+    gridView.style.display = 'none';
+    treemapView.style.display = 'block';
+    gridSearch.style.display = 'none';
+    btnGrid.classList.remove('active');
+    btnGrid.setAttribute('aria-selected','false');
+    btnTreemap.classList.add('active');
+    btnTreemap.setAttribute('aria-selected','true');
+    renderTreemap(currentMetric);
+  }
+}
+
+// ── TREEMAP ───────────────────────────────────────────────────────────────────
+let currentMetric = 'budget';
+let treemapRendered = false;
+
+function setMetric(metric) {
+  currentMetric = metric;
+  document.getElementById('btn-budget').classList.toggle('active', metric === 'budget');
+  document.getElementById('btn-headcount').classList.toggle('active', metric === 'headcount');
+  renderTreemap(metric);
+}
+
+function renderTreemap(metric) {
+  const container = document.getElementById('treemap-container');
+  container.innerHTML = '';
+
+  const W = container.clientWidth;
+  const H = container.clientHeight;
+
+  // Build hierarchy: root → sectors → agencies
+  const sectors = [...new Set(AGENCIES.map(a => a.sector))];
+  const data = {
+    name: 'NYC Agencies',
+    children: sectors.map(sector => ({
+      name: sector,
+      children: AGENCIES.filter(a => a.sector === sector).map(a => ({
+        ...a,
+        value: metric === 'budget' ? a.budget_m : a.headcount
+      }))
+    }))
+  };
+
+  const root = d3.hierarchy(data)
+    .sum(d => d.value || 0)
+    .sort((a, b) => b.value - a.value);
+
+  d3.treemap()
+    .size([W, H])
+    .padding(3)
+    .paddingTop(22)
+    .round(true)(root);
+
+  const svg = d3.select('#treemap-container')
+    .append('svg')
+    .attr('width', W)
+    .attr('height', H);
+
+  const tooltip = document.getElementById('tooltip');
+
+  // Draw sector groups (parent nodes)
+  const sectorNodes = root.children;
+  sectorNodes.forEach(sNode => {
+    const color = SECTOR_COLORS[sNode.data.name] || '#374151';
+    // Sector label background
+    svg.append('rect')
+      .attr('x', sNode.x0)
+      .attr('y', sNode.y0)
+      .attr('width', sNode.x1 - sNode.x0)
+      .attr('height', 20)
+      .attr('fill', color)
+      .attr('rx', 3);
+    // Sector label text
+    const labelW = sNode.x1 - sNode.x0;
+    if (labelW > 60) {
+      svg.append('text')
+        .attr('x', sNode.x0 + 5)
+        .attr('y', sNode.y0 + 14)
+        .attr('fill', '#fff')
+        .attr('font-family', "'Roboto Mono', monospace")
+        .attr('font-size', '9px')
+        .attr('font-weight', '700')
+        .attr('letter-spacing', '0.04em')
+        .text(sNode.data.name.length > labelW / 7 ? sNode.data.name.substring(0, Math.floor(labelW / 7) - 1) + '…' : sNode.data.name);
+    }
+  });
+
+  // Draw leaf nodes (agencies)
+  const leaves = root.leaves();
+  const cell = svg.selectAll('g.cell')
+    .data(leaves)
+    .enter()
+    .append('g')
+    .attr('class', 'cell')
+    .attr('transform', d => `translate(${d.x0},${d.y0})`);
+
+  cell.append('rect')
+    .attr('width', d => Math.max(0, d.x1 - d.x0))
+    .attr('height', d => Math.max(0, d.y1 - d.y0))
+    .attr('fill', d => {
+      const color = SECTOR_COLORS[d.data.sector] || '#374151';
+      return color + 'cc'; // slightly transparent
+    })
+    .attr('stroke', '#fff')
+    .attr('stroke-width', 1)
+    .attr('rx', 2)
+    .style('cursor', 'pointer')
+    .on('mousemove', function(event, d) {
+      document.getElementById('tt-name').textContent = d.data.abbr + ' — ' + d.data.name;
+      document.getElementById('tt-sector').textContent = d.data.sector;
+      document.getElementById('tt-budget').textContent = fmtBudget(d.data.budget_m);
+      document.getElementById('tt-head').textContent = d.data.headcount.toLocaleString();
+      tooltip.classList.add('visible');
+      tooltip.style.left = (event.clientX + 14) + 'px';
+      tooltip.style.top  = (event.clientY - 10) + 'px';
+    })
+    .on('mouseleave', function() {
+      tooltip.classList.remove('visible');
+    });
+
+  // Agency labels
+  cell.append('text')
+    .attr('x', 5)
+    .attr('y', 13)
+    .attr('fill', '#fff')
+    .attr('font-family', "'Roboto Mono', monospace")
+    .attr('font-size', '9px')
+    .attr('font-weight', '700')
+    .attr('pointer-events', 'none')
+    .text(d => {
+      const w = d.x1 - d.x0;
+      const h = d.y1 - d.y0;
+      if (w < 36 || h < 20) return '';
+      return d.data.abbr;
+    });
+
+  cell.append('text')
+    .attr('x', 5)
+    .attr('y', 24)
+    .attr('fill', 'rgba(255,255,255,0.85)')
+    .attr('font-family', "'Inter', sans-serif")
+    .attr('font-size', '8px')
+    .attr('pointer-events', 'none')
+    .text(d => {
+      const w = d.x1 - d.x0;
+      const h = d.y1 - d.y0;
+      if (w < 50 || h < 34) return '';
+      const val = metric === 'budget' ? fmtBudget(d.data.budget_m) : fmtHeadcount(d.data.headcount);
+      return val;
+    });
+
+  // Render legend
+  renderLegend();
+}
+
+function renderLegend() {
+  const legend = document.getElementById('treemap-legend');
+  legend.innerHTML = '';
+  Object.entries(SECTOR_COLORS).forEach(([sector, color]) => {
+    const item = document.createElement('div');
+    item.className = 'legend-item';
+    item.innerHTML = `<span class="legend-dot" style="background:${color}"></span><span>${sector}</span>`;
+    legend.appendChild(item);
+  });
+}
+
+// ── INIT ─────────────────────────────────────────────────────────────────────
+renderCards(AGENCIES);
+document.getElementById('results-count').textContent = `${AGENCIES.length} agencies`;
+</script>
+
+</body>
+</html>
