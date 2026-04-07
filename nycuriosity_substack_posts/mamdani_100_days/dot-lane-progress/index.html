@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>DOT Lane Progress vs. Legal Mandate — Mamdani's First 100 Days — NYCuriosity</title>
-  <meta name="description" content="In 2024, NYC DOT built 29 of 50 mandated miles of protected bike lanes (58%) and 13.5 of 30 mandated bus lane miles (45%).">
+  <title>How NYC Uses Its Curb Space — Mamdani's First 100 Days — NYCuriosity</title>
+  <meta name="description" content="About 62% of NYC's 12,000 linear curb miles are dedicated to car storage. Only 5% supports protected bike or bus lanes.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -24,7 +24,6 @@
       --bg:         #f8faff;
       --surface:    #ffffff;
       --border:     #e5e7eb;
-      --shadow-sm:  0 1px 3px rgba(17,24,39,0.08);
       --radius:     10px;
     }
 
@@ -61,58 +60,142 @@
     .btn-outline:hover { color: var(--blue); border-color: var(--blue-mid); background: var(--blue-light); }
 
     main { flex: 1; padding: clamp(28px, 4vw, 48px) clamp(20px, 5vw, 48px); }
-    .main-inner { max-width: 900px; margin: 0 auto; }
+    .main-inner { max-width: 960px; margin: 0 auto; }
 
-    /* ── CHART CARDS ─────────────────────────────────────── */
-    .lane-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 20px;
-      margin-bottom: 24px;
+    /* ── CALLOUT PILLS ───────────────────────────────────── */
+    .callout-row { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 24px; }
+    .callout-pill {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 14px 20px; flex: 1; min-width: 160px;
     }
-    @media (max-width: 580px) { .lane-grid { grid-template-columns: 1fr; } }
+    .callout-pill.red  { border-color: #fecaca; background: #fef2f2; }
+    .callout-pill.blue { border-color: var(--blue-mid); background: var(--blue-light); }
+    .callout-pill .cp-num { font-family: 'Roboto Mono', monospace; font-size: 1.4rem; font-weight: 700; line-height: 1; }
+    .callout-pill.red  .cp-num { color: #dc2626; }
+    .callout-pill.blue .cp-num { color: var(--blue); }
+    .callout-pill .cp-label { font-size: 0.78rem; color: var(--text-muted); margin-top: 4px; line-height: 1.4; }
 
-    .lane-card {
+    /* ── CHART WRAP ──────────────────────────────────────── */
+    .chart-wrap {
       background: var(--surface);
-      border: 1.5px solid var(--border);
+      border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 22px 22px 20px;
+      padding: 28px 28px 0;
+      overflow: hidden;
     }
-    .lane-card.shortfall { border-color: #fecaca; }
-
-    .lane-card-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 18px; }
-    .lane-type { font-family: 'Roboto Mono', monospace; font-size: 0.88rem; font-weight: 700; color: var(--text); }
-    .pct-badge {
-      font-family: 'Roboto Mono', monospace; font-size: 0.82rem; font-weight: 700;
-      padding: 3px 10px; border-radius: 4px; background: #fef2f2; color: #dc2626; border: 1px solid #fecaca;
+    .chart-wrap-title {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.02em;
+      margin-bottom: 6px;
+    }
+    .chart-wrap-sub {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      margin-bottom: 24px;
+      line-height: 1.5;
     }
 
-    /* Comparison bars */
-    .comp-bars { display: flex; flex-direction: column; gap: 12px; }
-    .comp-row { display: flex; flex-direction: column; gap: 4px; }
-    .comp-label { display: flex; justify-content: space-between; align-items: center; }
-    .comp-label-name { font-size: 0.78rem; color: var(--text-muted); }
-    .comp-label-val { font-family: 'Roboto Mono', monospace; font-size: 0.82rem; font-weight: 600; }
-    .comp-label-val.mandate { color: var(--text-faint); }
-    .comp-label-val.built   { color: var(--blue); }
-
-    .comp-track { height: 10px; background: var(--border); border-radius: 5px; overflow: hidden; }
-    .comp-fill { height: 100%; border-radius: 5px; width: 0; transition: width 0.9s cubic-bezier(0.4, 0, 0.2, 1); }
-    .comp-fill.mandate { background: #e5e7eb; }
-    .comp-fill.built { background: var(--blue); }
-
-    .gap-note {
-      margin-top: 14px; padding: 10px 13px;
-      background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px;
-      font-size: 0.78rem; color: #991b1b; line-height: 1.5;
+    /* ── CURB STRIP ──────────────────────────────────────── */
+    .curb-strip-wrap { margin-bottom: 6px; }
+    .curb-strip {
+      display: flex;
+      height: 52px;
+      border-radius: 6px;
+      overflow: hidden;
+      width: 100%;
     }
-    .gap-note strong { font-family: 'Roboto Mono', monospace; }
-
-    .chart-attribution {
-      font-family: 'Roboto Mono', monospace; font-size: 0.72rem; color: var(--text-faint);
-      text-align: right; padding: 12px 0 4px;
+    .curb-segment {
+      height: 100%;
+      transition: opacity 0.15s;
+      position: relative;
+      flex-shrink: 0;
     }
-    /* Chart actions */
+    .curb-segment:hover { opacity: 0.85; }
+
+    /* ── STRIP LABELS ────────────────────────────────────── */
+    .strip-labels {
+      display: flex;
+      height: 20px;
+      width: 100%;
+      margin-bottom: 20px;
+    }
+    .strip-label-slot {
+      position: relative;
+      display: flex;
+      align-items: flex-start;
+      flex-shrink: 0;
+    }
+    .strip-label-text {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.62rem;
+      font-weight: 600;
+      white-space: nowrap;
+      color: var(--text-muted);
+      padding-top: 3px;
+    }
+    .strip-label-pct {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    /* ── CATEGORY ROWS ───────────────────────────────────── */
+    .category-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      margin-bottom: 0;
+    }
+    .cat-group-header {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.09em;
+      color: var(--text-faint);
+      padding: 14px 0 6px;
+      border-top: 1px solid var(--border);
+    }
+    .cat-group-header:first-child { border-top: none; padding-top: 0; }
+    .cat-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--bg);
+    }
+    .cat-swatch {
+      width: 12px; height: 12px; border-radius: 3px; flex-shrink: 0;
+    }
+    .cat-name {
+      font-size: 0.85rem; color: var(--text-mid); flex: 1;
+    }
+    .cat-bar-track {
+      width: 160px; height: 8px; background: var(--border); border-radius: 4px; flex-shrink: 0;
+    }
+    .cat-bar-fill {
+      height: 100%; border-radius: 4px; width: 0;
+      transition: width 0.9s cubic-bezier(0.4,0,0.2,1);
+    }
+    .cat-miles {
+      font-family: 'Roboto Mono', monospace; font-size: 0.8rem;
+      color: var(--text-muted); min-width: 70px; text-align: right;
+    }
+    .cat-pct {
+      font-family: 'Roboto Mono', monospace; font-size: 0.8rem; font-weight: 700;
+      color: var(--text); min-width: 36px; text-align: right;
+    }
+    @media (max-width: 560px) {
+      .cat-bar-track { width: 80px; }
+      .cat-miles { display: none; }
+    }
+
+    .chart-attribution { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; color: var(--text-faint); text-align: right; padding: 14px 0 0; border-top: 1px solid var(--border); margin-top: 16px; }
+
     .chart-actions { display: flex; gap: 8px; margin-bottom: 16px; }
     .action-btn { display: inline-flex; align-items: center; gap: 6px; background: var(--surface); color: var(--text-muted); font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600; padding: 6px 14px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; transition: all 0.15s; }
     .action-btn:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
@@ -147,25 +230,22 @@
 </head>
 <body>
 
-<!-- HEADER -->
 <header>
   <div class="header-inner">
     <a href="/nycuriosity_substack_posts/mamdani_100_days/" class="back-link">← mamdani-100-days</a>
     <div class="header-divider"></div>
-    <h1>DOT Lane Progress vs. Mandate</h1>
+    <h1>How NYC Uses Its Curb Space</h1>
   </div>
 </header>
 
-<!-- PILL NAV -->
 <div class="pill-nav">
   <span class="pill-label">Charts in this post:</span>
   <a href="../rikers-population/">Rikers Population</a>
-  <a href="../better-billion-corridors/">Better Billion Corridors</a>
+  <a href="../better-billion-corridors/">Better Billion Projects</a>
   <a href="../school-funding/">School Funding</a>
-  <a href="./" class="active">DOT Lane Progress</a>
+  <a href="./" class="active">NYC Curb Allocation</a>
 </div>
 
-<!-- HERO -->
 <div class="hero">
   <div class="hero-inner">
     <div class="breadcrumb">
@@ -173,18 +253,18 @@
       <span>›</span>
       <a href="/nycuriosity_substack_posts/mamdani_100_days/">Mamdani's First 100 Days</a>
       <span>›</span>
-      <span>DOT Lane Progress</span>
+      <span>NYC Curb Allocation</span>
     </div>
     <div class="hero-meta">
       <span class="hero-tag">Transportation</span>
       <span class="hero-updated">April 2026</span>
     </div>
-    <h1>DOT Lane Progress vs. <span>Legal Mandate</span></h1>
+    <h1>How NYC Uses Its <span>Curb Space</span></h1>
     <p>
-      NYC Local Law 195 (the Streets Plan) requires DOT to install 50 miles of protected bike lanes and 30 miles of protected bus lanes every year. In 2024, DOT built 29 bike lane miles (58% of the mandate) and 13.5 bus lane miles (45% of the mandate). Incoming Chief Strategy Officer Tiffany-Ann Taylor inherits both gaps — plus the stakeholder tensions that slow delivery.
+      NYC has roughly 12,000 linear miles of curb — and about 62% of it is dedicated to storing cars. Only 5% supports protected bike or bus infrastructure. Incoming DOT Chief Strategy Officer Tiffany-Ann Taylor will be managing this real estate. Every new bike lane or bus lane is, in practice, a conversion of parking into something else.
     </p>
     <div class="hero-actions">
-      <a href="../data/dot_lane_progress.csv" download class="btn btn-outline">
+      <a href="../data/nyc_curb_allocation.csv" download class="btn btn-outline">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         Download CSV
       </a>
@@ -192,30 +272,55 @@
   </div>
 </div>
 
-<!-- CHART -->
 <main>
   <div class="main-inner" id="chart-container">
+
+    <div class="callout-row">
+      <div class="callout-pill red">
+        <div class="cp-num">62%</div>
+        <div class="cp-label">of curb space dedicated to car storage (free + metered parking)</div>
+      </div>
+      <div class="callout-pill blue">
+        <div class="cp-num">5%</div>
+        <div class="cp-label">of curb space used for protected bike lanes + bus lanes</div>
+      </div>
+      <div class="callout-pill">
+        <div class="cp-num" style="color:var(--text)">~12,000</div>
+        <div class="cp-label">total linear curb miles (both sides of ~6,300 centerline miles)</div>
+      </div>
+    </div>
 
     <div class="chart-actions">
       <button class="action-btn" onclick="downloadChart(this)">&#11015; Download PNG</button>
       <button class="action-btn" onclick="showEmbed()">&#60;/&#62; Embed</button>
     </div>
 
-    <div class="lane-grid" id="laneGrid">
-      <!-- Injected by JS -->
+    <div class="chart-wrap" id="chartWrap">
+      <div class="chart-wrap-title">NYC Curb Space Allocation</div>
+      <div class="chart-wrap-sub">Approximate breakdown of ~12,000 linear curb miles (both sides of all streets). Source: NYC DOT Curb Management Strategy, 2021.</div>
+
+      <!-- Segmented curb strip -->
+      <div class="curb-strip-wrap">
+        <div class="curb-strip" id="curbStrip"></div>
+      </div>
+
+      <!-- Category rows by group -->
+      <div class="category-grid" id="categoryGrid"></div>
+
+      <div class="chart-attribution">Created by Tal Roded · NYCuriosity</div>
     </div>
-    <div class="chart-attribution">Created by Tal Roded · NYCuriosity</div>
 
     <div class="footnotes">
-      <p><strong>2024 actuals:</strong> 29 miles of protected bike lanes and 13.5 miles of protected bus lanes installed in 2024. Source: <a href="https://www.nyc.gov/html/dot/html/pr2024/nyc-dot-record-of-accomplishment-2024.shtml" target="_blank" rel="noopener">NYC DOT 2024 Record of Accomplishment</a>. The 13.5 miles of protected bus lanes was described by DOT as more progress than any prior single year.</p>
-      <p><strong>Legal mandates (50 mi / 30 mi per year):</strong> Set by NYC Local Law 195 of 2019 (the NYC Streets Plan). Bike lane mandate: 50 miles of protected bike lanes annually. Bus lane mandate: 30 miles of protected bus lanes annually. Source: <a href="https://www.cityandstateny.com/policy/2025/03/nyc-dot-falls-far-short-24-targets-bike-and-bus-lanes-touts-progress/403707/" target="_blank" rel="noopener">City &amp; State NY</a>.</p>
-      <p><strong>Cumulative note:</strong> Over the prior three years, DOT installed a total of 87.5 miles of protected bike lanes — an average of ~29 miles/year, well below the 50-mile annual mandate. The gap compounds each year the mandate is missed.</p>
+      <p><strong>Total curb mileage:</strong> NYC has approximately 6,300 centerline miles of streets (NYC DOT). On both sides, this yields roughly 12,000–12,600 linear curb miles. This visualization uses 12,000 miles as a round-number baseline.</p>
+      <p><strong>Allocation estimates:</strong> Category breakdowns are based on the <a href="https://www.nyc.gov/html/dot/html/pedestrians/curbmanagement.shtml" target="_blank" rel="noopener">NYC DOT Curb Management Strategy</a> (2021) and related DOT data. These are city-wide averages; actual allocation varies by neighborhood and changes by time of day (e.g., commercial loading zones become parking overnight).</p>
+      <p><strong>Protected bike lanes (~3%):</strong> NYC had approximately 387 miles of protected bike lanes as of 2024 (NYC DOT Record of Accomplishment). As one-way infrastructure, this represents roughly 3% of total curb mileage.</p>
+      <p><strong>Dedicated bus lanes (~2%):</strong> NYC had approximately 68 miles of dedicated bus lanes as of 2024. These run in the curb lane and are counted here as active transit infrastructure.</p>
+      <p><strong>Free vs. metered parking:</strong> The majority of NYC parking is free and unregulated — roughly 54% of all curb. Only ~8% is metered. The DOT Curb Management Strategy documented the dominant role of unmetered parking as a first step toward rethinking how curb space is allocated.</p>
     </div>
 
   </div>
 </main>
 
-<!-- EMBED MODAL -->
 <div id="embedModal" class="embed-modal" style="display:none">
   <div class="embed-modal-box">
     <div class="embed-modal-header">
@@ -228,7 +333,6 @@
   </div>
 </div>
 
-<!-- FOOTER -->
 <footer>
   <div class="footer-inner">
     <span class="footer-copy">© NYCuriosity · Tal Roded</span>
@@ -241,66 +345,93 @@
 </footer>
 
 <script>
-  const LANES = [
+  // ── DATA ──────────────────────────────────────────────────────
+  const TOTAL_MILES = 12000;
+
+  const GROUPS = [
     {
-      type: 'Protected Bike Lanes',
-      built: 29,
-      mandate: 50,
-      pct: 58,
-      gap: 21,
-      gapNote: '21 miles short of the 50-mile annual mandate — the third-highest single-year total in city history, but still only 58% of the legal requirement.',
+      label: 'Car Storage',
+      items: [
+        { name: 'Free / unmetered parking',    pct: 54, miles: 6480, color: '#9ca3af' },
+        { name: 'Metered / regulated parking', pct:  8, miles:  960, color: '#6b7280' },
+      ]
     },
     {
-      type: 'Protected Bus Lanes',
-      built: 13.5,
-      mandate: 30,
-      pct: 45,
-      gap: 16.5,
-      gapNote: '16.5 miles short of the 30-mile annual mandate — though DOT described 2024 as more bus lane progress than any prior year, it still represents less than half the mandate.',
+      label: 'Vehicle Access & Clearance',
+      items: [
+        { name: 'Driveways and curb cuts',      pct: 9, miles: 1080, color: '#d1d5db' },
+        { name: 'Fire hydrant clearance zones', pct: 5, miles:  600, color: '#e5e7eb' },
+      ]
+    },
+    {
+      label: 'Active & Commercial Use',
+      items: [
+        { name: 'Commercial loading / delivery', pct: 5, miles: 600, color: '#fbbf24' },
+        { name: 'Bus stops and bus bays',         pct: 4, miles: 480, color: '#93c5fd' },
+      ]
+    },
+    {
+      label: 'Transit Infrastructure',
+      items: [
+        { name: 'Protected bike lanes',  pct: 3, miles: 360, color: '#16a34a' },
+        { name: 'Dedicated bus lanes',   pct: 2, miles: 240, color: '#2563eb' },
+      ]
+    },
+    {
+      label: 'Other Regulated',
+      items: [
+        { name: 'Other (taxi stands, no-standing, CitiBike, accessible parking)', pct: 10, miles: 1200, color: '#f3f4f6' },
+      ]
     },
   ];
 
-  const grid = document.getElementById('laneGrid');
-  LANES.forEach(d => {
-    const card = document.createElement('div');
-    card.className = 'lane-card shortfall';
-    const mandatePct = 100;
-    const builtPct = Math.round((d.built / d.mandate) * 100);
+  const ALL_ITEMS = GROUPS.flatMap(g => g.items);
+  const MAX_PCT = 54; // for bar scaling
 
-    card.innerHTML = `
-      <div class="lane-card-header">
-        <div class="lane-type">${d.type}</div>
-        <div class="pct-badge">${d.pct}% of mandate</div>
-      </div>
-      <div class="comp-bars">
-        <div class="comp-row">
-          <div class="comp-label">
-            <span class="comp-label-name">Annual mandate (LL195)</span>
-            <span class="comp-label-val mandate">${d.mandate} mi</span>
-          </div>
-          <div class="comp-track"><div class="comp-fill mandate" data-pct="${mandatePct}"></div></div>
-        </div>
-        <div class="comp-row">
-          <div class="comp-label">
-            <span class="comp-label-name">Built in 2024</span>
-            <span class="comp-label-val built">${d.built} mi</span>
-          </div>
-          <div class="comp-track"><div class="comp-fill built" data-pct="${builtPct}"></div></div>
-        </div>
-      </div>
-      <div class="gap-note"><strong>${d.gap} mi gap</strong> — ${d.gapNote}</div>
-    `;
-    grid.appendChild(card);
+  // ── CURB STRIP ────────────────────────────────────────────────
+  const strip = document.getElementById('curbStrip');
+  ALL_ITEMS.forEach(item => {
+    const seg = document.createElement('div');
+    seg.className = 'curb-segment';
+    seg.style.cssText = `width:${item.pct}%; background:${item.color};`;
+    seg.title = `${item.name}: ${item.pct}% (~${item.miles.toLocaleString()} mi)`;
+    strip.appendChild(seg);
   });
 
+  // ── CATEGORY ROWS ─────────────────────────────────────────────
+  const grid = document.getElementById('categoryGrid');
+  GROUPS.forEach((group, gi) => {
+    const hdr = document.createElement('div');
+    hdr.className = 'cat-group-header';
+    hdr.textContent = group.label;
+    grid.appendChild(hdr);
+
+    group.items.forEach(item => {
+      const row = document.createElement('div');
+      row.className = 'cat-row';
+      row.innerHTML = `
+        <div class="cat-swatch" style="background:${item.color};border:1px solid rgba(0,0,0,0.08)"></div>
+        <div class="cat-name">${item.name}</div>
+        <div class="cat-bar-track">
+          <div class="cat-bar-fill" data-pct="${Math.round((item.pct / MAX_PCT) * 100)}" style="background:${item.color};border:1px solid rgba(0,0,0,0.06)"></div>
+        </div>
+        <div class="cat-miles">~${item.miles.toLocaleString()} mi</div>
+        <div class="cat-pct">${item.pct}%</div>
+      `;
+      grid.appendChild(row);
+    });
+  });
+
+  // Animate bars on load
   requestAnimationFrame(() => {
     setTimeout(() => {
-      document.querySelectorAll('.comp-fill').forEach(el => {
+      document.querySelectorAll('.cat-bar-fill').forEach(el => {
         el.style.width = el.dataset.pct + '%';
       });
     }, 100);
   });
 
+  // ── DOWNLOAD / EMBED ─────────────────────────────────────────
   async function downloadChart(btn) {
     const orig = btn.innerHTML;
     btn.innerHTML = '⏳ Capturing…'; btn.disabled = true;
@@ -308,14 +439,14 @@
       const el = document.querySelector('.main-inner');
       const canvas = await html2canvas(el, { backgroundColor: '#f8faff', scale: 2, useCORS: true, logging: false });
       const a = document.createElement('a');
-      a.download = 'dot-lane-progress-vs-mandate.png';
+      a.download = 'nyc-curb-space-allocation.png';
       a.href = canvas.toDataURL('image/png'); a.click();
     } finally { btn.innerHTML = orig; btn.disabled = false; }
   }
   function showEmbed() {
     const url = location.origin + location.pathname;
     document.getElementById('embedCode').value =
-      `<iframe src="${url}" width="900" height="620" frameborder="0" style="border:1px solid #e5e7eb; border-radius:8px;" loading="lazy"></iframe>`;
+      `<iframe src="${url}" width="900" height="720" frameborder="0" style="border:1px solid #e5e7eb; border-radius:8px;" loading="lazy"></iframe>`;
     document.getElementById('embedModal').style.display = 'flex';
   }
   function closeEmbed() { document.getElementById('embedModal').style.display = 'none'; }
