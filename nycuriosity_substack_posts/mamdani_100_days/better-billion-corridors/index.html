@@ -244,14 +244,11 @@
         <thead>
           <tr>
             <th onclick="sortTable(0)" data-col="0">Project <span class="sort-arrow">↕</span></th>
-            <th onclick="sortTable(1)" data-col="1">Borough <span class="sort-arrow">↕</span></th>
-            <th onclick="sortTable(2)" data-col="2" class="num">Decade <span class="sort-arrow">↓</span></th>
-            <th onclick="sortTable(3)" data-col="3" class="num">Stations <span class="sort-arrow">↕</span></th>
-            <th onclick="sortTable(4)" data-col="4" class="num">New Miles <span class="sort-arrow">↕</span></th>
-            <th onclick="sortTable(5)" data-col="5" class="num">Est. Housing Units <span class="sort-arrow">↕</span></th>
-            <th onclick="sortTable(6)" data-col="6" class="num">% Affordable <span class="sort-arrow">↕</span></th>
-            <th onclick="sortTable(7)" data-col="7" class="num">Cost ($B) <span class="sort-arrow">↕</span></th>
-            <th onclick="sortTable(8)" data-col="8" class="num">Bus Ridership/day <span class="sort-arrow">↕</span></th>
+            <th onclick="sortTable(1)" data-col="1" class="num">Decade <span class="sort-arrow">↓</span></th>
+            <th onclick="sortTable(2)" data-col="2" class="num">Est. Housing Units <span class="sort-arrow">↕</span></th>
+            <th onclick="sortTable(3)" data-col="3" class="num">% Affordable <span class="sort-arrow">↕</span></th>
+            <th onclick="sortTable(4)" data-col="4" class="num">Cost ($B) <span class="sort-arrow">↕</span></th>
+            <th onclick="sortTable(5)" data-col="5" class="num">Bus Ridership/day <span class="sort-arrow">↕</span></th>
           </tr>
         </thead>
         <tbody id="tableBody"></tbody>
@@ -262,7 +259,6 @@
     <div class="footnotes">
       <p><strong>Source:</strong> NYU Marron Institute of Urban Management, <a href="https://transitcosts.com/a-better-billion.html" target="_blank" rel="noopener">A Better Billion</a>, January 2026. All figures in 2025 dollars. Housing estimates assume no additional upzoning beyond City of Yes for Housing Opportunity amendments.</p>
       <p><strong>Plan totals</strong> (167,064 units, $48B, 12 projects, 41 miles, 64 stations) are stated explicitly in the report summary.</p>
-      <p><strong>New Miles:</strong> Stated explicitly in the report for 9 of 12 projects. The three Decade 1 projects (Utica, 125th St Western Extension, QueensLink) do not have per-project mileage in the report; the three projects account for the remaining ~8.4 miles of the 41-mile total.</p>
       <p><strong>Bus ridership figures</strong> are 2019 pre-pandemic weekday boardings for corridor bus routes, cited in the report. Hillside Ave figure (59,000) covers 9 routes; Guy Brewer/Merrick (46,000) covers 6 routes; Woodhaven Blvd (31,000) is the Q52/Q53 combined figure.</p>
       <p><strong>Flagship projects</strong> are the four projects designated by the report as the largest service expansions and most transformative investments of each decade.</p>
     </div>
@@ -330,10 +326,7 @@
           ${d.name}
           ${d.flagship ? '<span class="flagship-badge">Flagship</span>' : ''}
         </td>
-        <td><span class="borough-tag">${d.borough}</span></td>
         <td class="num"><span class="phase-badge">Decade ${d.decade}</span></td>
-        <td class="num">${d.stations}</td>
-        <td class="num">${d.miles !== null ? d.miles.toFixed(1) + ' mi' : na()}</td>
         <td class="num">
           <div class="housing-cell">
             <div class="housing-bar-track"><div class="housing-bar-fill" data-pct="${hPct}"></div></div>
@@ -367,7 +360,7 @@
       const arrow = th.querySelector('.sort-arrow');
       if (arrow) arrow.textContent = i === col ? (sortAsc ? '↑' : '↓') : '↕';
     });
-    const keys = ['name', 'borough', 'decade', 'stations', 'miles', 'housing', 'pctAffordable', 'cost', 'ridership'];
+    const keys = ['name', 'decade', 'housing', 'pctAffordable', 'cost', 'ridership'];
     const key = keys[col];
     const sorted = [...PROJECTS].sort((a, b) => {
       const av = a[key] ?? -Infinity;
