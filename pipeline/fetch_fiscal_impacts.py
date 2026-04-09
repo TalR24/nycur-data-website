@@ -19,6 +19,8 @@ Notes:
     - Run with --incremental in GitHub Actions to only process new matters
 """
 
+from __future__ import annotations
+
 import os
 import re
 import json
@@ -27,6 +29,7 @@ import logging
 import argparse
 from datetime import datetime
 from pathlib import Path
+from typing import Optional
 
 import requests
 from docx import Document
@@ -63,8 +66,8 @@ Return a JSON object with exactly these fields (use null for missing/unknown, 0 
   "legislation_type": "Introduction or Resolution or Pre-Considered Resolution or Other",
   "title": "full title as written",
   "committee": "committee name only (e.g. Transportation, Aging, Finance)",
-  "sponsors": ["full name 1", "full name 2"],
-  "prime_sponsor": "first listed sponsor",
+  "sponsors": ["Last Name 1", "Last Name 2"],
+  "prime_sponsor": "Last Name of first listed sponsor",
   "effective_date": "as written (e.g. 120 days after becoming law)",
   "fy_first_effective": "e.g. FY26 or FY27 — just the FY label",
   "fy_full_impact": "e.g. FY27 or FY28 — just the FY label",
@@ -121,6 +124,7 @@ RULES:
 - Extract ALL agencies mentioned anywhere in the document (not just in the table).
 - Standard NYC agency abbreviations: DOT, DPR, NYPD, FDNY, DOE, DSS, DFTA, DEP, HPD, HRA, DCAS, DSNY, DOF, DOB, DHS, NYCEM, TLC, SBS, DYCD, DOHMH, DCA, DDC, MTA, DOC, DCLA, ACS, MOCJ, OMB. Create reasonable abbreviations for others.
 - program_breakdowns: extract named cost line items from the Impact on Expenditures section. May be empty [].
+- For sponsors and prime_sponsor: strip all prefixes ("Council Member", "Council Members", "By Council Members", "(s):"). Return only the name. For "The Speaker (Council Member X)", return "X (Speaker)". Always use last name only as written in the document.
 - Return ONLY the JSON object — no markdown, no explanation.
 """
 
