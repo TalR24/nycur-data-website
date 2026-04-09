@@ -332,6 +332,43 @@ def save_output(path: Path, records: list, years: list[int]) -> None:
     log.info(f"Saved {len(records)} records -> {path}")
 
 
+# ── Fiscal impact filters ────────────────────────────────────────────────────
+
+def text_is_zero_impact(text: str) -> bool:
+    """
+    Fast pre-check on raw docx text. Returns True if the document clearly
+    shows all-zero figures and no 'See below' language, so we can skip the
+    Claude API call entirely.
+    """
+    t = text.lower()
+    # If the doc says cost cannot be estimated, let Claude decide
+    if "see below" in t or "cannot estimate" in t or "unable to estimate" in t:
+        return False
+    # Find all dollar amounts in the text (e.g. $1,234,567 or $1.2 million or $0)
+    amounts = re.findall(
+        r"\$\s*([\d,]+(?:\.\d+)?)\s*(?:million|billion)?", t
+    )
+    non_zero = [a for a in amounts if a.replace(",", "").replace(".", "") not in ("0", "")]
+    # If there are no dollar figures at all, or all are literally $0, skip
+    return len(non_zero) == 0
+
+
+def record_has_fiscal_impact(fiscal: dict) -> bool:
+    """
+    Post-extraction check. Returns True only if the bill has a non-zero,
+    estimable fiscal impact worth storing.
+    """
+    if not fiscal.get("cost_estimable", True):
+        return False
+    if "extraction_error" in fiscal:
+        return False  # don't store failed extractions
+    exp = fiscal.get("total_expenditure") or 0
+    cap = fiscal.get("total_capital") or 0
+    rev = fiscal.get("total_revenue") or 0
+    net = fiscal.get("net_fiscal_impact") or 0
+    return any(abs(v) > 0 for v in [exp, cap, rev, net])
+
+
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 def main() -> int:
@@ -396,8 +433,22 @@ def main() -> int:
                     log.warning(f"  Empty text from {docx_path} — skipping")
                     continue
 
+                # Fast pre-check: skip obvious zero-impact bills before calling Claude.
+                # If every dollar figure in the text is $0 and there's no "See below",
+                # there's nothing worth storing.
+                if text_is_zero_impact(text):
+                    log.info(f"  Pre-check: all-zero fiscal impact — skipping Claude call")
+                    existing_ids.add(matter_id)  # mark as seen so --incremental skips it
+                    continue
+
                 log.info("  Calling Claude for extraction ...")
                 fiscal = extract_fiscal_data(text, client)
+
+                # Post-extraction filter: skip if no real fiscal impact or unestimable.
+                if not record_has_fiscal_impact(fiscal):
+                    log.info(f"  Post-check: zero/unestimable fiscal impact — skipping")
+                    existing_ids.add(matter_id)
+                    continue
 
                 record = {
                     "matter_id":    matter_id,
