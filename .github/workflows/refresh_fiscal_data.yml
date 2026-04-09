@@ -6,10 +6,6 @@ on:
     - cron: "0 7 1 * *"
   workflow_dispatch:
     inputs:
-      years:
-        description: "Comma-separated years to search (e.g. 2024,2025,2026)"
-        required: false
-        default: "2024,2025,2026"
       incremental:
         description: "Skip already-processed matters"
         required: false
@@ -41,10 +37,9 @@ jobs:
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
-          YEARS="${{ github.event.inputs.years || '2024,2025,2026' }}"
           INCREMENTAL="${{ github.event.inputs.incremental || 'true' }}"
-          FLAGS="--years $YEARS"
-          if [ "$INCREMENTAL" = "true" ]; then FLAGS="$FLAGS --incremental"; fi
+          FLAGS=""
+          if [ "$INCREMENTAL" = "true" ]; then FLAGS="--incremental"; fi
           echo "Running: python pipeline/fetch_fiscal_impacts.py $FLAGS"
           python pipeline/fetch_fiscal_impacts.py $FLAGS
 
@@ -52,11 +47,11 @@ jobs:
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data_website/nyc_council_fiscal_impacts_tracker/data/fiscal_impacts.json
+          git add nyc_council_fiscal_impacts_tracker/data/fiscal_impacts.json
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else
-            COUNT=$(python3 -c "import json; d=json.load(open('data_website/nyc_council_fiscal_impacts_tracker/data/fiscal_impacts.json')); print(d['metadata']['total_records'])")
+            COUNT=$(python3 -c "import json; d=json.load(open('nyc_council_fiscal_impacts_tracker/data/fiscal_impacts.json')); print(d['metadata']['total_records'])")
             git commit -m "data: refresh fiscal impacts — $COUNT records [$(date -u '+%Y-%m-%d')]"
             git push
           fi

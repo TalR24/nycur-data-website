@@ -6,8 +6,9 @@ data using the Claude API, and writes results to fiscal_impacts.json for the
 data website.
 
 Usage:
-    python fetch_fiscal_impacts.py --years 2024,2025,2026
-    python fetch_fiscal_impacts.py --years 2024,2025,2026 --incremental
+    python fetch_fiscal_impacts.py
+    python fetch_fiscal_impacts.py --incremental
+    python fetch_fiscal_impacts.py --dry-run
     python fetch_fiscal_impacts.py --help
 
 Environment variables required:
@@ -140,12 +141,19 @@ def create_session() -> requests.Session:
     return s
 
 
-def search_legistar_year(session: requests.Session, year: int) -> list[tuple[str, str]]:
+def search_legistar_all(session: requests.Session) -> list[tuple[str, str]]:
     """
-    Search Legistar for matters with 'Fiscal Impact Statement' in attachments
-    for a given year. Returns list of (matter_id, guid) tuples.
+    Search Legistar for ALL matters with 'Fiscal Impact Statement' in attachments,
+    across all years, handling pagination.
+
+    Background: Legistar's year filter (lstYears) is non-functional for attachment
+    searches — it always returns the same results regardless of the year selected.
+    We therefore search with 'All Years' and paginate through all result pages.
+    Pagination uses ASP.NET __doPostBack with the RadGrid pager event targets.
+
+    Returns list of (matter_id, guid) tuples, deduplicated.
     """
-    log.info(f"Searching Legistar year={year} ...")
+    log.info("Searching Legistar for all fiscal impact statement attachments ...")
 
     r = session.get(f"{BASE_URL}/Legislation.aspx", timeout=20)
     r.raise_for_status()
@@ -156,31 +164,84 @@ def search_legistar_year(session: requests.Session, year: int) -> list[tuple[str
         log.error("Could not find __VIEWSTATE on Legistar search page")
         return []
 
+    # Initial search POST — "All Years" returns all available bills
     post_data = {
         "__VIEWSTATE":          vs_match.group(1),
         "__VIEWSTATEGENERATOR": vsg_match.group(1) if vsg_match else "",
-        "ctl00$ContentPlaceHolder1$txtSearch":   "Fiscal Impact Statement",
-        "ctl00$ContentPlaceHolder1$lstYears":    str(year),
+        "ctl00$ContentPlaceHolder1$txtSearch":    "Fiscal Impact Statement",
+        "ctl00$ContentPlaceHolder1$lstYears":     "All Years",
         "ctl00$ContentPlaceHolder1$lstTypeBasic": "All Types",
         "ctl00$ContentPlaceHolder1$chkAttachments": "on",
-        "ctl00$ContentPlaceHolder1$btnSearch":   "Search Legislation",
+        "ctl00$ContentPlaceHolder1$btnSearch":    "Search Legislation",
     }
 
     r2 = session.post(f"{BASE_URL}/Legislation.aspx", data=post_data, timeout=30)
     r2.raise_for_status()
 
-    matters = re.findall(
-        r"LegislationDetail\.aspx\?ID=(\d+)&(?:amp;)?GUID=([A-F0-9\-]+)",
-        r2.text,
-    )
+    seen:   set[str]           = set()
+    unique: list[tuple[str, str]] = []
 
-    seen, unique = set(), []
-    for mid, guid in matters:
-        if mid not in seen:
-            seen.add(mid)
-            unique.append((mid, guid))
+    def _extract_matters(html: str) -> None:
+        for mid, guid in re.findall(
+            r"LegislationDetail\.aspx\?ID=(\d+)&(?:amp;)?GUID=([A-F0-9\-]+)", html
+        ):
+            if mid not in seen:
+                seen.add(mid)
+                unique.append((mid, guid))
 
-    log.info(f"  -> {len(unique)} matters found for {year}")
+    _extract_matters(r2.text)
+    log.info(f"  Page 1: {len(unique)} matters")
+
+    # Paginate: find all numeric page links beyond page 1 in the pager.
+    # The RadGrid pager renders links as:
+    #   __doPostBack('ctl00$...$ctl04','')  → page 2
+    #   __doPostBack('ctl00$...$ctl06','')  → page 3  etc.
+    # We detect them by finding the pager HTML and extracting event targets
+    # for pages 2, 3, … until no new pages are found.
+    current_html = r2.text
+    page_num = 1
+
+    while True:
+        # Find pager link for the next page (page_num + 1).
+        # Pager links are <a href="javascript:__doPostBack(...)"><span>N</span></a>
+        # The current page has class="rgCurrentPage" with no href navigation.
+        next_page = page_num + 1
+        # Match: href with doPostBack target followed by <span>{next_page}</span>
+        pattern = (
+            r"doPostBack\(&#39;([^&]+)&#39;,&#39;&#39;\)"
+            r"[^<]*<span>" + str(next_page) + r"</span>"
+        )
+        m = re.search(pattern, current_html)
+        if not m:
+            break  # no more pages
+
+        event_target = m.group(1)
+        vs2  = re.search(r'id="__VIEWSTATE"\s+value="([^"]+)"', current_html)
+        vsg2 = re.search(r'id="__VIEWSTATEGENERATOR"\s+value="([^"]+)"', current_html)
+
+        page_data = {
+            "__VIEWSTATE":          vs2.group(1) if vs2 else "",
+            "__VIEWSTATEGENERATOR": vsg2.group(1) if vsg2 else "",
+            "__EVENTTARGET":        event_target,
+            "__EVENTARGUMENT":      "",
+            "ctl00$ContentPlaceHolder1$txtSearch":    "Fiscal Impact Statement",
+            "ctl00$ContentPlaceHolder1$lstYears":     "All Years",
+            "ctl00$ContentPlaceHolder1$lstTypeBasic": "All Types",
+            "ctl00$ContentPlaceHolder1$chkAttachments": "on",
+        }
+        rn = session.post(f"{BASE_URL}/Legislation.aspx", data=page_data, timeout=30)
+        rn.raise_for_status()
+
+        before = len(unique)
+        _extract_matters(rn.text)
+        added = len(unique) - before
+        log.info(f"  Page {next_page}: {added} new matters (running total: {len(unique)})")
+
+        current_html = rn.text
+        page_num = next_page
+        time.sleep(1)
+
+    log.info(f"  -> {len(unique)} total matters found across all pages")
     return unique
 
 
@@ -316,13 +377,12 @@ def load_existing(path: Path) -> dict:
     return {"metadata": {}, "records": []}
 
 
-def save_output(path: Path, records: list, years: list[int]) -> None:
+def save_output(path: Path, records: list) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     data = {
         "metadata": {
             "last_updated": datetime.utcnow().isoformat() + "Z",
             "total_records": len(records),
-            "years_searched": years,
             "source": "NYC Legistar (legistar.council.nyc.gov)",
         },
         "records": records,
@@ -357,6 +417,9 @@ def record_has_fiscal_impact(fiscal: dict) -> bool:
     """
     Post-extraction check. Returns True only if the bill has a non-zero,
     estimable fiscal impact worth storing.
+    Excludes balanced budget modifications (Pre-Considered Resolutions where
+    revenue == expenditure and net == 0) — these are budget approvals, not
+    legislated costs.
     """
     if not fiscal.get("cost_estimable", True):
         return False
@@ -366,6 +429,9 @@ def record_has_fiscal_impact(fiscal: dict) -> bool:
     cap = fiscal.get("total_capital") or 0
     rev = fiscal.get("total_revenue") or 0
     net = fiscal.get("net_fiscal_impact") or 0
+    # Exclude balanced budget mods (revenue offsets expenditure exactly, net=0)
+    if net == 0 and rev == exp and exp > 0:
+        return False
     return any(abs(v) > 0 for v in [exp, cap, rev, net])
 
 
@@ -373,10 +439,6 @@ def record_has_fiscal_impact(fiscal: dict) -> bool:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="NYC Council Fiscal Impacts Pipeline")
-    parser.add_argument(
-        "--years", default="2024,2025,2026",
-        help="Comma-separated years to search on Legistar (default: 2024,2025,2026)",
-    )
     parser.add_argument(
         "--incremental", action="store_true",
         help="Skip matters already present in fiscal_impacts.json",
@@ -386,8 +448,6 @@ def main() -> int:
         help="Process data but do not write output file",
     )
     args = parser.parse_args()
-
-    years = [int(y.strip()) for y in args.years.split(",")]
 
     api_key = os.environ.get("ANTHROPIC_API_KEY")
     if not api_key:
@@ -403,82 +463,83 @@ def main() -> int:
 
     total_new = 0
 
-    for year in years:
-        matters = search_legistar_year(session, year)
-        time.sleep(1)
+    # Search once with All Years and paginate — year filtering is non-functional
+    # in Legistar's attachment search; this retrieves the complete dataset.
+    matters = search_legistar_all(session)
+    time.sleep(1)
 
-        for matter_id, guid in matters:
-            if args.incremental and matter_id in existing_ids:
-                log.info(f"  Skipping already-processed matter {matter_id}")
+    for matter_id, guid in matters:
+        if args.incremental and matter_id in existing_ids:
+            log.info(f"  Skipping already-processed matter {matter_id}")
+            continue
+
+        log.info(f"Processing matter {matter_id} ...")
+
+        try:
+            att_id, att_guid = get_fiscal_attachment(session, matter_id, guid)
+            time.sleep(0.5)
+
+            if not att_id:
+                log.info(f"  No fiscal impact attachment found — skipping")
                 continue
 
-            log.info(f"Processing matter {matter_id} ...")
+            docx_path = download_docx(session, att_id, att_guid)
+            time.sleep(0.5)
 
-            try:
-                att_id, att_guid = get_fiscal_attachment(session, matter_id, guid)
-                time.sleep(0.5)
+            if not docx_path:
+                continue
 
-                if not att_id:
-                    log.info(f"  No fiscal impact attachment found — skipping")
-                    continue
+            text = extract_docx_text(docx_path)
+            if not text.strip():
+                log.warning(f"  Empty text from {docx_path} — skipping")
+                continue
 
-                docx_path = download_docx(session, att_id, att_guid)
-                time.sleep(0.5)
+            # Fast pre-check: skip obvious zero-impact bills before calling Claude.
+            # If every dollar figure in the text is $0 and there's no "See below",
+            # there's nothing worth storing.
+            if text_is_zero_impact(text):
+                log.info(f"  Pre-check: all-zero fiscal impact — skipping Claude call")
+                existing_ids.add(matter_id)  # mark as seen so --incremental skips it
+                continue
 
-                if not docx_path:
-                    continue
+            log.info("  Calling Claude for extraction ...")
+            fiscal = extract_fiscal_data(text, client)
 
-                text = extract_docx_text(docx_path)
-                if not text.strip():
-                    log.warning(f"  Empty text from {docx_path} — skipping")
-                    continue
-
-                # Fast pre-check: skip obvious zero-impact bills before calling Claude.
-                # If every dollar figure in the text is $0 and there's no "See below",
-                # there's nothing worth storing.
-                if text_is_zero_impact(text):
-                    log.info(f"  Pre-check: all-zero fiscal impact — skipping Claude call")
-                    existing_ids.add(matter_id)  # mark as seen so --incremental skips it
-                    continue
-
-                log.info("  Calling Claude for extraction ...")
-                fiscal = extract_fiscal_data(text, client)
-
-                # Post-extraction filter: skip if no real fiscal impact or unestimable.
-                if not record_has_fiscal_impact(fiscal):
-                    log.info(f"  Post-check: zero/unestimable fiscal impact — skipping")
-                    existing_ids.add(matter_id)
-                    continue
-
-                record = {
-                    "matter_id":    matter_id,
-                    "legistar_guid": guid,
-                    "legistar_url": (
-                        f"https://legistar.council.nyc.gov/LegislationDetail.aspx"
-                        f"?ID={matter_id}&GUID={guid}"
-                    ),
-                    "attachment_id": att_id,
-                    "processed_at": datetime.utcnow().isoformat() + "Z",
-                    **fiscal,
-                }
-
-                records.append(record)
+            # Post-extraction filter: skip if no real fiscal impact or unestimable.
+            if not record_has_fiscal_impact(fiscal):
+                log.info(f"  Post-check: zero/unestimable fiscal impact — skipping")
                 existing_ids.add(matter_id)
-                total_new += 1
+                continue
 
-                fn    = fiscal.get("file_number", "?")
-                title = (fiscal.get("title") or "")[:60]
-                log.info(f"  -> {fn}: {title}")
+            record = {
+                "matter_id":    matter_id,
+                "legistar_guid": guid,
+                "legistar_url": (
+                    f"https://legistar.council.nyc.gov/LegislationDetail.aspx"
+                    f"?ID={matter_id}&GUID={guid}"
+                ),
+                "attachment_id": att_id,
+                "processed_at": datetime.utcnow().isoformat() + "Z",
+                **fiscal,
+            }
 
-            except Exception as e:
-                log.error(f"  Error on matter {matter_id}: {e}", exc_info=True)
+            records.append(record)
+            existing_ids.add(matter_id)
+            total_new += 1
 
-            time.sleep(1)  # be polite to Legistar
+            fn    = fiscal.get("file_number", "?")
+            title = (fiscal.get("title") or "")[:60]
+            log.info(f"  -> {fn}: {title}")
+
+        except Exception as e:
+            log.error(f"  Error on matter {matter_id}: {e}", exc_info=True)
+
+        time.sleep(1)  # be polite to Legistar
 
     log.info(f"Processed {total_new} new matters (total in file: {len(records)})")
 
     if not args.dry_run:
-        save_output(OUTPUT_PATH, records, years)
+        save_output(OUTPUT_PATH, records)
     else:
         log.info("--dry-run: not writing output file")
 
