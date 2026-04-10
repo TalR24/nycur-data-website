@@ -417,9 +417,8 @@ def record_has_fiscal_impact(fiscal: dict) -> bool:
     """
     Post-extraction check. Returns True only if the bill has a non-zero,
     estimable fiscal impact worth storing.
-    Excludes balanced budget modifications (Pre-Considered Resolutions where
-    revenue == expenditure and net == 0) — these are budget approvals, not
-    legislated costs.
+    Excludes only bills where ALL of revenue, expenditure, capital, and net
+    are zero — i.e. no fiscal impact whatsoever.
     """
     if not fiscal.get("cost_estimable", True):
         return False
@@ -429,9 +428,6 @@ def record_has_fiscal_impact(fiscal: dict) -> bool:
     cap = fiscal.get("total_capital") or 0
     rev = fiscal.get("total_revenue") or 0
     net = fiscal.get("net_fiscal_impact") or 0
-    # Exclude balanced budget mods (revenue offsets expenditure exactly, net=0)
-    if net == 0 and rev == exp and exp > 0:
-        return False
     return any(abs(v) > 0 for v in [exp, cap, rev, net])
 
 
