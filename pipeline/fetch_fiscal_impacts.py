@@ -124,9 +124,10 @@ RULES:
 - net_fiscal_impact = total_revenue - total_expenditure - total_capital. Negative = net cost to city.
 - If ANY cell says "See below" or indicates the cost cannot be estimated, set cost_estimable to false and set that total to null.
 - fiscal_table_columns must preserve the exact column structure from the document (there may be 2–6 columns).
-- Extract ALL agencies mentioned anywhere in the document (not just in the table).
+- agencies_abbrev: list only agencies that are directly responsible for implementing the legislation — i.e. agencies that have at least one line item in program_breakdowns. Do NOT list agencies that only appear in passing in narrative text (e.g. OMB as reviewer, IBO as analyst, NYC Council as introducer).
 - Standard NYC agency abbreviations: DOT, DPR, NYPD, FDNY, DOE, DSS, DFTA, DEP, HPD, HRA, DCAS, DSNY, DOF, DOB, DHS, NYCEM, TLC, SBS, DYCD, DOHMH, DCA, DDC, MTA, DOC, DCLA, ACS, MOCJ, OMB. Create reasonable abbreviations for others.
 - program_breakdowns: extract named cost line items from the Impact on Expenditures section. May be empty [].
+- For program_breakdowns entries involving street sign installation, street sign fabrication, co-naming of thoroughfares, or sign procurement: set agency="DOT" regardless of which agency the document credits. DOT is responsible for all street signage in NYC.
 - For sponsors and prime_sponsor: strip all prefixes ("Council Member", "Council Members", "By Council Members", "(s):"). Return only the name. For "The Speaker (Council Member X)", return "X (Speaker)". Always use last name only as written in the document.
 - Return ONLY the JSON object — no markdown, no explanation.
 
@@ -580,6 +581,81 @@ def record_has_fiscal_impact(fiscal: dict) -> bool:
     return any(abs(v) > 0 for v in [exp, cap, rev, net])
 
 
+def is_budget_modification(fiscal: dict) -> bool:
+    """
+    Returns True if this record is a mayoral budget modification (MN-#),
+    not independent legislation. These are Charter §107(e) administrative
+    approvals and should not appear in the fiscal tracker.
+    """
+    title = (fiscal.get("title") or "").lower()
+    return bool(re.search(r"\bmn-\d+\b", title) or "modification (mn" in title)
+
+
+def is_proposed_bill(fiscal: dict) -> bool:
+    """
+    Returns True if this record is a proposed (not yet passed) bill.
+    Titles beginning with 'Proposed' indicate draft legislation that has
+    not been enacted as a local law. Only final/passed bills belong in
+    the tracker.
+    """
+    title = (fiscal.get("title") or "").strip()
+    return title.lower().startswith("proposed")
+
+
+_SIGN_KEYWORDS = [
+    "street sign", "sign installation", "new street sign", "sign procurement",
+    "co-name", "thoroughfare sign", "street co-name", "new signs",
+    "sign fabricat", "signs at $", "signs for renamed", "signs for thoroughfare",
+]
+
+_DOT_FULL = "Department of Transportation"
+
+
+def normalize_agency_attribution(fiscal: dict) -> dict:
+    """
+    Apply two post-extraction agency cleanup rules:
+
+    1. Street sign line items → agency = DOT.
+       Any program_breakdowns entry whose program or description mentions
+       street sign installation, fabrication, or co-naming is credited to DOT.
+
+    2. agencies_abbrev pruning.
+       If program_breakdowns are present, keep only agencies that actually
+       appear in at least one breakdown entry. This removes agencies that
+       Claude listed from narrative text only (e.g. OMB as reviewer, IBO as
+       analyst, NYC Council as introducer).
+    """
+    pbs = fiscal.get("program_breakdowns") or []
+    if not pbs:
+        return fiscal
+
+    # Rule 1: assign DOT to sign line items
+    for pb in pbs:
+        combined = ((pb.get("program") or "") + " " + (pb.get("description") or "")).lower()
+        if any(kw in combined for kw in _SIGN_KEYWORDS):
+            pb["agency"] = "DOT"
+
+    # Rule 2: rebuild agencies_abbrev from pb agencies only
+    seen: list[str] = []
+    seen_set: set[str] = set()
+    for pb in pbs:
+        a = pb.get("agency")
+        if a and a not in seen_set:
+            seen.append(a)
+            seen_set.add(a)
+
+    if seen:
+        old_map = dict(zip(
+            fiscal.get("agencies_abbrev") or [],
+            fiscal.get("agencies_full") or [],
+        ))
+        old_map["DOT"] = _DOT_FULL
+        fiscal["agencies_abbrev"] = seen
+        fiscal["agencies_full"]   = [old_map.get(a, a) for a in seen]
+
+    return fiscal
+
+
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 def main() -> int:
@@ -698,6 +774,24 @@ def main() -> int:
                 log.info(f"  Post-check: zero/unestimable fiscal impact — skipping")
                 existing_ids.add(matter_id)
                 continue
+
+            # Skip budget modification resolutions (MN-#) — these are Charter
+            # §107(e) administrative approvals, not independent legislation.
+            if is_budget_modification(fiscal):
+                log.info(f"  Budget modification (MN-#) — skipping")
+                existing_ids.add(matter_id)
+                continue
+
+            # Skip proposed (not yet passed) bills — only final/enacted legislation
+            # belongs in the tracker.
+            if is_proposed_bill(fiscal):
+                log.info(f"  Proposed bill (not yet passed) — skipping")
+                existing_ids.add(matter_id)
+                continue
+
+            # Normalize agency attribution: assign DOT to street sign line items
+            # and prune agencies not present in program_breakdowns.
+            fiscal = normalize_agency_attribution(fiscal)
 
             record = {
                 "matter_id":    matter_id,

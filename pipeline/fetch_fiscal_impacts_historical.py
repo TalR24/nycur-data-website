@@ -44,6 +44,9 @@ from fetch_fiscal_impacts import (
     extract_docx_text,
     extract_fiscal_data,
     record_has_fiscal_impact,
+    is_budget_modification,
+    is_proposed_bill,
+    normalize_agency_attribution,
     text_is_zero_impact,
     save_output,
     load_existing,
@@ -551,6 +554,21 @@ def main() -> int:
                     log.info(f"    Post-check: zero/unestimable — skipping")
                     cp["processed_ids"].append(matter_id)
                     continue
+
+                # Skip budget modification resolutions (MN-#).
+                if is_budget_modification(fiscal):
+                    log.info(f"    Budget modification (MN-#) — skipping")
+                    cp["processed_ids"].append(matter_id)
+                    continue
+
+                # Skip proposed (not yet passed) bills.
+                if is_proposed_bill(fiscal):
+                    log.info(f"    Proposed bill (not yet passed) — skipping")
+                    cp["processed_ids"].append(matter_id)
+                    continue
+
+                # Normalize agency attribution.
+                fiscal = normalize_agency_attribution(fiscal)
 
                 record = {
                     "matter_id":     matter_id,

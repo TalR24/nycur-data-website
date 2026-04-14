@@ -8,9 +8,9 @@ This document is the complete reference for running, maintaining, and extending 
 
 An interactive data tool at `data.nycuriosity.com/nyc_council_fiscal_impacts_tracker/` that lets users explore the estimated fiscal impact of NYC City Council legislation. It covers Introductions and Resolutions that have a fiscal impact statement attachment on NYC Legistar, where the Finance Division estimated a **non-zero** fiscal impact.
 
-**Live URL:** `https://data.nycuriosity.com/nyc_council_fiscal_impacts_tracker/`  
-**GitHub repo:** `TalR24/nycur-data-website`  
-**Current record count:** ~19 bills (2024–2026, as of April 2026)
+**Live URL:** `https://data.nycuriosity.com/nyc_council_fiscal_impacts_tracker/`
+**GitHub repo:** `TalR24/nycur-data-website`
+**Current record count:** 307 bills (2014–2026, as of April 2026)
 
 ---
 
@@ -19,21 +19,26 @@ An interactive data tool at `data.nycuriosity.com/nyc_council_fiscal_impacts_tra
 ```
 data_website/
 ├── nyc_council_fiscal_impacts_tracker/
-│   ├── index.html                     ← Frontend: interactive tracker page
+│   ├── index.html                          ← Frontend: interactive bill table page
+│   ├── PIPELINE_REFERENCE.md               ← This file
 │   ├── data/
-│   │   └── fiscal_impacts.json        ← Data file read by the frontend
-│   └── PIPELINE_REFERENCE.md          ← This file
+│   │   └── fiscal_impacts.json             ← Master data file (307 records)
+│   └── agency-fiscal-impact/
+│       ├── index.html                      ← Bar chart: fiscal impact by agency
+│       └── data.json                       ← Enriched data for the agency chart
 │
 ├── pipeline/
-│   ├── fetch_fiscal_impacts.py        ← Main pipeline script
-│   ├── requirements.txt               ← Python dependencies
-│   ├── .gitignore                     ← Ignores cache/ folder
+│   ├── fetch_fiscal_impacts.py             ← Incremental pipeline (2024+)
+│   ├── fetch_fiscal_impacts_historical.py  ← Historical scraper (2014–2023, needs Legistar token)
+│   ├── requirements.txt                    ← Python dependencies
+│   ├── .gitignore                          ← Ignores cache/ folder
 │   └── cache/
-│       └── docx/                      ← Downloaded .docx files (gitignored, local only)
+│       ├── docx/                           ← Downloaded .docx files (gitignored)
+│       └── historical_checkpoint.json      ← Historical run resume state (gitignored)
 │
 └── .github/
     └── workflows/
-        └── refresh_fiscal_data.yml    ← Monthly GitHub Actions cron job
+        └── refresh_fiscal_data.yml         ← Monthly GitHub Actions cron job
 ```
 
 ---
@@ -47,108 +52,139 @@ pip install -r pipeline/requirements.txt
 # Packages: requests, python-docx, anthropic
 ```
 
-### Environment variable required
+### Environment variables
 
 ```bash
-export ANTHROPIC_API_KEY=sk-ant-...
+export ANTHROPIC_API_KEY=sk-ant-...     # required for all Claude extraction runs
+export LEGISTAR_TOKEN=...               # required for historical scraper Phase 1 enumeration
 ```
 
-Get/manage keys at `console.anthropic.com`. Make sure the account has credits — Claude Haiku is used for extraction and is cheap (~$0.001 per document).
+Get/manage Anthropic keys at `console.anthropic.com`. Claude Haiku is used (~$0.001 per document).
+Legistar token: a public 2017 read token is stored in Claude memory (`reference_github.md`).
+For GitHub Actions, `ANTHROPIC_API_KEY` is stored as a repository secret.
 
-For GitHub Actions, the key is stored as a repository secret: `Settings → Secrets → ANTHROPIC_API_KEY`.
-
-### Run command
+### Incremental run (monthly top-up for new 2024+ bills)
 
 ```bash
-cd /path/to/data_website
-python3 pipeline/fetch_fiscal_impacts.py --years 2024,2025,2026
+cd data_website
+python3 pipeline/fetch_fiscal_impacts.py --incremental
 ```
 
-Add `--incremental` to skip matter IDs already present in `fiscal_impacts.json` (used by GitHub Actions to avoid reprocessing):
+**No `--years` flag** — the pipeline searches "All Years" and paginates. Legistar's year filter is non-functional. The `--incremental` flag skips matter IDs already in `fiscal_impacts.json`.
+
+### Historical run (2014–2023, requires Legistar token)
 
 ```bash
-python3 pipeline/fetch_fiscal_impacts.py --years 2024,2025,2026 --incremental
+cd data_website
+export LEGISTAR_TOKEN=...
+export ANTHROPIC_API_KEY=...
+
+# Phase 1: enumerate all matters via REST API (~10 seconds, no Claude)
+python3 pipeline/fetch_fiscal_impacts_historical.py --years 2014-2023 --phase 1
+
+# Phase 2: check each matter for fiscal attachment, extract via Claude, save
+python3 pipeline/fetch_fiscal_impacts_historical.py --years 2014-2023 --phase 2
 ```
 
-Add `--dry-run` to process without writing output (useful for testing):
+The historical scraper checkpoints progress to `cache/historical_checkpoint.json` and auto-resumes if interrupted. After Phase 2, it automatically merges into `fiscal_impacts.json`.
+
+**After any pipeline run that adds new records**, regenerate `agency-fiscal-impact/data.json`:
 
 ```bash
-python3 pipeline/fetch_fiscal_impacts.py --years 2024,2025,2026 --dry-run
+python3 - <<'EOF'
+import json, re
+
+with open("nyc_council_fiscal_impacts_tracker/data/fiscal_impacts.json") as f:
+    data = json.load(f)
+records = data["records"]
+
+def get_intro_year(rec):
+    fn = rec.get("file_number") or ""
+    m = re.search(r'-(\d{4})$', str(fn))
+    if m: return int(m.group(1))
+    pa = rec.get("processed_at") or ""
+    return int(pa[:4]) if pa else None
+
+def normalize_fy(fy):
+    if not fy: return None
+    m = re.search(r'(\d{2,4})', str(fy))
+    if not m: return None
+    yr = m.group(1)
+    if len(yr) == 4: yr = yr[2:]
+    return f"FY{yr}"
+
+enriched = []
+for rec in records:
+    r = dict(rec)
+    r["intro_year"] = get_intro_year(rec)
+    r["fy_first_normalized"] = normalize_fy(rec.get("fy_first_effective"))
+    enriched.append(r)
+
+committees  = sorted(set(r["committee"] for r in enriched if r.get("committee")))
+sponsors    = sorted(set(r["prime_sponsor"] for r in enriched if r.get("prime_sponsor")))
+intro_years = sorted(set(r["intro_year"] for r in enriched if r.get("intro_year")))
+fiscal_years= sorted(set(r["fy_first_normalized"] for r in enriched if r.get("fy_first_normalized")))
+
+output = {"records": enriched, "filter_options": {"committees": committees, "sponsors": sponsors, "intro_years": intro_years, "fiscal_years": fiscal_years}}
+
+with open("nyc_council_fiscal_impacts_tracker/agency-fiscal-impact/data.json","w") as f:
+    json.dump(output, f, indent=2, ensure_ascii=False)
+print(f"Written {len(enriched)} records")
+EOF
 ```
-
-### Adding historical data
-
-To expand to earlier years, add them to the `--years` flag:
-
-```bash
-python3 pipeline/fetch_fiscal_impacts.py --years 2018,2019,2020,2021,2022,2023
-```
-
-The docx cache prevents re-downloading already-fetched files. The incremental flag prevents re-processing already-extracted matter IDs. Run in batches if doing a full history pull.
 
 ---
 
 ## How the Pipeline Works
 
-### Step 1 — Legistar search (no API token required)
+### Incremental pipeline (`fetch_fiscal_impacts.py`)
 
-The NYC Legistar REST API requires a registered token. This pipeline uses the **public web interface** instead, which requires no authentication. It POSTs to the Legistar legislation search form with:
-- Search text: `"Fiscal Impact Statement"`
-- Search scope: Attachments only
-- Year: the target year
-- Type: All Types
+**Step 1 — Legistar web search**
+POSTs to the Legistar legislation search form with `"Fiscal Impact Statement"` as attachment search text, `"All Years"` scope, and paginates through all result pages using ASP.NET RadGrid `__doPostBack` events. Returns `(matter_id, guid)` tuples.
 
-The response HTML contains matter IDs and GUIDs as links of the form:
-`LegislationDetail.aspx?ID={matter_id}&GUID={guid}`
+**Step 2 — Find fiscal attachment**
+For each matter, fetches the detail page and HEAD-checks each attachment. Identifies the fiscal impact .docx by `"fiscal"` or `"impact"` in the `Content-Disposition` filename.
 
-These are extracted with regex. **Note:** Legistar uses Telerik RadGrid with AJAX pagination — only the first page of results is captured per year search. For 2024–2026 this appears sufficient. Pagination handling is a future improvement if needed for years with very high bill counts.
+**Step 3 — Download and cache**
+Downloads to `pipeline/cache/docx/{att_id}.docx`. Cached files are reused on subsequent runs.
 
-### Step 2 — Find fiscal impact attachment
+**Step 4 — Pre-check (skip zero-impact bills)**
+Scans raw docx text for non-zero dollar amounts before calling Claude. Skips the API call if every dollar figure is `$0` and there's no "See below" language. Saves ~80% of Claude calls.
 
-For each matter, the pipeline fetches the matter detail page (with `Options=Attachments|`) and finds download links of the form `View.ashx?M=F&ID={att_id}&GUID={att_guid}`. It does a HEAD request on each attachment and checks the `Content-Disposition` header for "fiscal" or "impact" in the filename. The naming convention is consistent: `"Fiscal Impact Statement - City Council.docx"` (newer) or `"Fiscal Impact Statement.docx"` (older).
-
-### Step 3 — Download and cache .docx
-
-Files are downloaded to `pipeline/cache/docx/{att_id}.docx`. On subsequent runs, cached files are reused — no re-download.
-
-### Step 4 — Pre-check (skip obvious zero-cost bills)
-
-Before calling Claude, the raw docx text is scanned for non-zero dollar amounts. If every dollar figure in the document is `$0` and there's no "See below" language, the bill is skipped entirely. This avoids ~80% of Claude API calls since most legislation has $0 fiscal impact.
-
-### Step 5 — Claude extraction
-
-`claude-haiku-4-5-20251001` is called with a structured prompt asking for a JSON object. The prompt explicitly instructs:
-- Strip "Council Member/Council Members" prefix from all sponsor names
-- Return only last names for sponsors (the fiscal impact statements only include last names)
-- Handle "The Speaker (Council Member X)" → "X (Speaker)"
-- Sum all fiscal year columns for the `total_*` fields
-- Use `null` for unestimable values, `0` for explicit zeros
+**Step 5 — Claude extraction**
+`claude-haiku-4-5-20251001` returns structured JSON. Key extraction rules:
+- Strip all sponsor name prefixes ("Council Member", "Council Members", "By Council Members")
+- Last names only for sponsors
+- Sum all fiscal year columns for `total_*` fields
 - `net_fiscal_impact = total_revenue - total_expenditure - total_capital` (negative = net cost)
+- Only list agencies in `agencies_abbrev` that have a line item in `program_breakdowns`
+- Assign `agency="DOT"` to any street sign installation/fabrication line item
 
-Retry logic: 3 attempts with exponential backoff on API errors.
-
-### Step 6 — Post-extraction filter
-
-After Claude returns data, bills are discarded if:
-- `cost_estimable` is `false` (Finance Division said it can't estimate costs)
+**Step 6 — Post-extraction filters**
+After extraction, records are discarded if:
+- `cost_estimable` is `false` (Finance Division said costs can't be estimated)
 - All of `total_expenditure`, `total_capital`, `total_revenue`, `net_fiscal_impact` are zero
 - `extraction_error` is present (Claude failed to return valid JSON)
+- Title matches `MN-\d+` pattern (budget modification resolutions — Charter §107(e) administrative approvals, not independent legislation)
+- Title starts with "Proposed" (draft legislation not yet enacted as a local law)
 
-### Step 7 — Write output
+**Step 7 — Agency normalization** (`normalize_agency_attribution`)
+Applied after passing the filters:
+1. Any `program_breakdowns` entry whose program/description mentions street sign installation → `agency = "DOT"`
+2. Rebuild `agencies_abbrev`/`agencies_full` from only the agencies appearing in `program_breakdowns`
 
-All passing records are written to `fiscal_impacts.json`. The file structure is:
+**Step 8 — Write output**
+Passing records appended to `fiscal_impacts.json`.
 
-```json
-{
-  "metadata": {
-    "last_updated": "2026-04-09T...",
-    "total_records": 19,
-    "years_searched": [2024, 2025, 2026],
-    "source": "NYC Legistar (legistar.council.nyc.gov)"
-  },
-  "records": [...]
-}
-```
+### Historical scraper (`fetch_fiscal_impacts_historical.py`)
+
+Imports all shared functions from `fetch_fiscal_impacts.py` (including filters and normalization). Applies identical post-extraction logic.
+
+**Phase 1 (REST API enumeration):** `GET /v1/nyc/Matters` with OData pagination ($top=1000) to enumerate all 16,339 NYC Council matters. Stores `matter_id → {guid, file_number}` in checkpoint. Requires Legistar token.
+
+**Phase 2 (attachment check + extraction):** For each matter, calls `GET /v1/nyc/Matters/{id}/Attachments` to find fiscal attachment URLs (direct `.docx` links on `nyc.legistar1.com`). Downloads, extracts, filters, and merges.
+
+**Critical ID note:** Legistar REST API `MatterId` ≠ web UI `LegislationDetail.aspx?ID=`. The REST API uses its own ID system. Never try to construct a web UI URL from a REST API matter ID — it will return "Invalid parameters!".
 
 ---
 
@@ -158,18 +194,18 @@ Each record in `records[]`:
 
 | Field | Type | Description |
 |---|---|---|
-| `matter_id` | string | Legistar internal matter ID (unique key for deduplication) |
+| `matter_id` | string | Legistar internal matter ID (unique dedup key) |
 | `legistar_guid` | string | Legistar GUID |
 | `legistar_url` | string | Direct URL to Legistar matter page |
-| `attachment_id` | string | Attachment ID for the fiscal impact docx |
-| `processed_at` | string | ISO timestamp of when this record was extracted |
-| `file_number` | string | Bill number (e.g. "Int. No. 692", "Res. No. 1234-A") |
+| `attachment_id` | string | Attachment ID (numeric for web scraper; URL for REST API) |
+| `processed_at` | string | ISO timestamp when this record was extracted |
+| `file_number` | string | Bill number (e.g. "Int. No. 692", "Int 0360-2014") |
 | `legislation_type` | string | "Introduction", "Resolution", "Pre-Considered Resolution", "Other" |
 | `title` | string | Full title of the legislation |
 | `committee` | string | Council committee (e.g. "Transportation", "Finance") |
-| `sponsors` | string[] | All sponsor last names, cleaned (e.g. ["Lee", "Louis"]) |
-| `prime_sponsor` | string | First listed sponsor's last name (e.g. "Lee") |
-| `effective_date` | string | When the law takes effect (e.g. "120 days after becoming law") |
+| `sponsors` | string[] | All sponsor last names, cleaned |
+| `prime_sponsor` | string | First listed sponsor's last name |
+| `effective_date` | string | When the law takes effect |
 | `fy_first_effective` | string | First fiscal year affected (e.g. "FY26") |
 | `fy_full_impact` | string | Fiscal year of full impact (e.g. "FY27") |
 | `source_of_funds` | string | "General Fund", "N/A", "Federal Funds", etc. |
@@ -177,10 +213,10 @@ Each record in `records[]`:
 | `total_revenue` | number\|null | Sum of all revenue columns (positive) |
 | `total_expenditure` | number\|null | Sum of all expense/operational cost columns (positive) |
 | `total_capital` | number\|null | Sum of all capital cost columns (positive); null if no capital |
-| `net_fiscal_impact` | number\|null | `revenue - expenditure - capital`; negative = net cost to city |
+| `net_fiscal_impact` | number\|null | `revenue - expenditure - capital`; negative = net cost |
 | `fiscal_table_columns` | object[] | Per-column breakdown: `{label, revenue, expenditure, capital, net}` |
-| `agencies_abbrev` | string[] | Agency abbreviations (e.g. ["DOT", "DPR"]) |
-| `agencies_full` | string[] | Full agency names |
+| `agencies_abbrev` | string[] | Agency abbreviations (only agencies with program_breakdowns entries) |
+| `agencies_full` | string[] | Full agency names (parallel to agencies_abbrev) |
 | `program_breakdowns` | object[] | Named cost line items: `{agency, program, description, cost_type, amount, fy_range, offset_notes}` |
 | `impact_narrative_revenue` | string | Full "Impact on Revenues" paragraph |
 | `impact_narrative_expenditure` | string | Full "Impact on Expenditures" paragraph |
@@ -188,29 +224,55 @@ Each record in `records[]`:
 | `omb_estimate_notes` | string\|null | What OMB said (or null) |
 | `estimate_prepared_by` | string | Finance Division analyst name |
 | `estimate_reviewed_by` | string[] | Reviewer names |
-| `date_prepared` | string | Date the fiscal impact statement was prepared |
+| `date_prepared` | string | Date the fiscal impact statement was prepared (may be null for older bills) |
 | `hearing_date` | string\|null | Committee hearing date (newer bills only) |
 
-### Key quirks
+### Key data rules (enforced by pipeline)
 
-- **Capital costs**: Only present on infrastructure-heavy bills. Most bills have `total_capital: null`, not `0`.
-- **Fiscal table columns**: Vary by bill. Newer template has 3 standard columns (Effective FY, FY Succeeding, Full Fiscal Impact FY). Older bills have custom column structures (e.g., Streets Plan had 5-year plan periods).
-- **Budget modifications** (Pre-Considered Resolutions like MN-6): Have large balanced revenue=expenditure, net=$0 — these will be filtered out by the zero-impact check. If you want budget modifications included, the filter logic needs adjustment.
-- **Sponsor names**: Last names only, as written in the fiscal impact statement. The Finance Division never includes first names. "Menin (Speaker)" indicates The Speaker.
+- **`total_capital`**: `null` (not `0`) when no capital costs exist.
+- **`net_fiscal_impact`**: `revenue - expenditure - capital`. Negative = net cost to city.
+- **`agencies_abbrev`**: Only agencies with at least one `program_breakdowns` entry. Agencies that appear only in narrative text (OMB as reviewer, IBO as analyst, NYC Council as introducer) are excluded.
+- **Street signs**: Any program_breakdown line item about street sign installation/fabrication is credited to DOT, regardless of what the document says.
+- **Budget modifications** (MN-# resolutions): Excluded at pipeline level. These are Charter §107(e) administrative budget approvals, not independent legislation.
+- **Balanced budgets** (revenue = expenditure, net = 0): Included. The filter only excludes bills where ALL values are zero.
+- **Sponsor names**: Last names only. "X (Speaker)" indicates The Speaker.
 
 ---
 
-## Known Issues and Fixes Applied
+## Frontend Pages
 
-### 1. Duplicate records from overlapping year searches
-**Problem:** Searching years 2024, 2025, 2026 separately caused the same bills to appear in multiple year results, storing them multiple times and inflating totals.  
-**Fix:** Deduplication by `matter_id` was applied to clean historical data. The `--incremental` flag on future runs prevents re-adding already-stored matter IDs.  
-**Prevention:** Always use `--incremental` in GitHub Actions (already configured).
+### Bill table (`index.html`)
+Fetches `./data/fiscal_impacts.json`. Default sort: `date_prepared` descending (most recent first), with fallback to the year in the file_number for bills without `date_prepared`.
 
-### 2. Sponsor names with "Council Member" prefix
-**Problem:** Claude inconsistently stripped the "Council Member / Council Members / By Council Members / (s):" prefix, resulting in "Council Members Lee" and "Lee" as different values for the same person.  
-**Fix:** A normalization pass was applied to all existing records. The extraction prompt now explicitly instructs Claude to strip all prefixes and return last name only.  
-**If it recurs:** Run this normalization script on the JSON:
+**Filters:** Text search, type, agency, committee, prime sponsor, full impact FY, net impact sign.
+**Sort columns:** Date prepared, net fiscal impact, expenditure, capital, revenue.
+**Row detail panel:** Click any row — shows per-column fiscal table, program breakdowns, narratives, OMB estimate, Legistar link.
+
+### Agency bar chart (`agency-fiscal-impact/index.html`)
+Fetches `./data.json` (the enriched file). Shows top-25 agencies by absolute value of selected metric.
+
+**Metric toggles:** Net Fiscal Impact | Operational Expense | Capital Expense | Revenue
+**Filters:** Committee, Prime Sponsor, Bill Intro Year, First Fiscal Year, Expense Type
+**Stat pills:** Bills, net, operational, capital, revenue totals for current filter set.
+**Chart nav strip:** "Charts in this tracker" pill nav links between the bill table and the agency chart. Active page = solid blue pill.
+
+---
+
+## Known Issues Fixed
+
+| Issue | Fix |
+|---|---|
+| Legistar year filter non-functional | Pipeline uses "All Years" + pagination |
+| Budget modifications (MN-#) appearing in table | Excluded via `is_budget_modification()` filter in both pipeline scripts |
+| Agencies from narrative text only (OMB, IBO, NYC Council) in agencies_abbrev | `normalize_agency_attribution()` prunes to program_breakdown agencies only |
+| Street signs credited to DPR, NYPD, DCAS, or None | `normalize_agency_attribution()` reassigns to DOT |
+| Historical bills without date_prepared sorting wrong | Table sort falls back to year extracted from file_number |
+| Sponsor name prefix ("Council Members Lee") | Prompt instructs Claude to strip all prefixes; normalization script available below |
+| Narrative-format fiscal statements (pre-2019 prose) | EXTRACTION_PROMPT has a "NARRATIVE FORMAT" rules section |
+| Legistar REST API ID ≠ web UI ID | Historical scraper uses `/Matters/{id}/Attachments` endpoint, never constructs web URLs from REST IDs |
+| Python 3.9 type hint incompatibility | `from __future__ import annotations` at top of both scripts |
+
+### Sponsor name normalization (if needed)
 ```python
 import re
 def normalize_name(name):
@@ -223,104 +285,43 @@ def normalize_name(name):
     return name.strip()
 ```
 
-### 3. Python 3.9 type hint incompatibility
-**Problem:** `str | None` union type syntax requires Python 3.10+. The script uses Python 3.9 on the local machine.  
-**Fix:** Added `from __future__ import annotations` at the top of `fetch_fiscal_impacts.py`. GitHub Actions uses Python 3.11, so no issue there.
-
-### 4. GitHub push authentication
-**Problem:** The local git credential is cached as `troded_LinkedIn` which doesn't have push access to `TalR24/nycur-data-website`.  
-**Fix:** Set the remote URL with the PAT embedded:
-```bash
-git remote set-url origin https://TalR24:{PAT}@github.com/TalR24/nycur-data-website.git
-```
-The PAT is stored in Claude memory (`reference_github.md`).
-
 ---
 
 ## Fiscal Impact Statement Document Formats
-
-Two template variants exist across the Council's history:
 
 **New template (~2020–present):**
 - Header: "City Council Estimate:"
 - 3 standard columns: "Effective FY{N}", "FY Succeeding Effective FY{N+1}", "Full Fiscal Impact FY{N+1}"
 - Rows: Revenues (+), Expenditures (−), Net
-- Includes "Office of Management and Budget Estimate:" section
-- Includes "Hearing/Meeting Date:" field
+- Includes OMB estimate section and hearing date field
 
 **Old template (pre-~2020):**
 - Header: "Fiscal Impact Statement:"
 - Column structure varies — custom labels based on legislation scope
 - Rows: Revenues, Expense, Capital (sometimes), Net
-- No OMB section
-- No hearing date field
+- No OMB section, no hearing date
 
-The extraction prompt handles both.
-
----
-
-## Frontend Notes
-
-**File:** `nyc_council_fiscal_impacts_tracker/index.html`  
-**Data source:** Fetches `./data/fiscal_impacts.json` on page load.  
-**No build step** — pure HTML/CSS/JS, same pattern as all other data website pages.
-
-### Filters available
-- Text search (bill number or title keyword)
-- Type (Introduction / Resolution / Pre-Considered Resolution)
-- Agency (from `agencies_abbrev[]`)
-- Committee
-- Prime Sponsor
-- Full Impact FY (from `fy_full_impact`)
-- Net Impact sign (cost / revenue / zero / unknown)
-
-### Running totals
-The results bar above the table shows net impact, expense, capital, and revenue summed across the current filtered view — useful for aggregate queries like "total DOT expenditure in FY27 from bills sponsored by council member X."
-
-### Row detail panel
-Click any row to expand: shows the full fiscal table (per-column), program breakdowns if available, revenue/expenditure narratives, OMB estimate, and a link to Legistar.
-
-### Adding a new filter column
-1. Add the filter `<select>` in the filter-section HTML
-2. Populate it in `populateFilters()`
-3. Add the filter logic in `applyFilters()`
+**Narrative format (pre-2019, common):**
+- No structured table at all — fiscal impact stated as prose paragraphs
+- Example: "This legislation is estimated to increase expenditures by $1.6 million annually"
+- The EXTRACTION_PROMPT "NARRATIVE FORMAT" rules section handles this, instructing Claude to synthesize totals from narrative text
 
 ---
 
 ## GitHub Actions Auto-Refresh
 
-**File:** `.github/workflows/refresh_fiscal_data.yml`  
-**Schedule:** 1st of each month at 7:00 AM UTC  
-**Can also be triggered manually:** Actions tab → "Refresh NYC Council Fiscal Impacts" → Run workflow
+**File:** `.github/workflows/refresh_fiscal_data.yml`
+**Schedule:** 1st of each month at 7:00 AM UTC (can be triggered manually)
 
-The workflow:
-1. Checks out repo
-2. Installs Python 3.11 + dependencies
-3. Runs `fetch_fiscal_impacts.py --years 2024,2025,2026 --incremental`
-4. Commits and pushes `fiscal_impacts.json` if changed
-
-**Required secret:** `ANTHROPIC_API_KEY` in repo settings → Secrets → Actions.
-
-To add more years to the scheduled run, edit the `years` default in the workflow file.
+The workflow runs `fetch_fiscal_impacts.py --incremental` and commits `fiscal_impacts.json` if changed. It does **not** run the historical scraper — that requires the Legistar token which is not stored as a secret.
 
 ---
 
-## Extending the Dataset
+## Legistar REST API Notes
 
-### To add historical years
-```bash
-python3 pipeline/fetch_fiscal_impacts.py --years 2014,2015,2016,2017,2018,2019,2020,2021,2022,2023
-```
-The existing 19 records will be preserved (pipeline appends, doesn't overwrite). Run in batches by era to avoid very long single runs.
-
-### To add a new field to the schema
-1. Add the field to the extraction prompt in `fetch_fiscal_impacts.py` (in the JSON template and in the RULES section if it needs special handling)
-2. Add the field to the detail panel HTML in `index.html`
-3. If it should be filterable, add it to the filter bar
-4. For existing records, you'd need to re-run extraction without `--incremental` (or write a one-off script to backfill)
-
-### To change what's filtered out
-Edit `record_has_fiscal_impact()` in `fetch_fiscal_impacts.py`. Currently excludes: `cost_estimable=False`, all-zero values, extraction errors. If you want to include budget modifications (which have large balanced revenue=expenditure, net=$0), you would need a different filter condition.
-
-### To improve extraction accuracy
-Edit the `EXTRACTION_PROMPT` constant in `fetch_fiscal_impacts.py`. The prompt is passed the full docx text (up to 18,000 characters). If certain fields are consistently wrong for a bill type, add a targeted rule to the RULES section.
+- **Base URL:** `https://webapi.legistar.com/v1/nyc`
+- **Token:** A public 2017 read-only token is stored in Claude memory (`reference_github.md`). Pass via `--token` arg or `LEGISTAR_TOKEN` env var.
+- **Pagination:** `$top=1000&$skip=N` (OData). 16,339 total matters as of April 2026.
+- **Matters endpoint:** `GET /v1/nyc/Matters?$filter=MatterIntroDate ge datetime'...'`
+- **Attachments endpoint:** `GET /v1/nyc/Matters/{MatterId}/Attachments` — returns `MatterAttachmentHyperlink` as a direct `.docx` URL on `nyc.legistar1.com`
+- **ID warning:** `MatterId` from the REST API ≠ `ID` parameter in the web UI. Do not mix them.
