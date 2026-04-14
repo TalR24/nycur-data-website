@@ -594,12 +594,12 @@ def is_budget_modification(fiscal: dict) -> bool:
 def is_proposed_bill(fiscal: dict) -> bool:
     """
     Returns True if this record is a proposed (not yet passed) bill.
-    Titles beginning with 'Proposed' indicate draft legislation that has
-    not been enacted as a local law. Only final/passed bills belong in
-    the tracker.
+    File numbers beginning with 'Proposed' (e.g. 'Proposed Int. No. 893-A')
+    indicate draft legislation that has not been enacted as a local law.
+    Only final/passed bills belong in the tracker.
     """
-    title = (fiscal.get("title") or "").strip()
-    return title.lower().startswith("proposed")
+    file_number = (fiscal.get("file_number") or "").strip()
+    return file_number.lower().startswith("proposed")
 
 
 _SIGN_KEYWORDS = [
