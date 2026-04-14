@@ -889,12 +889,26 @@ function applyFilters() {
   });
 
   // Sort
+  // For date_prepared: fall back to year in file_number (e.g. "Int 0620-2015" → "2015-01-01")
+  // so historical bills without a date_prepared still sort by intro year
+  function dateKey(r) {
+    if (r.date_prepared) return r.date_prepared;
+    const m = (r.file_number || "").match(/-(\d{4})$/);
+    if (m) return m[1] + "-01-01";
+    return "";
+  }
   filtered.sort((a, b) => {
-    let va = a[sortCol] ?? "";
-    let vb = b[sortCol] ?? "";
+    let va, vb;
+    if (sortCol === "date_prepared") {
+      va = dateKey(a);
+      vb = dateKey(b);
+    } else {
+      va = a[sortCol] ?? "";
+      vb = b[sortCol] ?? "";
+    }
     if (sortCol === "net_fiscal_impact" || sortCol === "total_expenditure" || sortCol === "total_capital" || sortCol === "total_revenue") {
-      va = va === null ? -Infinity : va;
-      vb = vb === null ? -Infinity : vb;
+      va = va === null || va === "" ? -Infinity : va;
+      vb = vb === null || vb === "" ? -Infinity : vb;
     }
     if (va < vb) return sortDir;
     if (va > vb) return -sortDir;
