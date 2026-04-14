@@ -10,7 +10,7 @@ An interactive data tool at `data.nycuriosity.com/nyc_council_fiscal_impacts_tra
 
 **Live URL:** `https://data.nycuriosity.com/nyc_council_fiscal_impacts_tracker/`
 **GitHub repo:** `TalR24/nycur-data-website`
-**Current record count:** 307 bills (2014–2026, as of April 2026)
+**Current record count:** 219 bills (2014–2026, as of April 2026)
 
 ---
 
@@ -166,7 +166,7 @@ After extraction, records are discarded if:
 - All of `total_expenditure`, `total_capital`, `total_revenue`, `net_fiscal_impact` are zero
 - `extraction_error` is present (Claude failed to return valid JSON)
 - Title matches `MN-\d+` pattern (budget modification resolutions — Charter §107(e) administrative approvals, not independent legislation)
-- Title starts with "Proposed" (draft legislation not yet enacted as a local law)
+- `file_number` starts with "Proposed" (e.g. "Proposed Int. No. 893-A" — draft legislation not yet enacted as a local law)
 
 **Step 7 — Agency normalization** (`normalize_agency_attribution`)
 Applied after passing the filters:
