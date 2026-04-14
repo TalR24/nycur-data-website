@@ -8,6 +8,8 @@ data website.
 Usage:
     python fetch_fiscal_impacts.py
     python fetch_fiscal_impacts.py --incremental
+    python fetch_fiscal_impacts.py --incremental --historical
+    python fetch_fiscal_impacts.py --incremental --historical --historical-years 2010-2023
     python fetch_fiscal_impacts.py --dry-run
     python fetch_fiscal_impacts.py --help
 
@@ -127,6 +129,16 @@ RULES:
 - program_breakdowns: extract named cost line items from the Impact on Expenditures section. May be empty [].
 - For sponsors and prime_sponsor: strip all prefixes ("Council Member", "Council Members", "By Council Members", "(s):"). Return only the name. For "The Speaker (Council Member X)", return "X (Speaker)". Always use last name only as written in the document.
 - Return ONLY the JSON object — no markdown, no explanation.
+
+NARRATIVE FORMAT (older documents without a structured table):
+Some documents — particularly pre-2019 legislation — state fiscal impacts as prose rather than a year-by-year table. If there is no structured numeric table, synthesize the totals from the narrative text using these rules:
+- Look for phrases like "estimated to cost $X", "increase expenditures by $X annually", "reduce revenues by $X", "capital cost of $X", "estimated at $X million".
+- If a dollar amount is given as an annual figure with no multi-year breakdown, use that figure as the total (do not multiply by years unless the document explicitly states a total cumulative cost).
+- Revenue REDUCTIONS (e.g. "this legislation would reduce revenues by $204,000") are a cost to the city: set total_revenue = 0 and add the reduction amount to total_expenditure so net_fiscal_impact is negative.
+- "No impact on revenues" or "existing resources" means 0 for that category — do NOT set cost_estimable to false.
+- If a range is given (e.g. "$1 million to $2 million"), use the midpoint.
+- Create a single fiscal_table_columns entry with label "Total" and populate revenue/expenditure/capital/net from the narrative figures.
+- If the narrative gives a cost figure but says it "cannot be estimated precisely" or "will be determined", set cost_estimable to false.
 """
 
 
@@ -243,6 +255,143 @@ def search_legistar_all(session: requests.Session) -> list[tuple[str, str]]:
 
     log.info(f"  -> {len(unique)} total matters found across all pages")
     return unique
+
+
+def search_legistar_advanced_year(
+    session: requests.Session, year: str, max_retries: int = 2
+) -> list[tuple[str, str]]:
+    """
+    Use the Legistar advanced search form to find matters with 'Fiscal Impact Statement'
+    attachments for a specific year. The advanced lstYearsAdvanced filter appears to
+    work for historical data where the basic lstYears filter does not.
+
+    Two-step process:
+    1. GET the page, then POST with btnSwitch to enter advanced mode
+    2. POST with txtAtt + lstYearsAdvanced to run the search, then paginate
+    """
+    log.info(f"  Advanced search for year {year} ...")
+
+    for attempt in range(max_retries + 1):
+        try:
+            # Step 1: GET the page
+            r = session.get(f"{BASE_URL}/Legislation.aspx", timeout=20)
+            r.raise_for_status()
+
+            vs_match  = re.search(r'id="__VIEWSTATE"\s+value="([^"]+)"', r.text)
+            vsg_match = re.search(r'id="__VIEWSTATEGENERATOR"\s+value="([^"]+)"', r.text)
+            if not vs_match:
+                log.error(f"  Could not find __VIEWSTATE for year {year}")
+                return []
+
+            # Step 2: Switch to advanced search mode
+            switch_data = {
+                "__VIEWSTATE":          vs_match.group(1),
+                "__VIEWSTATEGENERATOR": vsg_match.group(1) if vsg_match else "",
+                "ctl00$ContentPlaceHolder1$btnSwitch":    "Advanced search >>>",
+                "ctl00$ContentPlaceHolder1$lstYears":     "This Year",
+                "ctl00$ContentPlaceHolder1$lstTypeBasic": "All Types",
+            }
+            r2 = session.post(f"{BASE_URL}/Legislation.aspx", data=switch_data, timeout=20)
+            r2.raise_for_status()
+
+            vs2  = re.search(r'id="__VIEWSTATE"\s+value="([^"]+)"', r2.text)
+            vsg2 = re.search(r'id="__VIEWSTATEGENERATOR"\s+value="([^"]+)"', r2.text)
+
+            # Step 3: Run the advanced search for this year
+            client_state = json.dumps({
+                "enabled": True,
+                "emptyMessage": "",
+                "validationText": year,
+                "valueAsString": year,
+                "lastSetTextInitiatesRequest": False,
+                "blockAnimationTimer": 0,
+                "lastAutoCompleteIndex": -1,
+                "Direction": 0,
+            })
+            search_data = {
+                "__VIEWSTATE":          vs2.group(1) if vs2 else "",
+                "__VIEWSTATEGENERATOR": vsg2.group(1) if vsg2 else "",
+                "ctl00$ContentPlaceHolder1$txtAtt":               "Fiscal Impact Statement",
+                "ctl00$ContentPlaceHolder1$lstYearsAdvanced":     year,
+                "ctl00_ContentPlaceHolder1_lstYearsAdvanced_ClientState": client_state,
+                "ctl00$ContentPlaceHolder1$lstType":              "All Types",
+                "ctl00$ContentPlaceHolder1$lstMax":               "50",
+                "ctl00$ContentPlaceHolder1$btnSearch":            "Search Legislation",
+            }
+            r3 = session.post(f"{BASE_URL}/Legislation.aspx", data=search_data, timeout=90)
+            r3.raise_for_status()
+
+            seen:   set[str]              = set()
+            unique: list[tuple[str, str]] = []
+
+            def _extract(html: str) -> None:
+                for mid, guid in re.findall(
+                    r"LegislationDetail\.aspx\?ID=(\d+)&(?:amp;)?GUID=([A-F0-9\-]+)", html
+                ):
+                    if mid not in seen:
+                        seen.add(mid)
+                        unique.append((mid, guid))
+
+            _extract(r3.text)
+            log.info(f"    Year {year} page 1: {len(unique)} matters")
+
+            # Paginate using the same RadGrid __doPostBack pattern
+            current_html = r3.text
+            page_num = 1
+
+            while True:
+                next_page = page_num + 1
+                pattern = (
+                    r"doPostBack\(&#39;([^&]+)&#39;,&#39;&#39;\)"
+                    r"[^<]*<span>" + str(next_page) + r"</span>"
+                )
+                m = re.search(pattern, current_html)
+                if not m:
+                    break
+
+                event_target = m.group(1)
+                vs_p  = re.search(r'id="__VIEWSTATE"\s+value="([^"]+)"', current_html)
+                vsg_p = re.search(r'id="__VIEWSTATEGENERATOR"\s+value="([^"]+)"', current_html)
+
+                page_data = {
+                    "__VIEWSTATE":          vs_p.group(1) if vs_p else "",
+                    "__VIEWSTATEGENERATOR": vsg_p.group(1) if vsg_p else "",
+                    "__EVENTTARGET":        event_target,
+                    "__EVENTARGUMENT":      "",
+                    "ctl00$ContentPlaceHolder1$txtAtt":               "Fiscal Impact Statement",
+                    "ctl00$ContentPlaceHolder1$lstYearsAdvanced":     year,
+                    "ctl00_ContentPlaceHolder1_lstYearsAdvanced_ClientState": client_state,
+                    "ctl00$ContentPlaceHolder1$lstType":              "All Types",
+                    "ctl00$ContentPlaceHolder1$lstMax":               "50",
+                }
+                rn = session.post(f"{BASE_URL}/Legislation.aspx", data=page_data, timeout=60)
+                rn.raise_for_status()
+
+                before = len(unique)
+                _extract(rn.text)
+                added = len(unique) - before
+                log.info(f"    Year {year} page {next_page}: {added} new matters (total: {len(unique)})")
+
+                current_html = rn.text
+                page_num = next_page
+                time.sleep(1.5)
+
+            log.info(f"    Year {year}: {len(unique)} total matters")
+            return unique
+
+        except requests.exceptions.Timeout:
+            if attempt < max_retries:
+                wait = 30 * (attempt + 1)
+                log.warning(f"    Timeout for year {year} (attempt {attempt+1}) — retrying in {wait}s")
+                time.sleep(wait)
+            else:
+                log.error(f"    Timeout for year {year} after {max_retries+1} attempts — skipping")
+                return []
+        except Exception as e:
+            log.error(f"    Error searching year {year}: {e}")
+            return []
+
+    return []
 
 
 def get_fiscal_attachment(
@@ -443,6 +592,15 @@ def main() -> int:
         "--dry-run", action="store_true",
         help="Process data but do not write output file",
     )
+    parser.add_argument(
+        "--historical", action="store_true",
+        help="Also search historical years via the advanced search form (slow)",
+    )
+    parser.add_argument(
+        "--historical-years", default="2014-2023",
+        metavar="START-END",
+        help="Year range for --historical mode, e.g. '2010-2023' (default: 2014-2023)",
+    )
     args = parser.parse_args()
 
     api_key = os.environ.get("ANTHROPIC_API_KEY")
@@ -459,10 +617,44 @@ def main() -> int:
 
     total_new = 0
 
-    # Search once with All Years and paginate — year filtering is non-functional
-    # in Legistar's attachment search; this retrieves the complete dataset.
-    matters = search_legistar_all(session)
-    time.sleep(1)
+    # Collect all matters, deduplicating by matter_id.
+    all_matter_ids: set[str] = set()
+    matters: list[tuple[str, str]] = []
+
+    def _add_matters(new: list[tuple[str, str]]) -> int:
+        added = 0
+        for mid, guid in new:
+            if mid not in all_matter_ids:
+                all_matter_ids.add(mid)
+                matters.append((mid, guid))
+                added += 1
+        return added
+
+    # Basic all-years search — covers all available bills in Legistar's
+    # attachment index (currently 2024+; the year filter is non-functional here).
+    basic = search_legistar_all(session)
+    _add_matters(basic)
+    log.info(f"Basic search: {len(basic)} results, {len(matters)} unique so far")
+    time.sleep(2)
+
+    # Optional historical search using the advanced form, which has a working
+    # lstYearsAdvanced filter. Run year-by-year for 2014–2023 (or custom range).
+    if args.historical:
+        try:
+            start_str, end_str = args.historical_years.split("-")
+            hist_years = [str(y) for y in range(int(start_str), int(end_str) + 1)]
+        except ValueError:
+            log.error(f"Invalid --historical-years value: {args.historical_years!r} (expected START-END)")
+            return 1
+
+        log.info(f"Historical search: years {args.historical_years}")
+        for year in hist_years:
+            hist = search_legistar_advanced_year(session, year)
+            added = _add_matters(hist)
+            log.info(f"  Year {year}: {added} new unique matters (running total: {len(matters)})")
+            time.sleep(3)  # be polite between year searches
+
+    log.info(f"Total matters to process: {len(matters)}")
 
     for matter_id, guid in matters:
         if args.incremental and matter_id in existing_ids:
