@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Methodology — NYC Council Fiscal Impacts Tracker — NYCuriosity Data</title>
+  <meta name="description" content="How the NYC Council Fiscal Impacts Tracker works: data sources, scraping, extraction, filters, and calculations.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue:        #2563eb;
+      --blue-hover:  #1d4ed8;
+      --blue-light:  #eff6ff;
+      --blue-mid:    #bfdbfe;
+      --orange:      #FF6319;
+      --text:        #111827;
+      --text-mid:    #374151;
+      --text-muted:  #6b7280;
+      --text-faint:  #9ca3af;
+      --bg:          #f8faff;
+      --surface:     #ffffff;
+      --border:      #e5e7eb;
+      --border-mid:  #d1d5db;
+      --shadow-sm:   0 1px 3px rgba(17,24,39,0.08);
+      --radius:      10px;
+      --red:         #dc2626;
+      --green:       #16a34a;
+      --yellow:      #d97706;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── HEADER ─────────────────────────────────────────────── */
+    header {
+      background: #111827;
+      border-bottom: 1px solid #1f2937;
+      padding: 0 clamp(16px, 4vw, 48px);
+    }
+    .header-inner {
+      max-width: 1300px;
+      margin: 0 auto;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .brand { display: flex; align-items: baseline; gap: 6px; text-decoration: none; }
+    .brand-name { font-family: 'Roboto Mono', monospace; font-size: 0.95rem; font-weight: 700; color: #60a5fa; letter-spacing: -0.02em; }
+    .brand-slash { font-family: 'Roboto Mono', monospace; font-size: 0.95rem; color: #4b5563; }
+    .brand-section { font-family: 'Roboto Mono', monospace; font-size: 0.95rem; font-weight: 600; color: #e5e7eb; }
+    .header-link { font-size: 0.78rem; font-weight: 500; color: #9ca3af; text-decoration: none; display: flex; align-items: center; gap: 5px; transition: color 0.15s; }
+    .header-link:hover { color: #60a5fa; }
+
+    /* ── BREADCRUMB ─────────────────────────────────────────── */
+    .breadcrumb { padding: 14px clamp(16px, 4vw, 48px) 0; }
+    .breadcrumb-inner {
+      max-width: 1300px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.72rem;
+      font-weight: 500;
+      color: var(--text-faint);
+    }
+    .breadcrumb a { color: var(--text-faint); text-decoration: none; transition: color 0.15s; }
+    .breadcrumb a:hover { color: var(--blue); }
+    .breadcrumb .current { color: var(--orange); }
+    .breadcrumb-sep { color: var(--border-mid); }
+
+    /* ── HERO ────────────────────────────────────────────────── */
+    .hero { padding: clamp(20px, 4vw, 40px) clamp(16px, 4vw, 48px) 0; }
+    .hero-inner {
+      max-width: 1300px;
+      margin: 0 auto;
+      padding-bottom: clamp(12px, 2vw, 20px);
+    }
+    .hero h1 {
+      font-family: 'Roboto Mono', monospace;
+      font-size: clamp(1.3rem, 3.5vw, 1.9rem);
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.03em;
+      line-height: 1.2;
+      margin-bottom: 8px;
+    }
+    .hero h1 span { color: var(--blue); }
+    .hero p { font-size: 0.9rem; color: var(--text-muted); max-width: 680px; line-height: 1.6; }
+
+    /* ── CHART NAV STRIP ────────────────────────────────────── */
+    .chart-nav {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 10px clamp(16px, 4vw, 48px);
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .chart-nav-label { font-size: 0.75rem; color: var(--text-muted); font-weight: 500; white-space: nowrap; margin-right: 4px; }
+    .chart-nav a {
+      font-size: 0.78rem;
+      font-family: 'Roboto Mono', monospace;
+      font-weight: 600;
+      padding: 4px 12px;
+      border-radius: 20px;
+      text-decoration: none;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      background: var(--bg);
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .chart-nav a:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
+    .chart-nav a.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+
+    /* ── MAIN ────────────────────────────────────────────────── */
+    .main {
+      flex: 1;
+      padding: clamp(20px, 3vw, 40px) clamp(16px, 4vw, 48px) clamp(40px, 6vw, 64px);
+    }
+    .main-inner {
+      max-width: 860px;
+      margin: 0 auto;
+    }
+
+    /* ── SECTION NAV (in-page) ──────────────────────────────── */
+    .section-nav {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 22px;
+      margin-bottom: 32px;
+      box-shadow: var(--shadow-sm);
+    }
+    .section-nav-label {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+    .section-nav ol {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .section-nav li { counter-increment: toc-item; display: flex; align-items: baseline; gap: 8px; }
+    .section-nav li::before {
+      content: counter(toc-item, decimal-leading-zero);
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.65rem;
+      color: var(--blue);
+      font-weight: 700;
+      min-width: 22px;
+    }
+    .section-nav ol { counter-reset: toc-item; }
+    .section-nav a { font-size: 0.85rem; color: var(--text-mid); text-decoration: none; transition: color 0.15s; }
+    .section-nav a:hover { color: var(--blue); }
+
+    /* ── CONTENT SECTIONS ───────────────────────────────────── */
+    .meth-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px 32px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow-sm);
+    }
+    .meth-section + .meth-section { }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 18px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .section-num {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--blue);
+      background: var(--blue-light);
+      border: 1px solid var(--blue-mid);
+      border-radius: 6px;
+      padding: 3px 8px;
+      white-space: nowrap;
+    }
+    .section-title {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -0.02em;
+    }
+
+    .meth-section h3 {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--text-mid);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin: 20px 0 8px;
+    }
+    .meth-section h3:first-of-type { margin-top: 0; }
+
+    .meth-section p {
+      font-size: 0.88rem;
+      line-height: 1.7;
+      color: var(--text-mid);
+      margin-bottom: 10px;
+    }
+    .meth-section p:last-child { margin-bottom: 0; }
+
+    .meth-section ul, .meth-section ol {
+      margin: 8px 0 14px 0;
+      padding-left: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .meth-section li {
+      font-size: 0.87rem;
+      line-height: 1.65;
+      color: var(--text-mid);
+    }
+    .meth-section li strong { color: var(--text); }
+
+    /* inline code */
+    code {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.78rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 1px 5px;
+      color: var(--blue);
+    }
+
+    /* formula box */
+    .formula {
+      background: var(--bg);
+      border: 1px solid var(--border-mid);
+      border-left: 3px solid var(--blue);
+      border-radius: 6px;
+      padding: 12px 16px;
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.82rem;
+      color: var(--text);
+      margin: 12px 0;
+      line-height: 1.6;
+    }
+
+    /* callout box */
+    .callout {
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin: 14px 0;
+      font-size: 0.85rem;
+      line-height: 1.65;
+    }
+    .callout.note { background: var(--blue-light); border: 1px solid var(--blue-mid); color: var(--text-mid); }
+    .callout.warn { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; }
+    .callout strong { color: var(--text); }
+
+    /* exclusion / inclusion pills in list */
+    .tag {
+      display: inline-block;
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      margin-right: 4px;
+      vertical-align: middle;
+    }
+    .tag.exclude { background: #fef2f2; color: var(--red); border: 1px solid #fecaca; }
+    .tag.include { background: #f0fdf4; color: var(--green); border: 1px solid #bbf7d0; }
+
+    /* ── FOOTER ──────────────────────────────────────────────── */
+    footer {
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      padding: 18px clamp(16px, 4vw, 48px);
+    }
+    .footer-inner {
+      max-width: 1300px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .footer-copy { font-size: 0.78rem; color: var(--text-faint); }
+    .footer-links { display: flex; gap: 18px; }
+    .footer-links a { font-size: 0.78rem; color: var(--text-faint); text-decoration: none; transition: color 0.15s; }
+    .footer-links a:hover { color: var(--blue); }
+
+    @media (max-width: 640px) {
+      .brand-slash, .brand-section { display: none; }
+      .meth-section { padding: 20px 18px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="header-inner">
+    <a href="/" class="brand" aria-label="NYCuriosity Data home">
+      <span class="brand-name">nycuriosity</span>
+      <span class="brand-slash">/</span>
+      <span class="brand-section">data</span>
+    </a>
+    <a href="https://nycuriosity.substack.com" class="header-link" target="_blank" rel="noopener">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v4H4z"/><path d="M4 10h16v10l-8-4-8 4z"/></svg>
+      Substack
+    </a>
+  </div>
+</header>
+
+<!-- BREADCRUMB -->
+<div class="breadcrumb">
+  <div class="breadcrumb-inner">
+    <a href="/">NYCuriosity Data</a>
+    <span class="breadcrumb-sep">/</span>
+    <a href="/nyc_council_fiscal_impacts_tracker/">NYC Council Fiscal Impacts Tracker</a>
+    <span class="breadcrumb-sep">/</span>
+    <span class="current">Methodology</span>
+  </div>
+</div>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-inner">
+    <h1>Tracker <span>Methodology</span></h1>
+    <p>How bills are identified, documents are obtained, numbers are extracted, what gets included and excluded, and how the figures in the table are calculated.</p>
+  </div>
+</div>
+
+<!-- CHART NAV -->
+<div class="chart-nav">
+  <span class="chart-nav-label">Charts in this tracker:</span>
+  <a href="/nyc_council_fiscal_impacts_tracker/">Bill Table</a>
+  <a href="/nyc_council_fiscal_impacts_tracker/agency-fiscal-impact/">Fiscal Impact by Agency</a>
+  <a href="/nyc_council_fiscal_impacts_tracker/methodology/" class="active">Methodology</a>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="main-inner">
+
+    <!-- TABLE OF CONTENTS -->
+    <nav class="section-nav" aria-label="Page sections">
+      <div class="section-nav-label">On this page</div>
+      <ol>
+        <li><a href="#source">Data source</a></li>
+        <li><a href="#coverage">What's covered</a></li>
+        <li><a href="#scraping">How bills are identified</a></li>
+        <li><a href="#extraction">How figures are extracted</a></li>
+        <li><a href="#calculations">How figures are calculated</a></li>
+        <li><a href="#filters">What gets excluded and why</a></li>
+        <li><a href="#agencies">How agency attribution works</a></li>
+        <li><a href="#formats">Document format variation</a></li>
+        <li><a href="#limits">Limitations and caveats</a></li>
+      </ol>
+    </nav>
+
+    <!-- 1. DATA SOURCE -->
+    <div class="meth-section" id="source">
+      <div class="section-header">
+        <span class="section-num">01</span>
+        <span class="section-title">Data source</span>
+      </div>
+      <p>All fiscal data in this tracker comes from <strong>NYC Legistar</strong>, the New York City Council's official legislative management system at <a href="https://legistar.council.nyc.gov" target="_blank" rel="noopener" style="color:var(--blue)">legistar.council.nyc.gov</a>. Legistar is the public record of all legislation introduced in the Council, including attached documents.</p>
+      <p>For any bill that moves toward a vote, the Council's Finance Division prepares a <strong>Fiscal Impact Statement</strong> — a standardized document estimating the bill's effect on city revenues, operational expenditures, and capital costs. These statements are attached as <code>.docx</code> files to each bill's Legistar record and are publicly accessible.</p>
+      <p>This tracker reads those documents directly. No data is sourced from any secondary database or government API — every figure comes from the text of the Finance Division's own analysis.</p>
+    </div>
+
+    <!-- 2. COVERAGE -->
+    <div class="meth-section" id="coverage">
+      <div class="section-header">
+        <span class="section-num">02</span>
+        <span class="section-title">What's covered</span>
+      </div>
+      <p>The tracker covers <strong>Introductions</strong> (proposed local laws) and <strong>Resolutions</strong> that have a fiscal impact statement attachment on Legistar, where the Finance Division estimated a <strong>non-zero fiscal impact</strong>. Coverage spans 2014 through the present.</p>
+
+      <h3>Included legislation types</h3>
+      <ul>
+        <li><strong>Introductions (Int.)</strong> — proposed local laws. These become binding law if passed by the Council and signed by the Mayor.</li>
+        <li><strong>Resolutions (Res.)</strong> — formal Council positions, requests, or ceremonial acts. Resolutions don't create law, but some carry real fiscal implications (e.g. approving a contract).</li>
+        <li><strong>Pre-Considered Resolutions</strong> — resolutions introduced and voted on in the same session, bypassing the normal committee referral.</li>
+      </ul>
+
+      <h3>Not included</h3>
+      <ul>
+        <li><strong>Bills with zero fiscal impact.</strong> Many bills are analyzed and found to have no net cost — these are excluded. Only bills where at least one of total expenditure, capital, revenue, or net impact is non-zero are tracked.</li>
+        <li><strong>Bills where costs can't be estimated.</strong> When the Finance Division determines that costs cannot be reasonably quantified (e.g. "depends on how many complaints are filed"), the statement says so and these bills are excluded.</li>
+        <li><strong>Proposed bills.</strong> Bills labeled "Proposed Int." or "Proposed Res." on Legistar are draft versions that have not yet been formally introduced. Only final, formally introduced bills are included.</li>
+        <li><strong>Budget modification resolutions (MN-#).</strong> These are administrative approvals of mayoral budget modifications under City Charter §107(e). They pass as a matter of course and do not represent independent legislative fiscal decisions.</li>
+      </ul>
+    </div>
+
+    <!-- 3. SCRAPING -->
+    <div class="meth-section" id="scraping">
+      <div class="section-header">
+        <span class="section-num">03</span>
+        <span class="section-title">How bills are identified</span>
+      </div>
+      <p>Legistar doesn't provide a bulk download of fiscal impact statements. The tracker identifies relevant bills by searching Legistar's legislation index for attachments containing the phrase <strong>"Fiscal Impact Statement"</strong> — the standard title the Finance Division uses for these documents.</p>
+
+      <h3>Current bills (2024–present)</h3>
+      <p>The tracker searches Legistar's web interface using the attachment text search, retrieving all bills across all years that have a matching attachment. Results are paginated and deduplicated. This search is run monthly via an automated job to pick up newly introduced bills.</p>
+      <div class="callout note"><strong>Note on Legistar's year filter:</strong> Legistar's built-in year filter is non-functional for attachment searches — it returns the same set of results regardless of what year is selected. The tracker works around this by searching "All Years" and handling deduplication itself.</div>
+
+      <h3>Historical bills (2014–2023)</h3>
+      <p>For older legislation, the tracker uses the Legistar REST API (<code>webapi.legistar.com/v1/nyc</code>) to enumerate all NYC Council matters and their attachment URLs. Each matter is checked for a fiscal impact statement attachment; if one is found, it's downloaded and processed using the same extraction logic as current bills.</p>
+
+      <h3>Finding the right attachment</h3>
+      <p>A single bill may have many attachments — committee reports, hearing transcripts, legal memos, and more. The tracker identifies the fiscal impact statement specifically by checking the filename of each attachment for the words "fiscal" or "impact." Only that attachment is downloaded; all others are ignored.</p>
+    </div>
+
+    <!-- 4. EXTRACTION -->
+    <div class="meth-section" id="extraction">
+      <div class="section-header">
+        <span class="section-num">04</span>
+        <span class="section-title">How figures are extracted</span>
+      </div>
+      <p>Once a fiscal impact statement is identified, the tracker downloads the <code>.docx</code> file and extracts its full text, including all table cells. That text is passed to a large language model — <strong>Claude Haiku</strong> (Anthropic) — with a structured prompt that instructs it to return a JSON object containing all key fields: fiscal totals by year, agency breakdown, narratives, sponsor names, and administrative metadata.</p>
+
+      <h3>Why AI extraction?</h3>
+      <p>Fiscal impact statements don't follow a perfectly uniform format. While newer documents (post-2020) use a consistent three-column table, older bills used varied column structures, different terminology, or described costs entirely in prose paragraphs. A rule-based parser would break on edge cases. Claude reads the document's actual content and synthesizes the values regardless of layout.</p>
+
+      <h3>Handling prose-only documents</h3>
+      <p>Pre-2019 fiscal impact statements often have no structured table at all — costs are stated in sentences like "this legislation is estimated to increase expenditures by $1.6 million annually." For these documents, the model synthesizes the totals from the narrative text. When a range is given (e.g. "$1 million to $2 million"), the midpoint is used.</p>
+
+      <h3>Pre-check before extraction</h3>
+      <p>Before calling the AI, the tracker scans the raw document text for any non-zero dollar amounts. If every dollar figure in the document is literally <code>$0</code> and there's no "See below" language indicating a cost described elsewhere, the document is skipped without an AI call. This avoids spending resources on bills that clearly have no fiscal impact.</p>
+
+      <h3>Sponsor name normalization</h3>
+      <p>Fiscal impact statements list sponsors inconsistently — sometimes as "Council Member Smith," sometimes as "By Council Members Smith and Jones," sometimes with "(s):" prefixes. The extraction prompt instructs the model to strip all prefixes and return last names only. "The Speaker (Council Member X)" is returned as "X (Speaker)".</p>
+    </div>
+
+    <!-- 5. CALCULATIONS -->
+    <div class="meth-section" id="calculations">
+      <div class="section-header">
+        <span class="section-num">05</span>
+        <span class="section-title">How figures are calculated</span>
+      </div>
+
+      <h3>Total expenditure, capital, and revenue</h3>
+      <p>Most fiscal impact statements present costs across multiple fiscal years in side-by-side columns — typically "Effective FY," "FY Succeeding Effective," and "Full Fiscal Impact FY." The tracker sums all column values to produce a single total for each category:</p>
+      <ul>
+        <li><strong>Total expenditure</strong> — sum of all operational expense amounts across all fiscal year columns. Always a positive number.</li>
+        <li><strong>Total capital</strong> — sum of all capital cost amounts across all fiscal year columns. Always a positive number, or <code>null</code> if the bill has no capital component.</li>
+        <li><strong>Total revenue</strong> — sum of all revenue amounts across all fiscal year columns. Always a positive number.</li>
+      </ul>
+      <div class="callout warn"><strong>These are multi-year totals, not annual figures.</strong> A bill with a $5M total expenditure across three fiscal years costs roughly $1.7M per year — not $5M per year. Always read the per-column breakdown in the bill detail panel for the year-by-year picture.</div>
+
+      <h3>Net fiscal impact</h3>
+      <p>The net fiscal impact represents the overall cost or benefit to the city's budget:</p>
+      <div class="formula">
+        Net Fiscal Impact = Total Revenue − Total Expenditure − Total Capital
+      </div>
+      <p>A <strong>negative</strong> net fiscal impact means the bill is a net cost to the city (expenses exceed revenues). A <strong>positive</strong> net fiscal impact means the bill generates more revenue than it costs — unusual but possible (e.g. a bill that imposes a new fee).</p>
+      <p>This matches the sign convention used in the Finance Division's own documents, where net figures appear as negative numbers in parentheses when they represent a cost.</p>
+
+      <h3>Revenue reductions (pre-2019 documents)</h3>
+      <p>Older narrative-format documents sometimes describe a fiscal impact as a <em>reduction</em> in revenue rather than an increase in expenditure — e.g. "this legislation would reduce revenues by $204,000." A revenue reduction is a real cost to the city. When the document frames it this way, the tracker records it as an expenditure so the net figure is negative (a cost), rather than as a positive revenue figure that would make the bill appear to be a money-maker.</p>
+
+      <h3>Balanced-budget bills</h3>
+      <p>Some bills are designed to be cost-neutral: new expenditures are fully offset by new revenues, so the net impact is $0. These are <em>included</em> in the tracker because the total expenditure and revenue figures are both non-zero and represent real resource flows, even if they cancel out.</p>
+    </div>
+
+    <!-- 6. FILTERS -->
+    <div class="meth-section" id="filters">
+      <div class="section-header">
+        <span class="section-num">06</span>
+        <span class="section-title">What gets excluded and why</span>
+      </div>
+      <p>After extraction, each record passes through a series of filters before it appears in the tracker. Records are excluded if any of the following conditions are true:</p>
+
+      <ul>
+        <li>
+          <span class="tag exclude">EXCLUDED</span>
+          <strong>All fiscal values are zero.</strong> If total expenditure, total capital, total revenue, and net fiscal impact are all zero or null, the bill has no real fiscal impact and is not tracked.
+        </li>
+        <li>
+          <span class="tag exclude">EXCLUDED</span>
+          <strong>Costs cannot be estimated.</strong> The Finance Division sometimes states that a bill's costs "cannot be estimated" because they depend on future administrative decisions, litigation outcomes, or behavioral responses. These bills are labeled <code>cost_estimable: false</code> and excluded. A bill whose cost genuinely can't be quantified would misrepresent certainty if given a dollar figure.
+        </li>
+        <li>
+          <span class="tag exclude">EXCLUDED</span>
+          <strong>Proposed (not yet introduced) bills.</strong> Bills labeled "Proposed Int." or "Proposed Res." on Legistar are draft versions circulating before formal introduction. They may never be introduced, and the bill number may change. Only formally introduced legislation is tracked.
+        </li>
+        <li>
+          <span class="tag exclude">EXCLUDED</span>
+          <strong>Budget modification resolutions (MN-#).</strong> These resolutions — labeled with a title like "MN-6" — are routine Council approvals of mayoral budget modifications under City Charter §107(e). They are not independent legislative decisions. Including them would inflate the tracker with administrative paperwork rather than substantive Council action.
+        </li>
+        <li>
+          <span class="tag include">INCLUDED</span>
+          <strong>Balanced-budget bills (net = $0).</strong> Bills where revenues exactly offset expenditures are kept because the gross figures (total spending, total revenues) still reflect real fiscal activity.
+        </li>
+      </ul>
+    </div>
+
+    <!-- 7. AGENCIES -->
+    <div class="meth-section" id="agencies">
+      <div class="section-header">
+        <span class="section-num">07</span>
+        <span class="section-title">How agency attribution works</span>
+      </div>
+      <p>Each fiscal impact statement includes a program-by-program cost breakdown listing which city agencies bear which costs. The tracker reads these breakdowns and applies two cleanup rules.</p>
+
+      <h3>Only agencies with actual cost line items</h3>
+      <p>Fiscal impact statements often mention agencies in narrative text for reasons other than fiscal responsibility — the Office of Management and Budget may be cited as a reviewer, the Independent Budget Office as a reference source, and the City Council itself as the bill's introducer. None of these agencies are incurring costs.</p>
+      <p>The tracker assigns agencies only to bills where that agency appears in at least one line item in the cost breakdown table. Agencies mentioned only in narrative text are excluded from the agency list for that bill.</p>
+
+      <h3>Street signs → DOT</h3>
+      <p>Many bills require the installation or fabrication of new street signs — co-namings, street redesignations, or new regulatory signs. These costs are sometimes attributed in the document to whichever agency sponsored the request (parks, police, sanitation), but the actual work of fabricating and installing street signs in New York City is performed exclusively by the <strong>Department of Transportation (DOT)</strong>.</p>
+      <p>The tracker reassigns any program breakdown line item involving street sign installation, fabrication, or co-naming to DOT, regardless of how the source document attributes it.</p>
+    </div>
+
+    <!-- 8. FORMATS -->
+    <div class="meth-section" id="formats">
+      <div class="section-header">
+        <span class="section-num">08</span>
+        <span class="section-title">Document format variation</span>
+      </div>
+      <p>The Finance Division's fiscal impact statement template has changed over time. The tracker handles all three formats it has encountered:</p>
+
+      <h3>New template (~2020–present)</h3>
+      <p>Three standard columns: "Effective FY," "FY Succeeding Effective," and "Full Fiscal Impact." Rows for revenues, expenditures, and net. Includes a separate OMB estimate section and a hearing date field. This is the most consistent format and extracts cleanly.</p>
+
+      <h3>Old template (~2015–2019)</h3>
+      <p>Column structure varies by bill — custom labels based on the legislation's scope and effective date. May include a capital row. No OMB section. The tracker extracts whatever columns are present and sums them into totals.</p>
+
+      <h3>Narrative format (pre-2019, common)</h3>
+      <p>No structured table at all. Fiscal impact is described entirely in prose: "This legislation is estimated to increase expenditures by $1.6 million annually." The tracker synthesizes totals from these narrative figures. When ranges are given, the midpoint is used. A single-column fiscal table labeled "Total" is created from the narrative figures for display purposes.</p>
+    </div>
+
+    <!-- 9. LIMITS -->
+    <div class="meth-section" id="limits">
+      <div class="section-header">
+        <span class="section-num">09</span>
+        <span class="section-title">Limitations and caveats</span>
+      </div>
+
+      <h3>These are estimates, not actual expenditures</h3>
+      <p>Every figure in this tracker is a <em>pre-passage estimate</em> prepared by the City Council's Finance Division. They represent what the bill is expected to cost if enacted and implemented as written. Actual costs after a bill becomes law may differ significantly — appropriations may be lower, implementation may be phased, or agencies may absorb costs within existing budgets.</p>
+
+      <h3>Totals are multi-year sums</h3>
+      <p>The "total expenditure," "total capital," and "net fiscal impact" columns sum costs across all fiscal years in the document — typically two or three years. They are not annual figures. Two bills with the same total cost may have very different annual profiles depending on how costs are distributed over time.</p>
+
+      <h3>AI extraction may contain errors</h3>
+      <p>Numbers are extracted from document text by a large language model. While the model performs well on structured tables, it can occasionally misread a figure, misattribute a cost to the wrong category, or misparse a complex multi-agency breakdown. If you spot a discrepancy, compare against the original document linked in each bill's detail panel (via the Legistar link).</p>
+
+      <h3>Older bills use narrative format</h3>
+      <p>For pre-2019 legislation, fiscal impacts were often written as prose rather than structured tables. Synthesizing totals from narrative text introduces more uncertainty than reading from a table. Treat older figures as rough approximations.</p>
+
+      <h3>Coverage depends on Legistar attachments</h3>
+      <p>The tracker only includes bills where a fiscal impact statement was attached to the Legistar record as a <code>.docx</code> file. Some older bills may have statements in PDF format or attached under different filenames that the tracker doesn't recognize. Coverage of pre-2020 legislation may therefore be incomplete.</p>
+
+      <h3>Source data</h3>
+      <p>All original fiscal impact statement documents are publicly available on <a href="https://legistar.council.nyc.gov" target="_blank" rel="noopener" style="color:var(--blue)">NYC Legistar</a>. Each bill in the tracker includes a direct link to its Legistar record where the source document can be downloaded.</p>
+    </div>
+
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <span class="footer-copy">Created by Tal Roded · NYCuriosity</span>
+    <div class="footer-links">
+      <a href="https://nycuriosity.substack.com" target="_blank" rel="noopener">Substack</a>
+      <a href="https://legistar.council.nyc.gov" target="_blank" rel="noopener">Source: NYC Legistar</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
