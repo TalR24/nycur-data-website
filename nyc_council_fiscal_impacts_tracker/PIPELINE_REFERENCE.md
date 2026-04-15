@@ -100,8 +100,19 @@ records = data["records"]
 
 def get_intro_year(rec):
     fn = rec.get("file_number") or ""
-    m = re.search(r'-(\d{4})$', str(fn))
-    if m: return int(m.group(1))
+    fn_str = str(fn)
+    # T-type prefix first: "Int. No. T2026-0123" → 2026
+    m2 = re.search(r'\bT(\d{4})\b', fn_str)
+    if m2:
+        yr = int(m2.group(1))
+        if 2010 <= yr <= 2030:
+            return yr
+    # Hyphenated year suffix: "Int 0360-2014" → 2014 (validated)
+    m = re.search(r'-(\d{4})$', fn_str)
+    if m:
+        yr = int(m.group(1))
+        if 2010 <= yr <= 2030:
+            return yr
     pa = rec.get("processed_at") or ""
     return int(pa[:4]) if pa else None
 
