@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Fiscal Impact by Agency — NYC Council Fiscal Impacts Tracker — NYCuriosity</title>
-  <meta name="description" content="Total fiscal impact of NYC Council legislation grouped by city agency, filterable by committee, sponsor, year, and expense type.">
+  <title>Fiscal Impact by Year — NYC Council Fiscal Impacts Tracker — NYCuriosity</title>
+  <meta name="description" content="Total fiscal impact of NYC Council legislation by the fiscal year in which costs are incurred, filterable by agency, committee, sponsor, and expense type.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -102,7 +102,6 @@
     }
     .metric-btn:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
     .metric-btn.active { background: var(--blue); color: #fff; border-color: var(--blue); }
-    .metric-btn.active.negative { background: var(--red); border-color: var(--red); }
 
     /* Filter dropdowns */
     .filter-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
@@ -262,7 +261,7 @@
       Fiscal Impacts Tracker
     </a>
     <div class="header-divider"></div>
-    <h1>Fiscal Impact by Agency</h1>
+    <h1>Fiscal Impact by Year</h1>
   </div>
 </header>
 
@@ -270,9 +269,9 @@
 <div class="chart-nav">
   <span class="chart-nav-label">Charts in this tracker:</span>
   <a href="/nyc_council_fiscal_impacts_tracker/">Bill Table</a>
-  <a href="/nyc_council_fiscal_impacts_tracker/agency-fiscal-impact/" class="active">Fiscal Impact by Agency</a>
+  <a href="/nyc_council_fiscal_impacts_tracker/agency-fiscal-impact/">Fiscal Impact by Agency</a>
   <a href="/nyc_council_fiscal_impacts_tracker/sponsor-fiscal-impact/">Fiscal Impact by Sponsor</a>
-  <a href="/nyc_council_fiscal_impacts_tracker/fiscal-year-impact/">Fiscal Impact by Year</a>
+  <a href="/nyc_council_fiscal_impacts_tracker/fiscal-year-impact/" class="active">Fiscal Impact by Year</a>
   <a href="/nyc_council_fiscal_impacts_tracker/methodology/">Methodology</a>
 </div>
 
@@ -283,11 +282,11 @@
       <span>›</span>
       <a href="/nyc_council_fiscal_impacts_tracker/">NYC Council Fiscal Impacts</a>
       <span>›</span>
-      <span>Fiscal Impact by Agency</span>
+      <span>Fiscal Impact by Year</span>
     </div>
     <div class="hero-tag">Bar Chart</div>
-    <h1>Which agencies bear the cost of <span>Council legislation?</span></h1>
-    <p>Total fiscal impact of NYC Council legislation (2014–2026), grouped by the city agencies responsible for implementation. Each bill may affect multiple agencies. Filter by committee, sponsor, bill year, or projected fiscal year.</p>
+    <h1>How do the costs of Council legislation <span>accumulate over time?</span></h1>
+    <p>Total fiscal impact of NYC Council legislation (2014–2026) broken out by the fiscal year in which costs are actually incurred. Each column in a bill's fiscal impact statement is attributed to its corresponding fiscal year. Filter by agency, committee, prime sponsor, or expense type.</p>
     <div class="hero-actions">
       <a href="/nyc_council_fiscal_impacts_tracker/" class="btn btn-outline">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
@@ -313,6 +312,12 @@
       <div class="filter-panel-title" style="margin-top:4px;">Filters</div>
       <div class="filter-row">
         <div class="filter-group">
+          <div class="filter-label">Agency</div>
+          <select class="filter-select" id="f-agency">
+            <option value="">All Agencies</option>
+          </select>
+        </div>
+        <div class="filter-group">
           <div class="filter-label">Committee</div>
           <select class="filter-select" id="f-committee">
             <option value="">All Committees</option>
@@ -322,18 +327,6 @@
           <div class="filter-label">Prime Sponsor</div>
           <select class="filter-select" id="f-sponsor">
             <option value="">All Sponsors</option>
-          </select>
-        </div>
-        <div class="filter-group">
-          <div class="filter-label">Bill Intro Year</div>
-          <select class="filter-select" id="f-year">
-            <option value="">All Years</option>
-          </select>
-        </div>
-        <div class="filter-group">
-          <div class="filter-label">First Fiscal Year</div>
-          <select class="filter-select" id="f-fy">
-            <option value="">All Fiscal Years</option>
           </select>
         </div>
         <div class="filter-group">
@@ -350,7 +343,7 @@
     </div>
 
     <!-- STAT PILLS -->
-    <div class="stat-row" id="stat-row">
+    <div class="stat-row">
       <div class="stat-pill">
         <div class="sp-num" id="stat-bills">—</div>
         <div class="sp-label">Bills included</div>
@@ -387,8 +380,8 @@
 
     <!-- CHART -->
     <div class="chart-wrap" id="chart-box">
-      <div class="chart-wrap-title" id="chart-title">Net Fiscal Impact by Agency</div>
-      <div class="chart-wrap-sub" id="chart-sub">Total net fiscal impact across all filtered legislation, attributed to each implementing agency. A bill affecting multiple agencies is counted in full for each.</div>
+      <div class="chart-wrap-title" id="chart-title">Net Fiscal Impact by Fiscal Year</div>
+      <div class="chart-wrap-sub" id="chart-sub">Net fiscal impact (revenue − operational − capital) attributed to each NYC fiscal year, based on the year-by-year columns in each bill's fiscal impact statement.</div>
       <div class="chart-area">
         <canvas id="myChart"></canvas>
         <div class="empty-state" id="empty-state" style="display:none;">
@@ -396,13 +389,13 @@
           No bills match the selected filters.
         </div>
       </div>
-      <div class="chart-caption">
-        Net fiscal impact of NYC Council legislation (2014–2026) grouped by implementing agency. Negative values indicate net costs to the city; positive values indicate net revenue gains.
+      <div class="chart-caption" id="chart-caption">
+        Net fiscal impact of NYC Council legislation by the fiscal year in which costs are incurred. Negative values are net costs to the city. Each bill's year-by-year column data is aggregated.
         Source: NYC Council Legistar fiscal impact statements, processed by NYCuriosity.
       </div>
       <div class="chart-attribution">
         <span>Created by Tal Roded · NYCuriosity</span>
-        <span id="record-count-note" style="font-family:'Roboto Mono',monospace;font-size:0.65rem;color:var(--text-faint);">308 total records · 2014–2026</span>
+        <span id="record-count-note" style="font-family:'Roboto Mono',monospace;font-size:0.65rem;color:var(--text-faint);">219 total records · 2014–2026</span>
       </div>
     </div>
 
@@ -410,10 +403,10 @@
     <div class="footnotes">
       <h3>Methodology</h3>
       <ul>
-        <li>Each NYC Council bill may affect multiple city agencies. A bill's fiscal impact is attributed in full to every agency listed in its fiscal impact statement — so totals across agencies will exceed the dataset total.</li>
-        <li><strong>Net fiscal impact</strong> = total revenue − total operational expense − total capital expense. Negative = net cost to the city.</li>
-        <li>Only bills with at least one non-zero, estimable fiscal figure are included. Bills where the IBO could not estimate costs ("See below" / unestimable) are excluded.</li>
-        <li>Intro year for 2024–2026 bills approximated from processing date; fiscal year labels follow NYC fiscal year convention (FY25 = July 2024 – June 2025).</li>
+        <li>Figures are aggregated from the <strong>per-column data</strong> in each fiscal impact statement — the individual FY columns, not the bill-level total. This shows when costs are actually incurred, not just when legislation was introduced.</li>
+        <li>Fiscal year labels are extracted from each column header (e.g. "Effective FY26" → FY26, "FY Succeeding Effective FY27" → FY27). Bills with narrative-format statements that don't specify a year are included in a "No FY specified" bucket.</li>
+        <li>A "Full Fiscal Impact" column in a document typically represents the steady-state annual cost. Because it often duplicates figures already captured in the preceding year columns, it is attributed to its labeled fiscal year — so some FY values may reflect that steady-state amount.</li>
+        <li><strong>Net fiscal impact</strong> = revenue − operational expense − capital expense. Negative = net cost to the city.</li>
         <li>Source: <a href="https://legistar.council.nyc.gov" target="_blank">NYC Council Legistar</a> fiscal impact statement documents, extracted and structured by NYCuriosity using the Legistar REST API and Claude AI.</li>
       </ul>
     </div>
@@ -441,13 +434,13 @@ let activeMetric = 'net';
 let chart = null;
 
 const METRIC_CONFIG = {
-  net:         { key: 'net_fiscal_impact',  label: 'Net Fiscal Impact',   sub: 'Net fiscal impact (revenue − operational − capital). Negative = net cost to the city.' },
-  expenditure: { key: 'total_expenditure',  label: 'Operational Expense', sub: 'Total operational expenditure mandated by filtered legislation, by implementing agency.' },
-  capital:     { key: 'total_capital',      label: 'Capital Expense',     sub: 'Total capital expenditure mandated by filtered legislation, by implementing agency.' },
-  revenue:     { key: 'total_revenue',      label: 'Revenue Generated',   sub: 'Total revenue generated by filtered legislation, by implementing agency.' },
+  net:         { colKey: 'net',         recKey: 'net_fiscal_impact', label: 'Net Fiscal Impact',   sub: 'Net fiscal impact (revenue − operational − capital) attributed to each fiscal year, summed across all filtered bills.' },
+  expenditure: { colKey: 'expenditure', recKey: 'total_expenditure', label: 'Operational Expense', sub: 'Total operational expenditure attributed to each fiscal year, summed across all filtered bills.' },
+  capital:     { colKey: 'capital',     recKey: 'total_capital',     label: 'Capital Expense',     sub: 'Total capital expenditure attributed to each fiscal year, summed across all filtered bills.' },
+  revenue:     { colKey: 'revenue',     recKey: 'total_revenue',     label: 'Revenue Generated',   sub: 'Total revenue attributed to each fiscal year, summed across all filtered bills.' },
 };
 
-fetch('data.json')
+fetch('../agency-fiscal-impact/data.json')
   .then(r => r.json())
   .then(data => {
     ALL_RECORDS = data.records;
@@ -455,6 +448,16 @@ fetch('data.json')
     populateFilters();
     render();
   });
+
+// ── EXTRACT FY FROM COLUMN LABEL ─────────────────────────────────────────────
+// Returns e.g. "FY26" from "Effective FY26" or "FY Succeeding Effective FY27"
+function fyFromLabel(label) {
+  if (!label) return null;
+  const m = label.match(/FY\s*(\d{2,4})/i);
+  if (!m) return null;
+  const yr = m[1].length === 4 ? m[1].slice(2) : m[1];
+  return 'FY' + yr;
+}
 
 // ── POPULATE FILTERS ──────────────────────────────────────────────────────────
 function populateFilters() {
@@ -466,25 +469,25 @@ function populateFilters() {
       el.appendChild(o);
     });
   };
+  const agencies = [...new Set(
+    ALL_RECORDS.flatMap(r => r.agencies_abbrev || [])
+  )].sort();
+  sel('f-agency',    agencies);
   sel('f-committee', FILTER_OPTIONS.committees || []);
   sel('f-sponsor',   FILTER_OPTIONS.sponsors   || []);
-  sel('f-year',      (FILTER_OPTIONS.intro_years || []).map(String));
-  sel('f-fy',        FILTER_OPTIONS.fiscal_years || []);
 }
 
 // ── FILTER RECORDS ────────────────────────────────────────────────────────────
 function getFiltered() {
+  const agency    = document.getElementById('f-agency').value;
   const committee = document.getElementById('f-committee').value;
   const sponsor   = document.getElementById('f-sponsor').value;
-  const year      = document.getElementById('f-year').value;
-  const fy        = document.getElementById('f-fy').value;
   const type      = document.getElementById('f-type').value;
 
   return ALL_RECORDS.filter(r => {
+    if (agency    && !(r.agencies_abbrev || []).includes(agency)) return false;
     if (committee && r.committee !== committee) return false;
     if (sponsor   && r.prime_sponsor !== sponsor) return false;
-    if (year      && String(r.intro_year) !== year) return false;
-    if (fy        && r.fy_first_normalized !== fy) return false;
     if (type) {
       const pbs = r.program_breakdowns || [];
       if (!pbs.some(pb => pb.cost_type === type)) return false;
@@ -493,29 +496,53 @@ function getFiltered() {
   });
 }
 
-// ── AGGREGATE BY AGENCY ───────────────────────────────────────────────────────
-function aggregateByAgency(records, metricKey) {
-  const map = {};
+// ── AGGREGATE BY FISCAL YEAR ──────────────────────────────────────────────────
+function aggregateByFY(records, colKey) {
+  const map = {}; // fy -> { total, bills }
+
   records.forEach(r => {
-    const agencies = r.agencies_abbrev || [];
-    if (!agencies.length) return;
-    const val = r[metricKey];
-    if (val == null) return;
-    agencies.forEach(ag => {
-      if (!ag) return;
-      if (!map[ag]) map[ag] = { total: 0, bills: 0, net: 0, exp: 0, cap: 0, rev: 0 };
-      map[ag].total += val;
-      map[ag].bills += 1;
-      map[ag].net   += r.net_fiscal_impact  || 0;
-      map[ag].exp   += r.total_expenditure  || 0;
-      map[ag].cap   += r.total_capital      || 0;
-      map[ag].rev   += r.total_revenue      || 0;
+    const cols = r.fiscal_table_columns || [];
+
+    if (cols.length === 0) {
+      // No column data — use record-level total, attribute to fy_first_normalized
+      const fy = r.fy_first_normalized || 'Unknown FY';
+      const val = r[METRIC_CONFIG[activeMetric].recKey];
+      if (val == null) return;
+      if (!map[fy]) map[fy] = { total: 0, bills: new Set() };
+      map[fy].total += val;
+      map[fy].bills.add(r.matter_id);
+      return;
+    }
+
+    // Seen FYs per record to avoid double-counting when a bill has a
+    // "Full Fiscal Impact FY27" after a "FY Succeeding Effective FY27"
+    // (same FY year, should only count the max of the two, not both).
+    // Strategy: last value wins — columns are ordered earliest→latest,
+    // so iterating forward and overwriting gives us the last stated value.
+    const perFY = {};
+    cols.forEach(col => {
+      const fy = fyFromLabel(col.label);
+      if (!fy) return;
+      const val = col[colKey];
+      if (val == null) return;
+      perFY[fy] = val; // overwrite — last column for this FY wins
+    });
+
+    Object.entries(perFY).forEach(([fy, val]) => {
+      if (!map[fy]) map[fy] = { total: 0, bills: new Set() };
+      map[fy].total += val;
+      map[fy].bills.add(r.matter_id);
     });
   });
-  // Sort by absolute value descending, take top 25
-  return Object.entries(map)
-    .sort((a, b) => Math.abs(b[1].total) - Math.abs(a[1].total))
-    .slice(0, 25);
+
+  // Sort by FY chronologically (FY14 < FY15 … < FY32)
+  const sorted = Object.entries(map).sort((a, b) => {
+    const numA = parseInt(a[0].replace('FY',''), 10) || 0;
+    const numB = parseInt(b[0].replace('FY',''), 10) || 0;
+    return numA - numB;
+  });
+
+  return sorted.map(([fy, d]) => ({ fy, total: d.total, bills: d.bills.size }));
 }
 
 // ── FORMAT ────────────────────────────────────────────────────────────────────
@@ -558,16 +585,16 @@ function render() {
   updateStats(filtered);
 
   const cfg = METRIC_CONFIG[activeMetric];
-  document.getElementById('chart-title').textContent = cfg.label + ' by Agency';
+  document.getElementById('chart-title').textContent = cfg.label + ' by Fiscal Year';
   document.getElementById('chart-sub').textContent   = cfg.sub;
   document.getElementById('record-count-note').textContent =
     `${filtered.length} bills shown · 2014–2026`;
 
-  const pairs = aggregateByAgency(filtered, cfg.key);
-  const empty = document.getElementById('empty-state');
+  const rows  = aggregateByFY(filtered, cfg.colKey);
+  const empty  = document.getElementById('empty-state');
   const canvas = document.getElementById('myChart');
 
-  if (!pairs.length) {
+  if (!rows.length) {
     canvas.style.display = 'none';
     empty.style.display = 'flex';
     if (chart) { chart.destroy(); chart = null; }
@@ -576,11 +603,10 @@ function render() {
   canvas.style.display = 'block';
   empty.style.display = 'none';
 
-  const labels = pairs.map(([ag]) => ag);
-  const values = pairs.map(([, d]) => d.total);
-  const agData  = Object.fromEntries(pairs);
+  const labels = rows.map(d => d.fy);
+  const values = rows.map(d => d.total);
+  const byFY   = Object.fromEntries(rows.map(d => [d.fy, d]));
 
-  // Color: positive blue, negative red
   const colors = values.map(v =>
     v < 0 ? 'rgba(220,38,38,0.85)' : 'rgba(37,99,235,0.85)'
   );
@@ -615,15 +641,10 @@ function render() {
           callbacks: {
             title: ctx => ctx[0].label,
             label: ctx => {
-              const ag = ctx.label;
-              const d  = agData[ag];
+              const d = byFY[ctx.label];
               return [
                 `${cfg.label}: ${fmtFull(d.total)}`,
-                `Net impact:   ${fmtFull(d.net)}`,
-                `Operational:  ${fmtFull(d.exp)}`,
-                `Capital:      ${fmtFull(d.cap)}`,
-                `Revenue:      ${fmtFull(d.rev)}`,
-                `Bills:        ${d.bills}`,
+                `Bills contributing: ${d.bills}`,
               ];
             },
           }
@@ -635,8 +656,6 @@ function render() {
           ticks: {
             font: { family: "'Roboto Mono', monospace", size: 11 },
             color: '#374151',
-            maxRotation: 45,
-            minRotation: 30,
           },
           border: { color: '#e5e7eb' },
         },
@@ -664,12 +683,12 @@ document.querySelectorAll('.metric-btn').forEach(btn => {
   });
 });
 
-['f-committee','f-sponsor','f-year','f-fy','f-type'].forEach(id => {
+['f-agency','f-committee','f-sponsor','f-type'].forEach(id => {
   document.getElementById(id).addEventListener('change', render);
 });
 
 document.getElementById('reset-btn').addEventListener('click', () => {
-  ['f-committee','f-sponsor','f-year','f-fy','f-type'].forEach(id => {
+  ['f-agency','f-committee','f-sponsor','f-type'].forEach(id => {
     document.getElementById(id).value = '';
   });
   render();
@@ -681,7 +700,7 @@ document.getElementById('dl-btn').addEventListener('click', () => {
     .then(canvas => {
       const a = document.createElement('a');
       a.href = canvas.toDataURL('image/png');
-      a.download = 'fiscal-impact-by-agency.png';
+      a.download = 'fiscal-impact-by-year.png';
       a.click();
     });
 });
@@ -689,7 +708,7 @@ document.getElementById('dl-btn').addEventListener('click', () => {
 // ── EMBED MODAL ───────────────────────────────────────────────────────────────
 document.getElementById('embed-btn').addEventListener('click', () => {
   document.getElementById('embed-code').value =
-    `<iframe src="https://data.nycuriosity.com/nyc_council_fiscal_impacts_tracker/agency-fiscal-impact/" width="100%" height="700" frameborder="0" style="border-radius:10px;"></iframe>`;
+    `<iframe src="https://data.nycuriosity.com/nyc_council_fiscal_impacts_tracker/fiscal-year-impact/" width="100%" height="700" frameborder="0" style="border-radius:10px;"></iframe>`;
   document.getElementById('embed-modal').classList.add('open');
 });
 document.getElementById('close-modal').addEventListener('click', () => {
