@@ -136,6 +136,24 @@
     }
     .reset-btn:hover { color: var(--red); border-color: #fca5a5; background: var(--red-light); }
 
+    /* ── MULTI-SELECT ── */
+    .ms-wrap { position: relative; }
+    .ms-btn { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 6px; font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 500; color: var(--text); background: var(--bg); border: 1.5px solid var(--border); border-radius: 6px; padding: 0 10px; height: 34px; cursor: pointer; transition: border-color 0.15s; text-align: left; }
+    .ms-btn:hover, .ms-btn.open { border-color: var(--blue); outline: none; }
+    .ms-btn-text { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .ms-caret { font-size: 0.55rem; color: var(--text-faint); flex-shrink: 0; transition: transform 0.15s; }
+    .ms-btn.open .ms-caret { transform: rotate(180deg); }
+    .ms-drop { position: absolute; top: calc(100% + 4px); left: 0; min-width: 100%; max-width: 280px; background: var(--surface); border: 1.5px solid var(--border); border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.13); z-index: 500; display: none; }
+    .ms-drop.open { display: block; }
+    .ms-acts { display: flex; gap: 6px; padding: 8px 10px 6px; border-bottom: 1px solid var(--border); }
+    .ms-act { font-family: 'Roboto Mono', monospace; font-size: 0.65rem; font-weight: 600; background: none; border: 1px solid var(--border); border-radius: 4px; padding: 3px 8px; cursor: pointer; color: var(--text-muted); transition: all 0.1s; }
+    .ms-act:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
+    .ms-list { max-height: 200px; overflow-y: auto; padding: 4px 0; }
+    .ms-item { display: flex; align-items: center; gap: 8px; padding: 5px 12px; cursor: pointer; user-select: none; }
+    .ms-item:hover { background: var(--blue-light); }
+    .ms-item input { width: 13px; height: 13px; accent-color: var(--blue); cursor: pointer; flex-shrink: 0; }
+    .ms-item span { font-size: 0.78rem; color: var(--text-mid); line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
     /* ── STAT PILLS ── */
     .stat-row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
     .stat-pill {
@@ -313,30 +331,19 @@
       <div class="filter-row">
         <div class="filter-group">
           <div class="filter-label">Agency</div>
-          <select class="filter-select" id="f-agency">
-            <option value="">All Agencies</option>
-          </select>
+          <div id="ms-agency"></div>
         </div>
         <div class="filter-group">
           <div class="filter-label">Committee</div>
-          <select class="filter-select" id="f-committee">
-            <option value="">All Committees</option>
-          </select>
+          <div id="ms-committee"></div>
         </div>
         <div class="filter-group">
           <div class="filter-label">Prime Sponsor</div>
-          <select class="filter-select" id="f-sponsor">
-            <option value="">All Sponsors</option>
-          </select>
+          <div id="ms-sponsor"></div>
         </div>
         <div class="filter-group">
           <div class="filter-label">Expense Type</div>
-          <select class="filter-select" id="f-type">
-            <option value="">All Types</option>
-            <option value="expense">Operational only</option>
-            <option value="capital">Capital only</option>
-            <option value="revenue">Revenue only</option>
-          </select>
+          <div id="ms-type"></div>
         </div>
         <button class="reset-btn" id="reset-btn">Reset filters</button>
       </div>
@@ -459,38 +466,90 @@ function fyFromLabel(label) {
   return 'FY' + yr;
 }
 
+// ── MULTI-SELECT CLASS ────────────────────────────────────────────────────────
+class MultiSelect {
+  constructor(id, placeholder, onChange) {
+    this.el = document.getElementById(id);
+    this.ph = placeholder;
+    this.onChange = onChange;
+    this.selected = new Set();
+    this.opts = [];
+    this._open = false;
+    this._init();
+  }
+  _init() {
+    this.el.classList.add('ms-wrap');
+    this.btn = Object.assign(document.createElement('button'), {type:'button', className:'ms-btn'});
+    this.btn.innerHTML = `<span class="ms-btn-text">All ${this.ph}</span><span class="ms-caret">▼</span>`;
+    this._txt = this.btn.querySelector('.ms-btn-text');
+    this.drop = Object.assign(document.createElement('div'), {className:'ms-drop'});
+    const acts = Object.assign(document.createElement('div'), {className:'ms-acts'});
+    const mkAct = (t, fn) => { const b = Object.assign(document.createElement('button'), {type:'button', className:'ms-act', textContent:t}); b.addEventListener('click', e => { e.stopPropagation(); fn(); }); return b; };
+    acts.append(mkAct('Select all', () => this._all()), mkAct('Clear', () => this._clear()));
+    this.list = Object.assign(document.createElement('div'), {className:'ms-list'});
+    this.drop.append(acts, this.list);
+    this.el.append(this.btn, this.drop);
+    this.btn.addEventListener('click', e => { e.stopPropagation(); this._toggle(); });
+    document.addEventListener('click', () => this._close());
+    this.drop.addEventListener('click', e => e.stopPropagation());
+  }
+  _toggle() { this._open ? this._close() : this._show(); }
+  _show()   { this._open = true;  this.btn.classList.add('open');    this.drop.classList.add('open'); }
+  _close()  { this._open = false; this.btn.classList.remove('open'); this.drop.classList.remove('open'); }
+  _all()    { this.selected = new Set(this.opts.map(o => o.v)); this._sync(); this._upd(); this.onChange(); }
+  _clear()  { this.selected.clear(); this._sync(); this._upd(); this.onChange(); }
+  _sync()   { this.list.querySelectorAll('input').forEach(cb => { cb.checked = this.selected.has(cb.value); }); }
+  _upd()    { const n = this.selected.size, t = this.opts.length; this._txt.textContent = (n === 0 || n === t) ? `All ${this.ph}` : `${n} selected`; }
+  setOptions(opts) {
+    this.opts = opts.map(o => typeof o === 'string' ? {v:o, l:o} : {v:o.value, l:o.label});
+    this.list.innerHTML = '';
+    this.opts.forEach(({v, l}) => {
+      const item = document.createElement('label');
+      item.className = 'ms-item';
+      const cb = Object.assign(document.createElement('input'), {type:'checkbox', value:v});
+      cb.addEventListener('change', () => { cb.checked ? this.selected.add(v) : this.selected.delete(v); this._upd(); this.onChange(); });
+      item.append(cb, Object.assign(document.createElement('span'), {textContent:l}));
+      this.list.appendChild(item);
+    });
+    this._upd();
+  }
+  get()   { return (this.selected.size === 0 || this.selected.size === this.opts.length) ? new Set() : new Set(this.selected); }
+  reset() { this._clear(); }
+}
+
+// ── MULTI-SELECT INSTANCES ────────────────────────────────────────────────────
+const msAgency    = new MultiSelect('ms-agency',    'Agencies',   render);
+const msCommittee = new MultiSelect('ms-committee', 'Committees', render);
+const msSponsor   = new MultiSelect('ms-sponsor',   'Sponsors',   render);
+const msType      = new MultiSelect('ms-type',      'Types',      render);
+msType.setOptions([
+  {value:'expense', label:'Operational'},
+  {value:'capital', label:'Capital'},
+  {value:'revenue', label:'Revenue'},
+]);
+
 // ── POPULATE FILTERS ──────────────────────────────────────────────────────────
 function populateFilters() {
-  const sel = (id, items) => {
-    const el = document.getElementById(id);
-    items.forEach(v => {
-      const o = document.createElement('option');
-      o.value = o.textContent = v;
-      el.appendChild(o);
-    });
-  };
-  const agencies = [...new Set(
-    ALL_RECORDS.flatMap(r => r.agencies_abbrev || [])
-  )].sort();
-  sel('f-agency',    agencies);
-  sel('f-committee', FILTER_OPTIONS.committees || []);
-  sel('f-sponsor',   FILTER_OPTIONS.sponsors   || []);
+  const agencies = [...new Set(ALL_RECORDS.flatMap(r => r.agencies_abbrev || []))].sort();
+  msAgency.setOptions(agencies);
+  msCommittee.setOptions(FILTER_OPTIONS.committees || []);
+  msSponsor.setOptions(FILTER_OPTIONS.sponsors || []);
 }
 
 // ── FILTER RECORDS ────────────────────────────────────────────────────────────
 function getFiltered() {
-  const agency    = document.getElementById('f-agency').value;
-  const committee = document.getElementById('f-committee').value;
-  const sponsor   = document.getElementById('f-sponsor').value;
-  const type      = document.getElementById('f-type').value;
+  const agencyF    = msAgency.get();
+  const committeeF = msCommittee.get();
+  const sponsorF   = msSponsor.get();
+  const typeF      = msType.get();
 
   return ALL_RECORDS.filter(r => {
-    if (agency    && !(r.agencies_abbrev || []).includes(agency)) return false;
-    if (committee && r.committee !== committee) return false;
-    if (sponsor   && r.prime_sponsor !== sponsor) return false;
-    if (type) {
+    if (agencyF.size    && !(r.agencies_abbrev || []).some(a => agencyF.has(a))) return false;
+    if (committeeF.size && !committeeF.has(r.committee)) return false;
+    if (sponsorF.size   && !sponsorF.has(r.prime_sponsor)) return false;
+    if (typeF.size) {
       const pbs = r.program_breakdowns || [];
-      if (!pbs.some(pb => pb.cost_type === type)) return false;
+      if (!pbs.some(pb => typeF.has(pb.cost_type))) return false;
     }
     return true;
   });
@@ -683,14 +742,8 @@ document.querySelectorAll('.metric-btn').forEach(btn => {
   });
 });
 
-['f-agency','f-committee','f-sponsor','f-type'].forEach(id => {
-  document.getElementById(id).addEventListener('change', render);
-});
-
 document.getElementById('reset-btn').addEventListener('click', () => {
-  ['f-agency','f-committee','f-sponsor','f-type'].forEach(id => {
-    document.getElementById(id).value = '';
-  });
+  [msAgency, msCommittee, msSponsor, msType].forEach(ms => ms.reset());
   render();
 });
 
