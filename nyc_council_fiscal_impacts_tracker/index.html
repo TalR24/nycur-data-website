@@ -443,6 +443,17 @@
       color: var(--text-mid);
     }
 
+    .package-note-banner {
+      background: #fffbeb;
+      border: 1px solid #fcd34d;
+      border-radius: 6px;
+      padding: 10px 14px;
+      font-size: 0.80rem;
+      line-height: 1.55;
+      color: #92400e;
+      margin-bottom: 16px;
+    }
+
     /* Fiscal mini-table */
     .fiscal-mini-table {
       width: 100%;
@@ -773,6 +784,8 @@ const sign = v => v === null ? "unk" : v < 0 ? "cost" : v > 0 ? "rev" : "zero";
 
 function netLabel(r) {
   if (!r.cost_estimable) return { cls: "net-unk", txt: "unestimable" };
+  if (r.package_note && (r.net_fiscal_impact === null || r.net_fiscal_impact === undefined))
+    return { cls: "net-unk", txt: "see package" };
   const n = r.net_fiscal_impact;
   if (n === null || n === undefined) return { cls: "net-unk", txt: "—" };
   if (n === 0) return { cls: "net-zero", txt: "$0" };
@@ -1102,6 +1115,9 @@ function renderDetailRow(r) {
   return `<tr class="detail-row">
     <td colspan="12">
       <div class="detail-panel">
+        ${r.package_note ? `<div class="package-note-banner">
+          <strong>Package assessment note:</strong> ${esc(r.package_note)}
+        </div>` : ""}
         <div class="detail-grid">
           <div class="detail-section">
             <h4>Legislation</h4>
