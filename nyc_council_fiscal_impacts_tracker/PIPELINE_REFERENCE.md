@@ -99,20 +99,27 @@ with open("nyc_council_fiscal_impacts_tracker/data/fiscal_impacts.json") as f:
 records = data["records"]
 
 def get_intro_year(rec):
-    fn = rec.get("file_number") or ""
-    fn_str = str(fn)
-    # T-type prefix first: "Int. No. T2026-0123" → 2026
-    m2 = re.search(r'\bT(\d{4})\b', fn_str)
-    if m2:
-        yr = int(m2.group(1))
-        if 2010 <= yr <= 2030:
-            return yr
-    # Hyphenated year suffix: "Int 0360-2014" → 2014 (validated)
-    m = re.search(r'-(\d{4})$', fn_str)
+    # 1. date_prepared year (most reliable — FIS prep date closely tracks bill introduction)
+    dp = rec.get("date_prepared") or ""
+    m = re.search(r'\b(20\d{2})\b', str(dp))
     if m:
         yr = int(m.group(1))
         if 2010 <= yr <= 2030:
             return yr
+    # 2. T-type prefix in file_number: "Int. No. T2026-0123" → 2026
+    fn = str(rec.get("file_number") or "")
+    m2 = re.search(r'\bT(20\d{2})\b', fn)
+    if m2:
+        yr = int(m2.group(1))
+        if 2010 <= yr <= 2030:
+            return yr
+    # 3. Hyphenated year suffix: "Int 0360-2014" → 2014 (validated)
+    m3 = re.search(r'-(20\d{2})$', fn)
+    if m3:
+        yr = int(m3.group(1))
+        if 2010 <= yr <= 2030:
+            return yr
+    # 4. Fall back to processed_at year
     pa = rec.get("processed_at") or ""
     return int(pa[:4]) if pa else None
 
