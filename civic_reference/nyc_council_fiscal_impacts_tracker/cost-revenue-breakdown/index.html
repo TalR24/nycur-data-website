@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Fiscal Impact by Year Legislated — NYC Council Fiscal Impacts Tracker — NYCuriosity</title>
-  <meta name="description" content="Total fiscal impact of NYC Council legislation grouped by the year the fiscal impact statement was prepared, filterable by agency, committee, and expense type.">
+  <title>Costs vs. Revenue — NYC Council Fiscal Impacts Tracker — NYCuriosity</title>
+  <meta name="description" content="Which NYC Council bills impose the largest costs on the city — and which generate revenue? A diverging bar chart comparing the top cost and revenue bills.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -29,6 +29,7 @@
       --red:        #dc2626;
       --red-light:  #fef2f2;
       --green:      #16a34a;
+      --green-light:#f0fdf4;
       --radius:     10px;
     }
 
@@ -51,12 +52,15 @@
     .breadcrumb span:last-child { color: #FF6319; }
     .hero-tag { display: inline-block; font-family: 'Roboto Mono', monospace; font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--blue); background: var(--blue-light); border: 1px solid var(--blue-mid); border-radius: 4px; padding: 3px 8px; margin-bottom: 12px; }
     .hero h1 { font-family: 'Roboto Mono', monospace; font-size: clamp(1.3rem, 3vw, 1.75rem); font-weight: 700; letter-spacing: -0.03em; line-height: 1.2; margin-bottom: 10px; }
-    .hero h1 span { color: var(--blue); }
+    .hero h1 span.red { color: var(--red); }
+    .hero h1 span.green { color: var(--green); }
     .hero p { font-size: 0.94rem; color: var(--text-muted); max-width: 760px; line-height: 1.7; }
     .hero-actions { display: flex; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
     .btn { display: inline-flex; align-items: center; gap: 6px; font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600; border-radius: 7px; padding: 8px 14px; transition: all 0.15s; cursor: pointer; border: none; text-decoration: none; }
     .btn-outline { background: var(--surface); color: var(--text-muted); border: 1.5px solid var(--border); }
     .btn-outline:hover { color: var(--blue); border-color: var(--blue-mid); background: var(--blue-light); }
+
+    /* ── CHART NAV ── */
     .chart-nav { background: var(--surface); border-bottom: 1px solid var(--border); padding: 10px clamp(16px, 4vw, 48px); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
     .chart-nav-label { font-size: 0.75rem; color: var(--text-muted); font-weight: 500; white-space: nowrap; margin-right: 4px; }
     .chart-nav a { font-size: 0.78rem; font-family: 'Roboto Mono', monospace; font-weight: 600; padding: 4px 12px; border-radius: 20px; text-decoration: none; border: 1px solid var(--border); color: var(--text-muted); background: var(--bg); transition: all 0.15s; white-space: nowrap; }
@@ -70,15 +74,10 @@
     /* ── FILTER PANEL ── */
     .filter-panel { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 24px; margin-bottom: 20px; }
     .filter-panel-title { font-family: 'Roboto Mono', monospace; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-faint); margin-bottom: 14px; }
-
-    /* Metric toggle */
     .metric-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
     .metric-btn { font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600; padding: 6px 14px; border-radius: 20px; border: 1.5px solid var(--border); background: var(--bg); color: var(--text-muted); cursor: pointer; transition: all 0.15s; white-space: nowrap; }
     .metric-btn:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
     .metric-btn.active { background: var(--blue); color: #fff; border-color: var(--blue); }
-    .metric-btn.active.negative { background: var(--red); border-color: var(--red); }
-
-    /* Filter dropdowns */
     .filter-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
     .filter-group { display: flex; flex-direction: column; gap: 4px; }
     .filter-label { font-family: 'Roboto Mono', monospace; font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-faint); }
@@ -105,17 +104,25 @@
 
     /* ── STAT PILLS ── */
     .stat-row { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
-    .stat-pill { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px 18px; flex: 1; min-width: 140px; }
-    .stat-pill .sp-num { font-family: 'Roboto Mono', monospace; font-size: 1.25rem; font-weight: 700; line-height: 1; color: var(--blue); }
-    .stat-pill .sp-num.red { color: var(--red); }
+    .stat-pill { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px 18px; flex: 1; min-width: 130px; }
+    .stat-pill .sp-num { font-family: 'Roboto Mono', monospace; font-size: 1.15rem; font-weight: 700; line-height: 1; color: var(--blue); }
+    .stat-pill .sp-num.red   { color: var(--red); }
     .stat-pill .sp-num.green { color: var(--green); }
-    .stat-pill .sp-label { font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; }
+    .stat-pill .sp-label { font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; }
 
     /* ── CHART WRAP ── */
     .chart-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px 28px 0; overflow: hidden; }
     .chart-wrap-title { font-family: 'Roboto Mono', monospace; font-size: 1.05rem; font-weight: 700; color: var(--text); letter-spacing: -0.02em; margin-bottom: 6px; }
     .chart-wrap-sub { font-size: 0.82rem; color: var(--text-muted); margin-bottom: 24px; line-height: 1.5; max-width: 700px; }
-    .chart-area { position: relative; height: 420px; margin-bottom: 0; }
+
+    /* Legend row inside chart */
+    .chart-legend { display: flex; gap: 20px; margin-bottom: 16px; flex-wrap: wrap; }
+    .legend-item { display: flex; align-items: center; gap: 7px; font-size: 0.78rem; color: var(--text-muted); }
+    .legend-swatch { width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0; }
+    .legend-swatch.cost { background: rgba(220,38,38,0.85); }
+    .legend-swatch.rev  { background: rgba(22,163,74,0.85); }
+
+    .chart-area { position: relative; margin-bottom: 0; }
     .chart-caption { font-size: 0.78rem; color: var(--text-muted); line-height: 1.55; padding: 14px 0; border-top: 1px solid var(--border); margin-top: 20px; }
     .chart-attribution { font-family: 'Roboto Mono', monospace; font-size: 0.68rem; color: var(--text-faint); padding: 10px 0; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
 
@@ -142,7 +149,7 @@
     .modal-actions { display: flex; gap: 8px; margin-top: 12px; justify-content: flex-end; }
 
     @media (max-width: 600px) {
-      .chart-area { height: 320px; }
+      .chart-area canvas { min-height: 360px; }
     }
   </style>
 </head>
@@ -150,24 +157,24 @@
 
 <header>
   <div class="header-inner">
-    <a href="/nyc_council_fiscal_impacts_tracker/" class="back-link">
+    <a href="/civic_reference/nyc_council_fiscal_impacts_tracker/" class="back-link">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
       Fiscal Impacts Tracker
     </a>
     <div class="header-divider"></div>
-    <h1>Fiscal Impact by Year Legislated</h1>
+    <h1>Costs vs. Revenue</h1>
   </div>
 </header>
 
 <!-- CHART NAV -->
 <div class="chart-nav">
   <span class="chart-nav-label">Charts in this tracker:</span>
-  <a href="/nyc_council_fiscal_impacts_tracker/">Bill Table</a>
-  <a href="/nyc_council_fiscal_impacts_tracker/agency-fiscal-impact/">Fiscal Impact by Agency</a>
-  <a href="/nyc_council_fiscal_impacts_tracker/sponsor-fiscal-impact/">Fiscal Impact by Sponsor</a>
-  <a href="/nyc_council_fiscal_impacts_tracker/intro-year-impact/" class="active">By Year Legislated</a>
-  <a href="/nyc_council_fiscal_impacts_tracker/cost-revenue-breakdown/">Costs vs. Revenue</a>
-  <a href="/nyc_council_fiscal_impacts_tracker/methodology/">Methodology</a>
+  <a href="/civic_reference/nyc_council_fiscal_impacts_tracker/">Bill Table</a>
+  <a href="/civic_reference/nyc_council_fiscal_impacts_tracker/agency-fiscal-impact/">Fiscal Impact by Agency</a>
+  <a href="/civic_reference/nyc_council_fiscal_impacts_tracker/sponsor-fiscal-impact/">Fiscal Impact by Sponsor</a>
+  <a href="/civic_reference/nyc_council_fiscal_impacts_tracker/intro-year-impact/">By Year Legislated</a>
+  <a href="/civic_reference/nyc_council_fiscal_impacts_tracker/cost-revenue-breakdown/" class="active">Costs vs. Revenue</a>
+  <a href="/civic_reference/nyc_council_fiscal_impacts_tracker/methodology/">Methodology</a>
 </div>
 
 <div class="hero">
@@ -175,15 +182,15 @@
     <div class="breadcrumb">
       <a href="/">NYCuriosity Data</a>
       <span>›</span>
-      <a href="/nyc_council_fiscal_impacts_tracker/">NYC Council Fiscal Impacts</a>
+      <a href="/civic_reference/nyc_council_fiscal_impacts_tracker/">NYC Council Fiscal Impacts</a>
       <span>›</span>
-      <span>Fiscal Impact by Year Legislated</span>
+      <span>Costs vs. Revenue</span>
     </div>
-    <div class="hero-tag">Bar Chart</div>
-    <h1>Which legislative years produced the most <span>fiscally significant bills?</span></h1>
-    <p>Total fiscal impact of NYC Council legislation (2014–2026), grouped by the year each bill's fiscal impact statement was prepared. Each bar sums all estimated costs and revenues across bills legislated that year.</p>
+    <div class="hero-tag">Diverging Bar Chart</div>
+    <h1>Which bills cost the city the most — and which <span class="green">generate revenue?</span></h1>
+    <p>201 of 219 bills impose a net cost on the city. Only 16 generate net revenue — most of them tax extensions or fine amnesty programs. This chart puts both sides side by side.</p>
     <div class="hero-actions">
-      <a href="/nyc_council_fiscal_impacts_tracker/" class="btn btn-outline">
+      <a href="/civic_reference/nyc_council_fiscal_impacts_tracker/" class="btn btn-outline">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
         Tracker home
       </a>
@@ -196,12 +203,11 @@
 
     <!-- FILTER PANEL -->
     <div class="filter-panel">
-      <div class="filter-panel-title">Y-Axis Metric</div>
-      <div class="metric-row">
-        <button class="metric-btn active" data-metric="net">Net Fiscal Impact</button>
-        <button class="metric-btn" data-metric="expenditure">Operational Expense</button>
-        <button class="metric-btn" data-metric="capital">Capital Expense</button>
-        <button class="metric-btn" data-metric="revenue">Revenue</button>
+      <div class="filter-panel-title">Bills shown per side</div>
+      <div class="metric-row" id="topn-row">
+        <button class="metric-btn active" data-n="5">Top 5</button>
+        <button class="metric-btn" data-n="10">Top 10</button>
+        <button class="metric-btn" data-n="15">Top 15</button>
       </div>
 
       <div class="filter-panel-title" style="margin-top:4px;">Filters</div>
@@ -219,38 +225,38 @@
           <div id="ms-sponsor"></div>
         </div>
         <div class="filter-group">
-          <div class="filter-label">First Fiscal Year</div>
-          <div id="ms-fy"></div>
+          <div class="filter-label">Bill Intro Year</div>
+          <div id="ms-year"></div>
         </div>
         <div class="filter-group">
-          <div class="filter-label">Expense Type</div>
-          <div id="ms-type"></div>
+          <div class="filter-label">First Fiscal Year</div>
+          <div id="ms-fy"></div>
         </div>
         <button class="reset-btn" id="reset-btn">Reset filters</button>
       </div>
     </div>
 
     <!-- STAT PILLS -->
-    <div class="stat-row" id="stat-row">
+    <div class="stat-row">
       <div class="stat-pill">
         <div class="sp-num" id="stat-bills">—</div>
-        <div class="sp-label">Bills included</div>
+        <div class="sp-label">Bills in filtered set</div>
       </div>
       <div class="stat-pill">
-        <div class="sp-num red" id="stat-net">—</div>
-        <div class="sp-label">Total net fiscal impact</div>
+        <div class="sp-num red" id="stat-cost-n">—</div>
+        <div class="sp-label">Bills with net cost</div>
       </div>
       <div class="stat-pill">
-        <div class="sp-num" id="stat-exp">—</div>
-        <div class="sp-label">Total operational expense</div>
+        <div class="sp-num green" id="stat-rev-n">—</div>
+        <div class="sp-label">Bills generating revenue</div>
       </div>
       <div class="stat-pill">
-        <div class="sp-num" id="stat-cap">—</div>
-        <div class="sp-label">Total capital expense</div>
+        <div class="sp-num red" id="stat-total-cost">—</div>
+        <div class="sp-label">Total net cost (all cost bills)</div>
       </div>
       <div class="stat-pill">
-        <div class="sp-num green" id="stat-rev">—</div>
-        <div class="sp-label">Total revenue</div>
+        <div class="sp-num green" id="stat-total-rev">—</div>
+        <div class="sp-label">Total net revenue (all revenue bills)</div>
       </div>
     </div>
 
@@ -268,9 +274,13 @@
 
     <!-- CHART -->
     <div class="chart-wrap" id="chart-box">
-      <div class="chart-wrap-title" id="chart-title">Net Fiscal Impact by Year Legislated</div>
-      <div class="chart-wrap-sub" id="chart-sub">Total net fiscal impact across all filtered legislation, grouped by the year each bill's fiscal impact statement was prepared. Bars sorted chronologically.</div>
-      <div class="chart-area">
+      <div class="chart-wrap-title">Net Fiscal Impact: Biggest Costs vs. Revenue Generators</div>
+      <div class="chart-wrap-sub">Bars extending left = net cost to the city. Bars extending right = net revenue gain. Only the top N bills per side are shown; use filters to narrow the dataset.</div>
+      <div class="chart-legend">
+        <div class="legend-item"><div class="legend-swatch cost"></div> Net cost (bars extend left)</div>
+        <div class="legend-item"><div class="legend-swatch rev"></div> Net revenue (bars extend right)</div>
+      </div>
+      <div class="chart-area" id="chart-area">
         <canvas id="myChart"></canvas>
         <div class="empty-state" id="empty-state" style="display:none;">
           <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h.01M15 9h.01M9 15h.01M15 15h.01"/></svg>
@@ -278,7 +288,7 @@
         </div>
       </div>
       <div class="chart-caption">
-        Net fiscal impact of NYC Council legislation grouped by the year each bill's fiscal impact statement was prepared. Negative values indicate net costs to the city; positive values indicate net revenue gains.
+        Net fiscal impact of NYC Council legislation (2014–2026). Net = total revenue − operational expense − capital expense. Negative values are net costs; positive values are net revenue gains.
         Source: NYC Council Legistar fiscal impact statements, processed by NYCuriosity.
       </div>
       <div class="chart-attribution">
@@ -291,9 +301,10 @@
     <div class="footnotes">
       <h3>Methodology</h3>
       <ul>
-        <li>Each bill is attributed to the year its fiscal impact statement was prepared, as recorded in the <strong>Date Prepared</strong> field. For most bills this closely matches the year it was voted on. Where date prepared is unavailable, the year is extracted from the bill's file number (e.g., "Int 0360-2014" → 2014).</li>
-        <li><strong>Net fiscal impact</strong> = total revenue − total operational expense − total capital expense. Negative = net cost to the city.</li>
-        <li>Only bills with at least one non-zero, estimable fiscal figure are included. Bills where costs could not be estimated are excluded.</li>
+        <li><strong>Net fiscal impact</strong> = total revenue − total operational expense − total capital expense. Negative = net cost to the city. Positive = net revenue gain.</li>
+        <li>Only the top N bills by absolute net impact are shown per side. Use the "Top 5 / 10 / 15" selector to adjust. The stat pills above always reflect the full filtered dataset.</li>
+        <li>Revenue-generating bills in this database are predominantly tax extensions (e.g., hotel occupancy tax, property assessment extensions) and fine amnesty programs — one-time or existing revenue streams, not new structural revenue sources.</li>
+        <li>Bills assessed as part of a legislative package (e.g., the 2023 DSS rental assistance package) are shown with the cost attributed to the primary bill only, to avoid double-counting. See <a href="/civic_reference/nyc_council_fiscal_impacts_tracker/">bill table</a> for package details.</li>
         <li>Source: <a href="https://legistar.council.nyc.gov" target="_blank">NYC Council Legistar</a> fiscal impact statement documents, extracted and structured by NYCuriosity using the Legistar REST API and Claude AI.</li>
       </ul>
     </div>
@@ -314,19 +325,13 @@
 </div>
 
 <script>
-// ── DATA LOADING ──────────────────────────────────────────────────────────────
+// ── STATE ─────────────────────────────────────────────────────────────────────
 let ALL_RECORDS = [];
 let FILTER_OPTIONS = {};
-let activeMetric = 'net';
+let topN = 5;
 let chart = null;
 
-const METRIC_CONFIG = {
-  net:         { key: 'net_fiscal_impact',  label: 'Net Fiscal Impact',   sub: 'Net fiscal impact (revenue − operational − capital) grouped by bill introduction year. Negative = net cost to the city.' },
-  expenditure: { key: 'total_expenditure',  label: 'Operational Expense', sub: 'Total operational expenditure mandated by filtered legislation, grouped by bill introduction year.' },
-  capital:     { key: 'total_capital',      label: 'Capital Expense',     sub: 'Total capital expenditure mandated by filtered legislation, grouped by bill introduction year.' },
-  revenue:     { key: 'total_revenue',      label: 'Revenue Generated',   sub: 'Total revenue generated by filtered legislation, grouped by bill introduction year.' },
-};
-
+// ── LOAD DATA ─────────────────────────────────────────────────────────────────
 fetch('../agency-fiscal-impact/data.json')
   .then(r => r.json())
   .then(data => {
@@ -336,7 +341,7 @@ fetch('../agency-fiscal-impact/data.json')
     render();
   });
 
-// ── MULTI-SELECT CLASS ────────────────────────────────────────────────────────
+// ── MULTI-SELECT ──────────────────────────────────────────────────────────────
 class MultiSelect {
   constructor(id, placeholder, onChange) {
     this.el = document.getElementById(id);
@@ -387,17 +392,11 @@ class MultiSelect {
   reset() { this._clear(); }
 }
 
-// ── MULTI-SELECT INSTANCES ────────────────────────────────────────────────────
 const msAgency    = new MultiSelect('ms-agency',   'Agencies',     render);
 const msCommittee = new MultiSelect('ms-committee','Committees',   render);
 const msSponsor   = new MultiSelect('ms-sponsor',  'Sponsors',     render);
+const msYear      = new MultiSelect('ms-year',     'Years',        render);
 const msFY        = new MultiSelect('ms-fy',       'Fiscal Years', render);
-const msType      = new MultiSelect('ms-type',     'Types',        render);
-msType.setOptions([
-  {value:'expense', label:'Operational'},
-  {value:'capital', label:'Capital'},
-  {value:'revenue', label:'Revenue'},
-]);
 
 // ── POPULATE FILTERS ──────────────────────────────────────────────────────────
 function populateFilters() {
@@ -405,6 +404,7 @@ function populateFilters() {
   msAgency.setOptions(agencies);
   msCommittee.setOptions(FILTER_OPTIONS.committees || []);
   msSponsor.setOptions(FILTER_OPTIONS.sponsors || []);
+  msYear.setOptions((FILTER_OPTIONS.intro_years || []).map(String));
   msFY.setOptions(FILTER_OPTIONS.fiscal_years || []);
 }
 
@@ -413,41 +413,35 @@ function getFiltered() {
   const agencyF    = msAgency.get();
   const committeeF = msCommittee.get();
   const sponsorF   = msSponsor.get();
+  const yearF      = msYear.get();
   const fyF        = msFY.get();
-  const typeF      = msType.get();
 
   return ALL_RECORDS.filter(r => {
+    if (r.net_fiscal_impact == null) return false;   // exclude package-nulled bills
     if (agencyF.size    && !(r.agencies_abbrev || []).some(a => agencyF.has(a))) return false;
     if (committeeF.size && !committeeF.has(r.committee)) return false;
     if (sponsorF.size   && !sponsorF.has(r.prime_sponsor)) return false;
+    if (yearF.size      && !yearF.has(String(r.intro_year))) return false;
     if (fyF.size        && !fyF.has(r.fy_first_normalized)) return false;
-    if (typeF.size) {
-      const pbs = r.program_breakdowns || [];
-      if (!pbs.some(pb => typeF.has(pb.cost_type))) return false;
-    }
     return true;
   });
 }
 
-// ── AGGREGATE BY INTRO YEAR ───────────────────────────────────────────────────
-function aggregateByIntroYear(records, metricKey) {
-  const map = {};
-  records.forEach(r => {
-    const yr = r.intro_year;
-    if (!yr) return;
-    const val = r[metricKey];
-    if (val == null) return;
-    if (!map[yr]) map[yr] = { total: 0, bills: 0, net: 0, exp: 0, cap: 0, rev: 0 };
-    map[yr].total += val;
-    map[yr].bills += 1;
-    map[yr].net   += r.net_fiscal_impact || 0;
-    map[yr].exp   += r.total_expenditure || 0;
-    map[yr].cap   += r.total_capital     || 0;
-    map[yr].rev   += r.total_revenue     || 0;
-  });
-  // Sort chronologically
-  return Object.entries(map)
-    .sort((a, b) => parseInt(a[0]) - parseInt(b[0]));
+// ── SELECT TOP BILLS ──────────────────────────────────────────────────────────
+function selectBills(records, n) {
+  const costBills = records
+    .filter(r => r.net_fiscal_impact < 0)
+    .sort((a, b) => a.net_fiscal_impact - b.net_fiscal_impact)  // most negative first
+    .slice(0, n);
+
+  const revBills = records
+    .filter(r => r.net_fiscal_impact > 0)
+    .sort((a, b) => b.net_fiscal_impact - a.net_fiscal_impact)  // most positive first
+    .slice(0, n);
+
+  // Combine: most negative at top → ... → most positive at bottom
+  return [...costBills, ...revBills.reverse()]
+    .sort((a, b) => a.net_fiscal_impact - b.net_fiscal_impact);
 }
 
 // ── FORMAT ────────────────────────────────────────────────────────────────────
@@ -455,69 +449,69 @@ function fmt(v) {
   if (v == null) return '—';
   const abs = Math.abs(v);
   const sign = v < 0 ? '−' : v > 0 ? '+' : '';
-  if (abs >= 1e9) return `${sign}$${(abs/1e9).toFixed(1)}B`;
+  if (abs >= 1e9) return `${sign}$${(abs/1e9).toFixed(2)}B`;
   if (abs >= 1e6) return `${sign}$${(abs/1e6).toFixed(1)}M`;
   if (abs >= 1e3) return `${sign}$${(abs/1e3).toFixed(0)}K`;
   return `${sign}$${abs.toFixed(0)}`;
 }
 function fmtFull(v) {
   if (v == null) return '—';
-  const abs = Math.abs(v);
-  const sign = v < 0 ? '−$' : '+$';
-  return sign + abs.toLocaleString();
+  return (v < 0 ? '−$' : '+$') + Math.abs(v).toLocaleString();
 }
+function truncate(s, n) { return s && s.length > n ? s.slice(0, n) + '…' : (s || ''); }
 
 // ── UPDATE STAT PILLS ─────────────────────────────────────────────────────────
-function updateStats(records) {
-  const sum = key => records.reduce((acc, r) => acc + (r[key] || 0), 0);
-  const totalNet = sum('net_fiscal_impact');
-  const totalExp = sum('total_expenditure');
-  const totalCap = sum('total_capital');
-  const totalRev = sum('total_revenue');
+function updateStats(filtered) {
+  const costBills = filtered.filter(r => r.net_fiscal_impact < 0);
+  const revBills  = filtered.filter(r => r.net_fiscal_impact > 0);
+  const totalCost = costBills.reduce((s, r) => s + r.net_fiscal_impact, 0);
+  const totalRev  = revBills.reduce((s, r)  => s + r.net_fiscal_impact, 0);
 
-  document.getElementById('stat-bills').textContent = records.length.toLocaleString();
-  document.getElementById('stat-net').textContent   = fmt(totalNet);
-  document.getElementById('stat-exp').textContent   = fmt(totalExp);
-  document.getElementById('stat-cap').textContent   = fmt(totalCap);
-  document.getElementById('stat-rev').textContent   = fmt(totalRev);
-
-  document.getElementById('stat-net').className = 'sp-num ' + (totalNet < 0 ? 'red' : 'green');
+  document.getElementById('stat-bills').textContent     = filtered.length.toLocaleString();
+  document.getElementById('stat-cost-n').textContent    = costBills.length.toLocaleString();
+  document.getElementById('stat-rev-n').textContent     = revBills.length.toLocaleString();
+  document.getElementById('stat-total-cost').textContent = fmt(totalCost);
+  document.getElementById('stat-total-rev').textContent  = fmt(totalRev);
 }
 
-// ── RENDER CHART ──────────────────────────────────────────────────────────────
+// ── RENDER ────────────────────────────────────────────────────────────────────
 function render() {
   const filtered = getFiltered();
   updateStats(filtered);
 
-  const cfg = METRIC_CONFIG[activeMetric];
-  document.getElementById('chart-title').textContent = cfg.label + ' by Year Legislated';
-  document.getElementById('chart-sub').textContent   = cfg.sub;
   document.getElementById('record-count-note').textContent =
-    `${filtered.length} bills shown · 2014–2026`;
+    `${filtered.length} bills in filtered set · 2014–2026`;
 
-  const pairs   = aggregateByIntroYear(filtered, cfg.key);
+  const bills   = selectBills(filtered, topN);
   const empty   = document.getElementById('empty-state');
   const canvas  = document.getElementById('myChart');
-  const yrData  = Object.fromEntries(pairs);
+  const area    = document.getElementById('chart-area');
 
-  if (!pairs.length) {
+  if (!bills.length) {
     canvas.style.display = 'none';
     empty.style.display  = 'flex';
+    area.style.height    = '300px';
     if (chart) { chart.destroy(); chart = null; }
     return;
   }
   canvas.style.display = 'block';
   empty.style.display  = 'none';
 
-  const labels = pairs.map(([yr]) => yr.toString());
-  const values = pairs.map(([, d]) => d.total);
+  // Dynamic height: 48px per bar + padding
+  const h = Math.max(320, bills.length * 52 + 60);
+  area.style.height = h + 'px';
 
-  const colors = values.map(v =>
-    v < 0 ? 'rgba(220,38,38,0.85)' : 'rgba(37,99,235,0.85)'
-  );
-  const hoverColors = values.map(v =>
-    v < 0 ? 'rgba(220,38,38,1)' : 'rgba(37,99,235,1)'
-  );
+  // Labels: two-line array [sponsor, file_number]
+  const labels = bills.map(r => [
+    (r.prime_sponsor || '').slice(0, 22),
+    truncate(r.file_number || '', 28)
+  ]);
+  const values = bills.map(r => r.net_fiscal_impact);
+  const colors = values.map(v => v < 0 ? 'rgba(220,38,38,0.85)' : 'rgba(22,163,74,0.85)');
+  const hoverColors = values.map(v => v < 0 ? 'rgba(220,38,38,1)' : 'rgba(22,163,74,1)');
+
+  // Build a lookup by index for tooltips
+  const billByIdx = bills;
 
   if (chart) chart.destroy();
   chart = new Chart(canvas, {
@@ -533,68 +527,79 @@ function render() {
       }]
     },
     options: {
+      indexAxis: 'y',
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
         legend: { display: false },
         tooltip: {
           backgroundColor: '#111827',
-          titleFont: { family: "'Roboto Mono', monospace", size: 12, weight: '700' },
-          bodyFont:  { family: "'Roboto Mono', monospace", size: 11 },
+          titleFont: { family: "'Roboto Mono', monospace", size: 11, weight: '700' },
+          bodyFont:  { family: "'Roboto Mono', monospace", size: 10 },
           padding: 12,
           cornerRadius: 8,
           callbacks: {
-            title: ctx => `Intro Year: ${ctx[0].label}`,
-            label: ctx => {
-              const d = yrData[parseInt(ctx.label)];
-              return [
-                `${cfg.label}: ${fmtFull(d.total)}`,
-                `Net impact:   ${fmtFull(d.net)}`,
-                `Operational:  ${fmtFull(d.exp)}`,
-                `Capital:      ${fmtFull(d.cap)}`,
-                `Revenue:      ${fmtFull(d.rev)}`,
-                `Bills:        ${d.bills}`,
-              ];
+            title: ctx => {
+              const r = billByIdx[ctx[0].dataIndex];
+              return truncate(r.title || '', 55);
             },
+            label: ctx => {
+              const r = billByIdx[ctx.dataIndex];
+              return [
+                `Sponsor:      ${r.prime_sponsor || '—'}`,
+                `File:         ${r.file_number || '—'}`,
+                `Net impact:   ${fmtFull(r.net_fiscal_impact)}`,
+                `Operational:  ${fmtFull(r.total_expenditure)}`,
+                `Capital:      ${fmtFull(r.total_capital)}`,
+                `Revenue:      ${fmtFull(r.total_revenue)}`,
+              ];
+            }
           }
         }
       },
       scales: {
         x: {
-          grid: { display: false },
-          ticks: {
-            font: { family: "'Roboto Mono', monospace", size: 12 },
-            color: '#374151',
-            maxRotation: 0,
-          },
-          border: { color: '#e5e7eb' },
-        },
-        y: {
           grid: { color: '#e5e7eb', lineWidth: 1 },
-          border: { dash: [3, 3], color: 'transparent' },
+          border: { dash: [3,3], color: 'transparent' },
           ticks: {
-            font: { family: "'Roboto Mono', monospace", size: 11 },
+            font: { family: "'Roboto Mono', monospace", size: 10 },
             color: '#6b7280',
             callback: v => fmt(v),
           },
+          // Force zero line to be visible and prominent
+          afterDataLimits(scale) {
+            // Ensure zero is always visible
+            if (scale.min > 0) scale.min = 0;
+            if (scale.max < 0) scale.max = 0;
+          }
+        },
+        y: {
+          grid: { display: false },
+          border: { color: '#e5e7eb' },
+          ticks: {
+            font: { family: "'Roboto Mono', monospace", size: 10 },
+            color: '#374151',
+            crossAlign: 'far',
+          }
         }
       }
     }
   });
 }
 
-// ── EVENT LISTENERS ───────────────────────────────────────────────────────────
-document.querySelectorAll('.metric-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.metric-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    activeMetric = btn.dataset.metric;
-    render();
-  });
+// ── TOP N SELECTOR ────────────────────────────────────────────────────────────
+document.getElementById('topn-row').addEventListener('click', e => {
+  const btn = e.target.closest('[data-n]');
+  if (!btn) return;
+  topN = parseInt(btn.dataset.n, 10);
+  document.querySelectorAll('#topn-row .metric-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  render();
 });
 
+// ── RESET ─────────────────────────────────────────────────────────────────────
 document.getElementById('reset-btn').addEventListener('click', () => {
-  [msAgency, msCommittee, msSponsor, msFY, msType].forEach(ms => ms.reset());
+  [msAgency, msCommittee, msSponsor, msYear, msFY].forEach(ms => ms.reset());
   render();
 });
 
@@ -604,7 +609,7 @@ document.getElementById('dl-btn').addEventListener('click', () => {
     .then(canvas => {
       const a = document.createElement('a');
       a.href = canvas.toDataURL('image/png');
-      a.download = 'fiscal-impact-by-intro-year.png';
+      a.download = 'fiscal-costs-vs-revenue.png';
       a.click();
     });
 });
@@ -612,7 +617,7 @@ document.getElementById('dl-btn').addEventListener('click', () => {
 // ── EMBED MODAL ───────────────────────────────────────────────────────────────
 document.getElementById('embed-btn').addEventListener('click', () => {
   document.getElementById('embed-code').value =
-    `<iframe src="https://data.nycuriosity.com/nyc_council_fiscal_impacts_tracker/intro-year-impact/" width="100%" height="700" frameborder="0" style="border-radius:10px;"></iframe>`;
+    `<iframe src="https://data.nycuriosity.com/nyc_council_fiscal_impacts_tracker/cost-revenue-breakdown/" width="100%" height="800" frameborder="0" style="border-radius:10px;"></iframe>`;
   document.getElementById('embed-modal').classList.add('open');
 });
 document.getElementById('close-modal').addEventListener('click', () => {

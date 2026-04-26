@@ -8,11 +8,31 @@ A companion site to [NYCuriosity](https://nycuriosity.substack.com), a Substack 
 
 ## Civic Reference
 
-### [NYC Government Bodies Explorer](https://data.nycuriosity.com/nyc-gov-bodies-explorer/)
+All standalone reference tools live under `/civic_reference/`.
+
+### [NYC Government Bodies Explorer](https://data.nycuriosity.com/civic_reference/nyc-gov-bodies-explorer/)
 Browse all ~80 NYC government bodies — agencies, elected offices, DA offices, authorities, and boards — with FY2025 Adopted Budget and headcount data. Features a searchable card grid with inline detail panels and a D3.js treemap sized by budget or headcount, with sector-level filtering.
 
-- [`/nyc-gov-bodies-explorer/`](https://data.nycuriosity.com/nyc-gov-bodies-explorer/) — main explorer (card grid + treemap)
-- [`/nyc-gov-bodies-explorer/methodology/`](https://data.nycuriosity.com/nyc-gov-bodies-explorer/methodology/) — data sources, definitions, and known limitations
+- [`/civic_reference/nyc-gov-bodies-explorer/`](https://data.nycuriosity.com/civic_reference/nyc-gov-bodies-explorer/) — main explorer (card grid + treemap)
+- [`/civic_reference/nyc-gov-bodies-explorer/methodology/`](https://data.nycuriosity.com/civic_reference/nyc-gov-bodies-explorer/methodology/) — data sources, definitions, and known limitations
+
+### [NYC Council Fiscal Impacts Tracker](https://data.nycuriosity.com/civic_reference/nyc_council_fiscal_impacts_tracker/)
+Estimated fiscal impact of every NYC Council bill with a Finance Division impact statement. Filterable by agency, committee, sponsor, and fiscal year, with cost/revenue/capital breakdowns and per-bill detail panels.
+
+- [`/civic_reference/nyc_council_fiscal_impacts_tracker/`](https://data.nycuriosity.com/civic_reference/nyc_council_fiscal_impacts_tracker/) — bill table
+- [`/civic_reference/nyc_council_fiscal_impacts_tracker/agency-fiscal-impact/`](https://data.nycuriosity.com/civic_reference/nyc_council_fiscal_impacts_tracker/agency-fiscal-impact/) — fiscal impact by agency
+- [`/civic_reference/nyc_council_fiscal_impacts_tracker/sponsor-fiscal-impact/`](https://data.nycuriosity.com/civic_reference/nyc_council_fiscal_impacts_tracker/sponsor-fiscal-impact/) — fiscal impact by sponsor
+- [`/civic_reference/nyc_council_fiscal_impacts_tracker/intro-year-impact/`](https://data.nycuriosity.com/civic_reference/nyc_council_fiscal_impacts_tracker/intro-year-impact/) — by year legislated
+- [`/civic_reference/nyc_council_fiscal_impacts_tracker/cost-revenue-breakdown/`](https://data.nycuriosity.com/civic_reference/nyc_council_fiscal_impacts_tracker/cost-revenue-breakdown/) — costs vs. revenue
+- [`/civic_reference/nyc_council_fiscal_impacts_tracker/methodology/`](https://data.nycuriosity.com/civic_reference/nyc_council_fiscal_impacts_tracker/methodology/) — methodology
+
+### [State Capacity Ecosystem](https://data.nycuriosity.com/civic_reference/state_capacity_ecosystem/)
+Directory and affinity network of 225 organizations working on state capacity — research, advocacy, GovTech, philanthropy, fellowships, digital services, and investors. Underlying database curated by Henry Tolchard.
+
+- [`/civic_reference/state_capacity_ecosystem/`](https://data.nycuriosity.com/civic_reference/state_capacity_ecosystem/) — hub
+- [`/civic_reference/state_capacity_ecosystem/directory/`](https://data.nycuriosity.com/civic_reference/state_capacity_ecosystem/directory/) — searchable, filterable org table
+- [`/civic_reference/state_capacity_ecosystem/network/`](https://data.nycuriosity.com/civic_reference/state_capacity_ecosystem/network/) — D3 force-directed affinity graph
+- [`/civic_reference/state_capacity_ecosystem/methodology/`](https://data.nycuriosity.com/civic_reference/state_capacity_ecosystem/methodology/) — scoring formula and data notes
 
 ---
 
@@ -73,14 +93,16 @@ Static site hosted on GitHub Pages at a custom domain (`data.nycuriosity.com`). 
 ## Repo Structure
 
 ```
-/                                          → Hub homepage
-/nyc-gov-bodies-explorer/                 → NYC Government Bodies Explorer
-/nyc-gov-bodies-explorer/methodology/     → Methodology page
-/cb3-resolutions/                         → CB3 hub + chart subpages
+/                                                 → Hub homepage
+/civic_reference/
+  ├── nyc-gov-bodies-explorer/                    → NYC Government Bodies Explorer
+  ├── nyc_council_fiscal_impacts_tracker/         → NYC Council Fiscal Impacts Tracker
+  └── state_capacity_ecosystem/                   → State Capacity Ecosystem
+/cb3-resolutions/                                 → CB3 hub + chart subpages
 /nycuriosity_substack_posts/
-  ├── streets_plan_2026/                  → Streets Plan 2026 post data
-  ├── cso_reports_2026/                   → CSO Reports 2026 post data
-  └── mcb3_history_analysis/              → MCB3 History Analysis post data
+  ├── streets_plan_2026/                          → Streets Plan 2026 post data
+  ├── cso_reports_2026/                           → CSO Reports 2026 post data
+  └── mcb3_history_analysis/                      → MCB3 History Analysis post data
 ```
 
 New post data projects follow the pattern described in `CLAUDE.md`: hub page at `nycuriosity_substack_posts/<folder>/index.html`, individual chart subpages in subdirectories, source CSVs in `data/`.
