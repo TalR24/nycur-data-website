@@ -222,6 +222,7 @@
       <div class="pill"><span class="pill-label">Problem statements</span><span class="pill-value" id="pill-problems">38</span></div>
       <div class="pill"><span class="pill-label">Focus levels</span><span class="pill-value" id="pill-focus">Federal · State · City</span></div>
       <div class="pill"><span class="pill-label">Affinity edges</span><span class="pill-value orange" id="pill-edges">1,681</span></div>
+      <div class="pill"><span class="pill-label">Data last updated</span><span class="pill-value" id="pill-updated">—</span></div>
     </div>
   </div>
 </div>
@@ -398,6 +399,14 @@ fetch("./data/graph.json")
     for (const o of orgs) (o.problem_statements || []).forEach(p => problems.add(p));
     const probEl = document.getElementById("pill-problems");
     if (probEl) probEl.textContent = problems.size;
+
+    // Data last-updated (ISO date from build_affinity.py)
+    const updatedEl = document.getElementById("pill-updated");
+    if (updatedEl && g.stats && g.stats.last_updated) {
+      const [y, m, d] = g.stats.last_updated.split("-").map(Number);
+      const months = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+      updatedEl.textContent = `${months[m-1]} ${d}, ${y}`;
+    }
 
     // Primary-segment counts
     const counts = {};

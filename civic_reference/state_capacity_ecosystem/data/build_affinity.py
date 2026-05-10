@@ -9,6 +9,7 @@ Methodology (per Henry's spec, https://claude.ai/share/c83f0e05-...):
 
 import csv, json, re, math
 from collections import Counter
+from datetime import date
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
@@ -263,6 +264,7 @@ nodes_out = [{
         "edge_count": len(edges),
         "max_weight": edges_raw[0]["weight"] if edges_raw else 0,
         "median_weight": edges_raw[len(edges_raw)//2]["weight"] if edges_raw else 0,
+        "last_updated": date.today().isoformat(),
     },
 }, indent=None, separators=(",", ":")))
 
