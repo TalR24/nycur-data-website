@@ -5,7 +5,7 @@
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Directory — State Capacity Ecosystem · NYCuriosity Data</title>
-  <meta name="description" content="Searchable directory of organizations working on state capacity. Filter by segment, focus level, funding model, named funder, and problem statement.">
+  <meta name="description" content="Searchable directory of organizations working on state capacity. Filter by segment, focus level, problem statement, and funding model.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -288,16 +288,12 @@
           <div id="ms-focus"></div>
         </div>
         <div class="filter-group">
-          <label class="filter-label">Funding model</label>
-          <div id="ms-fund"></div>
-        </div>
-        <div class="filter-group">
-          <label class="filter-label">Named funder</label>
-          <div id="ms-funder"></div>
-        </div>
-        <div class="filter-group">
           <label class="filter-label">Problem statement</label>
           <div id="ms-problem"></div>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Funding model</label>
+          <div id="ms-fund"></div>
         </div>
         <button class="btn-reset" id="btn-reset">Reset</button>
       </div>
@@ -412,9 +408,8 @@ class MS {
 const onChange = () => { expandedId = null; applyFilters(); };
 const msSeg     = new MS("ms-seg", "Segments", onChange);
 const msFocus   = new MS("ms-focus", "Levels",   onChange);
-const msFund    = new MS("ms-fund", "Models",   onChange);
-const msFunder  = new MS("ms-funder", "Funders", onChange);
 const msProblem = new MS("ms-problem", "Problems", onChange);
+const msFund    = new MS("ms-fund", "Models",   onChange);
 
 fetch("../data/orgs.json").then(r => r.json()).then(orgs => {
   allOrgs = orgs;
@@ -426,24 +421,22 @@ fetch("../data/orgs.json").then(r => r.json()).then(orgs => {
 });
 
 function populateFilters() {
-  const segs = new Set(), focuses = new Set(), models = new Set(), funders = new Set(), problems = new Set();
+  const segs = new Set(), focuses = new Set(), models = new Set(), problems = new Set();
   for (const o of allOrgs) {
     if (o.primary_segment) segs.add(o.primary_segment);
     (o.focus || []).forEach(f => focuses.add(f));
     if (o.funding_model) models.add(o.funding_model);
-    (o.named_funders || []).forEach(f => funders.add(f));
     (o.problem_statements || []).forEach(p => problems.add(p));
   }
   msSeg.setOptions([...segs].sort());
   msFocus.setOptions([...focuses].sort());
   msFund.setOptions([...models].sort());
-  msFunder.setOptions([...funders].sort());
   msProblem.setOptions([...problems].sort());
 }
 
 function applyFilters() {
   const q = document.getElementById("f-search").value.toLowerCase().trim();
-  const segF = msSeg.get(), focF = msFocus.get(), fundF = msFund.get(), fndF = msFunder.get(), probF = msProblem.get();
+  const segF = msSeg.get(), focF = msFocus.get(), fundF = msFund.get(), probF = msProblem.get();
 
   filtered = allOrgs.filter(o => {
     if (q) {
@@ -453,7 +446,6 @@ function applyFilters() {
     if (segF.size && !segF.has(o.primary_segment)) return false;
     if (focF.size && !(o.focus || []).some(f => focF.has(f))) return false;
     if (fundF.size && !fundF.has(o.funding_model)) return false;
-    if (fndF.size && !(o.named_funders || []).some(f => fndF.has(f))) return false;
     if (probF.size && !(o.problem_statements || []).some(p => probF.has(p))) return false;
     return true;
   });
@@ -636,7 +628,7 @@ window.goPage = goPage;
 // Wiring
 document.getElementById("f-search").addEventListener("input", () => { expandedId = null; applyFilters(); });
 document.getElementById("btn-reset").addEventListener("click", () => {
-  [msSeg, msFocus, msFund, msFunder, msProblem].forEach(m => m.reset());
+  [msSeg, msFocus, msFund, msProblem].forEach(m => m.reset());
   document.getElementById("f-search").value = "";
   expandedId = null;
   applyFilters();

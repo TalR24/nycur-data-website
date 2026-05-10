@@ -134,6 +134,12 @@
       paint-order:stroke; stroke:#fff; stroke-width:3px;
     }
     #graph .label.dim { opacity:0.0; }
+    #graph .seg-label {
+      font-family:'Roboto Mono',monospace; font-size:15px; font-weight:700;
+      letter-spacing:0.04em; text-transform:uppercase;
+      pointer-events:none; opacity:0.92;
+      paint-order:stroke fill; stroke:#ffffff; stroke-width:4.5px; stroke-linejoin:round;
+    }
 
     .graph-overlay {
       position:absolute;
@@ -362,9 +368,10 @@ const W = () => document.getElementById("graph").clientWidth;
 const H = () => document.getElementById("graph").clientHeight;
 
 const root = svg.append("g");
-const linkLayer  = root.append("g").attr("class","links");
-const nodeLayer  = root.append("g").attr("class","nodes");
-const labelLayer = root.append("g").attr("class","labels");
+const linkLayer     = root.append("g").attr("class","links");
+const nodeLayer     = root.append("g").attr("class","nodes");
+const labelLayer    = root.append("g").attr("class","labels");
+const segLabelLayer = root.append("g").attr("class","seg-labels").attr("pointer-events","none");
 
 const zoom = d3.zoom().scaleExtent([0.2, 5]).on("zoom", (e) => root.attr("transform", e.transform));
 svg.call(zoom);
@@ -507,6 +514,18 @@ function build() {
   labels.exit().remove();
   labels.enter().append("text").attr("class","label").text(d => shortName(d.name)).merge(labels);
 
+  // Segment labels (one per visible segment, anchored at cluster centroid each tick)
+  const visibleSegs = [...new Set(visibleNodes.map(n => n.primary_segment))];
+  const segLabels = segLabelLayer.selectAll("text").data(visibleSegs, d => d);
+  segLabels.exit().remove();
+  segLabels.enter().append("text")
+    .attr("class","seg-label")
+    .attr("text-anchor","middle")
+    .attr("dominant-baseline","middle")
+    .merge(segLabels)
+    .text(d => d)
+    .attr("fill", d => SEGMENT_COLORS[d] || "#6b7280");
+
   svg.on("click", () => { selected = null; renderDetail(); updateHover(); });
 
   simulation.on("tick", () => {
@@ -516,6 +535,17 @@ function build() {
     nodeLayer.selectAll("circle").attr("cx", d => d.x).attr("cy", d => d.y);
     labelLayer.selectAll("text")
       .attr("x", d => d.x).attr("y", d => d.y - 4 - Math.sqrt(d.deg||1)*2.2);
+
+    // Compute centroid per segment from current node positions
+    const segCent = {};
+    for (const n of visibleNodes) {
+      if (n.x == null) continue;
+      const c = segCent[n.primary_segment] || (segCent[n.primary_segment] = {x:0, y:0, n:0});
+      c.x += n.x; c.y += n.y; c.n += 1;
+    }
+    segLabelLayer.selectAll("text")
+      .attr("x", d => segCent[d] ? segCent[d].x / segCent[d].n : 0)
+      .attr("y", d => segCent[d] ? segCent[d].y / segCent[d].n : 0);
   });
 
   updateHover();
