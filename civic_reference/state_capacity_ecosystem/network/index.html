@@ -5,7 +5,7 @@
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Affinity Network — State Capacity Ecosystem · NYCuriosity Data</title>
-  <meta name="description" content="Interactive force-directed graph showing affinity between 225 state-capacity organizations, weighted by description similarity, segment overlap, and named-funder overlap.">
+  <meta name="description" content="Interactive force-directed graph showing affinity between state-capacity organizations, weighted by description similarity, segment overlap, and named-funder overlap.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -189,6 +189,13 @@
     }
     .detail-tag.secondary { background:#f3f4f6; color:var(--text-mid); }
     .detail-tag.focus { background:var(--orange); color:#fff; }
+    .detail-tag.problem {
+      font-family:'Inter',sans-serif;
+      font-size:0.72rem; font-weight:500; text-transform:none; letter-spacing:0;
+      padding:2px 9px; border-radius:12px;
+      background:var(--blue-light); color:var(--blue); border:1px solid var(--blue-mid);
+    }
+    .problem-list { display:flex; flex-wrap:wrap; gap:5px; }
     .detail-desc { font-size:0.9rem; color:var(--text-mid); line-height:1.6; margin-bottom:14px; }
     .detail-meta-grid {
       display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
@@ -576,12 +583,17 @@ function renderDetail() {
     `<span class="detail-tag${s === o.primary_segment ? "" : " secondary"}">${esc(s)}</span>`).join("");
   const focHtml = (o.focus||[]).map(f => `<span class="detail-tag focus">${esc(f)}</span>`).join("");
   const fnd = o.named_funders || [];
+  const problems = o.problem_statements || [];
 
   panel.innerHTML = `
     <div class="detail-name">${esc(o.name)}</div>
     <div class="detail-segs">${segHtml}${focHtml}</div>
     <div class="detail-desc">${esc(o.description || "—")}</div>
     <div class="detail-meta-grid">
+      ${problems.length ? `<div class="detail-meta-item" style="grid-column:1/-1">
+        <div class="meta-label">Problem statements</div>
+        <div class="problem-list">${problems.map(p => `<span class="detail-tag problem">${esc(p)}</span>`).join("")}</div>
+      </div>` : ""}
       <div class="detail-meta-item">
         <div class="meta-label">Funding model</div>
         <div class="meta-val">${esc(o.funding_model || "—")}</div>

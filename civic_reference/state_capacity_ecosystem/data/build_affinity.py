@@ -78,6 +78,10 @@ def parse_focus(focus: str):
     return [s.strip() for s in (focus or "").split(",") if s.strip()]
 
 
+def parse_problem_statements(value: str):
+    return [s.strip() for s in (value or "").split(",") if s.strip()]
+
+
 def extract_funders(detail: str):
     detail = (detail or "")
     found = set()
@@ -127,6 +131,7 @@ for r in rows:
         "funding_detail": normalize(r["Funding Detail"]),
         "named_funders": sorted(funders),
         "website": normalize(r["Website"]),
+        "problem_statements": parse_problem_statements(r.get("Problem Statements", "")),
         "_tokens": tokens(desc + " " + r["Funding Detail"]),  # not exposed; used for TF-IDF
     })
 
@@ -246,6 +251,7 @@ nodes_out = [{
     "funding_detail": o["funding_detail"],
     "named_funders": o["named_funders"],
     "website": o["website"],
+    "problem_statements": o["problem_statements"],
     "degree": final_deg.get(o["id"], 0),
 } for o in orgs]
 

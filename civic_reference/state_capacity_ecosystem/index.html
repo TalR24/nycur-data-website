@@ -5,11 +5,11 @@
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>State Capacity Ecosystem — NYCuriosity Data</title>
-  <meta name="description" content="An interactive map of 225+ organizations working on state capacity — research, advocacy, GovTech, philanthropy, fellowships, and digital services across federal, state, and city government.">
+  <meta name="description" content="An interactive map of 300+ organizations working on state capacity — research, advocacy, GovTech, philanthropy, fellowships, and digital services across federal, state, and city government.">
   <meta property="og:type"        content="website">
   <meta property="og:url"         content="https://data.nycuriosity.com/civic_reference/state_capacity_ecosystem/">
   <meta property="og:title"       content="State Capacity Ecosystem — NYCuriosity Data">
-  <meta property="og:description" content="Browse 225 organizations working on state capacity, then see who's likely to collaborate via an affinity graph built from mission, segments, and funders.">
+  <meta property="og:description" content="Browse 300+ organizations working on state capacity, then see who's likely to collaborate via an affinity graph built from mission, segments, funders, and problem statements.">
   <meta property="og:image"       content="https://data.nycuriosity.com/website_logo.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -212,15 +212,16 @@
 <div class="hero">
   <div class="hero-inner">
     <h1>The <span>State Capacity</span> Ecosystem</h1>
-    <p class="hero-lede">A directory of 225 organizations working to make American government more effective — and a network view of who is likely to collaborate with whom.</p>
+    <p class="hero-lede">A directory of 300+ organizations working to make American government more effective — and a network view of who is likely to collaborate with whom.</p>
     <p class="hero-explainer">
       "State capacity" is a clunky term for a simple idea: the ability of government to actually deliver on what it promises — paving streets, processing benefits, building housing, running elections. The orgs in this database approach that problem from very different angles. <strong>Research shops</strong> diagnose dysfunction. <strong>Advocacy groups</strong> push for reform. <strong>GovTech vendors and digital services teams</strong> build the systems. <strong>Philanthropies and investors</strong> fund the work. <strong>Fellowships</strong> route talent into government. The point of this tool is to make the shape of that ecosystem legible: who exists, what they do, and which orgs cluster together by mission, funding, and focus.
     </p>
     <div class="stat-pills">
-      <div class="pill"><span class="pill-label">Organizations</span><span class="pill-value blue" id="pill-orgs">225</span></div>
+      <div class="pill"><span class="pill-label">Organizations</span><span class="pill-value blue" id="pill-orgs">304</span></div>
       <div class="pill"><span class="pill-label">Primary segments</span><span class="pill-value" id="pill-segs">10</span></div>
+      <div class="pill"><span class="pill-label">Problem statements</span><span class="pill-value" id="pill-problems">38</span></div>
       <div class="pill"><span class="pill-label">Focus levels</span><span class="pill-value" id="pill-focus">Federal · State · City</span></div>
-      <div class="pill"><span class="pill-label">Affinity edges</span><span class="pill-value orange" id="pill-edges">1,212</span></div>
+      <div class="pill"><span class="pill-label">Affinity edges</span><span class="pill-value orange" id="pill-edges">1,681</span></div>
     </div>
   </div>
 </div>
@@ -236,7 +237,7 @@
         <div class="card-preview">
           <svg viewBox="0 0 320 160" xmlns="http://www.w3.org/2000/svg">
             <rect width="320" height="160" fill="#0f172a"/>
-            <text x="16" y="20" font-family="'Roboto Mono',monospace" font-size="8" font-weight="700" letter-spacing="0.6" fill="#FF6319">SEARCHABLE DIRECTORY · 225 ORGS</text>
+            <text x="16" y="20" font-family="'Roboto Mono',monospace" font-size="8" font-weight="700" letter-spacing="0.6" fill="#FF6319">SEARCHABLE DIRECTORY · 300+ ORGS</text>
             <!-- search bar -->
             <rect x="16" y="28" width="288" height="14" rx="3" fill="#1e293b" stroke="#334155"/>
             <text x="22" y="38" font-family="'Roboto Mono',monospace" font-size="7" fill="#94a3b8">Search org name · description · funder…</text>
@@ -270,7 +271,7 @@
           <div class="card-title">Browse organizations</div>
           <div class="card-desc">Searchable, sortable table of every org in the database. Filter by segment, focus level, funding model, or named funder. Click any row to see the full description, funding detail, and a link out.</div>
           <div class="card-meta">
-            <span class="card-stat">225 orgs · 10 segments</span>
+            <span class="card-stat">304 orgs · 10 segments · 38 problem statements</span>
             <span class="card-cta">Open directory →</span>
           </div>
         </div>
@@ -327,7 +328,7 @@
           <div class="card-title">Affinity graph</div>
           <div class="card-desc">A force-directed view of which orgs share mission, funders, and focus areas. Edges weighted by description similarity (TF-IDF), segment overlap, and named-funder overlap. Hover any node to see its closest peers.</div>
           <div class="card-meta">
-            <span class="card-stat">1,212 edges · clustered by segment</span>
+            <span class="card-stat">1,681 edges · clustered by segment</span>
             <span class="card-cta">Open network →</span>
           </div>
         </div>
@@ -391,6 +392,12 @@ fetch("./data/graph.json")
     const orgs = g.nodes;
     document.getElementById("pill-orgs").textContent = orgs.length.toLocaleString();
     document.getElementById("pill-edges").textContent = g.edges.length.toLocaleString();
+
+    // Problem-statement count (unique tags)
+    const problems = new Set();
+    for (const o of orgs) (o.problem_statements || []).forEach(p => problems.add(p));
+    const probEl = document.getElementById("pill-problems");
+    if (probEl) probEl.textContent = problems.size;
 
     // Primary-segment counts
     const counts = {};
