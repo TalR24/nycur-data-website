@@ -5,7 +5,7 @@
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Directory — State Capacity Ecosystem · NYCuriosity Data</title>
-  <meta name="description" content="Searchable directory of organizations working on state capacity. Filter by segment, focus level, problem statement, and funding model.">
+  <meta name="description" content="Searchable directory of organizations working on state capacity. Type a natural-language query for semantic ranking, or filter by segment, focus level, and problem statement.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -257,13 +257,14 @@
 <div class="hero">
   <div class="hero-inner">
     <h1>Organization <span>Directory</span></h1>
-    <p>Every org in the database, sortable and filterable. Click any row to read the full description, see the funding detail, and follow the website link.</p>
+    <p>Every org in the database. Type a name, a problem area, or a natural-language phrase like "procurement reform in NYC" — results are ranked by semantic relevance. Or filter by segment, focus level, or problem statement. Click any row for the full description and funding detail.</p>
   </div>
 </div>
 
 <div class="chart-nav">
   <span class="chart-nav-label">Views in this tool:</span>
   <a href="./" class="active">Directory</a>
+  <a href="../segments/">Segments</a>
   <a href="../network/">Affinity Network</a>
   <a href="../methodology/">Methodology</a>
   <a href="../">← Hub</a>
@@ -276,8 +277,8 @@
     <div class="filter-section">
       <div class="filter-row">
         <div class="filter-group search">
-          <label class="filter-label" for="f-search">Search name, description, or funder</label>
-          <input id="f-search" type="text" class="filter-input" placeholder="e.g. Code for America, permitting, Schmidt…">
+          <label class="filter-label" for="f-search">Search by name or describe what you're looking for</label>
+          <input id="f-search" type="text" class="filter-input" placeholder="e.g. Code for America, &quot;procurement reform in NYC&quot;, &quot;AI in benefits delivery&quot;…">
         </div>
         <div class="filter-group">
           <label class="filter-label">Primary segment</label>
@@ -290,10 +291,6 @@
         <div class="filter-group">
           <label class="filter-label">Problem statement</label>
           <div id="ms-problem"></div>
-        </div>
-        <div class="filter-group">
-          <label class="filter-label">Funding model</label>
-          <div id="ms-fund"></div>
         </div>
         <button class="btn-reset" id="btn-reset">Reset</button>
       </div>
@@ -346,7 +343,8 @@
 const SEGMENT_COLORS = {
   "Research":"#2563eb","Government":"#0891b2","Philanthropy":"#dc2626","Fellowships":"#d97706",
   "Community":"#7c3aed","GovTech":"#16a34a","Advocacy":"#db2777",
-  "Digital Services & Consulting":"#0d9488","Investor":"#9333ea","Training":"#ca8a04"
+  "Digital Services & Consulting":"#0d9488","Investor":"#9333ea",
+  "Capacity Building":"#ca8a04","Ecosystems":"#65a30d"
 };
 
 let allOrgs = [];
@@ -357,12 +355,14 @@ let page = 1;
 const PAGE_SIZE = 50;
 let expandedId = null;
 
-// MultiSelect
+// MultiSelect — opening one closes the others; clicking outside closes any open dropdown.
 class MS {
+  static _registry = [];
   constructor(id, ph, onChange) {
     this.el = document.getElementById(id);
     this.ph = ph; this.onChange = onChange;
     this.selected = new Set(); this.opts = []; this._open = false;
+    MS._registry.push(this);
     this._init();
   }
   _init() {
@@ -382,7 +382,11 @@ class MS {
     this.drop.addEventListener("click", e => e.stopPropagation());
   }
   _toggle() { this._open ? this._close() : this._show(); }
-  _show()  { this._open = true; this.btn.classList.add("open"); this.drop.classList.add("open"); }
+  _show()  {
+    // Close any sibling dropdown so only one is open at a time
+    for (const m of MS._registry) if (m !== this && m._open) m._close();
+    this._open = true; this.btn.classList.add("open"); this.drop.classList.add("open");
+  }
   _close() { this._open = false; this.btn.classList.remove("open"); this.drop.classList.remove("open"); }
   _all()   { this.selected = new Set(this.opts.map(o => o.v)); this._sync(); this._upd(); this.onChange(); }
   _clear() { this.selected.clear(); this._sync(); this._upd(); this.onChange(); }
@@ -409,10 +413,55 @@ const onChange = () => { expandedId = null; applyFilters(); };
 const msSeg     = new MS("ms-seg", "Segments", onChange);
 const msFocus   = new MS("ms-focus", "Levels",   onChange);
 const msProblem = new MS("ms-problem", "Problems", onChange);
-const msFund    = new MS("ms-fund", "Models",   onChange);
 
-fetch("../data/orgs.json").then(r => r.json()).then(orgs => {
+// ── Semantic search state ───────────────────────────────────────────────
+// Populated from search_index.json. Used to rank orgs against a free-text query.
+let searchIndex = null;        // { vocab, idf, vectors }
+let vocabIdx    = new Map();   // term → index
+
+const STOPWORDS = new Set("a an the and or but if then so of in on at to for from with by about into over through across under above between among against during before after up down out off as is are was were be been being have has had do does did doing this that these those there here it its their our your his her my we they them us i you he she who whom what which whose when where why how all any both each few more most other some such no nor not only own same than too very can will just dont don't".split(/\s+/));
+function tokenize(s) {
+  return (s.toLowerCase().match(/[a-z][a-z\-]+/g) || [])
+    .filter(t => t.length > 2 && !STOPWORDS.has(t));
+}
+
+// Build query vector and score each org via cosine. Boost for exact substring
+// match in the org name so people typing an exact name don't get out-ranked.
+function rankByQuery(rawQ) {
+  if (!searchIndex || !rawQ) return null;
+  const toks = tokenize(rawQ);
+  const qv = {};
+  for (const t of toks) {
+    const i = vocabIdx.get(t);
+    if (i === undefined) continue;
+    qv[i] = (qv[i] || 0) + searchIndex.idf[i];
+  }
+  let qnorm = 0; for (const k in qv) qnorm += qv[k] * qv[k];
+  qnorm = Math.sqrt(qnorm) || 1;
+  for (const k in qv) qv[k] /= qnorm;
+
+  const lq = rawQ.toLowerCase().trim();
+  const scored = new Map();
+  for (const o of allOrgs) {
+    const ov = searchIndex.vectors[o.id];
+    let s = 0;
+    for (const k in qv) s += qv[k] * (ov[k] || 0);
+    if (o.name.toLowerCase().includes(lq)) s += 0.5;          // exact-name boost
+    if ((o.named_funders || []).some(f => f.toLowerCase().includes(lq))) s += 0.15;
+    if (s > 0.01) scored.set(o.id, s);
+  }
+  return scored;
+}
+
+Promise.all([
+  fetch("../data/orgs.json").then(r => r.json()),
+  fetch("../data/search_index.json").then(r => r.json()).catch(() => null),
+]).then(([orgs, idx]) => {
   allOrgs = orgs;
+  if (idx) {
+    searchIndex = idx;
+    idx.vocab.forEach((t, i) => vocabIdx.set(t, i));
+  }
   populateFilters();
   applyFilters();
 }).catch(err => {
@@ -421,43 +470,54 @@ fetch("../data/orgs.json").then(r => r.json()).then(orgs => {
 });
 
 function populateFilters() {
-  const segs = new Set(), focuses = new Set(), models = new Set(), problems = new Set();
+  const segs = new Set(), focuses = new Set(), problems = new Set();
   for (const o of allOrgs) {
     if (o.primary_segment) segs.add(o.primary_segment);
     (o.focus || []).forEach(f => focuses.add(f));
-    if (o.funding_model) models.add(o.funding_model);
     (o.problem_statements || []).forEach(p => problems.add(p));
   }
   msSeg.setOptions([...segs].sort());
   msFocus.setOptions([...focuses].sort());
-  msFund.setOptions([...models].sort());
   msProblem.setOptions([...problems].sort());
 }
 
 function applyFilters() {
-  const q = document.getElementById("f-search").value.toLowerCase().trim();
-  const segF = msSeg.get(), focF = msFocus.get(), fundF = msFund.get(), probF = msProblem.get();
+  const rawQ = document.getElementById("f-search").value.trim();
+  const segF = msSeg.get(), focF = msFocus.get(), probF = msProblem.get();
 
-  filtered = allOrgs.filter(o => {
-    if (q) {
-      const hay = (o.name + " " + o.description + " " + (o.named_funders||[]).join(" ") + " " + o.funding_detail + " " + (o.problem_statements||[]).join(" ")).toLowerCase();
-      if (!hay.includes(q)) return false;
-    }
+  // Pre-filter by faceted filters
+  let pool = allOrgs.filter(o => {
     if (segF.size && !segF.has(o.primary_segment)) return false;
     if (focF.size && !(o.focus || []).some(f => focF.has(f))) return false;
-    if (fundF.size && !fundF.has(o.funding_model)) return false;
     if (probF.size && !(o.problem_statements || []).some(p => probF.has(p))) return false;
     return true;
   });
 
-  filtered.sort((a, b) => {
-    const va = (a[sortCol] || "").toString().toLowerCase();
-    const vb = (b[sortCol] || "").toString().toLowerCase();
-    if (va < vb) return -sortDir;
-    if (va > vb) return  sortDir;
-    return 0;
-  });
+  // Apply search ranking (if query present)
+  if (rawQ) {
+    const scores = rankByQuery(rawQ);
+    if (scores && scores.size) {
+      pool = pool.filter(o => scores.has(o.id));
+      pool.sort((a, b) => scores.get(b.id) - scores.get(a.id));
+    } else {
+      // Fall back to plain substring across description/funder text for very short queries
+      const lq = rawQ.toLowerCase();
+      pool = pool.filter(o => {
+        const hay = (o.name + " " + o.description + " " + (o.named_funders||[]).join(" ") + " " + o.funding_detail + " " + (o.problem_statements||[]).join(" ")).toLowerCase();
+        return hay.includes(lq);
+      });
+    }
+  } else {
+    pool.sort((a, b) => {
+      const va = (a[sortCol] || "").toString().toLowerCase();
+      const vb = (b[sortCol] || "").toString().toLowerCase();
+      if (va < vb) return -sortDir;
+      if (va > vb) return  sortDir;
+      return 0;
+    });
+  }
 
+  filtered = pool;
   page = 1;
   updateResultsBar();
   renderTable();
@@ -628,7 +688,7 @@ window.goPage = goPage;
 // Wiring
 document.getElementById("f-search").addEventListener("input", () => { expandedId = null; applyFilters(); });
 document.getElementById("btn-reset").addEventListener("click", () => {
-  [msSeg, msFocus, msFund, msProblem].forEach(m => m.reset());
+  [msSeg, msFocus, msProblem].forEach(m => m.reset());
   document.getElementById("f-search").value = "";
   expandedId = null;
   applyFilters();

@@ -27,12 +27,13 @@ Estimated fiscal impact of every NYC Council bill with a Finance Division impact
 - [`/civic_reference/nyc_council_fiscal_impacts_tracker/methodology/`](https://data.nycuriosity.com/civic_reference/nyc_council_fiscal_impacts_tracker/methodology/) — methodology
 
 ### [State Capacity Ecosystem](https://data.nycuriosity.com/civic_reference/state_capacity_ecosystem/)
-Directory and affinity network of 225 organizations working on state capacity — research, advocacy, GovTech, philanthropy, fellowships, digital services, and investors. Underlying database curated by Henry Tolchard. Affinity score is a composite of description TF-IDF, segment overlap, and named-funder overlap.
+Directory, segment view, and affinity network of 300+ organizations working on state capacity — research, advocacy, GovTech, philanthropy, fellowships, digital services, investors, and ecosystem-builders. Underlying database curated by Henry Grunzeweig. Affinity score combines description TF-IDF, shared problem statements, named funders, and segment overlap, with semantic search powered by a precomputed TF-IDF index.
 
-- [`/civic_reference/state_capacity_ecosystem/`](https://data.nycuriosity.com/civic_reference/state_capacity_ecosystem/) — hub (explainer, stat pills, segment-distribution chart)
+- [`/civic_reference/state_capacity_ecosystem/`](https://data.nycuriosity.com/civic_reference/state_capacity_ecosystem/) — hub
 - [`/civic_reference/state_capacity_ecosystem/directory/`](https://data.nycuriosity.com/civic_reference/state_capacity_ecosystem/directory/) — searchable, filterable org table
-- [`/civic_reference/state_capacity_ecosystem/network/`](https://data.nycuriosity.com/civic_reference/state_capacity_ecosystem/network/) — D3 force-directed affinity graph
-- [`/civic_reference/state_capacity_ecosystem/methodology/`](https://data.nycuriosity.com/civic_reference/state_capacity_ecosystem/methodology/) — scoring formula, weight rationale, and data notes
+- [`/civic_reference/state_capacity_ecosystem/segments/`](https://data.nycuriosity.com/civic_reference/state_capacity_ecosystem/segments/) — segment distribution + click-to-list
+- [`/civic_reference/state_capacity_ecosystem/network/`](https://data.nycuriosity.com/civic_reference/state_capacity_ecosystem/network/) — D3 force-directed affinity graph + semantic search
+- [`/civic_reference/state_capacity_ecosystem/methodology/`](https://data.nycuriosity.com/civic_reference/state_capacity_ecosystem/methodology/) — scoring formula, taxonomy, inclusion criteria
 
 ---
 

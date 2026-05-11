@@ -1,10 +1,23 @@
 """
-Build affinity graph + directory data for the State Capacity Ecosystem tool.
+Build affinity graph + directory data + semantic-search index for the
+State Capacity Ecosystem tool.
 
-Methodology (per Henry's spec, https://claude.ai/share/c83f0e05-...):
-  composite = 0.4 * description_similarity
-            + 0.35 * segment_similarity (primary-weighted)
-            + 0.25 * funder_overlap
+Affinity score (composite, 0–1) — rebalanced May 2026 to surface surprise
+connections instead of obvious same-segment pairings:
+
+  composite = 0.40 * description_TFIDF_cosine
+            + 0.30 * problem_statement_jaccard
+            + 0.15 * named_funder_jaccard
+            + 0.15 * segment_overlap_jaccard
+
+The segment signal is intentionally de-weighted (and the primary-segment
+boost dropped) so the network surfaces cross-segment affinities. Problem
+statements — Henry Grunzeweig's tags, present on every org — replace the
+old same-segment dominance with shared-problem dominance.
+
+The script also writes a separate search_index.json containing a term
+vocabulary and per-org sparse TF-IDF vectors so the front-end can do
+ranked semantic search at query time without an external embedding API.
 """
 
 import csv, json, re, math
@@ -133,7 +146,16 @@ for r in rows:
         "named_funders": sorted(funders),
         "website": normalize(r["Website"]),
         "problem_statements": parse_problem_statements(r.get("Problem Statements", "")),
-        "_tokens": tokens(desc + " " + r["Funding Detail"]),  # not exposed; used for TF-IDF
+        # Token bag used for TF-IDF — folds in problem statements + segment names
+        # so a free-text query like "procurement" can hit orgs whose description
+        # never says the word but whose problem-statement tag does.
+        "_tokens": tokens(
+            desc + " "
+            + r.get("Funding Detail", "") + " "
+            + r.get("Problem Statements", "").replace(",", " ") + " "
+            + r.get("Primary Segment", "") + " "
+            + r.get("Secondary Segments", "").replace(",", " ")
+        ),
     })
 
 n = len(orgs)
@@ -166,14 +188,20 @@ def cosine(a, b):
 
 # ── Pairwise similarity ──────────────────────────────────────────────────────
 def segment_sim(a, b):
-    pa, pb = a["primary_segment"], b["primary_segment"]
+    # Plain Jaccard, no primary-segment boost — we deliberately want the
+    # graph to NOT collapse into same-segment cliques.
     sa, sb = set(a["segments"]), set(b["segments"])
     union = sa | sb
     if not union:
         return 0.0
-    jacc = len(sa & sb) / len(union)
-    primary_boost = 0.5 if pa and pa == pb else 0.0
-    return min(1.0, jacc * 0.7 + primary_boost)
+    return len(sa & sb) / len(union)
+
+
+def problem_sim(a, b):
+    pa, pb = set(a["problem_statements"]), set(b["problem_statements"])
+    if not pa or not pb:
+        return 0.0
+    return len(pa & pb) / len(pa | pb)
 
 
 def funder_sim(a, b):
@@ -190,21 +218,26 @@ def funder_sim(a, b):
     return len(inter) / len(fa | fb)
 
 
+# Weights — sum to 1.0. See module docstring for rationale.
+W_DESC, W_PROB, W_FUND, W_SEG = 0.40, 0.30, 0.15, 0.15
+
 edges_raw = []
 for i in range(n):
     for j in range(i + 1, n):
         ds = cosine(vecs[i], vecs[j])
-        ss = segment_sim(orgs[i], orgs[j])
+        ps = problem_sim(orgs[i], orgs[j])
         fs = funder_sim(orgs[i], orgs[j])
-        composite = 0.4 * ds + 0.35 * ss + 0.25 * fs
+        ss = segment_sim(orgs[i], orgs[j])
+        composite = W_DESC*ds + W_PROB*ps + W_FUND*fs + W_SEG*ss
         if composite < 0.05:
             continue
         edges_raw.append({
             "source": i, "target": j,
             "weight": round(composite, 4),
             "desc": round(ds, 4),
-            "seg": round(ss, 4),
+            "prob": round(ps, 4),
             "fund": round(fs, 4),
+            "seg":  round(ss, 4),
         })
 
 edges_raw.sort(key=lambda e: -e["weight"])
@@ -272,5 +305,30 @@ nodes_out = [{
 # subpage can ship its own bundle.
 (OUT / "orgs.json").write_text(json.dumps(nodes_out, indent=None, separators=(",", ":")))
 
+# ── Semantic-search index ────────────────────────────────────────────────────
+# Ship a vocab + per-org sparse TF-IDF vectors so the front-end can rank orgs
+# against an arbitrary natural-language query without round-tripping to an
+# embedding API. Cost at query time: O(num_query_terms × num_orgs).
+vocab_list = sorted(idf.keys())
+vocab_idx  = {t: i for i, t in enumerate(vocab_list)}
+idf_list   = [round(idf[t], 4) for t in vocab_list]
+
+search_vectors = []
+for v in vecs:
+    # {term_idx: weight} — only non-zero entries
+    sparse = {vocab_idx[t]: round(w, 4) for t, w in v.items() if t in vocab_idx}
+    search_vectors.append(sparse)
+
+(OUT / "search_index.json").write_text(json.dumps({
+    "vocab": vocab_list,
+    "idf":   idf_list,
+    "vectors": search_vectors,
+    "stats": {
+        "vocab_size": len(vocab_list),
+        "avg_terms_per_org": round(sum(len(v) for v in search_vectors) / max(1, n), 1),
+    },
+}, indent=None, separators=(",", ":")))
+
 print(f"Wrote {OUT/'graph.json'}")
 print(f"Wrote {OUT/'orgs.json'}")
+print(f"Wrote {OUT/'search_index.json'}  (vocab={len(vocab_list)}, avg terms/org={sum(len(v) for v in search_vectors)/max(1,n):.1f})")

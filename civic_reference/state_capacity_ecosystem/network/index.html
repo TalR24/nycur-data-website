@@ -111,6 +111,31 @@
     }
     .btn-reset:hover { border-color:var(--blue); color:var(--blue); }
 
+    /* SEARCH RESULTS */
+    .search-results {
+      margin-top:12px; padding:10px 12px;
+      background:var(--blue-light); border:1px solid var(--blue-mid); border-radius:8px;
+    }
+    .search-results-header {
+      font-family:'Roboto Mono',monospace; font-size:0.7rem; font-weight:700;
+      letter-spacing:0.06em; color:var(--blue); text-transform:uppercase;
+      margin-bottom:8px;
+    }
+    .search-chip-row { display:flex; flex-wrap:wrap; gap:6px; }
+    .search-chip {
+      font-size:0.78rem; padding:4px 10px; border-radius:14px;
+      background:var(--surface); border:1px solid var(--blue-mid);
+      cursor:pointer; transition:all 0.12s;
+      display:flex; align-items:center; gap:6px;
+      color:var(--text);
+    }
+    .search-chip:hover { background:var(--blue); color:#fff; border-color:var(--blue); }
+    .search-chip:hover .search-chip-score { color:rgba(255,255,255,0.85); }
+    .search-chip-score {
+      font-family:'Roboto Mono',monospace; font-size:0.68rem; font-weight:700;
+      color:var(--text-faint);
+    }
+
     /* GRAPH AREA */
     .graph-wrap {
       background:var(--surface);
@@ -129,11 +154,13 @@
     #graph .node.dim { opacity:0.15; }
     #graph .node.hi  { stroke:#111827; stroke-width:2.5; }
     #graph .label {
-      font-family:'Inter',sans-serif; font-size:9px; font-weight:600;
-      fill:#111827; pointer-events:none;
-      paint-order:stroke; stroke:#fff; stroke-width:3px;
+      font-family:'Inter',sans-serif; font-size:8px; font-weight:500;
+      fill:#374151; pointer-events:none;
+      paint-order:stroke; stroke:#ffffff; stroke-width:2.5px;
+      opacity:0.78;
     }
-    #graph .label.dim { opacity:0.0; }
+    #graph .label.hi  { font-weight:700; font-size:10px; fill:#111827; opacity:1; }
+    #graph .label.dim { opacity:0.18; }
     #graph .seg-label {
       font-family:'Roboto Mono',monospace; font-size:15px; font-weight:700;
       letter-spacing:0.04em; text-transform:uppercase;
@@ -283,13 +310,14 @@
 <div class="hero">
   <div class="hero-inner">
     <h1><span>Affinity</span> Network</h1>
-    <p>A force-directed graph of which orgs are most likely to share purpose, funding, and focus areas. Edges combine description similarity (TF-IDF), segment overlap, and named-funder overlap. Hover or click any node to see its closest peers.</p>
+    <p>A force-directed map of which orgs are working on the same underlying problems. Type a question like "where should I work on procurement in NYC?" — the search ranks orgs by semantic relevance and highlights the top matches. Or just browse the graph: thicker edges mean the two orgs share a stronger combination of described work, problem statements, and funders. The graph deliberately under-weights segment overlap so cross-segment surprises surface.</p>
   </div>
 </div>
 
 <div class="chart-nav">
   <span class="chart-nav-label">Views in this tool:</span>
   <a href="../directory/">Directory</a>
+  <a href="../segments/">Segments</a>
   <a href="./" class="active">Affinity Network</a>
   <a href="../methodology/">Methodology</a>
   <a href="../">← Hub</a>
@@ -301,14 +329,14 @@
     <!-- CONTROLS -->
     <div class="controls">
       <div class="controls-row">
-        <div class="control-group control-search">
-          <label class="control-label" for="ctl-search">Highlight an org</label>
-          <input id="ctl-search" type="text" placeholder="Type a name…" autocomplete="off">
+        <div class="control-group control-search" style="width:340px;">
+          <label class="control-label" for="ctl-search">Search by name or question</label>
+          <input id="ctl-search" type="text" placeholder='e.g. "procurement reform in NYC", "AI in benefits"' autocomplete="off">
         </div>
         <div class="control-group threshold-group">
-          <label class="control-label" for="ctl-threshold">Min affinity</label>
+          <label class="control-label" for="ctl-threshold">Show edges at or above</label>
           <input id="ctl-threshold" type="range" min="0.10" max="0.40" step="0.01" value="0.18">
-          <div class="threshold-readout"><span>weaker</span><span><strong id="threshold-val">0.18</strong></span><span>stronger</span></div>
+          <div class="threshold-readout"><span>more edges (weaker matches)</span><span><strong id="threshold-val">0.18</strong></span><span>fewer edges (stronger matches)</span></div>
         </div>
         <div class="control-group" style="flex:1; min-width:240px;">
           <label class="control-label">Segment filter</label>
@@ -316,6 +344,7 @@
         </div>
         <button class="btn-reset" id="btn-reset">Reset</button>
       </div>
+      <div id="search-results" class="search-results" style="display:none;"></div>
     </div>
 
     <!-- GRAPH -->
@@ -339,7 +368,7 @@
 
     <!-- METHODOLOGY -->
     <div class="methodology">
-      <strong>How the affinity score is computed.</strong> For every pair of orgs we compute three signals: (1) <strong>description similarity</strong> via TF-IDF cosine over the org's description and funding-detail text; (2) <strong>segment overlap</strong>, with a primary-segment match weighted higher than secondary-segment overlap; (3) <strong>named-funder overlap</strong>, parsing funder names out of the funding-detail field. The composite is <code>0.4 × description + 0.35 × segments + 0.25 × funders</code>. Edges below 0.10 are dropped, and each node is capped at ~8 strongest neighbors to prevent hairballs. <strong>What this shows: structural affinity</strong> — orgs that probably share rooms and run in similar circles. <strong>What it doesn't show:</strong> documented partnerships, deal flow, or relationship quality. <a href="https://claude.ai/share/c83f0e05-aafb-44cf-acfe-adfe90f67fb4" target="_blank" rel="noopener">Methodology developed in this conversation</a> by Henry Tolchard.
+      <strong>How affinity is computed.</strong> For every pair of orgs we measure four signals: <strong>description overlap</strong> (TF-IDF cosine over the org's description and funding-detail text), <strong>shared problem statements</strong> (Jaccard over Henry Grunzeweig's curated tags), <strong>shared funders</strong> (Jaccard over named funders extracted from funding detail), and <strong>shared segments</strong> (Jaccard over primary and secondary segments). The composite is <code>0.40 × description + 0.30 × problems + 0.15 × funders + 0.15 × segments</code> — segment overlap is intentionally the smallest signal so that two orgs sharing a segment isn't enough on its own to draw an edge. A thicker, more saturated edge means a higher composite: those two orgs talk about similar things, work on the same problems, and often share funders. A thin, faint edge is a weaker match. Edges below 0.10 are dropped and each node is capped at ~8 strongest neighbors to prevent hairballs. <strong>What this shows:</strong> structural affinity — orgs that are probably working on the same underlying problem, even when they live in different segments. <strong>What it doesn't show:</strong> documented partnerships, deal flow, or relationship quality.
     </div>
 
   </div>
@@ -360,8 +389,44 @@
 const SEGMENT_COLORS = {
   "Research":"#2563eb","Government":"#0891b2","Philanthropy":"#dc2626","Fellowships":"#d97706",
   "Community":"#7c3aed","GovTech":"#16a34a","Advocacy":"#db2777",
-  "Digital Services & Consulting":"#0d9488","Investor":"#9333ea","Training":"#ca8a04"
+  "Digital Services & Consulting":"#0d9488","Investor":"#9333ea",
+  "Capacity Building":"#ca8a04","Ecosystems":"#65a30d"
 };
+
+// ── Semantic-search index (TF-IDF, computed at build time) ─────────────────
+let searchIndex = null;
+let vocabIdx    = new Map();
+let queryScores = null;          // Map<orgId, score> when a search is active
+let queryTopIds = new Set();     // top N matches to highlight
+
+const STOPWORDS = new Set("a an the and or but if then so of in on at to for from with by about into over through across under above between among against during before after up down out off as is are was were be been being have has had do does did doing this that these those there here it its their our your his her my we they them us i you he she who whom what which whose when where why how all any both each few more most other some such no nor not only own same than too very can will just dont don't".split(/\s+/));
+function tokenize(s) {
+  return (s.toLowerCase().match(/[a-z][a-z\-]+/g) || [])
+    .filter(t => t.length > 2 && !STOPWORDS.has(t));
+}
+function rankByQuery(rawQ) {
+  if (!searchIndex || !rawQ) return null;
+  const toks = tokenize(rawQ);
+  const qv = {};
+  for (const t of toks) {
+    const i = vocabIdx.get(t);
+    if (i === undefined) continue;
+    qv[i] = (qv[i] || 0) + searchIndex.idf[i];
+  }
+  let qnorm = 0; for (const k in qv) qnorm += qv[k]*qv[k];
+  qnorm = Math.sqrt(qnorm) || 1;
+  for (const k in qv) qv[k] /= qnorm;
+  const lq = rawQ.toLowerCase().trim();
+  const scored = new Map();
+  for (const o of allNodes) {
+    const ov = searchIndex.vectors[o.id];
+    let s = 0;
+    for (const k in qv) s += qv[k] * (ov[k] || 0);
+    if (o.name.toLowerCase().includes(lq)) s += 0.5;
+    if (s > 0.01) scored.set(o.id, s);
+  }
+  return scored;
+}
 
 const svg = d3.select("#graph");
 const W = () => document.getElementById("graph").clientWidth;
@@ -390,10 +455,18 @@ let simulation;
 
 const nodeById = new Map();
 
-fetch("../data/graph.json").then(r => r.json()).then(g => {
+Promise.all([
+  fetch("../data/graph.json").then(r => r.json()),
+  fetch("../data/search_index.json").then(r => r.json()).catch(() => null),
+]).then(([g, idx]) => {
   allNodes = g.nodes.map(n => ({...n}));
   allEdges = g.edges.map(e => ({...e}));
   for (const n of allNodes) nodeById.set(n.id, n);
+
+  if (idx) {
+    searchIndex = idx;
+    idx.vocab.forEach((t, i) => vocabIdx.set(t, i));
+  }
 
   // Init: all segments on
   const segs = [...new Set(allNodes.map(n => n.primary_segment))].sort((a,b) => {
@@ -507,12 +580,14 @@ function build() {
     .attr("r", d => 4 + Math.sqrt(d.deg||1)*2.2)
     .attr("fill", d => SEGMENT_COLORS[d.primary_segment] || "#6b7280");
 
-  // Labels for top-degree nodes
-  visibleNodes.sort((a,b) => (b.deg||0) - (a.deg||0));
-  const labelSet = new Set(visibleNodes.slice(0, Math.min(20, visibleNodes.length)).map(n => n.id));
-  const labels = labelLayer.selectAll("text").data(visibleNodes.filter(n => labelSet.has(n.id)), d => d.id);
+  // Labels under every visible node (small + faded so they don't dominate; hover/zoom for legibility)
+  const labels = labelLayer.selectAll("text").data(visibleNodes, d => d.id);
   labels.exit().remove();
-  labels.enter().append("text").attr("class","label").text(d => shortName(d.name)).merge(labels);
+  labels.enter().append("text")
+    .attr("class","label")
+    .attr("text-anchor","middle")
+    .merge(labels)
+    .text(d => shortName(d.name));
 
   // Segment labels (one per visible segment, anchored at cluster centroid each tick)
   const visibleSegs = [...new Set(visibleNodes.map(n => n.primary_segment))];
@@ -533,8 +608,9 @@ function build() {
       .attr("x1", d => d.source.x).attr("y1", d => d.source.y)
       .attr("x2", d => d.target.x).attr("y2", d => d.target.y);
     nodeLayer.selectAll("circle").attr("cx", d => d.x).attr("cy", d => d.y);
+    // Labels appear BELOW each node circle
     labelLayer.selectAll("text")
-      .attr("x", d => d.x).attr("y", d => d.y - 4 - Math.sqrt(d.deg||1)*2.2);
+      .attr("x", d => d.x).attr("y", d => d.y + 4 + Math.sqrt(d.deg||1)*2.2 + 8);
 
     // Compute centroid per segment from current node positions
     const segCent = {};
@@ -565,10 +641,28 @@ function updateHover() {
   const nodes = nodeLayer.selectAll("circle");
   const labels = labelLayer.selectAll("text");
 
+  // Search-active state: highlight top matches, dim everything else
+  if (queryTopIds && queryTopIds.size && !hovered) {
+    const adj = new Set(queryTopIds);
+    if (selected) adj.add(selected.id);
+    links.classed("dim", d => {
+      const s = typeof d.source === "object" ? d.source.id : d.source;
+      const t = typeof d.target === "object" ? d.target.id : d.target;
+      return !adj.has(s) && !adj.has(t);
+    }).classed("hi", d => {
+      const s = typeof d.source === "object" ? d.source.id : d.source;
+      const t = typeof d.target === "object" ? d.target.id : d.target;
+      return selected && (s === selected.id || t === selected.id);
+    });
+    nodes.classed("dim", d => !adj.has(d.id)).classed("hi", d => queryTopIds.has(d.id));
+    labels.classed("dim", d => !adj.has(d.id)).classed("hi", d => queryTopIds.has(d.id));
+    return;
+  }
+
   if (!target) {
     links.classed("dim", false).classed("hi", false);
     nodes.classed("dim", false).classed("hi", false);
-    labels.classed("dim", false);
+    labels.classed("dim", false).classed("hi", false);
     return;
   }
   const id = target.id;
@@ -588,7 +682,7 @@ function updateHover() {
     return s === id || t === id;
   });
   nodes.classed("dim", d => !adj.has(d.id)).classed("hi", d => d.id === id);
-  labels.classed("dim", d => !adj.has(d.id));
+  labels.classed("dim", d => !adj.has(d.id)).classed("hi", d => d.id === id);
 }
 
 function renderDetail() {
@@ -676,21 +770,70 @@ document.getElementById("ctl-threshold").addEventListener("input", (e) => {
   build();
 });
 
-// Search highlight
-document.getElementById("ctl-search").addEventListener("input", (e) => {
-  const q = e.target.value.trim().toLowerCase();
-  if (!q) { selected = null; renderDetail(); updateHover(); return; }
-  const match = allNodes.find(n => n.name.toLowerCase().includes(q));
-  if (match && segmentsOn.has(match.primary_segment)) {
-    selected = match;
+// Semantic search — accepts a name OR a natural-language question. Ranks orgs by
+// TF-IDF cosine against the query; highlights the top matches and dims the rest.
+function applySearch(rawQ) {
+  const q = rawQ.trim();
+  const resultsEl = document.getElementById("search-results");
+  if (!q) {
+    queryScores = null;
+    queryTopIds = new Set();
+    resultsEl.style.display = "none";
+    resultsEl.innerHTML = "";
+    selected = null;
     renderDetail();
     updateHover();
-    if (match.x != null) {
-      const t = d3.zoomIdentity.translate(W()/2 - match.x*1.2, H()/2 - match.y*1.2).scale(1.2);
+    return;
+  }
+  const scores = rankByQuery(q) || new Map();
+  queryScores = scores;
+  // Top 10 from the score set, but only among currently visible segments
+  const ranked = [...scores.entries()]
+    .filter(([id]) => {
+      const n = nodeById.get(id);
+      return n && segmentsOn.has(n.primary_segment);
+    })
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 10);
+  queryTopIds = new Set(ranked.map(([id]) => id));
+
+  if (ranked.length === 0) {
+    resultsEl.innerHTML = `<div class="search-results-header">No matches</div><div style="font-size:0.82rem;color:var(--text-muted)">Try a broader phrase, or clear segment filters above.</div>`;
+    resultsEl.style.display = "block";
+  } else {
+    resultsEl.innerHTML = `
+      <div class="search-results-header">Top ${ranked.length} ${ranked.length === 1 ? "match" : "matches"} for "${esc(q)}"</div>
+      <div class="search-chip-row">${ranked.map(([id, s]) => {
+        const n = nodeById.get(id);
+        return `<div class="search-chip" data-id="${id}">${esc(n.name)}<span class="search-chip-score">${s.toFixed(2)}</span></div>`;
+      }).join("")}</div>`;
+    resultsEl.style.display = "block";
+    resultsEl.querySelectorAll(".search-chip").forEach(el => {
+      el.addEventListener("click", () => {
+        const id = +el.dataset.id;
+        const target = nodeById.get(id);
+        if (!target) return;
+        selected = target;
+        renderDetail();
+        updateHover();
+        if (target.x != null) {
+          const t = d3.zoomIdentity.translate(W()/2 - target.x*1.2, H()/2 - target.y*1.2).scale(1.2);
+          svg.transition().duration(450).call(zoom.transform, t);
+        }
+      });
+    });
+    // Auto-focus + center on top match
+    const topId = ranked[0][0];
+    selected = nodeById.get(topId);
+    renderDetail();
+    if (selected && selected.x != null) {
+      const t = d3.zoomIdentity.translate(W()/2 - selected.x*1.0, H()/2 - selected.y*1.0).scale(1.0);
       svg.transition().duration(450).call(zoom.transform, t);
     }
   }
-});
+  updateHover();
+}
+document.getElementById("ctl-search").addEventListener("input", (e) => applySearch(e.target.value));
 
 // Reset
 document.getElementById("btn-reset").addEventListener("click", () => {
@@ -700,6 +843,10 @@ document.getElementById("btn-reset").addEventListener("click", () => {
   segmentsOn = new Set(allNodes.map(n => n.primary_segment));
   document.querySelectorAll(".seg-chip").forEach(el => el.classList.remove("off"));
   document.getElementById("ctl-search").value = "";
+  queryScores = null;
+  queryTopIds = new Set();
+  document.getElementById("search-results").style.display = "none";
+  document.getElementById("search-results").innerHTML = "";
   selected = null;
   svg.transition().duration(300).call(zoom.transform, d3.zoomIdentity);
   build();
