@@ -162,10 +162,11 @@
     #graph .label.hi  { font-weight:800; font-size:11px; fill:#1d4ed8; }
     #graph .label.dim { opacity:0.22; }
     #graph .seg-label {
-      font-family:'Roboto Mono',monospace; font-size:14px; font-weight:700;
-      letter-spacing:0.06em; text-transform:uppercase;
-      pointer-events:none; opacity:0.55;
-      paint-order:stroke fill; stroke:#ffffff; stroke-width:4px; stroke-linejoin:round;
+      font-family:'Roboto Mono',monospace; font-weight:800;
+      letter-spacing:0.05em; text-transform:uppercase;
+      pointer-events:none; opacity:0.88;
+      paint-order:stroke fill; stroke:#ffffff; stroke-width:6px; stroke-linejoin:round;
+      /* font-size is set in JS so it counter-scales with zoom */
     }
 
     .graph-overlay {
@@ -317,8 +318,8 @@
 <div class="chart-nav">
   <span class="chart-nav-label">Views in this tool:</span>
   <a href="../directory/">Directory</a>
-  <a href="../segments/">Segments</a>
   <a href="./" class="active">Affinity Network</a>
+  <a href="../segments/">Segments</a>
   <a href="../methodology/">Methodology</a>
   <a href="../">← Hub</a>
 </div>
@@ -440,7 +441,23 @@ const nodeLayer     = root.append("g").attr("class","nodes");
 const segLabelLayer = root.append("g").attr("class","seg-labels").attr("pointer-events","none");
 const labelLayer    = root.append("g").attr("class","labels");
 
-const zoom = d3.zoom().scaleExtent([0.2, 5]).on("zoom", (e) => root.attr("transform", e.transform));
+// Track current zoom scale so segment labels can counter-scale (stay readable
+// at any zoom level — bigger when zoomed out, smaller when zoomed in).
+let currentZoom = 1;
+function updateSegLabelSize() {
+  // Target visual size in screen pixels. Because labels sit inside the zoomed
+  // <g>, divide by current scale so the rendered size is roughly constant.
+  // Floor at 22px (in graph coords) so they're always prominent.
+  const target = Math.max(22, 28 / currentZoom);
+  segLabelLayer.selectAll("text").attr("font-size", target);
+  // Halo also needs to scale so it doesn't disappear or dominate
+  segLabelLayer.selectAll("text").attr("stroke-width", Math.max(5, 6 / currentZoom));
+}
+const zoom = d3.zoom().scaleExtent([0.2, 5]).on("zoom", (e) => {
+  root.attr("transform", e.transform);
+  currentZoom = e.transform.k;
+  updateSegLabelSize();
+});
 svg.call(zoom);
 
 document.getElementById("zoom-in").onclick  = () => svg.transition().duration(200).call(zoom.scaleBy, 1.4);
@@ -606,6 +623,7 @@ function build() {
     .merge(segLabels)
     .text(d => d)
     .attr("fill", d => SEGMENT_COLORS[d] || "#6b7280");
+  updateSegLabelSize();
 
   svg.on("click", () => { selected = null; renderDetail(); updateHover(); });
 
