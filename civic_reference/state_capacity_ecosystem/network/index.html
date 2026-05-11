@@ -154,18 +154,18 @@
     #graph .node.dim { opacity:0.15; }
     #graph .node.hi  { stroke:#111827; stroke-width:2.5; }
     #graph .label {
-      font-family:'Inter',sans-serif; font-size:8px; font-weight:500;
-      fill:#374151; pointer-events:none;
-      paint-order:stroke; stroke:#ffffff; stroke-width:2.5px;
-      opacity:0.78;
+      font-family:'Inter',sans-serif; font-size:9.5px; font-weight:600;
+      fill:#111827; pointer-events:none;
+      paint-order:stroke fill; stroke:#ffffff; stroke-width:3.5px; stroke-linejoin:round;
+      opacity:1;
     }
-    #graph .label.hi  { font-weight:700; font-size:10px; fill:#111827; opacity:1; }
-    #graph .label.dim { opacity:0.18; }
+    #graph .label.hi  { font-weight:800; font-size:11px; fill:#1d4ed8; }
+    #graph .label.dim { opacity:0.22; }
     #graph .seg-label {
-      font-family:'Roboto Mono',monospace; font-size:15px; font-weight:700;
-      letter-spacing:0.04em; text-transform:uppercase;
-      pointer-events:none; opacity:0.92;
-      paint-order:stroke fill; stroke:#ffffff; stroke-width:4.5px; stroke-linejoin:round;
+      font-family:'Roboto Mono',monospace; font-size:14px; font-weight:700;
+      letter-spacing:0.06em; text-transform:uppercase;
+      pointer-events:none; opacity:0.55;
+      paint-order:stroke fill; stroke:#ffffff; stroke-width:4px; stroke-linejoin:round;
     }
 
     .graph-overlay {
@@ -435,8 +435,10 @@ const H = () => document.getElementById("graph").clientHeight;
 const root = svg.append("g");
 const linkLayer     = root.append("g").attr("class","links");
 const nodeLayer     = root.append("g").attr("class","nodes");
-const labelLayer    = root.append("g").attr("class","labels");
+// Segment labels sit BELOW org labels so cluster names recede when individual
+// org names matter. Org labels paint last → they stay readable in dense areas.
 const segLabelLayer = root.append("g").attr("class","seg-labels").attr("pointer-events","none");
+const labelLayer    = root.append("g").attr("class","labels");
 
 const zoom = d3.zoom().scaleExtent([0.2, 5]).on("zoom", (e) => root.attr("transform", e.transform));
 svg.call(zoom);
@@ -580,14 +582,18 @@ function build() {
     .attr("r", d => 4 + Math.sqrt(d.deg||1)*2.2)
     .attr("fill", d => SEGMENT_COLORS[d.primary_segment] || "#6b7280");
 
-  // Labels under every visible node (small + faded so they don't dominate; hover/zoom for legibility)
-  const labels = labelLayer.selectAll("text").data(visibleNodes, d => d.id);
+  // Labels under every visible node. DOM order = paint order in SVG, so we sort
+  // by ascending degree: low-degree labels paint first, high-degree labels paint last
+  // (on top) and stay readable when labels overlap in dense clusters.
+  const sortedForLabels = [...visibleNodes].sort((a, b) => (a.deg||0) - (b.deg||0));
+  const labels = labelLayer.selectAll("text").data(sortedForLabels, d => d.id);
   labels.exit().remove();
   labels.enter().append("text")
     .attr("class","label")
     .attr("text-anchor","middle")
     .merge(labels)
     .text(d => shortName(d.name));
+  labelLayer.selectAll("text").sort((a, b) => (a.deg||0) - (b.deg||0));
 
   // Segment labels (one per visible segment, anchored at cluster centroid each tick)
   const visibleSegs = [...new Set(visibleNodes.map(n => n.primary_segment))];
