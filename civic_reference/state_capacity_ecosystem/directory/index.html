@@ -289,7 +289,11 @@
           <div id="ms-focus"></div>
         </div>
         <div class="filter-group">
-          <label class="filter-label">Problem statement</label>
+          <label class="filter-label">Problem area</label>
+          <div id="ms-area"></div>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Problem topic</label>
           <div id="ms-problem"></div>
         </div>
         <button class="btn-reset" id="btn-reset">Reset</button>
@@ -412,7 +416,8 @@ class MS {
 const onChange = () => { expandedId = null; applyFilters(); };
 const msSeg     = new MS("ms-seg", "Segments", onChange);
 const msFocus   = new MS("ms-focus", "Levels",   onChange);
-const msProblem = new MS("ms-problem", "Problems", onChange);
+const msArea    = new MS("ms-area", "Areas",    onChange);
+const msProblem = new MS("ms-problem", "Topics", onChange);
 
 // ── Semantic search state ───────────────────────────────────────────────
 // Populated from search_index.json. Used to rank orgs against a free-text query.
@@ -470,25 +475,28 @@ Promise.all([
 });
 
 function populateFilters() {
-  const segs = new Set(), focuses = new Set(), problems = new Set();
+  const segs = new Set(), focuses = new Set(), problems = new Set(), areas = new Set();
   for (const o of allOrgs) {
     if (o.primary_segment) segs.add(o.primary_segment);
     (o.focus || []).forEach(f => focuses.add(f));
     (o.problem_statements || []).forEach(p => problems.add(p));
+    (o.problem_areas || []).forEach(a => areas.add(a));
   }
   msSeg.setOptions([...segs].sort());
   msFocus.setOptions([...focuses].sort());
+  msArea.setOptions([...areas].sort());
   msProblem.setOptions([...problems].sort());
 }
 
 function applyFilters() {
   const rawQ = document.getElementById("f-search").value.trim();
-  const segF = msSeg.get(), focF = msFocus.get(), probF = msProblem.get();
+  const segF = msSeg.get(), focF = msFocus.get(), areaF = msArea.get(), probF = msProblem.get();
 
   // Pre-filter by faceted filters
   let pool = allOrgs.filter(o => {
     if (segF.size && !segF.has(o.primary_segment)) return false;
     if (focF.size && !(o.focus || []).some(f => focF.has(f))) return false;
+    if (areaF.size && !(o.problem_areas || []).some(a => areaF.has(a))) return false;
     if (probF.size && !(o.problem_statements || []).some(p => probF.has(p))) return false;
     return true;
   });
@@ -503,7 +511,7 @@ function applyFilters() {
       // Fall back to plain substring across description/funder text for very short queries
       const lq = rawQ.toLowerCase();
       pool = pool.filter(o => {
-        const hay = (o.name + " " + o.description + " " + (o.named_funders||[]).join(" ") + " " + o.funding_detail + " " + (o.problem_statements||[]).join(" ")).toLowerCase();
+        const hay = (o.name + " " + o.description + " " + (o.named_funders||[]).join(" ") + " " + o.funding_detail + " " + (o.problem_statements||[]).join(" ") + " " + (o.problem_areas||[]).join(" ")).toLowerCase();
         return hay.includes(lq);
       });
     }
@@ -588,6 +596,10 @@ function renderDetailRow(o) {
   const problemHtml = problems.length
     ? `<div class="problem-tag-list">${problems.map(p => `<span class="problem-tag">${esc(p)}</span>`).join("")}</div>`
     : `<span class="detail-field-value" style="color:var(--text-faint)">—</span>`;
+  const areas = o.problem_areas || [];
+  const areaHtml = areas.length
+    ? `<div class="problem-tag-list">${areas.map(a => `<span class="problem-tag" style="background:#fff4ed;color:#c2410c;border-color:#fed7aa">${esc(a)}</span>`).join("")}</div>`
+    : `<span class="detail-field-value" style="color:var(--text-faint)">—</span>`;
 
   return `<tr class="detail-row">
     <td colspan="7">
@@ -597,7 +609,11 @@ function renderDetailRow(o) {
             <h4>What they do</h4>
             <p class="detail-narrative">${esc(o.description || "—")}</p>
             <div class="detail-field" style="margin-top:14px">
-              <span class="detail-field-label">Problem statements</span>
+              <span class="detail-field-label">Problem areas</span>
+              ${areaHtml}
+            </div>
+            <div class="detail-field" style="margin-top:10px">
+              <span class="detail-field-label">Problem topics</span>
               ${problemHtml}
             </div>
           </div>
@@ -688,7 +704,7 @@ window.goPage = goPage;
 // Wiring
 document.getElementById("f-search").addEventListener("input", () => { expandedId = null; applyFilters(); });
 document.getElementById("btn-reset").addEventListener("click", () => {
-  [msSeg, msFocus, msProblem].forEach(m => m.reset());
+  [msSeg, msFocus, msArea, msProblem].forEach(m => m.reset());
   document.getElementById("f-search").value = "";
   expandedId = null;
   applyFilters();
