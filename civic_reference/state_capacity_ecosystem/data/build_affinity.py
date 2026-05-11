@@ -145,14 +145,22 @@ for r in rows:
         "funding_detail": normalize(r["Funding Detail"]),
         "named_funders": sorted(funders),
         "website": normalize(r["Website"]),
-        "problem_statements": parse_problem_statements(r.get("Problem Statements", "")),
-        # Token bag used for TF-IDF — folds in problem statements + segment names
+        # Schema May 2026: the old "Problem Statements" column was split into
+        # "Problem Area" (7 coarse buckets) and "Problem Topic" (36 fine tags).
+        # We map Topic → problem_statements (same granularity as before, so the
+        # existing UI + Jaccard signal carry over) and capture Area separately.
+        "problem_statements": parse_problem_statements(
+            r.get("Problem Topic") or r.get("Problem Statements", "")
+        ),
+        "problem_areas": parse_problem_statements(r.get("Problem Area", "")),
+        # Token bag used for TF-IDF — folds in problem topics + areas + segments
         # so a free-text query like "procurement" can hit orgs whose description
-        # never says the word but whose problem-statement tag does.
+        # never says the word but whose tags do.
         "_tokens": tokens(
             desc + " "
             + r.get("Funding Detail", "") + " "
-            + r.get("Problem Statements", "").replace(",", " ") + " "
+            + (r.get("Problem Topic") or r.get("Problem Statements", "")).replace(",", " ") + " "
+            + r.get("Problem Area", "").replace(",", " ") + " "
             + r.get("Primary Segment", "") + " "
             + r.get("Secondary Segments", "").replace(",", " ")
         ),
@@ -286,6 +294,7 @@ nodes_out = [{
     "named_funders": o["named_funders"],
     "website": o["website"],
     "problem_statements": o["problem_statements"],
+    "problem_areas": o["problem_areas"],
     "degree": final_deg.get(o["id"], 0),
 } for o in orgs]
 
