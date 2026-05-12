@@ -12,7 +12,7 @@ connections instead of obvious same-segment pairings:
 
 The segment signal is intentionally de-weighted (and the primary-segment
 boost dropped) so the network surfaces cross-segment affinities. Problem
-statements — Henry Grunzeweig's tags, present on every org — replace the
+statements — Henry Grunzweig's tags, present on every org — replace the
 old same-segment dominance with shared-problem dominance.
 
 The script also writes a separate search_index.json containing a term

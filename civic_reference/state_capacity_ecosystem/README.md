@@ -1,7 +1,7 @@
 # State Capacity Ecosystem — Project Handoff & Reference
 
 **Last updated:** 2026-05-11
-**Maintainer:** Tal Roded (visualization layer) · Henry Grunzeweig (curates the underlying database)
+**Maintainer:** Tal Roded (visualization layer) · Henry Grunzweig (curates the underlying database)
 **Live:** https://data.nycuriosity.com/civic_reference/state_capacity_ecosystem/
 
 This file is the single source of truth for the State Capacity Ecosystem tool. If you are a future Claude session (or future-Tal): **read this file first** before making changes. The companion local-only orientation file at `nycur/state_capacity_ecosystem_claude_ref.md` is a shorter pointer that auto-loads at session start.
@@ -10,7 +10,7 @@ This file is the single source of truth for the State Capacity Ecosystem tool. I
 
 ## What this tool is
 
-A four-page visualization layer over Henry Grunzeweig's **State Capacity Ecosystem Database** (an external Airtable curated by Henry, not Tal). NYCuriosity does not curate the underlying data — we only build views on top of Henry's CSV export.
+A four-page visualization layer over Henry Grunzweig's **State Capacity Ecosystem Database** (an external Airtable curated by Henry, not Tal). NYCuriosity does not curate the underlying data — we only build views on top of Henry's CSV export.
 
 The four public pages:
 
@@ -278,7 +278,7 @@ These were arrived at via user feedback over multiple sessions. Don't reintroduc
 2. **No "Funding Model" filter on the directory.** Removed because the source data has inconsistencies (`Government,Philanthropy` vs `Philanthropy,Government` are treated as different categories) and the filter was low-value.
 3. **No "Named Funder" filter on the directory.** Removed because it was cluttered with ~50 options. Funder text is still matched by the search box.
 4. **Em dashes are banned** in NYCuriosity prose. So is the "not just X / it's Y not X" framing. See `nycur/.claude/projects/.../memory/feedback_writing_style_rules.md`.
-5. **"Henry Grunzeweig"** is the curator's name. Earlier sessions used "Henry Tolchard" — that was wrong, corrected May 2026.
+5. **"Henry Grunzweig"** is the curator's name (no 'e' between 'z' and 'w'). Earlier sessions used "Henry Tolchard" and "Henry Grunzeweig" — both were wrong. Corrected to "Grunzweig" May 2026. Watch for this when refreshing data or writing prose.
 6. **No links to Claude conversations** anywhere on the public site. (Previously the methodology page linked to a Claude convo for weight rationale — removed.)
 7. **The methodology page has no "Refreshing the data" section.** That's internal workflow, doesn't belong in public-facing docs.
 8. **Pill-nav order:** Directory · Affinity Network · Segments · Methodology · ← Hub. Affinity Network sits before Segments. **Exception:** the Affinity Network page itself omits the Methodology pill, and also has no inline methodology blurb (removed by user request May 2026). The network view is deliberately kept focused on exploration; methodology is reachable from the Hub or via the pill nav on Directory/Segments.
