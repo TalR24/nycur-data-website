@@ -190,7 +190,7 @@ Total cost is one ~190 KB JSON fetch + O(query_terms × num_orgs) per query. No 
 
 ### Affinity Network (`network/index.html`)
 - D3 force-directed graph; nodes colored by primary segment; edge width scales with composite score
-- **Pill nav has no Methodology link** (removed May 2026) — keeps users in the visual exploration flow. The inline methodology blurb at the bottom links out to the full methodology page.
+- **Pill nav has no Methodology link AND no inline methodology blurb** (both removed May 2026 per user request) — the network view stays focused on exploration. Methodology is reachable from the Hub or via the pill nav on Directory/Segments.
 - **Controls row** (in order): Search by name or question · Show edges at or above (threshold slider) · Segment filter chips · Reset
 - **Search behavior:**
   - Empty: graph in normal state
@@ -281,11 +281,11 @@ These were arrived at via user feedback over multiple sessions. Don't reintroduc
 5. **"Henry Grunzeweig"** is the curator's name. Earlier sessions used "Henry Tolchard" — that was wrong, corrected May 2026.
 6. **No links to Claude conversations** anywhere on the public site. (Previously the methodology page linked to a Claude convo for weight rationale — removed.)
 7. **The methodology page has no "Refreshing the data" section.** That's internal workflow, doesn't belong in public-facing docs.
-8. **Pill-nav order:** Directory · Affinity Network · Segments · Methodology · ← Hub. Affinity Network sits before Segments. **Exception:** the Affinity Network page itself omits the Methodology pill — the inline methodology blurb at the bottom of that page links to the full methodology page. Keeps the network view focused on exploration.
+8. **Pill-nav order:** Directory · Affinity Network · Segments · Methodology · ← Hub. Affinity Network sits before Segments. **Exception:** the Affinity Network page itself omits the Methodology pill, and also has no inline methodology blurb (removed by user request May 2026). The network view is deliberately kept focused on exploration; methodology is reachable from the Hub or via the pill nav on Directory/Segments.
 9. **Org labels appear below every visible bubble** in the network view (not just top-N by degree). 9.5px / weight 600 / white halo. DOM-sorted by ascending degree so high-degree labels paint on top of overlaps.
 10. **No segment labels rendered inside the map.** Earlier versions drew uppercase segment names at the cluster centroid (counter-scaled with zoom). Removed May 2026 — they competed with org names for attention and segment identity is already conveyed by node color + the segment filter chips above the graph.
 11. **Multi-select dropdowns close siblings on open.** `MS._registry` static array tracks all instances; `_show()` closes any other open dropdown first.
-12. **Methodology page stays in sync with the affinity network.** Any change to the scoring formula, weights, token bag, edge thresholding, degree cap, or graph rendering MUST be reflected on `methodology/index.html` in the same commit. Touch points: the formula block, the per-signal `<h3>` paragraphs, the score-range table, the "what gets dropped" thresholds, and the published-dataset stats line. The network page's inline blurb (bottom of `network/index.html`) is the abridged version of the same content and should match.
+12. **Methodology page stays in sync with the affinity network.** Any change to the scoring formula, weights, token bag, edge thresholding, degree cap, or graph rendering MUST be reflected on `methodology/index.html` in the same commit. Touch points: the formula block, the per-signal `<h3>` paragraphs, the score-range table, the "what gets dropped" thresholds, and the published-dataset stats line. (Note: the network page no longer has its own inline methodology blurb, so the methodology page is the single source of truth for user-facing scoring documentation.)
 13. **Directory table is the 6 user-asked columns + expand chevron:** Organization · Segment · Secondary Segments · Description (truncated) · Problem Area · Problem Statement. All other CSV fields are in the row-click detail panel. Do not add columns without explicit user request — the layout was deliberately narrowed May 2026.
 
 ---
