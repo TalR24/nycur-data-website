@@ -305,7 +305,7 @@
       <p><strong>Segment overlap is intentionally the smallest signal.</strong> An earlier version of the score gave segments 35% weight plus a primary-segment match boost — but that made the network show mostly the obvious thing (Research orgs cluster with Research orgs). The current weighting surfaces cross-segment surprises: a Research shop and a GovTech vendor that turn out to be working on the same problem with overlapping funders are now plausibly connected even though they live in different segment clusters.</p>
 
       <h3>Description similarity (40%)</h3>
-      <p>The strongest signal, because the description text is where org-specific language lives: phrases like "permitting reform," "legislative capacity," "procurement modernization," or "AI policy." We compute a TF-IDF representation of each org's description, funding-detail text, segment names, and problem-statement tags combined, then take the cosine similarity between every pair of vectors.</p>
+      <p>The strongest signal, because the description text is where org-specific language lives: phrases like "permitting reform," "legislative capacity," "procurement modernization," or "AI policy." We compute a TF-IDF representation of each org's description, funding-detail text, segment names, problem-topic tags, and problem-area tags combined, then take the cosine similarity between every pair of vectors. Folding problem areas into this bag lets a free-text query like "procurement" match orgs whose description never uses the word but whose tags do.</p>
       <p><strong>TF-IDF</strong> (term frequency–inverse document frequency) downweights words that appear everywhere ("government," "technology," "policy") and upweights words that are distinctive. Two orgs that both talk about "procurement" will score higher than two orgs that both talk about "policy." Common words and short tokens are dropped before vectorizing.</p>
 
       <h3>Shared problem statements (30%)</h3>
@@ -336,7 +336,7 @@
           <tr><th>Signal</th><th>Weight</th><th>Range</th><th>Notes</th></tr>
         </thead>
         <tbody>
-          <tr><td>TF-IDF cosine (descriptions, problems, segments, funding text)</td><td class="weight">0.40</td><td>0 to ~0.6 in practice</td><td>Rarely exceeds 0.5 because descriptions are short.</td></tr>
+          <tr><td>TF-IDF cosine (descriptions, problem topics + areas, segments, funding text)</td><td class="weight">0.40</td><td>0 to ~0.6 in practice</td><td>Rarely exceeds 0.5 because descriptions are short.</td></tr>
           <tr><td>Problem-statement Jaccard</td><td class="weight">0.30</td><td>0 to 1.0</td><td>Highest-confidence signal — curator-assigned tags.</td></tr>
           <tr><td>Named-funder Jaccard</td><td class="weight">0.15</td><td>0 to 1.0</td><td>Falls back to 0.15 if funding models match and no funders are detected.</td></tr>
           <tr><td>Segment Jaccard (no primary boost)</td><td class="weight">0.15</td><td>0 to 1.0</td><td>Intentionally a tiebreaker, not a dominant signal.</td></tr>

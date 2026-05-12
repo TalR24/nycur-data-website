@@ -169,7 +169,27 @@
       margin-right:4px; margin-bottom:4px;
       line-height:1.4;
     }
+    .area-tag {
+      display:inline-block;
+      font-family:'Inter',sans-serif;
+      font-size:0.72rem; font-weight:500;
+      padding:2px 8px; border-radius:12px;
+      background:#fff4ed; color:#c2410c; border:1px solid #fed7aa;
+      margin-right:4px; margin-bottom:4px;
+      line-height:1.4;
+    }
     .problem-tag-list { display:flex; flex-wrap:wrap; gap:0; margin-top:2px; }
+    td.desc-cell { max-width:320px; }
+    td.desc-cell .desc-text {
+      display:-webkit-box;
+      -webkit-line-clamp:2;
+      -webkit-box-orient:vertical;
+      overflow:hidden;
+      font-size:0.82rem;
+      line-height:1.45;
+      color:var(--text-muted);
+    }
+    td.tag-cell { max-width:240px; }
     .funder-mini {
       font-family:'Roboto Mono',monospace;
       font-size:0.7rem; color:var(--text-muted);
@@ -314,10 +334,10 @@
             <tr>
               <th data-col="name">Organization <i class="sort-icon">↕</i></th>
               <th data-col="primary_segment">Segment <i class="sort-icon">↕</i></th>
-              <th>Other Segments</th>
-              <th>Focus</th>
-              <th data-col="funding_model">Funding <i class="sort-icon">↕</i></th>
-              <th>Named Funders</th>
+              <th>Secondary Segments</th>
+              <th>Description</th>
+              <th>Problem Area</th>
+              <th>Problem Statement</th>
               <th style="width:28px"></th>
             </tr>
           </thead>
@@ -557,19 +577,32 @@ function renderRow(o) {
   const otherSegs = (o.segments || []).filter(s => s !== o.primary_segment);
   const otherSegHtml = otherSegs.slice(0,3).map(s => `<span class="seg-tag secondary">${esc(s)}</span>`).join(" ") +
     (otherSegs.length > 3 ? ` <span class="funder-mini">+${otherSegs.length - 3}</span>` : "");
-  const focHtml = (o.focus || []).map(f => `<span class="focus-tag">${esc(f)}</span>`).join("");
-  const fnd = (o.named_funders || []).slice(0, 3);
-  const fndHtml = fnd.length
-    ? `<span class="funder-mini">${fnd.map(esc).join(", ")}${(o.named_funders||[]).length > 3 ? ", +" + ((o.named_funders||[]).length - 3) : ""}</span>`
+
+  const rawDesc = o.description || "";
+  const truncDesc = rawDesc.length > 180 ? rawDesc.slice(0, 180).trimEnd() + "…" : rawDesc;
+  const descHtml = rawDesc
+    ? `<div class="desc-text">${esc(truncDesc)}</div>`
+    : `<span class="funder-mini" style="color:var(--text-faint)">—</span>`;
+
+  const areas = o.problem_areas || [];
+  const areaHtml = areas.length
+    ? areas.slice(0, 3).map(a => `<span class="area-tag">${esc(a)}</span>`).join("") +
+      (areas.length > 3 ? ` <span class="funder-mini">+${areas.length - 3}</span>` : "")
+    : `<span class="funder-mini" style="color:var(--text-faint)">—</span>`;
+
+  const problems = o.problem_statements || [];
+  const problemHtml = problems.length
+    ? problems.slice(0, 3).map(p => `<span class="problem-tag">${esc(p)}</span>`).join("") +
+      (problems.length > 3 ? ` <span class="funder-mini">+${problems.length - 3}</span>` : "")
     : `<span class="funder-mini" style="color:var(--text-faint)">—</span>`;
 
   return `<tr class="data-row${expanded ? " expanded" : ""}" data-id="${o.id}">
     <td class="name-cell"><div class="org-name">${esc(o.name)}</div></td>
     <td><span class="seg-tag" style="background:${segColor}">${esc(o.primary_segment)}</span></td>
     <td>${otherSegHtml || '<span class="funder-mini" style="color:var(--text-faint)">—</span>'}</td>
-    <td>${focHtml || '<span class="funder-mini" style="color:var(--text-faint)">—</span>'}</td>
-    <td>${esc(o.funding_model || "—")}</td>
-    <td>${fndHtml}</td>
+    <td class="desc-cell">${descHtml}</td>
+    <td class="tag-cell">${areaHtml}</td>
+    <td class="tag-cell">${problemHtml}</td>
     <td style="text-align:center"><span class="expand-icon">›</span></td>
   </tr>
   ${expanded ? renderDetailRow(o) : ""}`;

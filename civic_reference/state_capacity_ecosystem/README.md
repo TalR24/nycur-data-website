@@ -16,13 +16,14 @@ The four public pages:
 
 | Page | URL | Purpose |
 |---|---|---|
-| **Hub** | `/civic_reference/state_capacity_ecosystem/` | Explainer, 6 stat pills, 3 view cards (Directory · Affinity Network · Segments), 5 info panels |
+| **Hub** | `/civic_reference/state_capacity_ecosystem/` | Explainer, 4 stat pills, 3 view cards (Directory · Affinity Network · Segments), 3 info panels |
 | **Directory** | `…/directory/` | Filterable, searchable table of every org. Semantic search via TF-IDF |
 | **Segments** | `…/segments/` | Bar chart of segment counts; click a bar to expand a table of orgs in that segment |
 | **Affinity Network** | `…/network/` | D3 force-directed graph + natural-language semantic search |
 | **Methodology** | `…/methodology/` | Long-form explainer: taxonomy, inclusion criteria, scoring formula |
 
-**Pill-nav order across all subpages:** Directory · Affinity Network · Segments · Methodology · ← Hub
+**Pill-nav order on Directory / Segments / Methodology:** Directory · Affinity Network · Segments · Methodology · ← Hub
+**Pill-nav order on the Affinity Network page** (no Methodology pill — deliberate, see decision below): Directory · Affinity Network · Segments · ← Hub
 
 ---
 
@@ -160,17 +161,16 @@ Total cost is one ~190 KB JSON fetch + O(query_terms × num_orgs) per query. No 
 
 ### Hub (`index.html`)
 - Hero with explainer paragraph
-- **6 stat pills:** Organizations · Primary segments · Problem topics · Focus levels · Affinity edges · Data last updated
-- **3 view cards** (Directory · Segments · Network) — `class="section-label"` says "Three ways to explore"
-- **5 info panels:**
-  - About the data
-  - Submit an organization (Henry's Google Form)
+- **4 stat pills:** Organizations · Primary segments · Problem topics · Data last updated
+- **3 view cards in order:** Directory · Affinity Network · Segments — `class="section-label"` says "Three ways to explore"
+- **3 info panels:**
+  - Submit an organization (full-width, single column — Henry's Google Form)
   - What gets included (inclusion criteria)
-  - Segment taxonomy (11 segments with color dots)
   - Problem statements (areas + topics)
-- Loads `data/graph.json` to dynamically fill the pills (org count, edge count, segment count, problem-topic count, last_updated date)
+- Loads `data/graph.json` to dynamically fill the pills (org count, segment count, problem-topic count, last_updated date)
 
 ### Directory (`directory/index.html`)
+- **Visible table columns:** Organization · Segment · Secondary Segments · Description (truncated to 180 chars) · Problem Area (orange chips) · Problem Topic (blue chips). Every other field (focus, funding model, funding detail, named funders, website) lives in the row-click detail panel.
 - Filters: search box · Primary segment · Focus level · Problem area · Problem topic
 - **No Funding Model filter** (removed May 2026 per user request)
 - **No Named Funder filter** (removed May 2026; substring search still matches funder text)
@@ -190,13 +190,13 @@ Total cost is one ~190 KB JSON fetch + O(query_terms × num_orgs) per query. No 
 
 ### Affinity Network (`network/index.html`)
 - D3 force-directed graph; nodes colored by primary segment; edge width scales with composite score
+- **Pill nav has no Methodology link** (removed May 2026) — keeps users in the visual exploration flow. The inline methodology blurb at the bottom links out to the full methodology page.
 - **Controls row** (in order): Search by name or question · Show edges at or above (threshold slider) · Segment filter chips · Reset
 - **Search behavior:**
   - Empty: graph in normal state
   - Non-empty: computes relevance scores; top-10 matches get `.hi` (highlighted), everything else gets `.dim`; results panel below the controls lists top matches as clickable chips with scores; selecting a chip pans and centers on that org
 - **Threshold slider** (0.10–0.40, default 0.18): changes which edges are visible. "More edges (weaker matches)" ↔ "Fewer edges (stronger matches)"
-- **Org labels:** every visible node has a small label below the circle (9.5px, weight 600, white halo). DOM-ordered by ascending degree so high-degree orgs paint on top.
-- **Segment labels:** one per visible segment at the cluster centroid (uppercase Roboto Mono, bold, in segment color, white halo). **Counter-scaled with zoom** — base 28px in graph coords, divided by current zoom scale, floored at 22px. Sit BELOW org labels in DOM so org names stay readable.
+- **Org labels only:** every visible node has a small label below the circle (9.5px, weight 600, white halo). DOM-ordered by ascending degree so high-degree orgs paint on top. **No segment labels in the map** (removed May 2026 — they cluttered the view; segment identity is conveyed by node color + filter chips).
 - Side panel: clicking a node shows full description, Problem statement chips, funding info, closest peers
 - Supports `?id=N` deep link from directory
 
@@ -281,10 +281,12 @@ These were arrived at via user feedback over multiple sessions. Don't reintroduc
 5. **"Henry Grunzeweig"** is the curator's name. Earlier sessions used "Henry Tolchard" — that was wrong, corrected May 2026.
 6. **No links to Claude conversations** anywhere on the public site. (Previously the methodology page linked to a Claude convo for weight rationale — removed.)
 7. **The methodology page has no "Refreshing the data" section.** That's internal workflow, doesn't belong in public-facing docs.
-8. **Pill-nav order:** Directory · Affinity Network · Segments · Methodology · ← Hub. Affinity Network sits before Segments.
+8. **Pill-nav order:** Directory · Affinity Network · Segments · Methodology · ← Hub. Affinity Network sits before Segments. **Exception:** the Affinity Network page itself omits the Methodology pill — the inline methodology blurb at the bottom of that page links to the full methodology page. Keeps the network view focused on exploration.
 9. **Org labels appear below every visible bubble** in the network view (not just top-N by degree). 9.5px / weight 600 / white halo. DOM-sorted by ascending degree so high-degree labels paint on top of overlaps.
-10. **Segment labels counter-scale with zoom** so they stay visually prominent at low zoom and don't dominate at high zoom.
+10. **No segment labels rendered inside the map.** Earlier versions drew uppercase segment names at the cluster centroid (counter-scaled with zoom). Removed May 2026 — they competed with org names for attention and segment identity is already conveyed by node color + the segment filter chips above the graph.
 11. **Multi-select dropdowns close siblings on open.** `MS._registry` static array tracks all instances; `_show()` closes any other open dropdown first.
+12. **Methodology page stays in sync with the affinity network.** Any change to the scoring formula, weights, token bag, edge thresholding, degree cap, or graph rendering MUST be reflected on `methodology/index.html` in the same commit. Touch points: the formula block, the per-signal `<h3>` paragraphs, the score-range table, the "what gets dropped" thresholds, and the published-dataset stats line. The network page's inline blurb (bottom of `network/index.html`) is the abridged version of the same content and should match.
+13. **Directory table is the 6 user-asked columns + expand chevron:** Organization · Segment · Secondary Segments · Description (truncated) · Problem Area · Problem Statement. All other CSV fields are in the row-click detail panel. Do not add columns without explicit user request — the layout was deliberately narrowed May 2026.
 
 ---
 
@@ -339,6 +341,8 @@ Working sessions on this tool tend to involve many file reads and edits across 5
 
 | Date | Commit | Summary |
 |---|---|---|
+| 2026-05-12 | _pending_ | Hub: streamline pills, reorder cards, drop About + Taxonomy panels |
+| 2026-05-12 | _pending_ | Directory: rework columns to org/segment/secondary/description/area/topic (others → row detail). Network: remove in-map segment labels + Methodology pill. Methodology + network blurb: sync TF-IDF token bag wording. Segments: harden fetch (timeout, no-cache, visible errors). README: bump decisions list to include methodology-sync rule. |
 | 2026-05-11 | `3323f54` | Directory: add Problem Area filter, surface areas in detail panel |
 | 2026-05-11 | `a93b155` | Refresh with 2026-05-11 dataset; schema split into Problem Area + Problem Topic |
 | 2026-05-11 | `44149f6` | Drop Refresh section from methodology; reorder pill nav; counter-scale segment labels |
