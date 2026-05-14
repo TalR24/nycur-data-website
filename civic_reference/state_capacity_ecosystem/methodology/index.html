@@ -243,8 +243,8 @@
         <li><strong>Funding Model</strong> — Philanthropy, Government, Volunteer, Private, VC-backed, etc.</li>
         <li><strong>Funding Detail</strong> — free-text description of specific funders.</li>
         <li><strong>Website</strong> — the org's homepage.</li>
-        <li><strong>Problem Area</strong> — one or more of 7 broad buckets: Service Delivery, Procurement &amp; Operations, Technology &amp; Data, Talent &amp; Hiring, Test &amp; Learn, Participatory Democracy, or Verticals.</li>
-        <li><strong>Problem Topic</strong> — one or more tags from a curated list of 36 specific issues nested under the Problem Areas (Procurement Reform, AI in Government, Service Design, Talent Pipeline, Housing &amp; Land Use, etc.).</li>
+        <li><strong>Problem Area</strong> — one or more of 8 broad buckets: Service Delivery, Procurement &amp; Operations, Technology &amp; Data, Talent &amp; Hiring, Test &amp; Learn, Participatory Democracy, Capacity, or Verticals.</li>
+        <li><strong>Problem Topic</strong> — one or more tags from a curated list of 37 specific issues nested under the Problem Areas (Procurement Reform, AI in Government, Service Design, Talent Pipeline, Housing &amp; Land Use, etc.).</li>
       </ul>
       <p>This page is an alternate visualization built on top of that source. Anyone can <a href="https://forms.gle/GSNh2ZqUfFG4EAzF6" target="_blank" rel="noopener">submit an organization for consideration</a>; submissions are reviewed before being added to the database.</p>
 
@@ -252,7 +252,7 @@
       <p>An org is added when it (a) actively works on the effectiveness, capacity, or legitimacy of American government, (b) is currently operating, and (c) has a clearly identifiable mission. The bar is wider than "civic tech" — it covers research shops, advocacy groups, philanthropies, fellowships, GovTech vendors, investors, ecosystem-builders, capacity-building organizations, community groups, and government bodies that themselves do the work of building state capacity. The bar excludes defunct organizations, individual consultancies without a public mission, and orgs whose work is not centered on government effectiveness even if government is one customer among many. Edge calls are made by the curator.</p>
 
       <h2>Problem statements</h2>
-      <p>Every org carries one or more <strong>problem topic</strong> tags identifying the substantive issues it works on — drawn from a curated list of 36 grouped under 7 broader <strong>problem areas</strong>. Topics cover both <em>operational</em> challenges (Procurement Reform, Legacy Systems, Hiring Architecture, Operational Excellence, Service Design, Data Integration) and <em>policy</em> verticals (Housing &amp; Land Use, Healthcare Access, Broadband &amp; Internet Connectivity, Criminal Justice, Tax &amp; Revenue, Workforce Development, Permitting &amp; Licensing, Public Health, Education Delivery). Problem topics are the highest-signal tag in the database because they encode <em>what an org is actually trying to fix</em>, independent of how it's structured or who funds it.</p>
+      <p>Every org carries one or more <strong>problem topic</strong> tags identifying the substantive issues it works on — drawn from a curated list of 37 grouped under 8 broader <strong>problem areas</strong>. Topics cover both <em>operational</em> challenges (Procurement Reform, Legacy Systems, Hiring Architecture, Operational Excellence, Service Design, Data Integration) and <em>policy</em> verticals (Housing &amp; Land Use, Healthcare Access, Broadband &amp; Internet Connectivity, Criminal Justice, Tax &amp; Revenue, Workforce Development, Permitting &amp; Licensing, Public Health, Education Delivery). Problem topics are the highest-signal tag in the database because they encode <em>what an org is actually trying to fix</em>, independent of how it's structured or who funds it.</p>
 
       <h2>The directory</h2>
       <p>The directory is a straight rendering of the underlying data. It supports three faceted filters and a semantic search box:</p>
@@ -260,7 +260,7 @@
         <li><strong>Search</strong> accepts either an org name or a natural-language phrase ("procurement reform in NYC", "AI in benefits delivery"). The query is tokenized, scored against a precomputed TF-IDF index of every org's description and tags, and results are returned ranked by relevance.</li>
         <li><strong>Primary segment</strong> is a multi-select on the org's main category.</li>
         <li><strong>Focus level</strong> is a multi-select; an org matches if it operates at <em>any</em> of the selected levels.</li>
-        <li><strong>Problem topic</strong> is a multi-select on the curated 36-tag list; an org matches if it carries <em>any</em> of the selected tags.</li>
+        <li><strong>Problem topic</strong> is a multi-select on the curated 37-tag list; an org matches if it carries <em>any</em> of the selected tags.</li>
       </ul>
 
       <h2>Semantic search</h2>
@@ -315,7 +315,7 @@
       <p>Funders are pulled from the free-text Funding Detail by string-matching against a curated list of ~50 well-known philanthropies, foundations, and venture funds (Schmidt Futures, Open Philanthropy, Omidyar Network, Ford, MacArthur, Knight, Bloomberg, Arnold Ventures, 8VC, a16z, etc.). For two orgs with at least one named funder each, we compute the Jaccard similarity of their funder sets. If neither has an extractable named funder, we fall back to a small bonus when their funding-model field matches exactly.</p>
 
       <div class="callout">
-        <strong>Limitation worth flagging.</strong> Approximately 63 of 304 orgs have at least one named funder detected. The curated list is not exhaustive, and many smaller foundations, family offices, and government grants are missed. Orgs that share an unlisted funder will not light up on this signal — the description and problem-statement scores carry them.
+        <strong>Limitation worth flagging.</strong> Approximately 62 of 304 orgs have at least one named funder detected. The curated list is not exhaustive, and many smaller foundations, family offices, and government grants are missed. Orgs that share an unlisted funder will not light up on this signal — the description and problem-statement scores carry them.
       </div>
 
       <h3>Shared segments (15%)</h3>
@@ -327,7 +327,7 @@
         <li><strong>Absolute floor:</strong> edges below 0.10 are not included in the dataset.</li>
         <li><strong>Per-node degree cap:</strong> we walk through the remaining edges in descending score order and keep an edge only if at least one of its two endpoints currently has fewer than 8 kept neighbors. This prevents central hubs from collecting hundreds of weak edges that produce a hairball, while still letting them be the most connected nodes.</li>
       </ul>
-      <p>The published dataset has <strong>304 nodes and 1,623 edges</strong>, with a maximum edge score of 0.82 and a median of 0.10. The network view starts at a visual threshold of 0.18 for legibility; the slider exposes the full 0.10–0.40 range. A thicker, more saturated edge is a higher composite score (stronger affinity); a thin faint edge is a weaker match.</p>
+      <p>The published dataset has <strong>304 nodes and 1,629 edges</strong>, with a maximum edge score of 0.82 and a median of 0.10. The network view starts at a visual threshold of 0.18 for legibility; the slider exposes the full 0.10–0.40 range. A thicker, more saturated edge is a higher composite score (stronger affinity); a thin faint edge is a weaker match.</p>
 
       <h2>Inside the score table</h2>
       <p>For reference, here is what each signal can range over:</p>

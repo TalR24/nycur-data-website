@@ -1,6 +1,6 @@
 # State Capacity Ecosystem — Project Handoff & Reference
 
-**Last updated:** 2026-05-11
+**Last updated:** 2026-05-14
 **Maintainer:** Tal Roded (visualization layer) · Henry Grunzweig (curates the underlying database)
 **Live:** https://data.nycuriosity.com/civic_reference/state_capacity_ecosystem/
 
@@ -77,12 +77,13 @@ The CSV columns are read by name (`csv.DictReader`) in `build_affinity.py`. If t
 | `Funding Detail` | string | Free-text. Funders extracted by regex against `KNOWN_FUNDERS` list. |
 | `Website` | string | Often missing protocol; `httpify()` in JS prepends `https://`. |
 | `Problem Area` | comma-list | **NEW May 2026.** 7 coarse buckets. See taxonomy below. |
-| `Problem Topic` | comma-list | **NEW May 2026** (split from old "Problem Statements"). 36 fine tags. |
+| `Problem Topic` | comma-list | **NEW May 2026** (split from old "Problem Statements"). 37 fine tags as of the 2026-05-14 refresh (was 36). |
 
 **Schema history:**
 - April 2026: 8 columns, no problem tagging
 - May 10, 2026: Added single `Problem Statements` column (38 tags, 100% coverage)
 - May 11, 2026: Split into `Problem Area` (7) + `Problem Topic` (36). `build_affinity.py` reads both; `Problem Topic` maps to `problem_statements` in the JSON output for backward compatibility.
+- May 14, 2026: Henry added an 8th Problem Area (`Capacity`) and a 37th Problem Topic. No structural schema change — same 10 columns, just new enum values. Refresh picked up automatically.
 
 ---
 
@@ -117,7 +118,7 @@ score = 0.40 × description_TFIDF_cosine
 **Why these weights** (rebalanced May 2026 from the original 0.40/0.35/0.25 with primary-segment boost):
 
 - **Description (40%)** — Strongest signal. TF-IDF cosine over a token bag that includes description + funding detail + Problem Area + Problem Topic + segment names. Distinctive terms ("permitting reform," "procurement") matter more than generic ones ("government," "policy").
-- **Problem topics (30%)** — Jaccard over Henry's 36 curated tags. Highest-confidence signal because tags are curator-assigned. Drives cross-segment surprise connections — the whole reason this scoring exists.
+- **Problem topics (30%)** — Jaccard over Henry's 37 curated tags. Highest-confidence signal because tags are curator-assigned. Drives cross-segment surprise connections — the whole reason this scoring exists.
 - **Funders (15%)** — Jaccard over funders extracted by substring match against `KNOWN_FUNDERS` (~50 entries at top of `build_affinity.py`). Falls back to a 0.15 bonus when funding-model strings match exactly and no named funders are detected. Coverage is partial (~21% of orgs).
 - **Segments (15%)** — Plain Jaccard over primary + secondary segment sets. **No primary-segment boost.** Earlier versions had 35% weight plus a +0.5 primary boost, which made the network collapse into same-segment cliques. Reducing weight + dropping the boost was a deliberate decision (May 2026) — do not reintroduce the boost without checking with Tal.
 
@@ -128,11 +129,11 @@ score = 0.40 × description_TFIDF_cosine
 - Composite < 0.10 → dropped from kept set (`MIN_W = 0.10`)
 - Per-node degree cap: walk edges in descending score order; keep an edge only if at least one endpoint has fewer than `MAX_DEG = 8` neighbors. Prevents central hubs from dominating.
 
-**Current dataset stats (May 11, 2026 refresh):**
-- 304 orgs, 1,623 kept edges
-- 21,879 candidate edges before thresholding
+**Current dataset stats (May 14, 2026 refresh):**
+- 304 orgs, 1,629 kept edges
+- 21,932 candidate edges before thresholding
 - Max edge: 0.82, median: 0.10
-- Funder coverage: ~63/304 orgs
+- Funder coverage: 62/304 orgs
 
 ---
 
@@ -236,16 +237,17 @@ Site-wide design tokens (defined in `:root` of each subpage):
 
 ## Problem taxonomy
 
-**7 Problem Areas** (broad buckets):
+**8 Problem Areas** (broad buckets) — Capacity added in the 2026-05-14 refresh:
 - Service Delivery
 - Procurement & Operations
 - Technology & Data
 - Talent & Hiring
 - Test & Learn
 - Participatory Democracy
+- Capacity
 - Verticals
 
-**36 Problem Topics** (fine tags, nested under Areas). Top by frequency: AI in Government (84), Service Design (77), Talent Pipeline (65), Benefits Access (65), Operational Excellence (59), Procurement Reform (50), Scaling What Works (50), Expert Contribution (50), Transparency & Accountability (49), Outcomes Measurement (46), Legacy Systems (44), Data Integration (42), Civic Engagement (39), Data Security (34), Iterative Learning (27)…
+**37 Problem Topics** (fine tags, nested under Areas; +1 in the 2026-05-14 refresh). Top by frequency: AI in Government (84), Service Design (79), Benefits Access (66), Talent Pipeline (65), Operational Excellence (59), Expert Contribution (50), Procurement Reform (50), Transparency & Accountability (49), Scaling What Works (49), Outcomes Measurement (45), Legacy Systems (44), Data Integration (42), Civic Engagement (39), Data Security (34), Iterative Learning (27)…
 
 100% coverage on both fields. Both feed into TF-IDF for semantic search; only Topics feed into the affinity Jaccard signal.
 
@@ -341,7 +343,8 @@ Working sessions on this tool tend to involve many file reads and edits across 5
 
 | Date | Commit | Summary |
 |---|---|---|
-| 2026-05-13 | _pending_ | Network: restore Methodology pill to the pill nav (briefly removed earlier in the day per user request, then restored). |
+| 2026-05-14 | _pending_ | State Capacity Ecosystem: refresh with 2026-05-14 dataset. 304 orgs (unchanged), 1,629 edges (was 1,623). Henry added an 8th Problem Area ("Capacity") and a 37th Problem Topic. Hardcoded counts in hub cards, methodology page, README, and build script comment all updated. |
+| 2026-05-13 | `a3e1957` | Network: restore Methodology pill to the pill nav (briefly removed earlier in the day per user request, then restored). |
 | 2026-05-13 | `52bf822` | Hub: move Submit-an-org panel above "Three ways to explore"; add a Methodology card under new "How this works" section. |
 | 2026-05-13 | `5c99b8b` | Network: add Focus level + Problem area + Problem topic multi-select filters mirroring the directory; search top-N now restricted to visible nodes. |
 | 2026-05-13 | `ac74b65` | Segments: fix SyntaxError (param/const shadow on `seg` in `selectSegment`) that prevented the whole script from parsing. Correct curator's name from "Grunzeweig" to "Grunzweig" everywhere. |
@@ -376,7 +379,7 @@ Use `git log --oneline -- civic_reference/state_capacity_ecosystem/` for the ful
 - **Affinity** — Composite score 0–1 indicating how likely two orgs are working on similar things. Not a documented relationship; an inference from public-facing data.
 - **TF-IDF** — Term Frequency × Inverse Document Frequency. Vectorizes text such that rare distinctive words ("procurement") matter more than ubiquitous ones ("government").
 - **Jaccard** — `|A ∩ B| / |A ∪ B|` for two sets. Used for segment, problem-topic, and funder overlap.
-- **Problem Area** — One of 7 broad buckets (Service Delivery, Procurement & Operations, etc.). Coarse.
-- **Problem Topic** — One of 36 fine tags (Procurement Reform, AI in Government, etc.). Maps to the `problem_statements` field in JSON output.
+- **Problem Area** — One of 8 broad buckets (Service Delivery, Procurement & Operations, Capacity, etc.). Coarse.
+- **Problem Topic** — One of 37 fine tags (Procurement Reform, AI in Government, etc.). Maps to the `problem_statements` field in JSON output.
 - **Composite score** — The weighted sum of the four affinity signals.
 - **Edge threshold** — UI slider hiding edges below a certain composite score. Default 0.18.

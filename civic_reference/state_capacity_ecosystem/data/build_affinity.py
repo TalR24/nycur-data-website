@@ -146,7 +146,7 @@ for r in rows:
         "named_funders": sorted(funders),
         "website": normalize(r["Website"]),
         # Schema May 2026: the old "Problem Statements" column was split into
-        # "Problem Area" (7 coarse buckets) and "Problem Topic" (36 fine tags).
+        # "Problem Area" (8 coarse buckets) and "Problem Topic" (37 fine tags).
         # We map Topic → problem_statements (same granularity as before, so the
         # existing UI + Jaccard signal carry over) and capture Area separately.
         "problem_statements": parse_problem_statements(
