@@ -215,7 +215,8 @@ Total cost is one ~190 KB JSON fetch + O(query_terms × num_orgs) per query. No 
   - Top-N is restricted to currently visible nodes — toggling a filter while a search is active re-runs the search so the top panel doesn't show orgs that have been filtered out.
 - **Threshold slider** (0.10–0.40, default 0.18): changes which edges are visible. "More edges (weaker matches)" ↔ "Fewer edges (stronger matches)"
 - **Org labels only:** every visible node has a small label below the circle (9.5px, weight 600, white halo). DOM-ordered by ascending degree so high-degree orgs paint on top. **No segment labels in the map** (removed May 2026 — they cluttered the view; segment identity is conveyed by node color + filter chips).
-- Side panel: clicking a node shows full description, Problem statement chips, funding info, closest peers
+- Side panel: clicking a node shows full description, Problem statement chips, funding info, closest peers, **and a "People working on these problem topics" section listing practitioners from `/people/` whose `problem_topic` is in this org's `problem_statements` list** (added May 2026). At current coverage ~97% of orgs surface at least one matching person. Up to 8 inline cards + "more →" link to the people directory.
+- **People matchmaking sidebar:** when Problem area or Problem topic filters are active, an orange-accented panel appears below the controls listing up to 6 matching practitioners + total count + "Open people directory ↗" deep link. Hidden otherwise. Mirrors the existing `search-results` pattern.
 - Supports `?id=N` deep link from directory
 
 ### Methodology (`methodology/index.html`)
@@ -308,6 +309,7 @@ These were arrived at via user feedback over multiple sessions. Don't reintroduc
 13. **Directory table is the 6 user-asked columns + expand chevron:** Organization · Segment · Secondary Segments · Description (truncated) · Problem Area · Problem Statement. All other CSV fields are in the row-click detail panel. Do not add columns without explicit user request — the layout was deliberately narrowed May 2026.
 14. **People directory is a SEPARATE dataset from the org pages.** Source is `data/problem_statement_seeds_v5.csv`, built by `build_people.py`. Do not merge into `build_affinity.py` — affinity is org-to-org, people are a parallel track. Hub treats the People card as a 4th "way to explore" alongside Directory / Affinity Network / Segments.
 15. **People submission form link is a placeholder.** The hero CTA on the people page currently has `href="#"` with a "form coming soon" caption. When the form exists, swap the href to the real URL and remove the caption. Don't replace with a mailto: — Tal explicitly chose the inert anchor + caption pattern over alert or mailto.
+16. **Network page bridges to /people/ in two places** (added May 2026): (a) inline "People working on these problem topics" subsection at the bottom of the org-node detail panel — matches by `problem_topic ∈ org.problem_statements`; (b) `people-results` panel inside the controls block that appears when Problem area or Problem topic filters are active. Both reuse the `.people-card` styling (orange-accented to distinguish from the blue semantic-search panel) and link out to `/people/` for the full list. The `people.json` fetch is wrapped in `.catch(() => [])` so the network page degrades gracefully if the file is missing.
 
 ---
 
@@ -362,7 +364,8 @@ Working sessions on this tool tend to involve many file reads and edits across 5
 
 | Date | Commit | Summary |
 |---|---|---|
-| 2026-05-14 | _pending_ | Add People & Problem Statements page (`/people/`). New 4th explore card on the hub. Sources `data/problem_statement_seeds_v5.csv` via `build_people.py` → `people.json`. 7-dimension filtering. Submit-yourself pill placeholder. People pill added to nav across all subpages. |
+| 2026-05-14 | _pending_ | Network ↔ People bridge: (a) detail panel adds "People working on these problem topics" subsection (~97% org coverage); (b) people-results sidebar appears in controls when Problem area or Problem topic filters are active. Both link out to `/people/`. |
+| 2026-05-14 | `4201640` | Add People & Problem Statements page (`/people/`). New 4th explore card on the hub. Sources `data/problem_statement_seeds_v5.csv` via `build_people.py` → `people.json`. 7-dimension filtering. Submit-yourself pill placeholder. People pill added to nav across all subpages. |
 | 2026-05-14 | `f1bd3e3` | State Capacity Ecosystem: refresh with 2026-05-14 dataset. 304 orgs (unchanged), 1,629 edges (was 1,623). Henry added an 8th Problem Area ("Capacity") and a 37th Problem Topic. Hardcoded counts in hub cards, methodology page, README, and build script comment all updated. |
 | 2026-05-13 | `a3e1957` | Network: restore Methodology pill to the pill nav (briefly removed earlier in the day per user request, then restored). |
 | 2026-05-13 | `52bf822` | Hub: move Submit-an-org panel above "Three ways to explore"; add a Methodology card under new "How this works" section. |
