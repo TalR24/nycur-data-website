@@ -22,8 +22,7 @@ The four public pages:
 | **Affinity Network** | `…/network/` | D3 force-directed graph + natural-language semantic search |
 | **Methodology** | `…/methodology/` | Long-form explainer: taxonomy, inclusion criteria, scoring formula |
 
-**Pill-nav order on Directory / Segments / Methodology:** Directory · Affinity Network · Segments · Methodology · ← Hub
-**Pill-nav order on the Affinity Network page** (no Methodology pill — deliberate, see decision below): Directory · Affinity Network · Segments · ← Hub
+**Pill-nav order across all subpages:** Directory · Affinity Network · Segments · Methodology · ← Hub
 
 ---
 
@@ -164,7 +163,7 @@ Total cost is one ~190 KB JSON fetch + O(query_terms × num_orgs) per query. No 
 - **4 stat pills:** Organizations · Primary segments · Problem topics · Data last updated
 - **Submit-an-organization panel** sits right after the pills, above "Three ways to explore" — full-width with Henry's Google Form CTA. Moved here May 2026 for higher visibility.
 - **3 view cards under "Three ways to explore":** Directory · Affinity Network · Segments
-- **1 methodology card under "How this works":** the only discoverability path from the hub to the methodology page (since the affinity-network page no longer has a Methodology pill). Card preview is a static rendering of the scoring formula and thresholds.
+- **1 methodology card under "How this works":** the hub-level entry point to the methodology page. Card preview is a static rendering of the scoring formula and thresholds. (Methodology is also reachable from every subpage's pill nav.)
 - **2 info panels at bottom:** What gets included (inclusion criteria) · Problem statements (areas + topics)
 - Loads `data/graph.json` to dynamically fill the pills (org count, segment count, problem-topic count, last_updated date)
 
@@ -189,7 +188,7 @@ Total cost is one ~190 KB JSON fetch + O(query_terms × num_orgs) per query. No 
 
 ### Affinity Network (`network/index.html`)
 - D3 force-directed graph; nodes colored by primary segment; edge width scales with composite score
-- **Pill nav has no Methodology link AND no inline methodology blurb** (both removed May 2026 per user request) — the network view stays focused on exploration. Methodology is reachable from the Hub or via the pill nav on Directory/Segments.
+- **No inline methodology blurb** (removed May 2026 per user request). The Methodology pill in the nav (restored May 2026 after a brief removal) is the in-page link to the full methodology page.
 - **Controls row 1** (in order): Search by name or question · Show edges at or above (threshold slider) · Segment filter chips · Reset
 - **Controls row 2** (added May 2026): Focus level · Problem area · Problem topic — multi-select dropdowns, mirroring the directory's `MS` component. A node passes only if every active filter accepts it. The dropdowns share the same registry as each other (opening one closes any sibling), and clicking outside closes them all.
 - **Search behavior:**
@@ -282,7 +281,7 @@ These were arrived at via user feedback over multiple sessions. Don't reintroduc
 5. **"Henry Grunzweig"** is the curator's name (no 'e' between 'z' and 'w'). Earlier sessions used "Henry Tolchard" and "Henry Grunzeweig" — both were wrong. Corrected to "Grunzweig" May 2026. Watch for this when refreshing data or writing prose.
 6. **No links to Claude conversations** anywhere on the public site. (Previously the methodology page linked to a Claude convo for weight rationale — removed.)
 7. **The methodology page has no "Refreshing the data" section.** That's internal workflow, doesn't belong in public-facing docs.
-8. **Pill-nav order:** Directory · Affinity Network · Segments · Methodology · ← Hub. Affinity Network sits before Segments. **Exception:** the Affinity Network page itself omits the Methodology pill, and also has no inline methodology blurb (removed by user request May 2026). The network view is deliberately kept focused on exploration; methodology is reachable from the Hub or via the pill nav on Directory/Segments.
+8. **Pill-nav order:** Directory · Affinity Network · Segments · Methodology · ← Hub. Affinity Network sits before Segments. Applies to every subpage including the affinity network page (the Methodology pill was briefly removed from the network page mid-May 2026 and then restored at user request — keep it).
 9. **Org labels appear below every visible bubble** in the network view (not just top-N by degree). 9.5px / weight 600 / white halo. DOM-sorted by ascending degree so high-degree labels paint on top of overlaps.
 10. **No segment labels rendered inside the map.** Earlier versions drew uppercase segment names at the cluster centroid (counter-scaled with zoom). Removed May 2026 — they competed with org names for attention and segment identity is already conveyed by node color + the segment filter chips above the graph.
 11. **Multi-select dropdowns close siblings on open.** `MS._registry` static array tracks all instances; `_show()` closes any other open dropdown first. Used on the directory page (Primary segment · Focus level · Problem area · Problem topic) and on the network page (Focus level · Problem area · Problem topic — added May 2026).
@@ -342,7 +341,8 @@ Working sessions on this tool tend to involve many file reads and edits across 5
 
 | Date | Commit | Summary |
 |---|---|---|
-| 2026-05-13 | _pending_ | Hub: move Submit-an-org panel above "Three ways to explore"; add a Methodology card under new "How this works" section (replaces missing pill-nav path from the affinity-network page). |
+| 2026-05-13 | _pending_ | Network: restore Methodology pill to the pill nav (briefly removed earlier in the day per user request, then restored). |
+| 2026-05-13 | `52bf822` | Hub: move Submit-an-org panel above "Three ways to explore"; add a Methodology card under new "How this works" section. |
 | 2026-05-13 | `5c99b8b` | Network: add Focus level + Problem area + Problem topic multi-select filters mirroring the directory; search top-N now restricted to visible nodes. |
 | 2026-05-13 | `ac74b65` | Segments: fix SyntaxError (param/const shadow on `seg` in `selectSegment`) that prevented the whole script from parsing. Correct curator's name from "Grunzeweig" to "Grunzweig" everywhere. |
 | 2026-05-12 | `14115fa` | Network: drop "How affinity is computed" inline blurb + orphan CSS. |
