@@ -162,11 +162,10 @@ Total cost is one ~190 KB JSON fetch + O(query_terms × num_orgs) per query. No 
 ### Hub (`index.html`)
 - Hero with explainer paragraph
 - **4 stat pills:** Organizations · Primary segments · Problem topics · Data last updated
-- **3 view cards in order:** Directory · Affinity Network · Segments — `class="section-label"` says "Three ways to explore"
-- **3 info panels:**
-  - Submit an organization (full-width, single column — Henry's Google Form)
-  - What gets included (inclusion criteria)
-  - Problem statements (areas + topics)
+- **Submit-an-organization panel** sits right after the pills, above "Three ways to explore" — full-width with Henry's Google Form CTA. Moved here May 2026 for higher visibility.
+- **3 view cards under "Three ways to explore":** Directory · Affinity Network · Segments
+- **1 methodology card under "How this works":** the only discoverability path from the hub to the methodology page (since the affinity-network page no longer has a Methodology pill). Card preview is a static rendering of the scoring formula and thresholds.
+- **2 info panels at bottom:** What gets included (inclusion criteria) · Problem statements (areas + topics)
 - Loads `data/graph.json` to dynamically fill the pills (org count, segment count, problem-topic count, last_updated date)
 
 ### Directory (`directory/index.html`)
@@ -343,7 +342,8 @@ Working sessions on this tool tend to involve many file reads and edits across 5
 
 | Date | Commit | Summary |
 |---|---|---|
-| 2026-05-13 | _pending_ | Network: add Focus level + Problem area + Problem topic multi-select filters mirroring the directory; search top-N now restricted to visible nodes. |
+| 2026-05-13 | _pending_ | Hub: move Submit-an-org panel above "Three ways to explore"; add a Methodology card under new "How this works" section (replaces missing pill-nav path from the affinity-network page). |
+| 2026-05-13 | `5c99b8b` | Network: add Focus level + Problem area + Problem topic multi-select filters mirroring the directory; search top-N now restricted to visible nodes. |
 | 2026-05-13 | `ac74b65` | Segments: fix SyntaxError (param/const shadow on `seg` in `selectSegment`) that prevented the whole script from parsing. Correct curator's name from "Grunzeweig" to "Grunzweig" everywhere. |
 | 2026-05-12 | `14115fa` | Network: drop "How affinity is computed" inline blurb + orphan CSS. |
 | 2026-05-12 | `b69af42` | Hub: streamline pills, reorder cards, drop About + Taxonomy panels |
