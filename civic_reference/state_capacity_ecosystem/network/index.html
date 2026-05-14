@@ -102,6 +102,24 @@
     .seg-chip .swatch { width:7px; height:7px; border-radius:50%; }
     .seg-chip.off { opacity:0.32; }
 
+    /* MULTI-SELECT — mirrors directory page so filter UX is consistent */
+    .ms-wrap { position:relative; }
+    .ms-btn { width:100%; display:flex; align-items:center; justify-content:space-between; gap:6px; font-family:'Inter',sans-serif; font-size:0.82rem; color:var(--text); background:var(--bg); border:1px solid var(--border-mid); border-radius:6px; padding:0 10px; height:32px; cursor:pointer; transition:border-color 0.15s; text-align:left; }
+    .ms-btn:hover, .ms-btn.open { border-color:var(--blue); }
+    .ms-btn-text { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .ms-caret { font-size:0.55rem; color:var(--text-faint); flex-shrink:0; transition:transform 0.15s; }
+    .ms-btn.open .ms-caret { transform:rotate(180deg); }
+    .ms-drop { position:absolute; top:calc(100% + 4px); left:0; min-width:100%; max-width:280px; background:var(--surface); border:1px solid var(--border-mid); border-radius:8px; box-shadow:0 4px 20px rgba(0,0,0,0.13); z-index:500; display:none; }
+    .ms-drop.open { display:block; }
+    .ms-acts { display:flex; gap:6px; padding:8px 10px 6px; border-bottom:1px solid var(--border); }
+    .ms-act { font-family:'Roboto Mono',monospace; font-size:0.65rem; font-weight:600; background:none; border:1px solid var(--border); border-radius:4px; padding:3px 8px; cursor:pointer; color:var(--text-muted); transition:all 0.1s; }
+    .ms-act:hover { border-color:var(--blue); color:var(--blue); background:var(--blue-light); }
+    .ms-list { max-height:240px; overflow-y:auto; padding:4px 0; }
+    .ms-item { display:flex; align-items:center; gap:8px; padding:5px 12px; cursor:pointer; user-select:none; }
+    .ms-item:hover { background:var(--blue-light); }
+    .ms-item input { width:13px; height:13px; accent-color:var(--blue); cursor:pointer; flex-shrink:0; }
+    .ms-item span { font-size:0.82rem; color:var(--text-mid); line-height:1.3; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
     .btn-reset {
       height:32px; padding:0 14px;
       background:transparent; border:1px solid var(--border-mid); border-radius:6px;
@@ -321,6 +339,20 @@
         </div>
         <button class="btn-reset" id="btn-reset">Reset</button>
       </div>
+      <div class="controls-row" style="margin-top:12px; padding-top:12px; border-top:1px solid var(--border);">
+        <div class="control-group" style="min-width:180px;">
+          <label class="control-label">Focus level</label>
+          <div id="ms-focus"></div>
+        </div>
+        <div class="control-group" style="min-width:180px;">
+          <label class="control-label">Problem area</label>
+          <div id="ms-area"></div>
+        </div>
+        <div class="control-group" style="flex:1; min-width:200px;">
+          <label class="control-label">Problem topic</label>
+          <div id="ms-topic"></div>
+        </div>
+      </div>
       <div id="search-results" class="search-results" style="display:none;"></div>
     </div>
 
@@ -364,6 +396,73 @@ const SEGMENT_COLORS = {
   "Digital Services & Consulting":"#0d9488","Investor":"#9333ea",
   "Capacity Building":"#ca8a04","Ecosystems":"#65a30d"
 };
+
+// MultiSelect — mirrors directory page. Opening one closes any other open
+// dropdown so only one is expanded at a time; clicking outside closes all.
+class MS {
+  static _registry = [];
+  constructor(id, ph, onChange) {
+    this.el = document.getElementById(id);
+    this.ph = ph; this.onChange = onChange;
+    this.selected = new Set(); this.opts = []; this._open = false;
+    MS._registry.push(this);
+    this._init();
+  }
+  _init() {
+    this.el.classList.add("ms-wrap");
+    this.btn = Object.assign(document.createElement("button"), {type:"button", className:"ms-btn"});
+    this.btn.innerHTML = `<span class="ms-btn-text">All ${this.ph}</span><span class="ms-caret">▼</span>`;
+    this._txt = this.btn.querySelector(".ms-btn-text");
+    this.drop = Object.assign(document.createElement("div"), {className:"ms-drop"});
+    const acts = Object.assign(document.createElement("div"), {className:"ms-acts"});
+    const mk = (t, fn) => { const b = Object.assign(document.createElement("button"), {type:"button", className:"ms-act", textContent:t}); b.addEventListener("click", e => { e.stopPropagation(); fn(); }); return b; };
+    acts.append(mk("Select all", () => this._all()), mk("Clear", () => this._clear()));
+    this.list = Object.assign(document.createElement("div"), {className:"ms-list"});
+    this.drop.append(acts, this.list);
+    this.el.append(this.btn, this.drop);
+    this.btn.addEventListener("click", e => { e.stopPropagation(); this._toggle(); });
+    document.addEventListener("click", () => this._close());
+    this.drop.addEventListener("click", e => e.stopPropagation());
+  }
+  _toggle() { this._open ? this._close() : this._show(); }
+  _show()  {
+    for (const m of MS._registry) if (m !== this && m._open) m._close();
+    this._open = true; this.btn.classList.add("open"); this.drop.classList.add("open");
+  }
+  _close() { this._open = false; this.btn.classList.remove("open"); this.drop.classList.remove("open"); }
+  _all()   { this.selected = new Set(this.opts.map(o => o.v)); this._sync(); this._upd(); this.onChange(); }
+  _clear() { this.selected.clear(); this._sync(); this._upd(); this.onChange(); }
+  _sync()  { this.list.querySelectorAll("input").forEach(cb => cb.checked = this.selected.has(cb.value)); }
+  _upd()   { const n = this.selected.size, t = this.opts.length; this._txt.textContent = (n===0||n===t) ? `All ${this.ph}` : `${n} selected`; }
+  setOptions(opts) {
+    this.opts = opts.map(o => typeof o === "string" ? {v:o, l:o} : {v:o.value, l:o.label});
+    this.list.innerHTML = "";
+    this.opts.forEach(({v,l}) => {
+      const item = document.createElement("label");
+      item.className = "ms-item";
+      const cb = Object.assign(document.createElement("input"), {type:"checkbox", value:v});
+      cb.addEventListener("change", () => { cb.checked ? this.selected.add(v) : this.selected.delete(v); this._upd(); this.onChange(); });
+      item.append(cb, Object.assign(document.createElement("span"), {textContent:l}));
+      this.list.appendChild(item);
+    });
+    this._upd();
+  }
+  get() { return (this.selected.size === 0 || this.selected.size === this.opts.length) ? new Set() : new Set(this.selected); }
+  reset() { this._clear(); }
+}
+
+// Created up-front so the script doesn't have to defer to first frame after
+// data load. setOptions() is called once allNodes is populated.
+const onFilterChange = () => {
+  build();
+  // Re-apply the active query so the top-N panel doesn't show nodes that
+  // are now filtered out (and vice versa).
+  const q = document.getElementById("ctl-search").value.trim();
+  if (q) applySearch(q);
+};
+const msFocus = new MS("ms-focus", "Focus levels", onFilterChange);
+const msArea  = new MS("ms-area",  "Areas",        onFilterChange);
+const msTopic = new MS("ms-topic", "Topics",       onFilterChange);
 
 // ── Semantic-search index (TF-IDF, computed at build time) ─────────────────
 let searchIndex = null;
@@ -448,6 +547,17 @@ Promise.all([
   segmentsOn = new Set(segs);
   buildSegChips(segs);
 
+  // Populate Focus / Problem area / Problem topic dropdowns from node data.
+  const focuses = new Set(), areas = new Set(), topics = new Set();
+  for (const n of allNodes) {
+    (n.focus || []).forEach(f => focuses.add(f));
+    (n.problem_areas || []).forEach(a => areas.add(a));
+    (n.problem_statements || []).forEach(t => topics.add(t));
+  }
+  msFocus.setOptions([...focuses].sort());
+  msArea.setOptions([...areas].sort());
+  msTopic.setOptions([...topics].sort());
+
   build();
 
   // Deep-link: ?id=N selects an org on load
@@ -491,8 +601,17 @@ function buildSegChips(segs) {
 }
 
 function build() {
-  // Filter
-  visibleNodes = allNodes.filter(n => segmentsOn.has(n.primary_segment));
+  // Filter — segment chips + the three multi-select dropdowns (focus / area /
+  // topic) all narrow which nodes appear. A node passes only if every active
+  // filter accepts it.
+  const focF = msFocus.get(), areaF = msArea.get(), topicF = msTopic.get();
+  visibleNodes = allNodes.filter(n => {
+    if (!segmentsOn.has(n.primary_segment)) return false;
+    if (focF.size   && !(n.focus || []).some(f => focF.has(f))) return false;
+    if (areaF.size  && !(n.problem_areas || []).some(a => areaF.has(a))) return false;
+    if (topicF.size && !(n.problem_statements || []).some(t => topicF.has(t))) return false;
+    return true;
+  });
   const visIds = new Set(visibleNodes.map(n => n.id));
   visibleEdges = allEdges.filter(e =>
     e.weight >= threshold && visIds.has(typeof e.source === "object" ? e.source.id : e.source) && visIds.has(typeof e.target === "object" ? e.target.id : e.target)
@@ -741,12 +860,11 @@ function applySearch(rawQ) {
   }
   const scores = rankByQuery(q) || new Map();
   queryScores = scores;
-  // Top 10 from the score set, but only among currently visible segments
+  // Top 10 from the score set, restricted to currently visible nodes (which
+  // already reflect segment chips + the focus/area/topic dropdowns).
+  const visibleIds = new Set(visibleNodes.map(n => n.id));
   const ranked = [...scores.entries()]
-    .filter(([id]) => {
-      const n = nodeById.get(id);
-      return n && segmentsOn.has(n.primary_segment);
-    })
+    .filter(([id]) => visibleIds.has(id))
     .sort((a, b) => b[1] - a[1])
     .slice(0, 10);
   queryTopIds = new Set(ranked.map(([id]) => id));
@@ -796,6 +914,7 @@ document.getElementById("btn-reset").addEventListener("click", () => {
   document.getElementById("threshold-val").textContent = "0.18";
   segmentsOn = new Set(allNodes.map(n => n.primary_segment));
   document.querySelectorAll(".seg-chip").forEach(el => el.classList.remove("off"));
+  msFocus.reset(); msArea.reset(); msTopic.reset();
   document.getElementById("ctl-search").value = "";
   queryScores = null;
   queryTopIds = new Set();

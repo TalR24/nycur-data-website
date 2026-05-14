@@ -191,10 +191,12 @@ Total cost is one ~190 KB JSON fetch + O(query_terms × num_orgs) per query. No 
 ### Affinity Network (`network/index.html`)
 - D3 force-directed graph; nodes colored by primary segment; edge width scales with composite score
 - **Pill nav has no Methodology link AND no inline methodology blurb** (both removed May 2026 per user request) — the network view stays focused on exploration. Methodology is reachable from the Hub or via the pill nav on Directory/Segments.
-- **Controls row** (in order): Search by name or question · Show edges at or above (threshold slider) · Segment filter chips · Reset
+- **Controls row 1** (in order): Search by name or question · Show edges at or above (threshold slider) · Segment filter chips · Reset
+- **Controls row 2** (added May 2026): Focus level · Problem area · Problem topic — multi-select dropdowns, mirroring the directory's `MS` component. A node passes only if every active filter accepts it. The dropdowns share the same registry as each other (opening one closes any sibling), and clicking outside closes them all.
 - **Search behavior:**
   - Empty: graph in normal state
   - Non-empty: computes relevance scores; top-10 matches get `.hi` (highlighted), everything else gets `.dim`; results panel below the controls lists top matches as clickable chips with scores; selecting a chip pans and centers on that org
+  - Top-N is restricted to currently visible nodes — toggling a filter while a search is active re-runs the search so the top panel doesn't show orgs that have been filtered out.
 - **Threshold slider** (0.10–0.40, default 0.18): changes which edges are visible. "More edges (weaker matches)" ↔ "Fewer edges (stronger matches)"
 - **Org labels only:** every visible node has a small label below the circle (9.5px, weight 600, white halo). DOM-ordered by ascending degree so high-degree orgs paint on top. **No segment labels in the map** (removed May 2026 — they cluttered the view; segment identity is conveyed by node color + filter chips).
 - Side panel: clicking a node shows full description, Problem statement chips, funding info, closest peers
@@ -284,7 +286,7 @@ These were arrived at via user feedback over multiple sessions. Don't reintroduc
 8. **Pill-nav order:** Directory · Affinity Network · Segments · Methodology · ← Hub. Affinity Network sits before Segments. **Exception:** the Affinity Network page itself omits the Methodology pill, and also has no inline methodology blurb (removed by user request May 2026). The network view is deliberately kept focused on exploration; methodology is reachable from the Hub or via the pill nav on Directory/Segments.
 9. **Org labels appear below every visible bubble** in the network view (not just top-N by degree). 9.5px / weight 600 / white halo. DOM-sorted by ascending degree so high-degree labels paint on top of overlaps.
 10. **No segment labels rendered inside the map.** Earlier versions drew uppercase segment names at the cluster centroid (counter-scaled with zoom). Removed May 2026 — they competed with org names for attention and segment identity is already conveyed by node color + the segment filter chips above the graph.
-11. **Multi-select dropdowns close siblings on open.** `MS._registry` static array tracks all instances; `_show()` closes any other open dropdown first.
+11. **Multi-select dropdowns close siblings on open.** `MS._registry` static array tracks all instances; `_show()` closes any other open dropdown first. Used on the directory page (Primary segment · Focus level · Problem area · Problem topic) and on the network page (Focus level · Problem area · Problem topic — added May 2026).
 12. **Methodology page stays in sync with the affinity network.** Any change to the scoring formula, weights, token bag, edge thresholding, degree cap, or graph rendering MUST be reflected on `methodology/index.html` in the same commit. Touch points: the formula block, the per-signal `<h3>` paragraphs, the score-range table, the "what gets dropped" thresholds, and the published-dataset stats line. (Note: the network page no longer has its own inline methodology blurb, so the methodology page is the single source of truth for user-facing scoring documentation.)
 13. **Directory table is the 6 user-asked columns + expand chevron:** Organization · Segment · Secondary Segments · Description (truncated) · Problem Area · Problem Statement. All other CSV fields are in the row-click detail panel. Do not add columns without explicit user request — the layout was deliberately narrowed May 2026.
 
@@ -341,6 +343,9 @@ Working sessions on this tool tend to involve many file reads and edits across 5
 
 | Date | Commit | Summary |
 |---|---|---|
+| 2026-05-13 | _pending_ | Network: add Focus level + Problem area + Problem topic multi-select filters mirroring the directory; search top-N now restricted to visible nodes. |
+| 2026-05-13 | `ac74b65` | Segments: fix SyntaxError (param/const shadow on `seg` in `selectSegment`) that prevented the whole script from parsing. Correct curator's name from "Grunzeweig" to "Grunzweig" everywhere. |
+| 2026-05-12 | `14115fa` | Network: drop "How affinity is computed" inline blurb + orphan CSS. |
 | 2026-05-12 | `b69af42` | Hub: streamline pills, reorder cards, drop About + Taxonomy panels |
 | 2026-05-12 | `d65de53` | Directory: rework columns to org/segment/secondary/description/area/topic (others → row detail). Network: remove in-map segment labels + Methodology pill. Methodology + network blurb: sync TF-IDF token bag wording. Segments: harden fetch (timeout, no-cache, visible errors). README: bump decisions list to include methodology-sync rule. |
 | 2026-05-11 | `3323f54` | Directory: add Problem Area filter, surface areas in detail panel |
