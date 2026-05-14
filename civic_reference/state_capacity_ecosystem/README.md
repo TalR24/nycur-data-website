@@ -10,19 +10,20 @@ This file is the single source of truth for the State Capacity Ecosystem tool. I
 
 ## What this tool is
 
-A four-page visualization layer over Henry Grunzweig's **State Capacity Ecosystem Database** (an external Airtable curated by Henry, not Tal). NYCuriosity does not curate the underlying data — we only build views on top of Henry's CSV export.
+A five-page visualization layer over Henry Grunzweig's **State Capacity Ecosystem Database** (an external Airtable curated by Henry, not Tal) plus a separate **People & Problem Statements** seed CSV that Tal curates for matchmaking. NYCuriosity does not curate the underlying org data — we only build views on top of Henry's CSV export. The people directory has a different source (`problem_statement_seeds_v5.csv` in `data/`) and is meant to grow via user self-submission.
 
-The four public pages:
+The five public pages:
 
 | Page | URL | Purpose |
 |---|---|---|
-| **Hub** | `/civic_reference/state_capacity_ecosystem/` | Explainer, 4 stat pills, 3 view cards (Directory · Affinity Network · Segments), 3 info panels |
+| **Hub** | `/civic_reference/state_capacity_ecosystem/` | Explainer, 4 stat pills, 4 view cards (Directory · Affinity Network · Segments · People), Methodology card, 3 info panels |
 | **Directory** | `…/directory/` | Filterable, searchable table of every org. Semantic search via TF-IDF |
 | **Segments** | `…/segments/` | Bar chart of segment counts; click a bar to expand a table of orgs in that segment |
 | **Affinity Network** | `…/network/` | D3 force-directed graph + natural-language semantic search |
+| **People** | `…/people/` | Directory of practitioners indexed by problem statement. 7-dimension filtering. Submit-yourself CTA (form placeholder). Separate dataset from the org pages. |
 | **Methodology** | `…/methodology/` | Long-form explainer: taxonomy, inclusion criteria, scoring formula |
 
-**Pill-nav order across all subpages:** Directory · Affinity Network · Segments · Methodology · ← Hub
+**Pill-nav order across all subpages:** Directory · Affinity Network · Segments · People · Methodology · ← Hub
 
 ---
 
@@ -41,13 +42,16 @@ The four public pages:
 ```
 data_website/civic_reference/state_capacity_ecosystem/
 ├── README.md                        ← THIS FILE
-├── index.html                       ← Hub: pills, 3 view cards, info panels
+├── index.html                       ← Hub: pills, 4 explore cards, methodology card, info panels
 ├── data/
-│   ├── state_capacity_ecosystem.csv ← Canonical source (replace to refresh)
+│   ├── state_capacity_ecosystem.csv ← Canonical org source (replace to refresh)
 │   ├── build_affinity.py            ← CSV → graph.json + orgs.json + search_index.json
 │   ├── graph.json                   ← Nodes + scored edges + stats (incl. last_updated)
 │   ├── orgs.json                    ← Flat node bundle for the directory + segments pages
-│   └── search_index.json            ← Vocab + IDF + per-org sparse TF-IDF for NL search
+│   ├── search_index.json            ← Vocab + IDF + per-org sparse TF-IDF for NL search
+│   ├── problem_statement_seeds_v5.csv ← People + problem-statement seeds (separate dataset)
+│   ├── build_people.py              ← CSV → people.json (simple transform; no scoring)
+│   └── people.json                  ← Flat people bundle for the /people/ page
 ├── directory/
 │   └── index.html                   ← Filterable table. Reads ../data/orgs.json + search_index.json
 ├── segments/
@@ -56,6 +60,9 @@ data_website/civic_reference/state_capacity_ecosystem/
 │   └── index.html                   ← D3 force-directed graph + NL search bar.
 │                                     Reads ../data/graph.json + search_index.json.
 │                                     Supports ?id=N deep-link from directory.
+├── people/
+│   └── index.html                   ← People directory + 7 filters + submit-yourself CTA.
+│                                     Reads ../data/people.json.
 └── methodology/
     └── index.html                   ← Long-form scoring + taxonomy write-up
 ```
@@ -162,8 +169,8 @@ Total cost is one ~190 KB JSON fetch + O(query_terms × num_orgs) per query. No 
 ### Hub (`index.html`)
 - Hero with explainer paragraph
 - **4 stat pills:** Organizations · Primary segments · Problem topics · Data last updated
-- **Submit-an-organization panel** sits right after the pills, above "Three ways to explore" — full-width with Henry's Google Form CTA. Moved here May 2026 for higher visibility.
-- **3 view cards under "Three ways to explore":** Directory · Affinity Network · Segments
+- **Submit-an-organization panel** sits right after the pills, above "Four ways to explore" — full-width with Henry's Google Form CTA (this is the *org* intake form, not the people-directory submission)
+- **4 view cards under "Four ways to explore":** Directory · Affinity Network · Segments · People. Section was relabeled from "Three" to "Four" in May 2026 when the People card was added.
 - **1 methodology card under "How this works":** the hub-level entry point to the methodology page. Card preview is a static rendering of the scoring formula and thresholds. (Methodology is also reachable from every subpage's pill nav.)
 - **2 info panels at bottom:** What gets included (inclusion criteria) · Problem statements (areas + topics)
 - Loads `data/graph.json` to dynamically fill the pills (org count, segment count, problem-topic count, last_updated date)
@@ -186,6 +193,16 @@ Total cost is one ~190 KB JSON fetch + O(query_terms × num_orgs) per query. No 
 - Click any bar → orange highlight on that row + table appears below showing every org in that segment with their focus, funding model, and problem-topic chips
 - Click the same bar again to deselect
 - Loads `data/orgs.json`
+
+### People (`people/index.html`)
+- Separate dataset from the org pages — sourced from `data/problem_statement_seeds_v5.csv`, a Tal-curated seed list of 34 practitioners working on specific state-capacity problems. Meant to grow via user self-submission (form is a placeholder for now).
+- **Submit-yourself pill** sits in the hero, prominent orange CTA: `Submit yourself to the directory`. Currently `href="#"` with a small italic caption "Submission form coming soon — link will be added here." Swap the href once the form exists.
+- **7-dimension filter row:** search (Name / Organization / Problem details) · Role · Jurisdiction · Problem area · Problem topic · Help they're seeking · Time window. All but search are multi-select dropdowns using the same `MS` component as Directory + Network. Jurisdiction is multi-valued per person (semicolon-separated in source), so the filter matches any-of.
+- **Table columns:** Person (name + org subtitle) · Role (colored badge) · Jurisdiction (orange chips) · Problem area (orange pill) · Problem topic (blue pill) · Contact (auto-detects email vs URL). Click a row to expand a detail panel with the full Problem Details narrative, what kind of help they're seeking, time window, and a duplicated contact link.
+- **Contact rendering:** strings with `@` (and not `http`) become `mailto:` links; everything else gets `https://` prepended and opens in a new tab. The Contact field in the source CSV is free-text so this heuristic handles emails, plain domains, and full URLs uniformly.
+- **Sortable columns:** Person (by name), Role, Problem area, Problem topic. Jurisdiction and Contact are not sortable.
+- **Hardened fetch:** explicit 15s `AbortController` timeout + `r.ok` check + try/catch around render. Same pattern as the segments page after that one's "Loading…" stall.
+- Loads `data/people.json` (regenerated by `python3 data/build_people.py`). Don't hand-edit `people.json` — edit the CSV and rebuild.
 
 ### Affinity Network (`network/index.html`)
 - D3 force-directed graph; nodes colored by primary segment; edge width scales with composite score
@@ -289,6 +306,8 @@ These were arrived at via user feedback over multiple sessions. Don't reintroduc
 11. **Multi-select dropdowns close siblings on open.** `MS._registry` static array tracks all instances; `_show()` closes any other open dropdown first. Used on the directory page (Primary segment · Focus level · Problem area · Problem topic) and on the network page (Focus level · Problem area · Problem topic — added May 2026).
 12. **Methodology page stays in sync with the affinity network.** Any change to the scoring formula, weights, token bag, edge thresholding, degree cap, or graph rendering MUST be reflected on `methodology/index.html` in the same commit. Touch points: the formula block, the per-signal `<h3>` paragraphs, the score-range table, the "what gets dropped" thresholds, and the published-dataset stats line. (Note: the network page no longer has its own inline methodology blurb, so the methodology page is the single source of truth for user-facing scoring documentation.)
 13. **Directory table is the 6 user-asked columns + expand chevron:** Organization · Segment · Secondary Segments · Description (truncated) · Problem Area · Problem Statement. All other CSV fields are in the row-click detail panel. Do not add columns without explicit user request — the layout was deliberately narrowed May 2026.
+14. **People directory is a SEPARATE dataset from the org pages.** Source is `data/problem_statement_seeds_v5.csv`, built by `build_people.py`. Do not merge into `build_affinity.py` — affinity is org-to-org, people are a parallel track. Hub treats the People card as a 4th "way to explore" alongside Directory / Affinity Network / Segments.
+15. **People submission form link is a placeholder.** The hero CTA on the people page currently has `href="#"` with a "form coming soon" caption. When the form exists, swap the href to the real URL and remove the caption. Don't replace with a mailto: — Tal explicitly chose the inert anchor + caption pattern over alert or mailto.
 
 ---
 
@@ -343,7 +362,8 @@ Working sessions on this tool tend to involve many file reads and edits across 5
 
 | Date | Commit | Summary |
 |---|---|---|
-| 2026-05-14 | _pending_ | State Capacity Ecosystem: refresh with 2026-05-14 dataset. 304 orgs (unchanged), 1,629 edges (was 1,623). Henry added an 8th Problem Area ("Capacity") and a 37th Problem Topic. Hardcoded counts in hub cards, methodology page, README, and build script comment all updated. |
+| 2026-05-14 | _pending_ | Add People & Problem Statements page (`/people/`). New 4th explore card on the hub. Sources `data/problem_statement_seeds_v5.csv` via `build_people.py` → `people.json`. 7-dimension filtering. Submit-yourself pill placeholder. People pill added to nav across all subpages. |
+| 2026-05-14 | `f1bd3e3` | State Capacity Ecosystem: refresh with 2026-05-14 dataset. 304 orgs (unchanged), 1,629 edges (was 1,623). Henry added an 8th Problem Area ("Capacity") and a 37th Problem Topic. Hardcoded counts in hub cards, methodology page, README, and build script comment all updated. |
 | 2026-05-13 | `a3e1957` | Network: restore Methodology pill to the pill nav (briefly removed earlier in the day per user request, then restored). |
 | 2026-05-13 | `52bf822` | Hub: move Submit-an-org panel above "Three ways to explore"; add a Methodology card under new "How this works" section. |
 | 2026-05-13 | `5c99b8b` | Network: add Focus level + Problem area + Problem topic multi-select filters mirroring the directory; search top-N now restricted to visible nodes. |
