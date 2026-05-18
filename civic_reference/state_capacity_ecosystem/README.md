@@ -1,6 +1,6 @@
 # State Capacity Ecosystem — Project Handoff & Reference
 
-**Last updated:** 2026-05-14
+**Last updated:** 2026-05-18
 **Maintainer:** Tal Roded (visualization layer) · Henry Grunzweig (curates the underlying database)
 **Live:** https://data.nycuriosity.com/civic_reference/state_capacity_ecosystem/
 
@@ -16,14 +16,14 @@ The five public pages:
 
 | Page | URL | Purpose |
 |---|---|---|
-| **Hub** | `/civic_reference/state_capacity_ecosystem/` | Explainer, 4 stat pills, 4 view cards (Directory · Affinity Network · Segments · People), Methodology card, 3 info panels |
+| **Hub** | `/civic_reference/state_capacity_ecosystem/` | Explainer, 4 stat pills, 4 view cards (Directory · Affinity Network · Asks & Opportunities · Segments), Methodology card, 3 info panels |
 | **Directory** | `…/directory/` | Filterable, searchable table of every org. Semantic search via TF-IDF |
+| **Asks & Opportunities** | `…/people/` | Directory of practitioners, orgs, and problem statements indexed by problem and help-type. 7-dimension filtering. Submit-yourself CTA (form placeholder). Separate dataset from the org pages. |
 | **Segments** | `…/segments/` | Bar chart of segment counts; click a bar to expand a table of orgs in that segment |
 | **Affinity Network** | `…/network/` | D3 force-directed graph + natural-language semantic search |
-| **People** | `…/people/` | Directory of practitioners indexed by problem statement. 7-dimension filtering. Submit-yourself CTA (form placeholder). Separate dataset from the org pages. |
 | **Methodology** | `…/methodology/` | Long-form explainer: taxonomy, inclusion criteria, scoring formula |
 
-**Pill-nav order across all subpages:** Directory · Affinity Network · Segments · People · Methodology · ← Hub
+**Pill-nav order across all subpages:** Directory · Affinity Network · Asks & Opportunities · Segments · Methodology · ← Hub
 
 ---
 
@@ -170,16 +170,17 @@ Total cost is one ~190 KB JSON fetch + O(query_terms × num_orgs) per query. No 
 - Hero with explainer paragraph
 - **4 stat pills:** Organizations · Primary segments · Problem topics · Data last updated
 - **Submit-an-organization panel** sits right after the pills, above "Four ways to explore" — full-width with Henry's Google Form CTA (this is the *org* intake form, not the people-directory submission)
-- **4 view cards under "Four ways to explore":** Directory · Affinity Network · Segments · People. Section was relabeled from "Three" to "Four" in May 2026 when the People card was added.
+- **4 view cards under "Four ways to explore":** Directory · Affinity Network · Asks & Opportunities · Segments. Grid is a fixed 2×2 layout. Card order: Asks & Opportunities appears before Segments (reordered May 2026). Section was relabeled from "Three" to "Four" in May 2026 when the Asks & Opportunities card was added.
 - **1 methodology card under "How this works":** the hub-level entry point to the methodology page. Card preview is a static rendering of the scoring formula and thresholds. (Methodology is also reachable from every subpage's pill nav.)
 - **2 info panels at bottom:** What gets included (inclusion criteria) · Problem statements (areas + topics)
 - Loads `data/graph.json` to dynamically fill the pills (org count, segment count, problem-topic count, last_updated date)
 
 ### Directory (`directory/index.html`)
 - **Visible table columns:** Organization · Segment · Secondary Segments · Description (truncated to 180 chars) · Problem Area (orange chips) · Problem Topic (blue chips). Every other field (focus, funding model, funding detail, named funders, website) lives in the row-click detail panel.
-- Filters: search box · Primary segment · Focus level · Problem area · Problem topic
+- Filters: search box · Primary segment · Geographic focus · Problem area · Problem topic
 - **No Funding Model filter** (removed May 2026 per user request)
 - **No Named Funder filter** (removed May 2026; substring search still matches funder text)
+- **Problem topic filter is case-insensitive** (May 2026): dropdown deduplicates by lowercase key (first-seen canonical form wins), and filter matching is also case-insensitive. Prevents duplicates like "AI in government" / "Ai in government" from appearing as separate options.
 - Search behavior:
   - Empty: sorted by current column header (default: name)
   - Non-empty: ranked by TF-IDF cosine, with name-substring (+0.5) and funder-substring (+0.15) boosts
@@ -194,7 +195,7 @@ Total cost is one ~190 KB JSON fetch + O(query_terms × num_orgs) per query. No 
 - Click the same bar again to deselect
 - Loads `data/orgs.json`
 
-### People (`people/index.html`)
+### Asks & Opportunities (`people/index.html`)
 - Separate dataset from the org pages — sourced from `data/problem_statement_seeds_v5.csv`, a Tal-curated seed list of 34 practitioners working on specific state-capacity problems. Meant to grow via user self-submission (form is a placeholder for now).
 - **Submit-yourself pill** sits in the hero, prominent orange CTA: `Submit yourself to the directory`. Currently `href="#"` with a small italic caption "Submission form coming soon — link will be added here." Swap the href once the form exists.
 - **7-dimension filter row:** search (Name / Organization / Problem details) · Role · Jurisdiction · Problem area · Problem topic · Help they're seeking · Time window. All but search are multi-select dropdowns using the same `MS` component as Directory + Network. Jurisdiction is multi-valued per person (semicolon-separated in source), so the filter matches any-of.
@@ -301,14 +302,14 @@ These were arrived at via user feedback over multiple sessions. Don't reintroduc
 5. **"Henry Grunzweig"** is the curator's name (no 'e' between 'z' and 'w'). Earlier sessions used "Henry Tolchard" and "Henry Grunzeweig" — both were wrong. Corrected to "Grunzweig" May 2026. Watch for this when refreshing data or writing prose.
 6. **No links to Claude conversations** anywhere on the public site. (Previously the methodology page linked to a Claude convo for weight rationale — removed.)
 7. **The methodology page has no "Refreshing the data" section.** That's internal workflow, doesn't belong in public-facing docs.
-8. **Pill-nav order:** Directory · Affinity Network · Segments · Methodology · ← Hub. Affinity Network sits before Segments. Applies to every subpage including the affinity network page (the Methodology pill was briefly removed from the network page mid-May 2026 and then restored at user request — keep it).
+8. **Pill-nav order:** Directory · Affinity Network · Asks & Opportunities · Segments · Methodology · ← Hub. Asks & Opportunities sits before Segments (reordered May 2026). Applies to every subpage including the affinity network page (the Methodology pill was briefly removed from the network page mid-May 2026 and then restored at user request — keep it).
 9. **Org labels appear below every visible bubble** in the network view (not just top-N by degree). 9.5px / weight 600 / white halo. DOM-sorted by ascending degree so high-degree labels paint on top of overlaps.
 10. **No segment labels rendered inside the map.** Earlier versions drew uppercase segment names at the cluster centroid (counter-scaled with zoom). Removed May 2026 — they competed with org names for attention and segment identity is already conveyed by node color + the segment filter chips above the graph.
-11. **Multi-select dropdowns close siblings on open.** `MS._registry` static array tracks all instances; `_show()` closes any other open dropdown first. Used on the directory page (Primary segment · Focus level · Problem area · Problem topic) and on the network page (Focus level · Problem area · Problem topic — added May 2026).
+11. **Multi-select dropdowns close siblings on open.** `MS._registry` static array tracks all instances; `_show()` closes any other open dropdown first. Used on the directory page (Primary segment · Geographic focus · Problem area · Problem topic) and on the network page (Geographic focus · Problem area · Problem topic — added May 2026).
 12. **Methodology page stays in sync with the affinity network.** Any change to the scoring formula, weights, token bag, edge thresholding, degree cap, or graph rendering MUST be reflected on `methodology/index.html` in the same commit. Touch points: the formula block, the per-signal `<h3>` paragraphs, the score-range table, the "what gets dropped" thresholds, and the published-dataset stats line. (Note: the network page no longer has its own inline methodology blurb, so the methodology page is the single source of truth for user-facing scoring documentation.)
 13. **Directory table is the 6 user-asked columns + expand chevron:** Organization · Segment · Secondary Segments · Description (truncated) · Problem Area · Problem Statement. All other CSV fields are in the row-click detail panel. Do not add columns without explicit user request — the layout was deliberately narrowed May 2026.
-14. **People directory is a SEPARATE dataset from the org pages.** Source is `data/problem_statement_seeds_v5.csv`, built by `build_people.py`. Do not merge into `build_affinity.py` — affinity is org-to-org, people are a parallel track. Hub treats the People card as a 4th "way to explore" alongside Directory / Affinity Network / Segments.
-15. **People submission form link is a placeholder.** The hero CTA on the people page currently has `href="#"` with a "form coming soon" caption. When the form exists, swap the href to the real URL and remove the caption. Don't replace with a mailto: — Tal explicitly chose the inert anchor + caption pattern over alert or mailto.
+14. **Asks & Opportunities (`/people/`) is a SEPARATE dataset from the org pages.** Source is `data/problem_statement_seeds_v5.csv`, built by `build_people.py`. Do not merge into `build_affinity.py` — affinity is org-to-org, people are a parallel track. Hub treats the Asks & Opportunities card as a 4th "way to explore" alongside Directory / Affinity Network / Segments.
+15. **Asks & Opportunities submission form link is a placeholder.** The hero CTA on the Asks & Opportunities page currently has `href="#"` with a "form coming soon" caption. When the form exists, swap the href to the real URL and remove the caption. Don't replace with a mailto: — Tal explicitly chose the inert anchor + caption pattern over alert or mailto.
 16. **Network page bridges to /people/ in two places** (added May 2026): (a) inline "People working on these problem topics" subsection at the bottom of the org-node detail panel — matches by `problem_topic ∈ org.problem_statements`; (b) `people-results` panel inside the controls block that appears when Problem area or Problem topic filters are active. Both reuse the `.people-card` styling (orange-accented to distinguish from the blue semantic-search panel) and link out to `/people/` for the full list. The `people.json` fetch is wrapped in `.catch(() => [])` so the network page degrades gracefully if the file is missing.
 
 ---
@@ -433,6 +434,10 @@ For changes where placement/labeling/UX is ambiguous (e.g., "add a new section t
 
 | Date | Commit | Summary |
 |---|---|---|
+| 2026-05-18 | `c8a2acf` | Directory: case-insensitive dedup for problem topic filter — "AI in government" / "Ai in government" collapse to one option; matching is also case-insensitive. |
+| 2026-05-18 | `0d7fe75` | Directory: rename "Focus level" filter label to "Geographic focus". |
+| 2026-05-18 | `7e1f96b` | Rename People view to "Asks & Opportunities" across all pages (hub card, pill navs, page title, breadcrumb, h1). Reorder hub card and pill nav so Asks & Opportunities appears before Segments everywhere. |
+| 2026-05-18 | `54a17e6` | Hub: change "Four ways to explore" card grid to fixed 2×2 layout. |
 | 2026-05-17 | _pending_ | README: add "Gotchas & lessons" section capturing the segments parse-error story, the hardcoded-counts sync checklist for data refreshes, the shared-vocabulary requirement for the network ↔ people bridge, and other lessons from the May 2026 sessions. |
 | 2026-05-14 | `f4f028c` | Network ↔ People bridge: (a) detail panel adds "People working on these problem topics" subsection (~97% org coverage); (b) people-results sidebar appears in controls when Problem area or Problem topic filters are active. Both link out to `/people/`. |
 | 2026-05-14 | `4201640` | Add People & Problem Statements page (`/people/`). New 4th explore card on the hub. Sources `data/problem_statement_seeds_v5.csv` via `build_people.py` → `people.json`. 7-dimension filtering. Submit-yourself pill placeholder. People pill added to nav across all subpages. |

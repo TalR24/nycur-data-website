@@ -27,10 +27,11 @@ Estimated fiscal impact of every NYC Council bill with a Finance Division impact
 - [`/civic_reference/nyc_council_fiscal_impacts_tracker/methodology/`](https://data.nycuriosity.com/civic_reference/nyc_council_fiscal_impacts_tracker/methodology/) — methodology
 
 ### [State Capacity Ecosystem](https://data.nycuriosity.com/civic_reference/state_capacity_ecosystem/)
-Directory, segment view, and affinity network of 300+ organizations working on state capacity — research, advocacy, GovTech, philanthropy, fellowships, digital services, investors, and ecosystem-builders. Underlying database curated by Henry Grunzeweig. Affinity score combines description TF-IDF, shared problem statements, named funders, and segment overlap, with semantic search powered by a precomputed TF-IDF index.
+Directory, segment view, affinity network, and practitioner matchmaking for 300+ organizations working on state capacity — research, advocacy, GovTech, philanthropy, fellowships, digital services, investors, and ecosystem-builders. Underlying database curated by Henry Grunzweig. Affinity score combines description TF-IDF, shared problem statements, named funders, and segment overlap, with semantic search powered by a precomputed TF-IDF index.
 
 - [`/civic_reference/state_capacity_ecosystem/`](https://data.nycuriosity.com/civic_reference/state_capacity_ecosystem/) — hub
 - [`/civic_reference/state_capacity_ecosystem/directory/`](https://data.nycuriosity.com/civic_reference/state_capacity_ecosystem/directory/) — searchable, filterable org table
+- [`/civic_reference/state_capacity_ecosystem/people/`](https://data.nycuriosity.com/civic_reference/state_capacity_ecosystem/people/) — Asks & Opportunities: practitioners + problem statements, 7-dimension filtering
 - [`/civic_reference/state_capacity_ecosystem/segments/`](https://data.nycuriosity.com/civic_reference/state_capacity_ecosystem/segments/) — segment distribution + click-to-list
 - [`/civic_reference/state_capacity_ecosystem/network/`](https://data.nycuriosity.com/civic_reference/state_capacity_ecosystem/network/) — D3 force-directed affinity graph + semantic search
 - [`/civic_reference/state_capacity_ecosystem/methodology/`](https://data.nycuriosity.com/civic_reference/state_capacity_ecosystem/methodology/) — scoring formula, taxonomy, inclusion criteria
@@ -138,15 +139,22 @@ Static site hosted on GitHub Pages at a custom domain (`data.nycuriosity.com`). 
 │   │   ├── cost-revenue-breakdown/
 │   │   └── methodology/
 │   └── state_capacity_ecosystem/
-│       ├── index.html                             → Hub (explainer, stat pills, segment chart)
+│       ├── index.html                             → Hub (explainer, stat pills, 2×2 view cards)
+│       ├── README.md                              → Full project reference doc
 │       ├── data/
-│       │   ├── build_affinity.py                  → CSV → graph.json + orgs.json
-│       │   ├── state_capacity_ecosystem.csv       → Source data (225 rows)
-│       │   ├── graph.json                         → Nodes + affinity edges
-│       │   └── orgs.json                          → Flat directory bundle
-│       ├── directory/                             → Searchable / filterable table
-│       ├── network/                               → D3 force-directed graph
-│       └── methodology/                           → Scoring formula and notes
+│       │   ├── build_affinity.py                  → CSV → graph.json + orgs.json + search_index.json
+│       │   ├── build_people.py                    → CSV → people.json
+│       │   ├── state_capacity_ecosystem.csv       → Canonical org source (304 rows)
+│       │   ├── graph.json                         → Nodes + affinity edges + stats
+│       │   ├── orgs.json                          → Flat directory bundle
+│       │   ├── search_index.json                  → TF-IDF vocab + IDF + per-org vectors
+│       │   ├── problem_statement_seeds_v5.csv     → People / problem-statement seed data
+│       │   └── people.json                        → Flat people bundle
+│       ├── directory/                             → Searchable / filterable org table
+│       ├── people/                                → Asks & Opportunities (practitioners + problem statements)
+│       ├── segments/                              → Segment distribution + click-to-list
+│       ├── network/                               → D3 force-directed affinity graph + semantic search
+│       └── methodology/                           → Scoring formula, taxonomy, inclusion criteria
 │
 ├── cb3-resolutions/                               → Manhattan CB3 resolutions corpus + tools
 │   ├── index.html                                 → Hub page
