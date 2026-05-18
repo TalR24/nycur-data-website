@@ -360,11 +360,81 @@ Working sessions on this tool tend to involve many file reads and edits across 5
 
 ---
 
+## Gotchas & lessons (read before making changes)
+
+Things that bit me in past sessions. Read these so you don't reinvent the wheel — or, worse, the bug.
+
+### Always syntax-check inline `<script>` after non-trivial JS edits
+
+The segments page sat broken in production with a silent `SyntaxError`: `selectSegment(seg)` had `const seg = document.getElementById(...)` inside it, redeclaring its own parameter. ES `const` cannot redeclare an existing binding in the same scope, so the entire `<script>` tag failed to parse — and **no JS ran at all**, leaving the page stuck on "Loading…" forever. Hardening code I'd added (timeout, error surfacing) didn't fire because the hardening itself never executed.
+
+I spent a debugging round investigating fetch / CDN / cache before finding the parse error. Don't repeat that. After any non-trivial JS edit, run:
+
+```bash
+node -e "
+const fs = require('fs');
+const html = fs.readFileSync('PATH/index.html', 'utf8');
+const scripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)]
+  .map(m => m[1]).filter(s => s.trim() && !s.includes('cdn.jsdelivr.net'));
+scripts.forEach((s, i) => {
+  try { new Function(s); console.log('script', i, 'OK,', s.length, 'chars'); }
+  catch(e) { console.log('script', i, 'SYNTAX ERROR:', e.message); }
+});
+"
+```
+
+`new Function()` runs the parser in strict mode and catches param/const shadows, missing braces, arrow-fn quirks, and reserved-word collisions in milliseconds. Visual review missed the `seg` shadow for multiple sessions.
+
+### Data refreshes need a hardcoded-counts sync checklist
+
+`build_affinity.py` regenerates `graph.json` / `orgs.json` / `search_index.json` automatically. But many user-facing strings have stats baked in. When the dataset refreshes (org count, edge count, segment count, problem area / topic count, funder coverage), update **all** of these in lockstep or the UI will lie to readers:
+
+1. **Hub `index.html`** — directory card stat ("304 orgs · 11 segments · X areas · Y topics"), network card stat ("1,629 edges · …"), problem-statements info panel ("Y fine-grained issues, X broader buckets"), people card stat (practitioner count)
+2. **Methodology `index.html`** — schema bullets, problem-statements paragraph, directory-filter bullet, "Limitation worth flagging" funder count, dataset stats line
+3. **README** — Current dataset stats, schema history, Problem taxonomy section, Glossary entries
+4. **`build_affinity.py`** — the docstring/comment around the schema bit referencing area + topic counts
+
+Stat-pills in the hero ARE dynamic (read from `graph.json` at load). Card-stat strings inside `.card` elements and inline taxonomy descriptions are NOT — they're hand-written. A future improvement would be to make the card stats dynamic too, but until then, hand-update them.
+
+### The network ↔ people bridge depends on shared topic vocabulary
+
+The matchmaking on the network detail panel (97% coverage at last audit) only works because the org dataset's `problem_statements` field uses the same canonical 37-tag list as the people dataset's `problem_topic` field. If either side ever uses a different vocabulary — free-text topics, a different controlled list, renamed tags — the bridge will degrade silently (no people will appear in the detail panel, no sidebar will fill). Audit after every dataset refresh:
+
+```bash
+python3 -c "
+import json
+orgs = json.load(open('data/orgs.json'))
+ppl  = json.load(open('data/people.json'))
+org_topics = set()
+for o in orgs:
+    for t in o.get('problem_statements', []): org_topics.add(t)
+covered = sum(1 for p in ppl if p.get('problem_topic') in org_topics)
+print(f'people whose topic is in the org vocab: {covered}/{len(ppl)}')
+"
+```
+
+If this drops materially (below ~80%), investigate before deploying — Henry may have renamed tags on the Airtable side, or the seeds CSV may have drifted.
+
+### Inline `<script>` is at end-of-body, sync — DOM is ready when it runs
+
+MS multi-select instances are constructed at module-load time and immediately call `document.getElementById(...)`. This works because the `<script>` tag sits at the end of `<body>`, after all HTML elements are parsed. If you ever move the script to `<head>` or add `defer`/`async`, you'll need to gate the MS constructors on `DOMContentLoaded` or they'll silently noop.
+
+### Don't trust the prior session's "decisions to honor" verbatim
+
+The decisions list IS the source of truth — but only at the time it was written. Decisions can flip (Methodology pill removed then restored same day; "Three ways to explore" became "Four"; Henry's surname spelled wrong for multiple sessions). Treat decisions as documented *state*, not as inviolable. When the user changes their mind, update the decision text + change log + any prose that references the old position **in the same commit**, or the README itself becomes the bug.
+
+### Ask for direction before building open-ended additions
+
+For changes where placement/labeling/UX is ambiguous (e.g., "add a new section to the hub") the cheapest path is `AskUserQuestion` with 2-3 concrete option previews **before** writing code. Validated twice this session — saved multiple revision cycles vs. guessing.
+
+---
+
 ## Recent change log
 
 | Date | Commit | Summary |
 |---|---|---|
-| 2026-05-14 | _pending_ | Network ↔ People bridge: (a) detail panel adds "People working on these problem topics" subsection (~97% org coverage); (b) people-results sidebar appears in controls when Problem area or Problem topic filters are active. Both link out to `/people/`. |
+| 2026-05-17 | _pending_ | README: add "Gotchas & lessons" section capturing the segments parse-error story, the hardcoded-counts sync checklist for data refreshes, the shared-vocabulary requirement for the network ↔ people bridge, and other lessons from the May 2026 sessions. |
+| 2026-05-14 | `f4f028c` | Network ↔ People bridge: (a) detail panel adds "People working on these problem topics" subsection (~97% org coverage); (b) people-results sidebar appears in controls when Problem area or Problem topic filters are active. Both link out to `/people/`. |
 | 2026-05-14 | `4201640` | Add People & Problem Statements page (`/people/`). New 4th explore card on the hub. Sources `data/problem_statement_seeds_v5.csv` via `build_people.py` → `people.json`. 7-dimension filtering. Submit-yourself pill placeholder. People pill added to nav across all subpages. |
 | 2026-05-14 | `f1bd3e3` | State Capacity Ecosystem: refresh with 2026-05-14 dataset. 304 orgs (unchanged), 1,629 edges (was 1,623). Henry added an 8th Problem Area ("Capacity") and a 37th Problem Topic. Hardcoded counts in hub cards, methodology page, README, and build script comment all updated. |
 | 2026-05-13 | `a3e1957` | Network: restore Methodology pill to the pill nav (briefly removed earlier in the day per user request, then restored). |
