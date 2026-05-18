@@ -496,29 +496,34 @@ Promise.all([
 });
 
 function populateFilters() {
-  const segs = new Set(), focuses = new Set(), problems = new Set(), areas = new Set();
+  const segs = new Set(), focuses = new Set(), areas = new Set();
+  const problemMap = new Map(); // lowercase key → first-seen canonical form
   for (const o of allOrgs) {
     if (o.primary_segment) segs.add(o.primary_segment);
     (o.focus || []).forEach(f => focuses.add(f));
-    (o.problem_statements || []).forEach(p => problems.add(p));
+    (o.problem_statements || []).forEach(p => {
+      const key = p.toLowerCase();
+      if (!problemMap.has(key)) problemMap.set(key, p);
+    });
     (o.problem_areas || []).forEach(a => areas.add(a));
   }
   msSeg.setOptions([...segs].sort());
   msFocus.setOptions([...focuses].sort());
   msArea.setOptions([...areas].sort());
-  msProblem.setOptions([...problems].sort());
+  msProblem.setOptions([...problemMap.values()].sort());
 }
 
 function applyFilters() {
   const rawQ = document.getElementById("f-search").value.trim();
   const segF = msSeg.get(), focF = msFocus.get(), areaF = msArea.get(), probF = msProblem.get();
+  const probFLower = probF.size ? new Set([...probF].map(f => f.toLowerCase())) : new Set();
 
   // Pre-filter by faceted filters
   let pool = allOrgs.filter(o => {
     if (segF.size && !segF.has(o.primary_segment)) return false;
     if (focF.size && !(o.focus || []).some(f => focF.has(f))) return false;
     if (areaF.size && !(o.problem_areas || []).some(a => areaF.has(a))) return false;
-    if (probF.size && !(o.problem_statements || []).some(p => probF.has(p))) return false;
+    if (probFLower.size && !(o.problem_statements || []).some(p => probFLower.has(p.toLowerCase()))) return false;
     return true;
   });
 
