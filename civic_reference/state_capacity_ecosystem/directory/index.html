@@ -5,7 +5,7 @@
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Directory — State Capacity Ecosystem · NYCuriosity Data</title>
-  <meta name="description" content="Searchable directory of organizations working on state capacity. Type a natural-language query for semantic ranking, or filter by segment, geographic focus, and problem statement.">
+  <meta name="description" content="Directory of organizations working on state capacity. Search by name or filter by segment, geographic focus, or problem statement to find relevant orgs.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -179,7 +179,7 @@
       line-height:1.4;
     }
     .problem-tag-list { display:flex; flex-wrap:wrap; gap:0; margin-top:2px; }
-    td.desc-cell { max-width:320px; }
+    td.desc-cell { min-width:220px; }
     td.desc-cell .desc-text {
       display:-webkit-box;
       -webkit-line-clamp:2;
@@ -196,8 +196,8 @@
       line-height:1.5;
     }
 
-    .expand-icon { color:var(--text-faint); font-size:1rem; line-height:1; transition:transform 0.2s; }
-    tr.expanded .expand-icon { transform:rotate(90deg); color:var(--blue); }
+    .expand-icon { color:var(--text-faint); line-height:1; transition:transform 0.2s; display:flex; align-items:center; justify-content:center; }
+    tr.expanded .expand-icon { transform:rotate(180deg); color:var(--blue); }
 
     /* DETAIL ROW */
     .detail-row { background:var(--blue-light) !important; }
@@ -277,7 +277,7 @@
 <div class="hero">
   <div class="hero-inner">
     <h1>Organization <span>Directory</span></h1>
-    <p>Every org in the database. Type a name, a problem area, or a natural-language phrase like "procurement reform in NYC" — results are ranked by semantic relevance. Or filter by segment, geographic focus, or problem statement. Click any row for the full description and funding detail.</p>
+    <p>Every org in the database. Search by name or use the filters to narrow by segment, geographic focus, or problem statement. Click any row for the full description and funding detail. For semantic search across descriptions and problem areas, use the <a href="../network/" style="color:var(--blue);text-decoration:none;border-bottom:1px solid var(--blue-mid)">Affinity Network</a>.</p>
   </div>
 </div>
 
@@ -298,8 +298,8 @@
     <div class="filter-section">
       <div class="filter-row">
         <div class="filter-group search">
-          <label class="filter-label" for="f-search">Search by name or describe what you're looking for</label>
-          <input id="f-search" type="text" class="filter-input" placeholder="e.g. Code for America, &quot;procurement reform in NYC&quot;, &quot;AI in benefits delivery&quot;…">
+          <label class="filter-label" for="f-search">Search by name</label>
+          <input id="f-search" type="text" class="filter-input" placeholder="e.g. Code for America, Niskanen Center, New America…">
         </div>
         <div class="filter-group">
           <label class="filter-label">Primary segment</label>
@@ -334,10 +334,10 @@
           <thead>
             <tr>
               <th data-col="name">Organization <i class="sort-icon">↕</i></th>
-              <th data-col="primary_segment">Segment <i class="sort-icon">↕</i></th>
-              <th>Secondary Segments</th>
-              <th>Description</th>
-              <th>Problem Area</th>
+              <th data-col="primary_segment" style="width:100px">Segment <i class="sort-icon">↕</i></th>
+              <th style="width:120px">Secondary Segments</th>
+              <th style="min-width:260px">Description</th>
+              <th style="width:140px">Problem Area</th>
               <th>Problem Statement</th>
               <th style="width:28px"></th>
             </tr>
@@ -377,7 +377,7 @@ let filtered = [];
 let sortCol = "name";
 let sortDir = 1;
 let page = 1;
-const PAGE_SIZE = 50;
+const PAGE_SIZE = 25;
 let expandedId = null;
 
 // MultiSelect — opening one closes the others; clicking outside closes any open dropdown.
@@ -440,60 +440,18 @@ const msFocus   = new MS("ms-focus", "Levels",   onChange);
 const msArea    = new MS("ms-area", "Areas",    onChange);
 const msProblem = new MS("ms-problem", "Topics", onChange);
 
-// ── Semantic search state ───────────────────────────────────────────────
-// Populated from search_index.json. Used to rank orgs against a free-text query.
-let searchIndex = null;        // { vocab, idf, vectors }
-let vocabIdx    = new Map();   // term → index
+function normArea(a) { return a === "Verticals" ? "Domains" : a; }
 
-const STOPWORDS = new Set("a an the and or but if then so of in on at to for from with by about into over through across under above between among against during before after up down out off as is are was were be been being have has had do does did doing this that these those there here it its their our your his her my we they them us i you he she who whom what which whose when where why how all any both each few more most other some such no nor not only own same than too very can will just dont don't".split(/\s+/));
-function tokenize(s) {
-  return (s.toLowerCase().match(/[a-z][a-z\-]+/g) || [])
-    .filter(t => t.length > 2 && !STOPWORDS.has(t));
-}
-
-// Build query vector and score each org via cosine. Boost for exact substring
-// match in the org name so people typing an exact name don't get out-ranked.
-function rankByQuery(rawQ) {
-  if (!searchIndex || !rawQ) return null;
-  const toks = tokenize(rawQ);
-  const qv = {};
-  for (const t of toks) {
-    const i = vocabIdx.get(t);
-    if (i === undefined) continue;
-    qv[i] = (qv[i] || 0) + searchIndex.idf[i];
-  }
-  let qnorm = 0; for (const k in qv) qnorm += qv[k] * qv[k];
-  qnorm = Math.sqrt(qnorm) || 1;
-  for (const k in qv) qv[k] /= qnorm;
-
-  const lq = rawQ.toLowerCase().trim();
-  const scored = new Map();
-  for (const o of allOrgs) {
-    const ov = searchIndex.vectors[o.id];
-    let s = 0;
-    for (const k in qv) s += qv[k] * (ov[k] || 0);
-    if (o.name.toLowerCase().includes(lq)) s += 0.5;          // exact-name boost
-    if ((o.named_funders || []).some(f => f.toLowerCase().includes(lq))) s += 0.15;
-    if (s > 0.01) scored.set(o.id, s);
-  }
-  return scored;
-}
-
-Promise.all([
-  fetch("../data/orgs.json").then(r => r.json()),
-  fetch("../data/search_index.json").then(r => r.json()).catch(() => null),
-]).then(([orgs, idx]) => {
-  allOrgs = orgs;
-  if (idx) {
-    searchIndex = idx;
-    idx.vocab.forEach((t, i) => vocabIdx.set(t, i));
-  }
-  populateFilters();
-  applyFilters();
-}).catch(err => {
-  document.getElementById("table-body").innerHTML =
-    `<tr><td colspan="7"><div class="state-msg"><h3>Could not load data</h3><p>${err.message}</p></div></td></tr>`;
-});
+fetch("../data/orgs.json")
+  .then(r => r.json())
+  .then(orgs => {
+    allOrgs = orgs;
+    populateFilters();
+    applyFilters();
+  }).catch(err => {
+    document.getElementById("table-body").innerHTML =
+      `<tr><td colspan="7"><div class="state-msg"><h3>Could not load data</h3><p>${err.message}</p></div></td></tr>`;
+  });
 
 function populateFilters() {
   const segs = new Set(), focuses = new Set(), areas = new Set();
@@ -505,7 +463,7 @@ function populateFilters() {
       const key = p.toLowerCase();
       if (!problemMap.has(key)) problemMap.set(key, p);
     });
-    (o.problem_areas || []).forEach(a => areas.add(a));
+    (o.problem_areas || []).forEach(a => areas.add(normArea(a)));
   }
   msSeg.setOptions([...segs].sort());
   msFocus.setOptions([...focuses].sort());
@@ -522,25 +480,14 @@ function applyFilters() {
   let pool = allOrgs.filter(o => {
     if (segF.size && !segF.has(o.primary_segment)) return false;
     if (focF.size && !(o.focus || []).some(f => focF.has(f))) return false;
-    if (areaF.size && !(o.problem_areas || []).some(a => areaF.has(a))) return false;
+    if (areaF.size && !(o.problem_areas || []).some(a => areaF.has(normArea(a)))) return false;
     if (probFLower.size && !(o.problem_statements || []).some(p => probFLower.has(p.toLowerCase()))) return false;
     return true;
   });
 
-  // Apply search ranking (if query present)
   if (rawQ) {
-    const scores = rankByQuery(rawQ);
-    if (scores && scores.size) {
-      pool = pool.filter(o => scores.has(o.id));
-      pool.sort((a, b) => scores.get(b.id) - scores.get(a.id));
-    } else {
-      // Fall back to plain substring across description/funder text for very short queries
-      const lq = rawQ.toLowerCase();
-      pool = pool.filter(o => {
-        const hay = (o.name + " " + o.description + " " + (o.named_funders||[]).join(" ") + " " + o.funding_detail + " " + (o.problem_statements||[]).join(" ") + " " + (o.problem_areas||[]).join(" ")).toLowerCase();
-        return hay.includes(lq);
-      });
-    }
+    const lq = rawQ.toLowerCase();
+    pool = pool.filter(o => o.name.toLowerCase().includes(lq));
   } else {
     pool.sort((a, b) => {
       const va = (a[sortCol] || "").toString().toLowerCase();
@@ -590,7 +537,7 @@ function renderRow(o) {
     ? `<div class="desc-text">${esc(truncDesc)}</div>`
     : `<span class="funder-mini" style="color:var(--text-faint)">—</span>`;
 
-  const areas = o.problem_areas || [];
+  const areas = (o.problem_areas || []).map(normArea);
   const areaHtml = areas.length
     ? areas.slice(0, 3).map(a => `<span class="area-tag">${esc(a)}</span>`).join("") +
       (areas.length > 3 ? ` <span class="funder-mini">+${areas.length - 3}</span>` : "")
@@ -609,7 +556,7 @@ function renderRow(o) {
     <td class="desc-cell">${descHtml}</td>
     <td class="tag-cell">${areaHtml}</td>
     <td class="tag-cell">${problemHtml}</td>
-    <td style="text-align:center"><span class="expand-icon">›</span></td>
+    <td style="text-align:center"><span class="expand-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span></td>
   </tr>
   ${expanded ? renderDetailRow(o) : ""}`;
 }
@@ -635,7 +582,7 @@ function renderDetailRow(o) {
   const problemHtml = problems.length
     ? `<div class="problem-tag-list">${problems.map(p => `<span class="problem-tag">${esc(p)}</span>`).join("")}</div>`
     : `<span class="detail-field-value" style="color:var(--text-faint)">—</span>`;
-  const areas = o.problem_areas || [];
+  const areas = (o.problem_areas || []).map(normArea);
   const areaHtml = areas.length
     ? `<div class="problem-tag-list">${areas.map(a => `<span class="problem-tag" style="background:#fff4ed;color:#c2410c;border-color:#fed7aa">${esc(a)}</span>`).join("")}</div>`
     : `<span class="detail-field-value" style="color:var(--text-faint)">—</span>`;
