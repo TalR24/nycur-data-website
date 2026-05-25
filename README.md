@@ -2,7 +2,7 @@
 
 **[data.nycuriosity.com](https://data.nycuriosity.com)**
 
-A companion site to [NYCuriosity](https://nycuriosity.substack.com), a Substack publication covering NYC urban policy, transit, infrastructure, and street design. The site hosts three types of content: **civic reference tools** (standalone interactive explorers), **Community Board 3 resolutions data** (a separate corpus with its own toolkit), and **post data pages** (charts and tables tied to specific Substack articles).
+A companion site to [NYCuriosity](https://nycuriosity.substack.com), a Substack publication covering NYC urban policy, transit, infrastructure, and street design. The site hosts two types of content: **civic reference tools** (standalone interactive explorers) and **post data pages** (charts and tables tied to specific Substack articles).
 
 ---
 
@@ -17,7 +17,7 @@ Browse all ~80 NYC government bodies — agencies, elected offices, DA offices, 
 - [`/civic_reference/nyc-gov-bodies-explorer/methodology/`](https://data.nycuriosity.com/civic_reference/nyc-gov-bodies-explorer/methodology/) — data sources, definitions, and known limitations
 
 ### [NYC Council Fiscal Impacts Tracker](https://data.nycuriosity.com/civic_reference/nyc_council_fiscal_impacts_tracker/)
-Estimated fiscal impact of every NYC Council bill with a Finance Division impact statement. Filterable by agency, committee, sponsor, and fiscal year, with cost/revenue/capital breakdowns and per-bill detail panels. Data is refreshed monthly via the pipeline scripts in `/pipeline/`.
+Estimated fiscal impact of every NYC Council bill with a Finance Division impact statement. Filterable by agency, committee, sponsor, and fiscal year, with cost/revenue/capital breakdowns and per-bill detail panels.
 
 - [`/civic_reference/nyc_council_fiscal_impacts_tracker/`](https://data.nycuriosity.com/civic_reference/nyc_council_fiscal_impacts_tracker/) — bill table
 - [`/civic_reference/nyc_council_fiscal_impacts_tracker/agency-fiscal-impact/`](https://data.nycuriosity.com/civic_reference/nyc_council_fiscal_impacts_tracker/agency-fiscal-impact/) — fiscal impact by agency
@@ -27,13 +27,13 @@ Estimated fiscal impact of every NYC Council bill with a Finance Division impact
 - [`/civic_reference/nyc_council_fiscal_impacts_tracker/methodology/`](https://data.nycuriosity.com/civic_reference/nyc_council_fiscal_impacts_tracker/methodology/) — methodology
 
 ### [State Capacity Ecosystem](https://data.nycuriosity.com/civic_reference/state_capacity_ecosystem/)
-Directory, segment view, affinity network, and practitioner matchmaking for 300+ organizations working on state capacity — research, advocacy, GovTech, philanthropy, fellowships, digital services, investors, and ecosystem-builders. Underlying database curated by Henry Grunzweig. Affinity score combines description TF-IDF, shared problem statements, named funders, and segment overlap, with semantic search powered by a precomputed TF-IDF index.
+Directory, segment view, affinity network, and matchmaking for 300+ organizations working on state capacity — research, advocacy, GovTech, philanthropy, fellowships, digital services, investors, and ecosystem-builders. Underlying database curated by Henry Grunzweig. Affinity score combines description TF-IDF, shared problem statements, named funders, and segment overlap, with semantic search powered by a precomputed TF-IDF index.
 
 - [`/civic_reference/state_capacity_ecosystem/`](https://data.nycuriosity.com/civic_reference/state_capacity_ecosystem/) — hub
 - [`/civic_reference/state_capacity_ecosystem/directory/`](https://data.nycuriosity.com/civic_reference/state_capacity_ecosystem/directory/) — searchable, filterable org table
-- [`/civic_reference/state_capacity_ecosystem/people/`](https://data.nycuriosity.com/civic_reference/state_capacity_ecosystem/people/) — Asks & Opportunities: practitioners + problem statements, 7-dimension filtering
+- [`/civic_reference/state_capacity_ecosystem/network/`](https://data.nycuriosity.com/civic_reference/state_capacity_ecosystem/network/) — D3 force-directed affinity graph + semantic search with geographic boosting
+- [`/civic_reference/state_capacity_ecosystem/connect/`](https://data.nycuriosity.com/civic_reference/state_capacity_ecosystem/connect/) — directory of people and orgs working on specific problems, with self-submission form and intro request flow
 - [`/civic_reference/state_capacity_ecosystem/segments/`](https://data.nycuriosity.com/civic_reference/state_capacity_ecosystem/segments/) — segment distribution + click-to-list
-- [`/civic_reference/state_capacity_ecosystem/network/`](https://data.nycuriosity.com/civic_reference/state_capacity_ecosystem/network/) — D3 force-directed affinity graph + semantic search
 - [`/civic_reference/state_capacity_ecosystem/methodology/`](https://data.nycuriosity.com/civic_reference/state_capacity_ecosystem/methodology/) — scoring formula, taxonomy, inclusion criteria
 
 ---
@@ -94,21 +94,9 @@ Data and charts from NYCuriosity's analysis of NYC's 10-year streets master plan
 
 ---
 
-## Pipelines
-
-Reusable Python scripts that refresh data feeding the live tools.
-
-- `pipeline/fetch_fiscal_impacts.py` — pulls newly-posted Council bill fiscal impact statements from NYC Legistar and writes them to `civic_reference/nyc_council_fiscal_impacts_tracker/data/fiscal_impacts.json`.
-- `pipeline/fetch_fiscal_impacts_historical.py` — one-shot historical backfill for the same dataset.
-- `civic_reference/state_capacity_ecosystem/data/build_affinity.py` — recomputes the affinity graph and directory bundle from a refreshed CSV.
-
-Detailed notes for the fiscal impacts pipeline live in `civic_reference/nyc_council_fiscal_impacts_tracker/PIPELINE_REFERENCE.md`.
-
----
-
 ## Tech
 
-Static site hosted on GitHub Pages at a custom domain (`data.nycuriosity.com`). No backend. Each project is a self-contained directory with an `index.html` that loads and renders data client-side.
+Static site hosted on GitHub Pages at a custom domain (`data.nycuriosity.com`). No backend. Each project is a self-contained directory with an `index.html` that loads and renders data client-side. All forms (self-submission, intro requests) submit via `mailto:` with pre-filled subject/body + clipboard copy fallback — no server required.
 
 **Libraries used:**
 - [D3.js v7](https://d3js.org/) — treemap (Gov Bodies) and force-directed graph (State Capacity)
@@ -123,7 +111,6 @@ Static site hosted on GitHub Pages at a custom domain (`data.nycuriosity.com`). 
 ```
 /                                                  → Hub homepage (index.html)
 ├── favicon.svg, website_logo.png, CNAME
-├── full_resolutions.csv                           → CB3 source corpus (used by /cb3-resolutions/)
 │
 ├── civic_reference/                               → Standalone interactive tools
 │   ├── nyc-gov-bodies-explorer/
@@ -131,7 +118,7 @@ Static site hosted on GitHub Pages at a custom domain (`data.nycuriosity.com`). 
 │   │   └── methodology/
 │   ├── nyc_council_fiscal_impacts_tracker/
 │   │   ├── index.html                             → Bill table
-│   │   ├── data/fiscal_impacts.json               → Output of pipeline/fetch_fiscal_impacts.py
+│   │   ├── data/fiscal_impacts.json
 │   │   ├── PIPELINE_REFERENCE.md
 │   │   ├── agency-fiscal-impact/
 │   │   ├── sponsor-fiscal-impact/
@@ -139,7 +126,7 @@ Static site hosted on GitHub Pages at a custom domain (`data.nycuriosity.com`). 
 │   │   ├── cost-revenue-breakdown/
 │   │   └── methodology/
 │   └── state_capacity_ecosystem/
-│       ├── index.html                             → Hub (explainer, stat pills, 2×2 view cards)
+│       ├── index.html                             → Hub (explainer, stat pills, 4 view cards)
 │       ├── README.md                              → Full project reference doc
 │       ├── data/
 │       │   ├── build_affinity.py                  → CSV → graph.json + orgs.json + search_index.json
@@ -148,55 +135,47 @@ Static site hosted on GitHub Pages at a custom domain (`data.nycuriosity.com`). 
 │       │   ├── graph.json                         → Nodes + affinity edges + stats
 │       │   ├── orgs.json                          → Flat directory bundle
 │       │   ├── search_index.json                  → TF-IDF vocab + IDF + per-org vectors
-│       │   ├── problem_statement_seeds_v5.csv     → People / problem-statement seed data
-│       │   └── people.json                        → Flat people bundle
+│       │   ├── problem_statement_seeds_v5.csv     → Connect directory seed data
+│       │   └── people.json                        → Flat connect bundle (read by connect/ page)
 │       ├── directory/                             → Searchable / filterable org table
-│       ├── people/                                → Asks & Opportunities (practitioners + problem statements)
+│       ├── connect/                               → People & org matchmaking, self-submission form, intro request flow
 │       ├── segments/                              → Segment distribution + click-to-list
 │       ├── network/                               → D3 force-directed affinity graph + semantic search
 │       └── methodology/                           → Scoring formula, taxonomy, inclusion criteria
 │
 ├── cb3-resolutions/                               → Manhattan CB3 resolutions corpus + tools
 │   ├── index.html                                 → Hub page
+│   ├── full_resolutions.csv                       → CB3 source corpus
 │   ├── data/
 │   ├── explorer/                                  → Full-text search + browse
 │   ├── resolutions-per-year/
 │   ├── top-agencies/
 │   └── top-topics/
 │
-├── nycuriosity_substack_posts/                    → Charts and tables tied to Substack posts
-│   ├── mamdani_100_days/
-│   │   ├── rikers-population/
-│   │   ├── better-billion-corridors/
-│   │   ├── dot-lane-progress/
-│   │   └── school-funding/
-│   ├── queensway_vs_queenslink/
-│   │   ├── comparison-table/
-│   │   └── further-facts/
-│   ├── mcb3_history_analysis/
-│   │   ├── agencies-comparison/
-│   │   ├── topics-comparison/
-│   │   ├── topics-over-time/
-│   │   └── 311-vs-resolutions/
-│   ├── cso_reports_2026/
-│   │   ├── agency-breakdown/
-│   │   ├── savings-by-category/
-│   │   ├── ibo-comparison/
-│   │   └── nyc-tax-rates/
-│   └── streets_plan_2026/
-│       ├── fiscal-impact/
-│       ├── program-breakdown/
-│       ├── ll195-mandates/
-│       └── compliance/
-│
-├── pipeline/                                      → Data refresh scripts
-│   ├── fetch_fiscal_impacts.py                    → Monthly Legistar pull
-│   ├── fetch_fiscal_impacts_historical.py         → One-shot backfill
-│   └── cache/                                     → Local cache for fetched docs
-│
-└── nyc_council_fiscal_impacts_tracker/, nyc-gov-bodies-explorer/
-    → Redirect stubs at the pre-move URLs (meta-refresh + JS replace),
-      kept so existing external links and bookmarks don't 404.
+└── nycuriosity_substack_posts/                    → Charts and tables tied to Substack posts
+    ├── mamdani_100_days/
+    │   ├── rikers-population/
+    │   ├── better-billion-corridors/
+    │   ├── dot-lane-progress/
+    │   └── school-funding/
+    ├── queensway_vs_queenslink/
+    │   ├── comparison-table/
+    │   └── further-facts/
+    ├── mcb3_history_analysis/
+    │   ├── agencies-comparison/
+    │   ├── topics-comparison/
+    │   ├── topics-over-time/
+    │   └── 311-vs-resolutions/
+    ├── cso_reports_2026/
+    │   ├── agency-breakdown/
+    │   ├── savings-by-category/
+    │   ├── ibo-comparison/
+    │   └── nyc-tax-rates/
+    └── streets_plan_2026/
+        ├── fiscal-impact/
+        ├── program-breakdown/
+        ├── ll195-mandates/
+        └── compliance/
 ```
 
 New post data projects follow the pattern described in `CLAUDE.md`: hub page at `nycuriosity_substack_posts/<folder>/index.html`, individual chart subpages in subdirectories, source CSVs in `data/`. New civic reference tools follow the same pattern under `civic_reference/<tool>/`.
