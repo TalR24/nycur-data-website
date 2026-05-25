@@ -175,6 +175,24 @@
       background:var(--blue-light); color:var(--blue); border:1px solid var(--blue-mid);
       line-height:1.4;
     }
+    .help-tag {
+      display:inline-block; font-family:'Inter',sans-serif;
+      font-size:0.72rem; font-weight:500; padding:2px 8px; border-radius:12px;
+      background:#f0fdf4; color:#166534; border:1px solid #bbf7d0; line-height:1.4;
+    }
+    .time-tag {
+      display:inline-block; font-family:'Roboto Mono',monospace;
+      font-size:0.66rem; font-weight:700; padding:2px 7px; border-radius:4px;
+      background:#f5f3ff; color:#6d28d9; border:1px solid #ddd6fe; white-space:nowrap;
+    }
+    .pref-tag {
+      display:inline-block; font-family:'Roboto Mono',monospace;
+      font-size:0.62rem; font-weight:700; padding:1px 7px; border-radius:4px; white-space:nowrap;
+    }
+    .pref-direct      { background:var(--blue-light); color:var(--blue); border:1px solid var(--blue-mid); }
+    .pref-facilitated { background:var(--orange-light); color:var(--orange); border:1px solid #fed7aa; }
+    .pref-other       { background:#f3f4f6; color:var(--text-mid); border:1px solid var(--border-mid); }
+    .contact-sub { margin-top:3px; }
     .contact-cell a {
       color:var(--blue); text-decoration:none; font-size:0.78rem;
       font-family:'Roboto Mono',monospace;
@@ -399,10 +417,10 @@
           <input id="f-search" type="text" class="filter-input" placeholder='e.g. "permitting", "Code for America", "Federal benefits"…'>
         </div>
         <div class="filter-group"><label class="filter-label">Role</label><div id="ms-role"></div></div>
-        <div class="filter-group"><label class="filter-label">Jurisdiction</label><div id="ms-juris"></div></div>
+        <div class="filter-group"><label class="filter-label">Geographic Focus</label><div id="ms-juris"></div></div>
         <div class="filter-group"><label class="filter-label">Problem area</label><div id="ms-area"></div></div>
         <div class="filter-group"><label class="filter-label">Problem topic</label><div id="ms-topic"></div></div>
-        <div class="filter-group"><label class="filter-label">Help they're seeking</label><div id="ms-help"></div></div>
+        <div class="filter-group"><label class="filter-label">Looking For</label><div id="ms-help"></div></div>
         <div class="filter-group"><label class="filter-label">Time window</label><div id="ms-window"></div></div>
         <button class="btn-reset" id="btn-reset">Reset</button>
       </div>
@@ -420,15 +438,16 @@
             <tr>
               <th data-col="name">Person <i class="sort-icon">↕</i></th>
               <th data-col="role">Role <i class="sort-icon">↕</i></th>
-              <th>Jurisdiction</th>
+              <th data-col="help_source">Looking For <i class="sort-icon">↕</i></th>
               <th data-col="problem_area">Problem area <i class="sort-icon">↕</i></th>
               <th data-col="problem_topic">Problem topic <i class="sort-icon">↕</i></th>
+              <th data-col="time_window">Time Window <i class="sort-icon">↕</i></th>
               <th>Contact</th>
               <th style="width:28px"></th>
             </tr>
           </thead>
           <tbody id="table-body">
-            <tr><td colspan="7"><div class="state-msg"><h3>Loading data…</h3></div></td></tr>
+            <tr><td colspan="8"><div class="state-msg"><h3>Loading data…</h3></div></td></tr>
           </tbody>
         </table>
       </div>
@@ -677,7 +696,7 @@ const msWindow = new MS("ms-window", "Time windows",  onChange);
 // surfaces an error instead of leaving the table on "Loading…" forever.
 const showLoadError = (msg) => {
   document.getElementById("table-body").innerHTML =
-    `<tr><td colspan="7"><div class="state-msg"><h3>Could not load data</h3><p>${msg}</p></div></td></tr>`;
+    `<tr><td colspan="8"><div class="state-msg"><h3>Could not load data</h3><p>${msg}</p></div></td></tr>`;
   console.error("[people]", msg);
 };
 
@@ -764,7 +783,7 @@ function renderTable() {
   const start = (page - 1) * PAGE_SIZE;
   const slice = filtered.slice(start, start + PAGE_SIZE);
   if (slice.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7"><div class="state-msg"><h3>No practitioners match the current filters</h3><p>Try clearing one of the filters above.</p></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8"><div class="state-msg"><h3>No practitioners match the current filters</h3><p>Try clearing one of the filters above.</p></div></td></tr>`;
     return;
   }
   tbody.innerHTML = slice.map(renderRow).join("");
@@ -779,8 +798,8 @@ function renderRow(p) {
   const roleHtml = p.role
     ? `<span class="role-tag ${roleClass}">${esc(p.role)}</span>`
     : `<span class="empty-cell">—</span>`;
-  const jurHtml = (p.jurisdictions || []).length
-    ? (p.jurisdictions || []).map(j => `<span class="juris-tag">${esc(j)}</span>`).join("")
+  const lookingHtml = p.help_source
+    ? `<span class="help-tag">${esc(p.help_source)}</span>`
     : `<span class="empty-cell">—</span>`;
   const areaHtml = p.problem_area
     ? `<span class="area-tag">${esc(p.problem_area)}</span>`
@@ -788,7 +807,10 @@ function renderRow(p) {
   const topicHtml = p.problem_topic
     ? `<span class="topic-tag">${esc(p.problem_topic)}</span>`
     : `<span class="empty-cell">—</span>`;
-  const contactHtml = renderContact(p.contact);
+  const timeHtml = p.time_window
+    ? `<span class="time-tag">${esc(p.time_window)}</span>`
+    : `<span class="empty-cell">—</span>`;
+  const contactHtml = renderContactCell(p);
 
   return `<tr class="data-row${expanded ? " expanded" : ""}" data-id="${p.id}">
     <td class="name-cell">
@@ -796,13 +818,25 @@ function renderRow(p) {
       <div class="person-org">${esc(p.organization || "")}</div>
     </td>
     <td>${roleHtml}</td>
-    <td>${jurHtml}</td>
+    <td>${lookingHtml}</td>
     <td>${areaHtml}</td>
     <td>${topicHtml}</td>
+    <td>${timeHtml}</td>
     <td class="contact-cell">${contactHtml}</td>
     <td style="text-align:center"><span class="expand-icon">›</span></td>
   </tr>
   ${expanded ? renderDetailRow(p) : ""}`;
+}
+
+function renderContactCell(p) {
+  const pref = p.contact_preference;
+  const parts = [];
+  if (pref) {
+    const cls = pref === "Direct" ? "pref-direct" : pref === "Facilitated" ? "pref-facilitated" : "pref-other";
+    parts.push(`<span class="pref-tag ${cls}">${esc(pref)}</span>`);
+  }
+  if (p.contact) parts.push(`<div class="${pref ? "contact-sub" : ""}">${renderContact(p.contact)}</div>`);
+  return parts.length ? parts.join("") : `<span class="empty-cell">—</span>`;
 }
 
 function renderContact(c) {
@@ -816,23 +850,19 @@ function renderContact(c) {
 
 function renderDetailRow(p) {
   return `<tr class="detail-row">
-    <td colspan="7">
+    <td colspan="8">
       <div class="detail-panel">
         <div class="detail-section">
-          <h4>The problem</h4>
+          <h4>Details</h4>
           <p class="detail-narrative">${esc(p.problem_details || "—")}</p>
         </div>
         <div class="detail-meta-grid">
           <div class="detail-meta-item">
-            <div class="meta-label">Looking for</div>
-            <div class="meta-val">${esc(p.help_source || "—")}</div>
+            <div class="meta-label">Seeking</div>
+            <div class="meta-val">${esc(p.seeking || "—")}</div>
           </div>
           <div class="detail-meta-item">
-            <div class="meta-label">Time window</div>
-            <div class="meta-val">${esc(p.time_window || "—")}</div>
-          </div>
-          <div class="detail-meta-item">
-            <div class="meta-label">Jurisdictions</div>
+            <div class="meta-label">Geographic Focus</div>
             <div class="meta-val">${(p.jurisdictions || []).join(", ") || "—"}</div>
           </div>
           <div class="detail-meta-item">
