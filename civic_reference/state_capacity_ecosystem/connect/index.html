@@ -185,6 +185,11 @@
       font-size:0.66rem; font-weight:700; padding:2px 7px; border-radius:4px;
       background:#f5f3ff; color:#6d28d9; border:1px solid #ddd6fe; white-space:nowrap;
     }
+    .seek-tag {
+      display:inline-block; font-family:'Inter',sans-serif;
+      font-size:0.72rem; font-weight:500; padding:2px 8px; border-radius:12px;
+      background:#fdf4ff; color:#7e22ce; border:1px solid #e9d5ff; line-height:1.4;
+    }
     .pref-tag {
       display:inline-block; font-family:'Roboto Mono',monospace;
       font-size:0.62rem; font-weight:700; padding:1px 7px; border-radius:4px; white-space:nowrap;
@@ -444,15 +449,17 @@
               <th data-col="name">Person <i class="sort-icon">↕</i></th>
               <th data-col="role">Role <i class="sort-icon">↕</i></th>
               <th data-col="help_source">Looking For <i class="sort-icon">↕</i></th>
-              <th data-col="problem_area">Problem area <i class="sort-icon">↕</i></th>
-              <th data-col="problem_topic">Problem topic <i class="sort-icon">↕</i></th>
+              <th data-col="seeking">Seeking <i class="sort-icon">↕</i></th>
+              <th data-col="problem_area">Problem Area <i class="sort-icon">↕</i></th>
+              <th data-col="problem_topic">Problem Topic <i class="sort-icon">↕</i></th>
+              <th>Geographic Focus</th>
               <th data-col="time_window">Time Window <i class="sort-icon">↕</i></th>
               <th>Contact</th>
               <th style="width:28px"></th>
             </tr>
           </thead>
           <tbody id="table-body">
-            <tr><td colspan="8"><div class="state-msg"><h3>Loading data…</h3></div></td></tr>
+            <tr><td colspan="10"><div class="state-msg"><h3>Loading data…</h3></div></td></tr>
           </tbody>
         </table>
       </div>
@@ -737,7 +744,7 @@ const msWindow = new MS("ms-window", "Time windows",  onChange);
 // surfaces an error instead of leaving the table on "Loading…" forever.
 const showLoadError = (msg) => {
   document.getElementById("table-body").innerHTML =
-    `<tr><td colspan="8"><div class="state-msg"><h3>Could not load data</h3><p>${msg}</p></div></td></tr>`;
+    `<tr><td colspan="10"><div class="state-msg"><h3>Could not load data</h3><p>${msg}</p></div></td></tr>`;
   console.error("[people]", msg);
 };
 
@@ -824,7 +831,7 @@ function renderTable() {
   const start = (page - 1) * PAGE_SIZE;
   const slice = filtered.slice(start, start + PAGE_SIZE);
   if (slice.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="8"><div class="state-msg"><h3>No practitioners match the current filters</h3><p>Try clearing one of the filters above.</p></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="10"><div class="state-msg"><h3>No practitioners match the current filters</h3><p>Try clearing one of the filters above.</p></div></td></tr>`;
     return;
   }
   tbody.innerHTML = slice.map(renderRow).join("");
@@ -842,11 +849,17 @@ function renderRow(p) {
   const lookingHtml = p.help_source
     ? `<span class="help-tag">${esc(p.help_source)}</span>`
     : `<span class="empty-cell">—</span>`;
+  const seekingHtml = p.seeking
+    ? `<span class="seek-tag">${esc(p.seeking)}</span>`
+    : `<span class="empty-cell">—</span>`;
   const areaHtml = p.problem_area
     ? `<span class="area-tag">${esc(p.problem_area)}</span>`
     : `<span class="empty-cell">—</span>`;
   const topicHtml = p.problem_topic
     ? `<span class="topic-tag">${esc(p.problem_topic)}</span>`
+    : `<span class="empty-cell">—</span>`;
+  const geoHtml = (p.jurisdictions || []).length
+    ? (p.jurisdictions).map(j => `<span class="juris-tag">${esc(j)}</span>`).join("")
     : `<span class="empty-cell">—</span>`;
   const timeHtml = p.time_window
     ? `<span class="time-tag">${esc(p.time_window)}</span>`
@@ -860,8 +873,10 @@ function renderRow(p) {
     </td>
     <td>${roleHtml}</td>
     <td>${lookingHtml}</td>
+    <td>${seekingHtml}</td>
     <td>${areaHtml}</td>
     <td>${topicHtml}</td>
+    <td>${geoHtml}</td>
     <td>${timeHtml}</td>
     <td class="contact-cell">${contactHtml}</td>
     <td style="text-align:center"><span class="expand-icon">›</span></td>
@@ -888,25 +903,11 @@ function renderContact(c) {
 
 function renderDetailRow(p) {
   return `<tr class="detail-row">
-    <td colspan="8">
+    <td colspan="10">
       <div class="detail-panel">
         <div class="detail-section">
           <h4>Details</h4>
           <p class="detail-narrative">${esc(p.problem_details || "—")}</p>
-        </div>
-        <div class="detail-meta-grid">
-          <div class="detail-meta-item">
-            <div class="meta-label">Seeking</div>
-            <div class="meta-val">${esc(p.seeking || "—")}</div>
-          </div>
-          <div class="detail-meta-item">
-            <div class="meta-label">Geographic Focus</div>
-            <div class="meta-val">${(p.jurisdictions || []).join(", ") || "—"}</div>
-          </div>
-          <div class="detail-meta-item">
-            <div class="meta-label">Contact</div>
-            <div class="meta-val">${renderContact(p.contact)}</div>
-          </div>
         </div>
       </div>
     </td>
