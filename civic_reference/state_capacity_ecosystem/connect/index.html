@@ -198,6 +198,11 @@
       font-family:'Roboto Mono',monospace;
     }
     .contact-cell a:hover { text-decoration:underline; }
+    .contact-ir {
+      color:var(--orange); text-decoration:none; font-size:0.78rem;
+      font-family:'Roboto Mono',monospace; font-weight:600; white-space:nowrap;
+    }
+    .contact-ir:hover { text-decoration:underline; }
     .empty-cell { color:var(--text-faint); font-size:0.78rem; }
 
     .expand-icon { color:var(--text-faint); font-size:1rem; line-height:1; transition:transform 0.2s; }
@@ -614,6 +619,42 @@
   </div>
 </div>
 
+<!-- INTRO REQUEST OVERLAY -->
+<div class="sf-overlay" id="ir-overlay" role="dialog" aria-modal="true" aria-labelledby="ir-title">
+  <div class="sf-modal" style="max-width:520px">
+    <div class="sf-hdr">
+      <span class="sf-hdr-title" id="ir-title">Request an introduction</span>
+      <button class="sf-close" type="button" onclick="closeIR()" aria-label="Close">×</button>
+    </div>
+    <div class="sf-body">
+      <p class="sf-intro" id="ir-intro"></p>
+      <div class="sf-section">
+        <div class="sf-prompt">Your name <span class="sf-req">*</span></div>
+        <input id="ir-name" type="text" class="sf-text-input" maxlength="80" placeholder="Your full name">
+        <div id="ir-name-err" class="sf-error-msg">Please enter your name.</div>
+      </div>
+      <div class="sf-section">
+        <div class="sf-prompt">Your email <span class="sf-req">*</span></div>
+        <input id="ir-email" type="email" class="sf-text-input" maxlength="120" placeholder="you@example.com">
+        <div id="ir-email-err" class="sf-error-msg">Please enter a valid email address.</div>
+      </div>
+      <div class="sf-section">
+        <div class="sf-prompt">Why you'd like to connect <span class="sf-req">*</span> <span class="sf-prompt-sub">280 chars</span></div>
+        <textarea id="ir-why" class="sf-textarea" maxlength="280" rows="3" placeholder="What you're working on and why connecting would be useful." oninput="sfCharCount('ir-why','ir-why-ct',280)"></textarea>
+        <div class="sf-char-row"><span id="ir-why-ct" class="sf-char-count">280 left</span></div>
+        <div id="ir-why-err" class="sf-error-msg">Please describe why you'd like to connect.</div>
+      </div>
+    </div>
+    <div class="sf-footer">
+      <div class="sf-footer-note">Tal will forward your request to the person listed.</div>
+      <button class="sf-submit-btn" type="button" onclick="irSubmit()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        Send request
+      </button>
+    </div>
+  </div>
+</div>
+
 <script>
 const ROLE_CLASS = {
   "Researcher": "researcher",
@@ -829,14 +870,11 @@ function renderRow(p) {
 }
 
 function renderContactCell(p) {
-  const pref = p.contact_preference;
-  const parts = [];
-  if (pref) {
-    const cls = pref === "Direct" ? "pref-direct" : pref === "Facilitated" ? "pref-facilitated" : "pref-other";
-    parts.push(`<span class="pref-tag ${cls}">${esc(pref)}</span>`);
+  if (p.contact_preference === "Facilitated") {
+    return `<a href="#" class="contact-ir" onclick="event.stopPropagation();openIR(${p.id});return false;">Request intro →</a>`;
   }
-  if (p.contact) parts.push(`<div class="${pref ? "contact-sub" : ""}">${renderContact(p.contact)}</div>`);
-  return parts.length ? parts.join("") : `<span class="empty-cell">—</span>`;
+  if (p.contact) return renderContact(p.contact);
+  return `<span class="empty-cell">—</span>`;
 }
 
 function renderContact(c) {
@@ -1195,6 +1233,59 @@ document.addEventListener("keydown", e => {
   sfMkChips("sf-contact-chips", ["Direct","Facilitated","Not listed yet"], false);
   sfUpdateTopics();
 })();
+
+// ─── INTRODUCTION REQUEST ────────────────────────────────────────────────────
+
+let _irPersonId = null;
+
+function openIR(personId) {
+  const p = allPeople.find(x => x.id === personId);
+  if (!p) return;
+  _irPersonId = personId;
+  const desc = p.organization ? `${p.name} (${p.organization})` : p.name;
+  document.getElementById("ir-title").textContent = `Request intro to ${p.name}`;
+  document.getElementById("ir-intro").textContent =
+    `Tal will forward your request to ${desc}. Leave your name, email, and a note about why you'd like to connect.`;
+  ["ir-name","ir-email","ir-why"].forEach(fid => { document.getElementById(fid).value = ""; });
+  document.querySelectorAll("#ir-overlay .sf-error-msg").forEach(e => e.classList.remove("show"));
+  document.getElementById("ir-why-ct").textContent = "280 left";
+  document.getElementById("ir-why-ct").classList.remove("warn","over");
+  document.getElementById("ir-overlay").classList.add("open");
+  document.body.style.overflow = "hidden";
+  requestAnimationFrame(() => document.getElementById("ir-name").focus());
+}
+
+function closeIR() {
+  document.getElementById("ir-overlay").classList.remove("open");
+  document.body.style.overflow = "";
+}
+
+function irSubmit() {
+  let ok = true;
+  const show = (eid, cond) => { document.getElementById(eid).classList.toggle("show", !cond); if (!cond) ok = false; };
+  const yourName  = document.getElementById("ir-name").value.trim();
+  const yourEmail = document.getElementById("ir-email").value.trim();
+  const why       = document.getElementById("ir-why").value.trim();
+  show("ir-name-err",  yourName.length > 0);
+  show("ir-email-err", yourEmail.length > 0 && yourEmail.includes("@"));
+  show("ir-why-err",   why.length > 0);
+  if (!ok) return;
+  const p      = allPeople.find(x => x.id === _irPersonId);
+  const target = p ? (p.organization ? `${p.name} (${p.organization})` : p.name) : "this person";
+  const sub    = encodeURIComponent(`Intro Request — ${p ? p.name : "unknown"}`);
+  const body   = encodeURIComponent(
+    `Hi Tal,\n\nI'd like to be connected with ${target} via the State Capacity Ecosystem Connect directory.\n\nWhy I'd like to connect:\n${why}\n\n— ${yourName}\n${yourEmail}`
+  );
+  window.location.href = `mailto:troded24@gmail.com?subject=${sub}&body=${body}`;
+  closeIR();
+}
+
+document.getElementById("ir-overlay").addEventListener("click", e => {
+  if (e.target === document.getElementById("ir-overlay")) closeIR();
+});
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape" && document.getElementById("ir-overlay").classList.contains("open")) closeIR();
+});
 </script>
 </body>
 </html>
