@@ -5,7 +5,7 @@
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Connect — State Capacity Ecosystem · NYCuriosity Data</title>
-  <meta name="description" content="Directory of practitioners working on state capacity, indexed by the specific problem they're tackling. Filter by role, jurisdiction, problem area, and topic to find collaborators.">
+  <meta name="description" content="Directory of people and organizations working on state capacity, indexed by the specific problem they're tackling and the kind of help they're looking for.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -143,8 +143,8 @@
     tbody tr.expanded { background:var(--blue-light); }
     td { padding:11px 12px; vertical-align:top; color:var(--text-mid); }
     td.name-cell { font-weight:600; color:var(--text); max-width:220px; }
-    td.name-cell .person-name { line-height:1.4; }
-    td.name-cell .person-org { font-weight:400; font-size:0.78rem; color:var(--text-muted); line-height:1.4; margin-top:2px; }
+    td.name-cell .entry-name { line-height:1.4; }
+    td.name-cell .entry-org { font-weight:400; font-size:0.78rem; color:var(--text-muted); line-height:1.4; margin-top:2px; }
 
     .role-tag {
       display:inline-block; font-family:'Roboto Mono',monospace;
@@ -397,11 +397,11 @@
 <div class="hero">
   <div class="hero-inner">
     <h1>Connect</h1>
-    <p>Practitioners working on state capacity, indexed by the specific problem they're tackling and the kind of help they're looking for. The goal is matchmaking — find someone working on what you're working on, or someone whose research, vendor expertise, or government access could unblock what you're stuck on. Filter by role, jurisdiction, problem area, or topic to narrow the list.</p>
+    <p>People and organizations working on state capacity, indexed by the specific problem they're tackling and the kind of help they're looking for. The goal is matchmaking — find someone working on what you're working on, or an organization whose research, vendor expertise, or government access could unblock what you're stuck on. Filter by role, geographic focus, problem area, or topic to narrow the list.</p>
     <div class="submit-row">
       <button class="submit-pill" type="button" onclick="openSF()">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        Submit yourself to the directory
+        Add yourself or your org to the directory
       </button>
     </div>
   </div>
@@ -428,10 +428,10 @@
         </div>
         <div class="filter-group"><label class="filter-label">Role</label><div id="ms-role"></div></div>
         <div class="filter-group"><label class="filter-label">Geographic Focus</label><div id="ms-juris"></div></div>
-        <div class="filter-group"><label class="filter-label">Problem area</label><div id="ms-area"></div></div>
-        <div class="filter-group"><label class="filter-label">Problem topic</label><div id="ms-topic"></div></div>
+        <div class="filter-group"><label class="filter-label">Problem Area</label><div id="ms-area"></div></div>
+        <div class="filter-group"><label class="filter-label">Problem Topic</label><div id="ms-topic"></div></div>
         <div class="filter-group"><label class="filter-label">Looking For</label><div id="ms-help"></div></div>
-        <div class="filter-group"><label class="filter-label">Time window</label><div id="ms-window"></div></div>
+        <div class="filter-group"><label class="filter-label">Time Window</label><div id="ms-window"></div></div>
         <button class="btn-reset" id="btn-reset">Reset</button>
       </div>
     </div>
@@ -446,7 +446,7 @@
         <table id="main-table">
           <thead>
             <tr>
-              <th data-col="name">Person <i class="sort-icon">↕</i></th>
+              <th data-col="name">Name <i class="sort-icon">↕</i></th>
               <th data-col="role">Role <i class="sort-icon">↕</i></th>
               <th data-col="help_source">Looking For <i class="sort-icon">↕</i></th>
               <th data-col="seeking">Seeking <i class="sort-icon">↕</i></th>
@@ -483,14 +483,14 @@
 <div class="sf-overlay" id="sf-overlay" role="dialog" aria-modal="true" aria-labelledby="sf-title">
   <div class="sf-modal">
     <div class="sf-hdr">
-      <span class="sf-hdr-title" id="sf-title">Submit yourself to the directory</span>
+      <span class="sf-hdr-title" id="sf-title">Add yourself or your org to the directory</span>
       <button class="sf-close" type="button" onclick="closeSF()" aria-label="Close">×</button>
     </div>
 
     <!-- Form body -->
     <div class="sf-body" id="sf-form-body">
       <p class="sf-intro">
-        Add yourself to the Connect directory so others working on state capacity can find you.
+        Add yourself or your organization to the Connect directory so others working on state capacity can find you.
         Submissions are reviewed before going live. Fields marked <span style="color:var(--orange)">*</span> are required.
       </p>
 
@@ -823,7 +823,7 @@ function applyFilters() {
 
 function updateResultsBar() {
   document.getElementById("results-count").innerHTML =
-    `Showing <strong>${filtered.length}</strong> of <strong>${allPeople.length}</strong> practitioners`;
+    `Showing <strong>${filtered.length}</strong> of <strong>${allPeople.length}</strong> entries`;
 }
 
 function renderTable() {
@@ -831,7 +831,7 @@ function renderTable() {
   const start = (page - 1) * PAGE_SIZE;
   const slice = filtered.slice(start, start + PAGE_SIZE);
   if (slice.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="10"><div class="state-msg"><h3>No practitioners match the current filters</h3><p>Try clearing one of the filters above.</p></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="10"><div class="state-msg"><h3>No entries match the current filters</h3><p>Try clearing one of the filters above.</p></div></td></tr>`;
     return;
   }
   tbody.innerHTML = slice.map(renderRow).join("");
@@ -868,8 +868,8 @@ function renderRow(p) {
 
   return `<tr class="data-row${expanded ? " expanded" : ""}" data-id="${p.id}">
     <td class="name-cell">
-      <div class="person-name">${esc(p.name)}</div>
-      <div class="person-org">${esc(p.organization || "")}</div>
+      <div class="entry-name">${esc(p.name)}</div>
+      <div class="entry-org">${esc(p.organization || "")}</div>
     </td>
     <td>${roleHtml}</td>
     <td>${lookingHtml}</td>
@@ -1272,7 +1272,7 @@ function irSubmit() {
   show("ir-why-err",   why.length > 0);
   if (!ok) return;
   const p      = allPeople.find(x => x.id === _irPersonId);
-  const target = p ? (p.organization ? `${p.name} (${p.organization})` : p.name) : "this person";
+  const target = p ? (p.organization ? `${p.name} (${p.organization})` : p.name) : "this entry";
   const sub    = encodeURIComponent(`Intro Request — ${p ? p.name : "unknown"}`);
   const body   = encodeURIComponent(
     `Hi Tal,\n\nI'd like to be connected with ${target} via the State Capacity Ecosystem Connect directory.\n\nWhy I'd like to connect:\n${why}\n\n— ${yourName}\n${yourEmail}`
