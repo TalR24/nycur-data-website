@@ -52,6 +52,7 @@
       border-radius:999px;
       background:var(--orange);
       border:1px solid var(--orange);
+      cursor:pointer;
       transition:transform 0.12s, box-shadow 0.12s;
       box-shadow:var(--shadow-sm);
     }
@@ -225,6 +226,122 @@
       .brand-slash, .brand-section { display:none; }
       td.name-cell { max-width:160px; }
     }
+
+    /* SUBMIT FORM OVERLAY */
+    .sf-overlay {
+      display:none; position:fixed; inset:0;
+      background:rgba(17,24,39,0.82); z-index:1000;
+      overflow-y:auto; padding:32px 16px;
+      justify-content:center; align-items:flex-start;
+    }
+    .sf-overlay.open { display:flex; }
+    .sf-modal {
+      background:var(--surface); border-radius:12px;
+      width:100%; max-width:680px;
+      box-shadow:0 24px 64px rgba(0,0,0,0.35);
+      overflow:hidden; margin:auto;
+    }
+    .sf-hdr {
+      background:#111827; padding:20px 28px;
+      display:flex; align-items:center; justify-content:space-between;
+    }
+    .sf-hdr-title { font-family:'Roboto Mono',monospace; font-size:0.95rem; font-weight:700; color:#e5e7eb; letter-spacing:-0.02em; }
+    .sf-close { background:none; border:none; color:#9ca3af; font-size:1.4rem; cursor:pointer; padding:0 4px; line-height:1; transition:color 0.15s; }
+    .sf-close:hover { color:#fff; }
+    .sf-body { padding:28px 32px 0; }
+    .sf-intro { font-size:0.84rem; color:var(--text-muted); line-height:1.6; margin-bottom:24px; }
+    .sf-section { margin-bottom:20px; }
+    .sf-prompt {
+      font-family:'Roboto Mono',monospace; font-size:0.82rem; font-weight:700;
+      color:var(--text); margin-bottom:10px; display:flex; align-items:center; gap:5px;
+    }
+    .sf-req { color:var(--orange); }
+    .sf-prompt-sub { font-size:0.72rem; color:var(--text-muted); font-weight:400; }
+    .sf-text-input {
+      width:100%; height:38px; border:1px solid var(--border-mid); border-radius:6px;
+      padding:0 12px; font-size:0.88rem; font-family:'Inter',sans-serif;
+      color:var(--text); background:var(--bg);
+      outline:none; transition:border-color 0.15s;
+    }
+    .sf-text-input:focus { border-color:var(--blue); }
+    .sf-chips { display:flex; flex-wrap:wrap; gap:7px; }
+    .sf-chip {
+      padding:5px 13px; border:1.5px solid var(--border-mid); border-radius:999px;
+      font-size:0.81rem; font-family:'Inter',sans-serif; font-weight:500;
+      color:var(--text-mid); background:var(--bg);
+      cursor:pointer; user-select:none;
+      transition:border-color 0.15s, background 0.15s, color 0.15s;
+      white-space:nowrap;
+    }
+    .sf-chip:hover { border-color:var(--blue); color:var(--blue); background:var(--blue-light); }
+    .sf-chip.on { border-color:var(--blue); background:var(--blue); color:#fff; }
+    .sf-chip.on:hover { background:var(--blue-hover); }
+    .sf-schip {
+      padding:5px 16px; border:1.5px solid var(--border-mid); border-radius:6px;
+      font-size:0.81rem; font-family:'Inter',sans-serif; font-weight:500;
+      color:var(--text-mid); background:var(--bg);
+      cursor:pointer; user-select:none;
+      transition:border-color 0.15s, background 0.15s, color 0.15s;
+      white-space:nowrap;
+    }
+    .sf-schip:hover { border-color:var(--blue); color:var(--blue); background:var(--blue-light); }
+    .sf-schip.on { border-color:var(--orange); background:var(--orange); color:#fff; }
+    .sf-single-chips { display:flex; flex-wrap:wrap; gap:7px; }
+    .sf-textarea {
+      width:100%; border:1px solid var(--border-mid); border-radius:6px;
+      padding:10px 12px; font-size:0.88rem; font-family:'Inter',sans-serif;
+      color:var(--text); background:var(--bg); resize:vertical; min-height:76px;
+      outline:none; transition:border-color 0.15s; line-height:1.5;
+    }
+    .sf-textarea:focus { border-color:var(--blue); }
+    .sf-char-row { display:flex; justify-content:flex-end; margin-top:4px; }
+    .sf-char-count { font-family:'Roboto Mono',monospace; font-size:0.68rem; color:var(--text-faint); }
+    .sf-char-count.warn { color:#d97706; }
+    .sf-char-count.over { color:#dc2626; }
+    .sf-error-msg { font-size:0.74rem; color:#dc2626; font-family:'Roboto Mono',monospace; margin-top:7px; display:none; }
+    .sf-error-msg.show { display:block; }
+    .sf-conditional { display:none; }
+    .sf-conditional.show { display:block; }
+    .sf-divider { border:none; border-top:1px solid var(--border); margin:22px 0; }
+    .sf-footer {
+      padding:20px 32px 28px; border-top:1px solid var(--border); margin-top:24px;
+      display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;
+    }
+    .sf-submit-btn {
+      display:inline-flex; align-items:center; gap:8px;
+      font-family:'Roboto Mono',monospace; font-size:0.88rem; font-weight:700;
+      color:#fff; background:var(--orange); border:none; border-radius:8px;
+      padding:12px 24px; cursor:pointer;
+      box-shadow:0 4px 12px rgba(255,99,25,0.30);
+      transition:transform 0.15s, box-shadow 0.15s;
+    }
+    .sf-submit-btn:hover { transform:translateY(-1px); box-shadow:0 6px 18px rgba(255,99,25,0.42); }
+    .sf-footer-note { font-size:0.75rem; color:var(--text-muted); line-height:1.5; flex:1; }
+    .sf-success { text-align:center; padding:52px 32px 48px; }
+    .sf-success-check { font-size:2.6rem; color:#16a34a; margin-bottom:14px; line-height:1; }
+    .sf-success-title { font-family:'Roboto Mono',monospace; font-size:1.05rem; font-weight:700; color:var(--text); margin-bottom:10px; }
+    .sf-success-text { font-size:0.88rem; color:var(--text-muted); line-height:1.65; margin-bottom:24px; max-width:440px; margin-left:auto; margin-right:auto; }
+    .sf-copy-btn {
+      display:inline-flex; align-items:center; gap:7px;
+      font-family:'Roboto Mono',monospace; font-size:0.8rem; font-weight:600;
+      color:var(--blue); background:var(--blue-light);
+      border:1px solid var(--blue-mid); border-radius:6px;
+      padding:8px 16px; cursor:pointer; transition:all 0.15s; margin-right:8px;
+    }
+    .sf-copy-btn:hover { background:var(--blue); color:#fff; }
+    .sf-done-btn {
+      display:inline-flex; align-items:center; gap:7px;
+      font-family:'Roboto Mono',monospace; font-size:0.8rem; font-weight:600;
+      color:var(--text-muted); background:var(--bg);
+      border:1px solid var(--border-mid); border-radius:6px;
+      padding:8px 16px; cursor:pointer; transition:all 0.15s;
+    }
+    .sf-done-btn:hover { border-color:var(--text-mid); color:var(--text); }
+    @media (max-width:640px) {
+      .sf-body, .sf-footer { padding-left:20px; padding-right:20px; }
+      .sf-hdr { padding:16px 20px; }
+      .sf-name-org-row { grid-template-columns:1fr !important; }
+    }
   </style>
 </head>
 <body>
@@ -254,11 +371,10 @@
     <h1>Connect</h1>
     <p>Practitioners working on state capacity, indexed by the specific problem they're tackling and the kind of help they're looking for. The goal is matchmaking — find someone working on what you're working on, or someone whose research, vendor expertise, or government access could unblock what you're stuck on. Filter by role, jurisdiction, problem area, or topic to narrow the list.</p>
     <div class="submit-row">
-      <a class="submit-pill" href="#" aria-label="Submit yourself to the directory (form coming soon)">
+      <button class="submit-pill" type="button" onclick="openSF()">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         Submit yourself to the directory
-      </a>
-      <span class="submit-caption">Submission form coming soon — link will be added here.</span>
+      </button>
     </div>
   </div>
 </div>
@@ -331,6 +447,153 @@
     </div>
   </div>
 </footer>
+
+<!-- SUBMISSION FORM OVERLAY -->
+<div class="sf-overlay" id="sf-overlay" role="dialog" aria-modal="true" aria-labelledby="sf-title">
+  <div class="sf-modal">
+    <div class="sf-hdr">
+      <span class="sf-hdr-title" id="sf-title">Submit yourself to the directory</span>
+      <button class="sf-close" type="button" onclick="closeSF()" aria-label="Close">×</button>
+    </div>
+
+    <!-- Form body -->
+    <div class="sf-body" id="sf-form-body">
+      <p class="sf-intro">
+        Add yourself to the Connect directory so others working on state capacity can find you.
+        Submissions are reviewed before going live. Fields marked <span style="color:var(--orange)">*</span> are required.
+      </p>
+
+      <!-- Name + Organization -->
+      <div class="sf-section sf-name-org-row" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div>
+          <div class="sf-prompt">Name <span class="sf-req">*</span></div>
+          <input id="sf-name" type="text" class="sf-text-input" maxlength="80" placeholder="Your full name" oninput="sfCharCount('sf-name','sf-name-ct',80)">
+          <div class="sf-char-row"><span id="sf-name-ct" class="sf-char-count">80 left</span></div>
+          <div id="sf-name-err" class="sf-error-msg">Please enter your name.</div>
+        </div>
+        <div>
+          <div class="sf-prompt">Organization <span class="sf-prompt-sub">(optional)</span></div>
+          <input id="sf-org" type="text" class="sf-text-input" maxlength="80" placeholder="Where you work or are affiliated" oninput="sfCharCount('sf-org','sf-org-ct',80)">
+          <div class="sf-char-row"><span id="sf-org-ct" class="sf-char-count">80 left</span></div>
+        </div>
+      </div>
+
+      <hr class="sf-divider">
+
+      <!-- Role -->
+      <div class="sf-section">
+        <div class="sf-prompt">I am a… <span class="sf-req">*</span></div>
+        <div class="sf-single-chips" id="sf-role-chips"></div>
+        <div id="sf-role-err" class="sf-error-msg">Please select a role.</div>
+      </div>
+
+      <!-- Looking For (multi) -->
+      <div class="sf-section">
+        <div class="sf-prompt">I'm looking for… <span class="sf-req">*</span> <span class="sf-prompt-sub">select all that apply</span></div>
+        <div class="sf-chips" id="sf-looking-chips"></div>
+        <div id="sf-looking-err" class="sf-error-msg">Please select at least one option.</div>
+      </div>
+
+      <!-- Seeking (single) -->
+      <div class="sf-section">
+        <div class="sf-prompt">To… <span class="sf-req">*</span></div>
+        <div class="sf-single-chips" id="sf-seeking-chips"></div>
+        <div id="sf-seeking-err" class="sf-error-msg">Please select what you're trying to do.</div>
+      </div>
+
+      <hr class="sf-divider">
+
+      <!-- Problem Area (single) -->
+      <div class="sf-section">
+        <div class="sf-prompt">On… <span class="sf-req">*</span> <span class="sf-prompt-sub">problem area</span></div>
+        <div class="sf-single-chips" id="sf-area-chips"></div>
+        <div id="sf-area-err" class="sf-error-msg">Please select a problem area.</div>
+      </div>
+
+      <!-- Problem Topic (multi, filtered by area) -->
+      <div class="sf-section">
+        <div class="sf-prompt">Specifically… <span class="sf-prompt-sub">optional — select all that apply</span></div>
+        <div class="sf-chips" id="sf-topic-chips"></div>
+      </div>
+
+      <hr class="sf-divider">
+
+      <!-- Geography (single) -->
+      <div class="sf-section">
+        <div class="sf-prompt">Where… <span class="sf-req">*</span> <span class="sf-prompt-sub">jurisdiction</span></div>
+        <div class="sf-single-chips" id="sf-geo-chips"></div>
+        <div id="sf-geo-err" class="sf-error-msg">Please select a geography.</div>
+      </div>
+
+      <!-- Time Window (single) -->
+      <div class="sf-section">
+        <div class="sf-prompt">Within… <span class="sf-req">*</span> <span class="sf-prompt-sub">time window</span></div>
+        <div class="sf-single-chips" id="sf-window-chips"></div>
+        <div id="sf-window-err" class="sf-error-msg">Please select a time window.</div>
+      </div>
+
+      <!-- Details (textarea) -->
+      <div class="sf-section">
+        <div class="sf-prompt">Details <span class="sf-prompt-sub">optional — 280 chars</span></div>
+        <textarea id="sf-details" class="sf-textarea" maxlength="280" rows="3" placeholder="Describe the specific problem you're working on and what kind of help would be most useful." oninput="sfCharCount('sf-details','sf-det-ct',280)"></textarea>
+        <div class="sf-char-row"><span id="sf-det-ct" class="sf-char-count">280 left</span></div>
+      </div>
+
+      <hr class="sf-divider">
+
+      <!-- Contact Preference (single) -->
+      <div class="sf-section">
+        <div class="sf-prompt">Contact via… <span class="sf-req">*</span></div>
+        <div class="sf-single-chips" id="sf-contact-chips"></div>
+        <div id="sf-contact-err" class="sf-error-msg">Please select a contact preference.</div>
+      </div>
+
+      <!-- Email — conditional on Direct -->
+      <div class="sf-conditional" id="sf-email-cond">
+        <div class="sf-section">
+          <div class="sf-prompt">Email <span class="sf-req">*</span></div>
+          <input id="sf-email" type="email" class="sf-text-input" maxlength="120" placeholder="you@example.com" oninput="sfCharCount('sf-email','sf-email-ct',120)">
+          <div class="sf-char-row"><span id="sf-email-ct" class="sf-char-count">120 left</span></div>
+          <div id="sf-email-err" class="sf-error-msg">Please enter a valid email address.</div>
+        </div>
+      </div>
+
+      <!-- Contact Parameters — conditional on Facilitated -->
+      <div class="sf-conditional" id="sf-params-cond">
+        <div class="sf-section">
+          <div class="sf-prompt">Preferences for introduction <span class="sf-prompt-sub">optional — 280 chars</span></div>
+          <textarea id="sf-params" class="sf-textarea" maxlength="280" rows="2" placeholder="Any preferences for who Tal should connect you with, or context for the intro." oninput="sfCharCount('sf-params','sf-params-ct',280)"></textarea>
+          <div class="sf-char-row"><span id="sf-params-ct" class="sf-char-count">280 left</span></div>
+        </div>
+      </div>
+    </div><!-- /sf-form-body -->
+
+    <!-- Success state -->
+    <div class="sf-success" id="sf-success" style="display:none">
+      <div class="sf-success-check">✓</div>
+      <div class="sf-success-title">Submitted!</div>
+      <div class="sf-success-text">
+        Your submission was sent to Tal for review. Once approved, your entry will appear in the Connect directory.
+        You can copy your responses below for your records.
+      </div>
+      <div>
+        <button class="sf-copy-btn" type="button" onclick="sfCopy()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Copy to clipboard
+        </button>
+        <button class="sf-done-btn" type="button" onclick="closeSF()">Done</button>
+      </div>
+    </div>
+
+    <div class="sf-footer" id="sf-form-footer">
+      <div class="sf-footer-note">Reviewed by Tal before going live. No account needed.</div>
+      <button class="sf-submit-btn" type="button" onclick="sfSubmit()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        Submit
+      </button>
+    </div>
+  </div>
+</div>
 
 <script>
 const ROLE_CLASS = {
@@ -632,6 +895,276 @@ document.getElementById("btn-reset").addEventListener("click", () => {
   expandedId = null;
   applyFilters();
 });
+
+// ─── SUBMISSION FORM ────────────────────────────────────────────────────────
+
+const AREA_TOPICS = {
+  "Participatory Democracy": [
+    "AI in Government","Benefits Access","Broadband & Internet Connectivity","Civic Engagement",
+    "Criminal Justice","Crisis Response","Data Integration","Data Security","Democracy Infrastructure",
+    "Economic Mobility","Education Delivery","Evidence Use","Expert Contribution","Feedback Loops",
+    "Hiring Architecture","Hiring Process","Housing & Land Use","Iterative Learning","Legacy Systems",
+    "Operational Excellence","Outcomes Measurement","Permitting & Licensing","Procurement Reform",
+    "Public Health","Reaction Time","Regulatory & Administrative Burden","Scaling What Works",
+    "Service Design","Shared Platforms","Talent Pipeline","Tax & Revenue","Transparency & Accountability"
+  ],
+  "Procurement & Operations": [
+    "AI in Government","Benefits Access","Broadband & Internet Connectivity","Child Welfare",
+    "Civic Engagement","Criminal Justice","Crisis Response","Data Integration","Data Security",
+    "Democracy Infrastructure","Economic Mobility","Education Delivery","Evidence Use","Expert Contribution",
+    "Feedback Loops","Healthcare Access","Hiring Architecture","Hiring Process","Housing & Land Use",
+    "Iterative Learning","Legacy Systems","Operational Excellence","Outcomes Measurement",
+    "Permitting & Licensing","Physical Infrastructure","Procurement Reform","Public Health","Reaction Time",
+    "Regulatory & Administrative Burden","Scaling What Works","Service Design","Shared Platforms",
+    "Talent Pipeline","Tax & Revenue","Transparency & Accountability","Workforce Development"
+  ],
+  "Service Delivery": [
+    "AI in Government","Benefits Access","Broadband & Internet Connectivity","Child Welfare",
+    "Civic Engagement","Criminal Justice","Crisis Response","Data Integration","Data Security",
+    "Democracy Infrastructure","Economic Mobility","Education Delivery","Evidence Use","Expert Contribution",
+    "Feedback Loops","Healthcare Access","Hiring Architecture","Hiring Process","Housing & Land Use",
+    "Iterative Learning","Legacy Systems","Operational Excellence","Outcomes Measurement",
+    "Permitting & Licensing","Procurement Reform","Regulatory & Administrative Burden","Scaling What Works",
+    "Service Design","Shared Platforms","Talent Pipeline","Tax & Revenue","Transparency & Accountability",
+    "Workforce Development"
+  ],
+  "Talent & Hiring": [
+    "AI in Government","Benefits Access","Broadband & Internet Connectivity","Child Welfare",
+    "Civic Engagement","Criminal Justice","Crisis Response","Data Integration","Data Security",
+    "Democracy Infrastructure","Economic Mobility","Education Delivery","Evidence Use","Expert Contribution",
+    "Feedback Loops","Healthcare Access","Hiring Architecture","Hiring Process","Housing & Land Use",
+    "Iterative Learning","Legacy Systems","Operational Excellence","Outcomes Measurement",
+    "Physical Infrastructure","Procurement Reform","Public Health","Reaction Time",
+    "Regulatory & Administrative Burden","Scaling What Works","Service Design","Talent Pipeline",
+    "Tax & Revenue","Transparency & Accountability","Workforce Development"
+  ],
+  "Technology & Data": [
+    "AI in Government","Benefits Access","Broadband & Internet Connectivity","Child Welfare",
+    "Civic Engagement","Criminal Justice","Crisis Response","Data Integration","Data Security",
+    "Democracy Infrastructure","Economic Mobility","Education Delivery","Evidence Use","Expert Contribution",
+    "Feedback Loops","Healthcare Access","Hiring Architecture","Hiring Process","Housing & Land Use",
+    "Iterative Learning","Legacy Systems","Operational Excellence","Outcomes Measurement",
+    "Permitting & Licensing","Physical Infrastructure","Procurement Reform","Public Health","Reaction Time",
+    "Regulatory & Administrative Burden","Scaling What Works","Service Design","Shared Platforms",
+    "Talent Pipeline","Tax & Revenue","Transparency & Accountability","Workforce Development"
+  ],
+  "Test & Learn": [
+    "AI in Government","Benefits Access","Broadband & Internet Connectivity","Child Welfare",
+    "Civic Engagement","Criminal Justice","Crisis Response","Data Integration","Data Security",
+    "Democracy Infrastructure","Economic Mobility","Education Delivery","Evidence Use","Expert Contribution",
+    "Feedback Loops","Healthcare Access","Hiring Architecture","Housing & Land Use","Iterative Learning",
+    "Legacy Systems","Operational Excellence","Outcomes Measurement","Physical Infrastructure",
+    "Procurement Reform","Public Health","Reaction Time","Regulatory & Administrative Burden",
+    "Scaling What Works","Service Design","Shared Platforms","Talent Pipeline","Tax & Revenue",
+    "Transparency & Accountability","Workforce Development"
+  ],
+  "Domains": [
+    "AI in Government","Benefits Access","Broadband & Internet Connectivity","Child Welfare",
+    "Civic Engagement","Criminal Justice","Crisis Response","Data Integration","Data Security",
+    "Democracy Infrastructure","Economic Mobility","Education Delivery","Evidence Use","Expert Contribution",
+    "Feedback Loops","Healthcare Access","Hiring Architecture","Hiring Process","Housing & Land Use",
+    "Iterative Learning","Legacy Systems","Operational Excellence","Outcomes Measurement",
+    "Permitting & Licensing","Physical Infrastructure","Procurement Reform","Public Health","Reaction Time",
+    "Regulatory & Administrative Burden","Scaling What Works","Service Design","Talent Pipeline",
+    "Tax & Revenue","Transparency & Accountability","Workforce Development"
+  ],
+  "Ecosystem & Capacity": [
+    "AI in Government","Procurement Reform","Regulatory & Administrative Burden","Service Design"
+  ]
+};
+
+const ALL_TOPICS_SORTED = [
+  "AI in Government","Benefits Access","Broadband & Internet Connectivity","Child Welfare",
+  "Civic Engagement","Criminal Justice","Crisis Response","Data Integration","Data Security",
+  "Democracy Infrastructure","Economic Mobility","Education Delivery","Evidence Use","Expert Contribution",
+  "Feedback Loops","Healthcare Access","Hiring Architecture","Hiring Process","Housing & Land Use",
+  "Iterative Learning","Legacy Systems","Operational Excellence","Outcomes Measurement",
+  "Permitting & Licensing","Physical Infrastructure","Procurement Reform","Public Health","Reaction Time",
+  "Regulatory & Administrative Burden","Scaling What Works","Service Design","Shared Platforms",
+  "Talent Pipeline","Tax & Revenue","Transparency & Accountability","Workforce Development"
+];
+
+let _sfLastText = "";
+
+function sfMkChips(containerId, opts, multi) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = "";
+  opts.forEach(v => {
+    const chip = document.createElement("span");
+    chip.className = multi ? "sf-chip" : "sf-schip";
+    chip.textContent = v;
+    chip.dataset.val = v;
+    chip.tabIndex = 0;
+    chip.addEventListener("click", () => {
+      if (!multi) el.querySelectorAll(".sf-schip").forEach(c => c.classList.remove("on"));
+      chip.classList.toggle("on");
+      if (containerId === "sf-area-chips") sfUpdateTopics();
+      if (containerId === "sf-contact-chips") sfContactSwitch();
+    });
+    chip.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); chip.click(); } });
+    el.appendChild(chip);
+  });
+}
+
+function sfGetChips(containerId) {
+  return [...document.querySelectorAll(`#${containerId} .sf-chip.on`)].map(c => c.dataset.val);
+}
+
+function sfGetSingle(containerId) {
+  const on = document.querySelector(`#${containerId} .sf-schip.on`);
+  return on ? on.dataset.val : "";
+}
+
+function sfContactSwitch() {
+  const pref = sfGetSingle("sf-contact-chips");
+  document.getElementById("sf-email-cond").classList.toggle("show", pref === "Direct");
+  document.getElementById("sf-params-cond").classList.toggle("show", pref === "Facilitated");
+}
+
+function sfUpdateTopics() {
+  const area = sfGetSingle("sf-area-chips");
+  const topics = (area && area !== "Open to Any") ? (AREA_TOPICS[area] || ALL_TOPICS_SORTED) : ALL_TOPICS_SORTED;
+  const prevSelected = sfGetChips("sf-topic-chips");
+  sfMkChips("sf-topic-chips", topics, true);
+  topics.forEach(t => {
+    if (prevSelected.includes(t)) {
+      const chip = document.querySelector(`#sf-topic-chips [data-val="${CSS.escape(t)}"]`);
+      if (chip) chip.classList.add("on");
+    }
+  });
+}
+
+function sfCharCount(inputId, countId, max) {
+  const val = document.getElementById(inputId).value || "";
+  const rem = max - val.length;
+  const ct = document.getElementById(countId);
+  ct.textContent = rem + " left";
+  ct.classList.toggle("warn", rem < 50 && rem >= 0);
+  ct.classList.toggle("over", rem < 0);
+}
+
+function sfValidate() {
+  let ok = true;
+  const show = (id, cond) => {
+    const e = document.getElementById(id);
+    if (e) e.classList.toggle("show", !cond);
+    if (!cond) ok = false;
+  };
+  show("sf-name-err",    document.getElementById("sf-name").value.trim().length > 0);
+  show("sf-role-err",    sfGetSingle("sf-role-chips") !== "");
+  show("sf-looking-err", sfGetChips("sf-looking-chips").length > 0);
+  show("sf-seeking-err", sfGetSingle("sf-seeking-chips") !== "");
+  show("sf-area-err",    sfGetSingle("sf-area-chips") !== "");
+  show("sf-geo-err",     sfGetSingle("sf-geo-chips") !== "");
+  show("sf-window-err",  sfGetSingle("sf-window-chips") !== "");
+  show("sf-contact-err", sfGetSingle("sf-contact-chips") !== "");
+  if (sfGetSingle("sf-contact-chips") === "Direct") {
+    const em = document.getElementById("sf-email").value.trim();
+    show("sf-email-err", em.length > 0 && em.includes("@"));
+  }
+  return ok;
+}
+
+function sfBuildText() {
+  const name    = document.getElementById("sf-name").value.trim();
+  const org     = document.getElementById("sf-org").value.trim();
+  const role    = sfGetSingle("sf-role-chips");
+  const looking = sfGetChips("sf-looking-chips").join(", ");
+  const seeking = sfGetSingle("sf-seeking-chips");
+  const area    = sfGetSingle("sf-area-chips");
+  const topics  = sfGetChips("sf-topic-chips").join(", ");
+  const geo     = sfGetSingle("sf-geo-chips");
+  const win     = sfGetSingle("sf-window-chips");
+  const details = document.getElementById("sf-details").value.trim();
+  const contact = sfGetSingle("sf-contact-chips");
+  const email   = document.getElementById("sf-email").value.trim();
+  const params  = document.getElementById("sf-params").value.trim();
+  return [
+    `Name: ${name}`,
+    org     ? `Organization: ${org}` : "",
+    `Role: ${role}`,
+    `Looking for: ${looking}`,
+    `Seeking to: ${seeking}`,
+    `Problem area: ${area}`,
+    topics  ? `Topics: ${topics}` : "",
+    `Geography: ${geo}`,
+    `Time window: ${win}`,
+    details ? `Details: ${details}` : "",
+    `Contact preference: ${contact}`,
+    email   ? `Email: ${email}` : "",
+    params  ? `Contact parameters: ${params}` : "",
+  ].filter(Boolean).join("\n");
+}
+
+function sfSubmit() {
+  if (!sfValidate()) return;
+  _sfLastText = sfBuildText();
+  const sub  = encodeURIComponent("State Capacity Ecosystem — Directory Submission");
+  const body = encodeURIComponent(_sfLastText);
+  window.location.href = `mailto:troded24@gmail.com?subject=${sub}&body=${body}`;
+  document.getElementById("sf-form-body").style.display  = "none";
+  document.getElementById("sf-form-footer").style.display = "none";
+  document.getElementById("sf-success").style.display    = "block";
+}
+
+async function sfCopy() {
+  const btn = document.querySelector(".sf-copy-btn");
+  try {
+    await navigator.clipboard.writeText(_sfLastText);
+    const orig = btn.innerHTML;
+    btn.textContent = "Copied!";
+    setTimeout(() => { btn.innerHTML = orig; }, 1800);
+  } catch (e) {
+    prompt("Copy the text below:", _sfLastText);
+  }
+}
+
+function openSF() {
+  document.getElementById("sf-form-body").style.display   = "";
+  document.getElementById("sf-form-footer").style.display  = "";
+  document.getElementById("sf-success").style.display     = "none";
+  document.querySelectorAll(".sf-error-msg").forEach(e => e.classList.remove("show"));
+  document.querySelectorAll("#sf-overlay .sf-chip.on, #sf-overlay .sf-schip.on").forEach(c => c.classList.remove("on"));
+  ["sf-name","sf-org","sf-details","sf-email","sf-params"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = "";
+  });
+  document.getElementById("sf-email-cond").classList.remove("show");
+  document.getElementById("sf-params-cond").classList.remove("show");
+  document.getElementById("sf-name-ct").textContent   = "80 left";
+  document.getElementById("sf-org-ct").textContent    = "80 left";
+  document.getElementById("sf-det-ct").textContent    = "280 left";
+  document.getElementById("sf-email-ct").textContent  = "120 left";
+  document.getElementById("sf-params-ct").textContent = "280 left";
+  document.querySelectorAll(".sf-char-count").forEach(el => el.classList.remove("warn","over"));
+  sfUpdateTopics();
+  document.getElementById("sf-overlay").classList.add("open");
+  document.body.style.overflow = "hidden";
+  requestAnimationFrame(() => document.getElementById("sf-name").focus());
+}
+
+function closeSF() {
+  document.getElementById("sf-overlay").classList.remove("open");
+  document.body.style.overflow = "";
+}
+
+document.getElementById("sf-overlay").addEventListener("click", e => {
+  if (e.target === document.getElementById("sf-overlay")) closeSF();
+});
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape" && document.getElementById("sf-overlay").classList.contains("open")) closeSF();
+});
+
+(function initSF() {
+  sfMkChips("sf-role-chips",    ["Researcher","Technologist","Government practitioner","Advocate","Funder"], false);
+  sfMkChips("sf-looking-chips", ["Research findings","Technical co-builder","Government partner to pilot with","Introduction to person/org","Funding","Vendor / product recommendations","Peer with shared problem"], true);
+  sfMkChips("sf-seeking-chips", ["Validate research","Co-design a product","Navigate procurement","Test in government","Find collaborators","Understand the problem better","Other"], false);
+  sfMkChips("sf-area-chips",    ["Participatory Democracy","Procurement & Operations","Service Delivery","Talent & Hiring","Technology & Data","Test & Learn","Domains","Ecosystem & Capacity","Open to Any"], false);
+  sfMkChips("sf-geo-chips",     ["Federal","State","Local / City / County","Multi-level","Outside US","Open to Any"], false);
+  sfMkChips("sf-window-chips",  ["1 month","1–3 months","3–6 months","6–12 months","No specific timeline"], false);
+  sfMkChips("sf-contact-chips", ["Direct","Facilitated","Not listed yet"], false);
+  sfUpdateTopics();
+})();
 </script>
 </body>
 </html>
