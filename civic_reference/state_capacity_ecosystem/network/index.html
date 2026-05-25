@@ -397,7 +397,7 @@
       </div>
       <div class="controls-row" style="margin-top:12px; padding-top:12px; border-top:1px solid var(--border);">
         <div class="control-group" style="min-width:180px;">
-          <label class="control-label">Focus level</label>
+          <label class="control-label">Geographic Focus</label>
           <div id="ms-focus"></div>
         </div>
         <div class="control-group" style="min-width:180px;">
@@ -518,7 +518,7 @@ const onFilterChange = () => {
   if (q) applySearch(q);
   renderPeopleSidebar();
 };
-const msFocus = new MS("ms-focus", "Focus levels", onFilterChange);
+const msFocus = new MS("ms-focus", "Geographic Focus", onFilterChange);
 const msArea  = new MS("ms-area",  "Areas",        onFilterChange);
 const msTopic = new MS("ms-topic", "Topics",       onFilterChange);
 
@@ -533,6 +533,25 @@ function tokenize(s) {
   return (s.toLowerCase().match(/[a-z][a-z\-]+/g) || [])
     .filter(t => t.length > 2 && !STOPWORDS.has(t));
 }
+// Geographic terms in a query → the focus value they imply.
+// We give a score bonus to orgs whose focus matches, so "procurement in NYC"
+// surfaces City-focused orgs before Federal ones even when the TF-IDF corpus
+// doesn't contain the word "NYC".
+const GEO_FOCUS_MAP = [
+  { terms: ["nyc","new york city","new york","city","local","municipal","county"], focus: "City" },
+  { terms: ["state","albany","statewide"], focus: "State" },
+  { terms: ["federal","national","dc","washington","capitol"], focus: "Federal" },
+];
+const GEO_BOOST = 0.25;
+
+function detectGeoFocus(q) {
+  const lq = q.toLowerCase();
+  for (const { terms, focus } of GEO_FOCUS_MAP) {
+    if (terms.some(t => lq.includes(t))) return focus;
+  }
+  return null;
+}
+
 function rankByQuery(rawQ) {
   if (!searchIndex || !rawQ) return null;
   const toks = tokenize(rawQ);
@@ -546,12 +565,14 @@ function rankByQuery(rawQ) {
   qnorm = Math.sqrt(qnorm) || 1;
   for (const k in qv) qv[k] /= qnorm;
   const lq = rawQ.toLowerCase().trim();
+  const geoFocus = detectGeoFocus(rawQ);
   const scored = new Map();
   for (const o of allNodes) {
     const ov = searchIndex.vectors[o.id];
     let s = 0;
     for (const k in qv) s += qv[k] * (ov[k] || 0);
     if (o.name.toLowerCase().includes(lq)) s += 0.5;
+    if (geoFocus && (o.focus || []).includes(geoFocus)) s += GEO_BOOST;
     if (s > 0.01) scored.set(o.id, s);
   }
   return scored;
