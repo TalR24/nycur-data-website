@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Search — State Capacity Ecosystem · NYCuriosity Data</title>
+  <meta name="description" content="Find practitioners, organizations, and funders in the State Capacity Ecosystem that match what you're working on.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+    :root {
+      --blue:#2563eb; --blue-hover:#1d4ed8; --blue-light:#eff6ff; --blue-mid:#bfdbfe;
+      --orange:#FF6319; --orange-light:#fff4ed;
+      --text:#111827; --text-mid:#374151; --text-muted:#6b7280; --text-faint:#9ca3af;
+      --bg:#f8faff; --surface:#ffffff; --border:#e5e7eb; --border-mid:#d1d5db;
+      --shadow-sm:0 1px 3px rgba(17,24,39,0.08); --shadow-md:0 4px 16px rgba(37,99,235,0.10);
+      --radius:10px;
+    }
+    body { font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; display:flex; flex-direction:column; }
+
+    header { background:#111827; border-bottom:1px solid #1f2937; padding:0 clamp(16px,4vw,48px); }
+    .header-inner { max-width:1300px; margin:0 auto; height:60px; display:flex; align-items:center; justify-content:space-between; gap:16px; }
+    .brand { display:flex; align-items:baseline; gap:6px; text-decoration:none; }
+    .brand-name { font-family:'Roboto Mono',monospace; font-size:0.95rem; font-weight:700; color:#60a5fa; letter-spacing:-0.02em; }
+    .brand-slash { font-family:'Roboto Mono',monospace; font-size:0.95rem; color:#4b5563; }
+    .brand-section { font-family:'Roboto Mono',monospace; font-size:0.95rem; font-weight:600; color:#e5e7eb; }
+    .header-link { font-size:0.78rem; font-weight:500; color:#9ca3af; text-decoration:none; display:flex; align-items:center; gap:5px; transition:color 0.15s; }
+    .header-link:hover { color:#60a5fa; }
+
+    .breadcrumb { padding:14px clamp(16px,4vw,48px) 0; }
+    .breadcrumb-inner { max-width:1300px; margin:0 auto; display:flex; align-items:center; gap:6px; font-family:'Roboto Mono',monospace; font-size:0.72rem; font-weight:500; color:var(--text-faint); }
+    .breadcrumb a { color:var(--text-faint); text-decoration:none; transition:color 0.15s; }
+    .breadcrumb a:hover { color:var(--blue); }
+    .breadcrumb .current { color:var(--orange); }
+    .breadcrumb-sep { color:var(--border-mid); }
+
+    .hero { padding:14px clamp(16px,4vw,48px) 0; }
+    .hero-inner { max-width:1300px; margin:0 auto; padding-bottom:14px; }
+    .hero h1 { font-family:'Roboto Mono',monospace; font-size:clamp(1.2rem,3vw,1.7rem); font-weight:700; color:var(--text); letter-spacing:-0.03em; line-height:1.2; margin-bottom:6px; }
+    .hero h1 span { color:var(--blue); }
+    .hero p { font-size:0.88rem; color:var(--text-muted); max-width:780px; line-height:1.6; }
+
+    .chart-nav { background:var(--surface); border-bottom:1px solid var(--border); padding:10px clamp(16px,4vw,48px); display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+    .chart-nav-label { font-size:0.75rem; color:var(--text-muted); font-weight:500; white-space:nowrap; margin-right:4px; }
+    .chart-nav a { font-size:0.78rem; font-family:'Roboto Mono',monospace; font-weight:600; padding:4px 12px; border-radius:20px; text-decoration:none; border:1px solid var(--border); color:var(--text-muted); background:var(--bg); transition:all 0.15s; white-space:nowrap; }
+    .chart-nav a:hover { border-color:var(--blue); color:var(--blue); background:var(--blue-light); }
+    .chart-nav a.active { background:var(--blue); color:#fff; border-color:var(--blue); }
+
+    .main { flex:1; padding:clamp(16px,3vw,28px) clamp(16px,4vw,48px) clamp(40px,6vw,64px); }
+    .main-inner { max-width:1100px; margin:0 auto; }
+
+    /* ── SEARCH FORM CARD ── */
+    .search-form-card {
+      background:var(--surface); border:1px solid var(--border);
+      border-radius:var(--radius); box-shadow:var(--shadow-sm);
+      padding:28px 32px 24px;
+      margin-bottom:24px;
+    }
+    .search-form-card h2 {
+      font-family:'Roboto Mono',monospace; font-size:0.72rem; font-weight:700;
+      text-transform:uppercase; letter-spacing:0.1em; color:var(--orange);
+      margin-bottom:20px;
+    }
+    .sentence-rows { display:flex; flex-direction:column; gap:14px; }
+    .sentence-row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+    .sentence-prose {
+      font-size:0.97rem; color:var(--text-mid); font-weight:500; white-space:nowrap;
+      min-width:90px;
+    }
+    .sentence-tokens { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+    .tok-sep { font-size:0.88rem; color:var(--text-faint); }
+
+    /* Token chip + dropdown */
+    .tok-wrap { position:relative; display:inline-block; }
+    .tok-btn {
+      font-family:'Roboto Mono',monospace; font-size:0.82rem; font-weight:700;
+      color:var(--orange); background:var(--orange-light);
+      border:1.5px solid #fed7aa; border-radius:6px;
+      padding:5px 12px; cursor:pointer; white-space:nowrap;
+      transition:background 0.12s, border-color 0.12s;
+      display:inline-flex; align-items:center; gap:5px;
+    }
+    .tok-btn:hover, .tok-btn.open { background:#ffe4ce; border-color:var(--orange); }
+    .tok-btn.set { color:var(--blue); background:var(--blue-light); border-color:var(--blue-mid); }
+    .tok-btn.set:hover, .tok-btn.set.open { background:#dbeafe; border-color:var(--blue); }
+    .tok-caret { font-size:0.5rem; opacity:0.6; }
+    .tok-drop {
+      display:none; position:absolute; top:calc(100% + 5px); left:0;
+      min-width:220px; max-width:320px;
+      background:var(--surface); border:1px solid var(--border-mid);
+      border-radius:8px; box-shadow:0 8px 28px rgba(0,0,0,0.16);
+      z-index:300; overflow:hidden;
+    }
+    .tok-drop.open { display:block; }
+    .tok-drop-list { max-height:260px; overflow-y:auto; padding:4px 0; }
+    .tok-drop-item {
+      padding:7px 14px; cursor:pointer; font-size:0.84rem; color:var(--text-mid);
+      transition:background 0.1s; user-select:none;
+    }
+    .tok-drop-item:hover { background:var(--blue-light); color:var(--blue); }
+    .tok-drop-item.selected { background:var(--blue-light); color:var(--blue); font-weight:600; }
+    .tok-clear {
+      border-top:1px solid var(--border); padding:6px 14px;
+      font-size:0.74rem; font-family:'Roboto Mono',monospace; font-weight:600;
+      color:var(--text-faint); cursor:pointer; transition:color 0.1s;
+    }
+    .tok-clear:hover { color:var(--orange); }
+
+    .search-reset {
+      margin-top:18px; padding-top:16px; border-top:1px solid var(--border);
+      display:flex; align-items:center; gap:12px;
+    }
+    .btn-reset-search {
+      font-family:'Roboto Mono',monospace; font-size:0.74rem; font-weight:600;
+      background:none; border:1px solid var(--border-mid); border-radius:6px;
+      padding:5px 14px; cursor:pointer; color:var(--text-muted); transition:all 0.15s;
+    }
+    .btn-reset-search:hover { border-color:var(--orange); color:var(--orange); }
+    .search-hint { font-size:0.78rem; color:var(--text-faint); }
+
+    /* ── RESULTS ── */
+    .results-header {
+      font-family:'Roboto Mono',monospace; font-size:0.72rem; font-weight:700;
+      text-transform:uppercase; letter-spacing:0.08em;
+      color:var(--text-muted); margin-bottom:16px;
+    }
+    .results-header strong { color:var(--text); font-size:0.88rem; }
+    .results-section-label {
+      font-family:'Roboto Mono',monospace; font-size:0.65rem; font-weight:700;
+      text-transform:uppercase; letter-spacing:0.09em; color:var(--orange);
+      margin:20px 0 10px;
+    }
+    .results-section-label:first-of-type { margin-top:0; }
+
+    /* ── RESULT CARDS ── */
+    .result-card {
+      background:var(--surface); border:1px solid var(--border);
+      border-radius:var(--radius); margin-bottom:8px;
+      overflow:hidden; transition:border-color 0.15s;
+      cursor:pointer;
+    }
+    .result-card:hover { border-color:var(--blue-mid); }
+    .result-card.expanded { border-color:var(--blue); }
+
+    .card-summary {
+      display:flex; align-items:center; gap:12px;
+      padding:14px 18px; flex-wrap:wrap;
+    }
+    .card-avatar {
+      width:34px; height:34px; border-radius:50%; flex-shrink:0;
+      display:flex; align-items:center; justify-content:center;
+      font-family:'Roboto Mono',monospace; font-size:0.82rem; font-weight:700; color:#fff;
+    }
+    .card-identity { flex:1; min-width:160px; }
+    .card-name { font-weight:700; color:var(--text); font-size:0.9rem; line-height:1.3; }
+    .card-sub  { font-size:0.76rem; color:var(--text-muted); line-height:1.35; margin-top:1px; }
+    .card-chips { display:flex; flex-wrap:wrap; gap:5px; align-items:center; }
+    .card-expand-icon {
+      font-size:0.75rem; color:var(--text-faint); flex-shrink:0; margin-left:auto;
+      transition:transform 0.15s; user-select:none;
+    }
+    .result-card.expanded .card-expand-icon { transform:rotate(180deg); }
+
+    .card-detail {
+      display:none; padding:0 18px 18px; border-top:1px solid var(--border);
+    }
+    .result-card.expanded .card-detail { display:block; }
+    .detail-section { margin-top:14px; }
+    .detail-label {
+      font-family:'Roboto Mono',monospace; font-size:0.6rem; font-weight:700;
+      text-transform:uppercase; letter-spacing:0.08em; color:var(--text-faint);
+      margin-bottom:4px;
+    }
+    .detail-text { font-size:0.86rem; color:var(--text-mid); line-height:1.65; }
+    .detail-text a { color:var(--blue); text-decoration:none; }
+    .detail-text a:hover { text-decoration:underline; }
+    .detail-actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:16px; padding-top:14px; border-top:1px solid var(--border); }
+    .action-btn {
+      display:inline-flex; align-items:center; gap:6px;
+      font-family:'Roboto Mono',monospace; font-size:0.78rem; font-weight:600;
+      padding:7px 16px; border-radius:6px; border:1.5px solid; cursor:pointer;
+      text-decoration:none; transition:all 0.15s;
+    }
+    .action-btn-blue { color:var(--blue); border-color:var(--blue-mid); background:var(--blue-light); }
+    .action-btn-blue:hover { background:var(--blue); color:#fff; border-color:var(--blue); }
+    .action-btn-orange { color:var(--orange); border-color:#fed7aa; background:var(--orange-light); }
+    .action-btn-orange:hover { background:var(--orange); color:#fff; border-color:var(--orange); }
+
+    /* tag chips */
+    .chip {
+      font-family:'Roboto Mono',monospace; font-size:0.62rem; font-weight:700;
+      padding:2px 8px; border-radius:4px; white-space:nowrap;
+    }
+    .chip-role     { background:#f3f4f6; color:var(--text-mid); }
+    .chip-role.researcher    { background:#e0e7ff; color:#3730a3; }
+    .chip-role.technologist  { background:#dbeafe; color:#1e40af; }
+    .chip-role.advocate      { background:#fce7f3; color:#9d174d; }
+    .chip-role.govpractitioner { background:#dcfce7; color:#166534; }
+    .chip-role.funder        { background:#fef3c7; color:#92400e; }
+    .chip-topic  { background:var(--blue-light); color:var(--blue); border:1px solid var(--blue-mid); }
+    .chip-area   { background:var(--orange-light); color:var(--orange); border:1px solid #fed7aa; }
+    .chip-geo    { background:#f3f4f6; color:var(--text-mid); border:1px solid var(--border); }
+    .chip-seg    { background:#f3f4f6; color:var(--text-mid); }
+    .chip-time   { background:#f5f3ff; color:#5b21b6; border:1px solid #ddd6fe; }
+    .chip-help   { background:#f0fdf4; color:#166534; border:1px solid #bbf7d0; }
+
+    .no-results {
+      text-align:center; padding:40px 20px; color:var(--text-faint);
+      font-size:0.88rem;
+    }
+    .no-results strong { display:block; margin-bottom:6px; color:var(--text-mid); font-size:0.96rem; }
+
+    /* ── INTRO REQUEST MODAL ── */
+    .ir-overlay {
+      display:none; position:fixed; inset:0;
+      background:rgba(17,24,39,0.7); z-index:1000;
+      justify-content:center; align-items:center; padding:16px;
+    }
+    .ir-overlay.open { display:flex; }
+    .ir-modal {
+      background:var(--surface); border-radius:12px;
+      width:100%; max-width:480px;
+      box-shadow:0 24px 64px rgba(0,0,0,0.3);
+      display:flex; flex-direction:column; max-height:calc(100vh - 40px);
+    }
+    .ir-hdr {
+      background:#111827; padding:18px 24px;
+      display:flex; align-items:center; justify-content:space-between;
+      border-radius:12px 12px 0 0; flex-shrink:0;
+    }
+    .ir-title { font-family:'Roboto Mono',monospace; font-size:0.9rem; font-weight:700; color:#e5e7eb; }
+    .ir-close { background:none; border:none; color:#9ca3af; font-size:1.3rem; cursor:pointer; padding:0 4px; transition:color 0.15s; }
+    .ir-close:hover { color:#fff; }
+    .ir-body { padding:24px; overflow-y:auto; flex:1; min-height:0; }
+    .ir-field { margin-bottom:16px; }
+    .ir-label { font-family:'Roboto Mono',monospace; font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-muted); margin-bottom:5px; display:block; }
+    .ir-input {
+      width:100%; padding:8px 12px; border:1px solid var(--border-mid);
+      border-radius:6px; font-size:0.88rem; font-family:'Inter',sans-serif;
+      color:var(--text); background:var(--bg); outline:none; transition:border-color 0.15s;
+    }
+    .ir-input:focus { border-color:var(--blue); }
+    .ir-footer {
+      padding:16px 24px; border-top:1px solid var(--border); flex-shrink:0;
+      display:flex; gap:10px; align-items:center;
+    }
+    .ir-submit {
+      font-family:'Roboto Mono',monospace; font-size:0.82rem; font-weight:700;
+      background:var(--orange); color:#fff; border:none; border-radius:6px;
+      padding:9px 20px; cursor:pointer; transition:all 0.15s;
+    }
+    .ir-submit:hover { background:#e05510; }
+    .ir-cancel {
+      font-family:'Roboto Mono',monospace; font-size:0.78rem; font-weight:600;
+      background:none; border:1px solid var(--border-mid); border-radius:6px;
+      padding:8px 16px; cursor:pointer; color:var(--text-muted); transition:all 0.15s;
+    }
+    .ir-cancel:hover { border-color:var(--text-muted); color:var(--text); }
+    .ir-footer-note { font-size:0.74rem; color:var(--text-faint); }
+    #ir-success { display:none; text-align:center; padding:24px 16px; }
+    #ir-success p { font-size:0.9rem; color:var(--text-mid); line-height:1.6; }
+
+    footer { background:var(--surface); border-top:1px solid var(--border); padding:18px clamp(16px,4vw,48px); }
+    .footer-inner { max-width:1300px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; }
+    .footer-copy { font-size:0.78rem; color:var(--text-faint); }
+    .footer-links { display:flex; gap:18px; }
+    .footer-links a { font-size:0.78rem; color:var(--text-faint); text-decoration:none; transition:color 0.15s; }
+    .footer-links a:hover { color:var(--blue); }
+
+    @media (max-width:640px) {
+      .brand-slash, .brand-section { display:none; }
+      .search-form-card { padding:20px 16px; }
+      .sentence-prose { min-width:70px; font-size:0.88rem; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <a href="/" class="brand">
+      <span class="brand-name">nycuriosity</span>
+      <span class="brand-slash">/</span>
+      <span class="brand-section">data</span>
+    </a>
+    <a href="https://nycuriosity.substack.com" class="header-link" target="_blank" rel="noopener">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v4H4z"/><path d="M4 10h16v10l-8-4-8 4z"/></svg>
+      Substack
+    </a>
+  </div>
+</header>
+
+<div class="breadcrumb">
+  <div class="breadcrumb-inner">
+    <a href="/">NYCuriosity Data</a>
+    <span class="breadcrumb-sep">/</span>
+    <a href="../">State Capacity Ecosystem</a>
+    <span class="breadcrumb-sep">/</span>
+    <span class="current">Search</span>
+  </div>
+</div>
+
+<div class="hero">
+  <div class="hero-inner">
+    <h1><span>Search</span> the Ecosystem</h1>
+    <p>Find the practitioners and organizations that match what you're working on. Select your filters below — results update as you go.</p>
+  </div>
+</div>
+
+<div class="chart-nav">
+  <span class="chart-nav-label">Views in this tool:</span>
+  <a href="./" class="active">Search</a>
+  <a href="../directory/">Directory</a>
+  <a href="../network/">Affinity Network</a>
+  <a href="../connect/">Connect</a>
+  <a href="../segments/">Segments</a>
+  <a href="../methodology/">Methodology</a>
+  <a href="../">← Hub</a>
+</div>
+
+<div class="main">
+  <div class="main-inner">
+
+    <div class="search-form-card">
+      <h2>Who are you looking for?</h2>
+      <div class="sentence-rows">
+
+        <div class="sentence-row">
+          <span class="sentence-prose">I am a</span>
+          <div class="sentence-tokens">
+            <div class="tok-wrap" id="tok-role"></div>
+          </div>
+        </div>
+
+        <div class="sentence-row">
+          <span class="sentence-prose">Seeking</span>
+          <div class="sentence-tokens">
+            <div class="tok-wrap" id="tok-seek"></div>
+          </div>
+        </div>
+
+        <div class="sentence-row">
+          <span class="sentence-prose">Working on</span>
+          <div class="sentence-tokens">
+            <div class="tok-wrap" id="tok-area"></div>
+            <span class="tok-sep" id="topic-sep" style="display:none">›</span>
+            <div class="tok-wrap" id="tok-topic" style="display:none"></div>
+          </div>
+        </div>
+
+        <div class="sentence-row">
+          <span class="sentence-prose">In</span>
+          <div class="sentence-tokens">
+            <div class="tok-wrap" id="tok-geo"></div>
+          </div>
+        </div>
+
+        <div class="sentence-row">
+          <span class="sentence-prose">Within</span>
+          <div class="sentence-tokens">
+            <div class="tok-wrap" id="tok-window"></div>
+          </div>
+        </div>
+
+      </div>
+      <div class="search-reset">
+        <button class="btn-reset-search" id="btn-reset">Clear all</button>
+        <span class="search-hint" id="search-hint">Select any field to filter results</span>
+      </div>
+    </div>
+
+    <div id="results-section" style="display:none">
+      <div class="results-header" id="results-header"></div>
+      <div id="people-results"></div>
+      <div id="org-results"></div>
+    </div>
+
+    <div id="empty-state" style="display:none">
+      <div class="no-results">
+        <strong>No matches found</strong>
+        Try clearing one or more filters — a broader search returns more results.
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<footer>
+  <div class="footer-inner">
+    <span class="footer-copy">Created by Tal Roded · NYCuriosity</span>
+    <div class="footer-links">
+      <a href="../connect/">Add yourself →</a>
+      <a href="../">← Back to hub</a>
+    </div>
+  </div>
+</footer>
+
+<!-- INTRO REQUEST MODAL -->
+<div class="ir-overlay" id="ir-overlay" onclick="if(event.target===this)closeIR()">
+  <div class="ir-modal">
+    <div class="ir-hdr">
+      <span class="ir-title">Request an introduction</span>
+      <button class="ir-close" onclick="closeIR()">✕</button>
+    </div>
+    <div class="ir-body">
+      <div id="ir-form-body">
+        <div class="ir-field">
+          <label class="ir-label" for="ir-name">Your name</label>
+          <input class="ir-input" id="ir-name" type="text" placeholder="Your full name" autocomplete="name">
+        </div>
+        <div class="ir-field">
+          <label class="ir-label" for="ir-email">Your email</label>
+          <input class="ir-input" id="ir-email" type="email" placeholder="you@example.com" autocomplete="email">
+        </div>
+        <div class="ir-field">
+          <label class="ir-label" for="ir-why">Why do you want to connect?</label>
+          <textarea class="ir-input" id="ir-why" rows="3" placeholder="Briefly describe what you'd like to discuss or collaborate on…" style="resize:vertical; min-height:80px;"></textarea>
+        </div>
+      </div>
+      <div id="ir-success">
+        <p>Your request has been sent. Tal will forward it to the contact listed.</p>
+      </div>
+    </div>
+    <div class="ir-footer" id="ir-footer">
+      <button class="ir-submit" onclick="irSubmit()">Send request</button>
+      <button class="ir-cancel" onclick="closeIR()">Cancel</button>
+      <span class="ir-footer-note">Reviewed by Tal before forwarding.</span>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Data ──────────────────────────────────────────────────────────────────────
+const AREA_TOPICS = {
+  "Participatory Democracy": [
+    "AI in Government","Benefits Access","Broadband & Internet Connectivity","Civic Engagement",
+    "Criminal Justice","Crisis Response","Data Integration","Data Security","Democracy Infrastructure",
+    "Economic Mobility","Education Delivery","Evidence Use","Expert Contribution","Feedback Loops",
+    "Hiring Architecture","Hiring Process","Housing & Land Use","Iterative Learning","Legacy Systems",
+    "Operational Excellence","Outcomes Measurement","Permitting & Licensing","Procurement Reform",
+    "Public Health","Reaction Time","Regulatory & Administrative Burden","Scaling What Works",
+    "Service Design","Shared Platforms","Talent Pipeline","Tax & Revenue","Transparency & Accountability"
+  ],
+  "Procurement & Operations": [
+    "AI in Government","Benefits Access","Broadband & Internet Connectivity","Child Welfare",
+    "Civic Engagement","Criminal Justice","Crisis Response","Data Integration","Data Security",
+    "Democracy Infrastructure","Economic Mobility","Education Delivery","Evidence Use","Expert Contribution",
+    "Feedback Loops","Healthcare Access","Hiring Architecture","Hiring Process","Housing & Land Use",
+    "Iterative Learning","Legacy Systems","Operational Excellence","Outcomes Measurement",
+    "Permitting & Licensing","Physical Infrastructure","Procurement Reform","Public Health","Reaction Time",
+    "Regulatory & Administrative Burden","Scaling What Works","Service Design","Shared Platforms",
+    "Talent Pipeline","Tax & Revenue","Transparency & Accountability","Workforce Development"
+  ],
+  "Service Delivery": [
+    "AI in Government","Benefits Access","Broadband & Internet Connectivity","Child Welfare",
+    "Civic Engagement","Criminal Justice","Crisis Response","Data Integration","Data Security",
+    "Democracy Infrastructure","Economic Mobility","Education Delivery","Evidence Use","Expert Contribution",
+    "Feedback Loops","Healthcare Access","Hiring Architecture","Hiring Process","Housing & Land Use",
+    "Iterative Learning","Legacy Systems","Operational Excellence","Outcomes Measurement",
+    "Permitting & Licensing","Procurement Reform","Regulatory & Administrative Burden","Scaling What Works",
+    "Service Design","Shared Platforms","Talent Pipeline","Tax & Revenue","Transparency & Accountability",
+    "Workforce Development"
+  ],
+  "Talent & Hiring": [
+    "AI in Government","Benefits Access","Broadband & Internet Connectivity","Child Welfare",
+    "Civic Engagement","Criminal Justice","Crisis Response","Data Integration","Data Security",
+    "Democracy Infrastructure","Economic Mobility","Education Delivery","Evidence Use","Expert Contribution",
+    "Feedback Loops","Healthcare Access","Hiring Architecture","Hiring Process","Housing & Land Use",
+    "Iterative Learning","Legacy Systems","Operational Excellence","Outcomes Measurement",
+    "Physical Infrastructure","Procurement Reform","Public Health","Reaction Time",
+    "Regulatory & Administrative Burden","Scaling What Works","Service Design","Talent Pipeline",
+    "Tax & Revenue","Transparency & Accountability","Workforce Development"
+  ],
+  "Technology & Data": [
+    "AI in Government","Benefits Access","Broadband & Internet Connectivity","Child Welfare",
+    "Civic Engagement","Criminal Justice","Crisis Response","Data Integration","Data Security",
+    "Democracy Infrastructure","Economic Mobility","Education Delivery","Evidence Use","Expert Contribution",
+    "Feedback Loops","Healthcare Access","Hiring Architecture","Hiring Process","Housing & Land Use",
+    "Iterative Learning","Legacy Systems","Operational Excellence","Outcomes Measurement",
+    "Permitting & Licensing","Physical Infrastructure","Procurement Reform","Public Health","Reaction Time",
+    "Regulatory & Administrative Burden","Scaling What Works","Service Design","Shared Platforms",
+    "Talent Pipeline","Tax & Revenue","Transparency & Accountability","Workforce Development"
+  ],
+  "Test & Learn": [
+    "AI in Government","Benefits Access","Broadband & Internet Connectivity","Child Welfare",
+    "Civic Engagement","Criminal Justice","Crisis Response","Data Integration","Data Security",
+    "Democracy Infrastructure","Economic Mobility","Education Delivery","Evidence Use","Expert Contribution",
+    "Feedback Loops","Healthcare Access","Hiring Architecture","Housing & Land Use","Iterative Learning",
+    "Legacy Systems","Operational Excellence","Outcomes Measurement","Physical Infrastructure",
+    "Procurement Reform","Public Health","Reaction Time","Regulatory & Administrative Burden",
+    "Scaling What Works","Service Design","Shared Platforms","Talent Pipeline","Tax & Revenue",
+    "Transparency & Accountability","Workforce Development"
+  ],
+  "Domains": [
+    "AI in Government","Benefits Access","Broadband & Internet Connectivity","Child Welfare",
+    "Civic Engagement","Criminal Justice","Crisis Response","Data Integration","Data Security",
+    "Democracy Infrastructure","Economic Mobility","Education Delivery","Evidence Use","Expert Contribution",
+    "Feedback Loops","Healthcare Access","Hiring Architecture","Hiring Process","Housing & Land Use",
+    "Iterative Learning","Legacy Systems","Operational Excellence","Outcomes Measurement",
+    "Permitting & Licensing","Physical Infrastructure","Procurement Reform","Public Health","Reaction Time",
+    "Regulatory & Administrative Burden","Scaling What Works","Service Design","Talent Pipeline",
+    "Tax & Revenue","Transparency & Accountability","Workforce Development"
+  ],
+  "Ecosystem & Capacity": [
+    "AI in Government","Procurement Reform","Regulatory & Administrative Burden","Service Design"
+  ]
+};
+const ALL_TOPICS_SORTED = [
+  "AI in Government","Benefits Access","Broadband & Internet Connectivity","Child Welfare",
+  "Civic Engagement","Criminal Justice","Crisis Response","Data Integration","Data Security",
+  "Democracy Infrastructure","Economic Mobility","Education Delivery","Evidence Use","Expert Contribution",
+  "Feedback Loops","Healthcare Access","Hiring Architecture","Hiring Process","Housing & Land Use",
+  "Iterative Learning","Legacy Systems","Operational Excellence","Outcomes Measurement",
+  "Permitting & Licensing","Physical Infrastructure","Procurement Reform","Public Health","Reaction Time",
+  "Regulatory & Administrative Burden","Scaling What Works","Service Design","Shared Platforms",
+  "Talent Pipeline","Tax & Revenue","Transparency & Accountability","Workforce Development"
+];
+const AREA_OPTS = ["Participatory Democracy","Procurement & Operations","Service Delivery","Talent & Hiring","Technology & Data","Test & Learn","Domains","Ecosystem & Capacity"];
+const ROLE_OPTS = ["Researcher","Technologist","Government practitioner","Advocate","Funder"];
+const SEEK_OPTS = [
+  { label:"Get research or analysis",   src:"Research (academic / think tank)" },
+  { label:"Find a technology partner",  src:"GovTech (technical vendor)" },
+  { label:"Get funded",                 src:"Philanthropy (grant / funding)" },
+  { label:"Hire or place talent",       src:"Fellowship or talent program" },
+  { label:"Meet a government partner",  src:"Peer government practitioner" },
+  { label:"Join a convening or event",  src:"Convening or event" },
+];
+const GEO_OPTS = ["Federal","State","Local / City / County","Multi-level","Outside US"];
+const ROLE_CLASS = { "Researcher":"researcher","Technologist":"technologist","Advocate":"advocate","Government practitioner":"govpractitioner","Funder":"funder" };
+const ROLE_COLOR = { "Researcher":"#2563eb","Technologist":"#0891b2","Government practitioner":"#16a34a","Advocate":"#db2777","Funder":"#d97706" };
+const ROLE_SEG_MAP = {
+  "Researcher":["Research"],
+  "Technologist":["GovTech","Digital Services & Consulting"],
+  "Government practitioner":["Government"],
+  "Advocate":["Advocacy","Community"],
+  "Funder":["Philanthropy","Investor"],
+};
+// Map search geo label → people.json jurisdiction values
+const GEO_PPL_MAP = {
+  "Federal":["Federal"], "State":["State"],
+  "Local / City / County":["Local"], "Multi-level":["Federal","State","Local"],
+  "Outside US":[], // no match in current data
+};
+// Map search geo label → orgs.json focus values
+const GEO_ORG_MAP = {
+  "Federal":["Federal"], "State":["State"],
+  "Local / City / County":["City"], "Multi-level":["Federal","State","City"],
+  "Outside US":[],
+};
+
+// ── Token state ───────────────────────────────────────────────────────────────
+let _tokens = {};
+let allPeople = [], allOrgs = [];
+
+// ── Load data ─────────────────────────────────────────────────────────────────
+Promise.all([
+  fetch("../data/people.json").then(r=>r.json()).catch(()=>[]),
+  fetch("../data/orgs.json").then(r=>r.json()).catch(()=>[]),
+]).then(([ppl, orgs]) => {
+  allPeople = ppl; allOrgs = orgs;
+  // Derive time window options from data
+  const wins = [...new Set(ppl.map(p=>p.time_window).filter(Boolean))].sort();
+  initTokens(wins);
+});
+
+// ── Token rendering ───────────────────────────────────────────────────────────
+function initTokens(timeOpts) {
+  mkTok("tok-role",   ROLE_OPTS,                        "I am a [Role]");
+  mkTok("tok-seek",   SEEK_OPTS.map(s=>s.label),        "Seeking [type of support]");
+  mkTok("tok-area",   AREA_OPTS,                        "Problem Area");
+  mkTok("tok-geo",    GEO_OPTS,                         "Geography");
+  mkTok("tok-window", timeOpts,                         "Time frame");
+  // Topic token built on demand
+  updateTopicToken(null);
+}
+
+function mkTok(containerId, opts, placeholder) {
+  const wrap = document.getElementById(containerId);
+  if (!wrap) return;
+  const tok = { sel: null, opts, placeholder, btn: null, drop: null, _open: false };
+  _tokens[containerId] = tok;
+
+  const btn = document.createElement("button");
+  btn.type = "button"; btn.className = "tok-btn";
+  tok.btn = btn;
+
+  const drop = document.createElement("div");
+  drop.className = "tok-drop";
+  tok.drop = drop;
+  drop.addEventListener("click", e => e.stopPropagation());
+
+  const list = document.createElement("div");
+  list.className = "tok-drop-list";
+  opts.forEach(opt => {
+    const item = document.createElement("div");
+    item.className = "tok-drop-item";
+    item.textContent = opt;
+    item.addEventListener("click", e => {
+      e.stopPropagation();
+      tok.sel = opt;
+      syncTok(tok);
+      closeTok(tok);
+      if (containerId === "tok-area") updateTopicToken(opt);
+      runSearch();
+    });
+    list.appendChild(item);
+  });
+  drop.appendChild(list);
+
+  const clear = document.createElement("div");
+  clear.className = "tok-clear";
+  clear.textContent = "Clear selection";
+  clear.addEventListener("click", e => {
+    e.stopPropagation();
+    tok.sel = null;
+    syncTok(tok);
+    closeTok(tok);
+    if (containerId === "tok-area") updateTopicToken(null);
+    runSearch();
+  });
+  drop.appendChild(clear);
+
+  btn.addEventListener("click", e => { e.stopPropagation(); togTok(tok); });
+  syncTok(tok);
+  wrap.append(btn, drop);
+  document.addEventListener("click", () => closeTok(tok));
+}
+
+function updateTopicToken(area) {
+  const wrap = document.getElementById("tok-topic");
+  const sep  = document.getElementById("topic-sep");
+  if (!area) {
+    if (wrap) wrap.style.display = "none";
+    if (sep)  sep.style.display = "none";
+    delete _tokens["tok-topic"];
+    return;
+  }
+  const topics = AREA_TOPICS[area] || ALL_TOPICS_SORTED;
+  if (wrap) { wrap.style.display = ""; wrap.innerHTML = ""; }
+  if (sep)  sep.style.display = "";
+
+  const tok = { sel: null, opts: topics, placeholder: "Problem Topic", btn: null, drop: null, _open: false };
+  _tokens["tok-topic"] = tok;
+
+  const btn = document.createElement("button");
+  btn.type = "button"; btn.className = "tok-btn";
+  tok.btn = btn;
+
+  const drop = document.createElement("div");
+  drop.className = "tok-drop";
+  tok.drop = drop;
+  drop.addEventListener("click", e => e.stopPropagation());
+
+  const list = document.createElement("div");
+  list.className = "tok-drop-list";
+  topics.forEach(opt => {
+    const item = document.createElement("div");
+    item.className = "tok-drop-item";
+    item.textContent = opt;
+    item.addEventListener("click", e => {
+      e.stopPropagation();
+      tok.sel = opt;
+      syncTok(tok);
+      closeTok(tok);
+      runSearch();
+    });
+    list.appendChild(item);
+  });
+  drop.appendChild(list);
+
+  const clear = document.createElement("div");
+  clear.className = "tok-clear";
+  clear.textContent = "Clear selection";
+  clear.addEventListener("click", e => {
+    e.stopPropagation();
+    tok.sel = null;
+    syncTok(tok);
+    closeTok(tok);
+    runSearch();
+  });
+  drop.appendChild(clear);
+
+  btn.addEventListener("click", e => { e.stopPropagation(); togTok(tok); });
+  syncTok(tok);
+  wrap.append(btn, drop);
+  document.addEventListener("click", () => closeTok(tok));
+}
+
+function syncTok(tok) {
+  if (!tok.btn) return;
+  if (tok.sel) {
+    tok.btn.textContent = tok.sel + " ▾";
+    tok.btn.classList.add("set");
+  } else {
+    tok.btn.textContent = tok.placeholder + " ▾";
+    tok.btn.classList.remove("set");
+  }
+  // highlight selected item in list
+  tok.drop?.querySelectorAll(".tok-drop-item").forEach(el => {
+    el.classList.toggle("selected", el.textContent === tok.sel);
+  });
+}
+function togTok(tok) { tok._open ? closeTok(tok) : openTok(tok); }
+function openTok(tok) {
+  Object.values(_tokens).forEach(t => { if (t !== tok) closeTok(t); });
+  tok._open = true; tok.btn?.classList.add("open"); tok.drop?.classList.add("open");
+}
+function closeTok(tok) { tok._open = false; tok.btn?.classList.remove("open"); tok.drop?.classList.remove("open"); }
+
+// ── Reset ─────────────────────────────────────────────────────────────────────
+document.getElementById("btn-reset").addEventListener("click", () => {
+  Object.values(_tokens).forEach(t => { t.sel = null; syncTok(t); });
+  updateTopicToken(null);
+  runSearch();
+});
+
+// ── Search / Filter ───────────────────────────────────────────────────────────
+function getVal(id) { return _tokens[id]?.sel || null; }
+
+function runSearch() {
+  const role   = getVal("tok-role");
+  const seekLbl= getVal("tok-seek");
+  const area   = getVal("tok-area");
+  const topic  = getVal("tok-topic");
+  const geo    = getVal("tok-geo");
+  const win    = getVal("tok-window");
+
+  const anyActive = role || seekLbl || area || topic || geo || win;
+  document.getElementById("search-hint").textContent = anyActive
+    ? "Showing filtered results below"
+    : "Select any field to filter results";
+
+  if (!anyActive) {
+    document.getElementById("results-section").style.display = "none";
+    document.getElementById("empty-state").style.display = "none";
+    return;
+  }
+
+  // Map "Seeking" label → help_source value
+  const seekSrc = seekLbl ? (SEEK_OPTS.find(s => s.label === seekLbl)?.src || null) : null;
+
+  // Filter people
+  const people = allPeople.filter(p => {
+    if (role && p.role !== role) return false;
+    if (seekSrc && p.help_source !== seekSrc) return false;
+    if (area && p.problem_area !== area) return false;
+    if (topic && p.problem_topic !== topic) return false;
+    if (geo) {
+      const vals = GEO_PPL_MAP[geo] || [];
+      if (vals.length && !(p.jurisdictions || []).some(j => vals.includes(j))) return false;
+    }
+    if (win && p.time_window !== win) return false;
+    return true;
+  });
+
+  // Filter orgs (time window and seeking don't apply to orgs)
+  const orgs = allOrgs.filter(o => {
+    if (role) {
+      const segs = ROLE_SEG_MAP[role] || [];
+      if (segs.length && !segs.includes(o.primary_segment)) return false;
+    }
+    if (area && !(o.problem_areas || []).includes(area)) return false;
+    if (topic && !(o.problem_statements || []).includes(topic)) return false;
+    if (geo) {
+      const vals = GEO_ORG_MAP[geo] || [];
+      if (vals.length && !(o.focus || []).some(f => vals.includes(f))) return false;
+    }
+    return true;
+  });
+
+  renderResults(people, orgs);
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
+function esc(s) { return (s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+function httpify(u) { return !u?"": /^https?:\/\//.test(u)?u:"https://"+u; }
+
+function renderResults(people, orgs) {
+  const section  = document.getElementById("results-section");
+  const hdrEl    = document.getElementById("results-header");
+  const pplEl    = document.getElementById("people-results");
+  const orgEl    = document.getElementById("org-results");
+  const emptyEl  = document.getElementById("empty-state");
+
+  const total = people.length + orgs.length;
+  if (total === 0) {
+    section.style.display = "none";
+    emptyEl.style.display = "block";
+    return;
+  }
+  emptyEl.style.display = "none";
+  section.style.display = "block";
+
+  hdrEl.innerHTML = `<strong>${total}</strong> result${total!==1?"s":""} — ${people.length} ${people.length===1?"person":"people"} · ${orgs.length} org${orgs.length!==1?"s":""}`;
+
+  if (people.length > 0) {
+    pplEl.innerHTML = `<div class="results-section-label">People (${people.length})</div>` +
+      people.map(p => renderPersonCard(p)).join("");
+  } else {
+    pplEl.innerHTML = "";
+  }
+
+  const SHOW_ORGS = 20;
+  if (orgs.length > 0) {
+    const shown = orgs.slice(0, SHOW_ORGS);
+    orgEl.innerHTML = `<div class="results-section-label">Organizations (${orgs.length})</div>` +
+      shown.map(o => renderOrgCard(o)).join("") +
+      (orgs.length > SHOW_ORGS ? `<div class="no-results" style="padding:16px 0">Showing ${SHOW_ORGS} of ${orgs.length} orgs. Use the <a href="../directory/" style="color:var(--blue)">Directory</a> for full browsing.</div>` : "");
+  } else {
+    orgEl.innerHTML = "";
+  }
+
+  // Attach expand listeners
+  section.querySelectorAll(".result-card").forEach(card => {
+    card.querySelector(".card-summary").addEventListener("click", () => {
+      card.classList.toggle("expanded");
+    });
+  });
+}
+
+function roleClass(role) { return ROLE_CLASS[role] || ""; }
+function roleColor(role) { return ROLE_COLOR[role] || "#6b7280"; }
+function initials(name) { return (name||"?").split(" ").map(w=>w[0]).slice(0,2).join("").toUpperCase(); }
+
+function renderContactAction(p) {
+  if (!p.contact) return "";
+  if (p.contact.includes("@") && !p.contact.startsWith("http")) {
+    return `<a class="action-btn action-btn-blue" href="mailto:${esc(p.contact)}">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+      Email directly
+    </a>`;
+  }
+  const url = httpify(p.contact);
+  return `<a class="action-btn action-btn-blue" href="${esc(url)}" target="_blank" rel="noopener">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+    ${esc(p.contact)} ↗
+  </a>`;
+}
+
+function renderPersonCard(p) {
+  const rc = roleClass(p.role);
+  const color = roleColor(p.role);
+  return `<div class="result-card" data-id="${p.id}">
+    <div class="card-summary">
+      <div class="card-avatar" style="background:${color}">${esc(initials(p.name))}</div>
+      <div class="card-identity">
+        <div class="card-name">${esc(p.name)}</div>
+        ${p.organization ? `<div class="card-sub">${esc(p.organization)}</div>` : ""}
+      </div>
+      <div class="card-chips">
+        ${p.role ? `<span class="chip chip-role ${rc}">${esc(p.role)}</span>` : ""}
+        ${p.problem_topic ? `<span class="chip chip-topic">${esc(p.problem_topic)}</span>` : ""}
+        ${(p.jurisdictions||[]).map(j=>`<span class="chip chip-geo">${esc(j)}</span>`).join("")}
+        ${p.time_window ? `<span class="chip chip-time">${esc(p.time_window)}</span>` : ""}
+      </div>
+      <span class="card-expand-icon">▼</span>
+    </div>
+    <div class="card-detail">
+      ${p.problem_area ? `<div class="detail-section"><div class="detail-label">Problem area</div><div class="detail-text">${esc(p.problem_area)}</div></div>` : ""}
+      ${p.problem_details ? `<div class="detail-section"><div class="detail-label">What they're working on</div><div class="detail-text">${esc(p.problem_details)}</div></div>` : ""}
+      ${p.help_source ? `<div class="detail-section"><div class="detail-label">Can offer</div><div class="detail-text"><span class="chip chip-help">${esc(p.help_source)}</span></div></div>` : ""}
+      <div class="detail-actions">
+        ${renderContactAction(p)}
+        <button class="action-btn action-btn-orange" onclick="event.stopPropagation();openIR(${p.id})">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          Request intro
+        </button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function renderOrgCard(o) {
+  const topics = (o.problem_statements || []).slice(0, 5);
+  const more   = (o.problem_statements || []).length - 5;
+  const website = o.website ? httpify(o.website) : null;
+  return `<div class="result-card">
+    <div class="card-summary">
+      <div class="card-identity">
+        <div class="card-name">${website ? `<a href="${esc(website)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:inherit;text-decoration:none;">${esc(o.name)} ↗</a>` : esc(o.name)}</div>
+        ${o.primary_segment ? `<div class="card-sub">${esc(o.primary_segment)}</div>` : ""}
+      </div>
+      <div class="card-chips">
+        ${topics.map(t=>`<span class="chip chip-topic">${esc(t)}</span>`).join("")}
+        ${more > 0 ? `<span class="chip chip-geo">+${more} more</span>` : ""}
+        ${(o.focus||[]).map(f=>`<span class="chip chip-geo">${esc(f)}</span>`).join("")}
+      </div>
+      <span class="card-expand-icon">▼</span>
+    </div>
+    <div class="card-detail">
+      ${o.description ? `<div class="detail-section"><div class="detail-label">Description</div><div class="detail-text">${esc(o.description)}</div></div>` : ""}
+      ${(o.problem_statements||[]).length > 5 ? `<div class="detail-section"><div class="detail-label">All problem topics</div><div class="detail-text" style="display:flex;flex-wrap:wrap;gap:4px">${(o.problem_statements||[]).map(t=>`<span class="chip chip-topic">${esc(t)}</span>`).join("")}</div></div>` : ""}
+      ${o.funding_model ? `<div class="detail-section"><div class="detail-label">Funding model</div><div class="detail-text">${esc(o.funding_model)}</div></div>` : ""}
+      ${o.funding_detail ? `<div class="detail-section"><div class="detail-label">Funding detail</div><div class="detail-text">${esc(o.funding_detail)}</div></div>` : ""}
+      ${website ? `<div class="detail-actions"><a class="action-btn action-btn-blue" href="${esc(website)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Visit website ↗</a><a class="action-btn action-btn-blue" href="../network/?id=${o.id}" onclick="event.stopPropagation()">See in network →</a></div>` : `<div class="detail-actions"><a class="action-btn action-btn-blue" href="../network/?id=${o.id}" onclick="event.stopPropagation()">See in network →</a></div>`}
+    </div>
+  </div>`;
+}
+
+// ── Intro request modal ───────────────────────────────────────────────────────
+let _irPersonId = null;
+function openIR(id) {
+  _irPersonId = id;
+  document.getElementById("ir-name").value = "";
+  document.getElementById("ir-email").value = "";
+  document.getElementById("ir-why").value = "";
+  document.getElementById("ir-form-body").style.display = "";
+  document.getElementById("ir-success").style.display = "none";
+  document.getElementById("ir-footer").style.display = "";
+  document.getElementById("ir-overlay").classList.add("open");
+  document.body.style.overflow = "hidden";
+}
+function closeIR() {
+  document.getElementById("ir-overlay").classList.remove("open");
+  document.body.style.overflow = "";
+}
+function irSubmit() {
+  const name  = document.getElementById("ir-name").value.trim();
+  const email = document.getElementById("ir-email").value.trim();
+  const why   = document.getElementById("ir-why").value.trim();
+  const p     = allPeople.find(x => x.id === _irPersonId);
+  const subj  = encodeURIComponent(`Intro request: ${p ? p.name : "contact"}`);
+  const body  = encodeURIComponent(`From: ${name}\nEmail: ${email}\nRegarding: ${p ? p.name : "contact"}\n\n${why}`);
+  window.location.href = `mailto:troded24@gmail.com?subject=${subj}&body=${body}`;
+  document.getElementById("ir-form-body").style.display = "none";
+  document.getElementById("ir-footer").style.display = "none";
+  document.getElementById("ir-success").style.display = "block";
+}
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeIR(); });
+</script>
+
+</body>
+</html>
