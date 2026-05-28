@@ -41,8 +41,8 @@
     /* HERO */
     .hero { padding:14px clamp(16px,4vw,48px) 0; }
     .hero-inner { max-width:1300px; margin:0 auto; padding-bottom:14px; }
-    .hero h1 { font-family:'Roboto Mono',monospace; font-size:clamp(1.2rem,3vw,1.7rem); font-weight:700; color:var(--text); letter-spacing:-0.03em; line-height:1.2; margin-bottom:6px; }
-    .hero h1 span { color:var(--blue); }
+    .hero-eyebrow { font-family:'Roboto Mono',monospace; font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.1em; color:var(--text-muted); margin-bottom:6px; }
+    .hero h1 { font-family:'Roboto Mono',monospace; font-size:clamp(1.2rem,3vw,1.7rem); font-weight:700; color:var(--blue); letter-spacing:-0.03em; line-height:1.2; margin-bottom:6px; }
     .hero p { font-size:0.88rem; color:var(--text-muted); max-width:780px; line-height:1.6; }
 
     /* PILL NAV */
@@ -111,8 +111,11 @@
     .results-bar { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:12px; padding:0 2px; }
     .results-count { font-family:'Roboto Mono',monospace; font-size:0.78rem; color:var(--text-muted); }
     .results-count strong { color:var(--text); }
+    .results-bar-right { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
     .download-link { font-family:'Roboto Mono',monospace; font-size:0.74rem; color:var(--blue); text-decoration:none; padding:4px 10px; border:1px solid var(--blue-mid); border-radius:6px; background:var(--blue-light); }
     .download-link:hover { background:var(--blue); color:#fff; }
+    .suggest-link { font-family:'Roboto Mono',monospace; font-size:0.74rem; font-weight:600; color:var(--orange); text-decoration:none; padding:4px 10px; border:1px solid #fed7aa; border-radius:6px; background:#fff4ed; display:inline-flex; align-items:center; gap:5px; }
+    .suggest-link:hover { background:var(--orange); color:#fff; border-color:var(--orange); }
 
     /* TABLE */
     .table-wrap { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow-sm); overflow:hidden; }
@@ -179,7 +182,7 @@
       line-height:1.4;
     }
     .problem-tag-list { display:flex; flex-wrap:wrap; gap:0; margin-top:2px; }
-    td.desc-cell { min-width:220px; }
+    td.desc-cell { min-width:300px; }
     td.desc-cell .desc-text {
       display:-webkit-box;
       -webkit-line-clamp:2;
@@ -276,8 +279,9 @@
 
 <div class="hero">
   <div class="hero-inner">
-    <h1>Organization <span>Directory</span></h1>
-    <p>Every org in the database. Search by name or use the filters to narrow by segment, geographic focus, or problem statement. Click any row for the full description and funding detail. For semantic search across descriptions and problem areas, use the <a href="../network/" style="color:var(--blue);text-decoration:none;border-bottom:1px solid var(--blue-mid)">Affinity Network</a>.</p>
+    <div class="hero-eyebrow">Browse organizations</div>
+    <h1>Directory</h1>
+    <p>Every org in the database. Search by name or use the filters to narrow by segment, geographic focus, or problem statement. Click any row for the full description.</p>
   </div>
 </div>
 
@@ -325,7 +329,13 @@
     <!-- RESULTS BAR -->
     <div class="results-bar">
       <div class="results-count" id="results-count">Loading…</div>
-      <a class="download-link" href="../data/state_capacity_ecosystem.csv" download>Download CSV ↓</a>
+      <div class="results-bar-right">
+        <a class="suggest-link" href="https://forms.gle/GSNh2ZqUfFG4EAzF6" target="_blank" rel="noopener">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Suggest an org
+        </a>
+        <a class="download-link" href="../data/state_capacity_ecosystem.csv" download>Download CSV ↓</a>
+      </div>
     </div>
 
     <!-- TABLE -->
@@ -335,16 +345,15 @@
           <thead>
             <tr>
               <th data-col="name">Organization <i class="sort-icon">↕</i></th>
-              <th data-col="primary_segment" style="width:100px">Segment <i class="sort-icon">↕</i></th>
-              <th style="width:120px">Secondary Segments</th>
-              <th style="min-width:260px">Description</th>
-              <th style="width:140px">Problem Area</th>
+              <th data-col="primary_segment" style="width:80px">Segment <i class="sort-icon">↕</i></th>
+              <th style="min-width:320px">Description</th>
+              <th style="width:130px">Problem Area</th>
               <th>Problem Statement</th>
               <th style="width:28px"></th>
             </tr>
           </thead>
           <tbody id="table-body">
-            <tr><td colspan="7"><div class="state-msg"><h3>Loading data…</h3></div></td></tr>
+            <tr><td colspan="6"><div class="state-msg"><h3>Loading data…</h3></div></td></tr>
           </tbody>
         </table>
       </div>
@@ -451,7 +460,7 @@ fetch("../data/orgs.json")
     applyFilters();
   }).catch(err => {
     document.getElementById("table-body").innerHTML =
-      `<tr><td colspan="7"><div class="state-msg"><h3>Could not load data</h3><p>${err.message}</p></div></td></tr>`;
+      `<tr><td colspan="6"><div class="state-msg"><h3>Could not load data</h3><p>${err.message}</p></div></td></tr>`;
   });
 
 function populateFilters() {
@@ -516,7 +525,7 @@ function renderTable() {
   const start = (page - 1) * PAGE_SIZE;
   const slice = filtered.slice(start, start + PAGE_SIZE);
   if (slice.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7"><div class="state-msg"><h3>No orgs match the current filters</h3><p>Try clearing one of the filters above.</p></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6"><div class="state-msg"><h3>No orgs match the current filters</h3><p>Try clearing one of the filters above.</p></div></td></tr>`;
     return;
   }
   tbody.innerHTML = slice.map(renderRow).join("");
@@ -553,7 +562,6 @@ function renderRow(o) {
   return `<tr class="data-row${expanded ? " expanded" : ""}" data-id="${o.id}">
     <td class="name-cell"><div class="org-name">${esc(o.name)}</div></td>
     <td><span class="seg-tag" style="background:${segColor}">${esc(o.primary_segment)}</span></td>
-    <td>${otherSegHtml || '<span class="funder-mini" style="color:var(--text-faint)">—</span>'}</td>
     <td class="desc-cell">${descHtml}</td>
     <td class="tag-cell">${areaHtml}</td>
     <td class="tag-cell">${problemHtml}</td>
@@ -589,7 +597,7 @@ function renderDetailRow(o) {
     : `<span class="detail-field-value" style="color:var(--text-faint)">—</span>`;
 
   return `<tr class="detail-row">
-    <td colspan="7">
+    <td colspan="6">
       <div class="detail-panel">
         <div class="detail-grid">
           <div class="detail-section">
