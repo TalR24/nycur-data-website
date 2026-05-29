@@ -52,46 +52,79 @@
     .main { flex:1; padding:clamp(16px,3vw,28px) clamp(16px,4vw,48px) clamp(40px,6vw,64px); }
     .main-inner { max-width:1100px; margin:0 auto; }
 
-    /* ── SEARCH FORM CARD ── */
+    /* ── SEARCH FORM CARD (dark) ── */
+    @keyframes cardIn {
+      from { opacity:0; transform:translateY(20px) scale(0.985); }
+      to   { opacity:1; transform:translateY(0)    scale(1); }
+    }
     .search-form-card {
-      background:var(--surface); border:1px solid var(--border);
-      border-radius:var(--radius); box-shadow:var(--shadow-sm);
-      padding:28px 32px 24px;
-      margin-bottom:24px;
+      background:#111827;
+      border:1px solid #1f2937;
+      border-radius:12px;
+      box-shadow:0 12px 40px rgba(0,0,0,0.28), 0 2px 8px rgba(0,0,0,0.14);
+      padding:32px 36px 28px;
+      margin-bottom:28px;
+      animation:cardIn 0.38s cubic-bezier(0.22,1,0.36,1) both;
     }
-    .search-form-card h2 {
-      font-family:'Roboto Mono',monospace; font-size:0.72rem; font-weight:700;
-      text-transform:uppercase; letter-spacing:0.1em; color:var(--orange);
-      margin-bottom:20px;
+    .card-header {
+      display:flex; align-items:baseline; justify-content:space-between;
+      flex-wrap:wrap; gap:10px; margin-bottom:28px;
     }
-    .sentence-rows { display:flex; flex-direction:column; gap:14px; }
-    .sentence-row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
-    .sentence-prose {
-      font-size:0.97rem; color:var(--text-mid); font-weight:500; white-space:nowrap;
-      min-width:90px;
+    .card-header h2 {
+      font-family:'Roboto Mono',monospace; font-size:0.7rem; font-weight:700;
+      text-transform:uppercase; letter-spacing:0.13em; color:var(--orange);
+      opacity:0.9;
     }
-    .sentence-tokens { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
-    .tok-sep { font-size:0.88rem; color:var(--text-faint); }
+    .filter-count {
+      font-family:'Roboto Mono',monospace; font-size:0.68rem; font-weight:600;
+      color:#374151; transition:color 0.2s;
+    }
+    .filter-count.active { color:#FF6319; }
 
-    /* Token chip + dropdown */
+    .sentence-rows { display:flex; flex-direction:column; gap:20px; }
+    .sentence-row { display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+    .sentence-prose {
+      font-size:1.12rem; color:#64748b; font-weight:500; white-space:nowrap;
+      min-width:108px;
+    }
+    .sentence-tokens { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+    .tok-sep { font-size:1rem; color:#334155; }
+
+    /* Token chip */
+    @keyframes tokPop {
+      0%   { transform:scale(1); }
+      38%  { transform:scale(1.14); }
+      65%  { transform:scale(0.95); }
+      100% { transform:scale(1); }
+    }
     .tok-wrap { position:relative; display:inline-block; }
     .tok-btn {
-      font-family:'Roboto Mono',monospace; font-size:0.82rem; font-weight:700;
-      color:var(--orange); background:var(--orange-light);
-      border:1.5px solid #fed7aa; border-radius:6px;
-      padding:5px 12px; cursor:pointer; white-space:nowrap;
+      font-family:'Roboto Mono',monospace; font-size:0.84rem; font-weight:700;
+      color:var(--orange); background:rgba(255,99,25,0.14);
+      border:1.5px solid rgba(255,99,25,0.38); border-radius:6px;
+      padding:6px 14px; cursor:pointer; white-space:nowrap;
       transition:background 0.12s, border-color 0.12s;
-      display:inline-flex; align-items:center; gap:5px;
+      display:inline-flex; align-items:center; gap:6px;
     }
-    .tok-btn:hover, .tok-btn.open { background:#ffe4ce; border-color:var(--orange); }
-    .tok-btn.set { color:var(--blue); background:var(--blue-light); border-color:var(--blue-mid); }
-    .tok-btn.set:hover, .tok-btn.set.open { background:#dbeafe; border-color:var(--blue); }
-    .tok-caret { font-size:0.5rem; opacity:0.6; }
+    .tok-btn:hover, .tok-btn.open {
+      background:rgba(255,99,25,0.24); border-color:var(--orange);
+    }
+    .tok-btn.set {
+      color:#93c5fd; background:rgba(37,99,235,0.18);
+      border-color:rgba(147,197,253,0.4);
+    }
+    .tok-btn.set:hover, .tok-btn.set.open {
+      background:rgba(37,99,235,0.28); border-color:#93c5fd;
+    }
+    .tok-btn.pop { animation:tokPop 0.3s ease both; }
+    .tok-caret { font-size:0.48rem; opacity:0.55; }
+
+    /* Dropdown — stays light for readability */
     .tok-drop {
-      display:none; position:absolute; top:calc(100% + 5px); left:0;
-      min-width:220px; max-width:320px;
+      display:none; position:absolute; top:calc(100% + 6px); left:0;
+      min-width:230px; max-width:320px;
       background:var(--surface); border:1px solid var(--border-mid);
-      border-radius:8px; box-shadow:0 8px 28px rgba(0,0,0,0.16);
+      border-radius:8px; box-shadow:0 10px 32px rgba(0,0,0,0.2);
       z-index:300; overflow:hidden;
     }
     .tok-drop.open { display:block; }
@@ -102,6 +135,13 @@
     }
     .tok-drop-item:hover { background:var(--blue-light); color:var(--blue); }
     .tok-drop-item.selected { background:var(--blue-light); color:var(--blue); font-weight:600; }
+    .tok-drop-item.any-item {
+      font-family:'Roboto Mono',monospace; font-size:0.74rem; font-weight:600;
+      color:var(--text-faint); border-bottom:1px solid var(--border);
+      letter-spacing:0.03em;
+    }
+    .tok-drop-item.any-item:hover { color:var(--text-mid); }
+    .tok-drop-item.any-item.selected { color:var(--text-mid); background:#f9fafb; }
     .tok-clear {
       border-top:1px solid var(--border); padding:6px 14px;
       font-size:0.74rem; font-family:'Roboto Mono',monospace; font-weight:600;
@@ -109,19 +149,25 @@
     }
     .tok-clear:hover { color:var(--orange); }
 
+    /* Reset row */
     .search-reset {
-      margin-top:18px; padding-top:16px; border-top:1px solid var(--border);
+      margin-top:24px; padding-top:18px; border-top:1px solid #1f2937;
       display:flex; align-items:center; gap:12px;
     }
     .btn-reset-search {
       font-family:'Roboto Mono',monospace; font-size:0.74rem; font-weight:600;
-      background:none; border:1px solid var(--border-mid); border-radius:6px;
-      padding:5px 14px; cursor:pointer; color:var(--text-muted); transition:all 0.15s;
+      background:none; border:1px solid #374151; border-radius:6px;
+      padding:5px 14px; cursor:pointer; color:#6b7280; transition:all 0.15s;
     }
     .btn-reset-search:hover { border-color:var(--orange); color:var(--orange); }
-    .search-hint { font-size:0.78rem; color:var(--text-faint); }
+    .search-hint { font-size:0.78rem; color:#374151; }
 
     /* ── RESULTS ── */
+    @keyframes fadeUp {
+      from { opacity:0; transform:translateY(10px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+    .results-anim { animation:fadeUp 0.28s ease both; }
     .results-header {
       font-family:'Roboto Mono',monospace; font-size:0.72rem; font-weight:700;
       text-transform:uppercase; letter-spacing:0.08em;
@@ -144,7 +190,6 @@
     }
     .result-card:hover { border-color:var(--blue-mid); }
     .result-card.expanded { border-color:var(--blue); }
-
     .card-summary {
       display:flex; align-items:center; gap:12px;
       padding:14px 18px; flex-wrap:wrap;
@@ -163,7 +208,6 @@
       transition:transform 0.15s; user-select:none;
     }
     .result-card.expanded .card-expand-icon { transform:rotate(180deg); }
-
     .card-detail {
       display:none; padding:0 18px 18px; border-top:1px solid var(--border);
     }
@@ -194,12 +238,16 @@
       font-family:'Roboto Mono',monospace; font-size:0.62rem; font-weight:700;
       padding:2px 8px; border-radius:4px; white-space:nowrap;
     }
-    .chip-role     { background:#f3f4f6; color:var(--text-mid); }
-    .chip-role.researcher    { background:#e0e7ff; color:#3730a3; }
-    .chip-role.technologist  { background:#dbeafe; color:#1e40af; }
-    .chip-role.advocate      { background:#fce7f3; color:#9d174d; }
-    .chip-role.govpractitioner { background:#dcfce7; color:#166534; }
-    .chip-role.funder        { background:#fef3c7; color:#92400e; }
+    .chip-role           { background:#f3f4f6; color:var(--text-mid); }
+    .chip-role.researcher        { background:#e0e7ff; color:#3730a3; }
+    .chip-role.technologist      { background:#dbeafe; color:#1e40af; }
+    .chip-role.advocate          { background:#fce7f3; color:#9d174d; }
+    .chip-role.govpractitioner   { background:#dcfce7; color:#166534; }
+    .chip-role.funder            { background:#fef3c7; color:#92400e; }
+    .chip-role.consultant        { background:#ccfbf1; color:#0f766e; }
+    .chip-role.civictech         { background:#cffafe; color:#0e7490; }
+    .chip-role.student           { background:#ede9fe; color:#5b21b6; }
+    .chip-role.journalist        { background:#fef9c3; color:#713f12; }
     .chip-topic  { background:var(--blue-light); color:var(--blue); border:1px solid var(--blue-mid); }
     .chip-area   { background:var(--orange-light); color:var(--orange); border:1px solid #fed7aa; }
     .chip-geo    { background:#f3f4f6; color:var(--text-mid); border:1px solid var(--border); }
@@ -272,8 +320,9 @@
 
     @media (max-width:640px) {
       .brand-slash, .brand-section { display:none; }
-      .search-form-card { padding:20px 16px; }
-      .sentence-prose { min-width:70px; font-size:0.88rem; }
+      .search-form-card { padding:22px 18px 20px; }
+      .sentence-prose { min-width:76px; font-size:0.96rem; }
+      .tok-btn { font-size:0.78rem; padding:5px 11px; }
     }
   </style>
 </head>
@@ -306,7 +355,7 @@
 <div class="hero">
   <div class="hero-inner">
     <h1><span>Search</span> the Ecosystem</h1>
-    <p>Find the practitioners and organizations that match what you're working on. Select your filters below — results update as you go.</p>
+    <p>Build a sentence describing who you're looking for. Select any combination of fields — results update as you go.</p>
   </div>
 </div>
 
@@ -325,7 +374,10 @@
   <div class="main-inner">
 
     <div class="search-form-card">
-      <h2>Who are you looking for?</h2>
+      <div class="card-header">
+        <h2>Who are you looking for?</h2>
+        <span class="filter-count" id="filter-count">No filters active</span>
+      </div>
       <div class="sentence-rows">
 
         <div class="sentence-row">
@@ -518,37 +570,81 @@ const ALL_TOPICS_SORTED = [
   "Regulatory & Administrative Burden","Scaling What Works","Service Design","Shared Platforms",
   "Talent Pipeline","Tax & Revenue","Transparency & Accountability","Workforce Development"
 ];
-const AREA_OPTS = ["Participatory Democracy","Procurement & Operations","Service Delivery","Talent & Hiring","Technology & Data","Test & Learn","Domains","Ecosystem & Capacity"];
-const ROLE_OPTS = ["Researcher","Technologist","Government practitioner","Advocate","Funder"];
+
+const AREA_OPTS = [
+  "Participatory Democracy","Procurement & Operations","Service Delivery","Talent & Hiring",
+  "Technology & Data","Test & Learn","Domains","Ecosystem & Capacity"
+];
+const ROLE_OPTS = [
+  "Researcher",
+  "Technologist",
+  "Government practitioner",
+  "Advocate",
+  "Funder",
+  "Consultant / Advisor",
+  "Civic Tech Practitioner",
+  "Student / Early Career",
+  "Journalist / Communicator",
+];
 const SEEK_OPTS = [
-  { label:"Get research or analysis",   src:"Research (academic / think tank)" },
-  { label:"Find a technology partner",  src:"GovTech (technical vendor)" },
-  { label:"Get funded",                 src:"Philanthropy (grant / funding)" },
-  { label:"Hire or place talent",       src:"Fellowship or talent program" },
-  { label:"Meet a government partner",  src:"Peer government practitioner" },
-  { label:"Join a convening or event",  src:"Convening or event" },
+  { label:"Get research or analysis",              src:"Research (academic / think tank)" },
+  { label:"Find a technology partner",             src:"GovTech (technical vendor)" },
+  { label:"Get funded",                            src:"Philanthropy (grant / funding)" },
+  { label:"Hire or place talent",                  src:"Fellowship or talent program" },
+  { label:"Meet a government partner",             src:"Peer government practitioner" },
+  { label:"Join a convening or event",             src:"Convening or event" },
+  { label:"Find an advocacy or policy partner",    src:"Advocacy partner" },
+  { label:"Get consulting or implementation help", src:"Digital Services & Consulting" },
+  { label:"Build my peer network",                 src:"Community or network" },
 ];
 const GEO_OPTS = ["Federal","State","Local / City / County","Multi-level","Outside US"];
-const ROLE_CLASS = { "Researcher":"researcher","Technologist":"technologist","Advocate":"advocate","Government practitioner":"govpractitioner","Funder":"funder" };
-const ROLE_COLOR = { "Researcher":"#2563eb","Technologist":"#0891b2","Government practitioner":"#16a34a","Advocate":"#db2777","Funder":"#d97706" };
+
+const ROLE_CLASS = {
+  "Researcher":              "researcher",
+  "Technologist":            "technologist",
+  "Advocate":                "advocate",
+  "Government practitioner": "govpractitioner",
+  "Funder":                  "funder",
+  "Consultant / Advisor":    "consultant",
+  "Civic Tech Practitioner": "civictech",
+  "Student / Early Career":  "student",
+  "Journalist / Communicator": "journalist",
+};
+const ROLE_COLOR = {
+  "Researcher":              "#2563eb",
+  "Technologist":            "#0891b2",
+  "Government practitioner": "#16a34a",
+  "Advocate":                "#db2777",
+  "Funder":                  "#d97706",
+  "Consultant / Advisor":    "#0d9488",
+  "Civic Tech Practitioner": "#0891b2",
+  "Student / Early Career":  "#7c3aed",
+  "Journalist / Communicator":"#ca8a04",
+};
 const ROLE_SEG_MAP = {
-  "Researcher":["Research"],
-  "Technologist":["GovTech","Digital Services & Consulting"],
-  "Government practitioner":["Government"],
-  "Advocate":["Advocacy","Community"],
-  "Funder":["Philanthropy","Investor"],
+  "Researcher":              ["Research"],
+  "Technologist":            ["GovTech","Digital Services & Consulting"],
+  "Government practitioner": ["Government"],
+  "Advocate":                ["Advocacy","Community"],
+  "Funder":                  ["Philanthropy","Investor"],
+  "Consultant / Advisor":    ["Digital Services & Consulting","Capacity Building"],
+  "Civic Tech Practitioner": ["GovTech","Digital Services & Consulting"],
+  "Student / Early Career":  ["Fellowships"],
+  "Journalist / Communicator":[], // no segment restriction — show all
 };
-// Map search geo label → people.json jurisdiction values
 const GEO_PPL_MAP = {
-  "Federal":["Federal"], "State":["State"],
-  "Local / City / County":["Local"], "Multi-level":["Federal","State","Local"],
-  "Outside US":[], // no match in current data
+  "Federal":            ["Federal"],
+  "State":              ["State"],
+  "Local / City / County":["Local"],
+  "Multi-level":        ["Federal","State","Local"],
+  "Outside US":         [],
 };
-// Map search geo label → orgs.json focus values
 const GEO_ORG_MAP = {
-  "Federal":["Federal"], "State":["State"],
-  "Local / City / County":["City"], "Multi-level":["Federal","State","City"],
-  "Outside US":[],
+  "Federal":            ["Federal"],
+  "State":              ["State"],
+  "Local / City / County":["City"],
+  "Multi-level":        ["Federal","State","City"],
+  "Outside US":         [],
 };
 
 // ── Token state ───────────────────────────────────────────────────────────────
@@ -561,26 +657,24 @@ Promise.all([
   fetch("../data/orgs.json").then(r=>r.json()).catch(()=>[]),
 ]).then(([ppl, orgs]) => {
   allPeople = ppl; allOrgs = orgs;
-  // Derive time window options from data
   const wins = [...new Set(ppl.map(p=>p.time_window).filter(Boolean))].sort();
   initTokens(wins);
 });
 
 // ── Token rendering ───────────────────────────────────────────────────────────
 function initTokens(timeOpts) {
-  mkTok("tok-role",   ROLE_OPTS,                        "I am a [Role]");
-  mkTok("tok-seek",   SEEK_OPTS.map(s=>s.label),        "Seeking [type of support]");
-  mkTok("tok-area",   AREA_OPTS,                        "Problem Area");
-  mkTok("tok-geo",    GEO_OPTS,                         "Geography");
-  mkTok("tok-window", timeOpts,                         "Time frame");
-  // Topic token built on demand
+  mkTok("tok-role",   ROLE_OPTS,             "I am a [Role]");
+  mkTok("tok-seek",   SEEK_OPTS.map(s=>s.label), "Seeking [type of support]");
+  mkTok("tok-area",   AREA_OPTS,             "Problem Area");
+  mkTok("tok-geo",    GEO_OPTS,              "Geography");
+  mkTok("tok-window", timeOpts,              "Time frame");
   updateTopicToken(null);
 }
 
 function mkTok(containerId, opts, placeholder) {
   const wrap = document.getElementById(containerId);
   if (!wrap) return;
-  const tok = { sel: null, opts, placeholder, btn: null, drop: null, _open: false };
+  const tok = { sel:null, opts, placeholder, btn:null, drop:null, _open:false };
   _tokens[containerId] = tok;
 
   const btn = document.createElement("button");
@@ -594,6 +688,21 @@ function mkTok(containerId, opts, placeholder) {
 
   const list = document.createElement("div");
   list.className = "tok-drop-list";
+
+  // "Any" as first item
+  const anyItem = document.createElement("div");
+  anyItem.className = "tok-drop-item any-item";
+  anyItem.textContent = "Any";
+  anyItem.addEventListener("click", e => {
+    e.stopPropagation();
+    tok.sel = null;
+    syncTok(tok);
+    closeTok(tok);
+    if (containerId === "tok-area") updateTopicToken(null);
+    runSearch();
+  });
+  list.appendChild(anyItem);
+
   opts.forEach(opt => {
     const item = document.createElement("div");
     item.className = "tok-drop-item";
@@ -642,7 +751,7 @@ function updateTopicToken(area) {
   if (wrap) { wrap.style.display = ""; wrap.innerHTML = ""; }
   if (sep)  sep.style.display = "";
 
-  const tok = { sel: null, opts: topics, placeholder: "Problem Topic", btn: null, drop: null, _open: false };
+  const tok = { sel:null, opts:topics, placeholder:"Problem Topic", btn:null, drop:null, _open:false };
   _tokens["tok-topic"] = tok;
 
   const btn = document.createElement("button");
@@ -656,6 +765,20 @@ function updateTopicToken(area) {
 
   const list = document.createElement("div");
   list.className = "tok-drop-list";
+
+  // "Any" as first item
+  const anyItem = document.createElement("div");
+  anyItem.className = "tok-drop-item any-item";
+  anyItem.textContent = "Any";
+  anyItem.addEventListener("click", e => {
+    e.stopPropagation();
+    tok.sel = null;
+    syncTok(tok);
+    closeTok(tok);
+    runSearch();
+  });
+  list.appendChild(anyItem);
+
   topics.forEach(opt => {
     const item = document.createElement("div");
     item.className = "tok-drop-item";
@@ -691,16 +814,22 @@ function updateTopicToken(area) {
 
 function syncTok(tok) {
   if (!tok.btn) return;
+  const wasSet = tok.btn.classList.contains("set");
   if (tok.sel) {
     tok.btn.textContent = tok.sel + " ▾";
     tok.btn.classList.add("set");
+    if (!wasSet) {
+      tok.btn.classList.remove("pop");
+      void tok.btn.offsetWidth; // force reflow for re-trigger
+      tok.btn.classList.add("pop");
+    }
   } else {
     tok.btn.textContent = tok.placeholder + " ▾";
-    tok.btn.classList.remove("set");
+    tok.btn.classList.remove("set", "pop");
   }
-  // highlight selected item in list
   tok.drop?.querySelectorAll(".tok-drop-item").forEach(el => {
-    el.classList.toggle("selected", el.textContent === tok.sel);
+    const isAny = el.classList.contains("any-item") && !tok.sel;
+    el.classList.toggle("selected", isAny || el.textContent === tok.sel);
   });
 }
 function togTok(tok) { tok._open ? closeTok(tok) : openTok(tok); }
@@ -721,28 +850,35 @@ document.getElementById("btn-reset").addEventListener("click", () => {
 function getVal(id) { return _tokens[id]?.sel || null; }
 
 function runSearch() {
-  const role   = getVal("tok-role");
-  const seekLbl= getVal("tok-seek");
-  const area   = getVal("tok-area");
-  const topic  = getVal("tok-topic");
-  const geo    = getVal("tok-geo");
-  const win    = getVal("tok-window");
+  const role    = getVal("tok-role");
+  const seekLbl = getVal("tok-seek");
+  const area    = getVal("tok-area");
+  const topic   = getVal("tok-topic");
+  const geo     = getVal("tok-geo");
+  const win     = getVal("tok-window");
 
-  const anyActive = role || seekLbl || area || topic || geo || win;
-  document.getElementById("search-hint").textContent = anyActive
+  const active = [role, seekLbl, area, topic, geo, win].filter(Boolean).length;
+  const countEl = document.getElementById("filter-count");
+  if (active === 0) {
+    countEl.textContent = "No filters active";
+    countEl.classList.remove("active");
+  } else {
+    countEl.textContent = `${active} filter${active !== 1 ? "s" : ""} active`;
+    countEl.classList.add("active");
+  }
+
+  document.getElementById("search-hint").textContent = active
     ? "Showing filtered results below"
     : "Select any field to filter results";
 
-  if (!anyActive) {
+  if (!active) {
     document.getElementById("results-section").style.display = "none";
     document.getElementById("empty-state").style.display = "none";
     return;
   }
 
-  // Map "Seeking" label → help_source value
   const seekSrc = seekLbl ? (SEEK_OPTS.find(s => s.label === seekLbl)?.src || null) : null;
 
-  // Filter people
   const people = allPeople.filter(p => {
     if (role && p.role !== role) return false;
     if (seekSrc && p.help_source !== seekSrc) return false;
@@ -750,23 +886,22 @@ function runSearch() {
     if (topic && p.problem_topic !== topic) return false;
     if (geo) {
       const vals = GEO_PPL_MAP[geo] || [];
-      if (vals.length && !(p.jurisdictions || []).some(j => vals.includes(j))) return false;
+      if (vals.length && !(p.jurisdictions||[]).some(j => vals.includes(j))) return false;
     }
     if (win && p.time_window !== win) return false;
     return true;
   });
 
-  // Filter orgs (time window and seeking don't apply to orgs)
   const orgs = allOrgs.filter(o => {
     if (role) {
       const segs = ROLE_SEG_MAP[role] || [];
       if (segs.length && !segs.includes(o.primary_segment)) return false;
     }
-    if (area && !(o.problem_areas || []).includes(area)) return false;
-    if (topic && !(o.problem_statements || []).includes(topic)) return false;
+    if (area && !(o.problem_areas||[]).includes(area)) return false;
+    if (topic && !(o.problem_statements||[]).includes(topic)) return false;
     if (geo) {
       const vals = GEO_ORG_MAP[geo] || [];
-      if (vals.length && !(o.focus || []).some(f => vals.includes(f))) return false;
+      if (vals.length && !(o.focus||[]).some(f => vals.includes(f))) return false;
     }
     return true;
   });
@@ -779,11 +914,11 @@ function esc(s) { return (s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").repl
 function httpify(u) { return !u?"": /^https?:\/\//.test(u)?u:"https://"+u; }
 
 function renderResults(people, orgs) {
-  const section  = document.getElementById("results-section");
-  const hdrEl    = document.getElementById("results-header");
-  const pplEl    = document.getElementById("people-results");
-  const orgEl    = document.getElementById("org-results");
-  const emptyEl  = document.getElementById("empty-state");
+  const section = document.getElementById("results-section");
+  const hdrEl   = document.getElementById("results-header");
+  const pplEl   = document.getElementById("people-results");
+  const orgEl   = document.getElementById("org-results");
+  const emptyEl = document.getElementById("empty-state");
 
   const total = people.length + orgs.length;
   if (total === 0) {
@@ -794,26 +929,27 @@ function renderResults(people, orgs) {
   emptyEl.style.display = "none";
   section.style.display = "block";
 
+  // Trigger fade-in animation
+  section.classList.remove("results-anim");
+  void section.offsetWidth;
+  section.classList.add("results-anim");
+
   hdrEl.innerHTML = `<strong>${total}</strong> result${total!==1?"s":""} — ${people.length} ${people.length===1?"person":"people"} · ${orgs.length} org${orgs.length!==1?"s":""}`;
 
-  if (people.length > 0) {
-    pplEl.innerHTML = `<div class="results-section-label">People (${people.length})</div>` +
-      people.map(p => renderPersonCard(p)).join("");
-  } else {
-    pplEl.innerHTML = "";
-  }
+  pplEl.innerHTML = people.length > 0
+    ? `<div class="results-section-label">People (${people.length})</div>` + people.map(renderPersonCard).join("")
+    : "";
 
   const SHOW_ORGS = 20;
   if (orgs.length > 0) {
     const shown = orgs.slice(0, SHOW_ORGS);
     orgEl.innerHTML = `<div class="results-section-label">Organizations (${orgs.length})</div>` +
-      shown.map(o => renderOrgCard(o)).join("") +
+      shown.map(renderOrgCard).join("") +
       (orgs.length > SHOW_ORGS ? `<div class="no-results" style="padding:16px 0">Showing ${SHOW_ORGS} of ${orgs.length} orgs. Use the <a href="../directory/" style="color:var(--blue)">Directory</a> for full browsing.</div>` : "");
   } else {
     orgEl.innerHTML = "";
   }
 
-  // Attach expand listeners
   section.querySelectorAll(".result-card").forEach(card => {
     card.querySelector(".card-summary").addEventListener("click", () => {
       card.classList.toggle("expanded");
@@ -841,7 +977,7 @@ function renderContactAction(p) {
 }
 
 function renderPersonCard(p) {
-  const rc = roleClass(p.role);
+  const rc    = roleClass(p.role);
   const color = roleColor(p.role);
   return `<div class="result-card" data-id="${p.id}">
     <div class="card-summary">
@@ -874,8 +1010,8 @@ function renderPersonCard(p) {
 }
 
 function renderOrgCard(o) {
-  const topics = (o.problem_statements || []).slice(0, 5);
-  const more   = (o.problem_statements || []).length - 5;
+  const topics  = (o.problem_statements||[]).slice(0, 5);
+  const more    = (o.problem_statements||[]).length - 5;
   const website = o.website ? httpify(o.website) : null;
   return `<div class="result-card">
     <div class="card-summary">
