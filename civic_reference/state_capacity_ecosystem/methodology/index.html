@@ -5,7 +5,7 @@
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Methodology — State Capacity Ecosystem · NYCuriosity Data</title>
-  <meta name="description" content="How the State Capacity Ecosystem affinity graph, semantic search, and directory are built: data source, inclusion criteria, taxonomy, problem statements, scoring formula, weight rationale, and limitations.">
+  <meta name="description" content="How the State Capacity Ecosystem directory, search, connect directory, affinity network, and segments view are built: data source, inclusion criteria, taxonomy, problem statements, scoring formula, and limitations.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -215,7 +215,7 @@
 <div class="hero">
   <div class="hero-inner">
     <h1><span>Methodology</span> &amp; data notes</h1>
-    <p>How the directory and affinity graph are built, why each scoring weight was chosen, what the score does and does not show, and how the data is refreshed.</p>
+    <p>How each of the five views is built — Directory, Search, Connect, Affinity Network, Segments — why each affinity scoring weight was chosen, and what the graph does and does not show.</p>
   </div>
 </div>
 
@@ -255,7 +255,8 @@
 
       <h2>Problem statements</h2>
       <p>Every org carries one or more <strong>problem topic</strong> tags identifying the substantive issues it works on — drawn from a curated list of 37 grouped under 8 broader <strong>problem areas</strong>. Topics cover both <em>operational</em> challenges (Procurement Reform, Legacy Systems, Hiring Architecture, Operational Excellence, Service Design, Data Integration) and <em>policy</em> domains (Housing &amp; Land Use, Healthcare Access, Broadband &amp; Internet Connectivity, Criminal Justice, Tax &amp; Revenue, Workforce Development, Permitting &amp; Licensing, Public Health, Education Delivery).</p>
-      <p>A tag is applied when solving the problem is core to the org's mission — a one-time project or peripheral focus does not qualify. Problem topics are the highest-signal tag in the database because they encode <em>what an org is actually trying to fix</em>, independent of how it's structured or who funds it. Two orgs in different segments sharing problem topics is often more informative than two orgs in the same segment with no shared problems.</p>
+      <p>An org earns a tag if it directly solves the problem for government customers, funds or builds the infrastructure that moves the needle on it, or sets the standards that govern it. The problem needs to be a focus for the org — not addressed by ancillary work or with one-time funding, truly part of the mission and vision.</p>
+      <p>Problem topics are the highest-signal tag in the database because they encode <em>what an org is actually trying to fix</em>, independent of how it's structured or who funds it. Two orgs in different segments sharing problem topics is often more informative than two orgs in the same segment with no shared problems. Our first pass identified 8 Problem Areas and 37 Problem Topics based on thorough scans of the organizations in the Ecosystem. We expect this to evolve.</p>
 
       <h2>The directory</h2>
       <p>The directory is a straight rendering of the underlying data. It supports three faceted filters and a semantic search box:</p>
@@ -266,8 +267,24 @@
         <li><strong>Problem topic</strong> is a multi-select on the curated 37-tag list; an org matches if it carries <em>any</em> of the selected tags.</li>
       </ul>
 
+      <h2>The Search page</h2>
+      <p>The Search page is a structured query builder that returns matching people and organizations simultaneously. Rather than a free-text box, it presents six sentence-form token chips that together describe who you are and who you're looking for:</p>
+      <ul>
+        <li><strong>Role</strong> — your own role (Researcher, Technologist, Government practitioner, Advocate, Funder, Consultant / Advisor, Civic Tech Practitioner, Student / Early Career, Journalist / Communicator). Drives which org segments surface — a Funder query surfaces Philanthropy and Investor orgs; a Researcher query surfaces Research orgs.</li>
+        <li><strong>Seeking</strong> — the kind of help or partner you're looking for (research or analysis, a technical co-builder, a government partner, funding, an advocacy partner, a peer network, etc.). Maps to the <code>help_source</code> field on people entries in the Connect directory.</li>
+        <li><strong>Problem Area</strong> — one of 8 broad buckets, which also filters the Topic chip list to the relevant subset.</li>
+        <li><strong>Topic</strong> — one of the 37 specific problem topics nested under the selected area.</li>
+        <li><strong>Geography</strong> — Local / State / Federal / International. Maps to jurisdictions for people and geographic focus for orgs.</li>
+        <li><strong>Time window</strong> — 1 month / 1–3 months / 3–6 months / 6–12 months / No specific timeline.</li>
+      </ul>
+      <p>Each token combination filters against both <code>people.json</code> (the Connect directory) and <code>orgs.json</code> (the org database). People are matched by their <code>role</code>, <code>jurisdictions</code>, <code>problem_area</code>, <code>problem_topic</code>, <code>help_source</code>, and <code>time_window</code> fields. Organizations are matched by segment (derived from the selected role via a curated mapping), geographic focus, and problem tags. Results appear as expandable cards with a direct way to connect or request an introduction.</p>
+
+      <h2>Connect</h2>
+      <p>The Connect page is a directory of individuals and open challenges — practitioners, researchers, funders, and others who have opted in to be findable, alongside open calls (grants, fellowships, collaborative projects) indexed by problem and help type. It is separate from the org Directory: orgs belong in the Directory; people and challenges belong in Connect.</p>
+      <p>Each entry carries: name, organization affiliation, role, what they're looking for (<code>help_source</code>), what they're trying to accomplish (<code>seeking</code>), one problem area, one or more problem topics, geographic jurisdiction(s), a time window for collaboration, and a contact preference (direct email, or a facilitated introduction through the curator). Entries are submitted through the on-page form and reviewed before going live. Filters on the Connect page mirror those on the Search page — role, jurisdiction, problem area, topic, help type, and time window — but allow multi-select for exploratory browsing rather than the sentence-form interface of Search.</p>
+
       <h2>Semantic search</h2>
-      <p>The directory and network both share a precomputed search index. At build time, every org's description, problem-statement tags, segments, and funding-detail text are tokenized into a unified bag and a TF-IDF vector is stored. At query time, the browser tokenizes your query the same way, builds an IDF-weighted query vector, and computes cosine similarity against every org. Exact substring matches in the org name receive a 0.5 boost so typing an exact name returns it first. The full index ships as a static JSON file (~190 KB) — no server, no embedding API, no per-query cost.</p>
+      <p>The directory's search box and the affinity network share a precomputed search index. (The Search page uses structured token-chip filters rather than free text — described in the section above.) At build time, every org's description, problem-statement tags, segments, and funding-detail text are tokenized into a unified bag and a TF-IDF vector is stored. At query time, the browser tokenizes your query the same way, builds an IDF-weighted query vector, and computes cosine similarity against every org. Exact substring matches in the org name receive a 0.5 boost so typing an exact name returns it first. The full index ships as a static JSON file (~190 KB) — no server, no embedding API, no per-query cost.</p>
       <p>This is significantly more than keyword matching: a query like "where should I work on procurement in NYC?" surfaces orgs tagged with Procurement Reform plus orgs operating in NYC plus orgs whose descriptions emphasize vendor evaluation, even when no single word matches everywhere. It is also significantly less than a true semantic embedding — it can't infer that "permits" and "licensing" refer to the same concept unless those words co-occur frequently in the corpus. For the size and vocabulary of this dataset, TF-IDF is the right cost/quality trade-off.</p>
 
       <h2>The affinity score</h2>
@@ -367,7 +384,7 @@
       </ul>
 
       <h2>Credits</h2>
-      <p>The State Capacity Ecosystem Database is curated by <strong>Henry Grunzweig</strong>. This visualization layer — the directory, segments view, affinity network, and search index — was built by <strong>Tal Roded</strong> for NYCuriosity.</p>
+      <p>The State Capacity Ecosystem Database is curated by <strong>Henry Grunzweig</strong>. The Connect directory (people and challenges) is maintained by <strong>Tal Roded</strong>. The visualization and interaction layer — Directory, Search, Connect, Affinity Network, and Segments — was built by Tal Roded for NYCuriosity.</p>
 
     </article>
   </div>
