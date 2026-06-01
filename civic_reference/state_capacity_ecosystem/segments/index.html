@@ -136,6 +136,22 @@
       background:var(--blue-light); color:var(--blue); border:1px solid var(--blue-mid);
       margin-right:3px; margin-bottom:3px; line-height:1.4;
     }
+    .data-row { cursor:pointer; }
+    .data-row.expanded td { background:var(--blue-light); }
+    .detail-row td { padding:0; background:var(--blue-light); }
+    .detail-panel { padding:16px 20px 20px; border-top:1px solid var(--blue-mid); }
+    .detail-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; }
+    @media (max-width:640px) { .detail-grid { grid-template-columns:1fr; } }
+    .detail-panel h4 { font-family:'Roboto Mono',monospace; font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-muted); margin-bottom:8px; }
+    .detail-narrative { font-size:0.84rem; color:var(--text-mid); line-height:1.6; margin-bottom:10px; }
+    .detail-field { margin-bottom:8px; }
+    .detail-field-label { display:block; font-size:0.66rem; font-family:'Roboto Mono',monospace; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-faint); margin-bottom:4px; }
+    .detail-field-value { font-size:0.82rem; color:var(--text-mid); }
+    .detail-links { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
+    .detail-link { display:inline-flex; align-items:center; gap:4px; font-size:0.76rem; font-family:'Roboto Mono',monospace; font-weight:600; color:var(--blue); text-decoration:none; padding:4px 10px; border:1px solid var(--blue-mid); border-radius:5px; background:var(--blue-light); transition:all 0.15s; }
+    .detail-link:hover { background:var(--blue); color:#fff; }
+    .expand-icon { color:var(--text-faint); display:inline-flex; align-items:center; transition:transform 0.2s; }
+    .data-row.expanded .expand-icon { transform:rotate(180deg); }
 
     footer { background:var(--surface); border-top:1px solid var(--border); padding:18px clamp(16px,4vw,48px); }
     .footer-inner { max-width:1300px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; }
@@ -215,6 +231,7 @@
                 <th style="min-width:280px">Description</th>
                 <th style="width:130px">Problem Area</th>
                 <th>Problem Statement</th>
+                <th style="width:36px"></th>
               </tr>
             </thead>
             <tbody id="orgs-body"></tbody>
@@ -307,6 +324,7 @@ function selectSegment(seg) {
   const segEl = document.getElementById("results-segment");
   segEl.textContent = activeSegment;
   segEl.style.background = color;
+  expandedId = null;
   document.getElementById("orgs-body").innerHTML = orgs.map(renderRow).join("");
   document.getElementById("orgs-panel").style.display = "block";
   // Scroll the panel into view
@@ -315,10 +333,12 @@ function selectSegment(seg) {
   }, 50);
 }
 
+let expandedId = null;
+
 function renderRow(o) {
   const segColor = SEGMENT_COLORS[o.primary_segment] || "#6b7280";
-  const link = o.website
-    ? `<a href="${esc(httpify(o.website))}" target="_blank" rel="noopener">${esc(o.name)} ↗</a>`
+  const nameHtml = o.website
+    ? `<a href="${esc(httpify(o.website))}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${esc(o.name)} ↗</a>`
     : esc(o.name);
   const rawDesc = o.description || "";
   const truncDesc = rawDesc.length > 160 ? rawDesc.slice(0, 160).trimEnd() + "…" : rawDesc;
@@ -333,14 +353,78 @@ function renderRow(o) {
     ? probs.slice(0, 3).map(p => `<span class="problem-chip">${esc(p)}</span>`).join("") +
       (probs.length > 3 ? ` <span style="color:var(--text-faint);font-size:0.72rem">+${probs.length - 3}</span>` : "")
     : `<span style="color:var(--text-faint)">—</span>`;
-  return `<tr>
-    <td class="name-cell">${link}</td>
+  return `<tr class="data-row" data-id="${o.id}">
+    <td class="name-cell">${nameHtml}</td>
     <td><span style="display:inline-block;background:${segColor};color:#fff;font-family:'Roboto Mono',monospace;font-size:0.62rem;font-weight:700;padding:2px 7px;border-radius:4px;white-space:nowrap">${esc(o.primary_segment)}</span></td>
     <td>${descHtml}</td>
     <td>${areaHtml}</td>
     <td>${probHtml}</td>
+    <td style="text-align:center"><span class="expand-icon"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span></td>
   </tr>`;
 }
+
+function renderDetailRow(o) {
+  const focHtml = (o.focus || []).length
+    ? (o.focus || []).map(f => `<span class="focus-tag">${esc(f)}</span>`).join("")
+    : `<span style="color:var(--text-faint)">—</span>`;
+  const allProbs = (o.problem_statements || []);
+  const probHtml = allProbs.length
+    ? allProbs.map(p => `<span class="problem-chip">${esc(p)}</span>`).join("")
+    : `<span style="color:var(--text-faint)">—</span>`;
+  const allAreas = (o.problem_areas || []);
+  const areaHtml = allAreas.length
+    ? allAreas.map(a => `<span class="focus-tag">${esc(a)}</span>`).join("")
+    : `<span style="color:var(--text-faint)">—</span>`;
+  const networkLink = `<a href="../network/?id=${o.id}" class="detail-link" onclick="event.stopPropagation()">See in Network</a>`;
+  const websiteLink = o.website ? ` <a href="${esc(httpify(o.website))}" target="_blank" rel="noopener" class="detail-link" onclick="event.stopPropagation()">Website ↗</a>` : "";
+  return `<tr class="detail-row">
+    <td colspan="6">
+      <div class="detail-panel">
+        <div class="detail-grid">
+          <div>
+            <h4>About</h4>
+            <p class="detail-narrative">${esc(o.description || "—")}</p>
+            <div class="detail-field">
+              <span class="detail-field-label">Problem Areas</span>
+              <div>${areaHtml}</div>
+            </div>
+            <div class="detail-field">
+              <span class="detail-field-label">Problem Topics</span>
+              <div>${probHtml}</div>
+            </div>
+          </div>
+          <div>
+            <h4>Organization</h4>
+            <div class="detail-field">
+              <span class="detail-field-label">Geography</span>
+              <div>${focHtml}</div>
+            </div>
+            <div class="detail-field">
+              <span class="detail-field-label">Funding Model</span>
+              <span class="detail-field-value">${esc(o.funding_model || "—")}</span>
+            </div>
+            <div class="detail-links">${networkLink}${websiteLink}</div>
+          </div>
+        </div>
+      </div>
+    </td>
+  </tr>`;
+}
+
+document.getElementById("orgs-body").addEventListener("click", e => {
+  const row = e.target.closest(".data-row");
+  if (!row) return;
+  const id = parseInt(row.dataset.id, 10);
+  const org = allOrgs.find(o => o.id === id);
+  if (!org) return;
+  const existingDetail = document.querySelector(".detail-row");
+  if (existingDetail) existingDetail.remove();
+  document.querySelectorAll(".data-row.expanded").forEach(r => r.classList.remove("expanded"));
+  if (expandedId === id) { expandedId = null; return; }
+  row.classList.add("expanded");
+  row.insertAdjacentHTML("afterend", renderDetailRow(org));
+  expandedId = id;
+});
 
 function httpify(u) {
   if (!u) return "";

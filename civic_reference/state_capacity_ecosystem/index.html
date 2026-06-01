@@ -410,7 +410,7 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
         Add to Directory
       </a>
-      <a class="hero-cta-btn" href="./connect/"
+      <a class="hero-cta-btn" href="./connect/?add=1"
          style="background:var(--orange-light);color:var(--orange);border:1.5px solid #fed7aa;box-shadow:none;"
          onmouseover="this.style.background='var(--orange)';this.style.color='#fff';"
          onmouseout="this.style.background='var(--orange-light)';this.style.color='var(--orange)';">
@@ -462,7 +462,7 @@
           <div class="bubble-cat">Directory</div>
           <div class="bubble-title">Browse Organizations</div>
           <div class="bubble-desc">Searchable, sortable table of every org in the database. Filter by segment, geographic focus, or problem statement. Click any row for the full description, funding detail, and a link out.</div>
-          <div class="bubble-cta">Open directory →</div>
+          <div class="bubble-cta">Open Directory →</div>
         </div>
       </a>
 
@@ -560,7 +560,7 @@
           <div class="bubble-cat">Affinity</div>
           <div class="bubble-title">Find Surprising Org Relationships</div>
           <div class="bubble-desc">A map of which orgs are working on the same underlying problems. Type a question like "where should I work on procurement in NYC?" — the search ranks orgs by semantic relevance and highlights the top matches. Or click through the graph: thicker edges mean the two orgs share a stronger combination of described work, problem statements, and funders.</div>
-          <div class="bubble-cta">Open network →</div>
+          <div class="bubble-cta">Open Network →</div>
         </div>
       </a>
 
@@ -594,7 +594,7 @@
           <div class="bubble-cat">Segments</div>
           <div class="bubble-title">Browse by Segment</div>
           <div class="bubble-desc">Distribution of all 11 segments as a horizontal bar chart. Click any bar to expand a table of the orgs in that segment, with their problem statements, geographic focus, and funding model.</div>
-          <div class="bubble-cta">Open segments →</div>
+          <div class="bubble-cta">Open Segments →</div>
         </div>
       </a>
 
@@ -603,12 +603,12 @@
     <div class="section-label" style="margin-top:24px;">How we built this</div>
     <div class="text-panel" style="border-left-color:var(--blue);display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap;">
       <p style="margin-bottom:0">Inclusion criteria, segment taxonomy, problem statement methodology, and how the Connect directory is curated — all documented on the Methodology page.</p>
-      <a href="./methodology/" class="info-link" style="flex-shrink:0;white-space:nowrap;">Read the Methodology →</a>
+      <a href="./methodology/" class="info-link" style="flex-shrink:0;white-space:nowrap;margin-left:auto;">Read the Methodology →</a>
     </div>
 
     <div class="section-label" style="margin-top:24px;">Submit feedback</div>
     <div class="text-panel" style="border-left-color:var(--orange);display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap;">
-      <p style="margin-bottom:0">Missing an org? Wrong segment? Have a suggestion for the directory, Connect, or the tool overall? We read everything.</p>
+      <p style="margin-bottom:0">Org is misclassified? Feature isn't working? Have a suggestion for the Directory, Connect, or the tool overall? We read everything.</p>
       <a href="mailto:henrygrunzweig@gmail.com?subject=State%20Capacity%20Ecosystem%20Feedback" class="info-link" style="flex-shrink:0;white-space:nowrap;background:var(--orange-light);border-color:#fed7aa;color:var(--orange);" onmouseover="this.style.background='var(--orange)';this.style.color='#fff';" onmouseout="this.style.background='var(--orange-light)';this.style.color='var(--orange)';">Send Feedback →</a>
     </div>
 
@@ -648,9 +648,9 @@ const ROLE_TO_SEGS = {
   "Funder":                 ["Philanthropy","Investor"],
   "Government Practitioner":["Government"],
   "Media":                  [],
-  "Other":                  [],
   "Researcher":             ["Research"],
   "Technologist":           ["GovTech","Digital Services & Consulting"],
+  "Other":                  [],
 };
 const ML_ROLES = Object.keys(ROLE_TO_SEGS);
 
@@ -682,18 +682,12 @@ window.closeMadLibs = closeMadLibs;
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeMadLibs(); });
 
 function _mlInitToks() {
-  const helps = new Set();
-  for (const p of _mlPeople) {
-    if (p.offering) p.offering.split(", ").forEach(o => { const t=o.trim(); if(t) helps.add(t); });
-    else if (p.help_source) helps.add(p.help_source);
-  }
-  const geos = new Set();
-  for (const o of _mlOrgs) (o.focus||[]).forEach(f => geos.add(f));
-  for (const p of _mlPeople) (p.geography || p.jurisdictions || []).forEach(j => geos.add(j));
-
-  _mkTok('ml-t-myrole',   ML_ROLES,          'single', 'Role');
-  _mkTok('ml-t-offering', [...helps].sort(),  'multi',  'any offering');
-  _mkTok('ml-t-geo',      [...geos].sort(),   'multi',  'any geography');
+  _mkTok('ml-t-myrole',   ML_ROLES, 'single', 'Role');
+  _mkTok('ml-t-offering', [
+    "Collaboration Opportunity","Expertise","Funding / Investment","Grant / Challenge",
+    "Interesting Conversation","Job / Fellowship","Problem to Solve","Tool / Product","Other"
+  ], 'multi', 'any offering');
+  _mkTok('ml-t-geo', ["Federal","State","Local","Outside US"], 'multi', 'any geography');
 }
 
 function _mkTok(id, opts, mode, ph) {

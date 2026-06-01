@@ -488,13 +488,13 @@
       <div class="sf-section sf-name-org-row" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
         <div>
           <div class="sf-prompt">Name <span class="sf-req">*</span></div>
-          <input id="sf-name" type="text" class="sf-text-input" maxlength="80" placeholder="Your full name" oninput="sfCharCount('sf-name','sf-name-ct',80)">
+          <input id="sf-name" type="text" class="sf-text-input" maxlength="80" placeholder="Your name or name of offering" oninput="sfCharCount('sf-name','sf-name-ct',80)">
           <div class="sf-char-row"><span id="sf-name-ct" class="sf-char-count">80 left</span></div>
           <div id="sf-name-err" class="sf-error-msg">Please enter your name.</div>
         </div>
         <div>
           <div class="sf-prompt">Organization <span class="sf-prompt-sub">(optional)</span></div>
-          <input id="sf-org" type="text" class="sf-text-input" maxlength="80" placeholder="Where you work or are affiliated" oninput="sfCharCount('sf-org','sf-org-ct',80)">
+          <input id="sf-org" type="text" class="sf-text-input" maxlength="80" placeholder="Org affiliated with offering" oninput="sfCharCount('sf-org','sf-org-ct',80)">
           <div class="sf-char-row"><span id="sf-org-ct" class="sf-char-count">80 left</span></div>
         </div>
       </div>
@@ -570,6 +570,9 @@
         <div class="sf-char-row"><span id="sf-email-ct" class="sf-char-count">120 left</span></div>
         <div id="sf-email-note" style="display:none;font-size:0.78rem;color:var(--text-muted);margin-top:6px;line-height:1.5;">
           Your email is kept private and will not be shown publicly. We will facilitate introductions on your behalf.
+        </div>
+        <div id="sf-email-direct-note" style="display:none;font-size:0.78rem;color:var(--text-muted);margin-top:6px;line-height:1.5;">
+          Your email will be publicly displayed in the Connect directory.
         </div>
         <div id="sf-email-err" class="sf-error-msg">Please enter a valid email address.</div>
       </div>
@@ -1006,7 +1009,7 @@ const AREA_TOPICS = {
   "Test & Learn": [
     "Evidence Use","Feedback Loops","Iterative Learning","Outcomes Measurement","Scaling What Works"
   ],
-  // "Ecosystem & Capacity" and "Open to Any" have no topics — topic section stays hidden for these
+  // "Open to Any" has no topics — topic section stays hidden if only that area is selected
 };
 
 let _sfLastText = "";
@@ -1043,7 +1046,9 @@ function sfGetSingle(containerId) {
 function sfContactSwitch() {
   const pref = sfGetSingle("sf-contact-chips");
   const note = document.getElementById("sf-email-note");
+  const directNote = document.getElementById("sf-email-direct-note");
   if (note) note.style.display = pref === "Facilitated" ? "block" : "none";
+  if (directNote) directNote.style.display = pref === "Direct" ? "block" : "none";
   document.getElementById("sf-params-cond").classList.toggle("show", pref === "Facilitated");
 }
 
@@ -1235,19 +1240,21 @@ document.addEventListener("keydown", e => {
 (function initSF() {
   sfMkChips("sf-role-chips", [
     "Advocate","Capacity Builder","Fellowship Program","Funder",
-    "Government Practitioner","Media","Other","Researcher","Technologist"
+    "Government Practitioner","Media","Researcher","Technologist","Other"
   ], false);
   sfMkChips("sf-offering-chips", [
     "Collaboration Opportunity","Expertise","Funding / Investment","Grant / Challenge",
-    "Interesting Conversation","Job / Fellowship","Other","Problem to Solve","Tool / Product"
+    "Interesting Conversation","Job / Fellowship","Problem to Solve","Tool / Product","Other"
   ], true);
   sfMkChips("sf-area-chips", [
-    "Domain-Specific","Ecosystem & Capacity","Open to Any","Participatory Democracy",
+    "Open to Any","Domain-Specific","Participatory Democracy",
     "Procurement & Operations","Service Delivery","Talent & Hiring","Technology & Data","Test & Learn"
   ], true);
-  sfMkChips("sf-geo-chips", ["Federal","Local","Outside US","State"], true);
+  sfMkChips("sf-geo-chips", ["Federal","State","Local","Outside US"], true);
   sfMkChips("sf-contact-chips", ["Direct","Facilitated"], false);
 })();
+
+if (new URLSearchParams(window.location.search).get("add") === "1") openSF();
 
 // ─── INTRODUCTION REQUEST ────────────────────────────────────────────────────
 
