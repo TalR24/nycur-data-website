@@ -642,11 +642,15 @@ const SEGMENT_COLORS = {
 };
 
 const ROLE_TO_SEGS = {
-  "Researcher":["Research"],
-  "Technologist":["GovTech","Digital Services & Consulting"],
-  "Advocate":["Advocacy"],
-  "Government practitioner":["Government"],
-  "Funder":["Philanthropy","Investor"],
+  "Advocate":               ["Advocacy"],
+  "Capacity Builder":       ["Capacity Building"],
+  "Fellowship Program":     ["Fellowships"],
+  "Funder":                 ["Philanthropy","Investor"],
+  "Government Practitioner":["Government"],
+  "Media":                  [],
+  "Other":                  [],
+  "Researcher":             ["Research"],
+  "Technologist":           ["GovTech","Digital Services & Consulting"],
 };
 const ML_ROLES = Object.keys(ROLE_TO_SEGS);
 
@@ -679,17 +683,17 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeMadLibs
 
 function _mlInitToks() {
   const helps = new Set();
-  for (const p of _mlPeople) if (p.help_source) helps.add(p.help_source);
+  for (const p of _mlPeople) {
+    if (p.offering) p.offering.split(", ").forEach(o => { const t=o.trim(); if(t) helps.add(t); });
+    else if (p.help_source) helps.add(p.help_source);
+  }
   const geos = new Set();
   for (const o of _mlOrgs) (o.focus||[]).forEach(f => geos.add(f));
-  for (const p of _mlPeople) (p.jurisdictions||[]).forEach(j => geos.add(j));
-  const wins = new Set();
-  for (const p of _mlPeople) if (p.time_window) wins.add(p.time_window);
+  for (const p of _mlPeople) (p.geography || p.jurisdictions || []).forEach(j => geos.add(j));
 
-  _mkTok('ml-t-myrole',    ML_ROLES,             'single', 'Role');
-  _mkTok('ml-t-offering',  [...helps].sort(),     'multi',  'any offering');
-  _mkTok('ml-t-geo',       [...geos].sort(),      'multi',  'any geography');
-  _mkTok('ml-t-window',    [...wins].sort(),      'multi',  'any time frame');
+  _mkTok('ml-t-myrole',   ML_ROLES,          'single', 'Role');
+  _mkTok('ml-t-offering', [...helps].sort(),  'multi',  'any offering');
+  _mkTok('ml-t-geo',      [...geos].sort(),   'multi',  'any geography');
 }
 
 function _mkTok(id, opts, mode, ph) {
@@ -773,12 +777,16 @@ function _mlSearch() {
   const myRole   = _mlGet('ml-t-myrole');
   const offering = _mlGet('ml-t-offering');
   const geos     = _mlGet('ml-t-geo');
-  const windows  = _mlGet('ml-t-window');
 
   const people = _mlPeople.filter(p => {
-    if (offering && !offering.has(p.help_source)) return false;
-    if (geos && !(p.jurisdictions||[]).some(j => geos.has(j))) return false;
-    if (windows && !windows.has(p.time_window)) return false;
+    if (offering) {
+      const pOffs = p.offering ? p.offering.split(", ").map(s=>s.trim()) : (p.help_source ? [p.help_source] : []);
+      if (!pOffs.some(o => offering.has(o))) return false;
+    }
+    if (geos) {
+      const pGeos = [...(p.geography||[]), ...(p.jurisdictions||[])];
+      if (!pGeos.some(j => geos.has(j))) return false;
+    }
     return true;
   });
 
@@ -820,8 +828,8 @@ function _mlRender(ppl, orgs) {
       <div class="ml-card-sub">${e2(p.organization||'')}${p.role?' &middot; '+e2(p.role):''}</div>
       <div class="ml-card-chips">
         ${p.problem_topic?`<span class="ml-chip ml-chip-blue">${e2(p.problem_topic)}</span>`:''}
-        ${(p.jurisdictions||[]).map(j=>`<span class="ml-chip ml-chip-orange">${e2(j)}</span>`).join('')}
-        ${p.help_source?`<span class="ml-chip ml-chip-green">${e2(p.help_source)}</span>`:''}
+        ${(p.geography||p.jurisdictions||[]).map(j=>`<span class="ml-chip ml-chip-orange">${e2(j)}</span>`).join('')}
+        ${(p.offering||p.help_source)?`<span class="ml-chip ml-chip-green">${e2(p.offering||p.help_source)}</span>`:''}
       </div>
     </div>`
   );
@@ -857,7 +865,7 @@ function _mlRender(ppl, orgs) {
         <span class="ml-prose">I am a </span><span class="ml-token" id="ml-t-myrole"></span>
         <span class="ml-prose"> seeking </span><span class="ml-token" id="ml-t-offering"></span>
         <span class="ml-prose"> in </span><span class="ml-token" id="ml-t-geo"></span>
-        <span class="ml-prose"> within </span><span class="ml-token" id="ml-t-window"></span><span class="ml-prose">.</span>
+        <span class="ml-prose">.</span>
       </div>
     </div>
     <div class="ml-results" id="ml-results-section">
