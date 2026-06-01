@@ -439,7 +439,7 @@
   <div class="footer-inner">
     <span class="footer-copy">Created by Tal Roded · NYCuriosity</span>
     <div class="footer-links">
-      <a href="../data/graph.json" target="_blank" rel="noopener">graph.json</a>
+      <a href="../data/affinity.json" target="_blank" rel="noopener">graph.json</a>
       <a href="https://airtable.com/appo3EaOAi7JjI2VZ/shrAswoPpY3sbZIY7/tblcsGZwPK5O5TXjb/viwQZffbnIJ8f4zjT" target="_blank" rel="noopener">Source: Airtable</a>
       <a href="../">← Back to hub</a>
     </div>
@@ -597,7 +597,7 @@ document.getElementById("zoom-out").onclick = () => svg.transition().duration(20
 document.getElementById("zoom-fit").onclick = () => svg.transition().duration(300).call(zoom.transform, d3.zoomIdentity);
 
 let allNodes = [], allEdges = [];
-let allPeople = [];   // From data/people.json — used for cross-page matchmaking.
+let allPeople = [];   // From data/connect.json — used for cross-page matchmaking.
 let visibleNodes = [], visibleEdges = [];
 let segmentsOn = new Set();
 let threshold = 0.18;
@@ -616,11 +616,11 @@ const ROLE_CLASS = {
 };
 
 Promise.all([
-  fetch("../data/graph.json").then(r => r.json()),
-  fetch("../data/search_index.json").then(r => r.json()).catch(() => null),
+  fetch("../data/affinity.json").then(r => r.json()),
+  fetch("../data/affinity_search.json").then(r => r.json()).catch(() => null),
   // People file is optional — older deployments won't have it; the page
   // continues to render normally if the fetch fails.
-  fetch("../data/people.json").then(r => r.json()).catch(() => []),
+  fetch("../data/connect.json").then(r => r.json()).catch(() => []),
 ]).then(([g, idx, people]) => {
   allNodes = g.nodes.map(n => ({...n}));
   allEdges = g.edges.map(e => ({...e}));
