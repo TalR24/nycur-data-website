@@ -1,6 +1,6 @@
 # State Capacity Ecosystem — Project Handoff & Reference
 
-**Last updated:** 2026-05-24
+**Last updated:** 2026-06-01
 **Maintainer:** Tal Roded (visualization layer) · Henry Grunzweig (curates the underlying database)
 **Live:** https://data.nycuriosity.com/civic_reference/state_capacity_ecosystem/
 
@@ -32,7 +32,7 @@ The six public pages:
 1. **Read this README first.** Don't guess at file structure or weights — they've been deliberately set.
 2. **Check the live site** before making changes — `https://data.nycuriosity.com/civic_reference/state_capacity_ecosystem/`. The deployed state may differ from your local working copy.
 3. **Identify which file you need to edit** from the file map below. The five subpages are independent HTML files; changes to shared concepts (colors, taxonomy, copy) must be made in **all** of them.
-4. **For data refreshes:** drop the new CSV in `data/state_capacity_ecosystem.csv` and run `python3 data/build_affinity.py`. Don't hand-edit `graph.json`, `orgs.json`, or `search_index.json` — they're regenerated from the CSV.
+4. **For data refreshes:** drop the new CSV in `data/state_capacity_ecosystem.csv` and run `python3 data/build_affinity.py`. Don't hand-edit `affinity.json`, `directory.json`, or `affinity_search.json` — they're regenerated from the CSV.
 5. **Push to GitHub** when done. Live in ~1 min via GitHub Pages.
 
 ---
@@ -45,24 +45,25 @@ data_website/civic_reference/state_capacity_ecosystem/
 ├── index.html                       ← Hub: pills, 4 explore cards, methodology card, info panels
 ├── data/
 │   ├── state_capacity_ecosystem.csv ← Canonical org source (replace to refresh)
-│   ├── build_affinity.py            ← CSV → graph.json + orgs.json + search_index.json
-│   ├── graph.json                   ← Nodes + scored edges + stats (incl. last_updated)
-│   ├── orgs.json                    ← Flat node bundle for the directory + segments pages
-│   ├── search_index.json            ← Vocab + IDF + per-org sparse TF-IDF for NL search
+│   ├── build_affinity.py            ← CSV → affinity.json + directory.json + affinity_search.json
+│   ├── affinity.json                ← Nodes + scored edges + stats (incl. last_updated)
+│   ├── directory.json               ← Flat node bundle for the directory + segments pages
+│   ├── affinity_search.json         ← Vocab + IDF + per-org sparse TF-IDF for NL search
 │   ├── problem_statement_seeds_v5.csv ← People + problem-statement seeds (separate dataset)
-│   ├── build_people.py              ← CSV → people.json (simple transform; no scoring)
-│   └── people.json                  ← Flat people bundle for the /people/ page
+│   ├── build_people.py              ← CSV → connect.json (simple transform; no scoring)
+│   └── connect.json                 ← Flat people bundle for the /connect/ page
 ├── directory/
-│   └── index.html                   ← Filterable table. Reads ../data/orgs.json + search_index.json
+│   └── index.html                   ← Filterable table. Reads ../data/directory.json + affinity_search.json
 ├── segments/
-│   └── index.html                   ← Bar chart + click-to-list. Reads ../data/orgs.json
+│   └── index.html                   ← Bar chart + click-to-list. Reads ../data/directory.json
 ├── network/
 │   └── index.html                   ← D3 force-directed graph + NL search bar.
-│                                     Reads ../data/graph.json + search_index.json.
+│                                     Reads ../data/affinity.json + affinity_search.json + connect.json.
 │                                     Supports ?id=N deep-link from directory.
 ├── connect/
-│   └── index.html                   ← Connect directory + 9-column table + 13-field self-submission
-│                                     form modal + intro request modal. Reads ../data/people.json.
+│   └── index.html                   ← Connect directory + 9-column table + 12-field self-submission
+│                                     form modal + intro request modal. Reads ../data/connect.json.
+│                                     Submissions post to Airtable via REST API.
 └── methodology/
     └── index.html                   ← Long-form scoring + taxonomy write-up
 ```
@@ -103,9 +104,9 @@ python3 data/build_affinity.py
 
 Pure stdlib + numpy. No env vars, no API keys, no network calls. Outputs three files into `data/`:
 
-- **`graph.json`** — nodes (with degree) + scored edges + stats block (`org_count`, `edge_count`, `max_weight`, `median_weight`, `last_updated`)
-- **`orgs.json`** — same node payload, flat array (no edges, no stats)
-- **`search_index.json`** — `{vocab, idf, vectors}` for client-side TF-IDF semantic search
+- **`affinity.json`** — nodes (with degree) + scored edges + stats block (`org_count`, `edge_count`, `max_weight`, `median_weight`, `last_updated`)
+- **`directory.json`** — same node payload, flat array (no edges, no stats)
+- **`affinity_search.json`** — `{vocab, idf, vectors}` for client-side TF-IDF semantic search
 
 The build is deterministic — same CSV in, same JSON out.
 
@@ -172,8 +173,8 @@ Total cost is one ~190 KB JSON fetch + O(query_terms × num_orgs) per query. No 
 - **Submit-an-organization panel** sits right after the pills, above "Four ways to explore" — full-width with Henry's Google Form CTA (this is the *org* intake form, not the people-directory submission)
 - **4 view cards under "Four ways to explore":** Directory · Affinity Network · Asks & Opportunities · Segments. Grid is a fixed 2×2 layout. Card order: Asks & Opportunities appears before Segments (reordered May 2026). Section was relabeled from "Three" to "Four" in May 2026 when the Asks & Opportunities card was added.
 - **1 methodology card under "How this works":** the hub-level entry point to the methodology page. Card preview is a static rendering of the scoring formula and thresholds. (Methodology is also reachable from every subpage's pill nav.)
-- **2 info panels at bottom:** What gets included (inclusion criteria) · Problem statements (areas + topics)
-- Loads `data/graph.json` to dynamically fill the pills (org count, segment count, problem-topic count, last_updated date)
+- **2 text panels at bottom:** "How we built this" (links to Methodology page) · "Submit feedback" (mailto:henrygrunzweig@gmail.com)
+- Loads `data/affinity.json` to dynamically fill the pills (org count, segment count, problem-topic count, last_updated date)
 
 ### Directory (`directory/index.html`)
 - **Visible table columns:** Organization · Segment · Secondary Segments · Description (truncated to 180 chars) · Problem Area (orange chips) · Problem Topic (blue chips). Every other field (focus, funding model, funding detail, named funders, website) lives in the row-click detail panel.
@@ -187,24 +188,25 @@ Total cost is one ~190 KB JSON fetch + O(query_terms × num_orgs) per query. No 
   - Falls back to plain substring filter if no TF-IDF hits (handles short fragments)
 - Multi-select dropdowns: opening one closes any other open dropdown. Clicking outside closes all.
 - Click any row to expand a detail panel showing: description, Problem areas (orange chips), Problem topics (blue chips), segments, focus, funding model, funding detail, named funders, website, "See in network" deep link
-- Loads `data/orgs.json` + `data/search_index.json`
+- Loads `data/directory.json` + `data/affinity_search.json`
 
 ### Segments (`segments/index.html`)
 - Bar chart of primary-segment counts (descending)
 - Click any bar → orange highlight on that row + table appears below showing every org in that segment with their focus, funding model, and problem-topic chips
 - Click the same bar again to deselect
-- Loads `data/orgs.json`
+- Loads `data/directory.json`
 
 ### Connect (`connect/index.html`)
-- Separate dataset from the org pages — sourced from `data/problem_statement_seeds_v5.csv`, a Tal-curated seed list. Entries can be people OR organizations. Grows via a 13-field in-page form modal.
-- **Self-submission form modal** (`openSF()` / `closeSF()`): opened by the "Add yourself or your org to the directory" pill button in the hero. Full-page overlay with 13 fields organized in sections: Name, Organization, Role (chips), Looking For (chips, multi), Seeking (chips), Problem Area (chips), Problem Topic (chips, filtered by area), Geographic Focus (chips), Time Window (chips), Contact preference (Direct / Facilitated / Not listed), conditional email field (Direct) or facilitated-parameters text (Facilitated), and a Details textarea. On submit generates a `mailto:troded24@gmail.com` link with pre-filled subject/body; also copies to clipboard. **CSS critical:** `.sf-body` requires `flex:1; min-height:0` — without `min-height:0` the flex child defaults to `min-height:auto` and can't scroll, so lower chip rows clip out of view.
-- **Intro request modal** (`openIR(id)` / `closeIR()`): triggered by "Request intro →" links in the Contact column for entries with `contact_preference === "Facilitated"`. 3-field overlay (name, email, why). Same mailto + clipboard pattern.
-- **9-column table:** Name (name + org subtitle) · Role · Looking For · Seeking · Problem Area · Problem Topic · Geographic Focus · Time Window · Contact. Click any row to expand a detail panel showing the Details narrative (if present) spanning all columns.
-- **Contact column rendering:** if `contact_preference === "Facilitated"` → "Request intro →" link (opens IR modal); if `contact` is an email string → `mailto:` link; URL → external link. Entries without a contact field show an em-dash.
-- **Tag color system:** Role = gray · Looking For = green (`.help-tag`) · Seeking = fuchsia (`.seek-tag`) · Time Window = violet (`.time-tag`) · Contact Direct = blue (`.pref-direct`) · Facilitated = orange (`.pref-facilitated`) · Not listed = gray (`.pref-other`)
-- **Neutral language throughout:** the page uses "entry" / "entries" / "Name" rather than "person" / "practitioners" — the directory contains both people and organizations.
-- **`AREA_TOPICS` constant** maps each problem area to its filtered topic list. `sfUpdateTopics()` rebuilds topic chips on area change, preserving prior selections. "Open to Any" or no area selected → show all 36 topics. Ecosystem & Capacity has a smaller subset (4 topics); all others share 32–36 of the full 36.
-- Loads `data/people.json` (regenerated by `python3 data/build_people.py`). Don't hand-edit `people.json` — edit the CSV and rebuild.
+- Separate dataset from the org pages — sourced from `data/problem_statement_seeds_v5.csv`, a Tal-curated seed list. Entries can be people OR organizations. Grows via a 12-field in-page form modal that POSTs directly to Airtable.
+- **Self-submission form modal** (`openSF()` / `closeSF()`): opened by the "Add yourself or a challenge" pill button in the hero. Full-page overlay with fields: Name, Organization (optional), Role (single, 9 options), Offering (multi, 9 options), Problem Area (multi, 9 options), Problem Topic (multi, conditional — shown only after a mappable area is selected), Geography (multi, 4 options), Due By (date, optional), Details (280-char textarea), Contact preference (Direct / Facilitated). Email always shown and required. For Facilitated: a privacy note is shown (email kept private) and a Connection Parameters textarea appears. On submit, POSTs to Airtable REST API. **CSS critical:** `.sf-body` requires `flex:1; min-height:0` — without `min-height:0` the flex child defaults to `min-height:auto` and can't scroll, so lower chip rows clip out of view.
+- **Airtable backend:** `AIRTABLE_ENDPOINT` points to base `appFIPqXkeQMQ3n94`, table `tbl2ArzY6c0CdNVsh` ("State Capacity Ecosystem Connect Submissions"). Token is a write-only PAT in client-side JS (intentional — scoped to this table only; readers can submit but cannot read/edit/delete). Table columns: Name, Organization, Role, Offering, Problem Areas, Problem Topics, Geography, Due By, Details, Contact Type, Email, Connection Parameters.
+- **Intro request modal** (`openIR(id)` / `closeIR()`): triggered by "Request intro →" links in the Contact column for Facilitated entries. 3-field overlay (name, email, why). Submits via `mailto:henrygrunzweig@gmail.com` + clipboard copy.
+- **9-column table:** Name · Role · Offering · Problem Area · Problem Topic · Geography · Due By · Contact · expand chevron. Click any row to expand a detail panel.
+- **Contact column rendering:** Facilitated → "Request intro →" link (opens IR modal); Direct → `mailto:` link on email field. Entries without a contact field show an em-dash.
+- **`AREA_TOPICS` constant** maps each of the 7 mappable problem areas to its topic list. "Ecosystem & Capacity" and "Open to Any" have no topics — topic section stays hidden if only those are selected. `sfUpdateTopics()` rebuilds topic chips on area change, preserving prior selections.
+- **Backward compatibility:** existing `connect.json` entries use old field names (`help_source`, `jurisdictions`, `problem_area`, `problem_topic`). New Airtable submissions use new names (`offering`, `geography`, `problem_areas`, `problem_topics`). Helper functions `_pGeos()`, `_pAreas()`, `_pTopics()`, `_pOfferings()` handle both schemas throughout the page JS.
+- **Neutral language throughout:** "entry" / "entries" / "Name" — the directory contains both people and organizations.
+- Loads `data/connect.json` (regenerated by `python3 data/build_people.py`). Don't hand-edit `connect.json` — edit the CSV and rebuild.
 
 ### Affinity Network (`network/index.html`)
 - D3 force-directed graph; nodes colored by primary segment; edge width scales with composite score
@@ -221,6 +223,7 @@ Total cost is one ~190 KB JSON fetch + O(query_terms × num_orgs) per query. No 
 - Side panel: clicking a node shows full description, Problem statement chips, funding info, closest peers, **and a "People working on these problem topics" section listing entries from `/connect/` whose `problem_topic` is in this org's `problem_statements` list** (added May 2026). At current coverage ~97% of orgs surface at least one matching entry. Up to 8 inline cards + "more →" link to the Connect page.
 - **Connect matchmaking sidebar:** when Problem area or Problem topic filters are active, an orange-accented panel appears below the controls listing up to 6 matching entries + total count + "Open Connect ↗" deep link. Hidden otherwise. Mirrors the existing `search-results` pattern.
 - Supports `?id=N` deep link from directory
+- Loads `data/affinity.json` + `data/affinity_search.json` + `data/connect.json`
 
 ### Methodology (`methodology/index.html`)
 - Long-form explainer organized as: data source → inclusion criteria → problem statements → directory filters → semantic search → affinity score (formula + per-signal explanation + thresholding) → score range table → what the graph does/doesn't show → color palette → credits
@@ -311,7 +314,7 @@ These were arrived at via user feedback over multiple sessions. Don't reintroduc
 12. **Methodology page stays in sync with the affinity network.** Any change to the scoring formula, weights, token bag, edge thresholding, degree cap, or graph rendering MUST be reflected on `methodology/index.html` in the same commit. Touch points: the formula block, the per-signal `<h3>` paragraphs, the score-range table, the "what gets dropped" thresholds, and the published-dataset stats line. (Note: the network page no longer has its own inline methodology blurb, so the methodology page is the single source of truth for user-facing scoring documentation.)
 13. **Directory table is the 6 user-asked columns + expand chevron:** Organization · Segment · Secondary Segments · Description (truncated) · Problem Area · Problem Statement. All other CSV fields are in the row-click detail panel. Do not add columns without explicit user request — the layout was deliberately narrowed May 2026.
 14. **Connect (`/connect/`) is a SEPARATE dataset from the org pages.** Source is `data/problem_statement_seeds_v5.csv`, built by `build_people.py` → `people.json`. Do not merge into `build_affinity.py` — affinity is org-to-org, Connect is a parallel track. Hub treats the Connect card as a 4th "way to explore" alongside Directory / Affinity Network / Segments.
-15. **Connect form is a live in-page modal, not a placeholder.** The "Add yourself or your org to the directory" pill button opens a 13-field overlay modal. Submission generates a `mailto:troded24@gmail.com` link + clipboard copy — no backend. Intro requests for Facilitated contacts use a separate 3-field modal with the same mailto pattern.
+15. **Connect form POSTs to Airtable, not mailto.** The "Add yourself or a challenge" pill opens a 12-field overlay modal. Submission POSTs to `appFIPqXkeQMQ3n94 / tbl2ArzY6c0CdNVsh` via a write-only PAT in client-side JS. This is intentional — the PAT is scoped to that table only (write, no read/edit/delete). Intro requests for Facilitated contacts use a separate 3-field modal that still uses `mailto:henrygrunzweig@gmail.com` + clipboard.
 16. **Network page bridges to /connect/ in two places** (added May 2026): (a) inline "People working on these problem topics" subsection at the bottom of the org-node detail panel; (b) `people-results` sidebar in controls when Problem area or Problem topic filters are active. Both link to `../connect/`. The `people.json` fetch is wrapped in `.catch(() => [])` so the network page degrades gracefully if the file is missing.
 17. **Connect uses neutral language ("Name", "entry", "entries") not "Person" / "practitioners"** — the directory contains both people and organizations. Do not reintroduce people-only language in table headers, filter labels, or JS string templates on this page.
 18. **Geographic search boost in network:** `GEO_FOCUS_MAP` + `detectGeoFocus()` in `rankByQuery()` add +0.25 to orgs matching the inferred focus level. Do not remove — the `focus` field values are "City"/"State"/"Federal", not city names, so without the boost "NYC" returns no results. The boost is additive to TF-IDF, not a replacement.
@@ -409,8 +412,8 @@ The matchmaking on the network detail panel (97% coverage at last audit) only wo
 ```bash
 python3 -c "
 import json
-orgs = json.load(open('data/orgs.json'))
-ppl  = json.load(open('data/people.json'))
+orgs = json.load(open('data/directory.json'))
+ppl  = json.load(open('data/connect.json'))
 org_topics = set()
 for o in orgs:
     for t in o.get('problem_statements', []): org_topics.add(t)
@@ -439,6 +442,14 @@ For changes where placement/labeling/UX is ambiguous (e.g., "add a new section t
 
 | Date | Commit | Summary |
 |---|---|---|
+| 2026-06-01 | `9ee743d` | Connect: fix Airtable base ID (missing `app` prefix), improve error logging to surface HTTP body on failure. |
+| 2026-06-01 | `e7961bf` | Connect: wire live Airtable credentials (base `appFIPqXkeQMQ3n94`, table `tbl2ArzY6c0CdNVsh`). |
+| 2026-06-01 | `6a957cd` | Data: rename all JSON files to match page names — `orgs.json` → `directory.json`, `people.json` → `connect.json`, `graph.json` → `affinity.json`, `search_index.json` → `affinity_search.json`. Updated all fetch() calls across hub, directory, segments, network, and connect pages. |
+| 2026-06-01 | `a5c9bad` | Hub: update Mad Libs for new Connect schema — ROLE_TO_SEGS expanded to 9 roles (alpha), `_mlInitToks` handles `p.offering`/`p.help_source` and `p.geography`/`p.jurisdictions`, `_mlSearch` removes time-window filter, Mad Libs sentence removes "within [time window]" token. |
+| 2026-06-01 | `97f478a` | Connect: overhaul intake form — Airtable REST API backend; 9 roles/offerings/areas (alpha); 4-geography multi-select; strict topic filtering (hidden until a mappable area selected); email always required; Facilitated shows privacy note + connection-params field; 9-column display table; backward-compat helpers for old people.json field names. |
+| 2026-06-01 | `f2c51ab` | Hub: add "Submit Feedback" text panel at bottom (mailto:henrygrunzweig@gmail.com), styled like the "How we built this" panel. |
+| 2026-06-01 | `511f923` | Hub: uniform hero button sizing (all four CTA buttons now same size); fix Mad Libs dropdown clipping — removed `overflow:hidden` from `.ml-modal`, added `border-radius:12px 12px 0 0` to `.ml-modal-hdr`, added `min-height:300px` to `.ml-results`. |
+| 2026-06-01 | `3eab5b5` | Hub + Segments: rename Connect bubble title to "Find Collaborators And Opportunities"; align Segments table columns to match Directory (Organization · Segment · Description · Problem Area · Problem Statement); update Segments hero description; replace hub bottom panels (Who gets included · Problem statements) with single Methodology CTA block ("How we built this"). |
 | 2026-05-24 | `648f55a` | Network: rename "Focus Level" → "Geographic Focus"; fix "Ai in Government" capitalization in orgs.json + graph.json (was a single mis-cased entry for Propel); add `GEO_FOCUS_MAP` + `detectGeoFocus()` geographic boost (+0.25) to `rankByQuery()` so "procurement in NYC" surfaces City-focused orgs. |
 | 2026-05-24 | `242c950` | Connect: fix form modal chip clipping — `.sf-body` needed `flex:1; min-height:0`; without `min-height:0` flex child can't be constrained by parent and lower chip rows (Time Window, Geography) are invisible. |
 | 2026-05-24 | `15db224` | Connect: fix form modal chip clipping (first attempt — added max-height and flex column structure). |
@@ -477,6 +488,7 @@ Use `git log --oneline -- civic_reference/state_capacity_ecosystem/` for the ful
 ## External pointers
 
 - **Source Airtable** (Henry's curation): https://airtable.com/appo3EaOAi7JjI2VZ/shrAswoPpY3sbZIY7/tblcsGZwPK5O5TXjb/viwQZffbnIJ8f4zjT
+- **Connect Submissions Airtable** (form backend, Tal-managed): base `appFIPqXkeQMQ3n94`, table `tbl2ArzY6c0CdNVsh` ("State Capacity Ecosystem Connect Submissions")
 - **Suggest-an-org form** (Henry's intake): https://forms.gle/GSNh2ZqUfFG4EAzF6
 - **Site repo:** https://github.com/TalR24/nycur-data-website
 - **NYCuriosity Substack:** https://nycuriosity.substack.com/

@@ -1,5 +1,5 @@
 """
-Build people.json from problem_statement_seeds_v5.csv.
+Build connect.json from problem_statement_seeds_v5.csv.
 
 Schema (10 columns in source CSV):
   Name, Organization, Role, Jurisdiction, Problem Area, Problem Topic,
@@ -14,7 +14,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 CSV  = ROOT / "problem_statement_seeds_v5.csv"
-OUT  = ROOT / "people.json"
+OUT  = ROOT / "connect.json"
 
 
 def norm(v):
@@ -48,4 +48,4 @@ for r in rows:
     })
 
 OUT.write_text(json.dumps(people, indent=None, separators=(",", ":")))
-print(f"Wrote {OUT} ({len(people)} people)")
+print(f"Wrote {OUT} ({len(people)} entries)")

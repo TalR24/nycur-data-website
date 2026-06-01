@@ -15,7 +15,7 @@ boost dropped) so the network surfaces cross-segment affinities. Problem
 statements — Henry Grunzweig's tags, present on every org — replace the
 old same-segment dominance with shared-problem dominance.
 
-The script also writes a separate search_index.json containing a term
+The script also writes a separate affinity_search.json containing a term
 vocabulary and per-org sparse TF-IDF vectors so the front-end can do
 ranked semantic search at query time without an external embedding API.
 """
@@ -298,7 +298,7 @@ nodes_out = [{
     "degree": final_deg.get(o["id"], 0),
 } for o in orgs]
 
-(OUT / "graph.json").write_text(json.dumps({
+(OUT / "affinity.json").write_text(json.dumps({
     "nodes": nodes_out,
     "edges": edges,
     "stats": {
@@ -312,7 +312,7 @@ nodes_out = [{
 
 # Directory file: same node list without the graph metadata so the directory
 # subpage can ship its own bundle.
-(OUT / "orgs.json").write_text(json.dumps(nodes_out, indent=None, separators=(",", ":")))
+(OUT / "directory.json").write_text(json.dumps(nodes_out, indent=None, separators=(",", ":")))
 
 # ── Semantic-search index ────────────────────────────────────────────────────
 # Ship a vocab + per-org sparse TF-IDF vectors so the front-end can rank orgs
@@ -328,7 +328,7 @@ for v in vecs:
     sparse = {vocab_idx[t]: round(w, 4) for t, w in v.items() if t in vocab_idx}
     search_vectors.append(sparse)
 
-(OUT / "search_index.json").write_text(json.dumps({
+(OUT / "affinity_search.json").write_text(json.dumps({
     "vocab": vocab_list,
     "idf":   idf_list,
     "vectors": search_vectors,
@@ -338,6 +338,6 @@ for v in vecs:
     },
 }, indent=None, separators=(",", ":")))
 
-print(f"Wrote {OUT/'graph.json'}")
-print(f"Wrote {OUT/'orgs.json'}")
-print(f"Wrote {OUT/'search_index.json'}  (vocab={len(vocab_list)}, avg terms/org={sum(len(v) for v in search_vectors)/max(1,n):.1f})")
+print(f"Wrote {OUT/'affinity.json'}")
+print(f"Wrote {OUT/'directory.json'}")
+print(f"Wrote {OUT/'affinity_search.json'}  (vocab={len(vocab_list)}, avg terms/org={sum(len(v) for v in search_vectors)/max(1,n):.1f})")
