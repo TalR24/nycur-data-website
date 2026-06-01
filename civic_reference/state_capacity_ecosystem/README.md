@@ -147,7 +147,7 @@ score = 0.40 × description_TFIDF_cosine
 
 ## Semantic search (client-side, no API)
 
-`build_affinity.py` emits `search_index.json` containing:
+`build_affinity.py` emits `affinity_search.json` containing:
 - `vocab` — sorted list of every term in the corpus (~2,400 terms)
 - `idf` — IDF score per term (parallel array)
 - `vectors` — array of per-org sparse maps `{term_idx_string: tfidf_weight}` (~35 terms per org avg)
@@ -178,7 +178,7 @@ Total cost is one ~190 KB JSON fetch + O(query_terms × num_orgs) per query. No 
 
 ### Directory (`directory/index.html`)
 - **Visible table columns:** Organization · Segment · Secondary Segments · Description (truncated to 180 chars) · Problem Area (orange chips) · Problem Topic (blue chips). Every other field (focus, funding model, funding detail, named funders, website) lives in the row-click detail panel.
-- Filters: search box · Primary segment · Geographic focus · Problem area · Problem topic
+- Filters: search box · Primary segment · Geography · Problem area · Problem topic
 - **No Funding Model filter** (removed May 2026 per user request)
 - **No Named Funder filter** (removed May 2026; substring search still matches funder text)
 - **Problem topic filter is case-insensitive** (May 2026): dropdown deduplicates by lowercase key (first-seen canonical form wins), and filter matching is also case-insensitive. Prevents duplicates like "AI in government" / "Ai in government" from appearing as separate options.
@@ -212,7 +212,7 @@ Total cost is one ~190 KB JSON fetch + O(query_terms × num_orgs) per query. No 
 - D3 force-directed graph; nodes colored by primary segment; edge width scales with composite score
 - **No inline methodology blurb** (removed May 2026 per user request). The Methodology pill in the nav (restored May 2026 after a brief removal) is the in-page link to the full methodology page.
 - **Controls row 1** (in order): Search by name or question · Show edges at or above (threshold slider) · Segment filter chips · Reset
-- **Controls row 2** (added May 2026): Geographic Focus · Problem area · Problem topic — multi-select dropdowns, mirroring the directory's `MS` component. A node passes only if every active filter accepts it. The dropdowns share the same registry as each other (opening one closes any sibling), and clicking outside closes them all.
+- **Controls row 2** (added May 2026): Geography · Problem area · Problem topic — multi-select dropdowns, mirroring the directory's `MS` component. A node passes only if every active filter accepts it. The dropdowns share the same registry as each other (opening one closes any sibling), and clicking outside closes them all.
 - **Search behavior:**
   - Empty: graph in normal state
   - Non-empty: computes relevance scores; top-10 matches get `.hi` (highlighted), everything else gets `.dim`; results panel below the controls lists top matches as clickable chips with scores; selecting a chip pans and centers on that org
@@ -310,12 +310,12 @@ These were arrived at via user feedback over multiple sessions. Don't reintroduc
 8. **Pill-nav order:** Directory · Affinity Network · Connect · Segments · Methodology · ← Hub. Connect sits before Segments. Applies to every subpage including the affinity network page (the Methodology pill was briefly removed from the network page mid-May 2026 and then restored at user request — keep it).
 9. **Org labels appear below every visible bubble** in the network view (not just top-N by degree). 9.5px / weight 600 / white halo. DOM-sorted by ascending degree so high-degree labels paint on top of overlaps.
 10. **No segment labels rendered inside the map.** Earlier versions drew uppercase segment names at the cluster centroid (counter-scaled with zoom). Removed May 2026 — they competed with org names for attention and segment identity is already conveyed by node color + the segment filter chips above the graph.
-11. **Multi-select dropdowns close siblings on open.** `MS._registry` static array tracks all instances; `_show()` closes any other open dropdown first. Used on the directory page (Primary segment · Geographic focus · Problem area · Problem topic) and on the network page (Geographic focus · Problem area · Problem topic — added May 2026).
+11. **Multi-select dropdowns close siblings on open.** `MS._registry` static array tracks all instances; `_show()` closes any other open dropdown first. Used on the directory page (Primary segment · Geography · Problem area · Problem topic) and on the network page (Geography · Problem area · Problem topic — added May 2026).
 12. **Methodology page stays in sync with the affinity network.** Any change to the scoring formula, weights, token bag, edge thresholding, degree cap, or graph rendering MUST be reflected on `methodology/index.html` in the same commit. Touch points: the formula block, the per-signal `<h3>` paragraphs, the score-range table, the "what gets dropped" thresholds, and the published-dataset stats line. (Note: the network page no longer has its own inline methodology blurb, so the methodology page is the single source of truth for user-facing scoring documentation.)
 13. **Directory table is the 6 user-asked columns + expand chevron:** Organization · Segment · Secondary Segments · Description (truncated) · Problem Area · Problem Statement. All other CSV fields are in the row-click detail panel. Do not add columns without explicit user request — the layout was deliberately narrowed May 2026.
-14. **Connect (`/connect/`) is a SEPARATE dataset from the org pages.** Source is `data/problem_statement_seeds_v5.csv`, built by `build_people.py` → `people.json`. Do not merge into `build_affinity.py` — affinity is org-to-org, Connect is a parallel track. Hub treats the Connect card as a 4th "way to explore" alongside Directory / Affinity Network / Segments.
+14. **Connect (`/connect/`) is a SEPARATE dataset from the org pages.** Source is `data/problem_statement_seeds_v5.csv`, built by `build_people.py` → `connect.json`. Do not merge into `build_affinity.py` — affinity is org-to-org, Connect is a parallel track. Hub treats the Connect card as a 4th "way to explore" alongside Directory / Affinity Network / Segments.
 15. **Connect form POSTs to Airtable, not mailto.** The "Add yourself or a challenge" pill opens a 12-field overlay modal. Submission POSTs to `appFIPqXkeQMQ3n94 / tbl2ArzY6c0CdNVsh` via a write-only PAT in client-side JS. This is intentional — the PAT is scoped to that table only (write, no read/edit/delete). Intro requests for Facilitated contacts use a separate 3-field modal that still uses `mailto:henrygrunzweig@gmail.com` + clipboard.
-16. **Network page bridges to /connect/ in two places** (added May 2026): (a) inline "People working on these problem topics" subsection at the bottom of the org-node detail panel; (b) `people-results` sidebar in controls when Problem area or Problem topic filters are active. Both link to `../connect/`. The `people.json` fetch is wrapped in `.catch(() => [])` so the network page degrades gracefully if the file is missing.
+16. **Network page bridges to /connect/ in two places** (added May 2026): (a) inline "People working on these problem topics" subsection at the bottom of the org-node detail panel; (b) `people-results` sidebar in controls when Problem area or Problem topic filters are active. Both link to `../connect/`. The `connect.json` fetch is wrapped in `.catch(() => [])` so the network page degrades gracefully if the file is missing.
 17. **Connect uses neutral language ("Name", "entry", "entries") not "Person" / "practitioners"** — the directory contains both people and organizations. Do not reintroduce people-only language in table headers, filter labels, or JS string templates on this page.
 18. **Geographic search boost in network:** `GEO_FOCUS_MAP` + `detectGeoFocus()` in `rankByQuery()` add +0.25 to orgs matching the inferred focus level. Do not remove — the `focus` field values are "City"/"State"/"Federal", not city names, so without the boost "NYC" returns no results. The boost is additive to TF-IDF, not a replacement.
 
@@ -396,14 +396,14 @@ scripts.forEach((s, i) => {
 
 ### Data refreshes need a hardcoded-counts sync checklist
 
-`build_affinity.py` regenerates `graph.json` / `orgs.json` / `search_index.json` automatically. But many user-facing strings have stats baked in. When the dataset refreshes (org count, edge count, segment count, problem area / topic count, funder coverage), update **all** of these in lockstep or the UI will lie to readers:
+`build_affinity.py` regenerates `affinity.json` / `directory.json` / `affinity_search.json` automatically. But many user-facing strings have stats baked in. When the dataset refreshes (org count, edge count, segment count, problem area / topic count, funder coverage), update **all** of these in lockstep or the UI will lie to readers:
 
 1. **Hub `index.html`** — directory card stat ("304 orgs · 11 segments · X areas · Y topics"), network card stat ("1,629 edges · …"), problem-statements info panel ("Y fine-grained issues, X broader buckets"), people card stat (practitioner count)
 2. **Methodology `index.html`** — schema bullets, problem-statements paragraph, directory-filter bullet, "Limitation worth flagging" funder count, dataset stats line
 3. **README** — Current dataset stats, schema history, Problem taxonomy section, Glossary entries
 4. **`build_affinity.py`** — the docstring/comment around the schema bit referencing area + topic counts
 
-Stat-pills in the hero ARE dynamic (read from `graph.json` at load). Card-stat strings inside `.card` elements and inline taxonomy descriptions are NOT — they're hand-written. A future improvement would be to make the card stats dynamic too, but until then, hand-update them.
+Stat-pills in the hero ARE dynamic (read from `affinity.json` at load). Card-stat strings inside `.card` elements and inline taxonomy descriptions are NOT — they're hand-written. A future improvement would be to make the card stats dynamic too, but until then, hand-update them.
 
 ### The network ↔ people bridge depends on shared topic vocabulary
 
@@ -442,6 +442,8 @@ For changes where placement/labeling/UX is ambiguous (e.g., "add a new section t
 
 | Date | Commit | Summary |
 |---|---|---|
+| 2026-06-01 | `246d78f` | Homepage: move Community Board Tools section to last section. |
+| 2026-06-01 | `9bf668b` | Multi-page UX overhaul: standardize "Geography" terminology across all pages (was "Geographic Focus"/"Jurisdiction"); card CTAs capitalized ("Open Directory →"); "Add to Connect" links to connect/?add=1; methodology button shortened to "Read →"; connect bubble desc uses "geography" not "jurisdiction"; segments page adds row-expand detail panel; hub feedback card text updated; affinity graph charge/distance spread out. |
 | 2026-06-01 | `9ee743d` | Connect: fix Airtable base ID (missing `app` prefix), improve error logging to surface HTTP body on failure. |
 | 2026-06-01 | `e7961bf` | Connect: wire live Airtable credentials (base `appFIPqXkeQMQ3n94`, table `tbl2ArzY6c0CdNVsh`). |
 | 2026-06-01 | `6a957cd` | Data: rename all JSON files to match page names — `orgs.json` → `directory.json`, `people.json` → `connect.json`, `graph.json` → `affinity.json`, `search_index.json` → `affinity_search.json`. Updated all fetch() calls across hub, directory, segments, network, and connect pages. |
