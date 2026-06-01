@@ -656,7 +656,7 @@
 //    with scope: data.records:write on your base only.
 // 3. Paste the Base ID (from the Airtable URL: airtable.com/BASE_ID/...) and
 //    the table name below.
-const AIRTABLE_ENDPOINT = "https://api.airtable.com/v0/FIPqXkeQMQ3n94/tbl2ArzY6c0CdNVsh";
+const AIRTABLE_ENDPOINT = "https://api.airtable.com/v0/appFIPqXkeQMQ3n94/tbl2ArzY6c0CdNVsh";
 const AIRTABLE_TOKEN    = "patvfjuYONKaZBtFQ.3e87ad18fdfdff0dce5902466a59bc8e8c2582ca8dd0c3aaa7f4f53c73e264ff";
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -1165,10 +1165,13 @@ async function sfSubmit() {
       },
       body: JSON.stringify({ records: [{ fields: sfBuildRecord() }] }),
     });
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    if (!resp.ok) {
+      const body = await resp.text().catch(() => "");
+      throw new Error(`HTTP ${resp.status} — ${body}`);
+    }
     showSuccess();
   } catch (e) {
-    console.error("Submit error:", e);
+    console.error("Airtable submit error:", e);
     btn.disabled = false;
     btn.innerHTML = origHtml;
     alert("Submission failed — please try again, or copy your responses and send them directly.");
