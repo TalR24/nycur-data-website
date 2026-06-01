@@ -175,7 +175,7 @@
 <div class="hero">
   <div class="hero-inner">
     <h1>Distribution by <span>Primary Segment</span></h1>
-    <p>Every org has exactly one primary segment. The bars below show how the database breaks down. Click any bar to expand a table of the orgs in that segment with their problem statements, focus levels, and funding model.</p>
+    <p>Every org has one primary segment. The bars below show how the database breaks down. Click any bar to expand a table of the orgs in that segment with their problem statements, geographic focus, and funding model.</p>
   </div>
 </div>
 
@@ -211,9 +211,10 @@
             <thead>
               <tr>
                 <th>Organization</th>
-                <th>Focus</th>
-                <th>Funding</th>
-                <th>Problem statements</th>
+                <th style="width:90px">Segment</th>
+                <th style="min-width:280px">Description</th>
+                <th style="width:130px">Problem Area</th>
+                <th>Problem Statement</th>
               </tr>
             </thead>
             <tbody id="orgs-body"></tbody>
@@ -315,18 +316,29 @@ function selectSegment(seg) {
 }
 
 function renderRow(o) {
-  const focHtml = (o.focus || []).map(f => `<span class="focus-tag">${esc(f)}</span>`).join("");
-  const probHtml = (o.problem_statements || []).slice(0, 5).map(p => `<span class="problem-chip">${esc(p)}</span>`).join("") +
-                   ((o.problem_statements || []).length > 5 ? ` <span style="color:var(--text-faint);font-size:0.72rem">+${o.problem_statements.length - 5}</span>` : "");
-  const desc = (o.description || "").slice(0, 140) + ((o.description || "").length > 140 ? "…" : "");
+  const segColor = SEGMENT_COLORS[o.primary_segment] || "#6b7280";
   const link = o.website
     ? `<a href="${esc(httpify(o.website))}" target="_blank" rel="noopener">${esc(o.name)} ↗</a>`
     : esc(o.name);
+  const rawDesc = o.description || "";
+  const truncDesc = rawDesc.length > 160 ? rawDesc.slice(0, 160).trimEnd() + "…" : rawDesc;
+  const descHtml = rawDesc ? `<div class="desc-snip">${esc(truncDesc)}</div>` : `<span style="color:var(--text-faint)">—</span>`;
+  const areas = o.problem_areas || [];
+  const areaHtml = areas.length
+    ? areas.slice(0, 3).map(a => `<span class="focus-tag">${esc(a)}</span>`).join("") +
+      (areas.length > 3 ? ` <span style="color:var(--text-faint);font-size:0.72rem">+${areas.length - 3}</span>` : "")
+    : `<span style="color:var(--text-faint)">—</span>`;
+  const probs = o.problem_statements || [];
+  const probHtml = probs.length
+    ? probs.slice(0, 3).map(p => `<span class="problem-chip">${esc(p)}</span>`).join("") +
+      (probs.length > 3 ? ` <span style="color:var(--text-faint);font-size:0.72rem">+${probs.length - 3}</span>` : "")
+    : `<span style="color:var(--text-faint)">—</span>`;
   return `<tr>
-    <td class="name-cell">${link}<div class="desc-snip">${esc(desc)}</div></td>
-    <td>${focHtml || '<span style="color:var(--text-faint)">—</span>'}</td>
-    <td>${esc(o.funding_model || "—")}</td>
-    <td>${probHtml || '<span style="color:var(--text-faint)">—</span>'}</td>
+    <td class="name-cell">${link}</td>
+    <td><span style="display:inline-block;background:${segColor};color:#fff;font-family:'Roboto Mono',monospace;font-size:0.62rem;font-weight:700;padding:2px 7px;border-radius:4px;white-space:nowrap">${esc(o.primary_segment)}</span></td>
+    <td>${descHtml}</td>
+    <td>${areaHtml}</td>
+    <td>${probHtml}</td>
   </tr>`;
 }
 
