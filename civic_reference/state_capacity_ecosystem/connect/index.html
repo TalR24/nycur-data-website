@@ -118,6 +118,8 @@
     .results-bar { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:12px; padding:0 2px; }
     .results-count { font-family:'Roboto Mono',monospace; font-size:0.78rem; color:var(--text-muted); }
     .results-count strong { color:var(--text); }
+    .download-link { font-family:'Roboto Mono',monospace; font-size:0.74rem; color:var(--blue); text-decoration:none; padding:4px 10px; border:1px solid var(--blue-mid); border-radius:6px; background:var(--blue-light); }
+    .download-link:hover { background:var(--blue); color:#fff; }
 
     .table-wrap { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow-sm); overflow:hidden; }
     .table-scroll { overflow-x:auto; }
@@ -391,11 +393,11 @@
 <div class="hero">
   <div class="hero-inner">
     <h1>Connect</h1>
-    <p>People and challenges (grants, open calls) working towards growing State Capacity, indexed by the specific problem they're tackling and the kind of help they're looking for. The goal is matchmaking: find someone working on what you're working on, or an organization whose research, vendor expertise, or government access could unblock what you're stuck on.</p>
+    <p>Database of people and opportunities for growing State Capacity, indexed by the specific problem they're tackling and the kind of help they're looking for. The goal is matchmaking: find someone working on what you're working on, or an organization whose research, vendor expertise, or government access could unblock what you're stuck on.</p>
     <div class="submit-row">
       <button class="submit-pill" type="button" onclick="openSF()">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        Add yourself or a challenge →
+        Add yourself or an opportunity →
       </button>
     </div>
   </div>
@@ -431,6 +433,7 @@
 
     <div class="results-bar">
       <div class="results-count" id="results-count">Loading…</div>
+      <a class="download-link" href="../data/problem_statement_seeds_v5.csv" download>Download CSV ↓</a>
     </div>
 
     <div class="table-wrap">
@@ -464,6 +467,7 @@
   <div class="footer-inner">
     <span class="footer-copy">Created by Tal Roded · NYCuriosity</span>
     <div class="footer-links">
+      <a href="../data/problem_statement_seeds_v5.csv" download>Download CSV</a>
       <a href="../">← Back to hub</a>
     </div>
   </div>
@@ -473,14 +477,14 @@
 <div class="sf-overlay" id="sf-overlay" role="dialog" aria-modal="true" aria-labelledby="sf-title">
   <div class="sf-modal">
     <div class="sf-hdr">
-      <span class="sf-hdr-title" id="sf-title">Add yourself or a challenge</span>
+      <span class="sf-hdr-title" id="sf-title">Add yourself or an opportunity</span>
       <button class="sf-close" type="button" onclick="closeSF()" aria-label="Close">×</button>
     </div>
 
     <!-- Form body -->
     <div class="sf-body" id="sf-form-body">
       <p class="sf-intro">
-        Add yourself as a practitioner or post a challenge (grant, open call, or request for collaboration) so others in the ecosystem can find you.
+        Add yourself as a practitioner or post an opportunity (grant, open call, job, or request for collaboration) so others in the ecosystem can find you.
         Submissions are reviewed before going live. Fields marked <span style="color:var(--orange)">*</span> are required.
       </p>
 
@@ -563,18 +567,18 @@
         <div id="sf-contact-err" class="sf-error-msg">Please select a contact preference.</div>
       </div>
 
-      <!-- Email (always required) -->
+      <!-- Contact info (always required) -->
       <div class="sf-section">
-        <div class="sf-prompt">Email <span class="sf-req">*</span></div>
-        <input id="sf-email" type="email" class="sf-text-input" maxlength="120" placeholder="you@example.com" oninput="sfCharCount('sf-email','sf-email-ct',120)">
-        <div class="sf-char-row"><span id="sf-email-ct" class="sf-char-count">120 left</span></div>
+        <div class="sf-prompt">Contact info <span class="sf-req">*</span> <span class="sf-prompt-sub">email or URL (e.g. link to job or fellowship application)</span></div>
+        <input id="sf-email" type="text" class="sf-text-input" maxlength="200" placeholder="you@example.com or https://apply.example.com" oninput="sfCharCount('sf-email','sf-email-ct',200)">
+        <div class="sf-char-row"><span id="sf-email-ct" class="sf-char-count">200 left</span></div>
         <div id="sf-email-note" style="display:none;font-size:0.78rem;color:var(--text-muted);margin-top:6px;line-height:1.5;">
-          Your email is kept private and will not be shown publicly. We will facilitate introductions on your behalf.
+          Your contact info is kept private and will not be shown publicly. We will facilitate introductions on your behalf.
         </div>
         <div id="sf-email-direct-note" style="display:none;font-size:0.78rem;color:var(--text-muted);margin-top:6px;line-height:1.5;">
-          Your email will be publicly displayed in the Connect directory.
+          Your contact info will be publicly displayed in the Connect directory.
         </div>
-        <div id="sf-email-err" class="sf-error-msg">Please enter a valid email address.</div>
+        <div id="sf-email-err" class="sf-error-msg">Please enter a valid email or URL.</div>
       </div>
 
       <!-- Connection Parameters — Facilitated only -->
@@ -773,7 +777,7 @@ fetch("../data/connect.json", { signal: controller.signal, cache: "no-cache" })
 function _pGeos(p)     { return p.geography || p.jurisdictions || []; }
 function _pAreas(p)    { return p.problem_areas ? (Array.isArray(p.problem_areas) ? p.problem_areas : p.problem_areas.split(", ").map(s=>s.trim())) : (p.problem_area ? [p.problem_area] : []); }
 function _pTopics(p)   { return p.problem_topics ? (Array.isArray(p.problem_topics) ? p.problem_topics : p.problem_topics.split(", ").map(s=>s.trim())) : (p.problem_topic ? [p.problem_topic] : []); }
-function _pOfferings(p){ return p.offering ? p.offering.split(", ").map(s=>s.trim()) : (p.help_source ? [p.help_source] : []); }
+function _pOfferings(p){ if (p.offering) return Array.isArray(p.offering) ? p.offering : p.offering.split(", ").map(s=>s.trim()); return p.help_source ? [p.help_source] : []; }
 
 function populateFilters() {
   const roles = new Set(), geos = new Set(), areas = new Set(),
@@ -1098,7 +1102,7 @@ function sfValidate() {
   show("sf-geo-err",      sfGetChips("sf-geo-chips").length > 0);
   show("sf-contact-err",  sfGetSingle("sf-contact-chips") !== "");
   const em = document.getElementById("sf-email").value.trim();
-  show("sf-email-err",    em.length > 0 && em.includes("@"));
+  show("sf-email-err",    em.length > 0 && (em.includes("@") || em.startsWith("http")));
   return ok;
 }
 
@@ -1126,7 +1130,7 @@ function sfBuildText() {
     dueby   ? `Due By: ${dueby}` : "",
     details ? `Details: ${details}` : "",
     `Contact: ${contact}`,
-    `Email: ${email}`,
+    `Contact: ${email}`,
     params  ? `Connection Parameters: ${params}` : "",
   ].filter(Boolean).join("\n");
 }
@@ -1214,7 +1218,7 @@ function openSF() {
   document.getElementById("sf-topic-cond").classList.remove("show");
   document.getElementById("sf-params-cond").classList.remove("show");
   const note = document.getElementById("sf-email-note"); if (note) note.style.display = "none";
-  [["sf-name-ct",80],["sf-org-ct",80],["sf-det-ct",280],["sf-email-ct",120],["sf-params-ct",280]]
+  [["sf-name-ct",80],["sf-org-ct",80],["sf-det-ct",280],["sf-email-ct",200],["sf-params-ct",280]]
     .forEach(([id,max]) => { const e = document.getElementById(id); if(e) e.textContent = `${max} left`; });
   document.querySelectorAll("#sf-overlay .sf-char-count").forEach(el => el.classList.remove("warn","over"));
   const btn = document.getElementById("sf-submit-btn");
@@ -1250,7 +1254,7 @@ document.addEventListener("keydown", e => {
     "Open to Any","Domain-Specific","Participatory Democracy",
     "Procurement & Operations","Service Delivery","Talent & Hiring","Technology & Data","Test & Learn"
   ], true);
-  sfMkChips("sf-geo-chips", ["Federal","State","Local","Outside US"], true);
+  sfMkChips("sf-geo-chips", ["Federal","State","City","Outside US"], true);
   sfMkChips("sf-contact-chips", ["Direct","Facilitated"], false);
 })();
 

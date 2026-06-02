@@ -1,12 +1,13 @@
 """
 Build connect.json from problem_statement_seeds_v5.csv.
 
-Schema (10 columns in source CSV):
-  Name, Organization, Role, Jurisdiction, Problem Area, Problem Topic,
-  Problem Details, Help + Source, Time Window, Contact
+Schema (10 columns, June 2026 refresh by Henry Grunzweig):
+  Name, Organization, Role, Offering, Problem Area, Problem Topic,
+  Geography, Due by, Details, Contact
 
-Jurisdiction is semicolon-separated in the source (e.g. "Federal; State; Local")
-so we split it into a list. All other fields are treated as single values.
+All multi-value fields use semicolon separators in the source CSV.
+Outputs both array and first-value-string for each multi-value field so the
+network page (which reads singular problem_topic / problem_area) stays compatible.
 """
 
 import csv, json
@@ -33,17 +34,22 @@ for r in rows:
     name = norm(r.get("Name"))
     if not name:
         continue
+    areas  = split_semi(r.get("Problem Area"))
+    topics = split_semi(r.get("Problem Topic"))
+    geo    = split_semi(r.get("Geography"))
     people.append({
         "id": len(people),
         "name": name,
         "organization": norm(r.get("Organization")),
         "role": norm(r.get("Role")),
-        "jurisdictions": split_semi(r.get("Jurisdiction")),
-        "problem_area": norm(r.get("Problem Area")),
-        "problem_topic": norm(r.get("Problem Topic")),
-        "problem_details": norm(r.get("Problem Details")),
-        "help_source": norm(r.get("Help + Source")),
-        "time_window": norm(r.get("Time Window")),
+        "offering": split_semi(r.get("Offering")),      # array — for connect page
+        "problem_areas":  areas,                         # array — for connect page filter
+        "problem_area":   areas[0]  if areas  else "",  # string — for network page compat
+        "problem_topics": topics,                        # array — for connect page filter
+        "problem_topic":  topics[0] if topics else "",  # string — for network page compat
+        "geography": geo,                                # array — for connect page filter
+        "due_by":  norm(r.get("Due by")),
+        "details": norm(r.get("Details")),
         "contact": norm(r.get("Contact")),
     })
 
