@@ -741,7 +741,6 @@ class MS {
 
 const onChange = () => { expandedId = null; applyFilters(); };
 const msRole     = new MS("ms-role",     "Roles",         onChange);
-const msGeo      = new MS("ms-geo",      "Geographies",   onChange);
 const msArea     = new MS("ms-area",     "Areas",         onChange);
 const msTopic    = new MS("ms-topic",    "Topics",        onChange);
 const msOffering = new MS("ms-offering", "Offerings",     onChange);
@@ -778,17 +777,15 @@ function _pTopics(p)   { return p.problem_topics ? (Array.isArray(p.problem_topi
 function _pOfferings(p){ if (p.offering) return Array.isArray(p.offering) ? p.offering : p.offering.split(", ").map(s=>s.trim()); return p.help_source ? [p.help_source] : []; }
 
 function populateFilters() {
-  const roles = new Set(), geos = new Set(), areas = new Set(),
+  const roles = new Set(), areas = new Set(),
         topics = new Set(), offerings = new Set();
   for (const p of allPeople) {
     if (p.role) roles.add(p.role);
-    _pGeos(p).forEach(j => geos.add(j));
     _pAreas(p).forEach(a => areas.add(a));
     _pTopics(p).forEach(t => topics.add(t));
     _pOfferings(p).forEach(o => offerings.add(o));
   }
   msRole.setOptions([...roles].sort());
-  msGeo.setOptions([...geos].sort());
   msArea.setOptions([...areas].sort());
   msTopic.setOptions([...topics].sort());
   msOffering.setOptions([...offerings].sort());
@@ -796,12 +793,11 @@ function populateFilters() {
 
 function applyFilters() {
   const rawQ    = document.getElementById("f-search").value.trim().toLowerCase();
-  const roleF   = msRole.get(),  geoF   = msGeo.get(),   areaF = msArea.get(),
+  const roleF   = msRole.get(),  areaF = msArea.get(),
         topicF  = msTopic.get(), offF   = msOffering.get();
 
   let pool = allPeople.filter(p => {
     if (roleF.size   && !roleF.has(p.role)) return false;
-    if (geoF.size    && !_pGeos(p).some(j => geoF.has(j))) return false;
     if (areaF.size   && !_pAreas(p).some(a => areaF.has(a))) return false;
     if (topicF.size  && !_pTopics(p).some(t => topicF.has(t))) return false;
     if (offF.size    && !_pOfferings(p).some(o => offF.has(o))) return false;
@@ -986,7 +982,7 @@ window.goPage = goPage;
 
 document.getElementById("f-search").addEventListener("input", () => { expandedId = null; applyFilters(); });
 document.getElementById("btn-reset").addEventListener("click", () => {
-  [msRole, msGeo, msArea, msTopic, msOffering].forEach(m => m.reset());
+  [msRole, msArea, msTopic, msOffering].forEach(m => m.reset());
   document.getElementById("f-search").value = "";
   expandedId = null;
   applyFilters();
