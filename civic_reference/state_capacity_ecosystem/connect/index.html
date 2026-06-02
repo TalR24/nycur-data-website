@@ -142,7 +142,7 @@
     tbody tr:hover { background:var(--blue-light); }
     tbody tr.expanded { background:var(--blue-light); }
     td { padding:11px 12px; vertical-align:top; color:var(--text-mid); }
-    td.name-cell { font-weight:600; color:var(--text); max-width:220px; }
+    td.name-cell { font-weight:600; color:var(--text); max-width:280px; }
     td.name-cell .entry-name { line-height:1.4; }
     td.name-cell .entry-org { font-weight:400; font-size:0.78rem; color:var(--text-muted); line-height:1.4; margin-top:2px; }
 
@@ -197,6 +197,7 @@
     .pref-direct      { background:var(--blue-light); color:var(--blue); border:1px solid var(--blue-mid); }
     .pref-facilitated { background:var(--orange-light); color:var(--orange); border:1px solid #fed7aa; }
     .contact-sub { margin-top:3px; }
+    .contact-cell { max-width:150px; word-break:break-all; overflow-wrap:break-word; }
     .contact-cell a {
       color:var(--blue); text-decoration:none; font-size:0.78rem;
       font-family:'Roboto Mono',monospace;
@@ -243,7 +244,7 @@
 
     @media (max-width: 640px) {
       .brand-slash, .brand-section { display:none; }
-      td.name-cell { max-width:160px; }
+      td.name-cell { max-width:200px; }
     }
 
     /* SUBMIT FORM OVERLAY */
@@ -423,7 +424,6 @@
           <input id="f-search" type="text" class="filter-input" placeholder='e.g. "permitting", "Code for America", "Federal benefits"…'>
         </div>
         <div class="filter-group"><label class="filter-label">Role</label><div id="ms-role"></div></div>
-        <div class="filter-group"><label class="filter-label">Geography</label><div id="ms-geo"></div></div>
         <div class="filter-group"><label class="filter-label">Problem Area</label><div id="ms-area"></div></div>
         <div class="filter-group"><label class="filter-label">Problem Topic</label><div id="ms-topic"></div></div>
         <div class="filter-group"><label class="filter-label">Offering</label><div id="ms-offering"></div></div>
@@ -446,14 +446,13 @@
               <th data-col="offering">Offering <i class="sort-icon">↕</i></th>
               <th data-col="problem_area">Problem Area <i class="sort-icon">↕</i></th>
               <th data-col="problem_topic">Problem Topic <i class="sort-icon">↕</i></th>
-              <th>Geography</th>
               <th data-col="due_by">Due By <i class="sort-icon">↕</i></th>
               <th>Contact</th>
               <th style="width:28px"></th>
             </tr>
           </thead>
           <tbody id="table-body">
-            <tr><td colspan="9"><div class="state-msg"><h3>Loading data…</h3></div></td></tr>
+            <tr><td colspan="8"><div class="state-msg"><h3>Loading data…</h3></div></td></tr>
           </tbody>
         </table>
       </div>
@@ -750,7 +749,7 @@ const msOffering = new MS("ms-offering", "Offerings",     onChange);
 
 const showLoadError = (msg) => {
   document.getElementById("table-body").innerHTML =
-    `<tr><td colspan="9"><div class="state-msg"><h3>Could not load data</h3><p>${msg}</p></div></td></tr>`;
+    `<tr><td colspan="8"><div class="state-msg"><h3>Could not load data</h3><p>${msg}</p></div></td></tr>`;
   console.error("[people]", msg);
 };
 
@@ -843,7 +842,7 @@ function renderTable() {
   const start = (page - 1) * PAGE_SIZE;
   const slice = filtered.slice(start, start + PAGE_SIZE);
   if (slice.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="9"><div class="state-msg"><h3>No entries match the current filters</h3><p>Try clearing one of the filters above.</p></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8"><div class="state-msg"><h3>No entries match the current filters</h3><p>Try clearing one of the filters above.</p></div></td></tr>`;
     return;
   }
   tbody.innerHTML = slice.map(renderRow).join("");
@@ -897,7 +896,6 @@ function renderRow(p) {
     <td>${offeringHtml}</td>
     <td>${areaHtml}</td>
     <td>${topicHtml}</td>
-    <td>${geoHtml}</td>
     <td>${dueHtml}</td>
     <td class="contact-cell">${contactHtml}</td>
     <td style="text-align:center"><span class="expand-icon">›</span></td>
@@ -924,9 +922,17 @@ function renderContact(c) {
 
 function renderDetailRow(p) {
   const details = p.problem_details || p.details || "—";
+  const geos = _pGeos(p);
+  const geoHtml = geos.length
+    ? geos.map(g => `<span class="juris-tag">${esc(g)}</span>`).join("")
+    : `<span class="empty-cell">—</span>`;
   return `<tr class="detail-row">
-    <td colspan="9">
+    <td colspan="8">
       <div class="detail-panel">
+        <div class="detail-section">
+          <h4>Geography</h4>
+          <p class="detail-narrative" style="margin-bottom:0">${geoHtml}</p>
+        </div>
         <div class="detail-section">
           <h4>Details</h4>
           <p class="detail-narrative">${esc(details)}</p>
