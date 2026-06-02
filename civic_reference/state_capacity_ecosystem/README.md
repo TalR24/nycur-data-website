@@ -12,18 +12,17 @@ This file is the single source of truth for the State Capacity Ecosystem tool. I
 
 A six-page visualization layer over Henry Grunzweig's **State Capacity Ecosystem Database** (an external Airtable curated by Henry, not Tal) plus a separate **Connect** directory (people and orgs) that Tal curates and grows via user self-submission. NYCuriosity does not curate the underlying org data — we only build views on top of Henry's CSV export. The Connect directory has a different source (`problem_statement_seeds_v5.csv` in `data/`) and grows via an in-page 13-field form modal.
 
-The six public pages:
+The five public pages:
 
 | Page | URL | Purpose |
 |---|---|---|
-| **Hub** | `/civic_reference/state_capacity_ecosystem/` | Explainer, 4 stat pills, 4 view cards (Directory · Affinity Network · Connect · Segments), Methodology card, 3 info panels |
+| **Hub** | `/civic_reference/state_capacity_ecosystem/` | Explainer, 4 stat pills, 3 view cards (Directory · Affinity Network · Connect), Methodology card, info panels |
 | **Directory** | `…/directory/` | Filterable, searchable table of every org. Semantic search via TF-IDF |
 | **Connect** | `…/connect/` | Directory of people and orgs indexed by problem, role, and help-type. 13-field self-submission form modal (mailto + clipboard). Intro request modal for facilitated contacts. Separate dataset from the org pages. |
-| **Segments** | `…/segments/` | Bar chart of segment counts; click a bar to expand a table of orgs in that segment |
 | **Affinity Network** | `…/network/` | D3 force-directed graph + natural-language semantic search with geographic boosting |
 | **Methodology** | `…/methodology/` | Long-form explainer: taxonomy, inclusion criteria, scoring formula |
 
-**Pill-nav order across all subpages:** Directory · Affinity Network · Connect · Segments · Methodology · ← Hub
+**Pill-nav order across all subpages:** Directory · Affinity Network · Connect · Methodology · ← Hub
 
 ---
 
@@ -47,15 +46,13 @@ data_website/civic_reference/state_capacity_ecosystem/
 │   ├── state_capacity_ecosystem.csv ← Canonical org source (replace to refresh)
 │   ├── build_affinity.py            ← CSV → affinity.json + directory.json + affinity_search.json
 │   ├── affinity.json                ← Nodes + scored edges + stats (incl. last_updated)
-│   ├── directory.json               ← Flat node bundle for the directory + segments pages
+│   ├── directory.json               ← Flat node bundle for the directory page
 │   ├── affinity_search.json         ← Vocab + IDF + per-org sparse TF-IDF for NL search
 │   ├── problem_statement_seeds_v5.csv ← People + problem-statement seeds (separate dataset)
 │   ├── build_people.py              ← CSV → connect.json (simple transform; no scoring)
 │   └── connect.json                 ← Flat people bundle for the /connect/ page
 ├── directory/
 │   └── index.html                   ← Filterable table. Reads ../data/directory.json + affinity_search.json
-├── segments/
-│   └── index.html                   ← Bar chart + click-to-list. Reads ../data/directory.json
 ├── network/
 │   └── index.html                   ← D3 force-directed graph + NL search bar.
 │                                     Reads ../data/affinity.json + affinity_search.json + connect.json.
@@ -171,7 +168,7 @@ Total cost is one ~190 KB JSON fetch + O(query_terms × num_orgs) per query. No 
 - Hero with explainer paragraph
 - **4 stat pills:** Organizations · Primary segments · Problem topics · Data last updated
 - **Submit-an-organization panel** sits right after the pills, above "Four ways to explore" — full-width with Henry's Google Form CTA (this is the *org* intake form, not the people-directory submission)
-- **4 view cards under "Four ways to explore":** Directory · Affinity Network · Asks & Opportunities · Segments. Grid is a fixed 2×2 layout. Card order: Asks & Opportunities appears before Segments (reordered May 2026). Section was relabeled from "Three" to "Four" in May 2026 when the Asks & Opportunities card was added.
+- **3 view cards under "Explore the ecosystem":** Directory · Affinity Network · Connect.
 - **1 methodology card under "How this works":** the hub-level entry point to the methodology page. Card preview is a static rendering of the scoring formula and thresholds. (Methodology is also reachable from every subpage's pill nav.)
 - **2 text panels at bottom:** "How we built this" (links to Methodology page) · "Submit feedback" (mailto:henrygrunzweig@gmail.com)
 - Loads `data/affinity.json` to dynamically fill the pills (org count, segment count, problem-topic count, last_updated date)
@@ -189,12 +186,6 @@ Total cost is one ~190 KB JSON fetch + O(query_terms × num_orgs) per query. No 
 - Multi-select dropdowns: opening one closes any other open dropdown. Clicking outside closes all.
 - Click any row to expand a detail panel showing: description, Problem areas (orange chips), Problem topics (blue chips), segments, focus, funding model, funding detail, named funders, website, "See in network" deep link
 - Loads `data/directory.json` + `data/affinity_search.json`
-
-### Segments (`segments/index.html`)
-- Bar chart of primary-segment counts (descending)
-- Click any bar → orange highlight on that row + table appears below showing every org in that segment with their focus, funding model, and problem-topic chips
-- Click the same bar again to deselect
-- Loads `data/directory.json`
 
 ### Connect (`connect/index.html`)
 - Separate dataset from the org pages — sourced from `data/problem_statement_seeds_v5.csv`, a Tal-curated seed list. Entries can be people OR organizations. Grows via a 12-field in-page form modal that POSTs directly to Airtable.
@@ -234,7 +225,7 @@ Total cost is one ~190 KB JSON fetch + O(query_terms × num_orgs) per query. No 
 
 ## Color palette (11 segments)
 
-These hex codes are duplicated in `SEGMENT_COLORS` constants across `index.html`, `directory/index.html`, `segments/index.html`, `network/index.html`, and as inline `background:` in methodology bullet dots. If you change one, change all five.
+These hex codes are duplicated in `SEGMENT_COLORS` constants across `index.html`, `directory/index.html`, `network/index.html`, and as inline `background:` in methodology bullet dots. If you change one, change all four.
 
 ```js
 {
@@ -306,13 +297,13 @@ These were arrived at via user feedback over multiple sessions. Don't reintroduc
 5. **"Henry Grunzweig"** is the curator's name (no 'e' between 'z' and 'w'). Earlier sessions used "Henry Tolchard" and "Henry Grunzeweig" — both were wrong. Corrected to "Grunzweig" May 2026. Watch for this when refreshing data or writing prose.
 6. **No links to Claude conversations** anywhere on the public site. (Previously the methodology page linked to a Claude convo for weight rationale — removed.)
 7. **The methodology page has no "Refreshing the data" section.** That's internal workflow, doesn't belong in public-facing docs.
-8. **Pill-nav order:** Directory · Affinity Network · Connect · Segments · Methodology · ← Hub. Connect sits before Segments. Applies to every subpage including the affinity network page (the Methodology pill was briefly removed from the network page mid-May 2026 and then restored at user request — keep it).
+8. **Pill-nav order:** Directory · Affinity Network · Connect · Methodology · ← Hub. Applies to every subpage including the affinity network page (the Methodology pill was briefly removed from the network page mid-May 2026 and then restored at user request — keep it).
 9. **Org labels appear below every visible bubble** in the network view (not just top-N by degree). 9.5px / weight 600 / white halo. DOM-sorted by ascending degree so high-degree labels paint on top of overlaps.
 10. **No segment labels rendered inside the map.** Earlier versions drew uppercase segment names at the cluster centroid (counter-scaled with zoom). Removed May 2026 — they competed with org names for attention and segment identity is already conveyed by node color + the segment filter chips above the graph.
 11. **Multi-select dropdowns close siblings on open.** `MS._registry` static array tracks all instances; `_show()` closes any other open dropdown first. Used on the directory page (Primary segment · Geography · Problem area · Problem topic) and on the network page (Geography · Problem area · Problem topic — added May 2026).
 12. **Methodology page stays in sync with the affinity network.** Any change to the scoring formula, weights, token bag, edge thresholding, degree cap, or graph rendering MUST be reflected on `methodology/index.html` in the same commit. Touch points: the formula block, the per-signal `<h3>` paragraphs, the score-range table, the "what gets dropped" thresholds, and the published-dataset stats line. (Note: the network page no longer has its own inline methodology blurb, so the methodology page is the single source of truth for user-facing scoring documentation.)
 13. **Directory table is the 6 user-asked columns + expand chevron:** Organization · Segment · Secondary Segments · Description (truncated) · Problem Area · Problem Statement. All other CSV fields are in the row-click detail panel. Do not add columns without explicit user request — the layout was deliberately narrowed May 2026.
-14. **Connect (`/connect/`) is a SEPARATE dataset from the org pages.** Source is `data/problem_statement_seeds_v5.csv`, built by `build_people.py` → `connect.json`. Do not merge into `build_affinity.py` — affinity is org-to-org, Connect is a parallel track. Hub treats the Connect card as a 4th "way to explore" alongside Directory / Affinity Network / Segments.
+14. **Connect (`/connect/`) is a SEPARATE dataset from the org pages.** Source is `data/problem_statement_seeds_v5.csv`, built by `build_people.py` → `connect.json`. Do not merge into `build_affinity.py` — affinity is org-to-org, Connect is a parallel track.
 15. **Connect form POSTs to Airtable, not mailto.** The "Add yourself or a challenge" pill opens a 12-field overlay modal. Submission POSTs to `appFIPqXkeQMQ3n94 / tbl2ArzY6c0CdNVsh` via a write-only PAT in client-side JS. This is intentional — the PAT is scoped to that table only (write, no read/edit/delete). Intro requests for Facilitated contacts use a separate 3-field modal that still uses `mailto:henrygrunzweig@gmail.com` + clipboard.
 16. **Network page bridges to /connect/ in two places** (added May 2026): (a) inline "People working on these problem topics" subsection at the bottom of the org-node detail panel; (b) `people-results` sidebar in controls when Problem area or Problem topic filters are active. Both link to `../connect/`. The `connect.json` fetch is wrapped in `.catch(() => [])` so the network page degrades gracefully if the file is missing.
 17. **Connect uses neutral language ("Name", "entry", "entries") not "Person" / "practitioners"** — the directory contains both people and organizations. Do not reintroduce people-only language in table headers, filter labels, or JS string templates on this page.
@@ -335,7 +326,6 @@ These were arrived at via user feedback over multiple sessions. Don't reintroduc
 
 ## Parking lot — ideas surfaced but not built
 
-- **Problem Area surfacing on segments page** — could add a "group by Problem Area" view alongside the segment chart.
 - **True semantic embeddings** — if the corpus grows or higher search quality is needed, swap TF-IDF for a local sentence-transformer (`all-MiniLM-L6-v2` is ~25 MB, ~$0/query). Would handle synonyms ("permits"/"licensing") that TF-IDF misses.
 - **Documented relationships layer** — distinguish "inferred affinity" (current edges) from "documented partnerships" (would require a second Henry data-collection pass). Would overlay solid edges from explicit links.
 - **Better funder extraction** — 21% coverage currently. Could move to NER (spaCy) or LLM extraction to cover smaller foundations and family offices. Trade-off: false positives on common nouns.

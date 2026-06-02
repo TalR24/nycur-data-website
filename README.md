@@ -33,7 +33,6 @@ Directory, segment view, affinity network, and matchmaking for 300+ organization
 - [`/civic_reference/state_capacity_ecosystem/directory/`](https://data.nycuriosity.com/civic_reference/state_capacity_ecosystem/directory/) — searchable, filterable org table
 - [`/civic_reference/state_capacity_ecosystem/network/`](https://data.nycuriosity.com/civic_reference/state_capacity_ecosystem/network/) — D3 force-directed affinity graph + semantic search with geographic boosting
 - [`/civic_reference/state_capacity_ecosystem/connect/`](https://data.nycuriosity.com/civic_reference/state_capacity_ecosystem/connect/) — directory of people and orgs working on specific problems, with self-submission form and intro request flow
-- [`/civic_reference/state_capacity_ecosystem/segments/`](https://data.nycuriosity.com/civic_reference/state_capacity_ecosystem/segments/) — segment distribution + click-to-list
 - [`/civic_reference/state_capacity_ecosystem/methodology/`](https://data.nycuriosity.com/civic_reference/state_capacity_ecosystem/methodology/) — scoring formula, taxonomy, inclusion criteria
 
 ---
@@ -139,7 +138,6 @@ Static site hosted on GitHub Pages at a custom domain (`data.nycuriosity.com`). 
 │       │   └── people.json                        → Flat connect bundle (read by connect/ page)
 │       ├── directory/                             → Searchable / filterable org table
 │       ├── connect/                               → People & org matchmaking, self-submission form, intro request flow
-│       ├── segments/                              → Segment distribution + click-to-list
 │       ├── network/                               → D3 force-directed affinity graph + semantic search
 │       └── methodology/                           → Scoring formula, taxonomy, inclusion criteria
 │

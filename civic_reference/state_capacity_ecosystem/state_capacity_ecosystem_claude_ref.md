@@ -9,7 +9,7 @@ This file auto-loads at session start (per the project CLAUDE.md). It is a **poi
 - File layout, CSV schema, build pipeline
 - Affinity-score formula and weight rationale
 - Semantic-search index design
-- Per-page behavior (Hub, Directory, Segments, Network, Methodology)
+- Per-page behavior (Hub, Directory, Network, Connect, Methodology)
 - Color palette (11 segments)
 - Problem taxonomy (7 areas + 36 topics)
 - GitHub push workflow
