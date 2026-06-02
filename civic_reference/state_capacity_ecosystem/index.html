@@ -654,6 +654,16 @@ const ROLE_TO_SEGS = {
 };
 const ML_ROLES = Object.keys(ROLE_TO_SEGS);
 
+const OFFERING_TO_SEGS = {
+  "Expertise":            ["Research","Digital Services & Consulting","Capacity Building"],
+  "Funding / Investment": ["Philanthropy","Investor"],
+  "Grant / Challenge":    ["Philanthropy"],
+  "Job / Fellowship":     ["Fellowships","Capacity Building"],
+  "Problem to Solve":     ["Government","GovTech"],
+  "Tool / Product":       ["GovTech"],
+  // "Collaboration Opportunity","Interesting Conversation","Other" → no segment constraint
+};
+
 let _mlOrgs = [], _mlPeople = [], _mlReady = false;
 const _mlToks = {};
 
@@ -794,8 +804,22 @@ function _mlSearch() {
   });
 
   const targetSegs = myRole ? new Set(ROLE_TO_SEGS[myRole]||[]) : null;
+
+  // Build an org-segment constraint from selected offerings. Only offerings with
+  // a known segment mapping contribute; "Collaboration Opportunity" etc. do not.
+  let offeringSegs = null;
+  if (offering) {
+    const segs = new Set();
+    let hasConstraint = false;
+    for (const o of offering) {
+      if (OFFERING_TO_SEGS[o]) { OFFERING_TO_SEGS[o].forEach(s => segs.add(s)); hasConstraint = true; }
+    }
+    if (hasConstraint) offeringSegs = segs;
+  }
+
   const orgs = _mlOrgs.filter(o => {
     if (targetSegs && targetSegs.size > 0 && !targetSegs.has(o.primary_segment)) return false;
+    if (offeringSegs && !(o.segments||[]).some(s => offeringSegs.has(s))) return false;
     if (problems && !((o.problem_areas||[]).some(a => problems.has(a)) || (o.problem_statements||[]).some(t => problems.has(t)))) return false;
     if (geos && !(o.focus||[]).some(f => geos.has(f))) return false;
     return true;
