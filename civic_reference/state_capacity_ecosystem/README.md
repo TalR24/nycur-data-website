@@ -395,14 +395,52 @@ scripts.forEach((s, i) => {
 
 ### Data refreshes need a hardcoded-counts sync checklist
 
-`build_affinity.py` regenerates `affinity.json` / `directory.json` / `affinity_search.json` automatically. But many user-facing strings have stats baked in. When the dataset refreshes (org count, edge count, segment count, problem area / topic count, funder coverage), update **all** of these in lockstep or the UI will lie to readers:
+`build_affinity.py` regenerates `affinity.json` / `directory.json` / `affinity_search.json` automatically, and `build_people.py` regenerates `connect.json`. But many user-facing strings have stats baked in. When either CSV is updated, run the appropriate build script first, then update **all** of the locations below in lockstep or the UI will lie to readers.
 
-1. **Hub `index.html`** — directory card stat ("308 orgs · 11 segments · X areas · Y topics"), network card stat ("1,653 edges · …"), problem-statements info panel ("Y fine-grained issues, X broader buckets"), people card stat (practitioner count)
-2. **Methodology `index.html`** — schema bullets, problem-statements paragraph, directory-filter bullet, "Limitation worth flagging" funder count, dataset stats line
-3. **README** — Current dataset stats, schema history, Problem taxonomy section, Glossary entries
-4. **`build_affinity.py`** — the docstring/comment around the schema bit referencing area + topic counts
+Stat-pills in the hub hero ARE dynamic (read from `affinity.json` at load). Everything below is hand-written and must be updated manually.
 
-Stat-pills in the hero ARE dynamic (read from `affinity.json` at load). Card-stat strings inside `.card` elements and inline taxonomy descriptions are NOT — they're hand-written. A future improvement would be to make the card stats dynamic too, but until then, hand-update them.
+**After updating `state_capacity_ecosystem.csv` (org data) — run `build_affinity.py` first, then update:**
+
+1. **`data_website/index.html`** (data website homepage) — `card-stat` span inside the State Capacity Ecosystem card: `"N orgs · 11 segments · N problem topics"`
+2. **`data_website/README.md`** — file tree entry: `state_capacity_ecosystem.csv → Canonical org source (N rows)`
+3. **`civic_reference/state_capacity_ecosystem/index.html`** (hub) — any hardcoded counts in card descriptions or bubble stat text (currently "300+" — only update if it crosses a round-number threshold)
+4. **`methodology/index.html`** — three locations:
+   - Data Fields bullet: `"N specific issues nested under the Problem Areas"`
+   - Funder limitation callout: `"Approximately N of N orgs have at least one named funder detected"`
+   - Published-dataset stats line: `"N nodes and N edges, with a maximum edge score of X and a median of Y"`
+5. **`README.md`** (this file) — six locations:
+   - Schema table: `Problem Topic` row — fine tag count
+   - Affinity weights: `"Jaccard over Henry's N curated tags"`
+   - Current dataset stats block: org count, edge count, funder coverage
+   - Problem taxonomy section: `"N Problem Areas"` header, `"N Problem Topics"` header, and area/topic lists if areas or topics were added/removed
+   - Hardcoded-counts checklist (this section): update the example stat strings
+   - Glossary: `Problem Topic` entry — fine tag count
+6. **`data/build_affinity.py`** — comment: `"Problem Area" (N coarse buckets) and "Problem Topic" (N fine tags)`
+7. **`state_capacity_ecosystem_claude_ref.md`** — "Current dataset" line: org count + edge count + refresh date; "Schema" line if area/topic counts changed
+
+**After updating `problem_statement_seeds_v5.csv` (Connect data) — run `build_people.py` first, then update:**
+
+1. **`connect/index.html`** — if entry count is surfaced in hero copy or stats (currently shown dynamically via JS count in results bar — no hardcoded number to update unless you add one)
+2. **`README.md`** (this file) — "people card stat (practitioner count)" reference in the checklist above if you add a hardcoded count to the hub card
+
+**Stats to read from the build output after each org-data refresh:**
+
+```bash
+python3 -c "
+import json
+aff  = json.load(open('data/affinity.json'))
+dirs = json.load(open('data/directory.json'))
+s = aff['stats']
+topics = set(t for o in dirs for t in o.get('problem_statements', []))
+areas  = set(a for o in dirs for a in o.get('problem_areas', []))
+funded = sum(1 for o in dirs if o.get('named_funders'))
+print(f'Orgs: {s[\"org_count\"]}  Edges: {s[\"edge_count\"]}')
+print(f'Max: {s[\"max_weight\"]:.3f}  Median: {s[\"median_weight\"]:.3f}')
+print(f'Segments: {len(set(o[\"primary_segment\"] for o in dirs))}')
+print(f'Problem areas: {len(areas)}  Problem topics: {len(topics)}')
+print(f'Funder coverage: {funded}/{len(dirs)}')
+"
+```
 
 ### The network ↔ people bridge depends on shared topic vocabulary
 
