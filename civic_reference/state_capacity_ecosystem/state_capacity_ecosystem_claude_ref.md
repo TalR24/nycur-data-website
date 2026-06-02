@@ -34,9 +34,28 @@ This file auto-loads at session start (per the project CLAUDE.md). It is a **poi
 - **Em dashes are banned** in NYCuriosity prose (per the global writing-style memory).
 - **No links to Claude conversations** anywhere on the public site.
 
+## ALWAYS do this first (every session, no exceptions)
+
+Henry and others push CSV updates to GitHub directly via the web UI between Claude sessions.
+If you don't pull before doing anything, your subsequent push will be rejected.
+
+```bash
+cd /Users/troded/Library/CloudStorage/OneDrive-Microsoft/Desktop/nycur/data_website
+git fetch
+git status          # look for "Your branch is behind origin/main by N commits"
+git pull            # fast-forward if behind; investigate if diverged
+```
+
+If `git pull` reports a diverge or conflict, check `git log --oneline HEAD..origin/main`
+to see what was pushed remotely, then resolve before proceeding.
+
 ## Refresh workflow
 
 ```bash
+# 0. Sync with remote FIRST (see above)
+git pull
+
+# ── Org CSV changed ──────────────────────────────────────────────────────────
 # 1. Drop the new CSV in place of the canonical file
 cp <new>.csv data_website/civic_reference/state_capacity_ecosystem/data/state_capacity_ecosystem.csv
 
@@ -44,10 +63,19 @@ cp <new>.csv data_website/civic_reference/state_capacity_ecosystem/data/state_ca
 cd data_website/civic_reference/state_capacity_ecosystem
 python3 data/build_affinity.py
 
-# 3. Push (remote URL already has PAT)
+# ── Connect CSV changed ──────────────────────────────────────────────────────
+# 1. Drop the new CSV in place
+cp <new>.csv data_website/civic_reference/state_capacity_ecosystem/data/problem_statement_seeds_v5.csv
+
+# 2. Rebuild
+cd data_website/civic_reference/state_capacity_ecosystem
+python3 data/build_people.py
+
+# ── Push (remote URL already has PAT) ────────────────────────────────────────
 cd /Users/troded/Library/CloudStorage/OneDrive-Microsoft/Desktop/nycur/data_website
 git add civic_reference/state_capacity_ecosystem/data/ ...
 git commit -m "..."
+git pull            # pull once more in case another upload landed while you worked
 git push
 ```
 
