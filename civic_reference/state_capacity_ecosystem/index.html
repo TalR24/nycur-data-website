@@ -686,8 +686,11 @@ function _mlInitToks() {
   _mkTok('ml-t-offering', [
     "Collaboration Opportunity","Expertise","Funding / Investment","Grant / Challenge",
     "Interesting Conversation","Job / Fellowship","Problem to Solve","Tool / Product","Other"
-  ], 'multi', 'any offering');
-  _mkTok('ml-t-geo', ["Federal","State","Local","Outside US"], 'multi', 'any geography');
+  ], 'multi', 'any collaboration opp');
+  const areas  = [...new Set(_mlOrgs.flatMap(o => o.problem_areas || []))].sort();
+  const topics = [...new Set(_mlOrgs.flatMap(o => o.problem_statements || []))].sort();
+  _mkTok('ml-t-problem', [...areas, ...topics], 'multi', 'any problem');
+  _mkTok('ml-t-geo', ["Federal","State","City","Outside US"], 'multi', 'any geography');
 }
 
 function _mkTok(id, opts, mode, ph) {
@@ -770,12 +773,18 @@ function _mlSearch() {
   if (!_mlReady) return;
   const myRole   = _mlGet('ml-t-myrole');
   const offering = _mlGet('ml-t-offering');
+  const problems = _mlGet('ml-t-problem');
   const geos     = _mlGet('ml-t-geo');
 
   const people = _mlPeople.filter(p => {
     if (offering) {
-      const pOffs = p.offering ? p.offering.split(", ").map(s=>s.trim()) : (p.help_source ? [p.help_source] : []);
+      const pOffs = Array.isArray(p.offering) ? p.offering : (p.offering ? p.offering.split(", ").map(s=>s.trim()) : (p.help_source ? [p.help_source] : []));
       if (!pOffs.some(o => offering.has(o))) return false;
+    }
+    if (problems) {
+      const pAreas  = p.problem_areas  || (p.problem_area  ? [p.problem_area]  : []);
+      const pTopics = p.problem_topics || (p.problem_topic ? [p.problem_topic] : []);
+      if (!pAreas.some(a => problems.has(a)) && !pTopics.some(t => problems.has(t))) return false;
     }
     if (geos) {
       const pGeos = [...(p.geography||[]), ...(p.jurisdictions||[])];
@@ -787,6 +796,7 @@ function _mlSearch() {
   const targetSegs = myRole ? new Set(ROLE_TO_SEGS[myRole]||[]) : null;
   const orgs = _mlOrgs.filter(o => {
     if (targetSegs && targetSegs.size > 0 && !targetSegs.has(o.primary_segment)) return false;
+    if (problems && !((o.problem_areas||[]).some(a => problems.has(a)) || (o.problem_statements||[]).some(t => problems.has(t)))) return false;
     if (geos && !(o.focus||[]).some(f => geos.has(f))) return false;
     return true;
   });
@@ -821,9 +831,9 @@ function _mlRender(ppl, orgs) {
       <div class="ml-card-name">${e2(p.name)}</div>
       <div class="ml-card-sub">${e2(p.organization||'')}${p.role?' &middot; '+e2(p.role):''}</div>
       <div class="ml-card-chips">
-        ${p.problem_topic?`<span class="ml-chip ml-chip-blue">${e2(p.problem_topic)}</span>`:''}
+        ${(p.problem_topics||[p.problem_topic].filter(Boolean)).slice(0,2).map(t=>`<span class="ml-chip ml-chip-blue">${e2(t)}</span>`).join('')}
         ${(p.geography||p.jurisdictions||[]).map(j=>`<span class="ml-chip ml-chip-orange">${e2(j)}</span>`).join('')}
-        ${(p.offering||p.help_source)?`<span class="ml-chip ml-chip-green">${e2(p.offering||p.help_source)}</span>`:''}
+        ${(Array.isArray(p.offering)?p.offering:[p.offering||p.help_source].filter(Boolean)).slice(0,1).map(o=>`<span class="ml-chip ml-chip-green">${e2(o)}</span>`).join('')}
       </div>
     </div>`
   );
@@ -858,6 +868,7 @@ function _mlRender(ppl, orgs) {
       <div class="ml-sentence">
         <span class="ml-prose">I am a </span><span class="ml-token" id="ml-t-myrole"></span>
         <span class="ml-prose"> seeking </span><span class="ml-token" id="ml-t-offering"></span>
+        <span class="ml-prose"> on </span><span class="ml-token" id="ml-t-problem"></span>
         <span class="ml-prose"> in </span><span class="ml-token" id="ml-t-geo"></span>
         <span class="ml-prose">.</span>
       </div>
