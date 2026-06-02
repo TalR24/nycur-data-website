@@ -85,7 +85,7 @@ The CSV columns are read by name (`csv.DictReader`) in `build_affinity.py`. If t
 | `Funding Detail` | string | Free-text. Funders extracted by regex against `KNOWN_FUNDERS` list. |
 | `Website` | string | Often missing protocol; `httpify()` in JS prepends `https://`. |
 | `Problem Area` | comma-list | **NEW May 2026.** 7 coarse buckets. See taxonomy below. |
-| `Problem Topic` | comma-list | **NEW May 2026** (split from old "Problem Statements"). 37 fine tags as of the 2026-05-14 refresh (was 36). |
+| `Problem Topic` | comma-list | **NEW May 2026** (split from old "Problem Statements"). 36 fine tags as of the 2026-06-01 refresh (was 37). |
 
 **Schema history:**
 - April 2026: 8 columns, no problem tagging
@@ -126,7 +126,7 @@ score = 0.40 × description_TFIDF_cosine
 **Why these weights** (rebalanced May 2026 from the original 0.40/0.35/0.25 with primary-segment boost):
 
 - **Description (40%)** — Strongest signal. TF-IDF cosine over a token bag that includes description + funding detail + Problem Area + Problem Topic + segment names. Distinctive terms ("permitting reform," "procurement") matter more than generic ones ("government," "policy").
-- **Problem topics (30%)** — Jaccard over Henry's 37 curated tags. Highest-confidence signal because tags are curator-assigned. Drives cross-segment surprise connections — the whole reason this scoring exists.
+- **Problem topics (30%)** — Jaccard over Henry's 36 curated tags. Highest-confidence signal because tags are curator-assigned. Drives cross-segment surprise connections — the whole reason this scoring exists.
 - **Funders (15%)** — Jaccard over funders extracted by substring match against `KNOWN_FUNDERS` (~50 entries at top of `build_affinity.py`). Falls back to a 0.15 bonus when funding-model strings match exactly and no named funders are detected. Coverage is partial (~21% of orgs).
 - **Segments (15%)** — Plain Jaccard over primary + secondary segment sets. **No primary-segment boost.** Earlier versions had 35% weight plus a +0.5 primary boost, which made the network collapse into same-segment cliques. Reducing weight + dropping the boost was a deliberate decision (May 2026) — do not reintroduce the boost without checking with Tal.
 
@@ -138,10 +138,10 @@ score = 0.40 × description_TFIDF_cosine
 - Per-node degree cap: walk edges in descending score order; keep an edge only if at least one endpoint has fewer than `MAX_DEG = 8` neighbors. Prevents central hubs from dominating.
 
 **Current dataset stats (May 14, 2026 refresh):**
-- 304 orgs, 1,629 kept edges
+- 308 orgs, 1,653 kept edges
 - 21,932 candidate edges before thresholding
 - Max edge: 0.82, median: 0.10
-- Funder coverage: 62/304 orgs
+- Funder coverage: 64/308 orgs
 
 ---
 
@@ -161,7 +161,7 @@ At query time, the directory and network views:
 
 Total cost is one ~190 KB JSON fetch + O(query_terms × num_orgs) per query. No external API. ~$0/query.
 
-**Trade-off vs real embeddings:** TF-IDF can't infer that "permits" and "licensing" refer to the same concept unless those words co-occur in the corpus. For 304 orgs with rich curator-assigned tags, this is the right cost/quality point. If the dataset grows past ~2000 orgs or the user wants true semantic understanding, consider switching to OpenAI `text-embedding-3-small` (~$0.02/1M tokens — still cheap) or a local sentence-transformer model.
+**Trade-off vs real embeddings:** TF-IDF can't infer that "permits" and "licensing" refer to the same concept unless those words co-occur in the corpus. For 308 orgs with rich curator-assigned tags, this is the right cost/quality point. If the dataset grows past ~2000 orgs or the user wants true semantic understanding, consider switching to OpenAI `text-embedding-3-small` (~$0.02/1M tokens — still cheap) or a local sentence-transformer model.
 
 ---
 
@@ -261,17 +261,16 @@ Site-wide design tokens (defined in `:root` of each subpage):
 
 ## Problem taxonomy
 
-**8 Problem Areas** (broad buckets) — Capacity added in the 2026-05-14 refresh:
+**7 Problem Areas** (broad buckets) — as of 2026-06-01 refresh (Capacity area removed):
 - Service Delivery
 - Procurement & Operations
 - Technology & Data
 - Talent & Hiring
 - Test & Learn
 - Participatory Democracy
-- Capacity
 - Verticals
 
-**37 Problem Topics** (fine tags, nested under Areas; +1 in the 2026-05-14 refresh). Top by frequency: AI in Government (84), Service Design (79), Benefits Access (66), Talent Pipeline (65), Operational Excellence (59), Expert Contribution (50), Procurement Reform (50), Transparency & Accountability (49), Scaling What Works (49), Outcomes Measurement (45), Legacy Systems (44), Data Integration (42), Civic Engagement (39), Data Security (34), Iterative Learning (27)…
+**36 Problem Topics** (fine tags, nested under Areas; -1 in the 2026-06-01 refresh). Top by frequency: AI in Government, Service Design, Benefits Access, Talent Pipeline, Operational Excellence, Expert Contribution, Procurement Reform, Transparency & Accountability, Scaling What Works, Outcomes Measurement, Legacy Systems, Data Integration, Civic Engagement, Data Security, Iterative Learning…
 
 100% coverage on both fields. Both feed into TF-IDF for semantic search; only Topics feed into the affinity Jaccard signal.
 
@@ -398,7 +397,7 @@ scripts.forEach((s, i) => {
 
 `build_affinity.py` regenerates `affinity.json` / `directory.json` / `affinity_search.json` automatically. But many user-facing strings have stats baked in. When the dataset refreshes (org count, edge count, segment count, problem area / topic count, funder coverage), update **all** of these in lockstep or the UI will lie to readers:
 
-1. **Hub `index.html`** — directory card stat ("304 orgs · 11 segments · X areas · Y topics"), network card stat ("1,629 edges · …"), problem-statements info panel ("Y fine-grained issues, X broader buckets"), people card stat (practitioner count)
+1. **Hub `index.html`** — directory card stat ("308 orgs · 11 segments · X areas · Y topics"), network card stat ("1,653 edges · …"), problem-statements info panel ("Y fine-grained issues, X broader buckets"), people card stat (practitioner count)
 2. **Methodology `index.html`** — schema bullets, problem-statements paragraph, directory-filter bullet, "Limitation worth flagging" funder count, dataset stats line
 3. **README** — Current dataset stats, schema history, Problem taxonomy section, Glossary entries
 4. **`build_affinity.py`** — the docstring/comment around the schema bit referencing area + topic counts
@@ -407,7 +406,7 @@ Stat-pills in the hero ARE dynamic (read from `affinity.json` at load). Card-sta
 
 ### The network ↔ people bridge depends on shared topic vocabulary
 
-The matchmaking on the network detail panel (97% coverage at last audit) only works because the org dataset's `problem_statements` field uses the same canonical 37-tag list as the people dataset's `problem_topic` field. If either side ever uses a different vocabulary — free-text topics, a different controlled list, renamed tags — the bridge will degrade silently (no people will appear in the detail panel, no sidebar will fill). Audit after every dataset refresh:
+The matchmaking on the network detail panel (97% coverage at last audit) only works because the org dataset's `problem_statements` field uses the same canonical 36-tag list as the people dataset's `problem_topic` field. If either side ever uses a different vocabulary — free-text topics, a different controlled list, renamed tags — the bridge will degrade silently (no people will appear in the detail panel, no sidebar will fill). Audit after every dataset refresh:
 
 ```bash
 python3 -c "
@@ -442,6 +441,9 @@ For changes where placement/labeling/UX is ambiguous (e.g., "add a new section t
 
 | Date | Commit | Summary |
 |---|---|---|
+| 2026-06-01 | `7a80f9c` | Data: rebuild JSON from June 2026 org CSV. 308 orgs (+4 vs prior), 1,653 edges (+24). Capacity Problem Area removed; topic count dropped from 37 to 36. Funder coverage 64/308. |
+| 2026-06-01 | `6a6a215` | Methodology: rewrite with mission/vision/segment taxonomy/problems taxonomy table. Remove stale Search page section. Update Focus → Geography, "challenges" → "opportunities". |
+| 2026-06-01 | `f5c2596` | Connect: CSV download button, description/CTA rewrite ("opportunity"), contact-info field (email or URL), City geography canonical. build_people.py updated for Henry's June 2026 CSV schema (Offering, Geography, Due by, Details; 19 entries). |
 | 2026-06-01 | `246d78f` | Homepage: move Community Board Tools section to last section. |
 | 2026-06-01 | `9bf668b` | Multi-page UX overhaul: standardize "Geography" terminology across all pages (was "Geographic Focus"/"Jurisdiction"); card CTAs capitalized ("Open Directory →"); "Add to Connect" links to connect/?add=1; methodology button shortened to "Read →"; connect bubble desc uses "geography" not "jurisdiction"; segments page adds row-expand detail panel; hub feedback card text updated; affinity graph charge/distance spread out. |
 | 2026-06-01 | `9ee743d` | Connect: fix Airtable base ID (missing `app` prefix), improve error logging to surface HTTP body on failure. |
@@ -502,7 +504,7 @@ Use `git log --oneline -- civic_reference/state_capacity_ecosystem/` for the ful
 - **Affinity** — Composite score 0–1 indicating how likely two orgs are working on similar things. Not a documented relationship; an inference from public-facing data.
 - **TF-IDF** — Term Frequency × Inverse Document Frequency. Vectorizes text such that rare distinctive words ("procurement") matter more than ubiquitous ones ("government").
 - **Jaccard** — `|A ∩ B| / |A ∪ B|` for two sets. Used for segment, problem-topic, and funder overlap.
-- **Problem Area** — One of 8 broad buckets (Service Delivery, Procurement & Operations, Capacity, etc.). Coarse.
-- **Problem Topic** — One of 37 fine tags (Procurement Reform, AI in Government, etc.). Maps to the `problem_statements` field in JSON output.
+- **Problem Area** — One of 7 broad buckets (Service Delivery, Procurement & Operations, Verticals, etc.). Coarse.
+- **Problem Topic** — One of 36 fine tags (Procurement Reform, AI in Government, etc.). Maps to the `problem_statements` field in JSON output.
 - **Composite score** — The weighted sum of the four affinity signals.
 - **Edge threshold** — UI slider hiding edges below a certain composite score. Default 0.18.
