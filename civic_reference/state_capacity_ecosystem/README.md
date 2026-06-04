@@ -135,10 +135,10 @@ score = 0.40 × description_TFIDF_cosine
 - Per-node degree cap: walk edges in descending score order; keep an edge only if at least one endpoint has fewer than `MAX_DEG = 8` neighbors. Prevents central hubs from dominating.
 
 **Current dataset stats (May 14, 2026 refresh):**
-- 308 orgs, 1,653 kept edges
+- 313 orgs, 1,675 kept edges
 - 21,932 candidate edges before thresholding
 - Max edge: 0.82, median: 0.10
-- Funder coverage: 64/308 orgs
+- Funder coverage: 65/313 orgs
 
 ---
 
@@ -158,7 +158,7 @@ At query time, the directory and network views:
 
 Total cost is one ~190 KB JSON fetch + O(query_terms × num_orgs) per query. No external API. ~$0/query.
 
-**Trade-off vs real embeddings:** TF-IDF can't infer that "permits" and "licensing" refer to the same concept unless those words co-occur in the corpus. For 308 orgs with rich curator-assigned tags, this is the right cost/quality point. If the dataset grows past ~2000 orgs or the user wants true semantic understanding, consider switching to OpenAI `text-embedding-3-small` (~$0.02/1M tokens — still cheap) or a local sentence-transformer model.
+**Trade-off vs real embeddings:** TF-IDF can't infer that "permits" and "licensing" refer to the same concept unless those words co-occur in the corpus. For 313 orgs with rich curator-assigned tags, this is the right cost/quality point. If the dataset grows past ~2000 orgs or the user wants true semantic understanding, consider switching to OpenAI `text-embedding-3-small` (~$0.02/1M tokens — still cheap) or a local sentence-transformer model.
 
 ---
 
@@ -259,7 +259,7 @@ Site-wide design tokens (defined in `:root` of each subpage):
 - Talent & Hiring
 - Test & Learn
 - Participatory Democracy
-- Verticals
+- Domains
 
 **36 Problem Topics** (fine tags, nested under Areas; -1 in the 2026-06-01 refresh). Top by frequency: AI in Government, Service Design, Benefits Access, Talent Pipeline, Operational Excellence, Expert Contribution, Procurement Reform, Transparency & Accountability, Scaling What Works, Outcomes Measurement, Legacy Systems, Data Integration, Civic Engagement, Data Security, Iterative Learning…
 
@@ -469,6 +469,7 @@ For changes where placement/labeling/UX is ambiguous (e.g., "add a new section t
 
 | Date | Commit | Summary |
 |---|---|---|
+| 2026-06-04 | — | Data: rebuild JSON from June 4 2026 CSV refresh. 313 orgs (+5 vs prior), 1,675 edges (+22). Problem topics and areas unchanged (36/7). Funder coverage 65/313. Updated hardcoded counts in homepage, methodology, data_website README, and this README. |
 | 2026-06-03 | `c18257a` | Segments: remove page entirely and scrub all references — deleted `segments/index.html`, removed Segments pill from nav on all four remaining pages, removed Segments bubble card from hub, removed dead `.seg-*` CSS from hub, updated OG meta, methodology hero/credits, CLAUDE.md, both READMEs, and session ref doc. |
 | 2026-06-03 | `7f1b501` | Connect: fix broken table caused by orphaned `msGeo` JS variable after `#ms-geo` HTML element was removed — `MS()` constructor called `.classList` on null, throwing TypeError that killed entire script. Removed `msGeo` from constructor, `populateFilters()`, `applyFilters()`, and reset handler. Methodology credits rewritten to single sentence. |
 | 2026-06-03 | `21c8f2d` | All pages: align hero heading style — Directory lost "Browse organizations" eyebrow and all-blue h1; both Directory and Connect now use standard dark h1 + blue `<span>` pattern matching Network/Segments/Methodology. |
@@ -540,7 +541,7 @@ Use `git log --oneline -- civic_reference/state_capacity_ecosystem/` for the ful
 - **Affinity** — Composite score 0–1 indicating how likely two orgs are working on similar things. Not a documented relationship; an inference from public-facing data.
 - **TF-IDF** — Term Frequency × Inverse Document Frequency. Vectorizes text such that rare distinctive words ("procurement") matter more than ubiquitous ones ("government").
 - **Jaccard** — `|A ∩ B| / |A ∪ B|` for two sets. Used for segment, problem-topic, and funder overlap.
-- **Problem Area** — One of 7 broad buckets (Service Delivery, Procurement & Operations, Verticals, etc.). Coarse.
+- **Problem Area** — One of 7 broad buckets (Service Delivery, Procurement & Operations, Domains, etc.). Coarse.
 - **Problem Topic** — One of 36 fine tags (Procurement Reform, AI in Government, etc.). Maps to the `problem_statements` field in JSON output.
 - **Composite score** — The weighted sum of the four affinity signals.
 - **Edge threshold** — UI slider hiding edges below a certain composite score. Default 0.18.
