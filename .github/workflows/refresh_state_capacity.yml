@@ -42,12 +42,29 @@ jobs:
             echo "No CSV changes since last JSON build — skipping."
           fi
 
+      - name: Snapshot previous Connect entries (before rebuild)
+        if: steps.check.outputs.changed == 'true'
+        run: |
+          git show HEAD:civic_reference/state_capacity_ecosystem/data/connect.json \
+            > /tmp/connect_prev.json 2>/dev/null || echo "[]" > /tmp/connect_prev.json
+
       - name: Rebuild JSON files
         if: steps.check.outputs.changed == 'true'
         working-directory: civic_reference/state_capacity_ecosystem
         run: |
           python3 data/build_affinity.py
           python3 data/build_people.py
+
+      - name: Email new Connect entries
+        if: steps.check.outputs.changed == 'true'
+        working-directory: civic_reference/state_capacity_ecosystem
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+        run: |
+          python3 data/notify_new_connect.py \
+            /tmp/connect_prev.json \
+            data/connect.json
 
       - name: Update hardcoded stat strings
         if: steps.check.outputs.changed == 'true'
