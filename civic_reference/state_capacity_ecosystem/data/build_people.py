@@ -1,5 +1,5 @@
 """
-Build connect.json from problem_statement_seeds_v5.csv.
+Build connect.json from connect_submissions.csv.
 
 Schema (10 columns, June 2026 refresh by Henry Grunzweig):
   Name, Organization, Role, Offering, Problem Area, Problem Topic,
@@ -14,7 +14,7 @@ import csv, json
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
-CSV  = ROOT / "problem_statement_seeds_v5.csv"
+CSV  = ROOT / "connect_submissions.csv"
 OUT  = ROOT / "connect.json"
 
 

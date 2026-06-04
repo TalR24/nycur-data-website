@@ -44,8 +44,8 @@ p = Path("../../README.md")
 md = p.read_text()
 md = sub(
     md,
-    r"state_capacity_ecosystem\.csv(\s+)→ Canonical org source \(\d+ rows\)",
-    lambda m: f"state_capacity_ecosystem.csv{m.group(1)}→ Canonical org source ({org_count} rows)",
+    r"directory\.csv(\s+)→ Canonical org source \(\d+ rows\)",
+    lambda m: f"directory.csv{m.group(1)}→ Canonical org source ({org_count} rows)",
     "data_website/README.md",
 )
 p.write_text(md)

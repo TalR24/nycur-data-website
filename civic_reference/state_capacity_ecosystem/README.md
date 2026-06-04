@@ -10,7 +10,7 @@ This file is the single source of truth for the State Capacity Ecosystem tool. I
 
 ## What this tool is
 
-A six-page visualization layer over Henry Grunzweig's **State Capacity Ecosystem Database** (an external Airtable curated by Henry, not Tal) plus a separate **Connect** directory (people and orgs) that Tal curates and grows via user self-submission. NYCuriosity does not curate the underlying org data — we only build views on top of Henry's CSV export. The Connect directory has a different source (`problem_statement_seeds_v5.csv` in `data/`) and grows via an in-page 13-field form modal.
+A six-page visualization layer over Henry Grunzweig's **State Capacity Ecosystem Database** (an external Airtable curated by Henry, not Tal) plus a separate **Connect** directory (people and orgs) that Tal curates and grows via user self-submission. NYCuriosity does not curate the underlying org data — we only build views on top of Henry's CSV export. The Connect directory has a different source (`connect_submissions.csv` in `data/`) and grows via an in-page 13-field form modal.
 
 The five public pages:
 
@@ -31,7 +31,7 @@ The five public pages:
 1. **Read this README first.** Don't guess at file structure or weights — they've been deliberately set.
 2. **Check the live site** before making changes — `https://data.nycuriosity.com/civic_reference/state_capacity_ecosystem/`. The deployed state may differ from your local working copy.
 3. **Identify which file you need to edit** from the file map below. The five subpages are independent HTML files; changes to shared concepts (colors, taxonomy, copy) must be made in **all** of them.
-4. **For data refreshes:** drop the new CSV in `data/state_capacity_ecosystem.csv` and run `python3 data/build_affinity.py`. Don't hand-edit `affinity.json`, `directory.json`, or `affinity_search.json` — they're regenerated from the CSV.
+4. **For data refreshes:** drop the new CSV in `data/directory.csv` and run `python3 data/build_affinity.py`. Don't hand-edit `affinity.json`, `directory.json`, or `affinity_search.json` — they're regenerated from the CSV.
 5. **Push to GitHub** when done. Live in ~1 min via GitHub Pages.
 
 ---
@@ -43,12 +43,12 @@ data_website/civic_reference/state_capacity_ecosystem/
 ├── README.md                        ← THIS FILE
 ├── index.html                       ← Hub: pills, 4 explore cards, methodology card, info panels
 ├── data/
-│   ├── state_capacity_ecosystem.csv ← Canonical org source (replace to refresh)
+│   ├── directory.csv                ← Canonical org source (replace to refresh)
 │   ├── build_affinity.py            ← CSV → affinity.json + directory.json + affinity_search.json
 │   ├── affinity.json                ← Nodes + scored edges + stats (incl. last_updated)
 │   ├── directory.json               ← Flat node bundle for the directory page
 │   ├── affinity_search.json         ← Vocab + IDF + per-org sparse TF-IDF for NL search
-│   ├── problem_statement_seeds_v5.csv ← People + problem-statement seeds (separate dataset)
+│   ├── connect_submissions.csv      ← Connect directory seed data (separate dataset)
 │   ├── build_people.py              ← CSV → connect.json (simple transform; no scoring)
 │   └── connect.json                 ← Flat people bundle for the /connect/ page
 ├── directory/
@@ -188,7 +188,7 @@ Total cost is one ~190 KB JSON fetch + O(query_terms × num_orgs) per query. No 
 - Loads `data/directory.json` + `data/affinity_search.json`
 
 ### Connect (`connect/index.html`)
-- Separate dataset from the org pages — sourced from `data/problem_statement_seeds_v5.csv`, a Tal-curated seed list. Entries can be people OR organizations. Grows via a 12-field in-page form modal that POSTs directly to Airtable.
+- Separate dataset from the org pages — sourced from `data/connect_submissions.csv`, a Tal-curated seed list. Entries can be people OR organizations. Grows via a 12-field in-page form modal that POSTs directly to Airtable.
 - **Self-submission form modal** (`openSF()` / `closeSF()`): opened by the "Add yourself or a challenge" pill button in the hero. Full-page overlay with fields: Name, Organization (optional), Role (single, 9 options), Offering (multi, 9 options), Problem Area (multi, 9 options), Problem Topic (multi, conditional — shown only after a mappable area is selected), Geography (multi, 4 options), Due By (date, optional), Details (280-char textarea), Contact preference (Direct / Facilitated). Email always shown and required. For Facilitated: a privacy note is shown (email kept private) and a Connection Parameters textarea appears. On submit, POSTs to Airtable REST API. **CSS critical:** `.sf-body` requires `flex:1; min-height:0` — without `min-height:0` the flex child defaults to `min-height:auto` and can't scroll, so lower chip rows clip out of view.
 - **Airtable backend:** `AIRTABLE_ENDPOINT` points to base `appFIPqXkeQMQ3n94`, table `tbl2ArzY6c0CdNVsh` ("State Capacity Ecosystem Connect Submissions"). Token is a write-only PAT in client-side JS (intentional — scoped to this table only; readers can submit but cannot read/edit/delete). Table columns: Name, Organization, Role, Offering, Problem Areas, Problem Topics, Geography, Due By, Details, Contact Type, Email, Connection Parameters.
 - **Intro request modal** (`openIR(id)` / `closeIR()`): triggered by "Request intro →" links in the Contact column for Facilitated entries. 3-field overlay (name, email, why). Submits via `mailto:henrygrunzweig@gmail.com` + clipboard copy.
@@ -282,7 +282,7 @@ git push
 
 **Don't stage unrelated files.** This repo has long-standing in-progress changes (deleted fiscal-impacts files, untracked `.DS_Store`s, the dated CSV `state_capacity_20260511.csv`). Always stage explicit paths, never `git add .` or `git add -A`.
 
-The dated CSV (`state_capacity_DATE.csv`) is left in the data folder unstaged as a working artifact. The canonical `state_capacity_ecosystem.csv` is the one tracked.
+Dated backup CSVs (`state_capacity_DATE.csv`) are left in the data folder unstaged as working artifacts. The canonical tracked file is `directory.csv`.
 
 ---
 
@@ -303,7 +303,7 @@ These were arrived at via user feedback over multiple sessions. Don't reintroduc
 11. **Multi-select dropdowns close siblings on open.** `MS._registry` static array tracks all instances; `_show()` closes any other open dropdown first. Used on the directory page (Primary segment · Geography · Problem area · Problem topic) and on the network page (Geography · Problem area · Problem topic — added May 2026).
 12. **Methodology page stays in sync with the affinity network.** Any change to the scoring formula, weights, token bag, edge thresholding, degree cap, or graph rendering MUST be reflected on `methodology/index.html` in the same commit. Touch points: the formula block, the per-signal `<h3>` paragraphs, the score-range table, the "what gets dropped" thresholds, and the published-dataset stats line. (Note: the network page no longer has its own inline methodology blurb, so the methodology page is the single source of truth for user-facing scoring documentation.)
 13. **Directory table is the 6 user-asked columns + expand chevron:** Organization · Segment · Secondary Segments · Description (truncated) · Problem Area · Problem Statement. All other CSV fields are in the row-click detail panel. Do not add columns without explicit user request — the layout was deliberately narrowed May 2026.
-14. **Connect (`/connect/`) is a SEPARATE dataset from the org pages.** Source is `data/problem_statement_seeds_v5.csv`, built by `build_people.py` → `connect.json`. Do not merge into `build_affinity.py` — affinity is org-to-org, Connect is a parallel track.
+14. **Connect (`/connect/`) is a SEPARATE dataset from the org pages.** Source is `data/connect_submissions.csv`, built by `build_people.py` → `connect.json`. Do not merge into `build_affinity.py` — affinity is org-to-org, Connect is a parallel track.
 15. **Connect form POSTs to Airtable, not mailto.** The "Add yourself or a challenge" pill opens a 12-field overlay modal. Submission POSTs to `appFIPqXkeQMQ3n94 / tbl2ArzY6c0CdNVsh` via a write-only PAT in client-side JS. This is intentional — the PAT is scoped to that table only (write, no read/edit/delete). Intro requests for Facilitated contacts use a separate 3-field modal that still uses `mailto:henrygrunzweig@gmail.com` + clipboard.
 16. **Network page bridges to /connect/ in two places** (added May 2026): (a) inline "People working on these problem topics" subsection at the bottom of the org-node detail panel; (b) `people-results` sidebar in controls when Problem area or Problem topic filters are active. Both link to `../connect/`. The `connect.json` fetch is wrapped in `.catch(() => [])` so the network page degrades gracefully if the file is missing.
 17. **Connect uses neutral language ("Name", "entry", "entries") not "Person" / "practitioners"** — the directory contains both people and organizations. Do not reintroduce people-only language in table headers, filter labels, or JS string templates on this page.
@@ -389,10 +389,10 @@ scripts.forEach((s, i) => {
 
 Stat-pills in the hub hero ARE dynamic (read from `affinity.json` at load). Everything below is hand-written and must be updated manually.
 
-**After updating `state_capacity_ecosystem.csv` (org data) — run `build_affinity.py` first, then update:**
+**After updating `directory.csv` (org data) — run `build_affinity.py` first, then update:**
 
 1. **`data_website/index.html`** (data website homepage) — `card-stat` span inside the State Capacity Ecosystem card: `"N orgs · 11 segments · N problem topics"`
-2. **`data_website/README.md`** — file tree entry: `state_capacity_ecosystem.csv → Canonical org source (N rows)`
+2. **`data_website/README.md`** — file tree entry: `directory.csv → Canonical org source (N rows)`
 3. **`civic_reference/state_capacity_ecosystem/index.html`** (hub) — any hardcoded counts in card descriptions or bubble stat text (currently "300+" — only update if it crosses a round-number threshold)
 4. **`methodology/index.html`** — three locations:
    - Data Fields bullet: `"N specific issues nested under the Problem Areas"`
@@ -408,7 +408,7 @@ Stat-pills in the hub hero ARE dynamic (read from `affinity.json` at load). Ever
 6. **`data/build_affinity.py`** — comment: `"Problem Area" (N coarse buckets) and "Problem Topic" (N fine tags)`
 7. **`state_capacity_ecosystem_claude_ref.md`** — "Current dataset" line: org count + edge count + refresh date; "Schema" line if area/topic counts changed
 
-**After updating `problem_statement_seeds_v5.csv` (Connect data) — run `build_people.py` first, then update:**
+**After updating `connect_submissions.csv` (Connect data) — run `build_people.py` first, then update:**
 
 1. **`connect/index.html`** — if entry count is surfaced in hero copy or stats (currently shown dynamically via JS count in results bar — no hardcoded number to update unless you add one)
 2. **`README.md`** (this file) — "people card stat (practitioner count)" reference in the checklist above if you add a hardcoded count to the hub card
@@ -503,7 +503,7 @@ For changes where placement/labeling/UX is ambiguous (e.g., "add a new section t
 | 2026-05-18 | `7e1f96b` | Rename People view to "Asks & Opportunities" across all pages. (Later renamed again to "Connect" on 2026-05-24.) |
 | 2026-05-18 | `54a17e6` | Hub: 2×2 card grid layout. |
 | 2026-05-14 | `f4f028c` | Network ↔ People bridge: (a) detail panel adds "People working on these problem topics" subsection (~97% org coverage); (b) people-results sidebar appears in controls when Problem area or Problem topic filters are active. Both link out to `/people/`. |
-| 2026-05-14 | `4201640` | Add People & Problem Statements page (`/people/`). New 4th explore card on the hub. Sources `data/problem_statement_seeds_v5.csv` via `build_people.py` → `people.json`. 7-dimension filtering. Submit-yourself pill placeholder. People pill added to nav across all subpages. |
+| 2026-05-14 | `4201640` | Add People & Problem Statements page (`/people/`). New 4th explore card on the hub. Sources `data/connect_submissions.csv` via `build_people.py` → `people.json`. 7-dimension filtering. Submit-yourself pill placeholder. People pill added to nav across all subpages. |
 | 2026-05-14 | `f1bd3e3` | State Capacity Ecosystem: refresh with 2026-05-14 dataset. 304 orgs (unchanged), 1,629 edges (was 1,623). Henry added an 8th Problem Area ("Capacity") and a 37th Problem Topic. Hardcoded counts in hub cards, methodology page, README, and build script comment all updated. |
 | 2026-05-13 | `a3e1957` | Network: restore Methodology pill to the pill nav (briefly removed earlier in the day per user request, then restored). |
 | 2026-05-13 | `52bf822` | Hub: move Submit-an-org panel above "Three ways to explore"; add a Methodology card under new "How this works" section. |

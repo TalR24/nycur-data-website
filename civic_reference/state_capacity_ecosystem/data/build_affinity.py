@@ -26,7 +26,7 @@ from datetime import date
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
-CSV  = ROOT / "state_capacity_ecosystem.csv"
+CSV  = ROOT / "directory.csv"
 OUT  = ROOT
 
 # Known funders likely to appear in Funding Detail. Extracted lazily and used

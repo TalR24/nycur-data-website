@@ -130,11 +130,11 @@ Static site hosted on GitHub Pages at a custom domain (`data.nycuriosity.com`). 
 │       ├── data/
 │       │   ├── build_affinity.py                  → CSV → graph.json + orgs.json + search_index.json
 │       │   ├── build_people.py                    → CSV → people.json
-│       │   ├── state_capacity_ecosystem.csv       → Canonical org source (313 rows)
+│       │   ├── directory.csv                      → Canonical org source (313 rows)
 │       │   ├── graph.json                         → Nodes + affinity edges + stats
 │       │   ├── orgs.json                          → Flat directory bundle
 │       │   ├── search_index.json                  → TF-IDF vocab + IDF + per-org vectors
-│       │   ├── problem_statement_seeds_v5.csv     → Connect directory seed data
+│       │   ├── connect_submissions.csv            → Connect directory seed data
 │       │   └── people.json                        → Flat connect bundle (read by connect/ page)
 │       ├── directory/                             → Searchable / filterable org table
 │       ├── connect/                               → People & org matchmaking, self-submission form, intro request flow
