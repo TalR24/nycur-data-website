@@ -27,38 +27,61 @@ jobs:
       - name: Install dependencies
         run: pip install numpy
 
-      - name: Check whether CSVs changed since last JSON build
+      - name: Check for CSV changes
         id: check
         working-directory: civic_reference/state_capacity_ecosystem
         run: |
-          CSV_TIME=$(git log -1 --format="%ct" -- \
-            data/directory.csv \
-            data/connect_submissions.csv)
-          JSON_TIME=$(git log -1 --format="%ct" -- data/affinity.json)
-          echo "CSV last committed: $CSV_TIME  |  JSON last built: $JSON_TIME"
-          if [ -z "$CSV_TIME" ] || [ -z "$JSON_TIME" ] || [ "$CSV_TIME" -gt "$JSON_TIME" ]; then
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-            echo "CSVs are newer than JSON — rebuilding."
+          DIR_CSV_TIME=$(git log -1 --format="%ct" -- data/directory.csv)
+          AFF_JSON_TIME=$(git log -1 --format="%ct" -- data/affinity.json)
+          CON_CSV_TIME=$(git log -1 --format="%ct" -- data/connect_submissions.csv)
+          CON_JSON_TIME=$(git log -1 --format="%ct" -- data/connect.json)
+
+          echo "directory.csv: $DIR_CSV_TIME  |  affinity.json: $AFF_JSON_TIME"
+          echo "connect_submissions.csv: $CON_CSV_TIME  |  connect.json: $CON_JSON_TIME"
+
+          if [ -z "$DIR_CSV_TIME" ] || [ -z "$AFF_JSON_TIME" ] || [ "$DIR_CSV_TIME" -gt "$AFF_JSON_TIME" ]; then
+            echo "org_changed=true" >> "$GITHUB_OUTPUT"
+            echo "directory.csv changed — rebuilding org JSON + stat strings."
           else
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-            echo "No CSV changes since last JSON build — skipping."
+            echo "org_changed=false" >> "$GITHUB_OUTPUT"
+            echo "directory.csv unchanged — skipping org rebuild."
           fi
 
+          if [ -z "$CON_CSV_TIME" ] || [ -z "$CON_JSON_TIME" ] || [ "$CON_CSV_TIME" -gt "$CON_JSON_TIME" ]; then
+            echo "connect_changed=true" >> "$GITHUB_OUTPUT"
+            echo "connect_submissions.csv changed — rebuilding connect.json."
+          else
+            echo "connect_changed=false" >> "$GITHUB_OUTPUT"
+            echo "connect_submissions.csv unchanged — skipping connect rebuild."
+          fi
+
+      # ── Org data pipeline (directory.csv → affinity/directory/search JSON + stat strings) ──
+
+      - name: Rebuild org JSON files
+        if: steps.check.outputs.org_changed == 'true'
+        working-directory: civic_reference/state_capacity_ecosystem
+        run: python3 data/build_affinity.py
+
+      - name: Update hardcoded stat strings
+        if: steps.check.outputs.org_changed == 'true'
+        working-directory: civic_reference/state_capacity_ecosystem
+        run: python3 data/update_stats.py
+
+      # ── Connect pipeline (connect_submissions.csv → connect.json + email notifications) ──
+
       - name: Snapshot previous Connect entries (before rebuild)
-        if: steps.check.outputs.changed == 'true'
+        if: steps.check.outputs.connect_changed == 'true'
         run: |
           git show HEAD:civic_reference/state_capacity_ecosystem/data/connect.json \
             > /tmp/connect_prev.json 2>/dev/null || echo "[]" > /tmp/connect_prev.json
 
-      - name: Rebuild JSON files
-        if: steps.check.outputs.changed == 'true'
+      - name: Rebuild Connect JSON
+        if: steps.check.outputs.connect_changed == 'true'
         working-directory: civic_reference/state_capacity_ecosystem
-        run: |
-          python3 data/build_affinity.py
-          python3 data/build_people.py
+        run: python3 data/build_people.py
 
       - name: Email new Connect entries
-        if: steps.check.outputs.changed == 'true'
+        if: steps.check.outputs.connect_changed == 'true'
         working-directory: civic_reference/state_capacity_ecosystem
         env:
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
@@ -68,45 +91,58 @@ jobs:
             /tmp/connect_prev.json \
             data/connect.json
 
-      - name: Update hardcoded stat strings
-        if: steps.check.outputs.changed == 'true'
-        working-directory: civic_reference/state_capacity_ecosystem
-        run: python3 data/update_stats.py
+      # ── Commit and push whatever changed ──
 
       - name: Commit and push
-        if: steps.check.outputs.changed == 'true'
+        if: steps.check.outputs.org_changed == 'true' || steps.check.outputs.connect_changed == 'true'
+        env:
+          ORG_CHANGED: ${{ steps.check.outputs.org_changed }}
+          CON_CHANGED: ${{ steps.check.outputs.connect_changed }}
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          ORG=$(python3 -c "
-          import json
-          s = json.load(open('civic_reference/state_capacity_ecosystem/data/affinity.json'))['stats']
-          print(s['org_count'])
-          ")
-          EDGES=$(python3 -c "
-          import json
-          s = json.load(open('civic_reference/state_capacity_ecosystem/data/affinity.json'))['stats']
-          print(s['edge_count'])
-          ")
-          CONNECT=$(python3 -c "
-          import json
-          print(len(json.load(open('civic_reference/state_capacity_ecosystem/data/connect.json'))))
-          ")
+          BASE="civic_reference/state_capacity_ecosystem"
 
-          git add \
-            civic_reference/state_capacity_ecosystem/data/affinity.json \
-            civic_reference/state_capacity_ecosystem/data/directory.json \
-            civic_reference/state_capacity_ecosystem/data/affinity_search.json \
-            civic_reference/state_capacity_ecosystem/data/connect.json \
-            civic_reference/state_capacity_ecosystem/methodology/index.html \
-            civic_reference/state_capacity_ecosystem/README.md \
-            index.html \
-            README.md
+          if [ "$ORG_CHANGED" = "true" ]; then
+            git add \
+              "$BASE/data/affinity.json" \
+              "$BASE/data/directory.json" \
+              "$BASE/data/affinity_search.json" \
+              "$BASE/methodology/index.html" \
+              "$BASE/README.md" \
+              index.html \
+              README.md
+          fi
+
+          if [ "$CON_CHANGED" = "true" ]; then
+            git add "$BASE/data/connect.json"
+          fi
 
           if git diff --staged --quiet; then
             echo "Nothing staged — skipping commit."
-          else
-            git commit -m "Data: auto-refresh from CSV update (${ORG} orgs, ${EDGES} edges, ${CONNECT} Connect entries) [$(date -u '+%Y-%m-%d')]"
-            git push
+            exit 0
           fi
+
+          ORG_STAT=""
+          CON_STAT=""
+          if [ "$ORG_CHANGED" = "true" ]; then
+            ORG=$(python3 -c "import json; s=json.load(open('$BASE/data/affinity.json'))['stats']; print(s['org_count'])")
+            EDGES=$(python3 -c "import json; s=json.load(open('$BASE/data/affinity.json'))['stats']; print(s['edge_count'])")
+            ORG_STAT="${ORG} orgs, ${EDGES} edges"
+          fi
+          if [ "$CON_CHANGED" = "true" ]; then
+            CON=$(python3 -c "import json; print(len(json.load(open('$BASE/data/connect.json'))))")
+            CON_STAT="${CON} Connect entries"
+          fi
+
+          if [ -n "$ORG_STAT" ] && [ -n "$CON_STAT" ]; then
+            SUMMARY="${ORG_STAT}, ${CON_STAT}"
+          elif [ -n "$ORG_STAT" ]; then
+            SUMMARY="$ORG_STAT"
+          else
+            SUMMARY="$CON_STAT"
+          fi
+
+          git commit -m "Data: auto-refresh — ${SUMMARY} [$(date -u '+%Y-%m-%d')]"
+          git push
