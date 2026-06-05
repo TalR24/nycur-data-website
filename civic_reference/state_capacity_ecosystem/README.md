@@ -135,10 +135,10 @@ score = 0.40 × description_TFIDF_cosine
 - Per-node degree cap: walk edges in descending score order; keep an edge only if at least one endpoint has fewer than `MAX_DEG = 8` neighbors. Prevents central hubs from dominating.
 
 **Current dataset stats (May 14, 2026 refresh):**
-- 312 orgs, 1,673 kept edges
+- 306 orgs, 1,632 kept edges
 - 21,932 candidate edges before thresholding
 - Max edge: 0.82, median: 0.10
-- Funder coverage: 65/312 orgs
+- Funder coverage: 63/306 orgs
 
 ---
 
@@ -158,7 +158,7 @@ At query time, the directory and network views:
 
 Total cost is one ~190 KB JSON fetch + O(query_terms × num_orgs) per query. No external API. ~$0/query.
 
-**Trade-off vs real embeddings:** TF-IDF can't infer that "permits" and "licensing" refer to the same concept unless those words co-occur in the corpus. For 312 orgs with rich curator-assigned tags, this is the right cost/quality point. If the dataset grows past ~2000 orgs or the user wants true semantic understanding, consider switching to OpenAI `text-embedding-3-small` (~$0.02/1M tokens — still cheap) or a local sentence-transformer model.
+**Trade-off vs real embeddings:** TF-IDF can't infer that "permits" and "licensing" refer to the same concept unless those words co-occur in the corpus. For 306 orgs with rich curator-assigned tags, this is the right cost/quality point. If the dataset grows past ~2000 orgs or the user wants true semantic understanding, consider switching to OpenAI `text-embedding-3-small` (~$0.02/1M tokens — still cheap) or a local sentence-transformer model.
 
 ---
 
