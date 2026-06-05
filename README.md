@@ -130,7 +130,7 @@ Static site hosted on GitHub Pages at a custom domain (`data.nycuriosity.com`). 
 │       ├── data/
 │       │   ├── build_affinity.py                  → CSV → graph.json + orgs.json + search_index.json
 │       │   ├── build_people.py                    → CSV → people.json
-│       │   ├── directory.csv                      → Canonical org source (313 rows)
+│       │   ├── directory.csv                      → Canonical org source (312 rows)
 │       │   ├── graph.json                         → Nodes + affinity edges + stats
 │       │   ├── orgs.json                          → Flat directory bundle
 │       │   ├── search_index.json                  → TF-IDF vocab + IDF + per-org vectors
