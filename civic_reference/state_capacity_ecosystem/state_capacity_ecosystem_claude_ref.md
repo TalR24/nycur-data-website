@@ -57,7 +57,7 @@ git pull
 
 # ── Org CSV changed ──────────────────────────────────────────────────────────
 # 1. Drop the new CSV in place of the canonical file
-cp <new>.csv data_website/civic_reference/state_capacity_ecosystem/data/state_capacity_ecosystem.csv
+cp <new>.csv data_website/civic_reference/state_capacity_ecosystem/data/directory.csv
 
 # 2. Rebuild
 cd data_website/civic_reference/state_capacity_ecosystem
@@ -65,7 +65,7 @@ python3 data/build_affinity.py
 
 # ── Connect CSV changed ──────────────────────────────────────────────────────
 # 1. Drop the new CSV in place
-cp <new>.csv data_website/civic_reference/state_capacity_ecosystem/data/problem_statement_seeds_v5.csv
+cp <new>.csv data_website/civic_reference/state_capacity_ecosystem/data/connect_submissions.csv
 
 # 2. Rebuild
 cd data_website/civic_reference/state_capacity_ecosystem

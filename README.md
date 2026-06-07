@@ -128,14 +128,16 @@ Static site hosted on GitHub Pages at a custom domain (`data.nycuriosity.com`). 
 │       ├── index.html                             → Hub (explainer, stat pills, 4 view cards)
 │       ├── README.md                              → Full project reference doc
 │       ├── data/
-│       │   ├── build_affinity.py                  → CSV → graph.json + orgs.json + search_index.json
-│       │   ├── build_people.py                    → CSV → people.json
-│       │   ├── directory.csv                      → Canonical org source (306 rows)
-│       │   ├── graph.json                         → Nodes + affinity edges + stats
-│       │   ├── orgs.json                          → Flat directory bundle
-│       │   ├── search_index.json                  → TF-IDF vocab + IDF + per-org vectors
+│       │   ├── directory.csv                      → Canonical org source (313 rows)
 │       │   ├── connect_submissions.csv            → Connect directory seed data
-│       │   └── people.json                        → Flat connect bundle (read by connect/ page)
+│       │   ├── build_affinity.py                  → directory.csv → affinity.json + directory.json + affinity_search.json
+│       │   ├── build_people.py                    → connect_submissions.csv → connect.json
+│       │   ├── update_stats.py                    → Patches hardcoded stat strings after org CSV rebuild
+│       │   ├── notify_new_connect.py              → Emails new Connect entries whose contact field has an @
+│       │   ├── affinity.json                      → Nodes + scored edges + stats (incl. last_updated)
+│       │   ├── directory.json                     → Flat node bundle for the directory page
+│       │   ├── affinity_search.json               → Vocab + IDF + per-org sparse TF-IDF for NL search
+│       │   └── connect.json                       → Flat people bundle for the /connect/ page
 │       ├── directory/                             → Searchable / filterable org table
 │       ├── connect/                               → People & org matchmaking, self-submission form, intro request flow
 │       ├── network/                               → D3 force-directed affinity graph + semantic search
@@ -177,3 +179,16 @@ Static site hosted on GitHub Pages at a custom domain (`data.nycuriosity.com`). 
 ```
 
 New post data projects follow the pattern described in `CLAUDE.md`: hub page at `nycuriosity_substack_posts/<folder>/index.html`, individual chart subpages in subdirectories, source CSVs in `data/`. New civic reference tools follow the same pattern under `civic_reference/<tool>/`.
+
+---
+
+## GitHub Actions
+
+Two scheduled workflows run in `.github/workflows/`:
+
+| Workflow | Schedule | What it does |
+|---|---|---|
+| `refresh_state_capacity.yml` | 6 AM ET daily | Detects changes to `directory.csv` (rebuilds org JSON + patches stat strings) and `connect_submissions.csv` (rebuilds connect.json + emails new entries) independently. Requires `GMAIL_USER` and `GMAIL_APP_PASSWORD` secrets. |
+| `refresh_fiscal_data.yml` | 1st of each month, 7 AM UTC | Fetches new fiscal impact statements from the NYC Council, runs Claude extraction, and commits updated `fiscal_impacts.json`. Requires `ANTHROPIC_API_KEY` secret. |
+
+Both workflows require the repo's **Workflow permissions** set to "Read and write permissions" (Settings → Actions → General) so `GITHUB_TOKEN` can push commits.

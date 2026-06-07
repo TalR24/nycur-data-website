@@ -1,6 +1,6 @@
 # State Capacity Ecosystem — Project Handoff & Reference
 
-**Last updated:** 2026-06-01
+**Last updated:** 2026-06-07
 **Maintainer:** Tal Roded (visualization layer) · Henry Grunzweig (curates the underlying database)
 **Live:** https://data.nycuriosity.com/civic_reference/state_capacity_ecosystem/
 
@@ -50,6 +50,8 @@ data_website/civic_reference/state_capacity_ecosystem/
 │   ├── affinity_search.json         ← Vocab + IDF + per-org sparse TF-IDF for NL search
 │   ├── connect_submissions.csv      ← Connect directory seed data (separate dataset)
 │   ├── build_people.py              ← CSV → connect.json (simple transform; no scoring)
+│   ├── update_stats.py              ← Patches hardcoded stat strings in HTML/MD after org rebuild
+│   ├── notify_new_connect.py        ← Emails new Connect entries whose contact field has an @
 │   └── connect.json                 ← Flat people bundle for the /connect/ page
 ├── directory/
 │   └── index.html                   ← Filterable table. Reads ../data/directory.json + affinity_search.json
@@ -271,16 +273,27 @@ Site-wide design tokens (defined in `:root` of each subpage):
 
 The repo lives at `https://github.com/TalR24/nycur-data-website`. GitHub Pages serves `data.nycuriosity.com` from the `main` branch.
 
+### Automated refresh (GitHub Actions)
+
+`.github/workflows/refresh_state_capacity.yml` runs at **6 AM ET daily** and handles CSV → JSON rebuilds automatically. It tracks the two CSVs independently:
+
+- **`directory.csv` newer than `affinity.json`** → runs `build_affinity.py` + `update_stats.py`, commits org JSON files and all patched stat strings.
+- **`connect_submissions.csv` newer than `connect.json`** → runs `build_people.py`, emails new entries whose `contact` field contains `@`, commits `connect.json`.
+
+Required GitHub secrets: `GMAIL_USER`, `GMAIL_APP_PASSWORD`. Requires repo Workflow permissions set to "Read and write permissions" (Settings → Actions → General).
+
+### Manual push (for HTML/code changes)
+
 ```bash
 cd /Users/troded/Library/CloudStorage/OneDrive-Microsoft/Desktop/nycur/data_website
-git add <files>
+git add <explicit file paths>
 git commit -m "..."
 git push
 ```
 
 **Important — the remote URL has the PAT baked in.** It was set up via `git remote set-url origin https://TalR24:{PAT}@github.com/TalR24/nycur-data-website.git`. The PAT lives in the local-only memory file `~/.claude/projects/.../memory/reference_github.md`. If the remote ever gets reset, re-add the PAT-baked URL.
 
-**Don't stage unrelated files.** This repo has long-standing in-progress changes (deleted fiscal-impacts files, untracked `.DS_Store`s, the dated CSV `state_capacity_20260511.csv`). Always stage explicit paths, never `git add .` or `git add -A`.
+**Don't stage unrelated files.** Always stage explicit paths — never `git add .` or `git add -A`. The repo has long-standing untracked files (`.DS_Store`s, dated backup CSVs) that must not be committed accidentally.
 
 Dated backup CSVs (`state_capacity_DATE.csv`) are left in the data folder unstaged as working artifacts. The canonical tracked file is `directory.csv`.
 
@@ -387,7 +400,7 @@ scripts.forEach((s, i) => {
 
 `build_affinity.py` regenerates `affinity.json` / `directory.json` / `affinity_search.json` automatically, and `build_people.py` regenerates `connect.json`. But many user-facing strings have stats baked in. When either CSV is updated, run the appropriate build script first, then update **all** of the locations below in lockstep or the UI will lie to readers.
 
-Stat-pills in the hub hero ARE dynamic (read from `affinity.json` at load). Everything below is hand-written and must be updated manually.
+Stat-pills in the hub hero ARE dynamic (read from `affinity.json` at load). **Items 1–5 below are patched automatically by `data/update_stats.py`** (run via GitHub Actions, or manually after `build_affinity.py`). Items 6–7 still require manual edits.
 
 **After updating `directory.csv` (org data) — run `build_affinity.py` first, then update:**
 
@@ -469,7 +482,11 @@ For changes where placement/labeling/UX is ambiguous (e.g., "add a new section t
 
 | Date | Commit | Summary |
 |---|---|---|
-| 2026-06-04 | — | Data: rebuild JSON from June 4 2026 CSV refresh. 313 orgs (+5 vs prior), 1,675 edges (+22). Problem topics and areas unchanged (36/7). Funder coverage 65/313. Updated hardcoded counts in homepage, methodology, data_website README, and this README. |
+| 2026-06-07 | — | Docs: update data_website README (fix stale JSON filenames, add update_stats.py + notify_new_connect.py to file tree, add GitHub Actions section). Update project README (file layout, hardcoded-counts checklist notes automation, GitHub push section documents Actions workflow, last-updated date). Update local ref doc (dataset stats, JSON filenames, automation notes). |
+| 2026-06-05 | `3f9711b` | Rename CSVs: `state_capacity_ecosystem.csv` → `directory.csv`, `problem_statement_seeds_v5.csv` → `connect_submissions.csv`. Updated all references across build scripts, workflow, HTML download links, and all READMEs. |
+| 2026-06-05 | `dc9c1f0` | Workflow: split change detection into two independent pipelines — `directory.csv` triggers org rebuild + stat patches; `connect_submissions.csv` triggers connect rebuild + email notifications. Each can fire independently or together. |
+| 2026-06-04 | `d803750` | Automation: add GitHub Actions workflow (`refresh_state_capacity.yml`) running at 6 AM ET daily. Add `update_stats.py` to auto-patch 7 hardcoded stat strings across 4 files. Add `notify_new_connect.py` to email new Connect entries via Gmail SMTP. |
+| 2026-06-04 | `98fee12` | Data: rebuild JSON from June 4 2026 CSV refresh. 313 orgs (+5 vs prior), 1,675 edges (+22). Problem topics and areas unchanged (36/7). Funder coverage 65/313. Updated hardcoded counts in homepage, methodology, data_website README, and this README. |
 | 2026-06-03 | `c18257a` | Segments: remove page entirely and scrub all references — deleted `segments/index.html`, removed Segments pill from nav on all four remaining pages, removed Segments bubble card from hub, removed dead `.seg-*` CSS from hub, updated OG meta, methodology hero/credits, CLAUDE.md, both READMEs, and session ref doc. |
 | 2026-06-03 | `7f1b501` | Connect: fix broken table caused by orphaned `msGeo` JS variable after `#ms-geo` HTML element was removed — `MS()` constructor called `.classList` on null, throwing TypeError that killed entire script. Removed `msGeo` from constructor, `populateFilters()`, `applyFilters()`, and reset handler. Methodology credits rewritten to single sentence. |
 | 2026-06-03 | `21c8f2d` | All pages: align hero heading style — Directory lost "Browse organizations" eyebrow and all-blue h1; both Directory and Connect now use standard dark h1 + blue `<span>` pattern matching Network/Segments/Methodology. |
