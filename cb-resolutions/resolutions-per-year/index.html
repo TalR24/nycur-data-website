@@ -4,19 +4,21 @@
   <meta charset="UTF-8">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MCB3 Resolutions Per Year — NYCuriosity Data</title>
-  <meta name="description" content="MCB3 resolution output peaked at 605 in 2004 and has declined to 135–165 in recent years. 22 years of data.">
+  <title>Resolutions Per Year — NYC Community Boards — NYCuriosity Data</title>
+  <meta name="description" content="Annual resolution output for Manhattan Community Boards. Toggle which boards to compare.">
   <meta property="og:type"        content="website">
-  <meta property="og:url"         content="https://data.nycuriosity.com/cb3-resolutions/resolutions-per-year/">
-  <meta property="og:title"       content="MCB3 Resolutions Per Year — NYCuriosity Data">
-  <meta property="og:description" content="Resolution output peaked at 605 in 2004 and has declined to 135–165 in recent years.">
+  <meta property="og:url"         content="https://data.nycuriosity.com/cb-resolutions/resolutions-per-year/">
+  <meta property="og:title"       content="Resolutions Per Year — NYC Community Boards — NYCuriosity Data">
+  <meta property="og:description" content="Annual resolution output for Manhattan Community Boards. Toggle which boards to compare.">
   <meta property="og:image"       content="https://data.nycuriosity.com/website_logo.png">
   <meta name="twitter:card"       content="summary_large_image">
   <meta name="twitter:image"      content="https://data.nycuriosity.com/website_logo.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../cb-filter.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -63,16 +65,6 @@
     .chart-actions { display:flex; gap:8px; margin-top:14px; }
     .action-btn { display:inline-flex; align-items:center; gap:6px; background:var(--surface); color:var(--text-muted); font-family:'Roboto Mono',monospace; font-size:0.75rem; font-weight:600; padding:6px 14px; border-radius:6px; border:1px solid var(--border-mid); cursor:pointer; transition:all 0.15s; }
     .action-btn:hover { border-color:var(--blue); color:var(--blue); background:var(--blue-light); }
-    .embed-modal { position:fixed; inset:0; background:rgba(0,0,0,0.45); display:flex; align-items:center; justify-content:center; z-index:1000; }
-    .embed-modal-box { background:var(--surface); border-radius:10px; padding:24px; max-width:540px; width:90%; box-shadow:0 8px 32px rgba(0,0,0,0.18); }
-    .embed-modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
-    .embed-modal-title { font-family:'Roboto Mono',monospace; font-weight:700; font-size:0.9rem; color:var(--text); }
-    .embed-close { background:none; border:none; font-size:1.1rem; color:var(--text-muted); cursor:pointer; padding:2px 6px; border-radius:4px; }
-    .embed-close:hover { color:var(--text); background:var(--bg); }
-    .embed-modal-box > p { font-size:0.83rem; color:var(--text-muted); margin-bottom:10px; }
-    .embed-textarea { width:100%; height:80px; font-family:'Roboto Mono',monospace; font-size:0.72rem; border:1px solid var(--border-mid); border-radius:6px; padding:10px; resize:none; color:var(--text-mid); background:var(--bg); margin-bottom:12px; }
-    .embed-copy-btn { background:var(--blue); color:#fff; font-family:'Roboto Mono',monospace; font-size:0.8rem; font-weight:600; padding:7px 18px; border:none; border-radius:6px; cursor:pointer; transition:background 0.15s; }
-    .embed-copy-btn:hover { background:#1d4ed8; }
 
     footer { padding:24px clamp(20px,5vw,48px); text-align:center; font-size:0.78rem; color:var(--text-faint); border-top:1px solid var(--border); }
     footer a { color:var(--text-muted); text-decoration:none; }
@@ -83,119 +75,149 @@
 
 <header>
   <div class="header-inner">
-    <a href="../" class="back-link">← cb3-resolutions</a>
+    <a href="../" class="back-link" data-cb-link="../">← cb-resolutions</a>
     <div class="header-divider"></div>
     <h1>Resolutions Over Time</h1>
   </div>
 </header>
 
+<div class="cb-filter" id="cb-filter"></div>
+
 <div class="pill-nav">
-  <span class="pill-label">Charts in this post:</span>
-  <a href="../">Overview</a>
-  <a href="../explorer/">Resolution Explorer</a>
-  <a href="../top-topics/">Top Topics</a>
-  <a href="../top-agencies/">Top Agencies</a>
-  <a href="./" class="active">Resolutions Over Time</a>
+  <span class="pill-label">Charts in this dashboard:</span>
+  <a data-cb-link="../">Overview</a>
+  <a data-cb-link="../explorer/">Resolution Explorer</a>
+  <a data-cb-link="../top-topics/">Top Topics</a>
+  <a data-cb-link="../top-agencies/">Top Agencies</a>
+  <a data-cb-link="./" class="active">Resolutions Over Time</a>
 </div>
 
 <main>
   <div class="breadcrumb">
-    <a href="/">nycuriosity/data</a> / <a href="../">cb3-resolutions</a> / <span style="color:#FF6319">resolutions-per-year</span>
+    <a href="/">nycuriosity/data</a> / <a data-cb-link="../">cb-resolutions</a> / <span style="color:#FF6319">resolutions-per-year</span>
   </div>
   <div class="hero">
-    <h2>MCB3 Resolutions Per Year, 2004–2025</h2>
-    <p>Annual resolution output from Manhattan Community Board 3. Excludes 2002–2003 (partial records) and 2026 (year in progress). Peak output was 701 resolutions in 2004; recent years average 150–190.</p>
+    <h2>Resolutions Per Year</h2>
+    <p>Annual resolution output for the selected community boards. Toggle the chips above to add or remove boards. 2026 is a partial year.</p>
   </div>
 
   <div class="chart-actions">
     <button class="action-btn" onclick="downloadChart()">⬇ Download PNG</button>
-    <button class="action-btn" onclick="showEmbed()">&#60;/&#62; Embed</button>
   </div>
   <div class="chart-card">
     <div class="chart-wrap">
       <canvas id="yearChart"></canvas>
     </div>
-    <p class="caption">MCB3 resolutions per year, 2004–2025. 2026 excluded (year in progress). Source: NYC.gov MCB3 meeting minutes. Created by Tal Roded · NYCuriosity</p>
+    <p class="caption" id="caption">Annual resolutions per board. Source: NYC.gov MCB3 minutes; cbmanhattan.cityofnewyork.us MCB2 PDFs. Created by Tal Roded · NYCuriosity</p>
   </div>
 
   <div class="meta-section">
     <h3>Context</h3>
-    <p>The sharp drop from the mid-2000s peak likely reflects multiple factors: changes in how the board packages resolutions (e.g., omnibus vs. individual motions), shifts in how liquor license applications are processed, and evolving board practices over time. The COVID-19 pandemic in 2020 caused a notable dip to 150 resolutions — the lowest on record — as in-person meetings were suspended.</p>
-    <p>2004's peak of 701 resolutions is more than 4× the 2022 low of 158. Even accounting for procedural differences, this suggests the board's formal output has contracted substantially over two decades.</p>
+    <p>MCB3's output peaked in 2004 at 701 resolutions and has declined steadily since — recent years average 150–190. MCB2's record begins in 2013 and runs in a different rhythm, climbing through the late 2010s and surging again from 2023 onward.</p>
+    <p>The COVID-19 pandemic in 2020 caused a notable dip on both boards as in-person meetings were suspended.</p>
   </div>
 
   <div class="meta-section">
     <h3>Data</h3>
-    <p>7,134 resolutions across 268 MCB3 full board meetings, 2004–2025. Source: <a href="https://www.nyc.gov/site/manhattancb3/index.page" style="color:var(--blue)">NYC.gov MCB3 meeting minutes</a>. 2002–2003 and 2026 excluded from this chart.</p>
+    <p>11,000+ resolutions across MCB2 (2013–2026) and MCB3 (2002–2026). MCB2 source: <a href="https://cbmanhattan.cityofnewyork.us/cb2/resolutions/" style="color:var(--blue)">cbmanhattan.cityofnewyork.us</a>. MCB3 source: <a href="https://www.nyc.gov/site/manhattancb3/index.page" style="color:var(--blue)">nyc.gov</a>.</p>
     <p style="margin-top:14px"><a class="download-btn" href="../data/resolutions_per_year.csv" download>⬇ Download CSV</a></p>
   </div>
 </main>
 
-<div id="embedModal" class="embed-modal" style="display:none">
-  <div class="embed-modal-box">
-    <div class="embed-modal-header">
-      <span class="embed-modal-title">Embed this chart</span>
-      <button class="embed-close" onclick="closeEmbed()">✕</button>
-    </div>
-    <p>Copy and paste into your webpage:</p>
-    <textarea id="embedCode" class="embed-textarea" readonly></textarea>
-    <button class="embed-copy-btn" onclick="copyEmbed()">Copy code</button>
-  </div>
-</div>
-
 <footer>
   <a href="https://talroded.nycuriosity.com" target="_blank" rel="noopener">About</a> ·
-  <a href="https://nycuriosity.substack.com/">NYCuriosity</a> · Data: NYC.gov MCB3 meeting minutes · Analysis: Author's calculations
+  <a href="https://nycuriosity.substack.com/">NYCuriosity</a> · Data: MCB2 + MCB3 meeting PDFs · Analysis: Author's calculations
 </footer>
 
+<script src="../cb-filter.js"></script>
 <script>
-const years = [2004,2005,2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016,2017,2018,2019,2020,2021,2022,2023,2024,2025];
-const values = [701,518,455,446,473,423,414,354,348,349,321,347,262,240,239,212,150,181,158,188,184,171];
+let chart = null;
+let rawRows = [];
 
-const ctx = document.getElementById('yearChart').getContext('2d');
-const chart = new Chart(ctx, {
-  type: 'line',
-  data: {
-    labels: years,
-    datasets: [{
-      label: 'Resolutions',
-      data: values,
-      borderColor: '#2563eb',
-      backgroundColor: 'rgba(37,99,235,0.08)',
+function buildDatasets(selected) {
+  // For every selected board, build a {year → count} map. Then take the
+  // union of years across boards and emit one dataset per board so the
+  // chart's x-axis lines up.
+  const perBoard = {};
+  selected.forEach(b => perBoard[b] = {});
+  rawRows.forEach(r => {
+    if (perBoard[r.board_id]) perBoard[r.board_id][Number(r.year)] = Number(r.resolutions);
+  });
+  const allYears = new Set();
+  Object.values(perBoard).forEach(m => Object.keys(m).forEach(y => allYears.add(Number(y))));
+  const years = [...allYears].sort((a, b) => a - b);
+
+  const datasets = selected.map(b => {
+    const color = CbFilter.colorFor(b);
+    const m = perBoard[b];
+    return {
+      label: b,
+      data: years.map(y => m[y] ?? null),
+      borderColor: color,
+      backgroundColor: color + '20',
       borderWidth: 2.5,
-      pointRadius: 4,
-      pointBackgroundColor: '#2563eb',
+      pointRadius: 3,
+      pointBackgroundColor: color,
       pointBorderColor: '#fff',
       pointBorderWidth: 1.5,
-      fill: true,
+      fill: false,
       tension: 0.3,
-    }]
-  },
-  options: {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        callbacks: {
-          label: ctx => ` ${ctx.parsed.y} resolutions`
-        }
-      }
-    },
-    scales: {
-      x: {
-        grid: { display: false },
-        ticks: { font: { family: "'Roboto Mono', monospace", size: 11 }, color: '#6b7280', maxRotation: 0 },
-        border: { display: false }
-      },
-      y: {
-        min: 0,
-        grid: { color: '#e5e7eb' },
-        ticks: { font: { family: "'Roboto Mono', monospace", size: 11 }, color: '#6b7280' },
-        border: { display: false }
-      }
-    }
+      spanGaps: false,
+    };
+  });
+  return { years, datasets };
+}
+
+function render(selected) {
+  const { years, datasets } = buildDatasets(selected);
+  if (chart) {
+    chart.data.labels = years;
+    chart.data.datasets = datasets;
+    chart.update();
+    return;
   }
+  const ctx = document.getElementById('yearChart').getContext('2d');
+  chart = new Chart(ctx, {
+    type: 'line',
+    data: { labels: years, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'top', align: 'end', labels: { font: { family: "'Roboto Mono', monospace", size: 11 } } },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${ctx.dataset.label}: ${Number(ctx.parsed.y).toLocaleString()} resolutions`,
+          },
+        },
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { font: { family: "'Roboto Mono', monospace", size: 11 }, color: '#6b7280', maxRotation: 0 },
+          border: { display: false },
+        },
+        y: {
+          min: 0,
+          grid: { color: '#e5e7eb' },
+          ticks: { font: { family: "'Roboto Mono', monospace", size: 11 }, color: '#6b7280' },
+          border: { display: false },
+        },
+      },
+    },
+  });
+}
+
+Papa.parse('../data/resolutions_per_year.csv', {
+  download: true,
+  header: true,
+  skipEmptyLines: true,
+  complete(res) {
+    rawRows = res.data;
+    CbFilter.onChange(render);
+    CbFilter.init();
+    render(CbFilter.selected);
+  },
 });
 
 function downloadChart() {
@@ -229,25 +251,9 @@ function downloadChart() {
   ctx.textBaseline = 'top';
   lines.forEach((l, i) => ctx.fillText(l, padH, src.height + padH + i * lineH));
   const a = document.createElement('a');
-  a.download = 'mcb3-resolutions-per-year.png';
+  a.download = 'cb-resolutions-per-year.png';
   a.href = out.toDataURL('image/png');
   a.click();
-}
-function showEmbed() {
-  const url = location.origin + location.pathname;
-  document.getElementById('embedCode').value =
-    `<iframe src="${url}" width="800" height="500" frameborder="0" style="border:1px solid #e5e7eb; border-radius:8px;" loading="lazy"></iframe>`;
-  document.getElementById('embedModal').style.display = 'flex';
-}
-function closeEmbed() { document.getElementById('embedModal').style.display = 'none'; }
-function copyEmbed() {
-  const ta = document.getElementById('embedCode');
-  ta.select();
-  navigator.clipboard.writeText(ta.value).then(() => {
-    const btn = document.querySelector('.embed-copy-btn');
-    btn.textContent = '✓ Copied!';
-    setTimeout(() => btn.textContent = 'Copy code', 2000);
-  });
 }
 </script>
 </body>

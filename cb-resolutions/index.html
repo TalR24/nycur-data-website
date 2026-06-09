@@ -4,18 +4,20 @@
   <meta charset="UTF-8">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MCB3 Resolutions Dashboard — NYCuriosity Data</title>
-  <meta name="description" content="Data and visualizations from 6,500+ resolutions across 24 years of Manhattan Community Board 3 meeting records.">
+  <title>NYC Community Board Resolutions Dashboard — NYCuriosity Data</title>
+  <meta name="description" content="Data and visualizations from 11,000+ resolutions across Manhattan Community Boards 2 and 3 — filter by board to compare.">
   <meta property="og:type"        content="website">
-  <meta property="og:url"         content="https://data.nycuriosity.com/cb3-resolutions/">
-  <meta property="og:title"       content="MCB3 Resolutions Dashboard — NYCuriosity Data">
-  <meta property="og:description" content="Data and visualizations from 6,500+ resolutions across 24 years of Manhattan Community Board 3 meeting records.">
+  <meta property="og:url"         content="https://data.nycuriosity.com/cb-resolutions/">
+  <meta property="og:title"       content="NYC Community Board Resolutions Dashboard — NYCuriosity Data">
+  <meta property="og:description" content="11,000+ resolutions across NYC Community Boards — searchable, visualized, downloadable.">
   <meta property="og:image"       content="https://data.nycuriosity.com/website_logo.png">
   <meta name="twitter:card"       content="summary_large_image">
   <meta name="twitter:image"      content="https://data.nycuriosity.com/website_logo.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./cb-filter.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -46,7 +48,6 @@
       flex-direction: column;
     }
 
-    /* ── HEADER ─────────────────────────────────────────── */
     header {
       background: #111827;
       border-bottom: 1px solid #1f2937;
@@ -83,7 +84,6 @@
       letter-spacing: -0.02em;
     }
 
-    /* ── MAIN ────────────────────────────────────────────── */
     main {
       flex: 1;
       max-width: 1100px;
@@ -92,10 +92,7 @@
       width: 100%;
     }
 
-    /* ── HERO ────────────────────────────────────────────── */
-    .hero {
-      margin-bottom: 36px;
-    }
+    .hero { margin-bottom: 24px; }
     .breadcrumb {
       font-family: 'Roboto Mono', monospace;
       font-size: 0.72rem;
@@ -116,16 +113,15 @@
     .hero p {
       font-size: 0.95rem;
       color: var(--text-muted);
-      max-width: 640px;
+      max-width: 720px;
       line-height: 1.65;
     }
 
-    /* ── STAT PILLS ──────────────────────────────────────── */
     .stat-pills {
       display: flex;
       gap: 12px;
       flex-wrap: wrap;
-      margin: 24px 0 40px;
+      margin: 28px 0 40px;
     }
     .stat-pill {
       background: var(--surface);
@@ -144,12 +140,8 @@
       color: var(--blue);
       letter-spacing: -0.02em;
     }
-    .stat-label {
-      font-size: 0.8rem;
-      color: var(--text-muted);
-    }
+    .stat-label { font-size: 0.8rem; color: var(--text-muted); }
 
-    /* ── SECTION HEADING ─────────────────────────────────── */
     .section-heading {
       font-family: 'Roboto Mono', monospace;
       font-size: 0.72rem;
@@ -160,14 +152,12 @@
       margin-bottom: 18px;
     }
 
-    /* ── CARD GRID ───────────────────────────────────────── */
     .card-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
       gap: 20px;
       margin-bottom: 48px;
     }
-
     .card {
       background: var(--surface);
       border: 1px solid var(--border);
@@ -185,7 +175,6 @@
       border-color: var(--blue-mid);
       transform: translateY(-2px);
     }
-
     .card-preview {
       background: #1e293b;
       height: 100px;
@@ -196,7 +185,6 @@
       overflow: hidden;
     }
     .card-preview svg { opacity: 0.65; }
-
     .card-body { padding: 16px; flex: 1; display: flex; flex-direction: column; }
     .card-type {
       font-family: 'Roboto Mono', monospace;
@@ -237,7 +225,6 @@
     }
     .card:hover .card-cta { gap: 8px; }
 
-    /* ── INSIGHTS ────────────────────────────────────────── */
     .insights-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -272,7 +259,6 @@
       line-height: 1.5;
     }
 
-    /* ── FOOTER ──────────────────────────────────────────── */
     footer {
       padding: 24px clamp(20px,5vw,48px);
       text-align: center;
@@ -290,43 +276,32 @@
   <div class="header-inner">
     <a href="/" class="back-link">← nycuriosity/data</a>
     <div class="header-divider"></div>
-    <h1>MCB3 Resolutions</h1>
+    <h1>NYC CB Resolutions</h1>
   </div>
 </header>
+
+<div class="cb-filter" id="cb-filter"></div>
 
 <main>
   <div class="hero">
     <div class="breadcrumb">
-      <a href="/">nycuriosity/data</a> / <span style="color:#FF6319">cb3-resolutions</span>
+      <a href="/">nycuriosity/data</a> / <span style="color:#FF6319">cb-resolutions</span>
     </div>
-    <h2>MCB3 Resolutions Dashboard</h2>
-    <p>24 years of Manhattan Community Board 3 resolutions — searchable, visualized, and downloadable. Source: <a href="https://www.nyc.gov/site/manhattancb3/index.page" style="color:var(--blue)">NYC.gov MCB3 meeting minutes</a>.</p>
+    <h2>NYC Community Board Resolutions Dashboard</h2>
+    <p>Searchable, visualized, and downloadable resolutions from Manhattan Community Boards. Use the filter above to compare any combination of boards. Sources: <a href="https://www.nyc.gov/site/manhattancb3/index.page" style="color:var(--blue)">NYC.gov MCB3 minutes</a>, <a href="https://cbmanhattan.cityofnewyork.us/cb2/resolutions/" style="color:var(--blue)">MCB2 resolutions hub</a>.</p>
   </div>
 
-  <div class="stat-pills">
-    <div class="stat-pill">
-      <span class="stat-num">7,134</span>
-      <span class="stat-label">resolutions</span>
-    </div>
-    <div class="stat-pill">
-      <span class="stat-num">268</span>
-      <span class="stat-label">meetings</span>
-    </div>
-    <div class="stat-pill">
-      <span class="stat-num">2002–2026</span>
-      <span class="stat-label">years covered</span>
-    </div>
-    <div class="stat-pill">
-      <span class="stat-num">~2M</span>
-      <span class="stat-label">words</span>
-    </div>
+  <div class="stat-pills" id="stat-pills">
+    <div class="stat-pill"><span class="stat-num" id="stat-resolutions">—</span><span class="stat-label">resolutions</span></div>
+    <div class="stat-pill"><span class="stat-num" id="stat-meetings">—</span><span class="stat-label">meetings</span></div>
+    <div class="stat-pill"><span class="stat-num" id="stat-years">—</span><span class="stat-label">years covered</span></div>
+    <div class="stat-pill"><span class="stat-num" id="stat-boards">—</span><span class="stat-label">boards selected</span></div>
   </div>
 
-  <p class="section-heading">Charts in this post</p>
+  <p class="section-heading">Charts in this dashboard</p>
   <div class="card-grid">
 
-    <!-- Resolution Explorer -->
-    <a class="card" href="./explorer/">
+    <a class="card" data-cb-link="./explorer/">
       <div class="card-preview">
         <svg width="80" height="60" viewBox="0 0 80 60" fill="none">
           <rect x="8" y="8" width="64" height="8" rx="2" fill="#60a5fa"/>
@@ -338,14 +313,13 @@
       <div class="card-body">
         <div class="card-type">Table</div>
         <div class="card-title">Resolution Explorer</div>
-        <div class="card-desc">Search and browse the full text of every MCB3 resolution across all 268 meetings.</div>
-        <div class="card-stat">7,134 rows · full-text search</div>
+        <div class="card-desc">Search and browse the full text of every selected board's resolutions, across every meeting.</div>
+        <div class="card-stat" id="card-stat-explorer">—</div>
         <div class="card-cta">Explore →</div>
       </div>
     </a>
 
-    <!-- Top Topics -->
-    <a class="card" href="./top-topics/">
+    <a class="card" data-cb-link="./top-topics/">
       <div class="card-preview">
         <svg width="90" height="60" viewBox="0 0 90 60" fill="none">
           <rect x="20" y="44" width="50" height="8" rx="2" fill="#60a5fa"/>
@@ -357,14 +331,13 @@
       <div class="card-body">
         <div class="card-type">Bar Chart</div>
         <div class="card-title">Top Topics by Resolution Count</div>
-        <div class="card-desc">Which subjects dominate MCB3's agenda? Liquor licenses, transportation, and parks lead the way.</div>
-        <div class="card-stat">13 topic categories</div>
+        <div class="card-desc">Which subjects dominate each board's agenda? Liquor licenses, transportation, and parks lead almost everywhere.</div>
+        <div class="card-stat" id="card-stat-topics">—</div>
         <div class="card-cta">Explore →</div>
       </div>
     </a>
 
-    <!-- Top Agencies -->
-    <a class="card" href="./top-agencies/">
+    <a class="card" data-cb-link="./top-agencies/">
       <div class="card-preview">
         <svg width="90" height="60" viewBox="0 0 90 60" fill="none">
           <rect x="20" y="44" width="45" height="8" rx="2" fill="#60a5fa"/>
@@ -376,14 +349,13 @@
       <div class="card-body">
         <div class="card-type">Bar Chart</div>
         <div class="card-title">Top Agencies Mentioned in Resolutions</div>
-        <div class="card-desc">Which City agencies does MCB3 address most? The State Liquor Authority leads, followed by DOT and DEP.</div>
-        <div class="card-stat">12 agencies tracked</div>
+        <div class="card-desc">Which City and State agencies do the boards address most? SLA leads almost everywhere; DOT, NYPD, and the BP follow.</div>
+        <div class="card-stat" id="card-stat-agencies">—</div>
         <div class="card-cta">Explore →</div>
       </div>
     </a>
 
-    <!-- Resolutions Over Time -->
-    <a class="card" href="./resolutions-per-year/">
+    <a class="card" data-cb-link="./resolutions-per-year/">
       <div class="card-preview">
         <svg width="90" height="60" viewBox="0 0 90 60" fill="none">
           <polyline points="10,48 22,28 34,30 46,35 58,38 70,42 80,44" stroke="#60a5fa" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
@@ -394,9 +366,9 @@
       </div>
       <div class="card-body">
         <div class="card-type">Line Chart</div>
-        <div class="card-title">Resolutions Per Year, 2004–2025</div>
-        <div class="card-desc">CB3 output peaked in 2004 at 605 resolutions and has declined steadily over two decades to ~135–165 per year.</div>
-        <div class="card-stat">22 years of data</div>
+        <div class="card-title">Resolutions Per Year</div>
+        <div class="card-desc">Annual resolution output for each selected board, side by side.</div>
+        <div class="card-stat" id="card-stat-year">—</div>
         <div class="card-cta">Explore →</div>
       </div>
     </a>
@@ -404,47 +376,178 @@
   </div>
 
   <p class="section-heading">Key insights</p>
-  <div class="insights-grid">
-    <div class="insight-card">
-      <div class="insight-num">48%</div>
-      <div class="insight-label">Liquor licenses dominate the agenda</div>
-      <div class="insight-sub">3,449 of 7,134 resolutions — nearly 1 in 2 — relate to liquor license applications reviewed by the State Liquor Authority (SLA).</div>
-    </div>
-    <div class="insight-card">
-      <div class="insight-num">2,285</div>
-      <div class="insight-label">Resolutions that mention the SLA</div>
-      <div class="insight-sub">The State Liquor Authority is the single most-cited agency in full resolution text, ahead of DOT (440) and NYPD (368), reflecting CB3's active role in reviewing liquor license applications.</div>
-    </div>
-    <div class="insight-card">
-      <div class="insight-num">701</div>
-      <div class="insight-label">Resolutions in 2004 — the peak year</div>
-      <div class="insight-sub">Board output has fallen sharply since the mid-2000s. Recent years see ~150–190 resolutions annually, less than a third of the 2004 peak.</div>
-    </div>
-    <div class="insight-card">
-      <div class="insight-num">99.6%</div>
-      <div class="insight-label">Pass rate among resolutions with recorded votes</div>
-      <div class="insight-sub">Of 987 resolutions with recorded vote data, 983 passed and only 4 failed — with an average of 34.5 yes votes and 1.2 no votes per resolution.</div>
-    </div>
-    <div class="insight-card">
-      <div class="insight-num">520</div>
-      <div class="insight-label">Resolutions touch transportation or streets</div>
-      <div class="insight-sub">520 resolutions mention DOT, bike lanes, traffic signals, bus lanes, crosswalks, or other street-related topics — making it the second-largest named category after liquor licenses.</div>
-    </div>
-    <div class="insight-card">
-      <div class="insight-num">3.3×</div>
-      <div class="insight-label">War and Peace novels worth of text</div>
-      <div class="insight-sub">MCB3's 250+ meeting documents contain nearly 2 million words — with no centralized search until now.</div>
-    </div>
-  </div>
+  <div class="insights-grid" id="insights-grid"></div>
 
 </main>
 
 <footer>
   <a href="https://talroded.nycuriosity.com" target="_blank" rel="noopener">About</a> ·
   <a href="https://nycuriosity.substack.com/">NYCuriosity</a> ·
-  Data: NYC.gov MCB3 meeting minutes (Jan 2002–Feb 2026) ·
+  Data: NYC.gov MCB3 minutes (Jan 2002–Feb 2026), cbmanhattan.cityofnewyork.us MCB2 PDFs (2013–2026) ·
   Analysis: Author's calculations
 </footer>
+
+<script src="./cb-filter.js"></script>
+<script>
+const DATA = { perYear: [], topics: [], agencies: [] };
+const SOURCES = [
+  ['perYear',  './data/resolutions_per_year.csv'],
+  ['topics',   './data/top_topics.csv'],
+  ['agencies', './data/top_agencies.csv'],
+];
+
+// Meeting totals — extractor output, June 2026. The aggregate CSVs
+// don't track meetings, so we hard-code per-board counts and sum.
+const MEETINGS = { MCB2: 549, MCB3: 268 };
+
+function fmt(n) { return Number(n).toLocaleString(); }
+
+function loadAll() {
+  return Promise.all(SOURCES.map(([key, url]) => new Promise((resolve, reject) => {
+    Papa.parse(url, {
+      download: true,
+      header: true,
+      skipEmptyLines: true,
+      complete(res) { DATA[key] = res.data; resolve(); },
+      error(err) { reject(err); },
+    });
+  })));
+}
+
+function rowsForSelected(rows, selected) {
+  const set = new Set(selected);
+  return rows.filter(r => set.has(r.board_id));
+}
+
+function renderStats(selected) {
+  const yearRows = rowsForSelected(DATA.perYear, selected);
+  const totalRes = yearRows.reduce((s, r) => s + Number(r.resolutions), 0);
+  const years = new Set(yearRows.map(r => Number(r.year)).filter(Number.isFinite));
+  const yearRange = years.size
+    ? `${Math.min(...years)}–${Math.max(...years)}`
+    : '—';
+
+  document.getElementById('stat-resolutions').textContent = fmt(totalRes);
+  document.getElementById('stat-years').textContent = yearRange;
+  document.getElementById('stat-boards').textContent =
+    `${selected.length} of ${CbFilter.KNOWN.length}`;
+  const totalMeetings = selected.reduce((s, id) => s + (MEETINGS[id] || 0), 0);
+  document.getElementById('stat-meetings').textContent = fmt(totalMeetings);
+
+  document.getElementById('card-stat-explorer').textContent =
+    `${fmt(totalRes)} rows · full-text search`;
+  const topicRows = rowsForSelected(DATA.topics, selected);
+  const topicCats = new Set(topicRows.map(r => r.topic));
+  document.getElementById('card-stat-topics').textContent =
+    `${topicCats.size} topic categories`;
+  const agencyRows = rowsForSelected(DATA.agencies, selected);
+  const agencyCats = new Set(agencyRows.map(r => r.agency));
+  document.getElementById('card-stat-agencies').textContent =
+    `${agencyCats.size} agencies tracked`;
+  document.getElementById('card-stat-year').textContent =
+    `${years.size} years of data`;
+}
+
+function renderInsights(selected) {
+  const yearRows = rowsForSelected(DATA.perYear, selected);
+  const topicRows = rowsForSelected(DATA.topics, selected);
+  const agencyRows = rowsForSelected(DATA.agencies, selected);
+
+  const totalRes = yearRows.reduce((s, r) => s + Number(r.resolutions), 0);
+
+  const topicTotals = {};
+  topicRows.forEach(r => {
+    topicTotals[r.topic] = (topicTotals[r.topic] || 0) + Number(r.resolutions);
+  });
+  const sortedTopics = Object.entries(topicTotals).sort((a, b) => b[1] - a[1]);
+  const topTopic = sortedTopics[0];
+  const topicShare = topTopic && totalRes
+    ? Math.round((topTopic[1] / totalRes) * 100)
+    : 0;
+
+  const agencyTotals = {};
+  agencyRows.forEach(r => {
+    agencyTotals[r.agency] = (agencyTotals[r.agency] || 0) + Number(r.resolutions);
+  });
+  const sortedAgencies = Object.entries(agencyTotals).sort((a, b) => b[1] - a[1]);
+  const topAgency = sortedAgencies[0];
+
+  const yearTotals = {};
+  yearRows.forEach(r => {
+    const y = r.year;
+    yearTotals[y] = (yearTotals[y] || 0) + Number(r.resolutions);
+  });
+  const sortedYears = Object.entries(yearTotals).sort((a, b) => b[1] - a[1]);
+  const peakYear = sortedYears[0];
+
+  const boardLabels = selected.join(' + ') || '—';
+
+  const cards = [];
+  if (topTopic) {
+    cards.push({
+      num: `${topicShare}%`,
+      label: `${topTopic[0]} dominates the agenda`,
+      sub: `${fmt(topTopic[1])} of ${fmt(totalRes)} resolutions across ${boardLabels} touch this category.`,
+    });
+  }
+  if (topAgency) {
+    cards.push({
+      num: fmt(topAgency[1]),
+      label: `Resolutions mention ${topAgency[0]}`,
+      sub: `The most-cited agency in resolution text across ${boardLabels}.`,
+    });
+  }
+  if (peakYear) {
+    cards.push({
+      num: fmt(peakYear[1]),
+      label: `Resolutions in ${peakYear[0]} — the peak year`,
+      sub: `Combined output across ${boardLabels} peaked in ${peakYear[0]}.`,
+    });
+  }
+  if (sortedTopics[1]) {
+    const [name, count] = sortedTopics[1];
+    cards.push({
+      num: fmt(count),
+      label: `Resolutions touch ${name}`,
+      sub: `Second-largest classified category across ${boardLabels}.`,
+    });
+  }
+  if (sortedAgencies[1]) {
+    const [name, count] = sortedAgencies[1];
+    cards.push({
+      num: fmt(count),
+      label: `Resolutions mention ${name}`,
+      sub: `Second most-cited agency across ${boardLabels}.`,
+    });
+  }
+  cards.push({
+    num: fmt(totalRes),
+    label: `Total resolutions in this view`,
+    sub: `Toggle the chips above to add or remove boards from every chart on this page.`,
+  });
+
+  document.getElementById('insights-grid').innerHTML = cards.map(c => `
+    <div class="insight-card">
+      <div class="insight-num">${c.num}</div>
+      <div class="insight-label">${c.label}</div>
+      <div class="insight-sub">${c.sub}</div>
+    </div>
+  `).join('');
+}
+
+function render(selected) {
+  renderStats(selected);
+  renderInsights(selected);
+}
+
+loadAll().then(() => {
+  CbFilter.onChange(render);
+  CbFilter.init();
+  render(CbFilter.selected);
+}).catch(err => {
+  console.error('Failed to load aggregate CSVs:', err);
+});
+</script>
 
 </body>
 </html>
