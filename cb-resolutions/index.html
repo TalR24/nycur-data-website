@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MCB3 Resolutions Dashboard — NYCuriosity Data</title>
+  <meta name="description" content="Data and visualizations from 6,500+ resolutions across 24 years of Manhattan Community Board 3 meeting records.">
+  <meta property="og:type"        content="website">
+  <meta property="og:url"         content="https://data.nycuriosity.com/cb3-resolutions/">
+  <meta property="og:title"       content="MCB3 Resolutions Dashboard — NYCuriosity Data">
+  <meta property="og:description" content="Data and visualizations from 6,500+ resolutions across 24 years of Manhattan Community Board 3 meeting records.">
+  <meta property="og:image"       content="https://data.nycuriosity.com/website_logo.png">
+  <meta name="twitter:card"       content="summary_large_image">
+  <meta name="twitter:image"      content="https://data.nycuriosity.com/website_logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue:       #2563eb;
+      --blue-hover: #1d4ed8;
+      --blue-light: #eff6ff;
+      --blue-mid:   #bfdbfe;
+      --text:       #111827;
+      --text-mid:   #374151;
+      --text-muted: #6b7280;
+      --text-faint: #9ca3af;
+      --bg:         #f8faff;
+      --surface:    #ffffff;
+      --border:     #e5e7eb;
+      --border-mid: #d1d5db;
+      --shadow-sm:  0 1px 3px rgba(17,24,39,0.08);
+      --shadow-md:  0 4px 16px rgba(37,99,235,0.10);
+      --radius:     10px;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── HEADER ─────────────────────────────────────────── */
+    header {
+      background: #111827;
+      border-bottom: 1px solid #1f2937;
+      padding: 0 clamp(20px, 5vw, 48px);
+    }
+    .header-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .back-link {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #9ca3af;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 8px 4px 4px;
+      border-radius: 5px;
+      transition: color 0.15s, background 0.15s;
+    }
+    .back-link:hover { color: #60a5fa; background: rgba(96,165,250,0.1); }
+    .header-divider { width: 1px; height: 20px; background: #374151; flex-shrink: 0; }
+    header h1 {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #e5e7eb;
+      letter-spacing: -0.02em;
+    }
+
+    /* ── MAIN ────────────────────────────────────────────── */
+    main {
+      flex: 1;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: clamp(28px, 5vw, 56px) clamp(20px, 5vw, 48px);
+      width: 100%;
+    }
+
+    /* ── HERO ────────────────────────────────────────────── */
+    .hero {
+      margin-bottom: 36px;
+    }
+    .breadcrumb {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--text-faint);
+      margin-bottom: 12px;
+      letter-spacing: 0.04em;
+    }
+    .breadcrumb a { color: var(--text-muted); text-decoration: none; }
+    .breadcrumb a:hover { color: var(--blue); }
+    .hero h2 {
+      font-size: clamp(1.5rem, 3vw, 2rem);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      color: var(--text);
+      margin-bottom: 10px;
+      line-height: 1.2;
+    }
+    .hero p {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      max-width: 640px;
+      line-height: 1.65;
+    }
+
+    /* ── STAT PILLS ──────────────────────────────────────── */
+    .stat-pills {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin: 24px 0 40px;
+    }
+    .stat-pill {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 40px;
+      padding: 8px 20px;
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      box-shadow: var(--shadow-sm);
+    }
+    .stat-num {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--blue);
+      letter-spacing: -0.02em;
+    }
+    .stat-label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    /* ── SECTION HEADING ─────────────────────────────────── */
+    .section-heading {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-faint);
+      margin-bottom: 18px;
+    }
+
+    /* ── CARD GRID ───────────────────────────────────────── */
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 20px;
+      margin-bottom: 48px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      text-decoration: none;
+      color: inherit;
+      display: flex;
+      flex-direction: column;
+      transition: box-shadow 0.18s, border-color 0.18s, transform 0.18s;
+      box-shadow: var(--shadow-sm);
+    }
+    .card:hover {
+      box-shadow: var(--shadow-md);
+      border-color: var(--blue-mid);
+      transform: translateY(-2px);
+    }
+
+    .card-preview {
+      background: #1e293b;
+      height: 100px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .card-preview svg { opacity: 0.65; }
+
+    .card-body { padding: 16px; flex: 1; display: flex; flex-direction: column; }
+    .card-type {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.68rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--blue);
+      margin-bottom: 6px;
+    }
+    .card-title {
+      font-size: 0.92rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 6px;
+      line-height: 1.35;
+    }
+    .card-desc {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      line-height: 1.55;
+      flex: 1;
+      margin-bottom: 12px;
+    }
+    .card-stat {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--text-faint);
+      margin-bottom: 12px;
+    }
+    .card-cta {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--blue);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .card:hover .card-cta { gap: 8px; }
+
+    /* ── INSIGHTS ────────────────────────────────────────── */
+    .insights-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+      margin-bottom: 48px;
+    }
+    .insight-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow-sm);
+    }
+    .insight-num {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--blue);
+      letter-spacing: -0.04em;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+    .insight-label {
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+    .insight-sub {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    /* ── FOOTER ──────────────────────────────────────────── */
+    footer {
+      padding: 24px clamp(20px,5vw,48px);
+      text-align: center;
+      font-size: 0.78rem;
+      color: var(--text-faint);
+      border-top: 1px solid var(--border);
+    }
+    footer a { color: var(--text-muted); text-decoration: none; }
+    footer a:hover { color: var(--blue); }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <a href="/" class="back-link">← nycuriosity/data</a>
+    <div class="header-divider"></div>
+    <h1>MCB3 Resolutions</h1>
+  </div>
+</header>
+
+<main>
+  <div class="hero">
+    <div class="breadcrumb">
+      <a href="/">nycuriosity/data</a> / <span style="color:#FF6319">cb3-resolutions</span>
+    </div>
+    <h2>MCB3 Resolutions Dashboard</h2>
+    <p>24 years of Manhattan Community Board 3 resolutions — searchable, visualized, and downloadable. Source: <a href="https://www.nyc.gov/site/manhattancb3/index.page" style="color:var(--blue)">NYC.gov MCB3 meeting minutes</a>.</p>
+  </div>
+
+  <div class="stat-pills">
+    <div class="stat-pill">
+      <span class="stat-num">7,134</span>
+      <span class="stat-label">resolutions</span>
+    </div>
+    <div class="stat-pill">
+      <span class="stat-num">268</span>
+      <span class="stat-label">meetings</span>
+    </div>
+    <div class="stat-pill">
+      <span class="stat-num">2002–2026</span>
+      <span class="stat-label">years covered</span>
+    </div>
+    <div class="stat-pill">
+      <span class="stat-num">~2M</span>
+      <span class="stat-label">words</span>
+    </div>
+  </div>
+
+  <p class="section-heading">Charts in this post</p>
+  <div class="card-grid">
+
+    <!-- Resolution Explorer -->
+    <a class="card" href="./explorer/">
+      <div class="card-preview">
+        <svg width="80" height="60" viewBox="0 0 80 60" fill="none">
+          <rect x="8" y="8" width="64" height="8" rx="2" fill="#60a5fa"/>
+          <rect x="8" y="22" width="64" height="6" rx="2" fill="#374151"/>
+          <rect x="8" y="33" width="64" height="6" rx="2" fill="#374151"/>
+          <rect x="8" y="44" width="44" height="6" rx="2" fill="#374151"/>
+        </svg>
+      </div>
+      <div class="card-body">
+        <div class="card-type">Table</div>
+        <div class="card-title">Resolution Explorer</div>
+        <div class="card-desc">Search and browse the full text of every MCB3 resolution across all 268 meetings.</div>
+        <div class="card-stat">7,134 rows · full-text search</div>
+        <div class="card-cta">Explore →</div>
+      </div>
+    </a>
+
+    <!-- Top Topics -->
+    <a class="card" href="./top-topics/">
+      <div class="card-preview">
+        <svg width="90" height="60" viewBox="0 0 90 60" fill="none">
+          <rect x="20" y="44" width="50" height="8" rx="2" fill="#60a5fa"/>
+          <rect x="20" y="33" width="38" height="8" rx="2" fill="#93c5fd"/>
+          <rect x="20" y="22" width="20" height="8" rx="2" fill="#bfdbfe"/>
+          <rect x="20" y="11" width="14" height="8" rx="2" fill="#dbeafe"/>
+        </svg>
+      </div>
+      <div class="card-body">
+        <div class="card-type">Bar Chart</div>
+        <div class="card-title">Top Topics by Resolution Count</div>
+        <div class="card-desc">Which subjects dominate MCB3's agenda? Liquor licenses, transportation, and parks lead the way.</div>
+        <div class="card-stat">13 topic categories</div>
+        <div class="card-cta">Explore →</div>
+      </div>
+    </a>
+
+    <!-- Top Agencies -->
+    <a class="card" href="./top-agencies/">
+      <div class="card-preview">
+        <svg width="90" height="60" viewBox="0 0 90 60" fill="none">
+          <rect x="20" y="44" width="45" height="8" rx="2" fill="#60a5fa"/>
+          <rect x="20" y="33" width="30" height="8" rx="2" fill="#93c5fd"/>
+          <rect x="20" y="22" width="22" height="8" rx="2" fill="#bfdbfe"/>
+          <rect x="20" y="11" width="12" height="8" rx="2" fill="#dbeafe"/>
+        </svg>
+      </div>
+      <div class="card-body">
+        <div class="card-type">Bar Chart</div>
+        <div class="card-title">Top Agencies Mentioned in Resolutions</div>
+        <div class="card-desc">Which City agencies does MCB3 address most? The State Liquor Authority leads, followed by DOT and DEP.</div>
+        <div class="card-stat">12 agencies tracked</div>
+        <div class="card-cta">Explore →</div>
+      </div>
+    </a>
+
+    <!-- Resolutions Over Time -->
+    <a class="card" href="./resolutions-per-year/">
+      <div class="card-preview">
+        <svg width="90" height="60" viewBox="0 0 90 60" fill="none">
+          <polyline points="10,48 22,28 34,30 46,35 58,38 70,42 80,44" stroke="#60a5fa" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="10" cy="48" r="3" fill="#2563eb"/>
+          <circle cx="22" cy="28" r="3" fill="#2563eb"/>
+          <circle cx="80" cy="44" r="3" fill="#2563eb"/>
+        </svg>
+      </div>
+      <div class="card-body">
+        <div class="card-type">Line Chart</div>
+        <div class="card-title">Resolutions Per Year, 2004–2025</div>
+        <div class="card-desc">CB3 output peaked in 2004 at 605 resolutions and has declined steadily over two decades to ~135–165 per year.</div>
+        <div class="card-stat">22 years of data</div>
+        <div class="card-cta">Explore →</div>
+      </div>
+    </a>
+
+  </div>
+
+  <p class="section-heading">Key insights</p>
+  <div class="insights-grid">
+    <div class="insight-card">
+      <div class="insight-num">48%</div>
+      <div class="insight-label">Liquor licenses dominate the agenda</div>
+      <div class="insight-sub">3,449 of 7,134 resolutions — nearly 1 in 2 — relate to liquor license applications reviewed by the State Liquor Authority (SLA).</div>
+    </div>
+    <div class="insight-card">
+      <div class="insight-num">2,285</div>
+      <div class="insight-label">Resolutions that mention the SLA</div>
+      <div class="insight-sub">The State Liquor Authority is the single most-cited agency in full resolution text, ahead of DOT (440) and NYPD (368), reflecting CB3's active role in reviewing liquor license applications.</div>
+    </div>
+    <div class="insight-card">
+      <div class="insight-num">701</div>
+      <div class="insight-label">Resolutions in 2004 — the peak year</div>
+      <div class="insight-sub">Board output has fallen sharply since the mid-2000s. Recent years see ~150–190 resolutions annually, less than a third of the 2004 peak.</div>
+    </div>
+    <div class="insight-card">
+      <div class="insight-num">99.6%</div>
+      <div class="insight-label">Pass rate among resolutions with recorded votes</div>
+      <div class="insight-sub">Of 987 resolutions with recorded vote data, 983 passed and only 4 failed — with an average of 34.5 yes votes and 1.2 no votes per resolution.</div>
+    </div>
+    <div class="insight-card">
+      <div class="insight-num">520</div>
+      <div class="insight-label">Resolutions touch transportation or streets</div>
+      <div class="insight-sub">520 resolutions mention DOT, bike lanes, traffic signals, bus lanes, crosswalks, or other street-related topics — making it the second-largest named category after liquor licenses.</div>
+    </div>
+    <div class="insight-card">
+      <div class="insight-num">3.3×</div>
+      <div class="insight-label">War and Peace novels worth of text</div>
+      <div class="insight-sub">MCB3's 250+ meeting documents contain nearly 2 million words — with no centralized search until now.</div>
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  <a href="https://talroded.nycuriosity.com" target="_blank" rel="noopener">About</a> ·
+  <a href="https://nycuriosity.substack.com/">NYCuriosity</a> ·
+  Data: NYC.gov MCB3 meeting minutes (Jan 2002–Feb 2026) ·
+  Analysis: Author's calculations
+</footer>
+
+</body>
+</html>

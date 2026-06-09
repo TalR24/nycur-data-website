@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Top Topics in MCB3 Resolutions — NYCuriosity Data</title>
+  <meta name="description" content="Which subjects dominate MCB3's agenda? Liquor licenses, transportation, and parks lead 24 years of resolutions.">
+  <meta property="og:type"        content="website">
+  <meta property="og:url"         content="https://data.nycuriosity.com/cb3-resolutions/top-topics/">
+  <meta property="og:title"       content="Top Topics in MCB3 Resolutions — NYCuriosity Data">
+  <meta property="og:description" content="Which subjects dominate MCB3's agenda? Liquor licenses, transportation, and parks lead 24 years of resolutions.">
+  <meta property="og:image"       content="https://data.nycuriosity.com/website_logo.png">
+  <meta name="twitter:card"       content="summary_large_image">
+  <meta name="twitter:image"      content="https://data.nycuriosity.com/website_logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --blue:#2563eb; --blue-light:#eff6ff; --blue-mid:#bfdbfe;
+      --text:#111827; --text-mid:#374151; --text-muted:#6b7280; --text-faint:#9ca3af;
+      --bg:#f8faff; --surface:#ffffff; --border:#e5e7eb; --border-mid:#d1d5db;
+      --shadow-sm:0 1px 3px rgba(17,24,39,0.08);
+    }
+    body { font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; display:flex; flex-direction:column; }
+
+    header { background:#111827; border-bottom:1px solid #1f2937; padding:0 clamp(20px,5vw,48px); }
+    .header-inner { max-width:1100px; margin:0 auto; height:56px; display:flex; align-items:center; gap:16px; }
+    .back-link { font-family:'Roboto Mono',monospace; font-size:0.75rem; font-weight:600; color:#9ca3af; text-decoration:none; display:flex; align-items:center; gap:5px; padding:4px 8px 4px 4px; border-radius:5px; transition:color 0.15s,background 0.15s; }
+    .back-link:hover { color:#60a5fa; background:rgba(96,165,250,0.1); }
+    .header-divider { width:1px; height:20px; background:#374151; flex-shrink:0; }
+    header h1 { font-family:'Roboto Mono',monospace; font-size:0.95rem; font-weight:700; color:#e5e7eb; letter-spacing:-0.02em; }
+
+    .pill-nav { background:var(--surface); border-bottom:1px solid var(--border); padding:10px clamp(20px,5vw,48px); display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+    .pill-nav a { font-size:0.78rem; font-family:'Roboto Mono',monospace; font-weight:600; padding:4px 12px; border-radius:20px; text-decoration:none; border:1px solid var(--border-mid); color:var(--text-muted); background:var(--bg); transition:all 0.15s; white-space:nowrap; }
+    .pill-nav a:hover { border-color:var(--blue); color:var(--blue); background:var(--blue-light); }
+    .pill-nav a.active { background:var(--blue); color:#fff; border-color:var(--blue); }
+    .pill-label { font-size:0.72rem; color:var(--text-faint); font-family:'Roboto Mono',monospace; white-space:nowrap; }
+
+    main { flex:1; max-width:1100px; margin:0 auto; padding:clamp(28px,5vw,48px) clamp(20px,5vw,48px); width:100%; }
+    .breadcrumb { font-family:'Roboto Mono',monospace; font-size:0.72rem; color:var(--text-faint); margin-bottom:12px; letter-spacing:0.04em; }
+    .breadcrumb a { color:var(--text-muted); text-decoration:none; }
+    .breadcrumb a:hover { color:var(--blue); }
+    .hero { margin-bottom:32px; }
+    .hero h2 { font-size:clamp(1.3rem,2.5vw,1.8rem); font-weight:700; letter-spacing:-0.03em; margin-bottom:8px; line-height:1.2; }
+    .hero p { font-size:0.92rem; color:var(--text-muted); max-width:640px; line-height:1.65; }
+
+    .chart-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:28px; box-shadow:var(--shadow-sm); margin-bottom:24px; }
+    .chart-wrap { position:relative; width:100%; height:420px; }
+
+    .caption { font-size:0.78rem; color:var(--text-faint); font-style:italic; margin-top:12px; line-height:1.5; }
+
+    .meta-section { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:24px; box-shadow:var(--shadow-sm); margin-bottom:24px; }
+    .meta-section h3 { font-family:'Roboto Mono',monospace; font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.1em; color:var(--text-faint); margin-bottom:14px; }
+    .meta-section p { font-size:0.85rem; color:var(--text-muted); line-height:1.65; margin-bottom:8px; }
+    .meta-section p:last-child { margin-bottom:0; }
+
+    .download-btn { display:inline-flex; align-items:center; gap:6px; background:var(--blue); color:#fff; font-size:0.82rem; font-weight:600; padding:8px 18px; border-radius:6px; text-decoration:none; transition:background 0.15s; }
+    .download-btn:hover { background:#1d4ed8; }
+
+    .chart-actions { display:flex; gap:8px; margin-top:14px; }
+    .action-btn { display:inline-flex; align-items:center; gap:6px; background:var(--surface); color:var(--text-muted); font-family:'Roboto Mono',monospace; font-size:0.75rem; font-weight:600; padding:6px 14px; border-radius:6px; border:1px solid var(--border-mid); cursor:pointer; transition:all 0.15s; }
+    .action-btn:hover { border-color:var(--blue); color:var(--blue); background:var(--blue-light); }
+    .embed-modal { position:fixed; inset:0; background:rgba(0,0,0,0.45); display:flex; align-items:center; justify-content:center; z-index:1000; }
+    .embed-modal-box { background:var(--surface); border-radius:10px; padding:24px; max-width:540px; width:90%; box-shadow:0 8px 32px rgba(0,0,0,0.18); }
+    .embed-modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+    .embed-modal-title { font-family:'Roboto Mono',monospace; font-weight:700; font-size:0.9rem; color:var(--text); }
+    .embed-close { background:none; border:none; font-size:1.1rem; color:var(--text-muted); cursor:pointer; padding:2px 6px; border-radius:4px; }
+    .embed-close:hover { color:var(--text); background:var(--bg); }
+    .embed-modal-box > p { font-size:0.83rem; color:var(--text-muted); margin-bottom:10px; }
+    .embed-textarea { width:100%; height:80px; font-family:'Roboto Mono',monospace; font-size:0.72rem; border:1px solid var(--border-mid); border-radius:6px; padding:10px; resize:none; color:var(--text-mid); background:var(--bg); margin-bottom:12px; }
+    .embed-copy-btn { background:var(--blue); color:#fff; font-family:'Roboto Mono',monospace; font-size:0.8rem; font-weight:600; padding:7px 18px; border:none; border-radius:6px; cursor:pointer; transition:background 0.15s; }
+    .embed-copy-btn:hover { background:#1d4ed8; }
+
+    footer { padding:24px clamp(20px,5vw,48px); text-align:center; font-size:0.78rem; color:var(--text-faint); border-top:1px solid var(--border); }
+    footer a { color:var(--text-muted); text-decoration:none; }
+    footer a:hover { color:var(--blue); }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <a href="../" class="back-link">← cb3-resolutions</a>
+    <div class="header-divider"></div>
+    <h1>Top Topics</h1>
+  </div>
+</header>
+
+<div class="pill-nav">
+  <span class="pill-label">Charts in this post:</span>
+  <a href="../">Overview</a>
+  <a href="../explorer/">Resolution Explorer</a>
+  <a href="./" class="active">Top Topics</a>
+  <a href="../top-agencies/">Top Agencies</a>
+  <a href="../resolutions-per-year/">Resolutions Over Time</a>
+</div>
+
+<main>
+  <div class="breadcrumb">
+    <a href="/">nycuriosity/data</a> / <a href="../">cb3-resolutions</a> / <span style="color:#FF6319">top-topics</span>
+  </div>
+  <div class="hero">
+    <h2>Top Topics by Resolution Count</h2>
+    <p>Which subjects does MCB3 address most? Categorized by keyword matching against the full text of 7,134 resolutions from 268 meetings (2004–2025). One resolution may span multiple categories.</p>
+  </div>
+
+  <div class="chart-actions">
+    <button class="action-btn" onclick="downloadChart()">⬇ Download PNG</button>
+    <button class="action-btn" onclick="showEmbed()">&#60;/&#62; Embed</button>
+  </div>
+  <div class="chart-card">
+    <div class="chart-wrap">
+      <canvas id="topicsChart"></canvas>
+    </div>
+    <p class="caption">Top topics in MCB3 resolutions, 2004–2025. Categorized by keyword matching against full resolution text; some resolutions appear in multiple categories. Source: NYC.gov MCB3 meeting minutes. Created by Tal Roded · NYCuriosity</p>
+  </div>
+
+  <div class="meta-section">
+    <h3>Methodology</h3>
+    <p>Each resolution's full text (from <code>full_resolutions.csv</code>) was matched against keyword lists for each category. A resolution is counted once per category regardless of how many matching keywords appear. Because some resolutions touch multiple categories, category totals do not sum to 7,134.</p>
+    <p>Using full resolution text rather than titles significantly improves SLA detection: early-year SLA denials were often recorded with short vote-only titles ("To deny renewal... due to nonappearance") that contained no SLA keywords, but their full text includes terms like "nonappearance," "method of operation," and "State Liquor Authority."</p>
+  </div>
+
+  <div class="meta-section">
+    <h3>Data</h3>
+    <p>7,134 resolutions across 268 MCB3 full board meetings, 2004–2025. Source: <a href="https://www.nyc.gov/site/manhattancb3/index.page" style="color:var(--blue)">NYC.gov MCB3 meeting minutes</a>.</p>
+    <p style="margin-top:14px"><a class="download-btn" href="../data/top_topics.csv" download>⬇ Download CSV</a></p>
+  </div>
+</main>
+
+<div id="embedModal" class="embed-modal" style="display:none">
+  <div class="embed-modal-box">
+    <div class="embed-modal-header">
+      <span class="embed-modal-title">Embed this chart</span>
+      <button class="embed-close" onclick="closeEmbed()">✕</button>
+    </div>
+    <p>Copy and paste into your webpage:</p>
+    <textarea id="embedCode" class="embed-textarea" readonly></textarea>
+    <button class="embed-copy-btn" onclick="copyEmbed()">Copy code</button>
+  </div>
+</div>
+
+<footer>
+  <a href="https://talroded.nycuriosity.com" target="_blank" rel="noopener">About</a> ·
+  <a href="https://nycuriosity.substack.com/">NYCuriosity</a> · Data: NYC.gov MCB3 meeting minutes · Analysis: Author's calculations
+</footer>
+
+<script>
+const labels = [
+  'Liquor License / SLA',
+  'Transportation & Streets',
+  'Parks & Open Space',
+  'Housing & Zoning',
+  'Public Safety',
+  'Environment & Waterfront',
+  'City Planning',
+  'Budget & Funding',
+  'Landmarks & Historic Preservation',
+  'Education & Schools'
+];
+const values = [3449, 520, 374, 369, 292, 237, 154, 94, 84, 79];
+
+const ctx = document.getElementById('topicsChart').getContext('2d');
+const chart = new Chart(ctx, {
+  type: 'bar',
+  data: {
+    labels,
+    datasets: [{
+      label: 'Resolutions',
+      data: values,
+      backgroundColor: labels.map((_, i) => i < 2 ? '#2563eb' : '#93c5fd'),
+      borderRadius: 4,
+      borderSkipped: false,
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: ctx => ` ${ctx.parsed.x.toLocaleString()} resolutions`
+        }
+      }
+    },
+    scales: {
+      x: {
+        grid: { color: '#e5e7eb' },
+        ticks: {
+          font: { family: "'Roboto Mono', monospace", size: 11 },
+          color: '#6b7280',
+          callback: v => v.toLocaleString()
+        },
+        border: { display: false }
+      },
+      y: {
+        grid: { display: false },
+        ticks: {
+          font: { family: "'Inter', sans-serif", size: 12.5 },
+          color: '#374151'
+        },
+        border: { display: false }
+      }
+    }
+  }
+});
+
+function downloadChart() {
+  const src = chart.canvas;
+  const captionText = document.querySelector('.caption').textContent.trim();
+  const scale = window.devicePixelRatio || 1;
+  const padH = Math.round(16 * scale);
+  const fontSize = Math.round(11 * scale);
+  const lineH = Math.round(17 * scale);
+  // measure word-wrap
+  const tmp = document.createElement('canvas');
+  const tmpCtx = tmp.getContext('2d');
+  tmpCtx.font = `italic ${fontSize}px Inter, -apple-system, sans-serif`;
+  const maxW = src.width - padH * 2;
+  const lines = [];
+  let line = '';
+  for (const word of captionText.split(' ')) {
+    const test = line ? line + ' ' + word : word;
+    if (line && tmpCtx.measureText(test).width > maxW) { lines.push(line); line = word; }
+    else line = test;
+  }
+  if (line) lines.push(line);
+  // build output canvas
+  const out = document.createElement('canvas');
+  out.width = src.width;
+  out.height = src.height + lines.length * lineH + padH * 2;
+  const ctx = out.getContext('2d');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, out.width, out.height);
+  ctx.drawImage(src, 0, 0);
+  ctx.font = `italic ${fontSize}px Inter, -apple-system, sans-serif`;
+  ctx.fillStyle = '#9ca3af';
+  ctx.textBaseline = 'top';
+  lines.forEach((l, i) => ctx.fillText(l, padH, src.height + padH + i * lineH));
+  const a = document.createElement('a');
+  a.download = 'mcb3-top-topics.png';
+  a.href = out.toDataURL('image/png');
+  a.click();
+}
+function showEmbed() {
+  const url = location.origin + location.pathname;
+  document.getElementById('embedCode').value =
+    `<iframe src="${url}" width="800" height="560" frameborder="0" style="border:1px solid #e5e7eb; border-radius:8px;" loading="lazy"></iframe>`;
+  document.getElementById('embedModal').style.display = 'flex';
+}
+function closeEmbed() { document.getElementById('embedModal').style.display = 'none'; }
+function copyEmbed() {
+  const ta = document.getElementById('embedCode');
+  ta.select();
+  navigator.clipboard.writeText(ta.value).then(() => {
+    const btn = document.querySelector('.embed-copy-btn');
+    btn.textContent = '✓ Copied!';
+    setTimeout(() => btn.textContent = 'Copy code', 2000);
+  });
+}
+</script>
+</body>
+</html>
