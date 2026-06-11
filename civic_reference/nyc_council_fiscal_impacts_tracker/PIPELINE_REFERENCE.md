@@ -6,11 +6,11 @@ This document is the complete reference for running, maintaining, and extending 
 
 ## What This Is
 
-An interactive data tool at `data.nycuriosity.com/nyc_council_fiscal_impacts_tracker/` that lets users explore the estimated fiscal impact of NYC City Council legislation. It covers Introductions and Resolutions that have a fiscal impact statement attachment on NYC Legistar, where the Finance Division estimated a **non-zero** fiscal impact.
+An interactive data tool at `data.nycuriosity.com/civic_reference/nyc_council_fiscal_impacts_tracker/` that lets users explore the estimated fiscal impact of NYC City Council legislation. It covers Introductions and Resolutions that have a fiscal impact statement attachment on NYC Legistar, where the Finance Division estimated a **non-zero** fiscal impact.
 
-**Live URL:** `https://data.nycuriosity.com/nyc_council_fiscal_impacts_tracker/`
+**Live URL:** `https://data.nycuriosity.com/civic_reference/nyc_council_fiscal_impacts_tracker/`
 **GitHub repo:** `TalR24/nycur-data-website`
-**Current record count:** 219 bills (2014–2026, as of April 2026)
+**Current record count:** 244 bills (2014–2026, as of June 2026)
 
 ---
 
@@ -18,7 +18,7 @@ An interactive data tool at `data.nycuriosity.com/nyc_council_fiscal_impacts_tra
 
 ```
 data_website/
-├── nyc_council_fiscal_impacts_tracker/
+├── civic_reference/nyc_council_fiscal_impacts_tracker/
 │   ├── index.html                          ← Frontend: interactive bill table page
 │   ├── PIPELINE_REFERENCE.md               ← This file
 │   ├── data/
@@ -94,7 +94,7 @@ The historical scraper checkpoints progress to `cache/historical_checkpoint.json
 python3 - <<'EOF'
 import json, re
 
-with open("nyc_council_fiscal_impacts_tracker/data/fiscal_impacts.json") as f:
+with open("civic_reference/nyc_council_fiscal_impacts_tracker/data/fiscal_impacts.json") as f:
     data = json.load(f)
 records = data["records"]
 
@@ -145,7 +145,7 @@ fiscal_years= sorted(set(r["fy_first_normalized"] for r in enriched if r.get("fy
 
 output = {"records": enriched, "filter_options": {"committees": committees, "sponsors": sponsors, "intro_years": intro_years, "fiscal_years": fiscal_years}}
 
-with open("nyc_council_fiscal_impacts_tracker/agency-fiscal-impact/data.json","w") as f:
+with open("civic_reference/nyc_council_fiscal_impacts_tracker/agency-fiscal-impact/data.json","w") as f:
     json.dump(output, f, indent=2, ensure_ascii=False)
 print(f"Written {len(enriched)} records")
 EOF

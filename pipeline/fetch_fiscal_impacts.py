@@ -50,7 +50,7 @@ log = logging.getLogger(__name__)
 SCRIPT_DIR   = Path(__file__).parent
 REPO_ROOT    = SCRIPT_DIR.parent   # data_website/ root (this repo)
 CACHE_DIR    = SCRIPT_DIR / "cache" / "docx"
-OUTPUT_PATH  = REPO_ROOT / "nyc_council_fiscal_impacts_tracker" / "data" / "fiscal_impacts.json"
+OUTPUT_PATH  = REPO_ROOT / "civic_reference" / "nyc_council_fiscal_impacts_tracker" / "data" / "fiscal_impacts.json"
 BASE_URL     = "https://legistar.council.nyc.gov"
 CLAUDE_MODEL = "claude-haiku-4-5-20251001"
 
