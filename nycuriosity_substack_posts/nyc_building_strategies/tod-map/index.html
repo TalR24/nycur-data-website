@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Where the Building Happens — NYCuriosity</title>
+  <meta name="description" content="Schematic map of the planned Interborough Express light rail route and the two South of Prospect rezoning corridors (McDonald Avenue and Coney Island Avenue).">
+  <meta property="og:type"        content="website">
+  <meta property="og:url"         content="https://data.nycuriosity.com/nycuriosity_substack_posts/nyc_building_strategies/tod-map/">
+  <meta property="og:title"       content="Where the Building Happens — NYCuriosity">
+  <meta property="og:description" content="Schematic map of the planned Interborough Express light rail route and the two South of Prospect rezoning corridors (McDonald Avenue and Coney Island Avenue).">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue:       #2563eb;
+      --blue-hover: #1d4ed8;
+      --blue-light: #eff6ff;
+      --blue-mid:   #bfdbfe;
+      --text:       #111827;
+      --text-mid:   #374151;
+      --text-muted: #6b7280;
+      --text-faint: #9ca3af;
+      --bg:         #f8faff;
+      --surface:    #ffffff;
+      --border:     #e5e7eb;
+      --shadow-sm:  0 1px 3px rgba(17,24,39,0.08);
+      --shadow-md:  0 4px 16px rgba(37,99,235,0.10);
+      --radius:     10px;
+      --green:      #16a34a;
+      --park-fill:  #bbf7d0;
+      --park-line:  #86efac;
+      --water:      #dbeafe;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── HEADER ──────────────────────────────────────────── */
+    header {
+      background: #111827;
+      border-bottom: 1px solid #1f2937;
+      padding: 0 clamp(20px, 5vw, 48px);
+    }
+    .header-inner {
+      max-width: 900px; margin: 0 auto; height: 56px;
+      display: flex; align-items: center; gap: 16px;
+    }
+    .back-link {
+      font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600;
+      color: #9ca3af; text-decoration: none; display: flex; align-items: center; gap: 5px;
+      padding: 4px 8px 4px 4px; border-radius: 5px; transition: color 0.15s, background 0.15s; white-space: nowrap;
+    }
+    .back-link:hover { color: #60a5fa; background: rgba(96,165,250,0.1); }
+    .header-divider { width: 1px; height: 20px; background: #374151; flex-shrink: 0; }
+    header h1 {
+      font-family: 'Roboto Mono', monospace; font-size: 0.95rem; font-weight: 700;
+      color: #e5e7eb; letter-spacing: -0.02em;
+    }
+
+    /* ── PILL NAV ─────────────────────────────────────────── */
+    .pill-nav {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 10px clamp(20px, 5vw, 48px);
+      display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+    }
+    .pill-nav a {
+      font-size: 0.78rem; font-family: 'Roboto Mono', monospace; font-weight: 600;
+      padding: 4px 12px; border-radius: 20px; text-decoration: none;
+      border: 1px solid var(--border); color: var(--text-muted); background: var(--bg);
+      transition: all 0.15s; white-space: nowrap;
+    }
+    .pill-nav a:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
+    .pill-nav a.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+    .pill-label { font-size: 0.72rem; color: var(--text-faint); font-family: 'Roboto Mono', monospace; white-space: nowrap; }
+
+    /* ── HERO ────────────────────────────────────────────── */
+    .hero {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: clamp(32px, 5vw, 52px) clamp(20px, 5vw, 48px);
+    }
+    .hero-inner { max-width: 900px; margin: 0 auto; }
+    .breadcrumb {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--text-faint);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .breadcrumb a { color: var(--blue); text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+    .breadcrumb span:last-child { color: #FF6319; }
+    .hero-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .hero-tag {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em;
+      color: var(--blue); background: var(--blue-light); border: 1px solid var(--blue-mid);
+      border-radius: 4px; padding: 3px 8px;
+    }
+    .hero-updated { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; color: var(--text-faint); }
+    .hero h1 {
+      font-family: 'Roboto Mono', monospace;
+      font-size: clamp(1.4rem, 3vw, 1.85rem);
+      font-weight: 700; color: var(--text);
+      letter-spacing: -0.03em; line-height: 1.2; margin-bottom: 10px;
+    }
+    .hero h1 span { color: var(--blue); }
+    .hero p {
+      font-size: 0.975rem; color: var(--text-muted); max-width: 680px; line-height: 1.7;
+    }
+    .hero p a { color: var(--blue); text-decoration: none; border-bottom: 1px solid var(--blue-mid); }
+    .hero p a:hover { border-color: var(--blue); }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600;
+      text-decoration: none; border-radius: 7px; padding: 8px 14px;
+      transition: background 0.15s, border-color 0.15s; cursor: pointer; border: none;
+    }
+    .btn-outline { background: var(--surface); color: var(--text-muted); border: 1.5px solid var(--border); }
+    .btn-outline:hover { color: var(--blue); border-color: var(--blue-mid); background: var(--blue-light); }
+
+    /* ── MAIN ────────────────────────────────────────────── */
+    main {
+      flex: 1;
+      padding: clamp(28px, 4vw, 48px) clamp(20px, 5vw, 48px);
+    }
+    .main-inner { max-width: 900px; margin: 0 auto; }
+
+    /* ── CHART ACTIONS ─────────────────────────────────────── */
+    .chart-actions { display:flex; gap:8px; margin-bottom:16px; }
+    .action-btn { display:inline-flex; align-items:center; gap:6px; background:var(--surface); color:var(--text-muted); font-family:'Roboto Mono',monospace; font-size:0.75rem; font-weight:600; padding:6px 14px; border-radius:6px; border:1px solid var(--border); cursor:pointer; transition:all 0.15s; }
+    .action-btn:hover { border-color:var(--blue); color:var(--blue); background:var(--blue-light); }
+    .action-btn:disabled { opacity:0.6; cursor:not-allowed; }
+
+    /* ── CHART BOX ───────────────────────────────────────── */
+    #chart-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+    }
+    .chart-inner { padding: 22px 22px 10px; }
+    .chart-title {
+      font-family: 'Roboto Mono', monospace; font-size: 0.95rem; font-weight: 700;
+      color: var(--text); letter-spacing: -0.02em; margin-bottom: 4px;
+    }
+    .chart-subtitle { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 16px; }
+
+    /* ── STAT STRIP ──────────────────────────────────────── */
+    .stat-strip {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+    .stat {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 9px 12px;
+      display: flex; flex-direction: column; gap: 2px;
+    }
+    .stat-val { font-family: 'Roboto Mono', monospace; font-size: 1.05rem; font-weight: 700; color: var(--blue); }
+    .stat-lbl { font-size: 0.68rem; color: var(--text-muted); line-height: 1.3; }
+
+    /* ── LEGEND ──────────────────────────────────────────── */
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 18px;
+      margin-bottom: 14px;
+      align-items: center;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 0.78rem;
+      color: var(--text-mid);
+      font-weight: 500;
+    }
+    .legend-item svg { flex-shrink: 0; display: block; }
+    .swatch-corridor {
+      width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0;
+      background: rgba(22,163,74,0.32); border: 1px solid rgba(22,163,74,0.6);
+    }
+
+    /* ── MAP ─────────────────────────────────────────────── */
+    .map-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .map-scroll svg { display: block; width: 100%; min-width: 680px; height: auto; }
+    .map-hint { display: none; font-size: 0.7rem; color: var(--text-faint); margin-top: 6px; }
+    @media (max-width: 740px) { .map-hint { display: block; } }
+
+    /* ── ATTRIBUTION ─────────────────────────────────────── */
+    .chart-attribution {
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+      padding: 12px 16px; border-top: 1px solid var(--border); background: var(--bg);
+      font-size: 0.78rem; color: var(--text-faint); font-family: 'Roboto Mono', monospace;
+    }
+    .chart-attribution a { color: var(--blue); text-decoration: none; }
+    .chart-attribution a:hover { text-decoration: underline; }
+
+    /* ── CONTEXT BOX ─────────────────────────────────────── */
+    .context-box {
+      margin-top: 28px;
+      padding: 16px 20px;
+      background: var(--blue-light);
+      border: 1px solid var(--blue-mid);
+      border-radius: var(--radius);
+    }
+    .context-box p {
+      font-size: 0.85rem;
+      color: var(--text-mid);
+      line-height: 1.65;
+    }
+    .context-box p + p { margin-top: 8px; }
+    .context-box strong { color: var(--text); }
+
+    /* ── FOOTNOTES ───────────────────────────────────────── */
+    .footnotes {
+      margin-top: 16px;
+      padding: 14px 18px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+    .footnotes p { font-size: 0.78rem; color: var(--text-muted); line-height: 1.6; }
+    .footnotes p + p { margin-top: 6px; }
+    .footnotes strong { color: var(--text-mid); }
+    .footnotes a { color: var(--blue); text-decoration: none; border-bottom: 1px solid var(--blue-mid); }
+    .footnotes a:hover { border-color: var(--blue); }
+
+    /* ── FOOTER ──────────────────────────────────────────── */
+    footer {
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      padding: 20px clamp(20px, 5vw, 48px);
+      margin-top: auto;
+    }
+    .footer-inner {
+      max-width: 900px; margin: 0 auto;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 12px;
+    }
+    .footer-copy { font-size: 0.8rem; color: var(--text-faint); }
+    .footer-links { display: flex; gap: 20px; }
+    .footer-links a { font-size: 0.8rem; color: var(--text-faint); text-decoration: none; transition: color 0.15s; }
+    .footer-links a:hover { color: var(--blue); }
+
+    /* ── EMBED MODAL ───────────────────────────────────────── */
+    .embed-modal { position:fixed; inset:0; background:rgba(0,0,0,0.45); display:flex; align-items:center; justify-content:center; z-index:1000; }
+    .embed-modal-box { background:var(--surface); border-radius:10px; padding:24px; max-width:540px; width:90%; box-shadow:0 8px 32px rgba(0,0,0,0.18); }
+    .embed-modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+    .embed-modal-title { font-family:'Roboto Mono',monospace; font-weight:700; font-size:0.9rem; color:var(--text); }
+    .embed-close { background:none; border:none; font-size:1.1rem; color:var(--text-muted); cursor:pointer; padding:2px 6px; border-radius:4px; }
+    .embed-close:hover { color:var(--text); background:var(--bg); }
+    .embed-modal-box > p { font-size:0.83rem; color:var(--text-muted); margin-bottom:10px; }
+    .embed-textarea { width:100%; height:80px; font-family:'Roboto Mono',monospace; font-size:0.72rem; border:1px solid var(--border); border-radius:6px; padding:10px; resize:none; color:var(--text-mid); background:var(--bg); margin-bottom:12px; }
+    .embed-copy-btn { background:var(--blue); color:#fff; font-family:'Roboto Mono',monospace; font-size:0.8rem; font-weight:600; padding:7px 18px; border:none; border-radius:6px; cursor:pointer; transition:background 0.15s; }
+    .embed-copy-btn:hover { background:#1d4ed8; }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="header-inner">
+    <a href="/nycuriosity_substack_posts/nyc_building_strategies/" class="back-link">← new-york-needs-to-grow</a>
+    <div class="header-divider"></div>
+    <h1>IBX &amp; Rezonings Map</h1>
+  </div>
+</header>
+
+<!-- VISUALS NAV -->
+<div class="pill-nav">
+  <span class="pill-label">Visuals in this post:</span>
+  <a href="../building-timeline/">Building Timeline</a>
+  <a href="../construction-costs/">Construction Costs</a>
+  <a href="../funding-mix/">Funding Mix</a>
+  <a href="../city-of-yes-rezonings/">City of Yes vs. Rezonings</a>
+  <a href="../expansion-rankings/">Expansion Rankings</a>
+  <a href="./" class="active">IBX &amp; Rezonings Map</a>
+</div>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-inner">
+    <div class="breadcrumb">
+      <a href="/">data.nycuriosity.com</a>
+      <span>›</span>
+      <a href="/nycuriosity_substack_posts/nyc_building_strategies/">New York Needs to Grow</a>
+      <span>›</span>
+      <span>IBX &amp; Rezonings Map</span>
+    </div>
+    <div class="hero-meta">
+      <span class="hero-tag">Transit &amp; Housing</span>
+      <span class="hero-updated">June 2026</span>
+    </div>
+    <h1>Where the <span>Building Happens</span></h1>
+    <p>
+      A schematic map of the planned <strong>Interborough Express</strong> — 14 miles of light rail on existing freight
+      rights-of-way from the Brooklyn Army Terminal to Jackson Heights — and the two
+      <strong>South of Prospect Plan</strong> rezoning corridors, McDonald Avenue and Coney Island Avenue,
+      which both run south from Prospect Park and end at Avenue I, right where the IBX plans to stop.
+    </p>
+    <div class="hero-actions">
+      <a href="../data/ibx_stations.csv" download class="btn btn-outline">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download CSV — IBX Stations
+      </a>
+      <a href="../data/rezoning_corridors.csv" download class="btn btn-outline">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download CSV — Rezoning Corridors
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- CHART -->
+<main>
+  <div class="main-inner">
+
+    <div class="chart-actions">
+      <button class="action-btn" onclick="downloadChart(this)">&#11015; Download PNG</button>
+      <button class="action-btn" onclick="showEmbed()">&#60;/&#62; Embed</button>
+    </div>
+
+    <div id="chart-box">
+      <div class="chart-inner">
+        <div class="chart-title">The Interborough Express and the South of Prospect rezoning corridors</div>
+        <div class="chart-subtitle">Schematic diagram, not to scale. Station locations are preliminary (pre-environmental review); corridor extents are approximate.</div>
+
+        <div class="stat-strip">
+          <div class="stat"><span class="stat-val">14</span><span class="stat-lbl">miles of light rail</span></div>
+          <div class="stat"><span class="stat-val">~19</span><span class="stat-lbl">planned stations</span></div>
+          <div class="stat"><span class="stat-val">17</span><span class="stat-lbl">subway line connections</span></div>
+          <div class="stat"><span class="stat-val">160,000</span><span class="stat-lbl">projected weekday riders</span></div>
+          <div class="stat"><span class="stat-val">~$5.5B</span><span class="stat-lbl">estimated cost</span></div>
+        </div>
+
+        <div class="legend">
+          <div class="legend-item">
+            <svg width="26" height="10" viewBox="0 0 26 10"><line x1="1" y1="5" x2="25" y2="5" stroke="#2563eb" stroke-width="3" stroke-dasharray="5,4" stroke-linecap="round"/></svg>
+            IBX route (planned)
+          </div>
+          <div class="legend-item">
+            <svg width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="4.5" fill="#ffffff" stroke="#2563eb" stroke-width="2.5"/></svg>
+            Planned IBX station
+          </div>
+          <div class="legend-item">
+            <span class="swatch-corridor"></span>
+            Rezoning corridor (South of Prospect Plan)
+          </div>
+        </div>
+
+        <div class="map-scroll">
+          <svg id="ibx-map" viewBox="0 30 880 570" role="img" aria-label="Schematic map of the Interborough Express route from Brooklyn Army Terminal to Jackson Heights with 18 named stations, and the McDonald Avenue and Coney Island Avenue rezoning corridors south of Prospect Park" xmlns="http://www.w3.org/2000/svg">
+
+            <!-- Water: Upper New York Bay, southwest Brooklyn waterfront -->
+            <path d="M56,290 Q44,380 58,470 Q66,530 96,595 L0,595 L0,290 Z" fill="#dbeafe"/>
+            <text x="30" y="430" transform="rotate(-72 30 430)" text-anchor="middle"
+                  font-family="Inter, sans-serif" font-size="9" font-style="italic" fill="#2563eb" opacity="0.45">Upper New York Bay</text>
+
+            <!-- Brooklyn / Queens boundary suggestion -->
+            <line x1="590" y1="330" x2="850" y2="290" stroke="#9ca3af" stroke-width="1.2" stroke-dasharray="4,5" opacity="0.5"/>
+            <text x="210" y="215" text-anchor="middle" font-family="'Roboto Mono', monospace" font-size="15" font-weight="700"
+                  letter-spacing="4" fill="#9ca3af" opacity="0.55">BROOKLYN</text>
+            <text x="800" y="250" text-anchor="middle" font-family="'Roboto Mono', monospace" font-size="15" font-weight="700"
+                  letter-spacing="4" fill="#9ca3af" opacity="0.55">QUEENS</text>
+
+            <!-- North arrow -->
+            <g>
+              <polygon points="46,62 52,46 58,62" fill="#6b7280"/>
+              <line x1="52" y1="58" x2="52" y2="86" stroke="#6b7280" stroke-width="2"/>
+              <text x="52" y="102" text-anchor="middle" font-family="'Roboto Mono', monospace" font-size="11" font-weight="700" fill="#6b7280">N</text>
+            </g>
+
+            <!-- Prospect Park anchor -->
+            <rect x="268" y="325" width="100" height="62" rx="8" fill="#bbf7d0" stroke="#86efac" stroke-width="1"/>
+            <text x="318" y="360" text-anchor="middle" font-family="'Roboto Mono', monospace" font-size="8.5" font-weight="600" fill="#15803d">Prospect Park</text>
+
+            <!-- Rezoning corridor bands -->
+            <rect x="278" y="396" width="20" height="116" rx="4" fill="#16a34a" fill-opacity="0.32" stroke="#16a34a" stroke-opacity="0.6" stroke-width="1"/>
+            <rect x="326" y="396" width="20" height="118" rx="4" fill="#16a34a" fill-opacity="0.32" stroke="#16a34a" stroke-opacity="0.6" stroke-width="1"/>
+            <text transform="translate(269 455) rotate(-90)" text-anchor="middle"
+                  font-family="'Roboto Mono', monospace" font-size="8" font-weight="600" fill="#15803d">McDonald Ave corridor</text>
+            <text transform="translate(317 455) rotate(-90)" text-anchor="middle"
+                  font-family="'Roboto Mono', monospace" font-size="8" font-weight="600" fill="#15803d">Coney Island Ave corridor</text>
+
+            <!-- Avenue I marker at corridor ends -->
+            <line x1="274" y1="513" x2="350" y2="513" stroke="#6b7280" stroke-width="1" stroke-dasharray="2,3" opacity="0.6"/>
+            <text x="354" y="516" text-anchor="start" font-family="'Roboto Mono', monospace" font-size="8" fill="#6b7280">Avenue I</text>
+
+            <!-- Callout: corridors end at IBX stops -->
+            <g font-family="Inter, sans-serif" font-size="9.5" fill="#374151">
+              <text x="385" y="262">Both corridors end at <tspan font-weight="600">Avenue I</tspan>,</text>
+              <text x="385" y="275">right at planned IBX stops:</text>
+              <text x="385" y="288"><tspan font-weight="600">McDonald Av</tspan> (F train) and</text>
+              <text x="385" y="301"><tspan font-weight="600">East 16 St</tspan> (Q train)</text>
+            </g>
+            <line x1="408" y1="312" x2="352" y2="448" stroke="#9ca3af" stroke-width="1" opacity="0.8"/>
+            <circle cx="352" cy="448" r="2" fill="#9ca3af"/>
+
+            <!-- IBX route (planned: dashed) -->
+            <polyline points="90,425 135,462 182,490 232,510 288,522 348,528 412,527 472,518 528,502 580,478 626,447 664,405 684,352 697,300 707,248 714,196 719,144 723,88"
+                      fill="none" stroke="#2563eb" stroke-width="4.5" stroke-dasharray="10,7" stroke-linecap="round" stroke-linejoin="round"/>
+
+            <!-- Stations injected by script -->
+            <g id="stations"></g>
+          </svg>
+        </div>
+        <div class="map-hint">Scroll sideways to see the full map →</div>
+      </div>
+
+      <div class="chart-attribution">
+        <span>Created by Tal Roded · NYCuriosity · Sources:
+          <a href="https://www.governor.ny.gov/news/governor-hochul-announces-interborough-express-advancing-planning-active-phase" target="_blank" rel="noopener">Office of Gov. Hochul (2025)</a>,
+          <a href="https://new.mta.info/document/103686" target="_blank" rel="noopener">MTA PEL Study (2023)</a>,
+          <a href="https://gothamist.com/news/mamdani-eyes-sweeping-housing-plan-for-blocks-south-of-brooklyns-prospect-park" target="_blank" rel="noopener">Gothamist (2026)</a>
+        </span>
+      </div>
+    </div>
+
+    <div class="context-box">
+      <p>
+        <strong>Why these two projects belong on one map:</strong> the South of Prospect Plan is the first neighborhood
+        rezoning drawn to plug directly into the IBX. Both corridors terminate at Avenue I, where the line's planned
+        McDonald Avenue stop (F transfer) and East 16th Street stop (Q transfer, at Avenue H) would sit. The New York
+        Building Congress estimates that rezoning around the full IBX corridor could support
+        <strong>70,000–100,000 housing units</strong> within a decade.
+      </p>
+    </div>
+
+    <div class="footnotes">
+      <p><strong>Station locations are preliminary:</strong> the 18 named station areas shown come from the MTA's January 2023 <a href="https://new.mta.info/document/103686" target="_blank" rel="noopener">Planning and Environmental Linkages (PEL) study</a>. The MTA and the <a href="https://www.governor.ny.gov/news/governor-hochul-announces-interborough-express-advancing-planning-active-phase" target="_blank" rel="noopener">Governor's office</a> officially cite roughly 19 stations; 18 locations have been publicly named. Names, sites, and transfers may change during the environmental review that began in October 2025. Per-station subway letters are the author's mapping of named IBX stops to adjacent subway stations; the official 17-line connection count includes the B via the parallel Brighton corridor.</p>
+      <p><strong>Corridors are approximate bands, not parcel lines:</strong> the <a href="https://gothamist.com/news/mamdani-eyes-sweeping-housing-plan-for-blocks-south-of-brooklyns-prospect-park" target="_blank" rel="noopener">South of Prospect Plan</a>, announced May 20, 2026, covers McDonald Avenue from roughly Fort Hamilton Parkway to Avenue I and Coney Island Avenue from roughly Caton Avenue to Avenue I, plus surrounding blocks. Precise boundaries await the zoning concept expected in 2027, followed by ULURP. The city has not published a housing-unit projection; the Department of City Planning says the plan could create "potentially thousands" of units.</p>
+      <p><strong>Ridership and cost:</strong> 160,000 projected weekday riders is the MTA's revised May 2025 estimate; the original PEL projection was 115,000. The ~$5.5B estimated cost includes $2.75B committed in the 2025–2029 MTA Capital Plan, per the Governor's August 2025 announcement. The 70,000–100,000 unit figure in the takeaway box is from the <a href="https://buildingcongress.com/report/2025-ibx-report/" target="_blank" rel="noopener">New York Building Congress 2025 IBX report</a> and assumes rezoning around the full corridor.</p>
+      <p><strong>Sources:</strong> <a href="https://www.governor.ny.gov/news/governor-hochul-announces-interborough-express-advancing-planning-active-phase" target="_blank" rel="noopener">Office of Governor Kathy Hochul, IBX announcement (Aug. 1, 2025)</a>; <a href="https://new.mta.info/document/103686" target="_blank" rel="noopener">MTA, Interborough Express PEL Study (Jan. 2023)</a>; <a href="https://gothamist.com/news/mamdani-eyes-sweeping-housing-plan-for-blocks-south-of-brooklyns-prospect-park" target="_blank" rel="noopener">Gothamist (May 20, 2026)</a>; <a href="https://www.6sqft.com/nyc-looks-to-rezone-neighborhoods-south-of-prospect-park-for-new-housing/" target="_blank" rel="noopener">6sqft (May 20, 2026)</a>.</p>
+    </div>
+
+  </div>
+</main>
+
+<!-- EMBED MODAL -->
+<div id="embedModal" class="embed-modal" style="display:none">
+  <div class="embed-modal-box">
+    <div class="embed-modal-header">
+      <span class="embed-modal-title">Embed this chart</span>
+      <button class="embed-close" onclick="closeEmbed()">✕</button>
+    </div>
+    <p>Copy and paste into your webpage:</p>
+    <textarea id="embedCode" class="embed-textarea" readonly></textarea>
+    <button class="embed-copy-btn" onclick="copyEmbed()">Copy code</button>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <span class="footer-copy">© NYCuriosity · Tal Roded</span>
+    <nav class="footer-links">
+      <a href="https://talroded.nycuriosity.com" target="_blank" rel="noopener">About</a>
+      <a href="https://nycuriosity.substack.com" target="_blank" rel="noopener">Substack</a>
+      <a href="https://github.com/TalR24/nycur-data-website" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </div>
+</footer>
+
+<script>
+  // 18 named station areas, MTA PEL Study (Jan 2023). lx/ly = label anchor position.
+  const STATIONS = [
+    { x:90,  y:425, big:true,  name:["Brooklyn Army","Terminal"],    conn:null,        anchor:"middle", lx:105, ly:393 },
+    { x:135, y:462, big:false, name:["Fourth Av"],                   conn:"R",         anchor:"end",    lx:123, ly:468 },
+    { x:182, y:490, big:false, name:["Eighth Av"],                   conn:"N",         anchor:"end",    lx:170, ly:496 },
+    { x:232, y:510, big:false, name:["New Utrecht Av"],              conn:"D N",       anchor:"end",    lx:220, ly:520 },
+    { x:288, y:522, big:false, name:["McDonald Av"],                 conn:"F",         anchor:"middle", lx:288, ly:545 },
+    { x:348, y:528, big:false, name:["East 16 St"],                  conn:"Q",         anchor:"middle", lx:348, ly:568 },
+    { x:412, y:527, big:false, name:["Flatbush Av–Nostrand Av"],     conn:"2 5",       anchor:"middle", lx:412, ly:545 },
+    { x:472, y:518, big:false, name:["Utica Av"],                    conn:null,        anchor:"middle", lx:472, ly:568 },
+    { x:528, y:502, big:false, name:["Remsen Av"],                   conn:null,        anchor:"middle", lx:528, ly:522 },
+    { x:580, y:478, big:false, name:["Linden Blvd"],                 conn:"L",         anchor:"middle", lx:588, ly:500 },
+    { x:626, y:447, big:false, name:["Livonia Av"],                  conn:"3",         anchor:"start",  lx:638, ly:458 },
+    { x:664, y:405, big:false, name:["Atlantic Av","Broadway Junction"], conn:"A C J L Z", anchor:"start", lx:678, ly:403 },
+    { x:684, y:352, big:false, name:["Wilson Av"],                   conn:"L",         anchor:"end",    lx:672, ly:356 },
+    { x:697, y:300, big:false, name:["Myrtle Av"],                   conn:"M",         anchor:"end",    lx:684, ly:300 },
+    { x:707, y:248, big:false, name:["Metropolitan Av"],             conn:"M",         anchor:"end",    lx:694, ly:252 },
+    { x:714, y:196, big:false, name:["Eliot Av"],                    conn:null,        anchor:"end",    lx:701, ly:200 },
+    { x:719, y:144, big:false, name:["Grand Av"],                    conn:null,        anchor:"end",    lx:706, ly:148 },
+    { x:723, y:88,  big:true,  name:["Jackson Hts–Roosevelt Av"],    conn:"7 E F M R", anchor:"end",    lx:710, ly:84  }
+  ];
+
+  const NS = 'http://www.w3.org/2000/svg';
+  const layer = document.getElementById('stations');
+
+  function svgEl(tag, attrs) {
+    const el = document.createElementNS(NS, tag);
+    for (const k in attrs) el.setAttribute(k, attrs[k]);
+    return el;
+  }
+
+  STATIONS.forEach(s => {
+    const g = svgEl('g', {});
+    let lineY = s.ly;
+
+    // Station name (one or two lines)
+    s.name.forEach((line, i) => {
+      const isSub = (i > 0 && s.name.length > 1 && !s.big); // second line of Atlantic Av = sub-name
+      const t = svgEl('text', {
+        x: s.lx, y: lineY, 'text-anchor': s.anchor,
+        'font-family': "'Roboto Mono', monospace",
+        'font-size': isSub ? '8.5' : '10',
+        'font-weight': isSub ? '500' : '600',
+        fill: isSub ? '#6b7280' : '#111827'
+      });
+      t.textContent = line;
+      g.appendChild(t);
+      lineY += isSub ? 12 : 11;
+    });
+
+    // Subway connections in tiny gray text under the name
+    if (s.conn) {
+      const c = svgEl('text', {
+        x: s.lx, y: lineY, 'text-anchor': s.anchor,
+        'font-family': "'Roboto Mono', monospace",
+        'font-size': '8.5', 'font-weight': '500', fill: '#6b7280'
+      });
+      c.textContent = s.conn;
+      g.appendChild(c);
+    }
+
+    // Station dot (after labels so it sits on top of the route line)
+    g.appendChild(svgEl('circle', {
+      cx: s.x, cy: s.y, r: s.big ? 6 : 4.5,
+      fill: '#ffffff', stroke: '#2563eb', 'stroke-width': s.big ? 3 : 2.5
+    }));
+
+    layer.appendChild(g);
+  });
+
+  async function downloadChart(btn) {
+    const orig = btn.innerHTML;
+    btn.innerHTML = '⏳ Capturing…'; btn.disabled = true;
+    try {
+      const el = document.getElementById('chart-box');
+      const canvas = await html2canvas(el, { backgroundColor:'#ffffff', scale:2, useCORS:true, logging:false });
+      const a = document.createElement('a');
+      a.download = 'ibx-south-of-prospect-map.png';
+      a.href = canvas.toDataURL('image/png'); a.click();
+    } finally { btn.innerHTML = orig; btn.disabled = false; }
+  }
+  function showEmbed() {
+    const url = location.origin + location.pathname;
+    document.getElementById('embedCode').value =
+      `<iframe src="${url}" width="900" height="900" frameborder="0" style="border:1px solid #e5e7eb; border-radius:8px;" loading="lazy"></iframe>`;
+    document.getElementById('embedModal').style.display = 'flex';
+  }
+  function closeEmbed() { document.getElementById('embedModal').style.display = 'none'; }
+  function copyEmbed() {
+    const ta = document.getElementById('embedCode'); ta.select();
+    navigator.clipboard.writeText(ta.value).then(() => {
+      const btn = document.querySelector('.embed-copy-btn');
+      btn.textContent = '✓ Copied!';
+      setTimeout(() => btn.textContent = 'Copy code', 2000);
+    });
+  }
+</script>
+
+</body>
+</html>

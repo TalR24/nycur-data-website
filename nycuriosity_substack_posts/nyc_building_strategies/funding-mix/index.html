@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>How Transit Agencies Pay the Bills — NYCuriosity</title>
+  <meta name="description" content="Operating revenue mix — fares vs. government subsidy vs. other income — for the MTA, Transport for London, and Hong Kong's MTR.">
+  <meta property="og:type"        content="website">
+  <meta property="og:url"         content="https://data.nycuriosity.com/nycuriosity_substack_posts/nyc_building_strategies/funding-mix/">
+  <meta property="og:title"       content="How Transit Agencies Pay the Bills — NYCuriosity">
+  <meta property="og:description" content="Operating revenue mix — fares vs. government subsidy vs. other income — for the MTA, Transport for London, and Hong Kong's MTR.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue:       #2563eb;
+      --blue-hover: #1d4ed8;
+      --blue-light: #eff6ff;
+      --blue-mid:   #bfdbfe;
+      --text:       #111827;
+      --text-mid:   #374151;
+      --text-muted: #6b7280;
+      --text-faint: #9ca3af;
+      --bg:         #f8faff;
+      --surface:    #ffffff;
+      --border:     #e5e7eb;
+      --shadow-sm:  0 1px 3px rgba(17,24,39,0.08);
+      --shadow-md:  0 4px 16px rgba(37,99,235,0.10);
+      --radius:     10px;
+      --fares-color: #2563eb;
+      --gov-color:   #6b7280;
+      --other-color: #93c5fd;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── HEADER ──────────────────────────────────────────── */
+    header {
+      background: #111827;
+      border-bottom: 1px solid #1f2937;
+      padding: 0 clamp(20px, 5vw, 48px);
+    }
+    .header-inner {
+      max-width: 900px; margin: 0 auto; height: 56px;
+      display: flex; align-items: center; gap: 16px;
+    }
+    .back-link {
+      font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600;
+      color: #9ca3af; text-decoration: none; display: flex; align-items: center; gap: 5px;
+      padding: 4px 8px 4px 4px; border-radius: 5px; transition: color 0.15s, background 0.15s; white-space: nowrap;
+    }
+    .back-link:hover { color: #60a5fa; background: rgba(96,165,250,0.1); }
+    .header-divider { width: 1px; height: 20px; background: #374151; flex-shrink: 0; }
+    header h1 {
+      font-family: 'Roboto Mono', monospace; font-size: 0.95rem; font-weight: 700;
+      color: #e5e7eb; letter-spacing: -0.02em;
+    }
+
+    /* ── PILL NAV ─────────────────────────────────────────── */
+    .pill-nav {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 10px clamp(20px, 5vw, 48px);
+      display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+    }
+    .pill-nav a {
+      font-size: 0.78rem; font-family: 'Roboto Mono', monospace; font-weight: 600;
+      padding: 4px 12px; border-radius: 20px; text-decoration: none;
+      border: 1px solid var(--border); color: var(--text-muted); background: var(--bg);
+      transition: all 0.15s; white-space: nowrap;
+    }
+    .pill-nav a:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
+    .pill-nav a.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+    .pill-label { font-size: 0.72rem; color: var(--text-faint); font-family: 'Roboto Mono', monospace; white-space: nowrap; }
+
+    /* ── HERO ────────────────────────────────────────────── */
+    .hero {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: clamp(32px, 5vw, 52px) clamp(20px, 5vw, 48px);
+    }
+    .hero-inner { max-width: 900px; margin: 0 auto; }
+    .breadcrumb {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--text-faint);
+      margin-bottom: 14px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 6px;
+    }
+    .breadcrumb a { color: var(--blue); text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+    .breadcrumb span:last-child { color: #FF6319; }
+    .hero-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .hero-tag {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em;
+      color: var(--blue); background: var(--blue-light); border: 1px solid var(--blue-mid);
+      border-radius: 4px; padding: 3px 8px;
+    }
+    .hero-updated { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; color: var(--text-faint); }
+    .hero h1 {
+      font-family: 'Roboto Mono', monospace;
+      font-size: clamp(1.4rem, 3vw, 1.85rem);
+      font-weight: 700; color: var(--text);
+      letter-spacing: -0.03em; line-height: 1.2; margin-bottom: 10px;
+    }
+    .hero h1 span { color: var(--blue); }
+    .hero p {
+      font-size: 0.975rem; color: var(--text-muted); max-width: 680px; line-height: 1.7;
+    }
+    .hero p a { color: var(--blue); text-decoration: none; border-bottom: 1px solid var(--blue-mid); }
+    .hero p a:hover { border-color: var(--blue); }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600;
+      text-decoration: none; border-radius: 7px; padding: 8px 14px;
+      transition: background 0.15s, border-color 0.15s; cursor: pointer; border: none;
+    }
+    .btn-outline { background: var(--surface); color: var(--text-muted); border: 1.5px solid var(--border); }
+    .btn-outline:hover { color: var(--blue); border-color: var(--blue-mid); background: var(--blue-light); }
+
+    /* ── MAIN ────────────────────────────────────────────── */
+    main {
+      flex: 1;
+      padding: clamp(28px, 4vw, 48px) clamp(20px, 5vw, 48px);
+    }
+    .main-inner { max-width: 900px; margin: 0 auto; }
+
+    /* ── CHART ACTIONS ─────────────────────────────────────── */
+    .chart-actions { display:flex; gap:8px; margin-bottom:16px; }
+    .action-btn { display:inline-flex; align-items:center; gap:6px; background:var(--surface); color:var(--text-muted); font-family:'Roboto Mono',monospace; font-size:0.75rem; font-weight:600; padding:6px 14px; border-radius:6px; border:1px solid var(--border); cursor:pointer; transition:all 0.15s; }
+    .action-btn:hover { border-color:var(--blue); color:var(--blue); background:var(--blue-light); }
+    .action-btn:disabled { opacity:0.6; cursor:not-allowed; }
+
+    /* ── CHART BOX ───────────────────────────────────────── */
+    #chart-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+    }
+    .chart-box-inner { padding: clamp(18px, 3vw, 28px); }
+    .chart-title {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.95rem; font-weight: 700; color: var(--text);
+      letter-spacing: -0.02em; margin-bottom: 4px;
+    }
+    .chart-subtitle {
+      font-size: 0.8rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 18px;
+    }
+
+    /* ── LEGEND ──────────────────────────────────────────── */
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px 20px;
+      margin-bottom: 26px;
+      align-items: center;
+    }
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.8rem;
+      color: var(--text-mid);
+      font-weight: 500;
+    }
+    .legend-swatch {
+      width: 14px;
+      height: 14px;
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+    .swatch-fares { background: var(--fares-color); }
+    .swatch-gov   { background: var(--gov-color); }
+    .swatch-other { background: var(--other-color); }
+
+    /* ── STACKED BARS ────────────────────────────────────── */
+    .chart { display: flex; flex-direction: column; gap: 26px; }
+
+    .agency-block { display: flex; flex-direction: column; gap: 7px; }
+    .agency-head {
+      display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
+    }
+    .agency-name {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.88rem; font-weight: 700; color: var(--text);
+    }
+    .agency-meta {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.72rem; color: var(--text-faint);
+    }
+    .stack-track {
+      display: flex;
+      height: 38px;
+      border-radius: 5px;
+      overflow: hidden;
+      background: var(--border);
+    }
+    .stack-seg {
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 0%;
+      transition: width 0.7s cubic-bezier(0.4,0,0.2,1);
+      overflow: hidden;
+      position: relative;
+    }
+    .stack-seg.fares { background: var(--fares-color); }
+    .stack-seg.gov   { background: var(--gov-color); }
+    .stack-seg.other { background: var(--other-color); }
+    .seg-pct {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.74rem; font-weight: 600;
+      white-space: nowrap;
+      opacity: 0;
+      transition: opacity 0.4s ease 0.55s;
+    }
+    .stack-seg.fares .seg-pct, .stack-seg.gov .seg-pct { color: #ffffff; }
+    .stack-seg.other .seg-pct { color: #1e3a8a; }
+    .seg-pct-outside {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.7rem; font-weight: 600; color: var(--text-muted);
+      white-space: nowrap; margin-left: 6px; align-self: center;
+    }
+    .recovery-line {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.72rem; color: var(--text-muted);
+      line-height: 1.5;
+    }
+    .recovery-line strong { color: var(--text); font-weight: 700; }
+
+    @media (max-width: 600px) {
+      .stack-track { height: 32px; }
+      .seg-pct { font-size: 0.66rem; }
+    }
+    @media (max-width: 360px) {
+      .seg-pct { font-size: 0.6rem; }
+    }
+
+    /* ── ATTRIBUTION ─────────────────────────────────────── */
+    .chart-attribution {
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+      padding: 12px 16px; border-top: 1px solid var(--border); background: var(--bg);
+      font-size: 0.78rem; color: var(--text-faint); font-family: 'Roboto Mono', monospace;
+    }
+    .chart-attribution a { color: var(--blue); text-decoration: none; }
+    .chart-attribution a:hover { text-decoration: underline; }
+    .dl-btn {
+      font-family: 'Roboto Mono', monospace; font-size: 0.72rem; font-weight: 600;
+      padding: 5px 12px; border-radius: 16px; background: var(--blue-light);
+      color: var(--blue); border: 1px solid var(--blue-mid); cursor: pointer;
+      text-decoration: none; transition: all 0.15s; white-space: nowrap;
+    }
+    .dl-btn:hover { background: var(--blue); color: #fff; border-color: var(--blue); }
+
+    /* ── FOOTNOTES ───────────────────────────────────────── */
+    .footnotes {
+      margin-top: 16px;
+      padding: 14px 18px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+    .footnotes p { font-size: 0.78rem; color: var(--text-muted); line-height: 1.6; }
+    .footnotes p + p { margin-top: 6px; }
+    .footnotes strong { color: var(--text-mid); }
+    .footnotes a { color: var(--blue); text-decoration: none; border-bottom: 1px solid var(--blue-mid); }
+    .footnotes a:hover { border-color: var(--blue); }
+
+    /* ── FOOTER ──────────────────────────────────────────── */
+    footer {
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      padding: 20px clamp(20px, 5vw, 48px);
+      margin-top: auto;
+    }
+    .footer-inner {
+      max-width: 900px; margin: 0 auto;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 12px;
+    }
+    .footer-copy { font-size: 0.8rem; color: var(--text-faint); }
+    .footer-links { display: flex; gap: 20px; }
+    .footer-links a { font-size: 0.8rem; color: var(--text-faint); text-decoration: none; transition: color 0.15s; }
+    .footer-links a:hover { color: var(--blue); }
+
+    /* ── EMBED MODAL ───────────────────────────────────────── */
+    .embed-modal { position:fixed; inset:0; background:rgba(0,0,0,0.45); display:flex; align-items:center; justify-content:center; z-index:1000; }
+    .embed-modal-box { background:var(--surface); border-radius:10px; padding:24px; max-width:540px; width:90%; box-shadow:0 8px 32px rgba(0,0,0,0.18); }
+    .embed-modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+    .embed-modal-title { font-family:'Roboto Mono',monospace; font-weight:700; font-size:0.9rem; color:var(--text); }
+    .embed-close { background:none; border:none; font-size:1.1rem; color:var(--text-muted); cursor:pointer; padding:2px 6px; border-radius:4px; }
+    .embed-close:hover { color:var(--text); background:var(--bg); }
+    .embed-modal-box > p { font-size:0.83rem; color:var(--text-muted); margin-bottom:10px; }
+    .embed-textarea { width:100%; height:80px; font-family:'Roboto Mono',monospace; font-size:0.72rem; border:1px solid var(--border); border-radius:6px; padding:10px; resize:none; color:var(--text-mid); background:var(--bg); margin-bottom:12px; }
+    .embed-copy-btn { background:var(--blue); color:#fff; font-family:'Roboto Mono',monospace; font-size:0.8rem; font-weight:600; padding:7px 18px; border:none; border-radius:6px; cursor:pointer; transition:background 0.15s; }
+    .embed-copy-btn:hover { background:#1d4ed8; }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="header-inner">
+    <a href="/nycuriosity_substack_posts/nyc_building_strategies/" class="back-link">← new-york-needs-to-grow</a>
+    <div class="header-divider"></div>
+    <h1>Funding Mix</h1>
+  </div>
+</header>
+
+<!-- VISUALS NAV -->
+<div class="pill-nav">
+  <span class="pill-label">Visuals in this post:</span>
+  <a href="../building-timeline/">Building Timeline</a>
+  <a href="../construction-costs/">Construction Costs</a>
+  <a href="./" class="active">Funding Mix</a>
+  <a href="../city-of-yes-rezonings/">City of Yes vs. Rezonings</a>
+  <a href="../expansion-rankings/">Expansion Rankings</a>
+  <a href="../tod-map/">IBX &amp; Rezonings Map</a>
+</div>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-inner">
+    <div class="breadcrumb">
+      <a href="/">data.nycuriosity.com</a>
+      <span>›</span>
+      <a href="/nycuriosity_substack_posts/nyc_building_strategies/">New York Needs to Grow</a>
+      <span>›</span>
+      <span>Funding Mix</span>
+    </div>
+    <div class="hero-meta">
+      <span class="hero-tag">Transit &amp; Housing</span>
+      <span class="hero-updated">June 2026</span>
+    </div>
+    <h1>How Transit Agencies <span>Pay the Bills</span></h1>
+    <p>
+      Where the operating money comes from — fares, government subsidies and dedicated taxes, or
+      other income — for New York's MTA, Transport for London, and Hong Kong's MTR. Fares cover
+      just 26.2% of the MTA's $19.9B 2025 operating budget; TfL riders cover 57.2% of theirs, and
+      MTR's Hong Kong fares cover more than its transit running costs entirely.
+    </p>
+    <div class="hero-actions">
+      <a href="../data/funding_mix.csv" download class="btn btn-outline">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download CSV
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- CHART -->
+<main>
+  <div class="main-inner">
+
+    <div class="chart-actions">
+      <button class="action-btn" onclick="downloadChart(this)">&#11015; Download PNG</button>
+      <button class="action-btn" onclick="showEmbed()">&#60;/&#62; Embed</button>
+    </div>
+
+    <div id="chart-box">
+      <div class="chart-box-inner">
+        <div class="chart-title">Operating revenue mix: MTA vs. TfL vs. MTR</div>
+        <div class="chart-subtitle">Share of each agency's operating revenue, by source. Author's classification of each agency's own reported figures.</div>
+
+        <div class="legend">
+          <div class="legend-item">
+            <span class="legend-swatch swatch-fares"></span>
+            Fares
+          </div>
+          <div class="legend-item">
+            <span class="legend-swatch swatch-gov"></span>
+            Government subsidies &amp; dedicated taxes
+          </div>
+          <div class="legend-item">
+            <span class="legend-swatch swatch-other"></span>
+            Other — tolls, road charges, commercial
+          </div>
+        </div>
+
+        <div class="chart" id="chart"></div>
+      </div>
+
+      <div class="chart-attribution">
+        <span>Created by Tal Roded · NYCuriosity · Sources: <a href="https://council.nyc.gov/budget/wp-content/uploads/sites/54/2025/03/Metropolitan-Transportation-Authority.pdf" target="_blank" rel="noopener">NYC Council Finance Division (MTA 2025 budget)</a>, <a href="https://content.tfl.gov.uk/tfl-annual-report-and-statement-of-accounts-2024-25.pdf" target="_blank" rel="noopener">TfL Annual Report 2024/25</a>, <a href="https://www.mtr.com.hk/archive/corporate/en/investor/sehk/e_Annual_Results_2024.pdf" target="_blank" rel="noopener">MTR Annual Results 2024</a></span>
+        <a class="dl-btn" href="../data/funding_mix.csv" download>↓ Download CSV</a>
+      </div>
+    </div>
+
+    <div class="footnotes">
+      <p><strong>Classification:</strong> Categories are the author's mapping of each agency's own reporting onto three buckets — the MTA, TfL, and MTR do not use a common chart of accounts, so shares are comparable only approximately. Fiscal years also differ: MTA figures are the calendar-2025 adopted budget, TfL figures are audited actuals for the year ended March 31, 2025, and MTR figures are audited actuals for calendar 2024.</p>
+      <p><strong>MTA tolls:</strong> Bridge and tunnel tolls ($2.7B, 13.4%) are classified here as Other — they are user charges on drivers that cross-subsidize transit, not transit fares. Reclassifying tolls as fare-like user revenue would raise the MTA's user-revenue share to about 40%, consistent with the "fares and tolls" framing (39% of the 2024 operating budget) in the <a href="https://www.osc.ny.gov/files/reports/pdf/report-4-2026.pdf" target="_blank" rel="noopener">NY State Comptroller's revenue-trends report</a>. Congestion pricing revenue is dedicated by statute to the MTA capital program, so it is absent from this operating mix.</p>
+      <p><strong>TfL:</strong> Extraordinary post-COVID government operating support from the Department for Transport ended in 2023/24 (zero in 2024/25), so this chart shows TfL at its most farebox-supported since the pandemic; 2020–2023 would look far more government-dependent. The government share includes a £270.5M local-authority reimbursement for statutory free travel; capital grants (£944.8M) are excluded. TfL's Other slice includes road user charging (ULEZ, Congestion Charge — roughly £1.05B), a policy levy grouped here with commercial income.</p>
+      <p><strong>MTR:</strong> Figures cover Hong Kong recurrent operations only. MTR's famous property-development profit — HK$12.2B in 2024, the engine of its land-value-capture model — sits on top of these figures and is excluded because it is not operating revenue, as are its Mainland China and international subsidiaries. The 0% government share means no direct operating subsidy, but support is implicit: the Hong Kong government grants MTR development rights over station land and is its majority shareholder.</p>
+      <p><strong>Farebox recovery:</strong> Ratios are author-computed from each agency's reports and use non-identical denominators — MTA: fares ÷ total 2025 expenses including debt service; TfL: passenger income ÷ management-accounts operating costs; MTR: Hong Kong fare revenue ÷ Hong Kong transport expenses before depreciation and amortisation (after full depreciation, MTR's Hong Kong transport segment was roughly break-even in 2024). These are not officially published farebox recovery ratios.</p>
+      <p><strong>Sources:</strong> <a href="https://council.nyc.gov/budget/wp-content/uploads/sites/54/2025/03/Metropolitan-Transportation-Authority.pdf" target="_blank" rel="noopener">NYC Council Finance Division, Report on the MTA (Fiscal 2026 Preliminary Budget analysis)</a>, presenting the <a href="https://www.mta.info/document/165071" target="_blank" rel="noopener">MTA 2025 Adopted Budget</a>; <a href="https://content.tfl.gov.uk/tfl-annual-report-and-statement-of-accounts-2024-25.pdf" target="_blank" rel="noopener">Transport for London, Annual Report and Statement of Accounts 2024/25</a>; <a href="https://www.mtr.com.hk/archive/corporate/en/investor/sehk/e_Annual_Results_2024.pdf" target="_blank" rel="noopener">MTR Corporation, Annual Results 2024</a>; <a href="https://www.osc.ny.gov/files/reports/pdf/report-4-2026.pdf" target="_blank" rel="noopener">Office of the NY State Comptroller, Report 4-2026</a>.</p>
+    </div>
+
+  </div>
+</main>
+
+<!-- EMBED MODAL -->
+<div id="embedModal" class="embed-modal" style="display:none">
+  <div class="embed-modal-box">
+    <div class="embed-modal-header">
+      <span class="embed-modal-title">Embed this chart</span>
+      <button class="embed-close" onclick="closeEmbed()">✕</button>
+    </div>
+    <p>Copy and paste into your webpage:</p>
+    <textarea id="embedCode" class="embed-textarea" readonly></textarea>
+    <button class="embed-copy-btn" onclick="copyEmbed()">Copy code</button>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <span class="footer-copy">© NYCuriosity · Tal Roded</span>
+    <nav class="footer-links">
+      <a href="https://talroded.nycuriosity.com" target="_blank" rel="noopener">About</a>
+      <a href="https://nycuriosity.substack.com" target="_blank" rel="noopener">Substack</a>
+      <a href="https://github.com/TalR24/nycur-data-website" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </div>
+</footer>
+
+<script>
+  const AGENCIES = [
+    {
+      name: 'MTA',
+      meta: 'New York · 2025 adopted budget',
+      fares: 26.2, gov: 50.5, other: 23.3,
+      recovery: 'Farebox recovery: <strong>26%</strong> · fares ÷ total 2025 expenses incl. debt service'
+    },
+    {
+      name: 'TfL',
+      meta: 'London · FY 2024/25 actuals',
+      fares: 57.2, gov: 23.5, other: 19.3,
+      recovery: 'Farebox recovery: <strong>63%</strong> · passenger income ÷ operating costs, 2024/25'
+    },
+    {
+      name: 'MTR',
+      meta: 'Hong Kong · 2024 actuals (HK operations only)',
+      fares: 66.6, gov: 0.0, other: 33.4,
+      recovery: 'Farebox recovery: <strong>~150%</strong> · HK fares ÷ HK transport costs before depreciation, 2024'
+    }
+  ];
+
+  const SEGMENTS = [
+    { key: 'fares', cls: 'fares' },
+    { key: 'gov',   cls: 'gov'   },
+    { key: 'other', cls: 'other' }
+  ];
+
+  // Inside-label threshold: below this share, the percent label moves
+  // outside the bar (or is omitted for zero-width segments).
+  const INSIDE_MIN = 9;
+
+  const chart = document.getElementById('chart');
+
+  AGENCIES.forEach(a => {
+    const block = document.createElement('div');
+    block.className = 'agency-block';
+
+    let segsHtml = '';
+    let outsideHtml = '';
+    SEGMENTS.forEach(s => {
+      const pct = a[s.key];
+      if (pct <= 0) return;
+      const label = pct.toFixed(1) + '%';
+      if (pct >= INSIDE_MIN) {
+        segsHtml += `<div class="stack-seg ${s.cls}" data-pct="${pct}"><span class="seg-pct">${label}</span></div>`;
+      } else {
+        segsHtml += `<div class="stack-seg ${s.cls}" data-pct="${pct}"></div>`;
+        outsideHtml += `<span class="seg-pct-outside">${label}</span>`;
+      }
+    });
+
+    block.innerHTML = `
+      <div class="agency-head">
+        <span class="agency-name">${a.name}</span>
+        <span class="agency-meta">${a.meta}</span>
+      </div>
+      <div style="display:flex; align-items:stretch;">
+        <div class="stack-track" style="flex:1;">${segsHtml}</div>${outsideHtml}
+      </div>
+      <div class="recovery-line">${a.recovery}</div>
+    `;
+    chart.appendChild(block);
+  });
+
+  // Animate segments in after a short delay
+  requestAnimationFrame(() => {
+    setTimeout(() => {
+      document.querySelectorAll('.stack-seg').forEach(el => {
+        el.style.width = el.dataset.pct + '%';
+      });
+      document.querySelectorAll('.seg-pct').forEach(el => {
+        el.style.opacity = '1';
+      });
+    }, 80);
+  });
+
+  async function downloadChart(btn) {
+    const orig = btn.innerHTML;
+    btn.innerHTML = '⏳ Capturing…'; btn.disabled = true;
+    try {
+      const el = document.getElementById('chart-box');
+      const canvas = await html2canvas(el, { backgroundColor:'#ffffff', scale:2, useCORS:true, logging:false });
+      const a = document.createElement('a');
+      a.download = 'transit-agency-funding-mix.png';
+      a.href = canvas.toDataURL('image/png'); a.click();
+    } finally { btn.innerHTML = orig; btn.disabled = false; }
+  }
+  function showEmbed() {
+    const url = location.origin + location.pathname;
+    document.getElementById('embedCode').value =
+      `<iframe src="${url}" width="900" height="860" frameborder="0" style="border:1px solid #e5e7eb; border-radius:8px;" loading="lazy"></iframe>`;
+    document.getElementById('embedModal').style.display = 'flex';
+  }
+  function closeEmbed() { document.getElementById('embedModal').style.display = 'none'; }
+  function copyEmbed() {
+    const ta = document.getElementById('embedCode'); ta.select();
+    navigator.clipboard.writeText(ta.value).then(() => {
+      const btn = document.querySelector('.embed-copy-btn');
+      btn.textContent = '✓ Copied!';
+      setTimeout(() => btn.textContent = 'Copy code', 2000);
+    });
+  }
+</script>
+
+</body>
+</html>
