@@ -302,6 +302,26 @@
     .context-box p + p { margin-top: 8px; }
     .context-box strong { color: var(--text); }
 
+    /* ── DATA TABLE ──────────────────────────────────────── */
+    .data-section { margin-top: 28px; }
+    .data-section-head { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+    .data-section-title { font-family: 'Roboto Mono', monospace; font-size: 0.95rem; font-weight: 700; color: var(--text); letter-spacing: -0.02em; }
+    .data-section-note { font-size: 0.78rem; color: var(--text-faint); }
+    .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); overflow-x: auto; }
+    table.data-table { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
+    table.data-table thead th { font-family: 'Roboto Mono', monospace; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); text-align: left; padding: 11px 14px; border-bottom: 2px solid var(--border); background: var(--bg); white-space: nowrap; }
+    table.data-table tbody td { padding: 10px 14px; border-bottom: 1px solid var(--border); color: var(--text-mid); line-height: 1.4; vertical-align: top; }
+    table.data-table tbody tr:last-child td { border-bottom: none; }
+    table.data-table tbody tr:hover { background: var(--blue-light); }
+    table.data-table .num { font-family: 'Roboto Mono', monospace; text-align: right; white-space: nowrap; color: var(--text); font-weight: 600; }
+    table.data-table th.num { text-align: right; }
+    table.data-table .name-cell { font-weight: 600; color: var(--text); }
+    table.data-table .sub { display: block; font-size: 0.72rem; color: var(--text-faint); font-weight: 400; margin-top: 2px; }
+    .tbl-tag { display: inline-block; font-family: 'Roboto Mono', monospace; font-size: 0.66rem; font-weight: 600; padding: 2px 7px; border-radius: 4px; background: var(--blue-light); color: var(--blue); border: 1px solid var(--blue-mid); white-space: nowrap; }
+    .tbl-tag.done { background: #dcfce7; color: #15803d; border-color: #bbf7d0; }
+    .tbl-tag.plan { background: #fef3c7; color: #b45309; border-color: #fde68a; }
+    @media (max-width: 560px) { table.data-table { font-size: 0.78rem; } table.data-table thead th, table.data-table tbody td { padding: 8px 10px; } }
+
     /* ── FOOTNOTES ───────────────────────────────────────── */
     .footnotes {
       margin-top: 16px;
@@ -470,6 +490,21 @@
       </p>
     </div>
 
+    <div class="data-section">
+      <div class="data-section-head">
+        <span class="data-section-title">The data behind the chart</span>
+        <span class="data-section-note">All 27 ranked projects, including the five outliers.</span>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr><th class="num">#</th><th>Project</th><th>Type</th><th class="num">Cost/min saved</th><th class="num">Daily riders 2045</th><th class="num">Construction cost</th></tr>
+          </thead>
+          <tbody id="data-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+
     <div class="footnotes">
       <p><strong>The metric:</strong> "Cost/Time Saved (30 yrs)" is the MTA's own cost-effectiveness measure — the 30-year net present value of capital costs (construction plus fleet, in 2027 dollars) and operating &amp; maintenance costs, divided by total door-to-door travel time saved. The MTA cautions that these are conceptual-level planning estimates, not rigorous cost estimates. The Ridgewood Busway shows $0/min because its projected operating savings over the project lifetime exceed its capital cost.</p>
       <p><strong>Ridership figures:</strong> The riders shown in each sublabel are <em>total</em> projected 2045 daily riders on the project, including riders diverted from existing MTA services — not net-new riders to the system. The gap can be large: the Second Ave Subway extension to Houston St projects 230,400 total daily riders but only 2,900 net-new.</p>
@@ -590,6 +625,25 @@
       });
     }, 80);
   });
+
+  // Build the data table from the same MAIN + OUTLIERS arrays that drive the chart
+  (function buildTable() {
+    const tbody = document.getElementById('data-table-body');
+    if (!tbody) return;
+    MAIN.concat(OUTLIERS).forEach((item, i) => {
+      const tr = document.createElement('tr');
+      if (item.type === 'ibx' || item.type === 'sas') tr.style.background = 'var(--blue-light)';
+      tr.innerHTML = `
+        <td class="num">${i + 1}</td>
+        <td class="name-cell">${item.name}</td>
+        <td>${item.cat}</td>
+        <td class="num">${fmtVal(item.val)}</td>
+        <td class="num">${item.riders.toLocaleString()}</td>
+        <td class="num">${fmtCost(item.costB)}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  })();
 
   async function downloadChart(btn) {
     const orig = btn.innerHTML;

@@ -261,6 +261,26 @@
     .context-box p + p { margin-top: 8px; }
     .context-box strong { color: var(--text); }
 
+    /* ── DATA TABLE ──────────────────────────────────────── */
+    .data-section { margin-top: 28px; }
+    .data-section-head { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+    .data-section-title { font-family: 'Roboto Mono', monospace; font-size: 0.95rem; font-weight: 700; color: var(--text); letter-spacing: -0.02em; }
+    .data-section-note { font-size: 0.78rem; color: var(--text-faint); }
+    .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); overflow-x: auto; }
+    table.data-table { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
+    table.data-table thead th { font-family: 'Roboto Mono', monospace; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); text-align: left; padding: 11px 14px; border-bottom: 2px solid var(--border); background: var(--bg); white-space: nowrap; }
+    table.data-table tbody td { padding: 10px 14px; border-bottom: 1px solid var(--border); color: var(--text-mid); line-height: 1.4; vertical-align: top; }
+    table.data-table tbody tr:last-child td { border-bottom: none; }
+    table.data-table tbody tr:hover { background: var(--blue-light); }
+    table.data-table .num { font-family: 'Roboto Mono', monospace; text-align: right; white-space: nowrap; color: var(--text); font-weight: 600; }
+    table.data-table th.num { text-align: right; }
+    table.data-table .name-cell { font-weight: 600; color: var(--text); }
+    table.data-table .sub { display: block; font-size: 0.72rem; color: var(--text-faint); font-weight: 400; margin-top: 2px; }
+    .tbl-tag { display: inline-block; font-family: 'Roboto Mono', monospace; font-size: 0.66rem; font-weight: 600; padding: 2px 7px; border-radius: 4px; background: var(--blue-light); color: var(--blue); border: 1px solid var(--blue-mid); white-space: nowrap; }
+    .tbl-tag.done { background: #dcfce7; color: #15803d; border-color: #bbf7d0; }
+    .tbl-tag.plan { background: #fef3c7; color: #b45309; border-color: #fde68a; }
+    @media (max-width: 560px) { table.data-table { font-size: 0.78rem; } table.data-table thead th, table.data-table tbody td { padding: 8px 10px; } }
+
     /* ── FOOTNOTES ───────────────────────────────────────── */
     .footnotes {
       margin-top: 16px;
@@ -402,6 +422,21 @@
         the charter ballot proposals (November 2025), Block by Block (May 26, 2026), and the state's SEQRA
         overhaul (May 27, 2026) — the last two arriving one day apart.
       </p>
+    </div>
+
+    <div class="data-section">
+      <div class="data-section-head">
+        <span class="data-section-title">The data behind the timeline</span>
+        <span class="data-section-note">Milestones in date order.</span>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr><th>Date</th><th>Milestone</th><th>Lane</th><th>Status</th><th>Detail</th></tr>
+          </thead>
+          <tbody id="data-table-body"></tbody>
+        </table>
+      </div>
     </div>
 
     <div class="footnotes">
@@ -581,6 +616,27 @@
   buildMobile();
 
   /* ── Chart actions ────────────────────────────────────── */
+  // Build the data table from the same MILESTONES array that drives the timeline
+  (function buildTable() {
+    const tbody = document.getElementById('data-table-body');
+    if (!tbody) return;
+    MILESTONES.slice().sort((a, b) => a.yr - b.yr).forEach(m => {
+      const name = m.lines.length >= 3 ? m.lines.slice(0, 2).join(' ') : m.lines[0];
+      const status = m.status === 'done'
+        ? '<span class="tbl-tag done">Complete</span>'
+        : '<span class="tbl-tag plan">Planned</span>';
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="num" style="text-align:left">${m.mdate}</td>
+        <td class="name-cell">${name}</td>
+        <td>${m.lane}</td>
+        <td>${status}</td>
+        <td style="font-size:0.78rem; color:var(--text-muted)">${m.note}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  })();
+
   async function downloadChart(btn) {
     const orig = btn.innerHTML;
     btn.innerHTML = '⏳ Capturing…'; btn.disabled = true;

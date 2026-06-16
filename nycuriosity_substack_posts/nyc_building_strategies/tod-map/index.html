@@ -233,6 +233,26 @@
     .context-box p + p { margin-top: 8px; }
     .context-box strong { color: var(--text); }
 
+    /* ── DATA TABLE ──────────────────────────────────────── */
+    .data-section { margin-top: 28px; }
+    .data-section-head { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+    .data-section-title { font-family: 'Roboto Mono', monospace; font-size: 0.95rem; font-weight: 700; color: var(--text); letter-spacing: -0.02em; }
+    .data-section-note { font-size: 0.78rem; color: var(--text-faint); }
+    .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); overflow-x: auto; }
+    table.data-table { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
+    table.data-table thead th { font-family: 'Roboto Mono', monospace; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); text-align: left; padding: 11px 14px; border-bottom: 2px solid var(--border); background: var(--bg); white-space: nowrap; }
+    table.data-table tbody td { padding: 10px 14px; border-bottom: 1px solid var(--border); color: var(--text-mid); line-height: 1.4; vertical-align: top; }
+    table.data-table tbody tr:last-child td { border-bottom: none; }
+    table.data-table tbody tr:hover { background: var(--blue-light); }
+    table.data-table .num { font-family: 'Roboto Mono', monospace; text-align: right; white-space: nowrap; color: var(--text); font-weight: 600; }
+    table.data-table th.num { text-align: right; }
+    table.data-table .name-cell { font-weight: 600; color: var(--text); }
+    table.data-table .sub { display: block; font-size: 0.72rem; color: var(--text-faint); font-weight: 400; margin-top: 2px; }
+    .tbl-tag { display: inline-block; font-family: 'Roboto Mono', monospace; font-size: 0.66rem; font-weight: 600; padding: 2px 7px; border-radius: 4px; background: var(--blue-light); color: var(--blue); border: 1px solid var(--blue-mid); white-space: nowrap; }
+    .tbl-tag.done { background: #dcfce7; color: #15803d; border-color: #bbf7d0; }
+    .tbl-tag.plan { background: #fef3c7; color: #b45309; border-color: #fde68a; }
+    @media (max-width: 560px) { table.data-table { font-size: 0.78rem; } table.data-table thead th, table.data-table tbody td { padding: 8px 10px; } }
+
     /* ── FOOTNOTES ───────────────────────────────────────── */
     .footnotes {
       margin-top: 16px;
@@ -449,6 +469,21 @@
       </p>
     </div>
 
+    <div class="data-section">
+      <div class="data-section-head">
+        <span class="data-section-title">The data behind the map</span>
+        <span class="data-section-note">18 proposed IBX station areas, south to north.</span>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr><th class="num">#</th><th>Station area</th><th>Subway connections</th><th>Notes</th></tr>
+          </thead>
+          <tbody id="data-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+
     <div class="footnotes">
       <p><strong>Station locations are preliminary:</strong> the 18 named station areas shown come from the MTA's January 2023 <a href="https://new.mta.info/document/103686" target="_blank" rel="noopener">Planning and Environmental Linkages (PEL) study</a>. The MTA and the <a href="https://www.governor.ny.gov/news/governor-hochul-announces-interborough-express-advancing-planning-active-phase" target="_blank" rel="noopener">Governor's office</a> officially cite roughly 19 stations; 18 locations have been publicly named. Names, sites, and transfers may change during the environmental review that began in October 2025. Per-station subway letters are the author's mapping of named IBX stops to adjacent subway stations; the official 17-line connection count includes the B via the parallel Brighton corridor.</p>
       <p><strong>Corridors are approximate bands, not parcel lines:</strong> the <a href="https://gothamist.com/news/mamdani-eyes-sweeping-housing-plan-for-blocks-south-of-brooklyns-prospect-park" target="_blank" rel="noopener">South of Prospect Plan</a>, announced May 20, 2026, covers McDonald Avenue from roughly Fort Hamilton Parkway to Avenue I and Coney Island Avenue from roughly Caton Avenue to Avenue I, plus surrounding blocks. Precise boundaries await the zoning concept expected in 2027, followed by ULURP. The city has not published a housing-unit projection; the Department of City Planning says the plan could create "potentially thousands" of units.</p>
@@ -554,6 +589,24 @@
 
     layer.appendChild(g);
   });
+
+  // Build the data table from the same STATIONS array that drives the map
+  (function buildTable() {
+    const tbody = document.getElementById('data-table-body');
+    if (!tbody) return;
+    STATIONS.forEach((s, i) => {
+      const conns = s.conn ? s.conn.split(' ').join(', ') : '<span style="color:var(--text-faint)">—</span>';
+      const note = s.big ? '<span class="tbl-tag">Terminal</span>' : '';
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="num">${i + 1}</td>
+        <td class="name-cell">${s.name.join(' ')}</td>
+        <td>${conns}</td>
+        <td>${note}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  })();
 
   async function downloadChart(btn) {
     const orig = btn.innerHTML;
