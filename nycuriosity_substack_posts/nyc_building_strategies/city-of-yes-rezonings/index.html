@@ -269,6 +269,21 @@
     .context-box strong { color: var(--text); }
     .context-box .ctx-num { font-family: 'Roboto Mono', monospace; font-weight: 700; color: var(--blue); }
 
+    /* ── SECONDARY CHART (waffle) ────────────────────────── */
+    #chart-box-2 { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); overflow: hidden; margin-top: 20px; }
+    .chart-title { font-family: 'Roboto Mono', monospace; font-size: 0.95rem; font-weight: 700; color: var(--text); letter-spacing: -0.02em; margin-bottom: 4px; }
+    .chart-subtitle { font-size: 0.8rem; color: var(--text-muted); line-height: 1.55; margin-bottom: 18px; }
+    .waffle-row { display: flex; gap: 28px; flex-wrap: wrap; justify-content: center; align-items: flex-start; }
+    .waffle-block { display: flex; flex-direction: column; align-items: center; gap: 8px; flex: 1 1 200px; max-width: 300px; }
+    .waffle-block svg { width: 100%; max-width: 220px; height: auto; display: block; }
+    .waffle-num { font-family: 'Roboto Mono', monospace; font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; }
+    .waffle-num.coy { color: var(--blue); }
+    .waffle-num.prior { color: var(--text-muted); }
+    .waffle-name { font-family: 'Roboto Mono', monospace; font-size: 0.8rem; font-weight: 600; color: var(--text); text-align: center; line-height: 1.4; }
+    .waffle-key { font-family: 'Roboto Mono', monospace; font-size: 0.74rem; color: var(--text-faint); text-align: center; margin-top: 14px; }
+    /* PNG text breathing room (commas/parentheses) */
+    .bar-value, .bar-label .sublabel { letter-spacing: 0.012em; }
+
     /* ── DATA TABLE ──────────────────────────────────────── */
     .data-section { margin-top: 28px; }
     .data-section-head { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
@@ -352,14 +367,10 @@
 
 <!-- VISUALS NAV -->
 <div class="pill-nav">
-  <span class="pill-label">Visuals in this post:</span>
-  <a href="../building-timeline/">Building Timeline</a>
-  <a href="../construction-costs/">Construction Costs</a>
+  <span class="pill-label">Visuals in this post:</span>  <a href="../construction-costs/">Construction Costs</a>
   <a href="../funding-mix/">Funding Mix</a>
   <a href="./" class="active">City of Yes vs. Rezonings</a>
-  <a href="../expansion-rankings/">Expansion Rankings</a>
-  <a href="../tod-map/">IBX &amp; Rezonings Map</a>
-</div>
+  <a href="../expansion-rankings/">Expansion Rankings</a></div>
 
 <!-- HERO -->
 <div class="hero">
@@ -395,7 +406,7 @@
   <div class="main-inner">
 
     <div class="chart-actions">
-      <button class="action-btn" onclick="downloadChart(this)">&#11015; Download PNG</button>
+      <button class="action-btn" onclick="downloadChart(this, 'chart-box', 'city-of-yes-vs-rezonings.png')">&#11015; Download PNG</button>
       <button class="action-btn" onclick="showEmbed()">&#60;/&#62; Embed</button>
     </div>
 
@@ -415,6 +426,22 @@
         <div class="chart" id="chart"></div>
       </div>
 
+      <div class="chart-attribution">
+        <span>Created by Tal Roded · NYCuriosity · Sources: <a href="https://www.nyc.gov/site/planning/index.page" target="_blank" rel="noopener">NYC Dept. of City Planning</a> &amp; <a href="https://citylimits.org/six-down-one-to-go-where-de-blasios-rezonings-stand/" target="_blank" rel="noopener">City Limits</a></span>
+      </div>
+    </div>
+
+    <div class="chart-actions" style="margin-top:20px;">
+      <button class="action-btn" onclick="downloadChart(this, 'chart-box-2', 'city-of-yes-waffle.png')">&#11015; Download PNG</button>
+    </div>
+
+    <div id="chart-box-2">
+      <div class="chart-box-inner">
+        <div class="chart-title">City of Yes vs. every prior rezoning, at a glance</div>
+        <div class="chart-subtitle">Each square is 1,000 projected homes. City of Yes alone (blue) is projected to add more housing than all 13 major neighborhood rezonings of 2004&ndash;2024 put together (gray).</div>
+        <div class="waffle-row" id="waffle"></div>
+        <div class="waffle-key">1 square = 1,000 projected homes</div>
+      </div>
       <div class="chart-attribution">
         <span>Created by Tal Roded · NYCuriosity · Sources: <a href="https://www.nyc.gov/site/planning/index.page" target="_blank" rel="noopener">NYC Dept. of City Planning</a> &amp; <a href="https://citylimits.org/six-down-one-to-go-where-de-blasios-rezonings-stand/" target="_blank" rel="noopener">City Limits</a></span>
       </div>
@@ -539,6 +566,40 @@
     }, 80);
   });
 
+  // Secondary visual: waffle — City of Yes vs. all prior rezonings combined
+  (function buildWaffle() {
+    const wrap = document.getElementById('waffle');
+    if (!wrap) return;
+    const coy = ITEMS.find(d => d.type === 'coy');
+    const priorsSum = ITEMS.filter(d => d.type === 'prior').reduce((s, d) => s + d.value, 0);
+    const cols = 10, sz = 16, gap = 3, per = 1000;
+    function waffle(n, color) {
+      const squares = Math.round(n / per);
+      const rows = Math.ceil(squares / cols);
+      const W = cols * (sz + gap) - gap;
+      const Hh = rows * (sz + gap) - gap;
+      let r = '';
+      for (let i = 0; i < squares; i++) {
+        const cx = (i % cols) * (sz + gap);
+        const cy = Math.floor(i / cols) * (sz + gap);
+        r += `<rect x="${cx}" y="${cy}" width="${sz}" height="${sz}" rx="2.5" fill="${color}"/>`;
+      }
+      return `<svg viewBox="0 0 ${W} ${Hh}" role="img" aria-label="${squares} thousand homes">${r}</svg>`;
+    }
+    wrap.innerHTML = `
+      <div class="waffle-block">
+        <div class="waffle-num coy">${coy.value.toLocaleString()}</div>
+        <div class="waffle-name">City of Yes for Housing Opportunity<br>(2024)</div>
+        ${waffle(coy.value, '#2563eb')}
+      </div>
+      <div class="waffle-block">
+        <div class="waffle-num prior">${priorsSum.toLocaleString()}</div>
+        <div class="waffle-name">All 13 prior neighborhood rezonings<br>(2004&ndash;2024) combined</div>
+        ${waffle(priorsSum, '#9ca3af')}
+      </div>
+    `;
+  })();
+
   // Build the data table from the same ITEMS array that drives the chart
   (function buildTable() {
     const tbody = document.getElementById('data-table-body');
@@ -556,21 +617,29 @@
     });
   })();
 
-  async function downloadChart(btn) {
+  async function downloadChart(btn, boxId, filename) {
     const orig = btn.innerHTML;
     btn.innerHTML = '⏳ Capturing…'; btn.disabled = true;
     try {
-      const el = document.getElementById('chart-box');
-      const canvas = await html2canvas(el, { backgroundColor:'#ffffff', scale:2, useCORS:true, logging:false });
+      if (document.fonts && document.fonts.ready) { try { await document.fonts.ready; } catch (e) {} }
+      const el = document.getElementById(boxId || 'chart-box');
+      const canvas = await html2canvas(el, {
+        backgroundColor: '#ffffff', scale: 2, useCORS: true, logging: false,
+        onclone: (doc) => {
+          doc.querySelectorAll('.bar-value, .bar-label, .bar-label .sublabel, .seg-pct, .seg-pct-outside, .agency-name, .agency-meta, .recovery-line').forEach(n => {
+            n.style.letterSpacing = '0.02em';
+          });
+        }
+      });
       const a = document.createElement('a');
-      a.download = 'city-of-yes-vs-rezonings.png';
+      a.download = filename || 'chart.png';
       a.href = canvas.toDataURL('image/png'); a.click();
     } finally { btn.innerHTML = orig; btn.disabled = false; }
   }
   function showEmbed() {
     const url = location.origin + location.pathname;
     document.getElementById('embedCode').value =
-      `<iframe src="${url}" width="900" height="900" frameborder="0" style="border:1px solid #e5e7eb; border-radius:8px;" loading="lazy"></iframe>`;
+      `<iframe src="${url}" width="900" height="1320" frameborder="0" style="border:1px solid #e5e7eb; border-radius:8px;" loading="lazy"></iframe>`;
     document.getElementById('embedModal').style.display = 'flex';
   }
   function closeEmbed() { document.getElementById('embedModal').style.display = 'none'; }

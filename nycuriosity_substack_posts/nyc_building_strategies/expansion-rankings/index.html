@@ -302,6 +302,16 @@
     .context-box p + p { margin-top: 8px; }
     .context-box strong { color: var(--text); }
 
+    /* ── SECONDARY CHART (bubble scatter) ────────────────── */
+    #chart-box-2 { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); overflow: hidden; margin-top: 20px; }
+    #scatter svg { width: 100%; height: auto; display: block; }
+    .dp-axis { font-family: 'Roboto Mono', monospace; font-size: 10px; fill: var(--text-muted); letter-spacing: 0.02em; }
+    .dp-axis-title { font-family: 'Roboto Mono', monospace; font-size: 10px; font-weight: 700; fill: var(--text-mid); }
+    .sc-name { font-family: 'Roboto Mono', monospace; font-size: 9.5px; font-weight: 600; }
+    .sc-name-hl { font-family: 'Roboto Mono', monospace; font-size: 10.5px; font-weight: 700; }
+    /* PNG text breathing room (commas/parentheses) */
+    .bar-value, .bar-label .sublabel { letter-spacing: 0.012em; }
+
     /* ── DATA TABLE ──────────────────────────────────────── */
     .data-section { margin-top: 28px; }
     .data-section-head { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
@@ -385,14 +395,10 @@
 
 <!-- VISUALS NAV -->
 <div class="pill-nav">
-  <span class="pill-label">Visuals in this post:</span>
-  <a href="../building-timeline/">Building Timeline</a>
-  <a href="../construction-costs/">Construction Costs</a>
+  <span class="pill-label">Visuals in this post:</span>  <a href="../construction-costs/">Construction Costs</a>
   <a href="../funding-mix/">Funding Mix</a>
   <a href="../city-of-yes-rezonings/">City of Yes vs. Rezonings</a>
-  <a href="./" class="active">Expansion Rankings</a>
-  <a href="../tod-map/">IBX &amp; Rezonings Map</a>
-</div>
+  <a href="./" class="active">Expansion Rankings</a></div>
 
 <!-- HERO -->
 <div class="hero">
@@ -431,7 +437,7 @@
   <div class="main-inner">
 
     <div class="chart-actions">
-      <button class="action-btn" onclick="downloadChart(this)">&#11015; Download PNG</button>
+      <button class="action-btn" onclick="downloadChart(this, 'chart-box', 'mta-expansion-rankings.png')">&#11015; Download PNG</button>
       <button class="action-btn" onclick="showEmbed()">&#60;/&#62; Embed</button>
     </div>
 
@@ -475,6 +481,27 @@
         </div>
       </div>
 
+      <div class="chart-attribution">
+        <span>Created by Tal Roded · NYCuriosity · Sources: <a href="https://future.mta.info/documents/20-YearNeedsAssessment_ComparativeEvaluation.pdf" target="_blank" rel="noopener">MTA 20-Year Needs Assessment, Comparative Evaluation (2023)</a></span>
+      </div>
+    </div>
+
+    <div class="chart-actions" style="margin-top:20px;">
+      <button class="action-btn" onclick="downloadChart(this, 'chart-box-2', 'mta-expansion-bubble-scatter.png')">&#11015; Download PNG</button>
+    </div>
+
+    <div id="chart-box-2">
+      <div class="chart-box-pad">
+        <div class="chart-headline">Cost-effectiveness vs. ridership</div>
+        <p class="metric-note">Each bubble is one project: horizontal position is cost per minute of travel time saved (further left is more efficient), vertical position is projected 2045 daily riders, and bubble size is construction cost. The Interborough Express sits in the sweet spot, with a low cost per minute and high ridership. The five extreme outliers from the bar chart above are off this scale.</p>
+        <div class="legend">
+          <div class="legend-item"><span class="legend-swatch" style="background:#2563eb;border-radius:50%;"></span>Interborough Express</div>
+          <div class="legend-item"><span class="legend-swatch" style="background:#c2410c;border-radius:50%;"></span>2nd Ave Subway 125th St ext.</div>
+          <div class="legend-item"><span class="legend-swatch" style="background:#9ca3af;border-radius:50%;"></span>Other projects</div>
+          <div class="legend-item" style="color:var(--text-faint);">bubble size = construction cost</div>
+        </div>
+        <div id="scatter"></div>
+      </div>
       <div class="chart-attribution">
         <span>Created by Tal Roded · NYCuriosity · Sources: <a href="https://future.mta.info/documents/20-YearNeedsAssessment_ComparativeEvaluation.pdf" target="_blank" rel="noopener">MTA 20-Year Needs Assessment, Comparative Evaluation (2023)</a></span>
       </div>
@@ -626,6 +653,53 @@
     }, 80);
   });
 
+  // Secondary visual: bubble scatter — cost per minute vs. ridership, size = construction cost
+  (function buildScatter() {
+    const wrap = document.getElementById('scatter');
+    if (!wrap) return;
+    const W = 680, H = 432, x0 = 58, x1 = 652, yt = 24, yb = 360;
+    const xMax = 15, yMax = 330000;
+    const xOf = v => x0 + Math.min(v, xMax) / xMax * (x1 - x0);
+    const yOf = r => yb - Math.min(r, yMax) / yMax * (yb - yt);
+    const rOf = b => 4 + Math.sqrt(b) * 4;
+    let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Scatter plot of MTA expansion projects: cost per minute saved versus projected daily riders, bubble size by construction cost">`;
+    [0, 100000, 200000, 300000].forEach(r => {
+      const gy = yOf(r).toFixed(1);
+      s += `<line x1="${x0}" y1="${gy}" x2="${x1}" y2="${gy}" stroke="#eef1f6" stroke-width="1"/>`;
+      s += `<text x="${x0 - 8}" y="${(+gy + 3).toFixed(1)}" text-anchor="end" class="dp-axis">${r / 1000}k</text>`;
+    });
+    s += `<line x1="${x0}" y1="${yb}" x2="${x1}" y2="${yb}" stroke="#d1d5db" stroke-width="1.5"/>`;
+    [0, 5, 10, 15].forEach(v => {
+      const gx = xOf(v).toFixed(1);
+      s += `<line x1="${gx}" y1="${yt}" x2="${gx}" y2="${yb}" stroke="#f3f4f6" stroke-width="1"/>`;
+      s += `<text x="${gx}" y="${yb + 18}" text-anchor="middle" class="dp-axis">$${v}</text>`;
+    });
+    s += `<text x="${((x0 + x1) / 2).toFixed(1)}" y="${yb + 34}" text-anchor="middle" class="dp-axis-title">Cost per minute of travel time saved (lower is better)</text>`;
+    const midY = ((yt + yb) / 2).toFixed(1);
+    s += `<text x="14" y="${midY}" text-anchor="middle" class="dp-axis-title" transform="rotate(-90 14 ${midY})">Projected 2045 daily riders</text>`;
+    MAIN.forEach(d => {
+      let fill = 'rgba(156,163,175,0.45)', stroke = '#9ca3af';
+      if (d.type === 'ibx') { fill = 'rgba(37,99,235,0.75)'; stroke = '#1d4ed8'; }
+      else if (d.type === 'sas') { fill = 'rgba(194,65,12,0.70)'; stroke = '#9a3412'; }
+      s += `<circle cx="${xOf(d.val).toFixed(1)}" cy="${yOf(d.riders).toFixed(1)}" r="${rOf(d.costB).toFixed(1)}" fill="${fill}" stroke="${stroke}" stroke-width="1.3"/>`;
+    });
+    const LABEL = {
+      'Interborough Express LRT (IBX)': 'IBX',
+      'Second Ave Subway West to 125th St/Broadway': 'SAS to 125th St',
+      'Utica–Nostrand Junction Capacity Improvements': 'Utica–Nostrand',
+      'Second Ave Subway South to Houston St': '2nd Ave to Houston'
+    };
+    MAIN.forEach(d => {
+      if (!LABEL[d.name]) return;
+      const cx = xOf(d.val), cy = yOf(d.riders), r = rOf(d.costB);
+      const hl = d.type === 'ibx' || d.type === 'sas';
+      const col = d.type === 'ibx' ? '#1e3a8a' : d.type === 'sas' ? '#9a3412' : '#6b7280';
+      s += `<text x="${(cx + r + 4).toFixed(1)}" y="${(cy + 3).toFixed(1)}" text-anchor="start" class="${hl ? 'sc-name-hl' : 'sc-name'}" fill="${col}">${LABEL[d.name]}</text>`;
+    });
+    s += `</svg>`;
+    wrap.innerHTML = s;
+  })();
+
   // Build the data table from the same MAIN + OUTLIERS arrays that drive the chart
   (function buildTable() {
     const tbody = document.getElementById('data-table-body');
@@ -645,21 +719,29 @@
     });
   })();
 
-  async function downloadChart(btn) {
+  async function downloadChart(btn, boxId, filename) {
     const orig = btn.innerHTML;
     btn.innerHTML = '⏳ Capturing…'; btn.disabled = true;
     try {
-      const el = document.getElementById('chart-box');
-      const canvas = await html2canvas(el, { backgroundColor:'#ffffff', scale:2, useCORS:true, logging:false });
+      if (document.fonts && document.fonts.ready) { try { await document.fonts.ready; } catch (e) {} }
+      const el = document.getElementById(boxId || 'chart-box');
+      const canvas = await html2canvas(el, {
+        backgroundColor: '#ffffff', scale: 2, useCORS: true, logging: false,
+        onclone: (doc) => {
+          doc.querySelectorAll('.bar-value, .bar-label, .bar-label .sublabel, .seg-pct, .seg-pct-outside, .agency-name, .agency-meta, .recovery-line').forEach(n => {
+            n.style.letterSpacing = '0.02em';
+          });
+        }
+      });
       const a = document.createElement('a');
-      a.download = 'mta-expansion-rankings.png';
+      a.download = filename || 'chart.png';
       a.href = canvas.toDataURL('image/png'); a.click();
     } finally { btn.innerHTML = orig; btn.disabled = false; }
   }
   function showEmbed() {
     const url = location.origin + location.pathname;
     document.getElementById('embedCode').value =
-      `<iframe src="${url}" width="900" height="960" frameborder="0" style="border:1px solid #e5e7eb; border-radius:8px;" loading="lazy"></iframe>`;
+      `<iframe src="${url}" width="900" height="1640" frameborder="0" style="border:1px solid #e5e7eb; border-radius:8px;" loading="lazy"></iframe>`;
     document.getElementById('embedModal').style.display = 'flex';
   }
   function closeEmbed() { document.getElementById('embedModal').style.display = 'none'; }

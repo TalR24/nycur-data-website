@@ -261,6 +261,18 @@
     .context-box p + p { margin-top: 8px; }
     .context-box strong { color: var(--text); }
 
+    /* ── SECONDARY CHART (log dot plot) ──────────────────── */
+    #chart-box-2 { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); overflow: hidden; margin-top: 20px; }
+    .chart-title { font-family: 'Roboto Mono', monospace; font-size: 0.95rem; font-weight: 700; color: var(--text); letter-spacing: -0.02em; margin-bottom: 4px; }
+    .chart-subtitle { font-size: 0.8rem; color: var(--text-muted); line-height: 1.55; margin-bottom: 18px; }
+    #dotplot svg { width: 100%; height: auto; display: block; }
+    .dp-axis { font-family: 'Roboto Mono', monospace; font-size: 10px; fill: var(--text-muted); letter-spacing: 0.02em; }
+    .dp-axis-note { font-family: 'Roboto Mono', monospace; font-size: 8.5px; fill: var(--text-faint); }
+    .dp-name { font-family: 'Roboto Mono', monospace; font-size: 9px; font-weight: 600; letter-spacing: 0.01em; }
+    .dp-val { font-family: 'Roboto Mono', monospace; font-size: 8.5px; font-weight: 700; letter-spacing: 0.01em; }
+    /* PNG text breathing room (commas/parentheses) */
+    .bar-value, .bar-label .sublabel { letter-spacing: 0.012em; }
+
     /* ── DATA TABLE ──────────────────────────────────────── */
     .data-section { margin-top: 28px; }
     .data-section-head { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
@@ -344,14 +356,10 @@
 
 <!-- VISUALS NAV -->
 <div class="pill-nav">
-  <span class="pill-label">Visuals in this post:</span>
-  <a href="../building-timeline/">Building Timeline</a>
-  <a href="./" class="active">Construction Costs</a>
+  <span class="pill-label">Visuals in this post:</span>  <a href="./" class="active">Construction Costs</a>
   <a href="../funding-mix/">Funding Mix</a>
   <a href="../city-of-yes-rezonings/">City of Yes vs. Rezonings</a>
-  <a href="../expansion-rankings/">Expansion Rankings</a>
-  <a href="../tod-map/">IBX &amp; Rezonings Map</a>
-</div>
+  <a href="../expansion-rankings/">Expansion Rankings</a></div>
 
 <!-- HERO -->
 <div class="hero">
@@ -389,7 +397,7 @@
   <div class="main-inner">
 
     <div class="chart-actions">
-      <button class="action-btn" onclick="downloadChart(this)">&#11015; Download PNG</button>
+      <button class="action-btn" onclick="downloadChart(this, 'chart-box', 'nyc-subway-construction-costs-per-mile.png')">&#11015; Download PNG</button>
       <button class="action-btn" onclick="showEmbed()">&#60;/&#62; Embed</button>
     </div>
 
@@ -409,6 +417,21 @@
         <div class="chart" id="chart"></div>
       </div>
 
+      <div class="chart-attribution">
+        <span>Created by Tal Roded · NYCuriosity · Sources: <a href="https://transitcosts.com/data/" target="_blank" rel="noopener">Transit Costs Project (NYU Marron Institute)</a></span>
+      </div>
+    </div>
+
+    <div class="chart-actions" style="margin-top:20px;">
+      <button class="action-btn" onclick="downloadChart(this, 'chart-box-2', 'nyc-subway-costs-log-scale.png')">&#11015; Download PNG</button>
+    </div>
+
+    <div id="chart-box-2">
+      <div class="chart-pad">
+        <div class="chart-title">The same costs on a logarithmic scale</div>
+        <div class="chart-subtitle">A log axis spaces each project by order of magnitude. New York's three projects (blue) sit one to two orders of magnitude beyond the tight international cluster (gray) — a gap the linear bars above flatten against the left edge.</div>
+        <div id="dotplot"></div>
+      </div>
       <div class="chart-attribution">
         <span>Created by Tal Roded · NYCuriosity · Sources: <a href="https://transitcosts.com/data/" target="_blank" rel="noopener">Transit Costs Project (NYU Marron Institute)</a></span>
       </div>
@@ -528,6 +551,69 @@
     }, 80);
   });
 
+  // Secondary visual: the same costs on a logarithmic strip plot
+  (function buildDotPlot() {
+    const wrap = document.getElementById('dotplot');
+    if (!wrap) return;
+    const SHORT = {
+      "East Side Access": "East Side Access",
+      "Second Avenue Subway Phase 2": "SAS Ph 2",
+      "Second Avenue Subway Phase 1": "SAS Ph 1",
+      "Crossrail (Elizabeth Line)": "Crossrail · London",
+      "Fukutoshin Line": "Tokyo",
+      "Grand Paris Express": "Paris · GPE",
+      "Cityringen (City Circle Line)": "Copenhagen",
+      "Metro Line 14": "Paris · L14",
+      "Line M4": "Milan",
+      "Sinbundang Line Phase 1": "Seoul",
+      "Madrid 1999–2003 expansion program": "Madrid"
+    };
+    const W = 680, H = 300, axisY = 210;
+    const x0 = 64, x1 = W - 28;
+    const lo = Math.log10(100), hi = Math.log10(10000); // dollars per mile, millions
+    const xOf = v => x0 + (Math.log10(v) - lo) / (hi - lo) * (x1 - x0);
+    const ticks = [100, 300, 1000, 3000, 10000];
+    const tickLabel = v => v >= 1000 ? '$' + (v / 1000) + 'B' : '$' + v + 'M';
+
+    let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Cost per mile of subway construction on a logarithmic scale: New York projects versus international peers">`;
+    s += `<line x1="${x0}" y1="${axisY}" x2="${x1}" y2="${axisY}" stroke="#d1d5db" stroke-width="1.5"/>`;
+    ticks.forEach(t => {
+      const tx = xOf(t).toFixed(1);
+      s += `<line x1="${tx}" y1="72" x2="${tx}" y2="${axisY}" stroke="#eef1f6" stroke-width="1"/>`;
+      s += `<text x="${tx}" y="${axisY + 18}" text-anchor="middle" class="dp-axis">${tickLabel(t)}</text>`;
+    });
+    s += `<text x="${x0}" y="${axisY + 34}" text-anchor="start" class="dp-axis-note">Logarithmic scale — each gridline is about 3x the one to its left. Cost per mile, PPP-adjusted 2023 dollars.</text>`;
+
+    const pts = ITEMS.map(d => ({ value: d.value, type: d.type, x: xOf(d.value), short: SHORT[d.label] || d.label }))
+      .sort((a, b) => a.x - b.x);
+    const tierRight = [];
+    const charW = 6.4, gap = 10, tierH = 30, baseY = axisY - 24;
+    pts.forEach(p => {
+      const w = p.short.length * charW + 10;
+      let tier = 0;
+      while (true) {
+        const left = p.x - w / 2;
+        if (tierRight[tier] == null || left > tierRight[tier] + gap) { tierRight[tier] = p.x + w / 2; p.tier = tier; break; }
+        tier++;
+        if (tier > 6) { p.tier = tier; tierRight[tier] = p.x + w / 2; break; }
+      }
+    });
+    pts.forEach(p => {
+      const ly = baseY - p.tier * tierH;
+      const isNYC = p.type === 'nyc';
+      const col = isNYC ? '#2563eb' : '#6b7280';
+      s += `<line x1="${p.x.toFixed(1)}" y1="${axisY - 7}" x2="${p.x.toFixed(1)}" y2="${ly + 4}" stroke="#e5e7eb" stroke-width="1"/>`;
+      s += `<text x="${p.x.toFixed(1)}" y="${ly}" text-anchor="middle" class="dp-name" fill="${isNYC ? '#1e3a8a' : '#374151'}">${p.short}</text>`;
+      s += `<text x="${p.x.toFixed(1)}" y="${ly + 11}" text-anchor="middle" class="dp-val" fill="${col}">${fmtPerMile(p.value)}</text>`;
+    });
+    pts.forEach(p => {
+      const isNYC = p.type === 'nyc';
+      s += `<circle cx="${p.x.toFixed(1)}" cy="${axisY}" r="${isNYC ? 6.5 : 5}" fill="${isNYC ? '#2563eb' : '#9ca3af'}" stroke="#fff" stroke-width="1.5"/>`;
+    });
+    s += `</svg>`;
+    wrap.innerHTML = s;
+  })();
+
   // Build the data table from the same ITEMS array that drives the chart
   (function buildTable() {
     const tbody = document.getElementById('data-table-body');
@@ -544,14 +630,22 @@
     });
   })();
 
-  async function downloadChart(btn) {
+  async function downloadChart(btn, boxId, filename) {
     const orig = btn.innerHTML;
     btn.innerHTML = '⏳ Capturing…'; btn.disabled = true;
     try {
-      const el = document.getElementById('chart-box');
-      const canvas = await html2canvas(el, { backgroundColor:'#ffffff', scale:2, useCORS:true, logging:false });
+      if (document.fonts && document.fonts.ready) { try { await document.fonts.ready; } catch (e) {} }
+      const el = document.getElementById(boxId || 'chart-box');
+      const canvas = await html2canvas(el, {
+        backgroundColor: '#ffffff', scale: 2, useCORS: true, logging: false,
+        onclone: (doc) => {
+          doc.querySelectorAll('.bar-value, .bar-label, .bar-label .sublabel, .seg-pct, .seg-pct-outside, .agency-name, .agency-meta, .recovery-line').forEach(n => {
+            n.style.letterSpacing = '0.02em';
+          });
+        }
+      });
       const a = document.createElement('a');
-      a.download = 'nyc-subway-construction-costs-per-mile.png';
+      a.download = filename || 'chart.png';
       a.href = canvas.toDataURL('image/png'); a.click();
     } finally { btn.innerHTML = orig; btn.disabled = false; }
   }
