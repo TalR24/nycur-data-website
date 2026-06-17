@@ -124,7 +124,7 @@ Static site hosted on GitHub Pages at a custom domain (`data.nycuriosity.com`). 
 │   │   ├── index.html                             → Hub (explainer, stat pills, view cards)
 │   │   ├── README.md                              → Full project reference doc
 │   │   ├── data/
-│   │   │   ├── directory.csv                      → Canonical org source (306 rows)
+│   │   │   ├── directory.csv                      → Canonical org source (307 rows)
 │   │   │   ├── connect_submissions.csv            → Connect directory seed data
 │   │   │   ├── build_affinity.py                  → directory.csv → affinity/directory/search JSON
 │   │   │   ├── build_people.py                    → connect_submissions.csv → connect.json
