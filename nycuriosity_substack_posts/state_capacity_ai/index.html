@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>State Capacity Has a New Toolkit — NYCuriosity</title>
+  <meta name="description" content="Data and charts from NYCuriosity's look at how AI is reshaping state capacity across seven domains of government, from benefits delivery to procurement to rulemaking.">
+  <meta property="og:type"        content="website">
+  <meta property="og:url"         content="https://data.nycuriosity.com/nycuriosity_substack_posts/state_capacity_ai/">
+  <meta property="og:title"       content="State Capacity Has a New Toolkit — NYCuriosity">
+  <meta property="og:description" content="Seven domains where AI is already changing what government can do, each with the data behind the problem and real examples to follow.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue:       #2563eb;
+      --blue-hover: #1d4ed8;
+      --blue-light: #eff6ff;
+      --blue-mid:   #bfdbfe;
+      --text:       #111827;
+      --text-mid:   #374151;
+      --text-muted: #6b7280;
+      --text-faint: #9ca3af;
+      --bg:         #f8faff;
+      --surface:    #ffffff;
+      --border:     #e5e7eb;
+      --shadow-sm:  0 1px 3px rgba(17,24,39,0.08);
+      --shadow-md:  0 4px 20px rgba(37,99,235,0.13);
+      --radius:     10px;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── HEADER ──────────────────────────────────────────── */
+    header {
+      background: #111827;
+      border-bottom: 1px solid #1f2937;
+      padding: 0 clamp(20px, 5vw, 48px);
+    }
+    .header-inner {
+      max-width: 1100px; margin: 0 auto; height: 56px;
+      display: flex; align-items: center; gap: 16px;
+    }
+    .back-link {
+      font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600;
+      color: #9ca3af; text-decoration: none; display: flex; align-items: center; gap: 5px;
+      padding: 4px 8px 4px 4px; border-radius: 5px; transition: color 0.15s, background 0.15s; white-space: nowrap;
+    }
+    .back-link:hover { color: #60a5fa; background: rgba(96,165,250,0.1); }
+    .header-divider { width: 1px; height: 20px; background: #374151; flex-shrink: 0; }
+    header h1 {
+      font-family: 'Roboto Mono', monospace; font-size: 0.95rem; font-weight: 700;
+      color: #e5e7eb; letter-spacing: -0.02em;
+    }
+
+    /* ── HERO ────────────────────────────────────────────── */
+    .hero {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: clamp(32px, 5vw, 52px) clamp(20px, 5vw, 48px);
+    }
+    .hero-inner { max-width: 1100px; margin: 0 auto; }
+    .breadcrumb {
+      font-family: 'Roboto Mono', monospace; font-size: 0.72rem;
+      color: var(--text-faint); margin-bottom: 14px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .breadcrumb a { color: var(--blue); text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+    .breadcrumb span:last-child { color: #FF6319; }
+    .hero-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .hero-tag {
+      font-family: 'Roboto Mono', monospace; font-size: 0.68rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.08em; color: var(--blue);
+      background: var(--blue-light); border: 1px solid var(--blue-mid); border-radius: 4px; padding: 3px 8px;
+    }
+    .hero-updated { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; color: var(--text-faint); }
+    .hero h1 {
+      font-family: 'Roboto Mono', monospace; font-size: clamp(1.5rem, 3.5vw, 2rem);
+      font-weight: 700; color: var(--text); letter-spacing: -0.03em; line-height: 1.2; margin-bottom: 10px;
+    }
+    .hero h1 span { color: var(--blue); }
+    .hero p { font-size: 0.975rem; color: var(--text-muted); max-width: 680px; line-height: 1.7; }
+    .hero p a { color: var(--blue); text-decoration: none; border-bottom: 1px solid var(--blue-mid); }
+    .hero p a:hover { border-color: var(--blue); }
+
+    /* ── STAT PILLS ──────────────────────────────────────── */
+    .stat-row {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: clamp(16px, 3vw, 24px) clamp(20px, 5vw, 48px);
+    }
+    .stat-row-inner { max-width: 1100px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 12px; }
+    .stat-pill {
+      display: flex; flex-direction: column; gap: 2px;
+      padding: 12px 18px; background: var(--bg); border: 1px solid var(--border);
+      border-radius: var(--radius); flex: 1; min-width: 140px;
+    }
+    .stat-pill .sp-num { font-family: 'Roboto Mono', monospace; font-size: 1.3rem; font-weight: 700; color: var(--text); letter-spacing: -0.03em; line-height: 1; }
+    .stat-pill .sp-num.blue { color: var(--blue); }
+    .stat-pill .sp-label { font-size: 0.75rem; color: var(--text-muted); line-height: 1.3; }
+
+    /* ── CHARTS SECTION ──────────────────────────────────── */
+    .charts-section {
+      flex: 1;
+      padding: clamp(32px, 5vw, 56px) clamp(20px, 5vw, 48px);
+    }
+    .charts-inner { max-width: 1100px; margin: 0 auto; }
+    .section-label {
+      font-family: 'Roboto Mono', monospace; font-size: 0.7rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-faint); margin-bottom: 20px;
+    }
+    .section-label.spaced { margin-top: 40px; }
+    .charts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 20px;
+    }
+
+    /* ── CHART CARD ──────────────────────────────────────── */
+    .chart-card {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+      text-decoration: none;
+      color: inherit;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+    }
+    .chart-card:hover {
+      border-color: var(--blue);
+      box-shadow: var(--shadow-md);
+      transform: translateY(-3px);
+    }
+
+    .chart-card-icon {
+      height: 100px;
+      background: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 0 24px;
+      flex-shrink: 0;
+    }
+    .icon-bars { display: flex; align-items: flex-end; gap: 5px; height: 48px; }
+    .icon-bar { border-radius: 3px 3px 0 0; width: 14px; }
+
+    .chart-card-body { padding: 20px 24px 24px; flex: 1; display: flex; flex-direction: column; }
+    .chart-card-label {
+      font-family: 'Roboto Mono', monospace; font-size: 0.68rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.08em; color: var(--blue); margin-bottom: 8px;
+    }
+    .chart-card-title {
+      font-family: 'Roboto Mono', monospace; font-size: 1.05rem; font-weight: 700;
+      color: var(--text); letter-spacing: -0.02em; line-height: 1.25; margin-bottom: 10px;
+    }
+    .chart-card-desc {
+      font-size: 0.875rem; color: var(--text-muted); line-height: 1.6; flex: 1; margin-bottom: 20px;
+    }
+    .chart-card-meta {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    }
+    .chart-card-stat { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; color: var(--text-faint); }
+    .chart-card-cta {
+      font-family: 'Roboto Mono', monospace; font-size: 0.78rem; font-weight: 700;
+      color: var(--blue); display: flex; align-items: center; gap: 5px; transition: gap 0.15s;
+    }
+    .chart-card:hover .chart-card-cta { gap: 9px; }
+
+    /* ── FOOTER ──────────────────────────────────────────── */
+    footer { background: var(--surface); border-top: 1px solid var(--border); padding: 20px clamp(20px, 5vw, 48px); }
+    .footer-inner { max-width: 1100px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+    .footer-copy { font-size: 0.8rem; color: var(--text-faint); }
+    .footer-links { display: flex; gap: 20px; }
+    .footer-links a { font-size: 0.8rem; color: var(--text-faint); text-decoration: none; transition: color 0.15s; }
+    .footer-links a:hover { color: var(--blue); }
+
+    @media (max-width: 540px) { .brand-slash, .brand-section { display: none; } }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="header-inner">
+    <a href="/" class="back-link">← nycuriosity/data</a>
+    <div class="header-divider"></div>
+    <h1>State Capacity &amp; AI</h1>
+  </div>
+</header>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-inner">
+    <div class="breadcrumb">
+      <a href="/">data.nycuriosity.com</a>
+      <span>›</span>
+      <span>State Capacity Has a New Toolkit</span>
+    </div>
+    <div class="hero-meta">
+      <span class="hero-tag">Government &amp; Technology</span>
+      <span class="hero-updated">June 2026</span>
+    </div>
+    <h1>State Capacity Has a <span>New Toolkit</span></h1>
+    <p>
+      The data behind NYCuriosity's look at how AI is already changing what government can do. Seven domains, each
+      paired with the numbers that define the problem and real examples worth following, from benefits delivery and
+      transparency to procurement, the public workforce, regulation, policy evaluation, and rulemaking.
+    </p>
+  </div>
+</div>
+
+<!-- STAT PILLS -->
+<div class="stat-row">
+  <div class="stat-row-inner">
+    <div class="stat-pill">
+      <span class="sp-num blue">21.4%</span>
+      <span class="sp-label">of eligible NYC residents miss out on SNAP</span>
+    </div>
+    <div class="stat-pill">
+      <span class="sp-num">90.7%</span>
+      <span class="sp-label">of NYC human-services contracts registered late (FY2024)</span>
+    </div>
+    <div class="stat-pill">
+      <span class="sp-num">194,395</span>
+      <span class="sp-label">pages in the Code of Federal Regulations (2024)</span>
+    </div>
+    <div class="stat-pill">
+      <span class="sp-num">~4 yrs</span>
+      <span class="sp-label">average time to write a federal rule</span>
+    </div>
+  </div>
+</div>
+
+<!-- CHARTS GRID -->
+<section class="charts-section">
+  <div class="charts-inner">
+
+    <p class="section-label">Outward-facing domains</p>
+    <div class="charts-grid">
+
+      <!-- Public Service Delivery -->
+      <a class="chart-card" href="public-service-delivery/">
+        <div class="chart-card-icon">
+          <div class="icon-bars">
+            <div class="icon-bar" style="height:100%;background:#2563eb"></div>
+            <div class="icon-bar" style="height:94%;background:#2563eb"></div>
+            <div class="icon-bar" style="height:84%;background:#2563eb"></div>
+          </div>
+        </div>
+        <div class="chart-card-body">
+          <div class="chart-card-label">Bar Chart</div>
+          <div class="chart-card-title">The Benefit Take-Up Gap</div>
+          <div class="chart-card-desc">The share of eligible people who never receive the benefits they qualify for, across the EITC and SNAP. This is the gap AI navigators and document processing aim to close.</div>
+          <div class="chart-card-meta">
+            <span class="chart-card-stat">3 programs · take-up gaps</span>
+            <span class="chart-card-cta">Explore →</span>
+          </div>
+        </div>
+      </a>
+
+      <!-- Transparency & Advocacy -->
+      <a class="chart-card" href="transparency-advocacy/">
+        <div class="chart-card-icon">
+          <div class="icon-bars">
+            <div class="icon-bar" style="height:62%;background:#2563eb"></div>
+            <div class="icon-bar" style="height:64%;background:#6b7280"></div>
+            <div class="icon-bar" style="height:97%;background:#6b7280"></div>
+          </div>
+        </div>
+        <div class="chart-card-body">
+          <div class="chart-card-label">Bar Chart</div>
+          <div class="chart-card-title">The Comprehension Gap</div>
+          <div class="chart-card-desc">How US adult literacy stacks up: more than one in four adults reads at the lowest level, while government writes in legal jargon. Why plain-language AI translation matters for access.</div>
+          <div class="chart-card-meta">
+            <span class="chart-card-stat">PIAAC 2023 · 3 levels</span>
+            <span class="chart-card-cta">Explore →</span>
+          </div>
+        </div>
+      </a>
+
+    </div>
+
+    <p class="section-label spaced">Inward-facing domains</p>
+    <div class="charts-grid">
+
+      <!-- Procurement -->
+      <a class="chart-card" href="procurement-contracting/">
+        <div class="chart-card-icon">
+          <div class="icon-bars">
+            <div class="icon-bar" style="height:18%;background:#16a34a"></div>
+            <div class="icon-bar" style="height:50%;background:#2563eb"></div>
+            <div class="icon-bar" style="height:44%;background:#2563eb"></div>
+            <div class="icon-bar" style="height:50%;background:#dc2626"></div>
+          </div>
+        </div>
+        <div class="chart-card-body">
+          <div class="chart-card-label">Bar Chart</div>
+          <div class="chart-card-title">How Late NYC Pays Its Nonprofits</div>
+          <div class="chart-card-desc">When NYC registers its human-services contracts, by delay bucket. Nearly a third land more than a year late. This is the chokepoint AI bid review and RFP drafting could unblock.</div>
+          <div class="chart-card-meta">
+            <span class="chart-card-stat">FY2023 · 4 buckets</span>
+            <span class="chart-card-cta">Explore →</span>
+          </div>
+        </div>
+      </a>
+
+      <!-- Workforce -->
+      <a class="chart-card" href="workforce-knowledge/">
+        <div class="chart-card-icon">
+          <div class="icon-bars">
+            <div class="icon-bar" style="height:35%;background:#2563eb"></div>
+            <div class="icon-bar" style="height:75%;background:#dc2626"></div>
+          </div>
+        </div>
+        <div class="chart-card-body">
+          <div class="chart-card-label">Bar Chart</div>
+          <div class="chart-card-title">More Workers Near the Exit</div>
+          <div class="chart-card-desc">The age structure of the federal workforce: twice as many are eligible to retire as are under 30. The institutional-knowledge cliff AI copilots and knowledge capture help bridge.</div>
+          <div class="chart-card-meta">
+            <span class="chart-card-stat">Federal · 2 cohorts</span>
+            <span class="chart-card-cta">Explore →</span>
+          </div>
+        </div>
+      </a>
+
+      <!-- Red Tape -->
+      <a class="chart-card" href="cutting-red-tape/">
+        <div class="chart-card-icon">
+          <svg viewBox="0 0 120 56" width="120" height="56" xmlns="http://www.w3.org/2000/svg" fill="none">
+            <polyline points="4,52 24,46 44,38 64,26 84,16 104,8 116,6" stroke="#2563eb" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="116" cy="6" r="3.5" fill="#2563eb"/>
+          </svg>
+        </div>
+        <div class="chart-card-body">
+          <div class="chart-card-label">Line Chart</div>
+          <div class="chart-card-title">74 Years of Red Tape</div>
+          <div class="chart-card-desc">Growth in the Code of Federal Regulations, from 9,745 pages in 1950 to 194,395 in 2024. The accumulation AI can finally help map, inventory, and prune.</div>
+          <div class="chart-card-meta">
+            <span class="chart-card-stat">1950–2024 · 16 points</span>
+            <span class="chart-card-cta">Explore →</span>
+          </div>
+        </div>
+      </a>
+
+      <!-- Policy Evaluation -->
+      <a class="chart-card" href="policy-evaluation/">
+        <div class="chart-card-icon">
+          <div class="icon-bars">
+            <div class="icon-bar" style="height:100%;background:#2563eb"></div>
+            <div class="icon-bar" style="height:42%;background:#2563eb"></div>
+            <div class="icon-bar" style="height:20%;background:#2563eb"></div>
+            <div class="icon-bar" style="height:15%;background:#2563eb"></div>
+          </div>
+        </div>
+        <div class="chart-card-body">
+          <div class="chart-card-label">Bar Chart</div>
+          <div class="chart-card-title">We Estimate, But Rarely Check</div>
+          <div class="chart-card-desc">The largest projected costs among recent NYC Council bills, from NYCuriosity's Fiscal Impacts Tracker. We forecast cost up front but almost never revisit whether the estimate held.</div>
+          <div class="chart-card-meta">
+            <span class="chart-card-stat">7 bills · $8.45B tracked</span>
+            <span class="chart-card-cta">Explore →</span>
+          </div>
+        </div>
+      </a>
+
+      <!-- Test & Learn -->
+      <a class="chart-card" href="test-and-learn/">
+        <div class="chart-card-icon">
+          <div class="icon-bars">
+            <div class="icon-bar" style="height:20%;background:#16a34a"></div>
+            <div class="icon-bar" style="height:45%;background:#2563eb"></div>
+            <div class="icon-bar" style="height:100%;background:#dc2626"></div>
+          </div>
+        </div>
+        <div class="chart-card-body">
+          <div class="chart-card-label">Bar Chart</div>
+          <div class="chart-card-title">How Long a Rule Takes</div>
+          <div class="chart-card-desc">Federal rulemaking runs from one year to fourteen, averaging about four. The timeline AI stress-testing and red-teaming could compress before a rule is ever enacted.</div>
+          <div class="chart-card-meta">
+            <span class="chart-card-stat">GAO · 1–14 years</span>
+            <span class="chart-card-cta">Explore →</span>
+          </div>
+        </div>
+      </a>
+
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <span class="footer-copy">© NYCuriosity · Tal Roded</span>
+    <nav class="footer-links">
+      <a href="https://talroded.nycuriosity.com" target="_blank" rel="noopener">About</a>
+      <a href="https://nycuriosity.substack.com" target="_blank" rel="noopener">Substack</a>
+      <a href="https://github.com/TalR24/nycur-data-website" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </div>
+</footer>
+
+</body>
+</html>
