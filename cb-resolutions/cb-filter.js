@@ -11,8 +11,13 @@
 */
 (function () {
   const KNOWN = [
-    { id: 'MCB2', label: 'MCB2', color: '#f59e0b' },
-    { id: 'MCB3', label: 'MCB3', color: '#2563eb' },
+    { id: 'MCB2',  label: 'MCB2',  color: '#f59e0b' },
+    { id: 'MCB3',  label: 'MCB3',  color: '#2563eb' },
+    { id: 'MCB4',  label: 'MCB4',  color: '#16a34a' },
+    { id: 'MCB5',  label: 'MCB5',  color: '#dc2626' },
+    { id: 'MCB7',  label: 'MCB7',  color: '#9333ea' },
+    { id: 'MCB8',  label: 'MCB8',  color: '#0891b2' },
+    { id: 'MCB10', label: 'MCB10', color: '#65a30d' },
   ];
   const STORAGE_KEY = 'cb-resolutions:selected';
 
