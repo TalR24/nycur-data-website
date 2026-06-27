@@ -4,12 +4,12 @@
   <meta charset="UTF-8">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>We Estimate, But Rarely Check — NYCuriosity</title>
-  <meta name="description" content="The largest projected costs among recent NYC Council bills. We forecast cost up front but almost never revisit whether the estimate held.">
+  <title>The Evaluation Drop-Off — NYCuriosity</title>
+  <meta name="description" content="Of 244 NYC Council bills with a cost projection, 21 got an independent estimate and essentially none get a retrospective evaluation. The gap AI can close.">
   <meta property="og:type"        content="website">
   <meta property="og:url"         content="https://data.nycuriosity.com/nycuriosity_substack_posts/state_capacity_ai/policy-evaluation/">
-  <meta property="og:title"       content="We Estimate, But Rarely Check — NYCuriosity">
-  <meta property="og:description" content="Projected costs of recent NYC Council bills from NYCuriosity's Fiscal Impacts Tracker, and how AI can close the evaluation loop.">
+  <meta property="og:title"       content="The Evaluation Drop-Off — NYCuriosity">
+  <meta property="og:description" content="How few projected NYC Council bills are ever independently estimated or evaluated after the fact, from NYCuriosity's Fiscal Impacts Tracker.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -60,16 +60,15 @@
     .action-btn:disabled { opacity:0.6; cursor:not-allowed; }
     #chart-box { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:24px clamp(16px,3vw,28px) 0; }
     .chart-title { font-family:'Roboto Mono',monospace; font-size:0.95rem; font-weight:700; color:var(--text); margin-bottom:4px; }
-    .chart-sub { font-size:0.8rem; color:var(--text-muted); margin-bottom:22px; }
-    .chart { display:flex; flex-direction:column; gap:14px; padding-bottom:24px; }
-    .bar-row { display:grid; grid-template-columns:250px 1fr auto; align-items:center; gap:12px; }
-    @media (max-width:600px){ .bar-row{ grid-template-columns:1fr; gap:4px; } .bar-track{ order:2; } .bar-value{ order:3; } }
-    .bar-label { font-size:0.82rem; color:var(--text-mid); font-weight:500; line-height:1.35; text-align:right; padding-right:4px; }
-    .bar-label .sublabel { display:block; font-size:0.72rem; color:var(--text-faint); font-weight:400; margin-top:2px; }
-    @media (max-width:600px){ .bar-label{ text-align:left; padding-right:0; } }
-    .bar-track { height:30px; background:var(--border); border-radius:4px; overflow:hidden; position:relative; }
-    .bar-fill { height:100%; border-radius:4px; transition:width 0.7s cubic-bezier(0.4,0,0.2,1); }
-    .bar-value { font-family:'Roboto Mono',monospace; font-size:0.82rem; font-weight:700; white-space:nowrap; min-width:64px; text-align:left; }
+    .chart-sub { font-size:0.8rem; color:var(--text-muted); margin-bottom:18px; }
+    .funnel { display:flex; flex-direction:column; gap:18px; padding-bottom:26px; }
+    .frow { }
+    .frow-label { font-size:0.84rem; color:var(--text-mid); font-weight:600; margin-bottom:7px; }
+    .frow-label span { color:var(--text-faint); font-weight:400; }
+    .ftrack { height:40px; background:var(--bg); border:1px solid var(--border); border-radius:6px; position:relative; overflow:hidden; }
+    .ffill { height:100%; border-radius:5px 0 0 5px; width:0; transition:width 0.8s cubic-bezier(0.4,0,0.2,1); display:flex; align-items:center; }
+    .fval { position:absolute; top:0; height:100%; display:flex; align-items:center; font-family:'Roboto Mono',monospace; font-size:0.95rem; font-weight:700; padding:0 12px; }
+    .fzero { border:1.5px dashed var(--red); border-radius:6px; }
     .chart-attribution { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; padding:12px 16px; border-top:1px solid var(--border); background:var(--bg); font-size:0.78rem; color:var(--text-faint); font-family:'Roboto Mono',monospace; margin:0 calc(-1 * clamp(16px,3vw,28px)); }
     .context-box { margin-top:24px; padding:16px 20px; background:var(--blue-light); border:1px solid var(--blue-mid); border-radius:var(--radius); }
     .context-box p { font-size:0.85rem; color:var(--text-mid); line-height:1.65; }
@@ -115,19 +114,16 @@
   <div class="header-inner">
     <a href="/nycuriosity_substack_posts/state_capacity_ai/" class="back-link">← state-capacity-ai</a>
     <div class="header-divider"></div>
-    <h1>We Estimate, But Rarely Check</h1>
+    <h1>The Evaluation Drop-Off</h1>
   </div>
 </header>
 
 <div class="pill-nav">
   <span class="pill-label">Domains in this post:</span>
   <a href="../public-service-delivery/">Public Service Delivery</a>
-  <a href="../transparency-advocacy/">Transparency &amp; Advocacy</a>
   <a href="../procurement-contracting/">Procurement</a>
-  <a href="../workforce-knowledge/">Workforce</a>
   <a href="../cutting-red-tape/">Red Tape</a>
   <a href="./" class="active">Policy Evaluation</a>
-  <a href="../test-and-learn/">Test &amp; Learn</a>
 </div>
 
 <div class="hero">
@@ -141,15 +137,15 @@
       <span class="hero-tag">Inward-facing</span>
       <span class="hero-updated">June 2026</span>
     </div>
-    <h1>We Estimate, But <span>Rarely Check</span></h1>
+    <h1>The Evaluation <span>Drop-Off</span></h1>
     <p>
-      Government rarely checks whether its own laws work. Costs are projected before a bill passes, then almost never
-      revisited against what actually happened. The chart below shows the largest projected costs among recent NYC
-      Council bills, drawn from NYCuriosity's
+      Government rarely checks whether its own laws work. A cost is projected before a bill passes, then almost never
+      independently estimated, and almost never revisited against what actually happened. The chart below traces that
+      drop-off across 244 recent NYC Council bills in NYCuriosity's
       <a href="/civic_reference/nyc_council_fiscal_impacts_tracker/" target="_blank" rel="noopener">Fiscal Impacts Tracker</a>.
     </p>
     <div class="hero-actions">
-      <a href="../data/nyc_bill_fiscal_impact.csv" download class="btn btn-outline">
+      <a href="../data/nyc_evaluation_gap.csv" download class="btn btn-outline">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         Download CSV
       </a>
@@ -166,9 +162,9 @@
     </div>
 
     <div id="chart-box">
-      <div class="chart-title">Largest projected costs, recent NYC Council bills</div>
-      <div class="chart-sub">Projected annual net cost at full fiscal impact, top seven of 244 tracked bills</div>
-      <div class="chart" id="chart"></div>
+      <div class="chart-title">From projection to evaluation: where the bills fall away</div>
+      <div class="chart-sub">244 recent NYC Council bills with a fiscal impact statement</div>
+      <div class="funnel" id="funnel"></div>
       <div class="chart-attribution">
         <span>Created by Tal Roded · NYCuriosity</span>
         <span>Source: Author's analysis · NYC Council Legistar</span>
@@ -176,7 +172,7 @@
     </div>
 
     <div class="context-box">
-      <p><strong>Why it matters:</strong> Across 244 recent bills, NYCuriosity's tracker totals roughly <strong>$8.45 billion</strong> in projected expenditure. Yet only 21 of those 244 bills (about 8.6%) came with an independent OMB cost estimate, and almost none will get a retrospective review checking whether the projection held.</p>
+      <p><strong>Why it matters:</strong> Every one of these 244 bills carries a projected cost, totaling about <strong>$8.45 billion</strong> in expenditure. But only 21 (8.6%) came with an independent OMB estimate, and none face a systematic retrospective review checking whether the projection held. We commit the money up front and look away.</p>
       <p><strong>Where AI helps:</strong> Synthesizing outcome data across agencies, scanning thousands of pages of audits and IBO reports, and tracking the gap between projected and realized impact. AI surfaces correlation, not causation, so its output is a lead to investigate, not a verdict.</p>
     </div>
 
@@ -191,9 +187,8 @@
     </div>
 
     <div class="footnotes">
-      <p><strong>Bill costs:</strong> Projected net fiscal impact at full fiscal effect, as stated in each bill's official fiscal impact statement. Values shown are costs (negative net impact). Source: author's analysis of NYC Council <a href="https://legistar.council.nyc.gov/" target="_blank" rel="noopener">Legistar</a> data via the <a href="/civic_reference/nyc_council_fiscal_impacts_tracker/" target="_blank" rel="noopener">NYCuriosity Fiscal Impacts Tracker</a>, last updated June 2026.</p>
-      <p><strong>Coverage:</strong> The tracker covers 244 bills with a fiscal impact statement; totals reflect that set, not all legislation. The Streets Plan figure (Intro 1557-A) is the same $1.74B analyzed in NYCuriosity's streets-plan reporting.</p>
-      <p><strong>Note:</strong> A projected cost is an estimate made before enactment; actual spending may differ. The point of the chart is that the comparison is rarely made.</p>
+      <p><strong>Counts:</strong> Of 244 NYC Council bills with a fiscal impact statement in the tracker, all carry a projected cost; 21 included an independent OMB cost estimate; none have a published retrospective evaluation. Source: author's analysis of NYC Council <a href="https://legistar.council.nyc.gov/" target="_blank" rel="noopener">Legistar</a> data via the <a href="/civic_reference/nyc_council_fiscal_impacts_tracker/" target="_blank" rel="noopener">NYCuriosity Fiscal Impacts Tracker</a>, last updated June 2026.</p>
+      <p><strong>Note:</strong> "Retrospective evaluation" means a published after-the-fact study comparing projected to actual fiscal impact. The absence of such reviews is the point; the tracker is one attempt to make the comparison possible.</p>
     </div>
 
   </div>
@@ -223,34 +218,36 @@
 </footer>
 
 <script>
-  const MAX = 4126000000;
-  const ITEMS = [
-    { label:"Rental assistance income/work rules", sub:"Int. 894-A · CityFHEPS",          value:4126000000, color:"#dc2626" },
-    { label:"Streets Plan five-year plans",        sub:"Intro 1557-A",                    value:1741247630, color:"#2563eb" },
-    { label:"Sanitation retirement benefits",      sub:"S.4667-A / A.5843-A",             value:802200000,  color:"#2563eb" },
-    { label:"Correction retirement benefits",      sub:"S.4706-A / A.5548-A",             value:617100000,  color:"#2563eb" },
-    { label:"Pedestrian space expansion",          sub:"Int. T2026-1338",                 value:512500000,  color:"#2563eb" },
-    { label:"School paraprofessional payments",    sub:"Int. 692",                        value:243900000,  color:"#2563eb" },
-    { label:"20-year retirement restoration",      sub:"S.9130 / A.10248",                value:232700000,  color:"#2563eb" },
+  const TOTAL = 244;
+  const STAGES = [
+    { label:"Bills with a fiscal projection",            note:"100% of tracked bills", value:244, color:"#2563eb", pct:"244" },
+    { label:"Bills with an independent OMB estimate",    note:"8.6% of tracked bills", value:21,  color:"#2563eb", pct:"21" },
+    { label:"Bills with a retrospective evaluation",     note:"none",                  value:0,   color:"#dc2626", pct:"0" },
   ];
-  function fmt(v){
-    if (v >= 1e9) return '$' + (v/1e9).toFixed(2).replace(/\.?0+$/,'') + 'B';
-    if (v >= 1e6) return '$' + Math.round(v/1e6) + 'M';
-    return '$' + v.toLocaleString();
-  }
-  const chart = document.getElementById('chart');
-  ITEMS.forEach(item => {
-    const pct = (item.value / MAX * 100).toFixed(2);
+  const funnel = document.getElementById('funnel');
+  STAGES.forEach(s => {
+    const widthPct = Math.max(s.value / TOTAL * 100, 0);
     const row = document.createElement('div');
-    row.className = 'bar-row';
-    row.innerHTML = `
-      <div class="bar-label">${item.label}<span class="sublabel">${item.sub}</span></div>
-      <div class="bar-track"><div class="bar-fill" style="width:0%;background:${item.color}" data-pct="${pct}"></div></div>
-      <div class="bar-value" style="color:${item.color}">${fmt(item.value)}</div>`;
-    chart.appendChild(row);
+    row.className = 'frow';
+    if (s.value === 0) {
+      row.innerHTML = `
+        <div class="frow-label">${s.label} <span>· ${s.note}</span></div>
+        <div class="ftrack fzero">
+          <div class="fval" style="left:0; color:${s.color}">0 bills</div>
+        </div>`;
+    } else {
+      const textInside = widthPct > 22;
+      row.innerHTML = `
+        <div class="frow-label">${s.label} <span>· ${s.note}</span></div>
+        <div class="ftrack">
+          <div class="ffill" style="background:${s.color}" data-w="${widthPct}"></div>
+          <div class="fval" style="${textInside ? 'left:0; color:#fff' : 'left:'+widthPct+'%; color:'+s.color}">${s.pct} bills</div>
+        </div>`;
+    }
+    funnel.appendChild(row);
   });
   requestAnimationFrame(() => setTimeout(() => {
-    document.querySelectorAll('.bar-fill').forEach(el => { el.style.width = el.dataset.pct + '%'; });
+    document.querySelectorAll('.ffill').forEach(el => { el.style.width = el.dataset.w + '%'; });
   }, 80));
 
   async function downloadChart(btn) {
@@ -258,14 +255,14 @@
     try {
       const el = document.getElementById('chart-box');
       const canvas = await html2canvas(el, { backgroundColor:'#ffffff', scale:2, useCORS:true, logging:false });
-      const a = document.createElement('a'); a.download = 'nyc-bill-projected-costs.png';
+      const a = document.createElement('a'); a.download = 'nyc-evaluation-gap.png';
       a.href = canvas.toDataURL('image/png'); a.click();
     } finally { btn.innerHTML = orig; btn.disabled = false; }
   }
   function showEmbed() {
     const url = location.origin + location.pathname;
     document.getElementById('embedCode').value =
-      `<iframe src="${url}" width="900" height="860" frameborder="0" style="border:1px solid #e5e7eb; border-radius:8px;" loading="lazy"></iframe>`;
+      `<iframe src="${url}" width="900" height="720" frameborder="0" style="border:1px solid #e5e7eb; border-radius:8px;" loading="lazy"></iframe>`;
     document.getElementById('embedModal').style.display = 'flex';
   }
   function closeEmbed() { document.getElementById('embedModal').style.display = 'none'; }
