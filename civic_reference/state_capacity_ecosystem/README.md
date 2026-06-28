@@ -69,9 +69,17 @@ data_website/civic_reference/state_capacity_ecosystem/
 └── events/
     ├── index.html                   ← Events hub: one card per event
     └── civic-tech-build-night/
-        └── index.html               ← Event detail page. Template for new events
-                                       (copy the folder; HTML comments at top mark
-                                       every section to edit). No JS, no data file.
+        ├── index.html               ← Event detail page. Template for new events
+        │                             (copy the folder; HTML comments at top mark
+        │                             every section to edit). No JS, no data file.
+        │                             Section order: Read about it → Projects produced
+        │                             → Overview → Goal → Tracks → Expert judges →
+        │                             Event archive. Date shown in the hero.
+        └── tideline/                ← Rehosted project (decision #20). TIDELINE flood
+            ├── index.html            tracker by D. Lee, D. Berkowitz & L. Kaplan,
+            └── *.json                republished WITH PERMISSION + credit. 5 JSON data
+                                      files (~6.5 MB). Source repo's build scripts/
+                                      notebooks NOT copied. Relative fetch() + CDN libs.
 ```
 
 ---

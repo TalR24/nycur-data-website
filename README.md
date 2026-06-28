@@ -18,6 +18,7 @@ Directory, segment view, affinity network, and matchmaking for 300+ organization
 - [`/civic_reference/state_capacity_ecosystem/network/`](https://data.nycuriosity.com/civic_reference/state_capacity_ecosystem/network/) — D3 force-directed affinity graph + semantic search with geographic boosting
 - [`/civic_reference/state_capacity_ecosystem/connect/`](https://data.nycuriosity.com/civic_reference/state_capacity_ecosystem/connect/) — directory of people and orgs working on specific problems, with self-submission form and intro request flow
 - [`/civic_reference/state_capacity_ecosystem/methodology/`](https://data.nycuriosity.com/civic_reference/state_capacity_ecosystem/methodology/) — scoring formula, taxonomy, inclusion criteria
+- [`/civic_reference/state_capacity_ecosystem/events/`](https://data.nycuriosity.com/civic_reference/state_capacity_ecosystem/events/) — state capacity hackathons, with per-event pages covering overview, tracks, judges, and the projects produced (e.g. `events/civic-tech-build-night/`)
 
 ### [NYC Council Fiscal Impacts Tracker](https://data.nycuriosity.com/civic_reference/nyc_council_fiscal_impacts_tracker/)
 Estimated fiscal impact of every NYC Council bill with a Finance Division impact statement. Filterable by agency, committee, sponsor, and fiscal year, with cost/revenue/capital breakdowns and per-bill detail panels.
@@ -132,6 +133,10 @@ Static site hosted on GitHub Pages at a custom domain (`data.nycuriosity.com`). 
 │   │   │   ├── notify_new_connect.py              → Emails new Connect entries
 │   │   │   └── *.json                             → Generated data bundles
 │   │   ├── directory/  network/  connect/  methodology/
+│   │   └── events/                                → Hackathons hub + per-event pages
+│   │       ├── index.html                         → Events hub (event cards)
+│   │       └── civic-tech-build-night/            → Event page + projects (incl. rehosted
+│   │                                                TIDELINE dashboard under tideline/)
 │   ├── nyc_council_fiscal_impacts_tracker/
 │   │   ├── index.html                             → Bill table
 │   │   ├── PIPELINE_REFERENCE.md                  → Pipeline + schema reference
