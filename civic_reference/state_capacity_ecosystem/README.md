@@ -21,8 +21,9 @@ The five public pages:
 | **Connect** | `…/connect/` | Directory of people and orgs indexed by problem, role, and help-type. 13-field self-submission form modal (mailto + clipboard). Intro request modal for facilitated contacts. Separate dataset from the org pages. |
 | **Affinity Network** | `…/network/` | D3 force-directed graph + natural-language semantic search with geographic boosting |
 | **Methodology** | `…/methodology/` | Long-form explainer: taxonomy, inclusion criteria, scoring formula |
+| **Events** | `…/events/` | Events hub listing state capacity hackathons as cards. Each event links to its own subpage (`…/events/<event-slug>/`) with overview, logistics, tracks, projects produced, Substack writeups, and Luma archive. |
 
-**Pill-nav order across all subpages:** Directory · Affinity Network · Connect · Methodology · ← Hub
+**Pill-nav order across all subpages:** Directory · Connect · Affinity · Methodology · Events · ← Hub
 
 ---
 
@@ -63,8 +64,14 @@ data_website/civic_reference/state_capacity_ecosystem/
 │   └── index.html                   ← Connect directory + 9-column table + 12-field self-submission
 │                                     form modal + intro request modal. Reads ../data/connect.json.
 │                                     Submissions post to Airtable via REST API.
-└── methodology/
-    └── index.html                   ← Long-form scoring + taxonomy write-up
+├── methodology/
+│   └── index.html                   ← Long-form scoring + taxonomy write-up
+└── events/
+    ├── index.html                   ← Events hub: one card per event
+    └── civic-tech-build-night/
+        └── index.html               ← Event detail page. Template for new events
+                                       (copy the folder; HTML comments at top mark
+                                       every section to edit). No JS, no data file.
 ```
 
 ---
@@ -310,7 +317,7 @@ These were arrived at via user feedback over multiple sessions. Don't reintroduc
 5. **"Henry Grunzweig"** is the curator's name (no 'e' between 'z' and 'w'). Earlier sessions used "Henry Tolchard" and "Henry Grunzeweig" — both were wrong. Corrected to "Grunzweig" May 2026. Watch for this when refreshing data or writing prose.
 6. **No links to Claude conversations** anywhere on the public site. (Previously the methodology page linked to a Claude convo for weight rationale — removed.)
 7. **The methodology page has no "Refreshing the data" section.** That's internal workflow, doesn't belong in public-facing docs.
-8. **Pill-nav order:** Directory · Affinity Network · Connect · Methodology · ← Hub. Applies to every subpage including the affinity network page (the Methodology pill was briefly removed from the network page mid-May 2026 and then restored at user request — keep it).
+8. **Pill-nav order:** Directory · Connect · Affinity · Methodology · Events · ← Hub. Applies to every subpage including the affinity network page (the Methodology pill was briefly removed from the network page mid-May 2026 and then restored at user request — keep it). The **Events** pill was added June 2026 when the Events page launched.
 9. **Org labels appear below every visible bubble** in the network view (not just top-N by degree). 9.5px / weight 600 / white halo. DOM-sorted by ascending degree so high-degree labels paint on top of overlaps.
 10. **No segment labels rendered inside the map.** Earlier versions drew uppercase segment names at the cluster centroid (counter-scaled with zoom). Removed May 2026 — they competed with org names for attention and segment identity is already conveyed by node color + the segment filter chips above the graph.
 11. **Multi-select dropdowns close siblings on open.** `MS._registry` static array tracks all instances; `_show()` closes any other open dropdown first. Used on the directory page (Primary segment · Geography · Problem area · Problem topic) and on the network page (Geography · Problem area · Problem topic — added May 2026).
@@ -321,6 +328,7 @@ These were arrived at via user feedback over multiple sessions. Don't reintroduc
 16. **Network page bridges to /connect/ in two places** (added May 2026): (a) inline "People working on these problem topics" subsection at the bottom of the org-node detail panel; (b) `people-results` sidebar in controls when Problem area or Problem topic filters are active. Both link to `../connect/`. The `connect.json` fetch is wrapped in `.catch(() => [])` so the network page degrades gracefully if the file is missing.
 17. **Connect uses neutral language ("Name", "entry", "entries") not "Person" / "practitioners"** — the directory contains both people and organizations. Do not reintroduce people-only language in table headers, filter labels, or JS string templates on this page.
 18. **Geographic search boost in network:** `GEO_FOCUS_MAP` + `detectGeoFocus()` in `rankByQuery()` add +0.25 to orgs matching the inferred focus level. Do not remove — the `focus` field values are "City"/"State"/"Federal", not city names, so without the boost "NYC" returns no results. The boost is additive to TF-IDF, not a replacement.
+19. **Events use a copy-the-folder template, not a data file.** Each event is a hand-authored static page at `events/<event-slug>/index.html`. To add an event, copy `events/civic-tech-build-night/` and follow the HTML-comment checklist at the top of the file, then add a matching card to `events/index.html`. There is no JSON, no build script, and no `data/` dependency for events — keep it that way unless the event count grows enough to warrant one. Project and Substack links live in clearly-marked `href="#"` slots with `.pending` styling until the real URLs are dropped in. The "Join Our Event" hero CTA on the hub was removed June 2026 once the first event passed; the Events page is now the entry point.
 
 ---
 
@@ -482,6 +490,7 @@ For changes where placement/labeling/UX is ambiguous (e.g., "add a new section t
 
 | Date | Commit | Summary |
 |---|---|---|
+| 2026-06-28 | — | Events: add Events page. New `events/index.html` hub (event cards) + `events/civic-tech-build-night/index.html` detail page (template for future events, populated with the June 2026 "A Civic Tech Build Night" hackathon: overview, logistics, 4 tracks, audience, 5 projects produced, Substack writeup slot, Luma archive). Add Events as a 4th explore bubble on the hub and an Events pill to the nav on all four subpages. Remove the now-expired "Join Our Event" hero CTA. Project/Substack links left as `.pending` placeholders pending real URLs. |
 | 2026-06-07 | — | Docs: update data_website README (fix stale JSON filenames, add update_stats.py + notify_new_connect.py to file tree, add GitHub Actions section). Update project README (file layout, hardcoded-counts checklist notes automation, GitHub push section documents Actions workflow, last-updated date). Update local ref doc (dataset stats, JSON filenames, automation notes). |
 | 2026-06-05 | `3f9711b` | Rename CSVs: `state_capacity_ecosystem.csv` → `directory.csv`, `problem_statement_seeds_v5.csv` → `connect_submissions.csv`. Updated all references across build scripts, workflow, HTML download links, and all READMEs. |
 | 2026-06-05 | `dc9c1f0` | Workflow: split change detection into two independent pipelines — `directory.csv` triggers org rebuild + stat patches; `connect_submissions.csv` triggers connect rebuild + email notifications. Each can fire independently or together. |
