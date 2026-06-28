@@ -184,7 +184,7 @@ Total cost is one ~190 KB JSON fetch + O(query_terms × num_orgs) per query. No 
 ### Hub (`index.html`)
 - Hero with explainer paragraph
 - **4 stat pills:** Organizations · Primary segments · Problem topics · Data last updated
-- **Submit-an-organization panel** sits right after the pills, above "Four ways to explore" — full-width with Henry's Google Form CTA (this is the *org* intake form, not the people-directory submission)
+- **"Add to Directory" hero CTA** deep-links to `./directory/?add=1`, which auto-opens the directory's in-page **Suggest-an-organization** form modal (`openOF()`). This mirrors the "Add to Connect" CTA's `./connect/?add=1` pattern. The directory's org form POSTs to a Google Form (`OF_ACTION` = a `…/formResponse` endpoint) via `fetch(..., {mode:"no-cors"})`. **It no longer links to the old `forms.gle/GSNh2ZqUfFG4EAzF6` short link** (changed June 2026). The org intake is distinct from the people-directory (Connect) submission.
 - **3 view cards under "Explore the ecosystem":** Directory · Affinity Network · Connect.
 - **1 methodology card under "How this works":** the hub-level entry point to the methodology page. Card preview is a static rendering of the scoring formula and thresholds. (Methodology is also reachable from every subpage's pill nav.)
 - **2 text panels at bottom:** "How we built this" (links to Methodology page) · "Submit feedback" (mailto:statecapacityecosystem@gmail.com)
@@ -499,6 +499,7 @@ For changes where placement/labeling/UX is ambiguous (e.g., "add a new section t
 
 | Date | Commit | Summary |
 |---|---|---|
+| 2026-06-28 | — | Hub: fix "Add to Directory" CTA — was still pointing at the old `forms.gle/GSNh2ZqUfFG4EAzF6` Google Form short link; now deep-links to `./directory/?add=1`, which auto-opens the directory's in-page Suggest-an-organization form (`openOF()`). Added the `?add=1` auto-open handler to `directory/index.html`, mirroring `connect/?add=1`. |
 | 2026-06-28 | — | Events hub reframed as a hub for past + upcoming events (not hackathons-only): new hero copy, a "kinds of events we run" section (large hackathons, targeted hackathons, demo nights, speaker/salon nights), broadened host-an-event CTA, and updated meta + hub Events-bubble copy. Methodology: Problems Taxonomy table reordered alphabetically (areas A–Z with Domains last as the catch-all; topics A–Z within each area). Affinity: ran `build_affinity.py` — JSON already current vs the 2026-06-27 directory.csv (no data diff). |
 | 2026-06-28 | — | Events: rehost TIDELINE. Add `events/civic-tech-build-night/tideline/` (self-contained index.html + 5 JSON data files, ~6.5 MB) republished with permission from David A. Lee, Dean Berkowitz & Lyndsey Kaplan. Added a `.credit` line to the rehosted page header (authors + permission note + source-repo link) and a 6th project card on the event page linking to `./tideline/#map`. Build scripts/notebooks from the source repo not copied. |
 | 2026-06-28 | — | Events: wire all 5 project links, move Projects above Overview, drop the header subtitle, business-health-map collapsed to a single figma.site link. |
