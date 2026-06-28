@@ -308,6 +308,35 @@
       .flow-step { flex: 1 1 44%; }
     }
 
+    /* ── DARK MODE (entire deck) ────────────────────────── */
+    /* Swaps the core palette so every light content slide adopts the
+       same dark scheme as the title / divider slides. */
+    body.dark-deck {
+      --surface:    #111827;
+      --bg:         #1b2536;
+      --border:     #33405a;
+      --text:       #f9fafb;
+      --text-mid:   #cbd5e1;
+      --text-muted: #94a3b8;
+      --text-faint: #6b7a90;
+      --blue:       #60a5fa;
+      --blue-light: #18253c;
+      --blue-mid:   #2f4a74;
+      --orange:     #fbbf77;
+    }
+    body.dark-deck .slide:not(.dark) {
+      background-color: #111827;
+      background-image:
+        radial-gradient(620px 320px at 84% 8%, rgba(37,99,235,0.16), transparent 60%),
+        radial-gradient(520px 300px at 6% 96%, rgba(255,99,25,0.08), transparent 60%);
+    }
+    /* hardcoded callout tints need explicit dark equivalents */
+    body.dark-deck .callout.warn  { background:#2a1f12; border-color:#7c4a1e; border-left-color:var(--orange); }
+    body.dark-deck .callout.alert { background:#2a1416; border-color:#7c2d2d; border-left-color:var(--red); }
+    /* the "top" org box equals the slide bg in dark mode — give it contrast */
+    body.dark-deck .org-box.top   { background:#2563eb; border-color:#2563eb; color:#fff; }
+    /* QR card stays white so it always scans */
+
     /* ── PRINT / PDF EXPORT ─────────────────────────────── */
     @media print {
       @page { size: 1120px 630px; margin: 0; }
@@ -318,13 +347,13 @@
         display: block !important; width: 1120px; height: 630px; max-height: none;
         aspect-ratio: auto; border-radius: 0; box-shadow: none; page-break-after: always; break-after: page;
       }
-      .slide.dark { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .slide.dark, body.dark-deck .slide { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     }
   </style>
 </head>
 <body>
   <div id="progress"></div>
-  <div class="hint">← → navigate · N notes · F fullscreen</div>
+  <div class="hint">← → navigate · N notes · D theme · F fullscreen</div>
 
   <div class="stage" id="stage">
 
@@ -1331,6 +1360,7 @@
     <button class="ctrl-btn" onclick="go(1)" aria-label="Next">Next ›</button>
     <span class="ctrl-div"></span>
     <button class="ctrl-btn" id="notesBtn" onclick="toggleNotes()" title="Toggle speaker notes (N)">Notes</button>
+    <button class="ctrl-btn" id="themeBtn" onclick="toggleTheme()" title="Toggle dark / light (D)">🌙 Dark</button>
     <button class="ctrl-btn" onclick="toggleFs()" title="Fullscreen (F)">⛶ Full</button>
   </div>
 
@@ -1364,6 +1394,13 @@
       if (!document.fullscreenElement) { document.documentElement.requestFullscreen?.(); }
       else { document.exitFullscreen?.(); }
     }
+    function applyTheme(dark) {
+      document.body.classList.toggle('dark-deck', dark);
+      const b = document.getElementById('themeBtn');
+      if (b) { b.classList.toggle('on', dark); b.textContent = dark ? '☀ Light' : '🌙 Dark'; }
+      try { localStorage.setItem('cbDeckTheme', dark ? 'dark' : 'light'); } catch (e) {}
+    }
+    function toggleTheme() { applyTheme(!document.body.classList.contains('dark-deck')); }
 
     document.addEventListener('keydown', (e) => {
       const k = e.key;
@@ -1372,6 +1409,7 @@
       else if (k === 'Home') { e.preventDefault(); show(0); }
       else if (k === 'End')  { e.preventDefault(); show(total - 1); }
       else if (k === 'n' || k === 'N') { toggleNotes(); }
+      else if (k === 'd' || k === 'D') { toggleTheme(); }
       else if (k === 'f' || k === 'F') { toggleFs(); }
     });
 
@@ -1392,6 +1430,9 @@
       if (Math.abs(dx) > 50) go(dx < 0 ? 1 : -1);
       tx = null;
     }, { passive: true });
+
+    // restore saved theme preference
+    try { applyTheme(localStorage.getItem('cbDeckTheme') === 'dark'); } catch (e) {}
 
     // deep-link via hash
     const start = parseInt((location.hash || '').slice(1), 10);
