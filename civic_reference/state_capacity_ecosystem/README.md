@@ -499,6 +499,7 @@ For changes where placement/labeling/UX is ambiguous (e.g., "add a new section t
 
 | Date | Commit | Summary |
 |---|---|---|
+| 2026-06-28 | — | Events hub reframed as a hub for past + upcoming events (not hackathons-only): new hero copy, a "kinds of events we run" section (large hackathons, targeted hackathons, demo nights, speaker/salon nights), broadened host-an-event CTA, and updated meta + hub Events-bubble copy. Methodology: Problems Taxonomy table reordered alphabetically (areas A–Z with Domains last as the catch-all; topics A–Z within each area). Affinity: ran `build_affinity.py` — JSON already current vs the 2026-06-27 directory.csv (no data diff). |
 | 2026-06-28 | — | Events: rehost TIDELINE. Add `events/civic-tech-build-night/tideline/` (self-contained index.html + 5 JSON data files, ~6.5 MB) republished with permission from David A. Lee, Dean Berkowitz & Lyndsey Kaplan. Added a `.credit` line to the rehosted page header (authors + permission note + source-repo link) and a 6th project card on the event page linking to `./tideline/#map`. Build scripts/notebooks from the source repo not copied. |
 | 2026-06-28 | — | Events: wire all 5 project links, move Projects above Overview, drop the header subtitle, business-health-map collapsed to a single figma.site link. |
 | 2026-06-28 | — | Events: restructure build-night page — remove At a glance (date now in hero), move Read about it to top, add Expert judges section, remove Who's in the room. |
