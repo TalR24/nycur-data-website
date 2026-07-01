@@ -394,7 +394,7 @@
 
     <!-- FEEDBACK NOTE -->
     <div class="callout note" style="margin-bottom:24px; font-size:0.87rem; line-height:1.7;">
-      <strong>Spot an error?</strong> If anything described on this page is incorrect or misleading, please reach out to me at <a href="mailto:troded24@gmail.com" style="color:var(--blue)">troded24@gmail.com</a> — I'd be eager to rectify it.
+      <strong>Spot an error?</strong> If anything described on this page is incorrect or misleading, please reach out to me at <a href="mailto:troded24@gmail.com" style="color:var(--blue)">troded24@gmail.com</a>, I'd be eager to rectify it.
     </div>
 
     <!-- TABLE OF CONTENTS -->
@@ -420,8 +420,8 @@
         <span class="section-title">Data source</span>
       </div>
       <p>All fiscal data in this tracker comes from <strong>NYC Legistar</strong>, the New York City Council's official legislative management system at <a href="https://legistar.council.nyc.gov" target="_blank" rel="noopener" style="color:var(--blue)">legistar.council.nyc.gov</a>. Legistar is the public record of all legislation introduced in the Council, including attached documents.</p>
-      <p>For any bill that moves toward a vote, the Council's Finance Division prepares a <strong>Fiscal Impact Statement</strong> — a standardized document estimating the bill's effect on city revenues, operational expenditures, and capital costs. These statements are attached as <code>.docx</code> files to each bill's Legistar record and are publicly accessible.</p>
-      <p>This tracker reads those documents directly. No data is sourced from any secondary database or government API — every figure comes from the text of the Finance Division's own analysis.</p>
+      <p>For any bill that moves toward a vote, the Council's Finance Division prepares a <strong>Fiscal Impact Statement</strong>, a standardized document estimating the bill's effect on city revenues, operational expenditures, and capital costs. These statements are attached as <code>.docx</code> files to each bill's Legistar record and are publicly accessible.</p>
+      <p>This tracker reads those documents directly. No data is sourced from any secondary database or government API, every figure comes from the text of the Finance Division's own analysis.</p>
     </div>
 
     <!-- 2. COVERAGE -->
@@ -434,14 +434,14 @@
 
       <h3>Included legislation types</h3>
       <ul>
-        <li><strong>Introductions (Int.)</strong> — proposed local laws. These become binding law if passed by the Council and signed by the Mayor.</li>
-        <li><strong>Resolutions (Res.)</strong> — formal Council positions, requests, or ceremonial acts. Resolutions don't create law, but some carry real fiscal implications (e.g. approving a contract).</li>
-        <li><strong>Pre-Considered Resolutions</strong> — resolutions introduced and voted on in the same session, bypassing the normal committee referral.</li>
+        <li><strong>Introductions (Int.)</strong>, proposed local laws. These become binding law if passed by the Council and signed by the Mayor.</li>
+        <li><strong>Resolutions (Res.)</strong>, formal Council positions, requests, or ceremonial acts. Resolutions don't create law, but some carry real fiscal implications (e.g. approving a contract).</li>
+        <li><strong>Pre-Considered Resolutions</strong>, resolutions introduced and voted on in the same session, bypassing the normal committee referral.</li>
       </ul>
 
       <h3>Not included</h3>
       <ul>
-        <li><strong>Bills with zero fiscal impact.</strong> Many bills are analyzed and found to have no net cost — these are excluded. Only bills where at least one of total expenditure, capital, revenue, or net impact is non-zero are tracked.</li>
+        <li><strong>Bills with zero fiscal impact.</strong> Many bills are analyzed and found to have no net cost, these are excluded. Only bills where at least one of total expenditure, capital, revenue, or net impact is non-zero are tracked.</li>
         <li><strong>Bills where costs can't be estimated.</strong> When the Finance Division determines that costs cannot be reasonably quantified (e.g. "depends on how many complaints are filed"), the statement says so and these bills are excluded.</li>
         <li><strong>Proposed bills.</strong> Bills labeled "Proposed Int." or "Proposed Res." on Legistar are draft versions that have not yet been formally introduced. Only final, formally introduced bills are included.</li>
         <li><strong>Budget modification resolutions (MN-#).</strong> These are administrative approvals of mayoral budget modifications under City Charter §107(e). They pass as a matter of course and do not represent independent legislative fiscal decisions.</li>
@@ -454,17 +454,17 @@
         <span class="section-num">03</span>
         <span class="section-title">How bills are identified</span>
       </div>
-      <p>Legistar doesn't provide a bulk download of fiscal impact statements. The tracker identifies relevant bills by searching Legistar's legislation index for attachments containing the phrase <strong>"Fiscal Impact Statement"</strong> — the standard title the Finance Division uses for these documents.</p>
+      <p>Legistar doesn't provide a bulk download of fiscal impact statements. The tracker identifies relevant bills by searching Legistar's legislation index for attachments containing the phrase <strong>"Fiscal Impact Statement"</strong>, the standard title the Finance Division uses for these documents.</p>
 
       <h3>Current bills (2024–present)</h3>
       <p>The tracker searches Legistar's web interface using the attachment text search, retrieving all bills across all years that have a matching attachment. Results are paginated and deduplicated. This search is run monthly via an automated job to pick up newly introduced bills.</p>
-      <div class="callout note"><strong>Note on Legistar's year filter:</strong> Legistar's built-in year filter is non-functional for attachment searches — it returns the same set of results regardless of what year is selected. The tracker works around this by searching "All Years" and handling deduplication itself.</div>
+      <div class="callout note"><strong>Note on Legistar's year filter:</strong> Legistar's built-in year filter is non-functional for attachment searches, it returns the same set of results regardless of what year is selected. The tracker works around this by searching "All Years" and handling deduplication itself.</div>
 
       <h3>Historical bills (2014–2023)</h3>
       <p>For older legislation, the tracker uses the Legistar REST API (<code>webapi.legistar.com/v1/nyc</code>) to enumerate all NYC Council matters and their attachment URLs. Each matter is checked for a fiscal impact statement attachment; if one is found, it's downloaded and processed using the same extraction logic as current bills.</p>
 
       <h3>Finding the right attachment</h3>
-      <p>A single bill may have many attachments — committee reports, hearing transcripts, legal memos, and more. The tracker identifies the fiscal impact statement specifically by checking the filename of each attachment for the words "fiscal" or "impact." Only that attachment is downloaded; all others are ignored.</p>
+      <p>A single bill may have many attachments, committee reports, hearing transcripts, legal memos, and more. The tracker identifies the fiscal impact statement specifically by checking the filename of each attachment for the words "fiscal" or "impact." Only that attachment is downloaded; all others are ignored.</p>
     </div>
 
     <!-- 4. EXTRACTION -->
@@ -473,19 +473,19 @@
         <span class="section-num">04</span>
         <span class="section-title">How figures are extracted</span>
       </div>
-      <p>Once a fiscal impact statement is identified, the tracker downloads the <code>.docx</code> file and extracts its full text, including all table cells. That text is passed to a large language model — <strong>Claude Haiku</strong> (Anthropic) — with a structured prompt that instructs it to return a JSON object containing all key fields: fiscal totals by year, agency breakdown, narratives, sponsor names, and administrative metadata.</p>
+      <p>Once a fiscal impact statement is identified, the tracker downloads the <code>.docx</code> file and extracts its full text, including all table cells. That text is passed to a large language model, <strong>Claude Haiku</strong> (Anthropic), with a structured prompt that instructs it to return a JSON object containing all key fields: fiscal totals by year, agency breakdown, narratives, sponsor names, and administrative metadata.</p>
 
       <h3>Why AI extraction?</h3>
       <p>Fiscal impact statements don't follow a perfectly uniform format. While newer documents (post-2020) use a consistent three-column table, older bills used varied column structures, different terminology, or described costs entirely in prose paragraphs. A rule-based parser would break on edge cases. Claude reads the document's actual content and synthesizes the values regardless of layout.</p>
 
       <h3>Handling prose-only documents</h3>
-      <p>Pre-2019 fiscal impact statements often have no structured table at all — costs are stated in sentences like "this legislation is estimated to increase expenditures by $1.6 million annually." For these documents, the model synthesizes the totals from the narrative text. When a range is given (e.g. "$1 million to $2 million"), the midpoint is used.</p>
+      <p>Pre-2019 fiscal impact statements often have no structured table at all, costs are stated in sentences like "this legislation is estimated to increase expenditures by $1.6 million annually." For these documents, the model synthesizes the totals from the narrative text. When a range is given (e.g. "$1 million to $2 million"), the midpoint is used.</p>
 
       <h3>Pre-check before extraction</h3>
       <p>Before calling the AI, the tracker scans the raw document text for any non-zero dollar amounts. If every dollar figure in the document is literally <code>$0</code> and there's no "See below" language indicating a cost described elsewhere, the document is skipped without an AI call. This avoids spending resources on bills that clearly have no fiscal impact.</p>
 
       <h3>Sponsor name normalization</h3>
-      <p>Fiscal impact statements list sponsors inconsistently — sometimes as "Council Member Smith," sometimes as "By Council Members Smith and Jones," sometimes with "(s):" prefixes. The extraction prompt instructs the model to strip all prefixes and return last names only. "The Speaker (Council Member X)" is returned as "X (Speaker)".</p>
+      <p>Fiscal impact statements list sponsors inconsistently, sometimes as "Council Member Smith," sometimes as "By Council Members Smith and Jones," sometimes with "(s):" prefixes. The extraction prompt instructs the model to strip all prefixes and return last names only. "The Speaker (Council Member X)" is returned as "X (Speaker)".</p>
     </div>
 
     <!-- 5. CALCULATIONS -->
@@ -496,24 +496,24 @@
       </div>
 
       <h3>Total expenditure, capital, and revenue</h3>
-      <p>Most fiscal impact statements present costs across multiple fiscal years in side-by-side columns — typically "Effective FY," "FY Succeeding Effective," and "Full Fiscal Impact FY." The tracker sums all column values to produce a single total for each category:</p>
+      <p>Most fiscal impact statements present costs across multiple fiscal years in side-by-side columns, typically "Effective FY," "FY Succeeding Effective," and "Full Fiscal Impact FY." The tracker sums all column values to produce a single total for each category:</p>
       <ul>
-        <li><strong>Total expenditure</strong> — sum of all operational expense amounts across all fiscal year columns. Always a positive number.</li>
-        <li><strong>Total capital</strong> — sum of all capital cost amounts across all fiscal year columns. Always a positive number, or <code>null</code> if the bill has no capital component.</li>
-        <li><strong>Total revenue</strong> — sum of all revenue amounts across all fiscal year columns. Always a positive number.</li>
+        <li><strong>Total expenditure</strong>, sum of all operational expense amounts across all fiscal year columns. Always a positive number.</li>
+        <li><strong>Total capital</strong>, sum of all capital cost amounts across all fiscal year columns. Always a positive number, or <code>null</code> if the bill has no capital component.</li>
+        <li><strong>Total revenue</strong>, sum of all revenue amounts across all fiscal year columns. Always a positive number.</li>
       </ul>
-      <div class="callout warn"><strong>These are multi-year totals, not annual figures.</strong> A bill with a $5M total expenditure across three fiscal years costs roughly $1.7M per year — not $5M per year. Always read the per-column breakdown in the bill detail panel for the year-by-year picture.</div>
+      <div class="callout warn"><strong>These are multi-year totals, not annual figures.</strong> A bill with a $5M total expenditure across three fiscal years costs roughly $1.7M per year, not $5M per year. Always read the per-column breakdown in the bill detail panel for the year-by-year picture.</div>
 
       <h3>Net fiscal impact</h3>
       <p>The net fiscal impact represents the overall cost or benefit to the city's budget:</p>
       <div class="formula">
         Net Fiscal Impact = Total Revenue − Total Expenditure − Total Capital
       </div>
-      <p>A <strong>negative</strong> net fiscal impact means the bill is a net cost to the city (expenses exceed revenues). A <strong>positive</strong> net fiscal impact means the bill generates more revenue than it costs — unusual but possible (e.g. a bill that imposes a new fee).</p>
+      <p>A <strong>negative</strong> net fiscal impact means the bill is a net cost to the city (expenses exceed revenues). A <strong>positive</strong> net fiscal impact means the bill generates more revenue than it costs, unusual but possible (e.g. a bill that imposes a new fee).</p>
       <p>This matches the sign convention used in the Finance Division's own documents, where net figures appear as negative numbers in parentheses when they represent a cost.</p>
 
       <h3>Revenue reductions (pre-2019 documents)</h3>
-      <p>Older narrative-format documents sometimes describe a fiscal impact as a <em>reduction</em> in revenue rather than an increase in expenditure — e.g. "this legislation would reduce revenues by $204,000." A revenue reduction is a real cost to the city. When the document frames it this way, the tracker records it as an expenditure so the net figure is negative (a cost), rather than as a positive revenue figure that would make the bill appear to be a money-maker.</p>
+      <p>Older narrative-format documents sometimes describe a fiscal impact as a <em>reduction</em> in revenue rather than an increase in expenditure, e.g. "this legislation would reduce revenues by $204,000." A revenue reduction is a real cost to the city. When the document frames it this way, the tracker records it as an expenditure so the net figure is negative (a cost), rather than as a positive revenue figure that would make the bill appear to be a money-maker.</p>
 
       <h3>Balanced-budget bills</h3>
       <p>Some bills are designed to be cost-neutral: new expenditures are fully offset by new revenues, so the net impact is $0. These are <em>included</em> in the tracker because the total expenditure and revenue figures are both non-zero and represent real resource flows, even if they cancel out.</p>
@@ -542,7 +542,7 @@
         </li>
         <li>
           <span class="tag exclude">EXCLUDED</span>
-          <strong>Budget modification resolutions (MN-#).</strong> These resolutions — labeled with a title like "MN-6" — are routine Council approvals of mayoral budget modifications under City Charter §107(e). They are not independent legislative decisions. Including them would inflate the tracker with administrative paperwork rather than substantive Council action.
+          <strong>Budget modification resolutions (MN-#).</strong> These resolutions, labeled with a title like "MN-6", are routine Council approvals of mayoral budget modifications under City Charter §107(e). They are not independent legislative decisions. Including them would inflate the tracker with administrative paperwork rather than substantive Council action.
         </li>
         <li>
           <span class="tag include">INCLUDED</span>
@@ -560,11 +560,11 @@
       <p>Each fiscal impact statement includes a program-by-program cost breakdown listing which city agencies bear which costs. The tracker reads these breakdowns and applies two cleanup rules.</p>
 
       <h3>Only agencies with actual cost line items</h3>
-      <p>Fiscal impact statements often mention agencies in narrative text for reasons other than fiscal responsibility — the Office of Management and Budget may be cited as a reviewer, the Independent Budget Office as a reference source, and the City Council itself as the bill's introducer. None of these agencies are incurring costs.</p>
+      <p>Fiscal impact statements often mention agencies in narrative text for reasons other than fiscal responsibility, the Office of Management and Budget may be cited as a reviewer, the Independent Budget Office as a reference source, and the City Council itself as the bill's introducer. None of these agencies are incurring costs.</p>
       <p>The tracker assigns agencies only to bills where that agency appears in at least one line item in the cost breakdown table. Agencies mentioned only in narrative text are excluded from the agency list for that bill.</p>
 
       <h3>Street signs → DOT</h3>
-      <p>Many bills require the installation or fabrication of new street signs — co-namings, street redesignations, or new regulatory signs. These costs are sometimes attributed in the document to whichever agency sponsored the request (parks, police, sanitation), but the actual work of fabricating and installing street signs in New York City is performed exclusively by the <strong>Department of Transportation (DOT)</strong>.</p>
+      <p>Many bills require the installation or fabrication of new street signs, co-namings, street redesignations, or new regulatory signs. These costs are sometimes attributed in the document to whichever agency sponsored the request (parks, police, sanitation), but the actual work of fabricating and installing street signs in New York City is performed exclusively by the <strong>Department of Transportation (DOT)</strong>.</p>
       <p>The tracker reassigns any program breakdown line item involving street sign installation, fabrication, or co-naming to DOT, regardless of how the source document attributes it.</p>
     </div>
 
@@ -580,7 +580,7 @@
       <p>Three standard columns: "Effective FY," "FY Succeeding Effective," and "Full Fiscal Impact." Rows for revenues, expenditures, and net. Includes a separate OMB estimate section and a hearing date field. This is the most consistent format and extracts cleanly.</p>
 
       <h3>Old template (~2015–2019)</h3>
-      <p>Column structure varies by bill — custom labels based on the legislation's scope and effective date. May include a capital row. No OMB section. The tracker extracts whatever columns are present and sums them into totals.</p>
+      <p>Column structure varies by bill, custom labels based on the legislation's scope and effective date. May include a capital row. No OMB section. The tracker extracts whatever columns are present and sums them into totals.</p>
 
       <h3>Narrative format (pre-2019, common)</h3>
       <p>No structured table at all. Fiscal impact is described entirely in prose: "This legislation is estimated to increase expenditures by $1.6 million annually." The tracker synthesizes totals from these narrative figures. When ranges are given, the midpoint is used. A single-column fiscal table labeled "Total" is created from the narrative figures for display purposes.</p>
@@ -594,10 +594,10 @@
       </div>
 
       <h3>These are estimates, not actual expenditures</h3>
-      <p>Every figure in this tracker is a <em>pre-passage estimate</em> prepared by the City Council's Finance Division. They represent what the bill is expected to cost if enacted and implemented as written. Actual costs after a bill becomes law may differ significantly — appropriations may be lower, implementation may be phased, or agencies may absorb costs within existing budgets.</p>
+      <p>Every figure in this tracker is a <em>pre-passage estimate</em> prepared by the City Council's Finance Division. They represent what the bill is expected to cost if enacted and implemented as written. Actual costs after a bill becomes law may differ significantly, appropriations may be lower, implementation may be phased, or agencies may absorb costs within existing budgets.</p>
 
       <h3>Totals are multi-year sums</h3>
-      <p>The "total expenditure," "total capital," and "net fiscal impact" columns sum costs across all fiscal years in the document — typically two or three years. They are not annual figures. Two bills with the same total cost may have very different annual profiles depending on how costs are distributed over time.</p>
+      <p>The "total expenditure," "total capital," and "net fiscal impact" columns sum costs across all fiscal years in the document, typically two or three years. They are not annual figures. Two bills with the same total cost may have very different annual profiles depending on how costs are distributed over time.</p>
 
       <h3>AI extraction may contain errors</h3>
       <p>Numbers are extracted from document text by a large language model. While the model performs well on structured tables, it can occasionally misread a figure, misattribute a cost to the wrong category, or misparse a complex multi-agency breakdown. If you spot a discrepancy, compare against the original document linked in each bill's detail panel (via the Legistar link).</p>
