@@ -104,6 +104,23 @@ Static site hosted on GitHub Pages at a custom domain (`data.nycuriosity.com`). 
 
 **Legacy redirects:** the Fiscal Impacts Tracker and Gov Bodies Explorer originally lived at top-level paths. The old folders (`/nyc_council_fiscal_impacts_tracker/`, `/nyc-gov-bodies-explorer/`) now contain only meta-refresh redirect stubs that preserve query strings and hashes — keep them so old links keep working.
 
+### Site chrome & shared components
+
+CSS is **inline per-page** (no shared stylesheet), so shared components are duplicated into each page. When adding a new page or tool, replicate the header and footer below.
+
+- **Header** — dark (`#111827`). Brand (`nycuriosity / data`) on the left; a `.header-actions` flex row on the right holds outlined `.header-link` pills (**About** → `https://talroded.nycuriosity.com`, **Substack**) and the `.support-link` pill.
+- **Footer** — white (`var(--surface)`, `#ffffff`). A `.footer-links` row of text links with a `.footer-support` pill.
+- **Buy Me a Coffee** — every page links to `https://buymeacoffee.com/nycuriosity`, label **"Support my work"**, coffee-cup icon, `target="_blank"`. Present in both header and footer.
+- **Palette per surface** — the pill color depends on its background: on the dark header use `.support-link` (light-blue text `#93c5fd`); on the white footer use `.footer-support` (blue text `#2563eb`). Both fill solid blue (`#2563eb`) with white text on hover. Do not put the light-blue `.support-link` on a white surface — it fails contrast.
+- **Footer alignment** — `.footer-links` must include `align-items: center`, otherwise the padded pill sits misaligned with the plain text links.
+- **Reusable button CSS** on subpages is injected in a single `<style id="support-btn-css">` block before `</head>`.
+
+Page types and how the button attaches:
+- **Hub pages** (brand + `.header-link`) → header pills **and** footer pill.
+- **Post/hub pages** with a `.footer-links` container → footer pill.
+- **Inline `·`-separated footers** (cb-resolutions, mcb3 topics charts) → a plain inline "Support my work" link matching the sibling text links (no pill).
+- **Skip:** the 8 meta-refresh redirect stubs; and chrome-less pages that have no header/footer — `civic_reference/cb_member_guide/{index,handout}.html` and `civic_reference/state_capacity_ecosystem/events/civic-tech-build-night/tideline/` (add a footer first if these ever need the button).
+
 ---
 
 ## Repo Structure
