@@ -6,6 +6,20 @@ A companion site to [NYCuriosity](https://nycuriosity.substack.com), a Substack 
 
 ---
 
+## ⚠️ Premium data paywall (members-only tools)
+
+Two tools are **paywalled** (launched Jul 2026): the **NYC Council Fiscal Impacts Tracker** and the **NYC CB Resolutions Dashboard**. Their public URLs here now serve **teaser pages**; the working tools live on a separate **private** origin.
+
+- **Real tools live in the PRIVATE repo** `TalR24/nycur-data-premium` → Cloudflare Worker (static assets) → **`premium.nycuriosity.com`**, gated by **Cloudflare Access** (email one-time-PIN + allowlist). **Never put these tools' data back in this public repo** — that bypasses the paywall.
+- **Public side (this repo):** `civic_reference/nyc_council_fiscal_impacts_tracker/index.html` and `cb-resolutions/index.html` are **teaser pages** ("Become a member" → `buymeacoffee.com/nycuriosity`; "Sign in" → `premium.nycuriosity.com`). All their subpages + CSV/JSON were removed.
+- **Access is manual:** when someone subscribes on Buy Me a Coffee, add their email in Cloudflare Zero Trust → Access → the app → policy **"NYCuriosity Premium"** → Emails; remove on cancellation.
+- **cb-resolutions teaser stats are HARDCODED.** When boards/resolutions are added to the database (done in other sessions), bump the `.stat-pills` + hero copy in `cb-resolutions/index.html` **and** the CB card in `index.html`.
+- **SEO:** teasers stay indexable (marketing); the premium origin is `noindex`/robots-disallowed. Keep `sitemap.xml` free of the removed gated subpages — it should list only the two teaser hubs, not their old subpages.
+
+Full architecture, deploy steps, and the approved Buy Me a Coffee copy are in the **private repo's README** (`nycur-data-premium/README.md`).
+
+---
+
 ## Civic Reference
 
 Standalone reference tools, listed in homepage order. New tools live under `/civic_reference/`; the CB Resolutions Dashboard predates that convention and is served from `/cb-resolutions/`.
@@ -23,12 +37,7 @@ Directory, segment view, affinity network, and matchmaking for 300+ organization
 ### [NYC Council Fiscal Impacts Tracker](https://data.nycuriosity.com/civic_reference/nyc_council_fiscal_impacts_tracker/)
 Estimated fiscal impact of every NYC Council bill with a Finance Division impact statement. Filterable by agency, committee, sponsor, and fiscal year, with cost/revenue/capital breakdowns and per-bill detail panels.
 
-- [`/civic_reference/nyc_council_fiscal_impacts_tracker/`](https://data.nycuriosity.com/civic_reference/nyc_council_fiscal_impacts_tracker/) — bill table
-- [`/civic_reference/nyc_council_fiscal_impacts_tracker/agency-fiscal-impact/`](https://data.nycuriosity.com/civic_reference/nyc_council_fiscal_impacts_tracker/agency-fiscal-impact/) — fiscal impact by agency
-- [`/civic_reference/nyc_council_fiscal_impacts_tracker/sponsor-fiscal-impact/`](https://data.nycuriosity.com/civic_reference/nyc_council_fiscal_impacts_tracker/sponsor-fiscal-impact/) — fiscal impact by sponsor
-- [`/civic_reference/nyc_council_fiscal_impacts_tracker/intro-year-impact/`](https://data.nycuriosity.com/civic_reference/nyc_council_fiscal_impacts_tracker/intro-year-impact/) — by year legislated
-- [`/civic_reference/nyc_council_fiscal_impacts_tracker/cost-revenue-breakdown/`](https://data.nycuriosity.com/civic_reference/nyc_council_fiscal_impacts_tracker/cost-revenue-breakdown/) — costs vs. revenue
-- [`/civic_reference/nyc_council_fiscal_impacts_tracker/methodology/`](https://data.nycuriosity.com/civic_reference/nyc_council_fiscal_impacts_tracker/methodology/) — methodology
+**🔒 Members-only** (see the Premium data paywall section above). The public URL is now a teaser; the full tracker and its subpages (bill table, by agency, by sponsor, by year, costs vs. revenue, methodology) live in the private `nycur-data-premium` repo, served at `premium.nycuriosity.com`.
 
 ### [NYC Government Bodies Explorer](https://data.nycuriosity.com/civic_reference/nyc-gov-bodies-explorer/)
 Browse all ~80 NYC government bodies — agencies, elected offices, DA offices, authorities, and boards — with FY2025 Adopted Budget and headcount data. Searchable card grid with inline detail panels and a D3.js treemap sized by budget or headcount, with sector-level filtering.
@@ -37,13 +46,9 @@ Browse all ~80 NYC government bodies — agencies, elected offices, DA offices, 
 - [`/civic_reference/nyc-gov-bodies-explorer/methodology/`](https://data.nycuriosity.com/civic_reference/nyc-gov-bodies-explorer/methodology/) — data sources, definitions, and known limitations
 
 ### [NYC CB Resolutions Dashboard](https://data.nycuriosity.com/cb-resolutions/)
-Search and visualize 11,000+ resolutions from Manhattan Community Boards 2 and 3 (817 meetings, 2002–2025). Filter by board, search full text, and compare topic and agency mentions side-by-side.
+Full-text search and visualization of resolutions across seven of Manhattan's Community Boards (2002–2026). Filter by board, search full text, and compare topic and agency mentions side-by-side.
 
-- [`/cb-resolutions/`](https://data.nycuriosity.com/cb-resolutions/) — hub page
-- [`/cb-resolutions/explorer/`](https://data.nycuriosity.com/cb-resolutions/explorer/) — full-text search and browse across all resolutions, filterable by board
-- [`/cb-resolutions/resolutions-per-year/`](https://data.nycuriosity.com/cb-resolutions/resolutions-per-year/) — annual resolution volume over time
-- [`/cb-resolutions/top-agencies/`](https://data.nycuriosity.com/cb-resolutions/top-agencies/) — most frequently addressed city agencies
-- [`/cb-resolutions/top-topics/`](https://data.nycuriosity.com/cb-resolutions/top-topics/) — most common resolution topics
+**🔒 Members-only** (see the Premium data paywall section above). The public URL is now a teaser; the working dashboard and its subpages (explorer, resolutions-per-year, top-agencies, top-topics) live in the private `nycur-data-premium` repo at `premium.nycuriosity.com`. *Board and resolution counts grow over time and the teaser stats are hardcoded — update them when the database expands.*
 
 ---
 
