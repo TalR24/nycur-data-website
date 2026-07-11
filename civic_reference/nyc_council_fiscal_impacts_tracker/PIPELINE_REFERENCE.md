@@ -1,3 +1,5 @@
+> **Note (Jul 2026):** The pipeline scripts, the monthly refresh GitHub Action, and the data files described below now live in the **private** `TalR24/nycur-data-premium` repo (the tracker is members-only). This public copy documents the methodology; paths below are relative to that private repo.
+
 # NYC Council Fiscal Impacts Tracker — Pipeline Reference
 
 This document is the complete reference for running, maintaining, and extending the NYC Council Fiscal Impacts Tracker. Read it before touching the pipeline, data, or frontend.

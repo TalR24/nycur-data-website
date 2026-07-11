@@ -2,7 +2,7 @@
 
 **[data.nycuriosity.com](https://data.nycuriosity.com)**
 
-A companion site to [NYCuriosity](https://nycuriosity.substack.com), a Substack publication covering NYC urban policy, transit, infrastructure, and street design. The site hosts two types of content: **civic reference tools** (standalone interactive explorers) and **post data pages** (charts and tables tied to specific Substack articles).
+A companion site to [NYCuriosity](https://www.nycuriosity.com), a Substack publication covering NYC urban policy, transit, infrastructure, and street design. The site hosts two types of content: **civic reference tools** (standalone interactive explorers) and **post data pages** (charts and tables tied to specific Substack articles).
 
 ---
 
@@ -137,11 +137,6 @@ Page types and how the button attaches:
 │
 ├── .github/workflows/                             → Scheduled data refresh workflows (see below)
 │
-├── pipeline/                                      → Fiscal impacts data pipeline (Python)
-│   ├── fetch_fiscal_impacts.py                    → Incremental Legistar fetch + Claude extraction
-│   ├── fetch_fiscal_impacts_historical.py         → Historical backfill (2014–2023)
-│   └── requirements.txt
-│
 ├── civic_reference/                               → Standalone interactive tools
 │   ├── state_capacity_ecosystem/
 │   │   ├── index.html                             → Hub (explainer, stat pills, view cards)
@@ -159,27 +154,26 @@ Page types and how the button attaches:
 │   │       ├── index.html                         → Events hub (event cards)
 │   │       └── civic-tech-build-night/            → Event page + projects (incl. rehosted
 │   │                                                TIDELINE dashboard under tideline/)
+│   ├── cb_member_guide/                           → CB member field guide (slide deck + handout)
 │   ├── nyc_council_fiscal_impacts_tracker/
-│   │   ├── index.html                             → Bill table
-│   │   ├── PIPELINE_REFERENCE.md                  → Pipeline + schema reference
-│   │   ├── data/fiscal_impacts.json               → Master data file (written by pipeline/)
-│   │   ├── agency-fiscal-impact/  sponsor-fiscal-impact/  intro-year-impact/
-│   │   └── cost-revenue-breakdown/  methodology/
+│   │   ├── index.html                             → Members-only teaser (full tool + data live in
+│   │   │                                            the private nycur-data-premium repo)
+│   │   └── PIPELINE_REFERENCE.md                  → Pipeline + schema reference (pipeline scripts
+│   │                                                and monthly refresh also live in the private repo)
 │   └── nyc-gov-bodies-explorer/
 │       ├── index.html                             → Card grid + D3 treemap
 │       └── methodology/
 │
-├── cb-resolutions/                                → CB Resolutions Dashboard (MCB2 + MCB3)
-│   ├── index.html                                 → Hub page
-│   ├── cb-filter.css, cb-filter.js                → Shared board-filter UI
-│   ├── data/                                      → full_resolutions.csv + chart CSVs
-│   ├── explorer/  resolutions-per-year/  top-agencies/  top-topics/
+├── cb-resolutions/                                → Pointer page → Block Party (blockparty.studio),
+│                                                    the external home of the CB resolutions data
 │
 ├── nycuriosity_substack_posts/                    → Charts and tables tied to Substack posts
-│   ├── queensway_vs_queenslink/
-│   ├── mamdani_100_days/
-│   ├── mcb3_history_analysis/
+│   ├── state_capacity_ai/
+│   ├── nyc_building_strategies/
 │   ├── cso_reports_2026/
+│   ├── mamdani_100_days/
+│   ├── queensway_vs_queenslink/
+│   ├── mcb3_history_analysis/
 │   └── streets_plan_2026/
 │
 ├── nyc_council_fiscal_impacts_tracker/            → Redirect stubs (old URL — do not delete)
@@ -192,11 +186,12 @@ New post data projects follow the pattern described in `CLAUDE.md` and `visualiz
 
 ## GitHub Actions
 
-Two scheduled workflows run in `.github/workflows/`:
+One scheduled workflow runs in `.github/workflows/`:
 
 | Workflow | Schedule | What it does |
 |---|---|---|
 | `refresh_state_capacity.yml` | 6 AM ET daily | Detects changes to `directory.csv` (rebuilds org JSON + patches stat strings) and `connect_submissions.csv` (rebuilds connect.json + emails new entries) independently. Requires `GMAIL_USER` and `GMAIL_APP_PASSWORD` secrets. |
-| `refresh_fiscal_data.yml` | 1st of each month, 7 AM UTC | Fetches new fiscal impact statements from NYC Legistar, runs Claude extraction (`pipeline/fetch_fiscal_impacts.py`), and commits the updated `civic_reference/nyc_council_fiscal_impacts_tracker/data/fiscal_impacts.json`. Requires `ANTHROPIC_API_KEY` secret. |
 
-Both workflows require the repo's **Workflow permissions** set to "Read and write permissions" (Settings → Actions → General) so `GITHUB_TOKEN` can push commits.
+The fiscal impacts refresh workflow (`refresh_fiscal_data.yml`, monthly) lives in the **private** `nycur-data-premium` repo alongside the pipeline scripts and the gated data, since the tracker went behind the membership paywall.
+
+Workflows require the repo's **Workflow permissions** set to "Read and write permissions" (Settings → Actions → General) so `GITHUB_TOKEN` can push commits.
