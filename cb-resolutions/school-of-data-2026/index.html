@@ -60,6 +60,42 @@
     .topbar .ctrl.on { color: #0b1220; background: var(--bp-yellow); border-color: var(--bp-yellow); }
     .topbar .counter { font-family: 'Courier New', monospace; font-size: 12px; color: #9ca3af; white-space: nowrap; }
 
+    /* ── DOWNLOAD BUTTON + POPOVER ───────────────────────── */
+    .dl-wrap { position: relative; }
+    .dl-btn { color: #7cd7f2; border-color: rgba(0,187,234,0.5); }
+    .dl-btn:hover { color: #0b1220; background: var(--bp-cyan); border-color: var(--bp-cyan); }
+    .dl-btn.on { color: #0b1220; background: var(--bp-cyan); border-color: var(--bp-cyan); }
+    .dl-pop {
+      display: none;
+      position: absolute; top: 38px; right: 0; z-index: 60;
+      width: 340px; max-width: calc(100vw - 32px);
+      background: #101a2e; border: 1px solid #24344f; border-radius: 10px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.55);
+      padding: 16px; text-align: left;
+      font-family: 'Lato', Arial, sans-serif;
+    }
+    .dl-pop.open { display: block; }
+    .dl-pop-title { font-size: 13px; font-weight: 700; color: #e8eefb; margin-bottom: 12px; }
+    .dl-primary {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      background: var(--bp-cyan); color: #04263a; font-weight: 700;
+      font-size: 13.5px; text-decoration: none;
+      padding: 11px 14px; border-radius: 8px; margin-bottom: 14px;
+    }
+    .dl-primary:hover { background: #22c9f5; }
+    .dl-steps-h {
+      font-family: 'Courier New', monospace; font-size: 10px; font-weight: 700;
+      letter-spacing: 0.09em; text-transform: uppercase; color: #7cd7f2; margin-bottom: 7px;
+    }
+    .dl-steps ol { margin: 0 0 0 16px; padding: 0; }
+    .dl-steps li { font-size: 12.5px; line-height: 1.5; color: #b9c6dc; margin-bottom: 5px; }
+    .dl-steps b { color: #e8eefb; font-weight: 700; }
+    .dl-alt {
+      margin-top: 10px; padding-top: 10px; border-top: 1px solid #24344f;
+      font-size: 12px; line-height: 1.5; color: #8ea0bd;
+    }
+    .dl-alt b { color: #cdd8ea; }
+
     /* ── STAGE + SLIDE ───────────────────────────────────── */
     .stage {
       position: fixed; inset: 48px 0 0 0;
@@ -130,6 +166,22 @@
   <span class="counter" id="counter">1 / 58</span>
   <button class="ctrl" id="notesBtn" onclick="toggleNotes()" title="Toggle speaker notes (N)">N notes</button>
   <button class="ctrl" onclick="toggleFs()" title="Fullscreen (F)">F full</button>
+  <div class="dl-wrap">
+    <button class="ctrl dl-btn" id="dlBtn" onclick="toggleDl(event)" title="Download this deck">&#8681; Download</button>
+    <div class="dl-pop" id="dlPop">
+      <div class="dl-pop-title">Download the full 58-slide deck</div>
+      <a class="dl-primary" href="Building_an_AI_Knowledge_Base_for_NYC_Community_Boards.pptx" download>&#8681; PowerPoint (.pptx) &middot; 19 MB</a>
+      <div class="dl-steps">
+        <div class="dl-steps-h">Open it in Google Slides</div>
+        <ol>
+          <li>Go to <b>slides.google.com</b> and open (or start) a presentation.</li>
+          <li>Choose <b>File &rsaquo; Import slides</b>, then the <b>Upload</b> tab, and drop in the .pptx.</li>
+          <li>Select the slides to import (or <b>All</b>) &mdash; Google Slides converts them automatically.</li>
+        </ol>
+        <div class="dl-alt">Or: upload the file to Google Drive, right-click it, and choose <b>Open with &rsaquo; Google Slides</b>.</div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div class="stage" id="stage">
@@ -536,6 +588,18 @@
     document.body.classList.toggle('notes-on');
     document.getElementById('notesBtn').classList.toggle('on', document.body.classList.contains('notes-on'));
   }
+  function toggleDl(e) {
+    e.stopPropagation();
+    const pop = document.getElementById('dlPop');
+    const open = pop.classList.toggle('open');
+    document.getElementById('dlBtn').classList.toggle('on', open);
+  }
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.dl-wrap')) {
+      document.getElementById('dlPop').classList.remove('open');
+      document.getElementById('dlBtn').classList.remove('on');
+    }
+  });
   function toggleFs() {
     if (!document.fullscreenElement) { document.documentElement.requestFullscreen?.(); }
     else { document.exitFullscreen?.(); }
