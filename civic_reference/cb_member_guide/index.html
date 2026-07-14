@@ -317,10 +317,50 @@
     body:hover .hint { opacity: 1; }
 
     @media (max-width: 760px) {
-      .two-col, .levers { grid-template-columns: 1fr; }
-      .flow { flex-wrap: wrap; }
+      /* Release slides from the fixed 16:9 box: on phones each slide
+         becomes a full-width, vertically scrollable card so text and
+         icons render at readable sizes instead of overflowing a tiny box. */
+      body { overflow-y: auto; overflow-x: hidden; }
+      .stage {
+        position: static; inset: auto; display: block;
+        padding: 50px 0 82px; min-height: 100vh;
+      }
+      .slide {
+        width: 100%; aspect-ratio: auto; height: auto;
+        min-height: calc(100vh - 132px); max-height: none;
+        border-radius: 0; box-shadow: none; overflow: visible;
+      }
+      .slide-inner {
+        position: static; inset: auto; min-height: calc(100vh - 132px);
+        padding: 24px 18px 36px;
+      }
+      body.notes-on .stage { align-items: stretch; padding-top: 50px; }
+      .grow { justify-content: flex-start; }
+
+      /* readable type at phone scale */
+      .kicker { font-size: 0.66rem; margin-bottom: 10px; }
+      .slide h2 { font-size: 1.38rem; margin-bottom: 15px; }
+      .slide p, ul.bullets li, .callout, .lead, .res-part .rp-d { font-size: 1rem; }
+      .title-slide h1 { font-size: 2rem; }
+      .divider-slide h2 { font-size: 1.6rem; }
+      .flow-step .fs-t { font-size: 1rem; }
+      .flow-step .fs-d { font-size: 0.9rem; }
+      .org-box { font-size: 0.9rem; }
+
+      /* stack multi-column layouts into a single readable column */
+      .two-col, .levers, .close-grid { grid-template-columns: 1fr; gap: 16px; height: auto; }
+      .flow { flex-direction: column; flex-wrap: nowrap; }
       .flow-arrow { display: none; }
-      .flow-step { flex: 1 1 44%; }
+      .flow-step { flex: none; }
+      .pills { gap: 10px; }
+
+      /* tables: tighten so they fit the viewport */
+      table.dt { font-size: 0.84rem; }
+      table.dt th, table.dt td { padding: 7px 8px; }
+
+      /* de-clutter chrome on small screens */
+      .wordmark, .pagenum { display: none; }
+      .qr-card { max-width: 240px; margin: 0 auto; }
     }
 
     /* ── DARK MODE (entire deck) ────────────────────────── */
@@ -1401,6 +1441,9 @@
 
     // click right/left half of a slide to advance (ignore clicks on links/buttons)
     document.getElementById('stage').addEventListener('click', (e) => {
+      // On phones the slide scrolls, so tap-to-advance would fight scrolling.
+      // Rely on swipe and the Prev/Next buttons there instead.
+      if (window.matchMedia('(max-width: 760px)').matches) return;
       if (e.target.closest('a, button')) return;
       const r = document.querySelector('.slide.active').getBoundingClientRect();
       if (e.clientX < r.left + r.width * 0.32) go(-1);
