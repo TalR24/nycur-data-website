@@ -245,14 +245,16 @@
   // x labels
   YEARS.forEach((y,i) => el('text', {x:xs(i), y:B+22, 'text-anchor':'middle', 'font-size':12, 'font-weight':600, fill:'#374151'}, y));
   // series lines + points + end labels
-  const endLabelY = { "Human Services": 4, "All Procurements": 14 }; // nudge close FY24 labels apart
+  // FY24 endpoints for All Procurements (77.4) and Human Services (73.9) are close;
+  // push one up and the other down so the labels never collide.
+  const endLabelY = { "Non-Profit": 4, "All Procurements": -5, "Human Services": 15 };
   SERIES.forEach(s => {
     const pts = s.vals.map((v,i) => `${xs(i)},${ys(v)}`).join(' ');
     el('polyline', {points:pts, fill:'none', stroke:s.color, 'stroke-width':3, 'stroke-linecap':'round', 'stroke-linejoin':'round'});
     s.vals.forEach((v,i) => el('circle', {cx:xs(i), cy:ys(v), r:3.5, fill:s.color}));
     const last = s.vals[n-1];
     const dy = endLabelY[s.name] || 4;
-    el('text', {x:xs(n-1)+9, y:ys(last)+dy, 'font-size':11, 'font-weight':700, fill:s.color}, last.toFixed(2)+'%');
+    el('text', {x:xs(n-1)+9, y:ys(last)+dy, 'font-size':11, 'font-weight':700, fill:s.color}, last.toFixed(1)+'%');
   });
 
   async function downloadChart(btn) {
