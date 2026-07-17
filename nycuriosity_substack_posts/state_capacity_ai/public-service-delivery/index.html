@@ -178,7 +178,7 @@
         <div class="legend-item"><span class="legend-swatch" style="background:#dc2626"></span>New York</div>
         <div class="legend-item"><span class="legend-swatch" style="background:#9ca3af"></span>US average (82%)</div>
       </div>
-      <svg class="barchart" id="barchart" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="SNAP take-up rate by state, FY2019, ranging from 55% in Wyoming to 100% in ten states; New York 89%, US average 82%"></svg>
+      <svg class="barchart" id="barchart" viewBox="0 0 720 762" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="SNAP take-up rate by state, FY2019, ranging from 55% in Wyoming to 100% in ten states; New York 89%, US average 82%"></svg>
       <div class="chart-attribution">
         <span>Created by Tal Roded · NYCuriosity</span>
         <span>Source: USDA FNS, Reaching Those in Need (FY2019)</span>
@@ -253,11 +253,11 @@
   const svg = document.getElementById('barchart');
   const rowH = 13, gap = 2, top = 16, bottom = 26;
   const Lx = 92, Rx = 690;                       // bar area x range (value 0..100)
+  // Height is fixed by DATA.length (48 rows); viewBox is set inline in the HTML
+  // (0 0 720 762) so Safari computes intrinsic height reliably. Keep this in sync
+  // if the number of states changes: H = top + DATA.length*(rowH+gap) + bottom.
   const H = top + DATA.length*(rowH+gap) + bottom;
   svg.setAttribute('viewBox', `0 0 720 ${H}`);
-  svg.setAttribute('width', 720);
-  svg.setAttribute('height', H);
-  svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
   const xs = v => Lx + v/100*(Rx - Lx);
 
   function el(tag, attrs, text){
