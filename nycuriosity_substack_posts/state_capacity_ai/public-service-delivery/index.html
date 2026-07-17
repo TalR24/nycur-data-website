@@ -176,7 +176,6 @@
       <div class="legend">
         <div class="legend-item"><span class="legend-swatch" style="background:#2563eb"></span>State take-up rate</div>
         <div class="legend-item"><span class="legend-swatch" style="background:#dc2626"></span>New York</div>
-        <div class="legend-item"><span class="legend-swatch" style="background:#9ca3af"></span>US average (82%)</div>
       </div>
       <svg class="barchart" id="barchart" viewBox="0 0 720 762" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="SNAP take-up rate by state, FY2019, ranging from 55% in Wyoming to 100% in ten states; New York 89%, US average 82%"></svg>
       <div class="chart-attribution">
@@ -273,13 +272,14 @@
     el('text', {x:xs(v), y:top+DATA.length*(rowH+gap)+16, 'text-anchor':'middle', 'font-size':10, fill:'#9ca3af'}, v+'%');
   });
 
-  // bars
+  // bars (drawn at full width immediately, no animation dependency)
   DATA.forEach((d,i) => {
     const y = top + i*(rowH+gap);
     const isNY = d[0]==="New York";
     const color = isNY ? '#dc2626' : '#2563eb';
-    el('text', {x:Lx-8, y:y+rowH-2.5, 'text-anchor':'end', 'font-size':9.5, 'font-weight':isNY?700:400, fill:isNY?'#dc2626':'#6b7280'}, ABBR[d[0]]);
-    el('rect', {x:Lx, y:y, width:0, height:rowH, rx:2, fill:color, 'data-w':(xs(d[1])-Lx).toFixed(1), class:'barfill'});
+    const w = Math.max(xs(d[1]) - Lx, 0);
+    el('text', {x:Lx-8, y:y+rowH-2.5, 'text-anchor':'end', 'font-size':9.5, 'font-weight':isNY?700:400, fill:isNY?'#dc2626':'#6b7280'}, ABBR[d[0]] || '');
+    el('rect', {x:Lx, y:y, width:w, height:rowH, rx:2, fill:color});
     el('text', {x:xs(d[1])+5, y:y+rowH-2.5, 'font-size':9, 'font-weight':isNY?700:600, fill:isNY?'#dc2626':'#374151'}, d[1]+'%');
   });
 
@@ -287,14 +287,6 @@
   const ax = xs(US_AVG);
   el('line', {x1:ax, y1:top-6, x2:ax, y2:top+DATA.length*(rowH+gap)+2, stroke:'#9ca3af', 'stroke-width':1.5, 'stroke-dasharray':'5,4'});
   el('text', {x:ax, y:top-9, 'text-anchor':'middle', 'font-size':10, 'font-weight':700, fill:'#6b7280'}, 'US 82%');
-
-  // animate bar widths
-  requestAnimationFrame(() => setTimeout(() => {
-    document.querySelectorAll('.barfill').forEach(r => {
-      r.style.transition = 'width 0.7s cubic-bezier(0.4,0,0.2,1)';
-      r.setAttribute('width', r.getAttribute('data-w'));
-    });
-  }, 80));
 
   async function downloadChart(btn) {
     const orig = btn.innerHTML; btn.innerHTML = '⏳ Capturing…'; btn.disabled = true;
