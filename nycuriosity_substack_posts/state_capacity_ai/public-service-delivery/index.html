@@ -250,12 +250,14 @@
 
   const SVG_NS = "http://www.w3.org/2000/svg";
   const svg = document.getElementById('barchart');
-  const rowH = 13, gap = 2, top = 16, bottom = 26;
+  // NOTE: do not name a top-level const "top" — it collides with window.top
+  // (a non-configurable global) and throws a SyntaxError that aborts the script.
+  const rowH = 13, gap = 2, topPad = 16, bottom = 26;
   const Lx = 92, Rx = 690;                       // bar area x range (value 0..100)
   // Height is fixed by DATA.length (48 rows); viewBox is set inline in the HTML
-  // (0 0 720 762) so Safari computes intrinsic height reliably. Keep this in sync
-  // if the number of states changes: H = top + DATA.length*(rowH+gap) + bottom.
-  const H = top + DATA.length*(rowH+gap) + bottom;
+  // (0 0 720 762). Keep in sync if the state list changes:
+  // H = topPad + DATA.length*(rowH+gap) + bottom.
+  const H = topPad + DATA.length*(rowH+gap) + bottom;
   svg.setAttribute('viewBox', `0 0 720 ${H}`);
   const xs = v => Lx + v/100*(Rx - Lx);
 
@@ -268,13 +270,13 @@
 
   // gridlines at 0/25/50/75/100
   [0,25,50,75,100].forEach(v => {
-    el('line', {x1:xs(v), y1:top-4, x2:xs(v), y2:top+DATA.length*(rowH+gap)+2, stroke:'#eef1f5', 'stroke-width':1});
-    el('text', {x:xs(v), y:top+DATA.length*(rowH+gap)+16, 'text-anchor':'middle', 'font-size':10, fill:'#9ca3af'}, v+'%');
+    el('line', {x1:xs(v), y1:topPad-4, x2:xs(v), y2:topPad+DATA.length*(rowH+gap)+2, stroke:'#eef1f5', 'stroke-width':1});
+    el('text', {x:xs(v), y:topPad+DATA.length*(rowH+gap)+16, 'text-anchor':'middle', 'font-size':10, fill:'#9ca3af'}, v+'%');
   });
 
   // bars (drawn at full width immediately, no animation dependency)
   DATA.forEach((d,i) => {
-    const y = top + i*(rowH+gap);
+    const y = topPad + i*(rowH+gap);
     const isNY = d[0]==="New York";
     const color = isNY ? '#dc2626' : '#2563eb';
     const w = Math.max(xs(d[1]) - Lx, 0);
@@ -285,8 +287,8 @@
 
   // US average reference line (drawn on top)
   const ax = xs(US_AVG);
-  el('line', {x1:ax, y1:top-6, x2:ax, y2:top+DATA.length*(rowH+gap)+2, stroke:'#9ca3af', 'stroke-width':1.5, 'stroke-dasharray':'5,4'});
-  el('text', {x:ax, y:top-9, 'text-anchor':'middle', 'font-size':10, 'font-weight':700, fill:'#6b7280'}, 'US 82%');
+  el('line', {x1:ax, y1:topPad-6, x2:ax, y2:topPad+DATA.length*(rowH+gap)+2, stroke:'#9ca3af', 'stroke-width':1.5, 'stroke-dasharray':'5,4'});
+  el('text', {x:ax, y:topPad-9, 'text-anchor':'middle', 'font-size':10, 'font-weight':700, fill:'#6b7280'}, 'US 82%');
 
   async function downloadChart(btn) {
     const orig = btn.innerHTML; btn.innerHTML = '⏳ Capturing…'; btn.disabled = true;
