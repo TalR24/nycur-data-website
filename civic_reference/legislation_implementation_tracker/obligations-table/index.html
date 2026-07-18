@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Obligations Table — NYC Legislation Implementation Tracker — NYCuriosity</title>
+  <meta name="description" content="Every agency action required by NYC local laws enacted since 2024, in one filterable table: agency, deliverable, deadline, and the statutory language behind each obligation.">
+  <meta property="og:type"        content="website">
+  <meta property="og:url"         content="https://data.nycuriosity.com/civic_reference/legislation_implementation_tracker/obligations-table/">
+  <meta property="og:title"       content="Obligations Table — NYC Legislation Implementation Tracker">
+  <meta property="og:description" content="Every agency action required by NYC local laws enacted since 2024, in one filterable table.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --blue: #2563eb; --blue-hover: #1d4ed8; --blue-light: #eff6ff; --blue-mid: #bfdbfe;
+      --text: #111827; --text-mid: #374151; --text-muted: #6b7280; --text-faint: #9ca3af;
+      --bg: #f8faff; --surface: #ffffff; --border: #e5e7eb;
+      --shadow-sm: 0 1px 3px rgba(17,24,39,0.08); --shadow-md: 0 4px 16px rgba(37,99,235,0.10);
+      --radius: 10px;
+      --red: #dc2626; --green: #16a34a;
+    }
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
+
+    header { background: #111827; border-bottom: 1px solid #1f2937; padding: 0 clamp(20px, 5vw, 48px); }
+    .header-inner { max-width: 1100px; margin: 0 auto; height: 56px; display: flex; align-items: center; gap: 16px; }
+    .back-link { font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600; color: #9ca3af; text-decoration: none; display: flex; align-items: center; gap: 5px; padding: 4px 8px 4px 4px; border-radius: 5px; transition: color 0.15s, background 0.15s; white-space: nowrap; }
+    .back-link:hover { color: #60a5fa; background: rgba(96,165,250,0.1); }
+    .header-divider { width: 1px; height: 20px; background: #374151; flex-shrink: 0; }
+    header h1 { font-family: 'Roboto Mono', monospace; font-size: 0.95rem; font-weight: 700; color: #e5e7eb; letter-spacing: -0.02em; }
+
+    .pill-nav { background: var(--surface); border-bottom: 1px solid var(--border); padding: 10px clamp(20px, 5vw, 48px); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .pill-nav a { font-size: 0.78rem; font-family: 'Roboto Mono', monospace; font-weight: 600; padding: 4px 12px; border-radius: 20px; text-decoration: none; border: 1px solid var(--border); color: var(--text-muted); background: var(--bg); transition: all 0.15s; white-space: nowrap; }
+    .pill-nav a:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
+    .pill-nav a.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+    .pill-label { font-size: 0.72rem; color: var(--text-faint); font-family: 'Roboto Mono', monospace; white-space: nowrap; }
+
+    .hero { background: var(--surface); border-bottom: 1px solid var(--border); padding: clamp(28px, 4vw, 44px) clamp(20px, 5vw, 48px); }
+    .hero-inner { max-width: 1100px; margin: 0 auto; }
+    .breadcrumb { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; color: var(--text-faint); margin-bottom: 14px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .breadcrumb a { color: var(--blue); text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+    .breadcrumb span:last-child { color: #FF6319; }
+    .hero-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .hero-tag { font-family: 'Roboto Mono', monospace; font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #FF6319; background: #fff4ed; border: 1px solid #ffd0b3; border-radius: 4px; padding: 3px 8px; }
+    .hero-updated { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; color: var(--text-faint); }
+    .hero h1 { font-family: 'Roboto Mono', monospace; font-size: clamp(1.4rem, 3vw, 1.8rem); font-weight: 700; letter-spacing: -0.03em; line-height: 1.2; margin-bottom: 10px; }
+    .hero h1 span { color: var(--blue); }
+    .hero p { font-size: 0.95rem; color: var(--text-muted); max-width: 680px; line-height: 1.7; }
+    .hero-actions { margin-top: 18px; display: flex; gap: 10px; flex-wrap: wrap; }
+    .btn { font-family: 'Roboto Mono', monospace; font-size: 0.78rem; font-weight: 600; padding: 8px 14px; border-radius: 7px; text-decoration: none; display: inline-flex; align-items: center; gap: 7px; cursor: pointer; border: 1.5px solid var(--blue); transition: all 0.15s; }
+    .btn-outline { color: var(--blue); background: var(--surface); }
+    .btn-outline:hover { background: var(--blue-light); }
+
+    main { flex: 1; padding: clamp(24px, 4vw, 40px) clamp(20px, 5vw, 48px); }
+    .main-inner { max-width: 1100px; margin: 0 auto; }
+
+    .filters { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 16px 18px; margin-bottom: 16px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    .filters input[type="search"] { flex: 2 1 220px; min-width: 180px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 7px; font-family: 'Inter', sans-serif; font-size: 0.85rem; background: var(--bg); color: var(--text); }
+    .filters select { flex: 1 1 150px; min-width: 130px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 7px; font-family: 'Roboto Mono', monospace; font-size: 0.75rem; background: var(--bg); color: var(--text-mid); cursor: pointer; }
+    .filters input:focus, .filters select:focus { outline: 2px solid var(--blue-mid); border-color: var(--blue); }
+    .reset-btn { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; font-weight: 600; color: var(--text-muted); background: none; border: 1px solid var(--border); border-radius: 7px; padding: 8px 12px; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+    .reset-btn:hover { color: var(--red); border-color: var(--red); }
+
+    .result-count { font-family: 'Roboto Mono', monospace; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 12px; }
+    .result-count strong { color: var(--blue); }
+
+    #chart-box { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); overflow: hidden; }
+    .table-scroll { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; min-width: 860px; }
+    thead th { font-family: 'Roboto Mono', monospace; font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); text-align: left; padding: 12px 14px; border-bottom: 2px solid var(--border); background: var(--bg); white-space: nowrap; cursor: pointer; user-select: none; }
+    thead th:hover { color: var(--blue); }
+    thead th .arrow { font-size: 0.6rem; margin-left: 3px; }
+    tbody td { padding: 12px 14px; border-bottom: 1px solid var(--border); font-size: 0.83rem; color: var(--text-mid); vertical-align: top; line-height: 1.5; }
+    tbody tr.data-row { cursor: pointer; transition: background 0.12s; }
+    tbody tr.data-row:hover { background: var(--blue-light); }
+    tbody tr:last-child td { border-bottom: none; }
+    .law-cell { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; font-weight: 600; color: var(--blue); white-space: nowrap; }
+    .law-cell .file-no { display: block; color: var(--text-faint); font-weight: 400; margin-top: 2px; }
+    .agency-cell { font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600; white-space: nowrap; }
+    .type-badge { display: inline-block; font-family: 'Roboto Mono', monospace; font-size: 0.65rem; font-weight: 600; padding: 2px 8px; border-radius: 10px; background: var(--blue-light); color: var(--blue); border: 1px solid var(--blue-mid); white-space: nowrap; }
+    .deadline-cell { font-family: 'Roboto Mono', monospace; font-size: 0.75rem; white-space: nowrap; }
+    .deadline-cell.overdue { color: var(--red); font-weight: 600; }
+    .deadline-cell.upcoming { color: var(--text); font-weight: 600; }
+    .recur-cell { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; color: var(--text-muted); white-space: nowrap; }
+
+    .detail-row td { background: var(--bg); padding: 18px 20px; }
+    .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .detail-block h4 { font-family: 'Roboto Mono', monospace; font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-faint); margin-bottom: 6px; }
+    .detail-block p { font-size: 0.83rem; line-height: 1.6; color: var(--text-mid); }
+    .detail-quote { grid-column: 1 / -1; border-left: 3px solid var(--blue); background: var(--blue-light); padding: 12px 16px; border-radius: 0 7px 7px 0; }
+    .detail-quote p { font-style: italic; font-size: 0.85rem; color: var(--text-mid); }
+    .detail-quote .cite { font-family: 'Roboto Mono', monospace; font-style: normal; font-size: 0.7rem; color: var(--text-muted); margin-top: 8px; }
+    .unverified-note { font-size: 0.72rem; color: var(--text-muted); font-style: italic; margin-top: 6px; }
+    .detail-links { grid-column: 1 / -1; display: flex; gap: 14px; flex-wrap: wrap; }
+    .detail-links a { font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600; color: var(--blue); text-decoration: none; }
+    .detail-links a:hover { text-decoration: underline; }
+
+    .chart-attribution { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 12px 16px; border-top: 1px solid var(--border); background: var(--bg); font-size: 0.78rem; color: var(--text-faint); font-family: 'Roboto Mono', monospace; }
+    .chart-attribution a { color: var(--blue); text-decoration: none; }
+
+    .footnotes { margin-top: 20px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; }
+    .footnotes p { font-size: 0.8rem; color: var(--text-muted); line-height: 1.65; margin-bottom: 10px; }
+    .footnotes p:last-child { margin-bottom: 0; }
+    .footnotes a { color: var(--blue); text-decoration: none; }
+    .footnotes a:hover { text-decoration: underline; }
+
+    .loading-note { font-family: 'Roboto Mono', monospace; font-size: 0.85rem; color: var(--text-faint); padding: 40px; text-align: center; }
+
+    footer { background: var(--surface); border-top: 1px solid var(--border); padding: 20px clamp(20px, 5vw, 48px); }
+    .footer-inner { max-width: 1100px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+    .footer-copy { font-size: 0.8rem; color: var(--text-faint); }
+    .footer-links { display: flex; gap: 20px; align-items: center; }
+    .footer-links a { font-size: 0.8rem; color: var(--text-muted); text-decoration: none; transition: color 0.15s; }
+    .footer-links a:hover { color: var(--blue); }
+    .footer-support { display: inline-flex; align-items: center; gap: 5px; font-size: 0.8rem; font-weight: 500; color: #2563eb; text-decoration: none; padding: 5px 11px; border: 1px solid rgba(37,99,235,0.45); border-radius: 6px; transition: color .15s, border-color .15s, background .15s; vertical-align: middle; }
+    .footer-support:hover { color: #fff; background: #2563eb; border-color: #2563eb; }
+
+    @media (max-width: 640px) {
+      .detail-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <a href="../" class="back-link">← legislation_implementation_tracker</a>
+    <div class="header-divider"></div>
+    <h1>Obligations Table</h1>
+  </div>
+</header>
+
+<div class="pill-nav">
+  <span class="pill-label">Views in this tool:</span>
+  <a href="./" class="active">Obligations Table</a>
+  <a href="../agency-workload/">Agency Workload</a>
+  <a href="../deadline-timeline/">Deadline Timeline</a>
+  <a href="../law/">Law Explorer</a>
+</div>
+
+<div class="hero">
+  <div class="hero-inner">
+    <div class="breadcrumb">
+      <a href="/">data.nycuriosity.com</a>
+      <span>›</span>
+      <a href="../">NYC Legislation Implementation Tracker</a>
+      <span>›</span>
+      <span>Obligations Table</span>
+    </div>
+    <div class="hero-meta">
+      <span class="hero-tag">Civic Reference</span>
+      <span class="hero-updated" id="heroUpdated"></span>
+    </div>
+    <h1>Every obligation the Council has <span>written into local law</span></h1>
+    <p>
+      Each row is one action a NYC local law requires of a city agency. Filter by agency, deliverable
+      type, or deadline year, or search the text. Click any row for the exact statutory language and
+      a link to the law on Legistar.
+    </p>
+    <div class="hero-actions">
+      <a class="btn btn-outline" href="https://premium.nycuriosity.com/civic_reference/legislation_implementation_tracker/data/obligations.csv">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download CSV (members)
+      </a>
+    </div>
+  </div>
+</div>
+
+<main>
+  <div class="main-inner">
+
+    <div class="filters">
+      <input type="search" id="fSearch" placeholder="Search obligations, laws, agencies…" aria-label="Search obligations">
+      <select id="fAgency" aria-label="Filter by agency"><option value="">All agencies</option></select>
+      <select id="fType" aria-label="Filter by deliverable type"><option value="">All deliverable types</option></select>
+      <select id="fRecur" aria-label="Filter by recurrence"><option value="">All recurrence</option></select>
+      <select id="fDeadline" aria-label="Filter by deadline">
+        <option value="">All deadlines</option>
+        <option value="overdue">Past due</option>
+        <option value="next12">Due in next 12 months</option>
+        <option value="dated">Any dated deadline</option>
+        <option value="none">No dated deadline</option>
+      </select>
+      <button class="reset-btn" id="fReset">Reset</button>
+    </div>
+
+    <p class="result-count" id="resultCount"></p>
+
+    <div id="chart-box">
+      <div class="table-scroll">
+        <table id="obTable">
+          <thead>
+            <tr>
+              <th data-sort="law">Law<span class="arrow"></span></th>
+              <th data-sort="agency">Agency<span class="arrow"></span></th>
+              <th data-sort="action">Required action<span class="arrow"></span></th>
+              <th data-sort="type">Type<span class="arrow"></span></th>
+              <th data-sort="deadline">Deadline<span class="arrow"></span></th>
+              <th data-sort="recurrence">Recurrence<span class="arrow"></span></th>
+            </tr>
+          </thead>
+          <tbody id="tbody">
+            <tr><td colspan="6"><p class="loading-note">Loading obligations…</p></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="chart-attribution">
+        <span>Created by Tal Roded · NYCuriosity · Source: Author's analysis of enacted local law text from <a href="https://legistar.council.nyc.gov" target="_blank" rel="noopener">NYC Legistar</a></span>
+      </div>
+    </div>
+
+    <div class="footnotes">
+      <p><strong>What counts as an obligation:</strong> a mandatory duty ("shall", "must") the enacted law places on a NYC government agency, office, or officer. Duties the law places on private parties appear only through the agency work they create, such as enforcement or rulemaking.</p>
+      <p><strong>Extraction and verification:</strong> obligations are extracted from the enacted legislation text on <a href="https://legistar.council.nyc.gov" target="_blank" rel="noopener">NYC Legistar</a> using Claude, and every quoted passage is mechanically checked against the law text. Rows whose quote could not be verified verbatim are marked in the row detail. Interpretation of statutory language ultimately requires human review; treat this as a research aid, not legal advice.</p>
+      <p><strong>Deadlines:</strong> computed from the law's enactment date on Legistar plus the effective-date and deadline clauses in the text. Months are converted at 30 days and years at 365 days, so computed dates can differ from an agency's own interpretation by a few days.</p>
+      <p><strong>Agency names:</strong> normalized with the <a href="https://data.cityofnewyork.us/City-Government/NYC-Agencies-and-Governance-Organizations/t3jq-9nkf/about_data" target="_blank" rel="noopener">NYC Agencies and Governance Organizations</a> dataset (NYC Open Data), so "DOT", "Dept of Transportation", and "Department of Transportation" resolve to one agency.</p>
+    </div>
+
+  </div>
+</main>
+
+<footer>
+  <div class="footer-inner">
+    <span class="footer-copy">© NYCuriosity · Tal Roded</span>
+    <nav class="footer-links">
+      <a href="https://buymeacoffee.com/nycuriosity" class="footer-support" target="_blank" rel="noopener" aria-label="Support my work on Buy Me a Coffee"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>Support my work</a>
+      <a href="https://talroded.nycuriosity.com" target="_blank" rel="noopener">About</a>
+      <a href="https://www.nycuriosity.com" target="_blank" rel="noopener">Substack</a>
+      <a href="https://github.com/TalR24/nycur-data-website" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var ALL = [];
+  var GENERATED = '';
+  var sortKey = 'deadline';
+  var sortDir = 1;
+  var openId = null;
+
+  fetch('../data/obligations.json')
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+      ALL = data.obligations || [];
+      GENERATED = data.generated_at || '';
+      if (GENERATED) {
+        var gen = new Date(GENERATED);
+        var months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+        document.getElementById('heroUpdated').textContent = 'Updated ' + months[gen.getMonth()] + ' ' + gen.getFullYear();
+      }
+      buildFilters();
+      applyFilters();
+    })
+    .catch(function () {
+      document.getElementById('tbody').innerHTML =
+        '<tr><td colspan="6"><p class="loading-note">Data failed to load.</p></td></tr>';
+    });
+
+  function uniqueSorted(key) {
+    var seen = {};
+    ALL.forEach(function (o) { var v = o[key]; if (v) seen[v] = (seen[v] || 0) + 1; });
+    return Object.keys(seen).sort(function (a, b) { return seen[b] - seen[a]; });
+  }
+
+  function buildFilters() {
+    var fa = document.getElementById('fAgency');
+    uniqueSorted('agency').forEach(function (a) {
+      var opt = document.createElement('option');
+      opt.value = a; opt.textContent = a;
+      fa.appendChild(opt);
+    });
+    var ft = document.getElementById('fType');
+    uniqueSorted('deliverable_type').forEach(function (t) {
+      var opt = document.createElement('option');
+      opt.value = t; opt.textContent = t;
+      ft.appendChild(opt);
+    });
+    var fr = document.getElementById('fRecur');
+    uniqueSorted('recurrence').forEach(function (t) {
+      var opt = document.createElement('option');
+      opt.value = t; opt.textContent = t;
+      fr.appendChild(opt);
+    });
+    ['fSearch', 'fAgency', 'fType', 'fRecur', 'fDeadline'].forEach(function (id) {
+      document.getElementById(id).addEventListener('input', applyFilters);
+    });
+    document.getElementById('fReset').addEventListener('click', function () {
+      ['fSearch', 'fAgency', 'fType', 'fRecur', 'fDeadline'].forEach(function (id) {
+        document.getElementById(id).value = '';
+      });
+      applyFilters();
+    });
+    document.querySelectorAll('thead th').forEach(function (th) {
+      th.addEventListener('click', function () {
+        var k = th.getAttribute('data-sort');
+        if (sortKey === k) { sortDir = -sortDir; } else { sortKey = k; sortDir = 1; }
+        applyFilters();
+      });
+    });
+  }
+
+  function applyFilters() {
+    var q = document.getElementById('fSearch').value.toLowerCase().trim();
+    var agency = document.getElementById('fAgency').value;
+    var type = document.getElementById('fType').value;
+    var recur = document.getElementById('fRecur').value;
+    var dl = document.getElementById('fDeadline').value;
+    var today = new Date(); today.setHours(0, 0, 0, 0);
+    var yearOut = new Date(today.getFullYear() + 1, today.getMonth(), today.getDate());
+
+    var rows = ALL.filter(function (o) {
+      if (agency && o.agency !== agency) return false;
+      if (type && o.deliverable_type !== type) return false;
+      if (recur && o.recurrence !== recur) return false;
+      if (dl) {
+        var d = o.deadline_date ? new Date(o.deadline_date + 'T00:00:00') : null;
+        if (dl === 'dated' && !d) return false;
+        if (dl === 'none' && d) return false;
+        if (dl === 'overdue' && (!d || d >= today || o.recurrence !== 'one-time')) return false;
+        if (dl === 'next12' && (!d || d < today || d > yearOut)) return false;
+      }
+      if (q) {
+        var hay = (o.action_summary + ' ' + o.agency + ' ' + o.agency_full + ' ' +
+                   o.law_number_display + ' ' + o.file_number + ' ' + o.law_title + ' ' +
+                   o.citation + ' ' + (o.quote || '')).toLowerCase();
+        if (hay.indexOf(q) === -1) return false;
+      }
+      return true;
+    });
+
+    rows.sort(cmp);
+    renderRows(rows);
+    document.getElementById('resultCount').innerHTML =
+      'Showing <strong>' + rows.length.toLocaleString() + '</strong> of ' +
+      ALL.length.toLocaleString() + ' obligations';
+    document.querySelectorAll('thead th').forEach(function (th) {
+      var arrow = th.querySelector('.arrow');
+      arrow.textContent = th.getAttribute('data-sort') === sortKey ? (sortDir === 1 ? '▲' : '▼') : '';
+    });
+  }
+
+  function cmp(a, b) {
+    var va, vb;
+    switch (sortKey) {
+      case 'law': va = a.enactment_date || ''; vb = b.enactment_date || ''; return sortDir * -va.localeCompare(vb);
+      case 'agency': va = a.agency || '￿'; vb = b.agency || '￿'; return sortDir * va.localeCompare(vb);
+      case 'action': va = a.action_summary || ''; vb = b.action_summary || ''; return sortDir * va.localeCompare(vb);
+      case 'type': va = a.deliverable_type || ''; vb = b.deliverable_type || ''; return sortDir * va.localeCompare(vb);
+      case 'recurrence': va = a.recurrence || ''; vb = b.recurrence || ''; return sortDir * va.localeCompare(vb);
+      case 'deadline':
+      default:
+        va = a.deadline_date || '9999-12-31'; vb = b.deadline_date || '9999-12-31';
+        return sortDir * va.localeCompare(vb);
+    }
+  }
+
+  function renderRows(rows) {
+    var today = new Date(); today.setHours(0, 0, 0, 0);
+    var html = '';
+    if (!rows.length) {
+      html = '<tr><td colspan="6"><p class="loading-note">No obligations match these filters.</p></td></tr>';
+    }
+    rows.forEach(function (o) {
+      var d = o.deadline_date ? new Date(o.deadline_date + 'T00:00:00') : null;
+      var dlClass = '';
+      if (d && o.recurrence === 'one-time') dlClass = d < today ? 'overdue' : 'upcoming';
+      var dlText = o.deadline_date ? fmtDate(o.deadline_date) :
+                   (o.deadline_kind === 'none' ? '—' : 'not dated');
+      html += '<tr class="data-row" data-id="' + esc(o.obligation_id) + '">'
+        + '<td class="law-cell">' + esc(o.law_number_display || o.file_number)
+        + '<span class="file-no">' + esc(o.file_number) + '</span></td>'
+        + '<td class="agency-cell" title="' + esc(o.agency_full) + '">' + esc(o.agency) + '</td>'
+        + '<td>' + esc(o.action_summary) + '</td>'
+        + '<td><span class="type-badge">' + esc(o.deliverable_type) + '</span></td>'
+        + '<td class="deadline-cell ' + dlClass + '">' + dlText + '</td>'
+        + '<td class="recur-cell">' + esc(o.recurrence) + '</td>'
+        + '</tr>';
+      if (openId === o.obligation_id) html += detailRow(o);
+    });
+    document.getElementById('tbody').innerHTML = html;
+    document.querySelectorAll('tr.data-row').forEach(function (tr) {
+      tr.addEventListener('click', function () {
+        openId = openId === tr.getAttribute('data-id') ? null : tr.getAttribute('data-id');
+        applyFilters();
+      });
+    });
+  }
+
+  function detailRow(o) {
+    var quoteBlock = '';
+    if (o.quote) {
+      quoteBlock = '<div class="detail-quote"><p>“' + esc(o.quote) + '”</p>'
+        + '<p class="cite">' + esc(o.citation || '') + '</p>'
+        + (o.quote_verified ? '' : '<p class="unverified-note">This quote could not be verified verbatim against the law text and may be paraphrased.</p>')
+        + '</div>';
+    }
+    var groups = (o.affected_groups && o.affected_groups.length)
+      ? '<div class="detail-block"><h4>Affected groups</h4><p>' + esc(o.affected_groups.join(', ')) + '</p></div>' : '';
+    return '<tr class="detail-row"><td colspan="6"><div class="detail-grid">'
+      + quoteBlock
+      + '<div class="detail-block"><h4>Law</h4><p>' + esc(o.law_title || '') + '</p></div>'
+      + '<div class="detail-block"><h4>Responsible entity as written</h4><p>' + esc(o.actor_raw || o.agency_full) + '</p></div>'
+      + '<div class="detail-block"><h4>Deadline clause</h4><p>' + esc(o.deadline_text || 'None stated') + '</p></div>'
+      + '<div class="detail-block"><h4>Key dates</h4><p>Enacted ' + fmtDate(o.enactment_date)
+      + (o.effective_date ? ' · Effective ' + fmtDate(o.effective_date) : '')
+      + (o.deadline_date ? ' · Due ' + fmtDate(o.deadline_date) : '') + '</p></div>'
+      + groups
+      + '<div class="detail-links">'
+      + '<a href="../law/?law=' + encodeURIComponent(o.matter_id) + '">Full law checklist →</a>'
+      + '<a href="' + esc(o.legistar_url) + '" target="_blank" rel="noopener">View on Legistar ↗</a>'
+      + '</div>'
+      + '</div></td></tr>';
+  }
+
+  function fmtDate(iso) {
+    if (!iso) return '';
+    var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    var p = iso.split('-');
+    return months[parseInt(p[1], 10) - 1] + ' ' + parseInt(p[2], 10) + ', ' + p[0];
+  }
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+})();
+</script>
+
+</body>
+</html>

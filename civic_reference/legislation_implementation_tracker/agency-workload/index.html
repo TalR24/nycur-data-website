@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Agency Workload — NYC Legislation Implementation Tracker — NYCuriosity</title>
+  <meta name="description" content="Which NYC agencies carry the most obligations from local laws enacted since 2024, ranked and broken down by deliverable type: rules, reports, programs, and outreach.">
+  <meta property="og:type"        content="website">
+  <meta property="og:url"         content="https://data.nycuriosity.com/civic_reference/legislation_implementation_tracker/agency-workload/">
+  <meta property="og:title"       content="Agency Workload — NYC Legislation Implementation Tracker">
+  <meta property="og:description" content="Which NYC agencies carry the most obligations from local laws enacted since 2024, ranked and broken down by deliverable type.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --blue: #2563eb; --blue-hover: #1d4ed8; --blue-light: #eff6ff; --blue-mid: #bfdbfe;
+      --text: #111827; --text-mid: #374151; --text-muted: #6b7280; --text-faint: #9ca3af;
+      --bg: #f8faff; --surface: #ffffff; --border: #e5e7eb;
+      --shadow-sm: 0 1px 3px rgba(17,24,39,0.08); --radius: 10px;
+      --c-report: #2563eb; --c-rule: #c2410c; --c-program: #16a34a; --c-outreach: #6b7280; --c-other: #bfdbfe;
+    }
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
+
+    header { background: #111827; border-bottom: 1px solid #1f2937; padding: 0 clamp(20px, 5vw, 48px); }
+    .header-inner { max-width: 1100px; margin: 0 auto; height: 56px; display: flex; align-items: center; gap: 16px; }
+    .back-link { font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600; color: #9ca3af; text-decoration: none; display: flex; align-items: center; gap: 5px; padding: 4px 8px 4px 4px; border-radius: 5px; transition: color 0.15s, background 0.15s; white-space: nowrap; }
+    .back-link:hover { color: #60a5fa; background: rgba(96,165,250,0.1); }
+    .header-divider { width: 1px; height: 20px; background: #374151; flex-shrink: 0; }
+    header h1 { font-family: 'Roboto Mono', monospace; font-size: 0.95rem; font-weight: 700; color: #e5e7eb; letter-spacing: -0.02em; }
+
+    .pill-nav { background: var(--surface); border-bottom: 1px solid var(--border); padding: 10px clamp(20px, 5vw, 48px); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .pill-nav a { font-size: 0.78rem; font-family: 'Roboto Mono', monospace; font-weight: 600; padding: 4px 12px; border-radius: 20px; text-decoration: none; border: 1px solid var(--border); color: var(--text-muted); background: var(--bg); transition: all 0.15s; white-space: nowrap; }
+    .pill-nav a:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
+    .pill-nav a.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+    .pill-label { font-size: 0.72rem; color: var(--text-faint); font-family: 'Roboto Mono', monospace; white-space: nowrap; }
+
+    .hero { background: var(--surface); border-bottom: 1px solid var(--border); padding: clamp(28px, 4vw, 44px) clamp(20px, 5vw, 48px); }
+    .hero-inner { max-width: 1100px; margin: 0 auto; }
+    .breadcrumb { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; color: var(--text-faint); margin-bottom: 14px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .breadcrumb a { color: var(--blue); text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+    .breadcrumb span:last-child { color: #FF6319; }
+    .hero-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .hero-tag { font-family: 'Roboto Mono', monospace; font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #FF6319; background: #fff4ed; border: 1px solid #ffd0b3; border-radius: 4px; padding: 3px 8px; }
+    .hero-updated { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; color: var(--text-faint); }
+    .hero h1 { font-family: 'Roboto Mono', monospace; font-size: clamp(1.4rem, 3vw, 1.8rem); font-weight: 700; letter-spacing: -0.03em; line-height: 1.2; margin-bottom: 10px; }
+    .hero h1 span { color: var(--blue); }
+    .hero p { font-size: 0.95rem; color: var(--text-muted); max-width: 680px; line-height: 1.7; }
+    .hero-actions { margin-top: 18px; display: flex; gap: 10px; flex-wrap: wrap; }
+    .btn { font-family: 'Roboto Mono', monospace; font-size: 0.78rem; font-weight: 600; padding: 8px 14px; border-radius: 7px; text-decoration: none; display: inline-flex; align-items: center; gap: 7px; cursor: pointer; border: 1.5px solid var(--blue); transition: all 0.15s; }
+    .btn-outline { color: var(--blue); background: var(--surface); }
+    .btn-outline:hover { background: var(--blue-light); }
+
+    main { flex: 1; padding: clamp(24px, 4vw, 40px) clamp(20px, 5vw, 48px); }
+    .main-inner { max-width: 900px; margin: 0 auto; }
+
+    .filters { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 16px 18px; margin-bottom: 16px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    .filters select { flex: 1 1 160px; min-width: 140px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 7px; font-family: 'Roboto Mono', monospace; font-size: 0.75rem; background: var(--bg); color: var(--text-mid); cursor: pointer; }
+    .filters select:focus { outline: 2px solid var(--blue-mid); border-color: var(--blue); }
+    .reset-btn { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; font-weight: 600; color: var(--text-muted); background: none; border: 1px solid var(--border); border-radius: 7px; padding: 8px 12px; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+    .reset-btn:hover { color: #dc2626; border-color: #dc2626; }
+
+    .stat-strip { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
+    .stat-pill { display: flex; flex-direction: column; gap: 2px; padding: 12px 18px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); flex: 1; min-width: 130px; }
+    .stat-pill .sp-num { font-family: 'Roboto Mono', monospace; font-size: 1.2rem; font-weight: 700; color: var(--blue); letter-spacing: -0.03em; line-height: 1; }
+    .stat-pill .sp-label { font-size: 0.72rem; color: var(--text-muted); line-height: 1.3; }
+
+    .chart-actions { display: flex; justify-content: flex-end; gap: 8px; margin-bottom: 10px; }
+    .action-btn { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; font-weight: 600; color: var(--text-muted); background: var(--surface); border: 1px solid var(--border); border-radius: 7px; padding: 7px 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.15s; }
+    .action-btn:hover { color: var(--blue); border-color: var(--blue); }
+
+    #chart-box { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); overflow: hidden; }
+    .chart-pad { padding: 22px 24px 10px; }
+    .chart-title-inbox { font-family: 'Roboto Mono', monospace; font-size: 1rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 4px; }
+    .chart-sub-inbox { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 16px; }
+    .legend { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 18px; }
+    .legend-item { display: flex; align-items: center; gap: 6px; font-family: 'Roboto Mono', monospace; font-size: 0.7rem; color: var(--text-mid); }
+    .legend-swatch { width: 12px; height: 12px; border-radius: 3px; }
+
+    .bar-row { display: grid; grid-template-columns: 170px 1fr 48px; gap: 10px; align-items: center; margin-bottom: 9px; }
+    .bar-label { font-family: 'Roboto Mono', monospace; font-size: 0.73rem; color: var(--text-mid); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right; cursor: default; }
+    .bar-track { background: var(--blue-light); border-radius: 4px; height: 18px; overflow: hidden; display: flex; }
+    .bar-seg { height: 100%; transition: width 0.6s ease; }
+    .bar-val { font-family: 'Roboto Mono', monospace; font-size: 0.73rem; font-weight: 600; color: var(--text); }
+    .loading-note { font-family: 'Roboto Mono', monospace; font-size: 0.85rem; color: var(--text-faint); padding: 40px; text-align: center; }
+
+    .chart-attribution { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 12px 16px; border-top: 1px solid var(--border); background: var(--bg); font-size: 0.78rem; color: var(--text-faint); font-family: 'Roboto Mono', monospace; }
+    .chart-attribution a { color: var(--blue); text-decoration: none; }
+
+    .footnotes { margin-top: 20px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; }
+    .footnotes p { font-size: 0.8rem; color: var(--text-muted); line-height: 1.65; margin-bottom: 10px; }
+    .footnotes p:last-child { margin-bottom: 0; }
+    .footnotes a { color: var(--blue); text-decoration: none; }
+    .footnotes a:hover { text-decoration: underline; }
+
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(17,24,39,0.55); z-index: 50; align-items: center; justify-content: center; padding: 20px; }
+    .modal { background: var(--surface); border-radius: var(--radius); max-width: 560px; width: 100%; padding: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.25); }
+    .modal h3 { font-family: 'Roboto Mono', monospace; font-size: 1rem; margin-bottom: 12px; }
+    .modal textarea { width: 100%; height: 90px; font-family: 'Roboto Mono', monospace; font-size: 0.72rem; padding: 10px; border: 1px solid var(--border); border-radius: 7px; resize: none; background: var(--bg); color: var(--text-mid); }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 14px; }
+    .modal-btn { font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600; padding: 8px 14px; border-radius: 7px; cursor: pointer; border: 1.5px solid var(--blue); }
+    .modal-btn.primary { background: var(--blue); color: #fff; }
+    .modal-btn.ghost { background: var(--surface); color: var(--blue); }
+
+    footer { background: var(--surface); border-top: 1px solid var(--border); padding: 20px clamp(20px, 5vw, 48px); }
+    .footer-inner { max-width: 1100px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+    .footer-copy { font-size: 0.8rem; color: var(--text-faint); }
+    .footer-links { display: flex; gap: 20px; align-items: center; }
+    .footer-links a { font-size: 0.8rem; color: var(--text-muted); text-decoration: none; transition: color 0.15s; }
+    .footer-links a:hover { color: var(--blue); }
+    .footer-support { display: inline-flex; align-items: center; gap: 5px; font-size: 0.8rem; font-weight: 500; color: #2563eb; text-decoration: none; padding: 5px 11px; border: 1px solid rgba(37,99,235,0.45); border-radius: 6px; transition: color .15s, border-color .15s, background .15s; vertical-align: middle; }
+    .footer-support:hover { color: #fff; background: #2563eb; border-color: #2563eb; }
+
+    @media (max-width: 640px) {
+      .bar-row { grid-template-columns: 108px 1fr 42px; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <a href="../" class="back-link">← legislation_implementation_tracker</a>
+    <div class="header-divider"></div>
+    <h1>Agency Workload</h1>
+  </div>
+</header>
+
+<div class="pill-nav">
+  <span class="pill-label">Views in this tool:</span>
+  <a href="../obligations-table/">Obligations Table</a>
+  <a href="./" class="active">Agency Workload</a>
+  <a href="../deadline-timeline/">Deadline Timeline</a>
+  <a href="../law/">Law Explorer</a>
+</div>
+
+<div class="hero">
+  <div class="hero-inner">
+    <div class="breadcrumb">
+      <a href="/">data.nycuriosity.com</a>
+      <span>›</span>
+      <a href="../">NYC Legislation Implementation Tracker</a>
+      <span>›</span>
+      <span>Agency Workload</span>
+    </div>
+    <div class="hero-meta">
+      <span class="hero-tag">Civic Reference</span>
+      <span class="hero-updated" id="heroUpdated"></span>
+    </div>
+    <h1>The Council's mandates <span>land on a few agencies</span></h1>
+    <p>
+      Obligations from enacted local laws ranked by responsible agency, with each bar broken down by
+      deliverable type. Filter by committee, prime sponsor, or enactment year to see how different
+      corners of the Council assign work across city government.
+    </p>
+    <div class="hero-actions">
+      <a class="btn btn-outline" href="https://premium.nycuriosity.com/civic_reference/legislation_implementation_tracker/data/obligations.csv">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download CSV (members)
+      </a>
+    </div>
+  </div>
+</div>
+
+<main>
+  <div class="main-inner">
+
+    <div class="filters">
+      <select id="fCommittee" aria-label="Filter by committee"><option value="">All committees</option></select>
+      <select id="fSponsor" aria-label="Filter by prime sponsor"><option value="">All prime sponsors</option></select>
+      <select id="fYear" aria-label="Filter by enactment year"><option value="">All enactment years</option></select>
+      <select id="fRecur" aria-label="Filter by recurrence"><option value="">All recurrence</option></select>
+      <button class="reset-btn" id="fReset">Reset</button>
+    </div>
+
+    <div class="stat-strip">
+      <div class="stat-pill"><span class="sp-num" id="stObs">–</span><span class="sp-label">Obligations in view</span></div>
+      <div class="stat-pill"><span class="sp-num" id="stAgencies">–</span><span class="sp-label">Agencies</span></div>
+      <div class="stat-pill"><span class="sp-num" id="stLaws">–</span><span class="sp-label">Laws</span></div>
+      <div class="stat-pill"><span class="sp-num" id="stRecurring">–</span><span class="sp-label">Recurring duties</span></div>
+    </div>
+
+    <div class="chart-actions">
+      <button class="action-btn" onclick="downloadChart(this)">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download PNG
+      </button>
+      <button class="action-btn" onclick="showEmbed()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+        Embed
+      </button>
+    </div>
+
+    <div id="chart-box">
+      <div class="chart-pad">
+        <div class="chart-title-inbox">Obligations by responsible agency</div>
+        <div class="chart-sub-inbox" id="chartSub">Local laws enacted 2024 to present, top 20 agencies.</div>
+        <div class="legend" id="legend"></div>
+        <div id="chartArea"><p class="loading-note">Loading…</p></div>
+      </div>
+      <div class="chart-attribution">
+        <span>Created by Tal Roded · NYCuriosity · Source: Author's analysis of enacted local law text from <a href="https://legistar.council.nyc.gov" target="_blank" rel="noopener">NYC Legistar</a></span>
+      </div>
+    </div>
+
+    <div class="footnotes">
+      <p><strong>Reading the bars:</strong> each bar counts distinct obligations, not their difficulty or cost. A one-time report and a permanent enforcement duty each count once; use the recurrence filter to separate them.</p>
+      <p><strong>Deliverable types:</strong> the five legend buckets group the full taxonomy; "everything else" includes studies, plans, signage, notices, training, enforcement, and staffing duties. The <a href="../obligations-table/">obligations table</a> shows the exact type for every record.</p>
+      <p><strong>Method:</strong> obligations are extracted from enacted local law text on <a href="https://legistar.council.nyc.gov" target="_blank" rel="noopener">NYC Legistar</a> using Claude, with every quoted passage mechanically checked against the source text. Agency names are normalized with the <a href="https://data.cityofnewyork.us/City-Government/NYC-Agencies-and-Governance-Organizations/t3jq-9nkf/about_data" target="_blank" rel="noopener">NYC Agencies and Governance Organizations</a> dataset. Obligations whose responsible entity could not be matched to a known agency (for example "an agency designated by the mayor") are excluded from this chart but appear in the table.</p>
+    </div>
+
+  </div>
+</main>
+
+<div class="modal-overlay" id="embedModal">
+  <div class="modal">
+    <h3>Embed this chart</h3>
+    <textarea id="embedCode" readonly></textarea>
+    <div class="modal-actions">
+      <button class="modal-btn ghost" onclick="document.getElementById('embedModal').style.display='none'">Close</button>
+      <button class="modal-btn primary" id="copyBtn" onclick="copyEmbed()">Copy</button>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-inner">
+    <span class="footer-copy">© NYCuriosity · Tal Roded</span>
+    <nav class="footer-links">
+      <a href="https://buymeacoffee.com/nycuriosity" class="footer-support" target="_blank" rel="noopener" aria-label="Support my work on Buy Me a Coffee"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>Support my work</a>
+      <a href="https://talroded.nycuriosity.com" target="_blank" rel="noopener">About</a>
+      <a href="https://www.nycuriosity.com" target="_blank" rel="noopener">Substack</a>
+      <a href="https://github.com/TalR24/nycur-data-website" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </div>
+</footer>
+
+<script>
+var ALL = [];
+var BUCKETS = [
+  { key: 'report', label: 'Reports', color: '#2563eb', match: ['report'] },
+  { key: 'rule', label: 'Rulemaking', color: '#c2410c', match: ['rulemaking'] },
+  { key: 'program', label: 'Programs & services', color: '#16a34a', match: ['program or service'] },
+  { key: 'outreach', label: 'Outreach & education', color: '#6b7280', match: ['outreach or education'] },
+  { key: 'other', label: 'Everything else', color: '#bfdbfe', match: null }
+];
+
+(function () {
+  fetch('../data/obligations.json')
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+      ALL = data.obligations || [];
+      if (data.generated_at) {
+        var gen = new Date(data.generated_at);
+        var months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+        document.getElementById('heroUpdated').textContent = 'Updated ' + months[gen.getMonth()] + ' ' + gen.getFullYear();
+      }
+      buildFilters();
+      buildLegend();
+      render();
+    })
+    .catch(function () {
+      document.getElementById('chartArea').innerHTML = '<p class="loading-note">Data failed to load.</p>';
+    });
+})();
+
+function uniqueSorted(key, fn) {
+  var seen = {};
+  ALL.forEach(function (o) { var v = fn ? fn(o) : o[key]; if (v) seen[v] = (seen[v] || 0) + 1; });
+  return Object.keys(seen).sort(function (a, b) { return seen[b] - seen[a]; });
+}
+
+function buildFilters() {
+  fillSelect('fCommittee', uniqueSorted('committee'));
+  fillSelect('fSponsor', uniqueSorted('prime_sponsor'));
+  fillSelect('fYear', uniqueSorted(null, function (o) {
+    return o.enactment_date ? o.enactment_date.slice(0, 4) : null;
+  }).sort());
+  fillSelect('fRecur', uniqueSorted('recurrence'));
+  ['fCommittee', 'fSponsor', 'fYear', 'fRecur'].forEach(function (id) {
+    document.getElementById(id).addEventListener('input', render);
+  });
+  document.getElementById('fReset').addEventListener('click', function () {
+    ['fCommittee', 'fSponsor', 'fYear', 'fRecur'].forEach(function (id) {
+      document.getElementById(id).value = '';
+    });
+    render();
+  });
+}
+
+function fillSelect(id, values) {
+  var sel = document.getElementById(id);
+  values.forEach(function (v) {
+    var opt = document.createElement('option');
+    opt.value = v; opt.textContent = v;
+    sel.appendChild(opt);
+  });
+}
+
+function buildLegend() {
+  var html = '';
+  BUCKETS.forEach(function (b) {
+    html += '<span class="legend-item"><span class="legend-swatch" style="background:' + b.color + '"></span>' + b.label + '</span>';
+  });
+  document.getElementById('legend').innerHTML = html;
+}
+
+function bucketOf(type) {
+  for (var i = 0; i < BUCKETS.length; i++) {
+    if (BUCKETS[i].match && BUCKETS[i].match.indexOf(type) !== -1) return BUCKETS[i].key;
+  }
+  return 'other';
+}
+
+function render() {
+  var committee = document.getElementById('fCommittee').value;
+  var sponsor = document.getElementById('fSponsor').value;
+  var year = document.getElementById('fYear').value;
+  var recur = document.getElementById('fRecur').value;
+
+  var rows = ALL.filter(function (o) {
+    if (committee && o.committee !== committee) return false;
+    if (sponsor && o.prime_sponsor !== sponsor) return false;
+    if (year && (!o.enactment_date || o.enactment_date.slice(0, 4) !== year)) return false;
+    if (recur && o.recurrence !== recur) return false;
+    return true;
+  });
+
+  var lawSet = {}, agencyCounts = {}, recurring = 0;
+  rows.forEach(function (o) {
+    lawSet[o.matter_id] = 1;
+    if (o.recurrence !== 'one-time') recurring++;
+    if (!o.agency_matched) return;
+    if (!agencyCounts[o.agency]) {
+      agencyCounts[o.agency] = { total: 0, segs: {}, full: o.agency_full };
+    }
+    agencyCounts[o.agency].total++;
+    var bk = bucketOf(o.deliverable_type);
+    agencyCounts[o.agency].segs[bk] = (agencyCounts[o.agency].segs[bk] || 0) + 1;
+  });
+
+  document.getElementById('stObs').textContent = rows.length.toLocaleString();
+  document.getElementById('stAgencies').textContent = Object.keys(agencyCounts).length.toLocaleString();
+  document.getElementById('stLaws').textContent = Object.keys(lawSet).length.toLocaleString();
+  document.getElementById('stRecurring').textContent = recurring.toLocaleString();
+
+  var ranked = Object.keys(agencyCounts).map(function (a) {
+    return { agency: a, full: agencyCounts[a].full, total: agencyCounts[a].total, segs: agencyCounts[a].segs };
+  }).sort(function (a, b) { return b.total - a.total; }).slice(0, 20);
+
+  var area = document.getElementById('chartArea');
+  if (!ranked.length) {
+    area.innerHTML = '<p class="loading-note">No obligations match these filters.</p>';
+    return;
+  }
+  var max = ranked[0].total;
+  var html = '';
+  ranked.forEach(function (r) {
+    var segsHtml = '';
+    BUCKETS.forEach(function (b) {
+      var n = r.segs[b.key] || 0;
+      if (!n) return;
+      segsHtml += '<div class="bar-seg" title="' + b.label + ': ' + n + '" style="background:' + b.color + ';width:' + (n / max * 100) + '%"></div>';
+    });
+    html += '<div class="bar-row">'
+      + '<span class="bar-label" title="' + esc(r.full) + '">' + esc(r.agency) + '</span>'
+      + '<div class="bar-track">' + segsHtml + '</div>'
+      + '<span class="bar-val">' + r.total.toLocaleString() + '</span>'
+      + '</div>';
+  });
+  area.innerHTML = html;
+
+  var filterBits = [];
+  if (committee) filterBits.push(committee);
+  if (sponsor) filterBits.push('prime sponsor ' + sponsor);
+  if (year) filterBits.push('enacted ' + year);
+  if (recur) filterBits.push(recur + ' duties');
+  document.getElementById('chartSub').textContent = filterBits.length
+    ? 'Filtered to ' + filterBits.join(' · ') + '. Top 20 agencies.'
+    : 'Local laws enacted 2024 to present, top 20 agencies.';
+}
+
+async function downloadChart(btn) {
+  var orig = btn.innerHTML;
+  btn.innerHTML = '⏳ Capturing…'; btn.disabled = true;
+  try {
+    var el = document.getElementById('chart-box');
+    var canvas = await html2canvas(el, { backgroundColor: '#ffffff', scale: 2, useCORS: true, logging: false });
+    var a = document.createElement('a');
+    a.download = 'nyc-agency-workload.png';
+    a.href = canvas.toDataURL('image/png'); a.click();
+  } finally { btn.innerHTML = orig; btn.disabled = false; }
+}
+
+function showEmbed() {
+  var url = location.origin + location.pathname;
+  document.getElementById('embedCode').value =
+    '<iframe src="' + url + '" width="900" height="920" frameborder="0" style="border:1px solid #e5e7eb; border-radius:8px;" loading="lazy"></iframe>';
+  document.getElementById('embedModal').style.display = 'flex';
+}
+
+function copyEmbed() {
+  var ta = document.getElementById('embedCode');
+  ta.select();
+  navigator.clipboard.writeText(ta.value).then(function () {
+    var b = document.getElementById('copyBtn');
+    b.textContent = '✓ Copied!';
+    setTimeout(function () { b.textContent = 'Copy'; }, 2000);
+  });
+}
+
+function esc(s) {
+  return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+</script>
+
+</body>
+</html>

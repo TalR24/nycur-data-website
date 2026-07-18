@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Council Members — NYC Council Legislation Trackers — NYCuriosity</title>
+  <meta name="description" content="A legislation profile for every NYC Council member since 2014: sponsored bills, fiscal impacts, agency obligations created, searchable by name and filterable by session, party, borough, and district, with a district map view.">
+  <meta property="og:type"        content="website">
+  <meta property="og:url"         content="https://data.nycuriosity.com/civic_reference/nyc_council_legislation_trackers/council-members/">
+  <meta property="og:title"       content="Council Members — NYC Council Legislation Trackers">
+  <meta property="og:description" content="A legislation profile for every NYC Council member since 2014: sponsored bills, fiscal impacts, and agency obligations created.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --blue: #2563eb; --blue-hover: #1d4ed8; --blue-light: #eff6ff; --blue-mid: #bfdbfe;
+      --text: #111827; --text-mid: #374151; --text-muted: #6b7280; --text-faint: #9ca3af;
+      --bg: #f8faff; --surface: #ffffff; --border: #e5e7eb;
+      --shadow-sm: 0 1px 3px rgba(17,24,39,0.08); --shadow-md: 0 4px 16px rgba(37,99,235,0.10);
+      --radius: 10px;
+      --red: #dc2626; --green: #16a34a;
+    }
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
+
+    header { background: #111827; border-bottom: 1px solid #1f2937; padding: 0 clamp(20px, 5vw, 48px); }
+    .header-inner { max-width: 1100px; margin: 0 auto; height: 56px; display: flex; align-items: center; gap: 16px; }
+    .back-link { font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600; color: #9ca3af; text-decoration: none; display: flex; align-items: center; gap: 5px; padding: 4px 8px 4px 4px; border-radius: 5px; transition: color 0.15s, background 0.15s; white-space: nowrap; }
+    .back-link:hover { color: #60a5fa; background: rgba(96,165,250,0.1); }
+    .header-divider { width: 1px; height: 20px; background: #374151; flex-shrink: 0; }
+    header h1 { font-family: 'Roboto Mono', monospace; font-size: 0.95rem; font-weight: 700; color: #e5e7eb; letter-spacing: -0.02em; }
+
+    .pill-nav { background: var(--surface); border-bottom: 1px solid var(--border); padding: 10px clamp(20px, 5vw, 48px); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .pill-nav a { font-size: 0.78rem; font-family: 'Roboto Mono', monospace; font-weight: 600; padding: 4px 12px; border-radius: 20px; text-decoration: none; border: 1px solid var(--border); color: var(--text-muted); background: var(--bg); transition: all 0.15s; white-space: nowrap; }
+    .pill-nav a:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
+    .pill-nav a.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+    .pill-label { font-size: 0.72rem; color: var(--text-faint); font-family: 'Roboto Mono', monospace; white-space: nowrap; }
+
+    .hero { background: var(--surface); border-bottom: 1px solid var(--border); padding: clamp(28px, 4vw, 44px) clamp(20px, 5vw, 48px); }
+    .hero-inner { max-width: 1100px; margin: 0 auto; }
+    .breadcrumb { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; color: var(--text-faint); margin-bottom: 14px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .breadcrumb a { color: var(--blue); text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+    .breadcrumb span:last-child { color: #FF6319; }
+    .hero-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .hero-tag { font-family: 'Roboto Mono', monospace; font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #FF6319; background: #fff4ed; border: 1px solid #ffd0b3; border-radius: 4px; padding: 3px 8px; }
+    .hero-updated { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; color: var(--text-faint); }
+    .hero h1 { font-family: 'Roboto Mono', monospace; font-size: clamp(1.4rem, 3vw, 1.8rem); font-weight: 700; letter-spacing: -0.03em; line-height: 1.25; margin-bottom: 10px; }
+    .hero h1 span { color: var(--blue); }
+    .hero p { font-size: 0.95rem; color: var(--text-muted); max-width: 720px; line-height: 1.7; }
+    .hero-actions { margin-top: 18px; display: flex; gap: 10px; flex-wrap: wrap; }
+    .btn { font-family: 'Roboto Mono', monospace; font-size: 0.78rem; font-weight: 600; padding: 8px 14px; border-radius: 7px; text-decoration: none; display: inline-flex; align-items: center; gap: 7px; cursor: pointer; border: 1.5px solid var(--blue); transition: all 0.15s; }
+    .btn-outline { color: var(--blue); background: var(--surface); }
+    .btn-outline:hover { background: var(--blue-light); }
+
+    main { flex: 1; padding: clamp(24px, 4vw, 40px) clamp(20px, 5vw, 48px); }
+    .main-inner { max-width: 1100px; margin: 0 auto; }
+
+    /* Controls */
+    .controls { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 16px 18px; margin-bottom: 16px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    .controls input[type="search"] { flex: 2 1 220px; min-width: 180px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 7px; font-family: 'Inter', sans-serif; font-size: 0.85rem; background: var(--bg); color: var(--text); }
+    .controls select { flex: 1 1 140px; min-width: 120px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 7px; font-family: 'Roboto Mono', monospace; font-size: 0.75rem; background: var(--bg); color: var(--text-mid); cursor: pointer; }
+    .controls input:focus, .controls select:focus { outline: 2px solid var(--blue-mid); border-color: var(--blue); }
+    .reset-btn { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; font-weight: 600; color: var(--text-muted); background: none; border: 1px solid var(--border); border-radius: 7px; padding: 8px 12px; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+    .reset-btn:hover { color: var(--red); border-color: var(--red); }
+    .view-toggle { display: inline-flex; border: 1px solid var(--border); border-radius: 20px; overflow: hidden; margin-left: auto; }
+    .view-toggle button { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; font-weight: 600; padding: 7px 14px; background: var(--bg); color: var(--text-muted); border: none; cursor: pointer; transition: all 0.15s; }
+    .view-toggle button.active { background: var(--blue); color: #fff; }
+
+    .result-count { font-family: 'Roboto Mono', monospace; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 12px; }
+    .result-count strong { color: var(--blue); }
+
+    /* Member cards */
+    .member-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+    .member-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 16px 18px; text-decoration: none; color: inherit; display: flex; flex-direction: column; gap: 8px; transition: border-color 0.15s, transform 0.12s; }
+    .member-card:hover { border-color: var(--blue); transform: translateY(-2px); }
+    .mc-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .mc-name { font-family: 'Roboto Mono', monospace; font-size: 0.92rem; font-weight: 700; letter-spacing: -0.02em; }
+    .party-badge { font-family: 'Roboto Mono', monospace; font-size: 0.62rem; font-weight: 700; padding: 2px 7px; border-radius: 9px; white-space: nowrap; }
+    .party-badge.dem { background: var(--blue-light); color: var(--blue); border: 1px solid var(--blue-mid); }
+    .party-badge.rep { background: #fef2f2; color: var(--red); border: 1px solid #fecaca; }
+    .party-badge.oth { background: var(--bg); color: var(--text-muted); border: 1px solid var(--border); }
+    .current-badge { font-family: 'Roboto Mono', monospace; font-size: 0.62rem; font-weight: 700; padding: 2px 7px; border-radius: 9px; background: #ecfdf5; color: var(--green); border: 1px solid #a7f3d0; }
+    .mc-sub { font-family: 'Roboto Mono', monospace; font-size: 0.7rem; color: var(--text-muted); }
+    .mc-stats { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 2px; }
+    .mc-stat { display: flex; flex-direction: column; }
+    .mc-stat .n { font-family: 'Roboto Mono', monospace; font-size: 0.95rem; font-weight: 700; color: var(--blue); }
+    .mc-stat .l { font-size: 0.65rem; color: var(--text-faint); }
+
+    /* Map view */
+    .map-wrap { display: none; grid-template-columns: minmax(0, 1.4fr) minmax(260px, 1fr); gap: 18px; align-items: start; }
+    .map-wrap.active { display: grid; }
+    .map-box { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 14px; }
+    .map-box svg { width: 100%; height: auto; display: block; }
+    .district-shape { fill: var(--blue-light); stroke: var(--blue); stroke-width: 0.7; cursor: pointer; transition: fill 0.12s; }
+    .district-shape:hover { fill: var(--blue-mid); }
+    .district-shape.selected { fill: var(--blue); }
+    .district-label { font-family: 'Roboto Mono', monospace; font-size: 11px; font-weight: 600; fill: var(--text-mid); pointer-events: none; }
+    .district-shape.selected + .district-label { fill: #fff; }
+    .map-panel { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 18px 20px; position: sticky; top: 12px; }
+    .map-panel h3 { font-family: 'Roboto Mono', monospace; font-size: 0.95rem; font-weight: 700; margin-bottom: 4px; }
+    .map-panel .sub { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 14px; }
+    .mp-section { font-family: 'Roboto Mono', monospace; font-size: 0.66rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-faint); margin: 14px 0 8px; }
+    .mp-member { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 7px; margin-bottom: 6px; text-decoration: none; color: inherit; transition: border-color 0.12s; flex-wrap: wrap; }
+    .mp-member:hover { border-color: var(--blue); }
+    .mp-member .nm { font-family: 'Roboto Mono', monospace; font-size: 0.78rem; font-weight: 600; }
+    .mp-member .yrs { font-family: 'Roboto Mono', monospace; font-size: 0.66rem; color: var(--text-faint); margin-left: auto; }
+    .map-hint { font-family: 'Roboto Mono', monospace; font-size: 0.75rem; color: var(--text-faint); }
+
+    /* Profile view */
+    .profile-stats { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; }
+    .stat-pill { display: flex; flex-direction: column; gap: 2px; padding: 12px 18px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); flex: 1; min-width: 150px; }
+    .stat-pill .sp-num { font-family: 'Roboto Mono', monospace; font-size: 1.2rem; font-weight: 700; color: var(--blue); letter-spacing: -0.03em; line-height: 1; }
+    .stat-pill .sp-num.neg { color: var(--red); }
+    .stat-pill .sp-label { font-size: 0.72rem; color: var(--text-muted); line-height: 1.3; }
+    .section-head { font-family: 'Roboto Mono', monospace; font-size: 0.8rem; font-weight: 700; color: var(--text); margin: 24px 0 12px; }
+    .leg-item { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 13px 16px; margin-bottom: 9px; display: block; text-decoration: none; color: inherit; transition: border-color 0.12s; }
+    .leg-item:hover { border-color: var(--blue); }
+    .leg-top { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; margin-bottom: 5px; }
+    .leg-label { font-family: 'Roboto Mono', monospace; font-size: 0.73rem; font-weight: 700; color: var(--blue); }
+    .prime-badge { font-family: 'Roboto Mono', monospace; font-size: 0.6rem; font-weight: 700; padding: 2px 7px; border-radius: 9px; background: #fff4ed; color: #FF6319; border: 1px solid #ffd0b3; }
+    .leg-num { font-family: 'Roboto Mono', monospace; font-size: 0.7rem; color: var(--text-muted); margin-left: auto; white-space: nowrap; }
+    .leg-num.neg { color: var(--red); font-weight: 600; }
+    .leg-title { font-size: 0.83rem; color: var(--text-mid); line-height: 1.55; }
+    .profile-note { font-size: 0.78rem; color: var(--text-muted); line-height: 1.6; margin-top: 6px; }
+
+    .footnotes { margin-top: 24px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; }
+    .footnotes p { font-size: 0.8rem; color: var(--text-muted); line-height: 1.65; margin-bottom: 10px; }
+    .footnotes p:last-child { margin-bottom: 0; }
+    .footnotes a { color: var(--blue); text-decoration: none; }
+    .footnotes a:hover { text-decoration: underline; }
+    .loading-note { font-family: 'Roboto Mono', monospace; font-size: 0.85rem; color: var(--text-faint); padding: 40px; text-align: center; }
+
+    footer { background: var(--surface); border-top: 1px solid var(--border); padding: 20px clamp(20px, 5vw, 48px); }
+    .footer-inner { max-width: 1100px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+    .footer-copy { font-size: 0.8rem; color: var(--text-faint); }
+    .footer-links { display: flex; gap: 20px; align-items: center; }
+    .footer-links a { font-size: 0.8rem; color: var(--text-muted); text-decoration: none; transition: color 0.15s; }
+    .footer-links a:hover { color: var(--blue); }
+    .footer-support { display: inline-flex; align-items: center; gap: 5px; font-size: 0.8rem; font-weight: 500; color: #2563eb; text-decoration: none; padding: 5px 11px; border: 1px solid rgba(37,99,235,0.45); border-radius: 6px; transition: color .15s, border-color .15s, background .15s; vertical-align: middle; }
+    .footer-support:hover { color: #fff; background: #2563eb; border-color: #2563eb; }
+
+    @media (max-width: 760px) {
+      .map-wrap.active { grid-template-columns: 1fr; }
+      .map-panel { position: static; }
+      .view-toggle { margin-left: 0; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <a href="../" class="back-link">← nyc_council_legislation_trackers</a>
+    <div class="header-divider"></div>
+    <h1>Council Members</h1>
+  </div>
+</header>
+
+<div class="pill-nav">
+  <span class="pill-label">In this collection:</span>
+  <a href="../../nyc_council_fiscal_impacts_tracker/">Fiscal Impacts Tracker</a>
+  <a href="../../legislation_implementation_tracker/">Implementation Tracker</a>
+  <a href="./" class="active">Council Members</a>
+</div>
+
+<div class="hero">
+  <div class="hero-inner" id="heroInner">
+    <div class="breadcrumb">
+      <a href="/">data.nycuriosity.com</a>
+      <span>›</span>
+      <a href="../">NYC Council Legislation Trackers</a>
+      <span>›</span>
+      <span id="crumbLast">Council Members</span>
+    </div>
+    <div class="hero-meta">
+      <span class="hero-tag">Civic Reference</span>
+      <span class="hero-updated" id="heroUpdated"></span>
+    </div>
+    <h1 id="heroTitle">Every council member, <span>measured by their legislation</span></h1>
+    <p id="heroDesc">
+      A profile for every member who has served since 2014: the bills they sponsored, the fiscal
+      impacts those bills carry, and the agency obligations their enacted laws created. Search by
+      name, filter by session, party, borough, or district, or switch to the map to browse by
+      council district.
+    </p>
+    <div id="profileMeta"></div>
+  </div>
+</div>
+
+<main>
+  <div class="main-inner" id="mainContent">
+    <p class="loading-note">Loading members…</p>
+  </div>
+</main>
+
+<footer>
+  <div class="footer-inner">
+    <span class="footer-copy">© NYCuriosity · Tal Roded</span>
+    <nav class="footer-links">
+      <a href="https://buymeacoffee.com/nycuriosity" class="footer-support" target="_blank" rel="noopener" aria-label="Support my work on Buy Me a Coffee"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>Support my work</a>
+      <a href="https://talroded.nycuriosity.com" target="_blank" rel="noopener">About</a>
+      <a href="https://www.nycuriosity.com" target="_blank" rel="noopener">Substack</a>
+      <a href="https://github.com/TalR24/nycur-data-website" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var DATA = null, MAP = null;
+  var viewMode = 'cards';
+  var selectedDistrict = null;
+
+  Promise.all([
+    fetch('../data/members.json').then(function (r) { return r.json(); }),
+    fetch('../data/districts_map.json').then(function (r) { return r.json(); })
+  ]).then(function (res) {
+    DATA = res[0]; MAP = res[1];
+    if (DATA.generated_at) {
+      var gen = new Date(DATA.generated_at);
+      var months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+      document.getElementById('heroUpdated').textContent = 'Updated ' + months[gen.getMonth()] + ' ' + gen.getFullYear();
+    }
+    var params = new URLSearchParams(location.search);
+    var memberId = params.get('member');
+    if (memberId) renderProfile(memberId); else renderBrowse();
+  }).catch(function () {
+    document.getElementById('mainContent').innerHTML = '<p class="loading-note">Data failed to load.</p>';
+  });
+
+  /* ── Shared helpers ─────────────────────────────────── */
+
+  function fmtMoney(n) {
+    if (n == null) return '—';
+    var sign = n < 0 ? '-' : '';
+    var a = Math.abs(n);
+    if (a >= 1e9) return sign + '$' + (a / 1e9).toFixed(1).replace(/\.0$/, '') + 'B';
+    if (a >= 1e6) return sign + '$' + (a / 1e6).toFixed(1).replace(/\.0$/, '') + 'M';
+    if (a >= 1e3) return sign + '$' + Math.round(a / 1e3) + 'K';
+    return sign + '$' + a.toLocaleString();
+  }
+
+  function partyClass(p) {
+    if (/^dem/i.test(p || '')) return 'dem';
+    if (/^rep/i.test(p || '')) return 'rep';
+    return 'oth';
+  }
+  function partyShort(p) {
+    if (/^dem/i.test(p || '')) return 'D';
+    if (/^rep/i.test(p || '')) return 'R';
+    return p ? p.slice(0, 3) : '?';
+  }
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  /* ── Browse view (cards + map) ──────────────────────── */
+
+  function renderBrowse() {
+    var el = document.getElementById('mainContent');
+    el.innerHTML =
+      '<div class="controls">'
+      + '<input type="search" id="fSearch" placeholder="Search council members by name…" aria-label="Search members">'
+      + '<select id="fSession" aria-label="Filter by session"><option value="">All sessions</option></select>'
+      + '<select id="fParty" aria-label="Filter by party"><option value="">All parties</option></select>'
+      + '<select id="fBorough" aria-label="Filter by borough"><option value="">All boroughs</option></select>'
+      + '<select id="fDistrict" aria-label="Filter by district"><option value="">All districts</option></select>'
+      + '<select id="fSort" aria-label="Sort members">'
+      + '<option value="district">By district</option>'
+      + '<option value="name">By name</option>'
+      + '<option value="legislation">Most legislation</option>'
+      + '<option value="obligations">Most obligations created</option>'
+      + '<option value="fiscal">Biggest fiscal impact</option>'
+      + '</select>'
+      + '<button class="reset-btn" id="fReset">Reset</button>'
+      + '<div class="view-toggle"><button id="btnCards" class="active">Cards</button><button id="btnMap">Map</button></div>'
+      + '</div>'
+      + '<p class="result-count" id="resultCount"></p>'
+      + '<div class="member-grid" id="memberGrid"></div>'
+      + '<div class="map-wrap" id="mapWrap">'
+      + '<div class="map-box" id="mapBox"></div>'
+      + '<div class="map-panel" id="mapPanel"><p class="map-hint">Click a district on the map to see its current and past council members.</p></div>'
+      + '</div>'
+      + footnotesHtml();
+
+    var sessions = {}, parties = {}, boroughs = {}, districts = {};
+    DATA.members.forEach(function (m) {
+      (m.sessions || []).forEach(function (s) { sessions[s] = 1; });
+      if (m.party) parties[m.party] = 1;
+      if (m.borough) boroughs[m.borough] = 1;
+      if (m.district) districts[m.district] = 1;
+    });
+    fill('fSession', Object.keys(sessions).sort());
+    fill('fParty', Object.keys(parties).sort());
+    fill('fBorough', Object.keys(boroughs).sort());
+    fill('fDistrict', Object.keys(districts).map(Number).sort(function (a, b) { return a - b; })
+      .map(function (d) { return String(d); }), function (d) { return 'District ' + d; });
+
+    ['fSearch', 'fSession', 'fParty', 'fBorough', 'fDistrict', 'fSort'].forEach(function (id) {
+      document.getElementById(id).addEventListener('input', drawCards);
+    });
+    document.getElementById('fReset').addEventListener('click', function () {
+      ['fSearch', 'fSession', 'fParty', 'fBorough', 'fDistrict'].forEach(function (id) {
+        document.getElementById(id).value = '';
+      });
+      document.getElementById('fSort').value = 'district';
+      drawCards();
+    });
+    document.getElementById('btnCards').addEventListener('click', function () { setView('cards'); });
+    document.getElementById('btnMap').addEventListener('click', function () { setView('map'); });
+
+    buildMap();
+    drawCards();
+  }
+
+  function fill(id, values, labelFn) {
+    var sel = document.getElementById(id);
+    values.forEach(function (v) {
+      var opt = document.createElement('option');
+      opt.value = v; opt.textContent = labelFn ? labelFn(v) : v;
+      sel.appendChild(opt);
+    });
+  }
+
+  function setView(mode) {
+    viewMode = mode;
+    document.getElementById('btnCards').classList.toggle('active', mode === 'cards');
+    document.getElementById('btnMap').classList.toggle('active', mode === 'map');
+    document.getElementById('memberGrid').style.display = mode === 'cards' ? 'grid' : 'none';
+    document.getElementById('resultCount').style.display = mode === 'cards' ? 'block' : 'none';
+    document.getElementById('mapWrap').classList.toggle('active', mode === 'map');
+  }
+
+  function filteredMembers() {
+    var q = document.getElementById('fSearch').value.toLowerCase().trim();
+    var session = document.getElementById('fSession').value;
+    var party = document.getElementById('fParty').value;
+    var borough = document.getElementById('fBorough').value;
+    var district = document.getElementById('fDistrict').value;
+    return DATA.members.filter(function (m) {
+      if (q && m.full_name.toLowerCase().indexOf(q) === -1) return false;
+      if (session && (m.sessions || []).indexOf(session) === -1) return false;
+      if (party && m.party !== party) return false;
+      if (borough && m.borough !== borough) return false;
+      if (district && String(m.district) !== district) return false;
+      return true;
+    });
+  }
+
+  function drawCards() {
+    var rows = filteredMembers();
+    var sort = document.getElementById('fSort').value;
+    rows.sort(function (a, b) {
+      switch (sort) {
+        case 'name': return a.full_name.localeCompare(b.full_name);
+        case 'legislation': return b.stats.legislation_total - a.stats.legislation_total;
+        case 'obligations': return b.stats.obligations_sum - a.stats.obligations_sum;
+        case 'fiscal': return Math.abs(b.stats.fiscal_net_sum) - Math.abs(a.stats.fiscal_net_sum);
+        default:
+          if (a.current !== b.current) return a.current ? -1 : 1;
+          return (a.district || 99) - (b.district || 99) || a.full_name.localeCompare(b.full_name);
+      }
+    });
+    document.getElementById('resultCount').innerHTML =
+      'Showing <strong>' + rows.length + '</strong> of ' + DATA.members.length + ' members';
+    var html = '';
+    rows.forEach(function (m) { html += cardHtml(m); });
+    document.getElementById('memberGrid').innerHTML =
+      html || '<p class="loading-note">No members match these filters.</p>';
+  }
+
+  function cardHtml(m) {
+    var s = m.stats;
+    return '<a class="member-card" href="?member=' + encodeURIComponent(m.id) + '">'
+      + '<div class="mc-top">'
+      + '<span class="mc-name">' + esc(m.full_name) + '</span>'
+      + '<span class="party-badge ' + partyClass(m.party) + '">' + esc(partyShort(m.party)) + '</span>'
+      + (m.current ? '<span class="current-badge">Current</span>' : '')
+      + '</div>'
+      + '<div class="mc-sub">District ' + (m.district || '—') + ' · ' + esc(m.borough || '')
+      + ' · ' + esc((m.sessions || []).length ? m.sessions[0].slice(0, 4) + '–' + (m.current ? 'now' : (m.end_year || '')) : '') + '</div>'
+      + '<div class="mc-stats">'
+      + '<span class="mc-stat"><span class="n">' + s.legislation_total + '</span><span class="l">tracked bills</span></span>'
+      + '<span class="mc-stat"><span class="n">' + s.obligations_sum + '</span><span class="l">obligations</span></span>'
+      + '<span class="mc-stat"><span class="n">' + fmtMoney(s.fiscal_net_sum) + '</span><span class="l">net fiscal impact</span></span>'
+      + '</div>'
+      + '</a>';
+  }
+
+  /* ── Map ─────────────────────────────────────────────── */
+
+  function buildMap() {
+    var svg = '<svg viewBox="' + MAP.viewBox + '" role="img" aria-label="Map of NYC City Council districts">';
+    MAP.districts.forEach(function (d) {
+      svg += '<path class="district-shape" id="dist' + d.district + '" d="' + d.path + '" data-district="' + d.district + '"><title>District ' + d.district + '</title></path>';
+    });
+    MAP.districts.forEach(function (d) {
+      svg += '<text class="district-label" x="' + d.cx + '" y="' + d.cy + '" text-anchor="middle">' + d.district + '</text>';
+    });
+    svg += '</svg>';
+    document.getElementById('mapBox').innerHTML = svg;
+    document.querySelectorAll('.district-shape').forEach(function (p) {
+      p.addEventListener('click', function () {
+        selectDistrict(parseInt(p.getAttribute('data-district'), 10));
+      });
+    });
+  }
+
+  function selectDistrict(n) {
+    selectedDistrict = n;
+    document.querySelectorAll('.district-shape').forEach(function (p) {
+      p.classList.toggle('selected', parseInt(p.getAttribute('data-district'), 10) === n);
+    });
+    var members = DATA.members.filter(function (m) { return m.district === n; });
+    var current = members.filter(function (m) { return m.current; });
+    var past = members.filter(function (m) { return !m.current; })
+      .sort(function (a, b) { return (b.end_year || 0) - (a.end_year || 0); });
+    var html = '<h3>District ' + n + '</h3>'
+      + '<p class="sub">' + esc((members[0] && members[0].borough) || '') + '</p>';
+    if (current.length) {
+      html += '<div class="mp-section">Current member</div>';
+      current.forEach(function (m) { html += panelMember(m, 'since ' + (m.start_year || '')); });
+    }
+    if (past.length) {
+      html += '<div class="mp-section">Previous members (2014 to present)</div>';
+      past.forEach(function (m) {
+        html += panelMember(m, (m.start_year || '') + '–' + (m.end_year || ''));
+      });
+    }
+    if (!members.length) {
+      html += '<p class="map-hint">No members of this district appear in the tracker datasets.</p>';
+    }
+    document.getElementById('mapPanel').innerHTML = html;
+  }
+
+  function panelMember(m, yrs) {
+    return '<a class="mp-member" href="?member=' + encodeURIComponent(m.id) + '">'
+      + '<span class="nm">' + esc(m.full_name) + '</span>'
+      + '<span class="party-badge ' + partyClass(m.party) + '">' + esc(partyShort(m.party)) + '</span>'
+      + '<span class="yrs">' + esc(yrs) + '</span>'
+      + '</a>';
+  }
+
+  /* ── Profile view ────────────────────────────────────── */
+
+  function renderProfile(id) {
+    var m = null;
+    DATA.members.forEach(function (x) { if (x.id === id) m = x; });
+    if (!m) {
+      document.getElementById('mainContent').innerHTML =
+        '<p class="loading-note">Member not found. <a href="./">Back to all members</a></p>';
+      return;
+    }
+    var s = m.stats;
+    document.title = m.full_name + ' — NYC Council Legislation Trackers — NYCuriosity';
+    document.getElementById('crumbLast').textContent = m.full_name;
+    document.getElementById('heroTitle').innerHTML =
+      esc(m.full_name) + ' <span>' + (m.district ? 'District ' + m.district : '') + '</span>';
+    document.getElementById('heroDesc').textContent =
+      (m.party || '') + (m.borough ? ' · ' + m.borough : '')
+      + ' · Sessions: ' + (m.sessions || []).join(', ')
+      + (m.notes ? ' · ' + m.notes : '');
+    document.getElementById('profileMeta').innerHTML =
+      '<div class="hero-actions"><a class="btn btn-outline" href="./">All members</a></div>';
+
+    var pct = s.impl_pct_with_obligations;
+    var html = '<div class="profile-stats">'
+      + '<div class="stat-pill"><span class="sp-num">' + s.legislation_total + '</span><span class="sp-label">Tracked bills and laws sponsored or co-sponsored</span></div>'
+      + '<div class="stat-pill"><span class="sp-num">' + s.obligations_sum + '</span><span class="sp-label">Agency obligations created by laws they sponsored (' + s.obligations_sum_prime + ' as prime sponsor)</span></div>'
+      + '<div class="stat-pill"><span class="sp-num' + (s.fiscal_net_sum < 0 ? ' neg' : '') + '">' + fmtMoney(s.fiscal_net_sum) + '</span><span class="sp-label">Combined net fiscal impact of sponsored bills (' + fmtMoney(s.fiscal_net_sum_prime) + ' as prime)</span></div>'
+      + '<div class="stat-pill"><span class="sp-num">' + (pct == null ? '—' : pct + '%') + '</span><span class="sp-label">Share of their enacted laws carrying at least one agency obligation</span></div>'
+      + '</div>';
+
+    var fiscal = m.legislation.filter(function (l) { return l.tracker === 'fiscal'; });
+    var impl = m.legislation.filter(function (l) { return l.tracker === 'impl'; });
+
+    if (impl.length) {
+      html += '<div class="section-head">Enacted laws in the Implementation Tracker (' + impl.length + ')</div>';
+      impl.forEach(function (l) {
+        html += '<a class="leg-item" href="../../legislation_implementation_tracker/law/?law=' + encodeURIComponent(l.matter_id) + '">'
+          + '<div class="leg-top"><span class="leg-label">' + esc(l.label) + '</span>'
+          + (l.prime ? '<span class="prime-badge">Prime</span>' : '')
+          + '<span class="leg-num">' + (l.obligation_count || 0) + ' obligation' + (l.obligation_count === 1 ? '' : 's') + '</span></div>'
+          + '<div class="leg-title">' + esc(l.title) + '</div>'
+          + '</a>';
+      });
+    }
+    if (fiscal.length) {
+      html += '<div class="section-head">Bills in the Fiscal Impacts Tracker (' + fiscal.length + ')</div>';
+      fiscal.forEach(function (l) {
+        var net = l.net_fiscal_impact;
+        html += '<a class="leg-item" href="' + esc(l.legistar_url) + '" target="_blank" rel="noopener">'
+          + '<div class="leg-top"><span class="leg-label">' + esc(l.label) + '</span>'
+          + (l.prime ? '<span class="prime-badge">Prime</span>' : '')
+          + '<span class="leg-num' + (net < 0 ? ' neg' : '') + '">' + fmtMoney(net) + ' net</span></div>'
+          + '<div class="leg-title">' + esc(l.title) + '</div>'
+          + '</a>';
+      });
+    }
+    if (!m.legislation.length) {
+      html += '<p class="profile-note">No legislation by this member appears in either tracker: no bill of theirs carries a non-zero fiscal impact statement, and none of their sponsored laws from 2024 on has been parsed for obligations.</p>';
+    }
+
+    html += footnotesHtml();
+    document.getElementById('mainContent').innerHTML = html;
+  }
+
+  function footnotesHtml() {
+    return '<div class="footnotes">'
+      + '<p><strong>What counts:</strong> a member\'s profile includes every bill where they appear as prime sponsor or co-sponsor in the <a href="../../nyc_council_fiscal_impacts_tracker/">Fiscal Impacts Tracker</a> (bills with a non-zero fiscal impact statement, 2014 to present) or the <a href="../../legislation_implementation_tracker/">Implementation Tracker</a> (enacted local laws parsed for agency obligations, 2024 to present). Legislation outside those datasets does not appear, so totals understate a member\'s full legislative record.</p>'
+      + '<p><strong>Summed fiscal impacts overlap:</strong> a bill with 10 sponsors counts toward all 10 members\' totals, so member totals cannot be added together.</p>'
+      + '<p><strong>Sponsor matching:</strong> the fiscal tracker records last names only; they are matched to members using service years, with ambiguous cases resolved manually. Roster of members, parties, and districts compiled from Wikipedia\'s New York City Council pages and council.nyc.gov; district boundaries from the NYC ArcGIS City Council Districts layer (2023 lines).</p>'
+      + '</div>';
+  }
+})();
+</script>
+
+</body>
+</html>

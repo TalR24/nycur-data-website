@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Law Explorer — NYC Legislation Implementation Tracker — NYCuriosity</title>
+  <meta name="description" content="Pick any NYC local law enacted since 2024 and see its full implementation checklist: every agency action it requires, with deadlines, statutory language, and Legistar links.">
+  <meta property="og:type"        content="website">
+  <meta property="og:url"         content="https://data.nycuriosity.com/civic_reference/legislation_implementation_tracker/law/">
+  <meta property="og:title"       content="Law Explorer — NYC Legislation Implementation Tracker">
+  <meta property="og:description" content="Pick any NYC local law enacted since 2024 and see its full implementation checklist.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --blue: #2563eb; --blue-hover: #1d4ed8; --blue-light: #eff6ff; --blue-mid: #bfdbfe;
+      --text: #111827; --text-mid: #374151; --text-muted: #6b7280; --text-faint: #9ca3af;
+      --bg: #f8faff; --surface: #ffffff; --border: #e5e7eb;
+      --shadow-sm: 0 1px 3px rgba(17,24,39,0.08); --radius: 10px;
+      --red: #dc2626; --green: #16a34a;
+    }
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
+
+    header { background: #111827; border-bottom: 1px solid #1f2937; padding: 0 clamp(20px, 5vw, 48px); }
+    .header-inner { max-width: 1100px; margin: 0 auto; height: 56px; display: flex; align-items: center; gap: 16px; }
+    .back-link { font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600; color: #9ca3af; text-decoration: none; display: flex; align-items: center; gap: 5px; padding: 4px 8px 4px 4px; border-radius: 5px; transition: color 0.15s, background 0.15s; white-space: nowrap; }
+    .back-link:hover { color: #60a5fa; background: rgba(96,165,250,0.1); }
+    .header-divider { width: 1px; height: 20px; background: #374151; flex-shrink: 0; }
+    header h1 { font-family: 'Roboto Mono', monospace; font-size: 0.95rem; font-weight: 700; color: #e5e7eb; letter-spacing: -0.02em; }
+
+    .pill-nav { background: var(--surface); border-bottom: 1px solid var(--border); padding: 10px clamp(20px, 5vw, 48px); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .pill-nav a { font-size: 0.78rem; font-family: 'Roboto Mono', monospace; font-weight: 600; padding: 4px 12px; border-radius: 20px; text-decoration: none; border: 1px solid var(--border); color: var(--text-muted); background: var(--bg); transition: all 0.15s; white-space: nowrap; }
+    .pill-nav a:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
+    .pill-nav a.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+    .pill-label { font-size: 0.72rem; color: var(--text-faint); font-family: 'Roboto Mono', monospace; white-space: nowrap; }
+
+    .hero { background: var(--surface); border-bottom: 1px solid var(--border); padding: clamp(28px, 4vw, 44px) clamp(20px, 5vw, 48px); }
+    .hero-inner { max-width: 1100px; margin: 0 auto; }
+    .breadcrumb { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; color: var(--text-faint); margin-bottom: 14px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .breadcrumb a { color: var(--blue); text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+    .breadcrumb span:last-child { color: #FF6319; }
+    .hero-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .hero-tag { font-family: 'Roboto Mono', monospace; font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #FF6319; background: #fff4ed; border: 1px solid #ffd0b3; border-radius: 4px; padding: 3px 8px; }
+    .hero-updated { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; color: var(--text-faint); }
+    .hero h1 { font-family: 'Roboto Mono', monospace; font-size: clamp(1.3rem, 3vw, 1.7rem); font-weight: 700; letter-spacing: -0.03em; line-height: 1.25; margin-bottom: 10px; }
+    .hero h1 span { color: var(--blue); }
+    .hero p { font-size: 0.95rem; color: var(--text-muted); max-width: 720px; line-height: 1.7; }
+    .law-meta-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+    .law-meta-chip { font-family: 'Roboto Mono', monospace; font-size: 0.7rem; color: var(--text-mid); background: var(--bg); border: 1px solid var(--border); border-radius: 7px; padding: 6px 10px; }
+    .law-meta-chip strong { color: var(--text); }
+    .hero-actions { margin-top: 18px; display: flex; gap: 10px; flex-wrap: wrap; }
+    .btn { font-family: 'Roboto Mono', monospace; font-size: 0.78rem; font-weight: 600; padding: 8px 14px; border-radius: 7px; text-decoration: none; display: inline-flex; align-items: center; gap: 7px; cursor: pointer; border: 1.5px solid var(--blue); transition: all 0.15s; }
+    .btn-outline { color: var(--blue); background: var(--surface); }
+    .btn-outline:hover { background: var(--blue-light); }
+
+    main { flex: 1; padding: clamp(24px, 4vw, 40px) clamp(20px, 5vw, 48px); }
+    .main-inner { max-width: 900px; margin: 0 auto; }
+
+    /* Law index list */
+    .filters { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 16px 18px; margin-bottom: 16px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    .filters input[type="search"] { flex: 2 1 240px; min-width: 200px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 7px; font-family: 'Inter', sans-serif; font-size: 0.85rem; background: var(--bg); color: var(--text); }
+    .filters select { flex: 1 1 150px; min-width: 130px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 7px; font-family: 'Roboto Mono', monospace; font-size: 0.75rem; background: var(--bg); color: var(--text-mid); cursor: pointer; }
+    .filters input:focus, .filters select:focus { outline: 2px solid var(--blue-mid); border-color: var(--blue); }
+    .result-count { font-family: 'Roboto Mono', monospace; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 12px; }
+    .result-count strong { color: var(--blue); }
+
+    .law-list { display: flex; flex-direction: column; gap: 10px; }
+    .law-item { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 16px 18px; text-decoration: none; color: inherit; transition: border-color 0.15s, transform 0.12s; display: block; }
+    .law-item:hover { border-color: var(--blue); transform: translateY(-1px); }
+    .law-item-top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; }
+    .law-no { font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 700; color: var(--blue); }
+    .law-file { font-family: 'Roboto Mono', monospace; font-size: 0.68rem; color: var(--text-faint); }
+    .ob-count { font-family: 'Roboto Mono', monospace; font-size: 0.68rem; font-weight: 600; padding: 2px 8px; border-radius: 10px; background: var(--blue-light); color: var(--blue); border: 1px solid var(--blue-mid); margin-left: auto; white-space: nowrap; }
+    .law-item-title { font-size: 0.86rem; color: var(--text-mid); line-height: 1.55; }
+
+    /* Checklist view */
+    .ob-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 16px 18px; margin-bottom: 12px; }
+    .ob-top { display: flex; align-items: flex-start; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+    .ob-num { font-family: 'Roboto Mono', monospace; font-size: 0.7rem; font-weight: 700; color: var(--text-faint); padding-top: 2px; }
+    .agency-badge { font-family: 'Roboto Mono', monospace; font-size: 0.68rem; font-weight: 600; padding: 2px 8px; border-radius: 10px; background: var(--blue-light); color: var(--blue); border: 1px solid var(--blue-mid); white-space: nowrap; }
+    .type-badge { font-family: 'Roboto Mono', monospace; font-size: 0.65rem; font-weight: 600; padding: 2px 8px; border-radius: 10px; background: var(--bg); color: var(--text-muted); border: 1px solid var(--border); white-space: nowrap; }
+    .ob-deadline { font-family: 'Roboto Mono', monospace; font-size: 0.7rem; font-weight: 600; margin-left: auto; white-space: nowrap; }
+    .ob-deadline.overdue { color: var(--red); }
+    .ob-action { font-size: 0.9rem; color: var(--text-mid); line-height: 1.6; margin-bottom: 8px; }
+    .ob-quote { border-left: 3px solid var(--blue); background: var(--blue-light); padding: 10px 14px; border-radius: 0 7px 7px 0; font-style: italic; font-size: 0.82rem; color: var(--text-mid); line-height: 1.6; margin: 10px 0 8px; display: none; }
+    .ob-card.open .ob-quote { display: block; }
+    .ob-meta { font-family: 'Roboto Mono', monospace; font-size: 0.68rem; color: var(--text-muted); display: flex; gap: 12px; flex-wrap: wrap; }
+    .quote-toggle { font-family: 'Roboto Mono', monospace; font-size: 0.7rem; font-weight: 600; color: var(--blue); background: none; border: none; cursor: pointer; padding: 0; }
+    .quote-toggle:hover { text-decoration: underline; }
+    .unverified-note { font-size: 0.7rem; color: var(--text-muted); font-style: italic; margin-top: 4px; }
+
+    .section-head { font-family: 'Roboto Mono', monospace; font-size: 0.78rem; font-weight: 700; color: var(--text); margin: 24px 0 12px; }
+    .loading-note { font-family: 'Roboto Mono', monospace; font-size: 0.85rem; color: var(--text-faint); padding: 40px; text-align: center; }
+
+    .footnotes { margin-top: 24px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; }
+    .footnotes p { font-size: 0.8rem; color: var(--text-muted); line-height: 1.65; margin-bottom: 10px; }
+    .footnotes p:last-child { margin-bottom: 0; }
+    .footnotes a { color: var(--blue); text-decoration: none; }
+    .footnotes a:hover { text-decoration: underline; }
+
+    footer { background: var(--surface); border-top: 1px solid var(--border); padding: 20px clamp(20px, 5vw, 48px); }
+    .footer-inner { max-width: 1100px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+    .footer-copy { font-size: 0.8rem; color: var(--text-faint); }
+    .footer-links { display: flex; gap: 20px; align-items: center; }
+    .footer-links a { font-size: 0.8rem; color: var(--text-muted); text-decoration: none; transition: color 0.15s; }
+    .footer-links a:hover { color: var(--blue); }
+    .footer-support { display: inline-flex; align-items: center; gap: 5px; font-size: 0.8rem; font-weight: 500; color: #2563eb; text-decoration: none; padding: 5px 11px; border: 1px solid rgba(37,99,235,0.45); border-radius: 6px; transition: color .15s, border-color .15s, background .15s; vertical-align: middle; }
+    .footer-support:hover { color: #fff; background: #2563eb; border-color: #2563eb; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <a href="../" class="back-link">← legislation_implementation_tracker</a>
+    <div class="header-divider"></div>
+    <h1>Law Explorer</h1>
+  </div>
+</header>
+
+<div class="pill-nav">
+  <span class="pill-label">Views in this tool:</span>
+  <a href="../obligations-table/">Obligations Table</a>
+  <a href="../agency-workload/">Agency Workload</a>
+  <a href="../deadline-timeline/">Deadline Timeline</a>
+  <a href="./" class="active">Law Explorer</a>
+</div>
+
+<div class="hero">
+  <div class="hero-inner" id="heroInner">
+    <div class="breadcrumb">
+      <a href="/">data.nycuriosity.com</a>
+      <span>›</span>
+      <a href="../">NYC Legislation Implementation Tracker</a>
+      <span>›</span>
+      <span id="crumbLast">Law Explorer</span>
+    </div>
+    <div class="hero-meta">
+      <span class="hero-tag">Civic Reference</span>
+      <span class="hero-updated" id="heroUpdated"></span>
+    </div>
+    <h1 id="heroTitle">Pick a law, get <span>its implementation checklist</span></h1>
+    <p id="heroDesc">
+      Every local law enacted since 2024, with the number of agency actions it created. Open any law
+      to see its checklist: who must act, what they must produce, and by when.
+    </p>
+    <div id="lawMeta"></div>
+  </div>
+</div>
+
+<main>
+  <div class="main-inner" id="mainContent">
+    <p class="loading-note">Loading laws…</p>
+  </div>
+</main>
+
+<footer>
+  <div class="footer-inner">
+    <span class="footer-copy">© NYCuriosity · Tal Roded</span>
+    <nav class="footer-links">
+      <a href="https://buymeacoffee.com/nycuriosity" class="footer-support" target="_blank" rel="noopener" aria-label="Support my work on Buy Me a Coffee"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>Support my work</a>
+      <a href="https://talroded.nycuriosity.com" target="_blank" rel="noopener">About</a>
+      <a href="https://www.nycuriosity.com" target="_blank" rel="noopener">Substack</a>
+      <a href="https://github.com/TalR24/nycur-data-website" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var DATA = null;
+
+  fetch('../data/obligations.json')
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+      DATA = data;
+      if (data.generated_at) {
+        var gen = new Date(data.generated_at);
+        var months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+        document.getElementById('heroUpdated').textContent = 'Updated ' + months[gen.getMonth()] + ' ' + gen.getFullYear();
+      }
+      var params = new URLSearchParams(location.search);
+      var lawId = params.get('law');
+      if (lawId) renderLaw(lawId); else renderIndex();
+    })
+    .catch(function () {
+      document.getElementById('mainContent').innerHTML = '<p class="loading-note">Data failed to load.</p>';
+    });
+
+  /* ── Index view ─────────────────────────────────────── */
+
+  function renderIndex() {
+    var el = document.getElementById('mainContent');
+    el.innerHTML =
+      '<div class="filters">'
+      + '<input type="search" id="fSearch" placeholder="Search laws by number, title, or sponsor…" aria-label="Search laws">'
+      + '<select id="fYear" aria-label="Filter by enactment year"><option value="">All years</option></select>'
+      + '<select id="fSort" aria-label="Sort laws">'
+      + '<option value="newest">Newest first</option>'
+      + '<option value="obligations">Most obligations</option>'
+      + '</select>'
+      + '</div>'
+      + '<p class="result-count" id="resultCount"></p>'
+      + '<div class="law-list" id="lawList"></div>';
+
+    var years = {};
+    DATA.laws.forEach(function (l) {
+      if (l.enactment_date) years[l.enactment_date.slice(0, 4)] = 1;
+    });
+    var fy = document.getElementById('fYear');
+    Object.keys(years).sort().forEach(function (y) {
+      var opt = document.createElement('option');
+      opt.value = y; opt.textContent = y;
+      fy.appendChild(opt);
+    });
+    ['fSearch', 'fYear', 'fSort'].forEach(function (id) {
+      document.getElementById(id).addEventListener('input', drawList);
+    });
+    drawList();
+  }
+
+  function drawList() {
+    var q = document.getElementById('fSearch').value.toLowerCase().trim();
+    var year = document.getElementById('fYear').value;
+    var sort = document.getElementById('fSort').value;
+    var rows = DATA.laws.filter(function (l) {
+      if (year && (!l.enactment_date || l.enactment_date.slice(0, 4) !== year)) return false;
+      if (q) {
+        var hay = (l.law_number_display + ' ' + l.file_number + ' ' + l.title + ' ' +
+                   (l.summary || '') + ' ' + l.prime_sponsor + ' ' + (l.committee || '')).toLowerCase();
+        if (hay.indexOf(q) === -1) return false;
+      }
+      return true;
+    });
+    if (sort === 'obligations') {
+      rows.sort(function (a, b) { return b.obligation_count - a.obligation_count; });
+    } else {
+      rows.sort(function (a, b) { return (b.enactment_date || '').localeCompare(a.enactment_date || ''); });
+    }
+    document.getElementById('resultCount').innerHTML =
+      'Showing <strong>' + rows.length.toLocaleString() + '</strong> of ' + DATA.laws.length.toLocaleString() + ' laws';
+    var html = '';
+    rows.forEach(function (l) {
+      html += '<a class="law-item" href="?law=' + encodeURIComponent(l.matter_id) + '">'
+        + '<div class="law-item-top">'
+        + '<span class="law-no">' + esc(l.law_number_display || l.file_number) + '</span>'
+        + '<span class="law-file">' + esc(l.file_number) + (l.enactment_date ? ' · enacted ' + fmtDate(l.enactment_date) : '') + '</span>'
+        + '<span class="ob-count">' + l.obligation_count + ' obligation' + (l.obligation_count === 1 ? '' : 's') + '</span>'
+        + '</div>'
+        + '<div class="law-item-title">' + esc(shortTitle(l)) + '</div>'
+        + '</a>';
+    });
+    document.getElementById('lawList').innerHTML =
+      html || '<p class="loading-note">No laws match these filters.</p>';
+  }
+
+  function shortTitle(l) {
+    var t = l.title || '';
+    t = t.replace(/^A Local Law\s+/i, '');
+    t = t.replace(/^to amend the (administrative code|New York city charter)[^,]*, in relation to\s*/i, '');
+    t = t.replace(/^in relation to\s*/i, '');
+    return t.charAt(0).toUpperCase() + t.slice(1);
+  }
+
+  /* ── Single-law checklist view ──────────────────────── */
+
+  function renderLaw(lawId) {
+    var law = null;
+    DATA.laws.forEach(function (l) { if (l.matter_id === lawId) law = l; });
+    if (!law) {
+      document.getElementById('mainContent').innerHTML =
+        '<p class="loading-note">Law not found. <a href="./">Back to all laws</a></p>';
+      return;
+    }
+    var obs = DATA.obligations.filter(function (o) { return o.matter_id === lawId; });
+
+    document.title = law.law_number_display + ' — NYC Legislation Implementation Tracker — NYCuriosity';
+    document.getElementById('crumbLast').textContent = law.law_number_display || law.file_number;
+    document.getElementById('heroTitle').innerHTML =
+      esc(law.law_number_display || law.file_number) + ': <span>' + esc(shortTitle(law)) + '</span>';
+    document.getElementById('heroDesc').textContent = law.summary || law.title;
+
+    var chips = '<div class="law-meta-row">'
+      + (law.committee ? '<span class="law-meta-chip"><strong>Committee:</strong> ' + esc(law.committee) + '</span>' : '')
+      + '<span class="law-meta-chip"><strong>Prime sponsor:</strong> ' + esc(law.prime_sponsor) + '</span>'
+      + (law.enactment_date ? '<span class="law-meta-chip"><strong>Enacted:</strong> ' + fmtDate(law.enactment_date) + '</span>' : '')
+      + (law.effective_date ? '<span class="law-meta-chip"><strong>Effective:</strong> ' + fmtDate(law.effective_date) + '</span>' : '')
+      + '</div>'
+      + '<div class="hero-actions">'
+      + '<a class="btn btn-outline" href="' + esc(law.legistar_url) + '" target="_blank" rel="noopener">View on Legistar ↗</a>'
+      + '<a class="btn btn-outline" href="./">All laws</a>'
+      + '</div>';
+    document.getElementById('lawMeta').innerHTML = chips;
+
+    var today = new Date(); today.setHours(0, 0, 0, 0);
+    var html = '<div class="section-head">Implementation checklist (' + obs.length + ' action' + (obs.length === 1 ? '' : 's') + ')</div>';
+    if (!obs.length) {
+      html += '<p class="loading-note">No agency obligations were extracted from this law. It may be a street co-naming or similar law whose only duty is routine, or the text may impose duties only on private parties.</p>';
+    }
+    obs.forEach(function (o, i) {
+      var dl = '';
+      if (o.deadline_date) {
+        var d = new Date(o.deadline_date + 'T00:00:00');
+        var overdue = d < today && o.recurrence === 'one-time';
+        dl = '<span class="ob-deadline' + (overdue ? ' overdue' : '') + '">Due ' + fmtDate(o.deadline_date) + '</span>';
+      } else if (o.recurrence !== 'one-time') {
+        dl = '<span class="ob-deadline">' + esc(o.recurrence) + '</span>';
+      }
+      html += '<div class="ob-card" id="ob' + i + '">'
+        + '<div class="ob-top">'
+        + '<span class="ob-num">' + String(i + 1).padStart(2, '0') + '</span>'
+        + '<span class="agency-badge" title="' + esc(o.agency_full) + '">' + esc(o.agency) + '</span>'
+        + '<span class="type-badge">' + esc(o.deliverable_type) + '</span>'
+        + dl
+        + '</div>'
+        + '<div class="ob-action">' + esc(o.action_summary) + '</div>'
+        + (o.quote ? '<div class="ob-quote">“' + esc(o.quote) + '”'
+            + (o.quote_verified ? '' : '<div class="unverified-note">This quote could not be verified verbatim against the law text and may be paraphrased.</div>')
+            + '</div>' : '')
+        + '<div class="ob-meta">'
+        + (o.citation ? '<span>' + esc(o.citation) + '</span>' : '')
+        + (o.deadline_text ? '<span>' + esc(o.deadline_text) + '</span>' : '')
+        + (o.quote ? '<button class="quote-toggle" data-target="ob' + i + '">Show statutory language</button>' : '')
+        + '</div>'
+        + '</div>';
+    });
+
+    html += '<div class="footnotes">'
+      + '<p><strong>Method:</strong> this checklist is extracted from the enacted text of ' + esc(law.law_number_display || law.file_number)
+      + ' on <a href="' + esc(law.legistar_url) + '" target="_blank" rel="noopener">NYC Legistar</a> using Claude. Every quoted passage is mechanically checked against the law text; deadlines are computed from the enactment date and the deadline clauses in the text. Interpretation of statutory language ultimately requires human review.</p>'
+      + '</div>';
+
+    document.getElementById('mainContent').innerHTML = html;
+    document.querySelectorAll('.quote-toggle').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var card = document.getElementById(b.getAttribute('data-target'));
+        card.classList.toggle('open');
+        b.textContent = card.classList.contains('open') ? 'Hide statutory language' : 'Show statutory language';
+      });
+    });
+  }
+
+  function fmtDate(iso) {
+    var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var p = iso.split('-');
+    return months[parseInt(p[1], 10) - 1] + ' ' + parseInt(p[2], 10) + ', ' + p[0];
+  }
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,72 @@
+name: Refresh Legislation Implementation Data
+
+on:
+  schedule:
+    # 1st of each month, 7:30 AM UTC (matches the fiscal tracker's monthly cadence)
+    - cron: "30 7 1 * *"
+  workflow_dispatch:  # allow manual trigger from the Actions tab
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install dependencies
+        run: pip install -r civic_reference/legislation_implementation_tracker/pipeline/requirements.txt
+
+      - name: Fetch newly enacted laws
+        working-directory: civic_reference/legislation_implementation_tracker
+        run: python3 pipeline/fetch_enacted_laws.py --incremental
+
+      - name: Extract obligations for new laws
+        working-directory: civic_reference/legislation_implementation_tracker
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: python3 pipeline/extract_obligations.py --incremental
+
+      - name: Commit and push if data changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add civic_reference/legislation_implementation_tracker/data/laws.json \
+                  civic_reference/legislation_implementation_tracker/data/obligations.json
+          if git diff --cached --quiet; then
+            echo "No data changes this month."
+          else
+            git commit -m "Monthly legislation implementation data refresh"
+            git push
+          fi
+
+      - name: Push members CSV to premium repo
+        env:
+          PREMIUM_PUSH_TOKEN: ${{ secrets.PREMIUM_PUSH_TOKEN }}
+        run: |
+          # obligations.csv is members-only: it lives in the private premium
+          # repo (served behind Cloudflare Access), never in this public repo
+          CSV=civic_reference/legislation_implementation_tracker/data/obligations.csv
+          if [ ! -f "$CSV" ]; then echo "No CSV generated; skipping."; exit 0; fi
+          git clone --depth 1 "https://TalR24:${PREMIUM_PUSH_TOKEN}@github.com/TalR24/nycur-data-premium.git" /tmp/premium
+          mkdir -p "/tmp/premium/civic_reference/legislation_implementation_tracker/data"
+          cp "$CSV" "/tmp/premium/$CSV"
+          cd /tmp/premium
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add "$CSV"
+          if git diff --cached --quiet; then
+            echo "Members CSV unchanged."
+          else
+            git commit -m "Monthly legislation implementation members CSV refresh"
+            git push
+          fi
