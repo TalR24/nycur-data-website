@@ -282,7 +282,7 @@
 SELECT * FROM spending
 WHERE billing_npi IS NOT NULL
   AND regexp_matches(billing_npi, '^[12][0-9]{9}$');</pre>
-      <p>That leaves $1.10 trillion in nationally attributable payments. It is deliberately not a filter on payment size: six and seven figure single claim lines are sometimes real (gene and cell therapies bill $400,000 to $2 million per dose through these codes), so dropping "big" rows would delete real spending.</p>
+      <p>That leaves $1.10 trillion in nationally attributable payments. Paid amounts sum claim line-level payments (CLM_LINE_PD_AMT), not claim-header totals, per the dataset's own methodology. It is deliberately not a filter on payment size: six and seven figure single claim lines are sometimes real (gene and cell therapies bill $400,000 to $2 million per dose through these codes), so dropping "big" rows would delete real spending.</p>
     </div>
 
     <div class="method-section">
@@ -314,10 +314,12 @@ GROUP BY p.state;</pre>
     <div class="method-section">
       <h2>What this data can and cannot say</h2>
       <ul>
+        <li><strong>Low-volume cells are suppressed for privacy.</strong> The file drops any billing-provider, servicing-provider, procedure, month combination with fewer than 12 claim lines or fewer than 12 unique beneficiaries. Every total on these pages is therefore a floor: small providers and occasional procedures are undercounted or absent entirely, and shares of niche procedure codes are shares of reported billing.</li>
         <li><strong>It is a subset of Medicaid.</strong> Only outpatient and professional claim lines carrying HCPCS codes are included. Institutional per-diem claims, most pharmacy billing, and capitation payments are not, so state totals here are far below total Medicaid budgets.</li>
         <li><strong>Managed care encounter completeness improved over time.</strong> Part of every state's growth, and most of Texas's 2020 to 2021 jump, reflects states getting better at reporting encounters to T-MSIS rather than new spending.</li>
         <li><strong>2024 is preliminary.</strong> CMS flags 2024 as subject to change as states finalize submissions; December 2024 in particular is visibly incomplete for some billers.</li>
         <li><strong>Patient counts do not sum.</strong> The patients field counts unique beneficiaries within each provider-procedure-month cell; summing cells overstates unique patients, so this project reports paid amounts and claim lines instead.</li>
+        <li><strong>Cross-state comparisons need care.</strong> CMS notes that differences across states can reflect state-specific policies, coding practices, and submission patterns rather than real spending differences, and that T-MSIS quality varies by state and data element; see <a href="https://www.medicaid.gov/dq-atlas/welcome" target="_blank" rel="noopener">CMS's DQ Atlas</a>. State Medicaid agencies remain the authoritative source for their own claims data.</li>
         <li><strong>Payments are not verdicts.</strong> Every provider-level figure is a record of what Medicaid paid, nothing more.</li>
       </ul>
     </div>
