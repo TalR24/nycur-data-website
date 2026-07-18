@@ -387,10 +387,14 @@
   }
 
   fetch('../data/provider_lookup.csv')
-    .then(r => r.text())
+    .then(r => {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.text();
+    })
     .then(text => {
       const rows = parseCSV(text);
       const head = rows[0];
+      if (!head || head.indexOf('NPI') === -1) throw new Error('unexpected file contents');
       const idx = {}; head.forEach((h, i) => idx[h] = i);
       allRows = rows.slice(1).map(r => ({
         st: r[idx['State']], npi: r[idx['NPI']], p: r[idx['Provider']],
@@ -404,8 +408,10 @@
       document.getElementById('pager').style.display = 'flex';
       render();
     })
-    .catch(() => {
-      document.getElementById('resultCount').textContent = 'Data failed to load. Refresh to retry.';
+    .catch(err => {
+      document.getElementById('resultCount').textContent = 'Data failed to load (' + err.message + '). Refresh to retry.';
+      document.querySelector('#lookupTable tbody').innerHTML =
+        '<tr><td colspan="7"><div class="loading-note">The provider file could not be loaded. Refresh the page to retry.</div></td></tr>';
     });
 
   const stateNames = { ALL: 'All states', NY: 'New York', TX: 'Texas', CA: 'California' };
