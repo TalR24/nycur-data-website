@@ -4,12 +4,12 @@
   <meta charset="UTF-8">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Look Up Any Medicaid Provider's Payments: NY, TX, CA — NYCuriosity</title>
-  <meta name="description" content="Search 55,501 Medicaid billing organizations in New York, Texas, and California by name, NPI, city, or specialty, with payments by year from 2018 to 2024.">
+  <title>Filter Every Medicaid Provider-Year: NY, TX, CA — NYCuriosity</title>
+  <meta name="description" content="Search and filter 314,121 Medicaid provider-year payment records in New York, Texas, and California by procedure code, payments, volume, and year-over-year growth.">
   <meta property="og:type"        content="website">
   <meta property="og:url"         content="https://data.nycuriosity.com/nycuriosity_substack_posts/medicaid_provider_spending/provider-lookup/">
-  <meta property="og:title"       content="Look Up Any Medicaid Provider's Payments: NY, TX, CA — NYCuriosity">
-  <meta property="og:description" content="Search 55,501 Medicaid billing organizations in New York, Texas, and California by name, NPI, city, or specialty, with payments by year from 2018 to 2024.">
+  <meta property="og:title"       content="Filter Every Medicaid Provider-Year: NY, TX, CA — NYCuriosity">
+  <meta property="og:description" content="Search and filter 314,121 Medicaid provider-year payment records in New York, Texas, and California by procedure code, payments, volume, and year-over-year growth.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -198,7 +198,7 @@
 
     @media (max-width: 540px) { .brand-slash, .brand-section { display: none; } }
 
-    .state-tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+    .state-tabs { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; align-items: center; }
     .state-tab {
       font-family: 'Roboto Mono', monospace; font-size: 0.78rem; font-weight: 600;
       padding: 6px 16px; border-radius: 20px; border: 1.5px solid var(--border);
@@ -206,22 +206,28 @@
     }
     .state-tab:hover { border-color: var(--blue); color: var(--blue); }
     .state-tab.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+    .tab-group-label { font-family: 'Roboto Mono', monospace; font-size: 0.7rem; color: var(--text-faint); margin-right: 2px; }
+    .tab-divider { width: 1px; height: 22px; background: var(--border); margin: 0 6px; }
     .table-wrap { overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
     thead th {
-      font-family: 'Roboto Mono', monospace; font-size: 0.7rem; font-weight: 700;
-      text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);
-      text-align: left; padding: 10px 12px; border-bottom: 2px solid var(--border);
+      font-family: 'Roboto Mono', monospace; font-size: 0.68rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted);
+      text-align: left; padding: 10px 10px; border-bottom: 2px solid var(--border);
       cursor: pointer; user-select: none; white-space: nowrap; background: var(--surface);
     }
     thead th.num { text-align: right; }
     thead th .arrow { color: var(--blue); }
-    tbody td { padding: 9px 12px; border-bottom: 1px solid var(--border); color: var(--text-mid); vertical-align: top; }
+    tbody td { padding: 8px 10px; border-bottom: 1px solid var(--border); color: var(--text-mid); vertical-align: top; }
     tbody td.num { text-align: right; font-family: 'Roboto Mono', monospace; white-space: nowrap; }
     tbody tr:hover { background: var(--blue-light); }
+    tbody tr.total-row { background: #f3f6ff; }
+    tbody tr.total-row td { font-weight: 600; }
     .provider-cell { font-weight: 600; color: var(--text); }
-    .npi-cell { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; color: var(--text-faint); }
-    .search-row { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+    .npi-cell { font-family: 'Roboto Mono', monospace; font-size: 0.7rem; color: var(--text-faint); }
+    .growth-pos { color: var(--alert); font-weight: 600; }
+    .growth-neg { color: #16a34a; }
+    .search-row { display: flex; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; align-items: center; }
     .search-input {
       flex: 1; min-width: 220px; font-family: 'Inter', sans-serif; font-size: 0.85rem;
       padding: 9px 14px; border: 1.5px solid var(--border); border-radius: 8px;
@@ -239,6 +245,48 @@
     .pager button:disabled { opacity: 0.4; cursor: not-allowed; }
     .pager .page-info { font-family: 'Roboto Mono', monospace; font-size: 0.75rem; color: var(--text-faint); }
     .loading-note { font-family: 'Roboto Mono', monospace; font-size: 0.8rem; color: var(--text-faint); padding: 30px 0; text-align: center; }
+
+    .filter-panel {
+      background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius);
+      padding: 14px 16px; margin-bottom: 16px;
+    }
+    .filter-panel-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+    .filter-panel-title { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); }
+    .filter-reset {
+      font-family: 'Roboto Mono', monospace; font-size: 0.72rem; font-weight: 600;
+      background: none; border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px;
+      color: var(--text-muted); cursor: pointer;
+    }
+    .filter-reset:hover { color: var(--blue); border-color: var(--blue); }
+    .hcpcs-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
+    .hcpcs-input {
+      font-family: 'Roboto Mono', monospace; font-size: 0.82rem; width: 150px;
+      padding: 7px 12px; border: 1.5px solid var(--border); border-radius: 8px;
+      background: var(--surface); color: var(--text); outline: none; text-transform: uppercase;
+    }
+    .hcpcs-input:focus { border-color: var(--blue); }
+    .hcpcs-status { font-size: 0.75rem; color: var(--text-muted); font-family: 'Roboto Mono', monospace; }
+    .slider-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px 24px; }
+    .range-filter.disabled { opacity: 0.45; pointer-events: none; }
+    .rf-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 2px; }
+    .rf-label { font-size: 0.75rem; font-weight: 600; color: var(--text-mid); }
+    .rf-vals { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; color: var(--blue); font-weight: 600; }
+    .rf-track { position: relative; height: 28px; }
+    .rf-rail { position: absolute; top: 12px; left: 0; right: 0; height: 4px; border-radius: 2px; background: var(--border); }
+    .rf-fill { position: absolute; top: 12px; height: 4px; border-radius: 2px; background: var(--blue); }
+    .rf-track input[type=range] {
+      position: absolute; top: 2px; left: 0; width: 100%; margin: 0; height: 24px;
+      -webkit-appearance: none; appearance: none; background: transparent; pointer-events: none; outline: none;
+    }
+    .rf-track input[type=range]::-webkit-slider-thumb {
+      -webkit-appearance: none; appearance: none; pointer-events: auto; cursor: pointer;
+      width: 16px; height: 16px; border-radius: 50%; background: var(--blue);
+      border: 2.5px solid #fff; box-shadow: 0 1px 4px rgba(17,24,39,0.35);
+    }
+    .rf-track input[type=range]::-moz-range-thumb {
+      pointer-events: auto; cursor: pointer; width: 12px; height: 12px; border-radius: 50%;
+      background: var(--blue); border: 2.5px solid #fff; box-shadow: 0 1px 4px rgba(17,24,39,0.35);
+    }
 
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -261,6 +309,7 @@
   <a href="../top-providers/">Top Providers</a>
   <a href="../outlier-screen/">Outlier Screen</a>
   <a href="./" class="active">Provider Lookup</a>
+  <a href="../random-sample/">Random Sample</a>
   <a href="../methodology/">Methodology</a>
 </div>
 
@@ -277,12 +326,12 @@
       <span class="hero-tag">Medicaid</span>
       <span class="hero-updated">July 2026</span>
     </div>
-    <h1>Look up <span>any provider's Medicaid payments</span> yourself</h1>
-    <p>Every billing organization in the three states that was paid at least $100,000 between 2018 and 2024, searchable by name, NPI, city, or specialty. Click any row for its full year-by-year history. This is the same table used to answer every question in this project.</p>
+    <h1>Filter <span>314,121 provider-year payment records</span> yourself</h1>
+    <p>Every billing organization paid at least $100,000 between 2018 and 2024, one row per year. Search by name, filter by procedure code, or set payment, volume, and growth ranges to run your own billing screens on three states' Medicaid data.</p>
     <div class="hero-actions">
-      <a href="../data/provider_lookup.csv" download class="btn btn-outline">
+      <a href="../data/provider_year_lookup.csv" download class="btn btn-outline">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        Download CSV (7 MB)
+        Download CSV (35 MB)
       </a>
     </div>
   </div>
@@ -291,13 +340,45 @@
 <main>
   <div class="main-inner">
     <div id="chart-box" style="padding-bottom:0;">
-      <div class="chart-title">Search 55,501 Medicaid billing organizations in New York, Texas, and California</div>
-      <div class="chart-subtitle">Every billing provider paid at least $100,000 on HCPCS-coded claims, 2018 to 2024, with per-year totals. Search by name, NPI, city, or specialty. Click a column header to sort.</div>
+      <div class="chart-title">Search and filter 314,121 provider-year payment records in New York, Texas, and California</div>
+      <div class="chart-subtitle">One row per provider per year (plus a shaded 2018 to 2024 total row per provider) for every billing organization paid at least $100,000 overall. Filter by procedure code, payments, volume, and year-over-year growth. Click a column header to sort.</div>
+
       <div class="search-row">
         <input type="search" id="searchBox" class="search-input" placeholder="Search provider name, NPI, city, or specialty…" disabled>
-        <span class="result-count" id="resultCount">Loading data…</span>
+        <span class="result-count" id="resultCount">Loading data (about 16 MB)…</span>
       </div>
-      <div class="state-tabs" id="stateTabs"></div>
+
+      <div class="state-tabs">
+        <span class="tab-group-label">State:</span>
+        <button class="state-tab active" data-state="ALL">All states</button>
+        <button class="state-tab" data-state="NY">New York</button>
+        <button class="state-tab" data-state="TX">Texas</button>
+        <button class="state-tab" data-state="CA">California</button>
+        <span class="tab-divider"></span>
+        <span class="tab-group-label">Rows:</span>
+        <button class="row-tab state-tab active" data-rows="years">Per-year</button>
+        <button class="row-tab state-tab" data-rows="totals">Provider totals</button>
+        <button class="row-tab state-tab" data-rows="both">Both</button>
+      </div>
+
+      <div class="filter-panel">
+        <div class="filter-panel-head">
+          <span class="filter-panel-title">Filters</span>
+          <button class="filter-reset" id="resetBtn">Reset all</button>
+        </div>
+        <div class="hcpcs-row">
+          <span class="rf-label">HCPCS code:</span>
+          <input type="text" id="hcpcsBox" class="hcpcs-input" placeholder="e.g. 68040" maxlength="5">
+          <span class="hcpcs-status" id="hcpcsStatus">Optional. Shows providers paid at least $1,000 for that code.</span>
+        </div>
+        <div class="slider-grid">
+          <div class="range-filter" id="rf-paid"></div>
+          <div class="range-filter" id="rf-lines"></div>
+          <div class="range-filter" id="rf-pat"></div>
+          <div class="range-filter" id="rf-growth"></div>
+        </div>
+      </div>
+
       <div class="table-wrap">
         <table id="lookupTable">
           <thead><tr>
@@ -305,11 +386,13 @@
             <th data-k="st">State</th>
             <th data-k="c">City</th>
             <th data-k="sp">Specialty</th>
-            <th data-k="total" class="num">Total 2018-2024</th>
-            <th data-k="y2023" class="num">2023</th>
-            <th data-k="y2024" class="num">2024</th>
+            <th data-k="yearSort" class="num">Year</th>
+            <th data-k="pat" class="num">Patient Services</th>
+            <th data-k="lines" class="num">Claim Lines</th>
+            <th data-k="paid" class="num">Paid</th>
+            <th data-k="growthSort" class="num">YoY</th>
           </tr></thead>
-          <tbody><tr><td colspan="7"><div class="loading-note">Loading 55,501 providers (about 7 MB)…</div></td></tr></tbody>
+          <tbody><tr><td colspan="9"><div class="loading-note">Loading 314,121 provider-year records…</div></td></tr></tbody>
         </table>
       </div>
       <div class="pager" id="pager" style="display:none;">
@@ -323,12 +406,13 @@
     </div>
 
     <div class="context-box">
-      <p><strong>This is the "how much did Company X make" table.</strong> Type any provider's name and get its Medicaid payments by year. Rows expand on click to show all seven years. Payments are facts, not accusations; use the <a href="../methodology/">methodology</a> to understand exactly what they cover.</p>
+      <p><strong>This is the "how much did Company X make" table, now at year level.</strong> Type a provider's name for its full payment history, or work the other way: filter to a procedure code and a growth range to see which billers of that code exploded in a given year. The screens from the <a href="../outlier-screen/">outlier page</a> are one slider setting here.</p>
     </div>
 
     <div class="footnotes">
-      <p><strong>Coverage:</strong> billing organizations with NPPES practice locations in NY, TX, or CA and at least $100,000 in total 2018 to 2024 paid amounts. The floor keeps the page fast; it drops 87,645 small billers holding 0.5% of dollars. The downloadable CSV has the same columns for all providers above the floor.</p>
-      <p><strong>Reading the numbers:</strong> figures are Medicaid and CHIP paid amounts on outpatient and professional claim lines with HCPCS codes, from the federal T-MSIS system. They exclude institutional per-diem and most pharmacy claims. 2024 is preliminary. A provider's absence means only that its billing NPI fell below the floor or sits in another state.</p>
+      <p><strong>Coverage:</strong> billing organizations with NPPES practice locations in NY, TX, or CA and at least $100,000 in total 2018 to 2024 paid amounts (55,501 providers; the floor drops 87,645 small billers holding 0.5% of dollars). One row per provider per year with billing, plus a shaded total row per provider.</p>
+      <p><strong>Column definitions:</strong> Patient services sums the unique-beneficiary counts of each provider, servicing provider, procedure, month cell; because one person can appear in many cells, it overstates unique patients and is best read as service volume. Claim lines count lines, not claims. YoY growth compares a year's paid amount to the immediately preceding year and is blank when a provider had no prior-year billing. The HCPCS filter matches providers paid at least $1,000 for that code across 2018 to 2024; dollar figures shown remain all-procedure totals.</p>
+      <p><strong>Reading the numbers:</strong> figures are Medicaid and CHIP paid amounts on outpatient and professional claim lines with HCPCS codes, from the federal T-MSIS system. Cells under 12 claim lines or 12 beneficiaries are suppressed at the source, so all figures are floors. 2024 is preliminary. High values and high growth are facts about payments, not accusations; see the <a href="../methodology/">methodology</a>.</p>
       <p><strong>Sources:</strong> <a href="https://opendata.hhs.gov/datasets/medicaid-provider-spending/" target="_blank" rel="noopener">HHS Open Data, Medicaid Provider Spending by HCPCS</a>; <a href="https://npiregistry.cms.hhs.gov/" target="_blank" rel="noopener">CMS NPPES</a> (July 2026). Author's analysis; replication steps in the <a href="../methodology/">methodology</a>.</p>
     </div>
   </div>
@@ -366,9 +450,11 @@
     if (n >= 1e3) return '$' + Math.round(n/1e3) + 'K';
     return '$' + Math.round(n).toLocaleString();
   }
-  const YEAR_COLS = ['2018','2019','2020','2021','2022','2023','2024'];
-  let allRows = [], view = [], page = 0, curState = 'ALL', sortKey = 'total', sortDir = -1, query = '';
-  const PAGE_SIZE = 50;
+  function fmtCount(n) {
+    if (n >= 1e6) return (n/1e6).toFixed(1).replace(/\.0$/,'') + 'M';
+    if (n >= 1e3) return (n/1e3).toFixed(1).replace(/\.0$/,'') + 'K';
+    return Math.round(n).toLocaleString();
+  }
 
   function parseCSV(text) {
     const rows = []; let row = [], field = '', inQ = false;
@@ -386,44 +472,121 @@
     return rows;
   }
 
-  fetch('../data/provider_lookup.csv')
-    .then(r => {
-      if (!r.ok) throw new Error('HTTP ' + r.status);
-      return r.text();
-    })
-    .then(text => {
-      const rows = parseCSV(text);
-      const head = rows[0];
-      if (!head || head.indexOf('NPI') === -1) throw new Error('unexpected file contents');
-      const idx = {}; head.forEach((h, i) => idx[h] = i);
-      allRows = rows.slice(1).map(r => ({
-        st: r[idx['State']], npi: r[idx['NPI']], p: r[idx['Provider']],
-        c: r[idx['City']], sp: r[idx['Specialty']],
-        total: +r[idx['Total paid (dollars)']],
-        years: YEAR_COLS.map(y => +r[idx[y]] || 0),
-        y2023: +r[idx['2023']] || 0, y2024: +r[idx['2024']] || 0,
-        hay: (r[idx['Provider']] + ' ' + r[idx['NPI']] + ' ' + r[idx['City']] + ' ' + (r[idx['Specialty']]||'')).toLowerCase()
-      }));
-      document.getElementById('searchBox').disabled = false;
-      document.getElementById('pager').style.display = 'flex';
-      render();
-    })
-    .catch(err => {
-      document.getElementById('resultCount').textContent = 'Data failed to load (' + err.message + '). Refresh to retry.';
-      document.querySelector('#lookupTable tbody').innerHTML =
-        '<tr><td colspan="7"><div class="loading-note">The provider file could not be loaded. Refresh the page to retry.</div></td></tr>';
+  // ---- dual-handle range slider ------------------------------------------
+  // Each slider works in integer steps 0..1000 mapped through toVal/format.
+  function makeSlider(el, label, toVal, format) {
+    el.innerHTML = '<div class="rf-head"><span class="rf-label">' + label + '</span>' +
+      '<span class="rf-vals"></span></div>' +
+      '<div class="rf-track"><div class="rf-rail"></div><div class="rf-fill"></div>' +
+      '<input type="range" min="0" max="1000" value="0" step="1">' +
+      '<input type="range" min="0" max="1000" value="1000" step="1"></div>';
+    const [lo, hi] = el.querySelectorAll('input');
+    const fill = el.querySelector('.rf-fill');
+    const vals = el.querySelector('.rf-vals');
+    const s = {
+      el, toVal,
+      get lo() { return +lo.value; }, get hi() { return +hi.value; },
+      active() { return +lo.value > 0 || +hi.value < 1000; },
+      reset() { lo.value = 0; hi.value = 1000; sync(); },
+      onchange: null
+    };
+    function sync() {
+      if (+lo.value > +hi.value) { const t = lo.value; lo.value = hi.value; hi.value = t; }
+      fill.style.left = (+lo.value/10) + '%';
+      fill.style.width = ((+hi.value - +lo.value)/10) + '%';
+      vals.textContent = format(+lo.value, +hi.value);
+    }
+    [lo, hi].forEach(inp => {
+      inp.addEventListener('input', () => { sync(); if (s.onchange) s.onchange(); });
     });
+    sync();
+    s.sync = sync;
+    return s;
+  }
+  // log scale: t=0 -> no floor, t=1000 -> no cap
+  function logScale(maxV) {
+    const minV = 1;
+    return t => minV * Math.pow(maxV / minV, t / 1000);
+  }
+  // growth scale: first half -100..+100 linear, second half 100 -> 10000 log
+  function growthVal(t) {
+    if (t <= 500) return -100 + (t / 500) * 200;
+    return 100 * Math.pow(100, (t - 500) / 500);
+  }
+  function fmtPct(v) {
+    if (v >= 1000) return '+' + Math.round(v/100)/10 + 'K%';
+    return (v > 0 ? '+' : '') + Math.round(v) + '%';
+  }
 
-  const stateNames = { ALL: 'All states', NY: 'New York', TX: 'Texas', CA: 'California' };
-  const tabsEl = document.getElementById('stateTabs');
-  Object.keys(stateNames).forEach(s => {
-    const b = document.createElement('button');
-    b.className = 'state-tab' + (s === curState ? ' active' : '');
-    b.textContent = stateNames[s];
-    b.onclick = () => { curState = s; page = 0; document.querySelectorAll('.state-tab').forEach(x => x.classList.remove('active')); b.classList.add('active'); render(); };
-    tabsEl.appendChild(b);
+  // ---- state --------------------------------------------------------------
+  const YEARS_MAX_PAID = 2e9, MAX_LINES = 3e7, MAX_PAT = 3e7;
+  let meta = [], rows = [], view = [], page = 0;
+  let curState = 'ALL', rowMode = 'years', sortKey = 'paid', sortDir = -1, query = '';
+  let hcpcsSet = null, hcpcsIndex = null, hcpcsLoading = false;
+  const PAGE_SIZE = 50;
+
+  const paidVal = logScale(YEARS_MAX_PAID);
+  const sPaid = makeSlider(document.getElementById('rf-paid'), 'Paid (per row)',
+    paidVal, (a, b) => (a === 0 ? '$0' : fmt(paidVal(a))) + ' – ' + (b === 1000 ? 'max' : fmt(paidVal(b))));
+  const linesVal = logScale(MAX_LINES);
+  const sLines = makeSlider(document.getElementById('rf-lines'), 'Claim lines',
+    linesVal, (a, b) => (a === 0 ? '0' : fmtCount(linesVal(a))) + ' – ' + (b === 1000 ? 'max' : fmtCount(linesVal(b))));
+  const patVal = logScale(MAX_PAT);
+  const sPat = makeSlider(document.getElementById('rf-pat'), 'Patient services',
+    patVal, (a, b) => (a === 0 ? '0' : fmtCount(patVal(a))) + ' – ' + (b === 1000 ? 'max' : fmtCount(patVal(b))));
+  const sGrowth = makeSlider(document.getElementById('rf-growth'), 'YoY growth',
+    growthVal, (a, b) => fmtPct(growthVal(a)) + ' – ' + (b === 1000 ? 'no cap' : fmtPct(growthVal(b))));
+  const sliders = [sPaid, sLines, sPat, sGrowth];
+  sliders.forEach(s => s.onchange = () => { page = 0; render(); });
+
+  // ---- data load ----------------------------------------------------------
+  Promise.all([
+    fetch('../data/provider_meta.csv').then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); }),
+    fetch('../data/provider_years.csv').then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.text(); })
+  ]).then(([metaText, yearsText]) => {
+    const m = parseCSV(metaText);
+    if (!m[0] || m[0].indexOf('NPI') === -1) throw new Error('unexpected meta file');
+    meta = m.slice(1).map(r => ({
+      npi: r[0], st: r[1], p: r[2], c: r[3], sp: r[4],
+      hay: (r[2] + ' ' + r[0] + ' ' + r[3] + ' ' + r[4]).toLowerCase()
+    }));
+    const y = parseCSV(yearsText);
+    if (!y[0] || y[0].indexOf('pidx') === -1) throw new Error('unexpected years file');
+    rows = y.slice(1).map(r => {
+      const isTotal = r[1] === 'Total';
+      return {
+        pidx: +r[0], year: r[1], yearSort: isTotal ? 9999 : +r[1], isTotal,
+        pat: +r[2], lines: +r[3], paid: +r[4],
+        growth: r[5] === '' ? null : +r[5],
+        growthSort: r[5] === '' ? -Infinity : +r[5]
+      };
+    });
+    document.getElementById('searchBox').disabled = false;
+    document.getElementById('pager').style.display = 'flex';
+    render();
+  }).catch(err => {
+    document.getElementById('resultCount').textContent = 'Data failed to load (' + err.message + '). Refresh to retry.';
+    document.querySelector('#lookupTable tbody').innerHTML =
+      '<tr><td colspan="9"><div class="loading-note">The provider files could not be loaded. Refresh the page to retry.</div></td></tr>';
   });
 
+  // ---- controls -----------------------------------------------------------
+  document.querySelectorAll('.state-tab[data-state]').forEach(b => {
+    b.onclick = () => {
+      curState = b.dataset.state;
+      document.querySelectorAll('.state-tab[data-state]').forEach(x => x.classList.remove('active'));
+      b.classList.add('active'); page = 0; render();
+    };
+  });
+  document.querySelectorAll('.row-tab').forEach(b => {
+    b.onclick = () => {
+      rowMode = b.dataset.rows;
+      document.querySelectorAll('.row-tab').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      document.getElementById('rf-growth').classList.toggle('disabled', rowMode === 'totals');
+      page = 0; render();
+    };
+  });
   let debounce;
   document.getElementById('searchBox').addEventListener('input', e => {
     clearTimeout(debounce);
@@ -432,53 +595,110 @@
   document.querySelectorAll('#lookupTable thead th').forEach(th => {
     th.onclick = () => {
       const k = th.dataset.k;
-      if (sortKey === k) sortDir *= -1; else { sortKey = k; sortDir = (k === 'p' || k === 'c' || k === 'sp' || k === 'st') ? 1 : -1; }
+      if (sortKey === k) sortDir *= -1;
+      else { sortKey = k; sortDir = (k === 'p' || k === 'c' || k === 'sp' || k === 'st') ? 1 : -1; }
       page = 0; render();
     };
   });
   document.getElementById('prevBtn').onclick = () => { if (page > 0) { page--; renderRows(); } };
   document.getElementById('nextBtn').onclick = () => { if ((page + 1) * PAGE_SIZE < view.length) { page++; renderRows(); } };
+  document.getElementById('resetBtn').onclick = () => {
+    sliders.forEach(s => s.reset());
+    document.getElementById('hcpcsBox').value = '';
+    hcpcsSet = null;
+    document.getElementById('hcpcsStatus').textContent = 'Optional. Shows providers paid at least $1,000 for that code.';
+    page = 0; render();
+  };
 
+  let hcpcsDebounce;
+  document.getElementById('hcpcsBox').addEventListener('input', e => {
+    clearTimeout(hcpcsDebounce);
+    hcpcsDebounce = setTimeout(() => applyHcpcs(e.target.value.trim().toUpperCase()), 250);
+  });
+  function applyHcpcs(code) {
+    const status = document.getElementById('hcpcsStatus');
+    if (!code) { hcpcsSet = null; status.textContent = 'Optional. Shows providers paid at least $1,000 for that code.'; page = 0; render(); return; }
+    if (!hcpcsIndex) {
+      if (!hcpcsLoading) {
+        hcpcsLoading = true;
+        status.textContent = 'Loading code index…';
+        fetch('../data/hcpcs_index.json')
+          .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+          .then(j => { hcpcsIndex = j; applyHcpcs(document.getElementById('hcpcsBox').value.trim().toUpperCase()); })
+          .catch(() => { hcpcsLoading = false; status.textContent = 'Code index failed to load. Try again.'; });
+      }
+      return;
+    }
+    const list = hcpcsIndex[code];
+    if (!list) {
+      hcpcsSet = new Set();
+      status.textContent = 'Code ' + code + ': no matching providers at the $1,000 floor.';
+    } else {
+      hcpcsSet = new Set(list);
+      status.textContent = 'Code ' + code + ': ' + list.length.toLocaleString() + ' providers.';
+    }
+    page = 0; render();
+  }
+
+  // ---- render -------------------------------------------------------------
   function render() {
-    view = allRows.filter(r => (curState === 'ALL' || r.st === curState) && (!query || r.hay.includes(query)));
+    if (!rows.length) return;
+    const pf = sPaid.active(), lf = sLines.active(), af = sPat.active(), gf = sGrowth.active() && rowMode !== 'totals';
+    const pLo = sPaid.lo === 0 ? -Infinity : paidVal(sPaid.lo), pHi = sPaid.hi === 1000 ? Infinity : paidVal(sPaid.hi);
+    const lLo = sLines.lo === 0 ? -Infinity : linesVal(sLines.lo), lHi = sLines.hi === 1000 ? Infinity : linesVal(sLines.hi);
+    const aLo = sPat.lo === 0 ? -Infinity : patVal(sPat.lo), aHi = sPat.hi === 1000 ? Infinity : patVal(sPat.hi);
+    const gLo = growthVal(sGrowth.lo), gHi = sGrowth.hi === 1000 ? Infinity : growthVal(sGrowth.hi);
+    view = rows.filter(r => {
+      if (rowMode === 'years' && r.isTotal) return false;
+      if (rowMode === 'totals' && !r.isTotal) return false;
+      const m = meta[r.pidx];
+      if (curState !== 'ALL' && m.st !== curState) return false;
+      if (query && !m.hay.includes(query)) return false;
+      if (hcpcsSet && !hcpcsSet.has(r.pidx)) return false;
+      if (pf && (r.paid < pLo || r.paid > pHi)) return false;
+      if (lf && (r.lines < lLo || r.lines > lHi)) return false;
+      if (af && (r.pat < aLo || r.pat > aHi)) return false;
+      if (gf && (r.growth === null || r.growth < gLo || r.growth > gHi)) return false;
+      return true;
+    });
     view.sort((a, b) => {
-      const va = a[sortKey], vb = b[sortKey];
-      return (typeof va === 'string' ? va.localeCompare(vb) : va - vb) * sortDir;
+      let va, vb;
+      if (sortKey === 'p' || sortKey === 'c' || sortKey === 'sp' || sortKey === 'st') {
+        va = meta[a.pidx][sortKey]; vb = meta[b.pidx][sortKey];
+        const cmp = va.localeCompare(vb);
+        return cmp !== 0 ? cmp * sortDir : a.yearSort - b.yearSort;
+      }
+      va = a[sortKey]; vb = b[sortKey];
+      return (va - vb) * sortDir;
     });
     document.querySelectorAll('#lookupTable thead th').forEach(th => {
-      const base = th.textContent.replace(/ [\u2191\u2193]$/, '');
-      th.innerHTML = th.dataset.k === sortKey ? base + ' <span class="arrow">' + (sortDir === 1 ? '\u2191' : '\u2193') + '</span>' : base;
+      const base = th.textContent.replace(/ [↑↓]$/, '');
+      th.innerHTML = th.dataset.k === sortKey ? base + ' <span class="arrow">' + (sortDir === 1 ? '↑' : '↓') + '</span>' : base;
     });
     renderRows();
   }
   function renderRows() {
     const start = page * PAGE_SIZE;
-    const rows = view.slice(start, start + PAGE_SIZE);
-    document.querySelector('#lookupTable tbody').innerHTML = rows.map((r, i) => `
-      <tr onclick="toggleYears(${start + i}, this)" style="cursor:pointer;">
-        <td><span class="provider-cell">${r.p}</span><br><span class="npi-cell">NPI ${r.npi}</span></td>
-        <td>${r.st}</td>
-        <td>${r.c || ''}</td>
-        <td>${r.sp || ''}</td>
-        <td class="num">${fmtExact(r.total)}</td>
-        <td class="num">${fmt(r.y2023)}</td>
-        <td class="num">${fmt(r.y2024)}</td>
-      </tr>`).join('') || '<tr><td colspan="7"><div class="loading-note">No providers match.</div></td></tr>';
-    document.getElementById('resultCount').textContent = view.length.toLocaleString() + ' providers';
+    document.querySelector('#lookupTable tbody').innerHTML = view.slice(start, start + PAGE_SIZE).map(r => {
+      const m = meta[r.pidx];
+      let g = '';
+      if (r.growth !== null) {
+        const cls = r.growth >= 100 ? 'growth-pos' : (r.growth < 0 ? 'growth-neg' : '');
+        g = '<span class="' + cls + '">' + fmtPct(r.growth) + '</span>';
+      }
+      return '<tr' + (r.isTotal ? ' class="total-row"' : '') + '>' +
+        '<td><span class="provider-cell">' + m.p + '</span><br><span class="npi-cell">NPI ' + m.npi + '</span></td>' +
+        '<td>' + m.st + '</td><td>' + m.c + '</td><td>' + m.sp + '</td>' +
+        '<td class="num">' + (r.isTotal ? '2018–2024' : r.year) + '</td>' +
+        '<td class="num">' + r.pat.toLocaleString() + '</td>' +
+        '<td class="num">' + r.lines.toLocaleString() + '</td>' +
+        '<td class="num">' + fmtExact(r.paid) + '</td>' +
+        '<td class="num">' + g + '</td></tr>';
+    }).join('') || '<tr><td colspan="9"><div class="loading-note">No rows match the current filters.</div></td></tr>';
+    document.getElementById('resultCount').textContent = view.length.toLocaleString() + ' rows';
     document.getElementById('pageInfo').textContent = 'Page ' + (page + 1) + ' of ' + Math.max(1, Math.ceil(view.length / PAGE_SIZE));
     document.getElementById('prevBtn').disabled = page === 0;
     document.getElementById('nextBtn').disabled = (page + 1) * PAGE_SIZE >= view.length;
-  }
-  function toggleYears(i, tr) {
-    const next = tr.nextElementSibling;
-    if (next && next.classList.contains('year-detail')) { next.remove(); return; }
-    document.querySelectorAll('.year-detail').forEach(el => el.remove());
-    const r = view[i];
-    const detail = document.createElement('tr');
-    detail.className = 'year-detail';
-    detail.innerHTML = '<td colspan="7" style="background:var(--blue-light); font-family:\'Roboto Mono\', monospace; font-size:0.75rem; padding:10px 12px;">' +
-      YEAR_COLS.map((y, j) => y + ': <strong>' + fmtExact(r.years[j]) + '</strong>').join(' &nbsp;·&nbsp; ') + '</td>';
-    tr.after(detail);
   }
 
 </script>
