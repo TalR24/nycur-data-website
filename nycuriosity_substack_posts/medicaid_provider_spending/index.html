@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Medicaid Provider Spending — NYCuriosity</title>
+  <meta name="description" content="Who gets paid by Medicaid in New York, Texas, and California: 238 million federal claim records turned into searchable charts, tables, and a replicable fraud-case study.">
+  <meta property="og:type"        content="website">
+  <meta property="og:url"         content="https://data.nycuriosity.com/nycuriosity_substack_posts/medicaid_provider_spending/">
+  <meta property="og:title"       content="Medicaid Provider Spending — NYCuriosity">
+  <meta property="og:description" content="Who gets paid by Medicaid in New York, Texas, and California: 238 million federal claim records turned into searchable charts and tables.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue:       #2563eb;
+      --blue-hover: #1d4ed8;
+      --blue-light: #eff6ff;
+      --blue-mid:   #bfdbfe;
+      --text:       #111827;
+      --text-mid:   #374151;
+      --text-muted: #6b7280;
+      --text-faint: #9ca3af;
+      --bg:         #f8faff;
+      --surface:    #ffffff;
+      --border:     #e5e7eb;
+      --shadow-sm:  0 1px 3px rgba(17,24,39,0.08);
+      --shadow-md:  0 4px 16px rgba(37,99,235,0.10);
+      --radius:     10px;
+      --ny-color:   #2563eb;
+      --tx-color:   #c2410c;
+      --ca-color:   #6b7280;
+      --alert:     #dc2626;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: #111827;
+      border-bottom: 1px solid #1f2937;
+      padding: 0 clamp(20px, 5vw, 48px);
+    }
+    .header-inner {
+      max-width: 1100px; margin: 0 auto; height: 56px;
+      display: flex; align-items: center; gap: 16px;
+    }
+    .back-link {
+      font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600;
+      color: #9ca3af; text-decoration: none; display: flex; align-items: center; gap: 5px;
+      padding: 4px 8px 4px 4px; border-radius: 5px; transition: color 0.15s, background 0.15s; white-space: nowrap;
+    }
+    .back-link:hover { color: #60a5fa; background: rgba(96,165,250,0.1); }
+    .header-divider { width: 1px; height: 20px; background: #374151; flex-shrink: 0; }
+    header h1 {
+      font-family: 'Roboto Mono', monospace; font-size: 0.95rem; font-weight: 700;
+      color: #e5e7eb; letter-spacing: -0.02em;
+    }
+
+    .pill-nav {
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      padding: 10px clamp(20px, 5vw, 48px);
+      display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+    }
+    .pill-nav a {
+      font-size: 0.78rem; font-family: 'Roboto Mono', monospace; font-weight: 600;
+      padding: 4px 12px; border-radius: 20px; text-decoration: none;
+      border: 1px solid var(--border); color: var(--text-muted); background: var(--bg);
+      transition: all 0.15s; white-space: nowrap;
+    }
+    .pill-nav a:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
+    .pill-nav a.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+    .pill-label { font-size: 0.72rem; color: var(--text-faint); font-family: 'Roboto Mono', monospace; white-space: nowrap; }
+
+    .hero {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: clamp(32px, 5vw, 52px) clamp(20px, 5vw, 48px);
+    }
+    .hero-inner { max-width: 1100px; margin: 0 auto; }
+    .breadcrumb {
+      font-family: 'Roboto Mono', monospace; font-size: 0.72rem;
+      color: var(--text-faint); margin-bottom: 14px;
+      display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+    }
+    .breadcrumb a { color: var(--blue); text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+    .breadcrumb span:last-child { color: #FF6319; }
+    .hero-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .hero-tag {
+      font-family: 'Roboto Mono', monospace; font-size: 0.68rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.08em; color: #FF6319;
+      background: #fff4ed; border: 1px solid #ffd0b3; border-radius: 4px; padding: 3px 8px;
+    }
+    .hero-updated { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; color: var(--text-faint); }
+    .hero h1 {
+      font-family: 'Roboto Mono', monospace; font-size: clamp(1.4rem, 3vw, 1.85rem);
+      font-weight: 700; color: var(--text); letter-spacing: -0.03em; line-height: 1.25; margin-bottom: 10px;
+    }
+    .hero h1 span { color: var(--blue); }
+    .hero p { font-size: 0.975rem; color: var(--text-muted); max-width: 680px; line-height: 1.7; }
+    .hero p a { color: var(--blue); text-decoration: none; border-bottom: 1px solid var(--blue-mid); }
+    .hero p a:hover { border-color: var(--blue); }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600;
+      text-decoration: none; border-radius: 7px; padding: 8px 14px;
+      transition: background 0.15s, border-color 0.15s; cursor: pointer; border: none;
+    }
+    .btn-outline { background: var(--surface); color: var(--text-muted); border: 1.5px solid var(--border); }
+    .btn-outline:hover { color: var(--blue); border-color: var(--blue-mid); background: var(--blue-light); }
+
+    main { flex: 1; padding: clamp(28px, 4vw, 48px) clamp(20px, 5vw, 48px); }
+    .main-inner { max-width: 1100px; margin: 0 auto; }
+
+    .chart-actions { display:flex; gap:8px; margin-bottom:16px; }
+    .action-btn { display:inline-flex; align-items:center; gap:6px; background:var(--surface); color:var(--text-muted); font-family:'Roboto Mono',monospace; font-size:0.75rem; font-weight:600; padding:6px 14px; border-radius:6px; border:1px solid var(--border); cursor:pointer; transition:all 0.15s; }
+    .action-btn:hover { border-color:var(--blue); color:var(--blue); background:var(--blue-light); }
+    .action-btn:disabled { opacity:0.6; cursor:not-allowed; }
+
+    #chart-box {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); box-shadow: var(--shadow-sm);
+      padding: 20px 20px 0; overflow: hidden;
+    }
+    .chart-title {
+      font-family: 'Roboto Mono', monospace; font-size: 0.95rem; font-weight: 700;
+      color: var(--text); letter-spacing: -0.02em; margin-bottom: 6px; line-height: 1.35;
+    }
+    .chart-subtitle { font-size: 0.82rem; color: var(--text-muted); margin-bottom: 18px; line-height: 1.55; }
+    .legend { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 18px; align-items: center; }
+    .legend-item { display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: var(--text-mid); font-weight: 500; }
+    .legend-swatch { width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0; }
+
+    .chart-attribution {
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+      padding: 12px 16px; border-top: 1px solid var(--border); background: var(--bg);
+      font-size: 0.78rem; color: var(--text-faint); font-family: 'Roboto Mono', monospace;
+      margin: 20px -20px 0;
+    }
+    .chart-attribution a { color: var(--blue); text-decoration: none; }
+    .chart-attribution a:hover { text-decoration: underline; }
+
+    .chart-block + .chart-block-wrap { margin-top: 28px; }
+
+    .context-box {
+      margin-top: 28px; padding: 16px 20px;
+      background: var(--blue-light); border: 1px solid var(--blue-mid); border-radius: var(--radius);
+    }
+    .context-box p { font-size: 0.85rem; color: var(--text-mid); line-height: 1.65; }
+    .context-box p + p { margin-top: 8px; }
+    .context-box strong { color: var(--text); }
+
+    .footnotes {
+      margin-top: 16px; padding: 14px 18px;
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    }
+    .footnotes p { font-size: 0.78rem; color: var(--text-muted); line-height: 1.6; }
+    .footnotes p + p { margin-top: 6px; }
+    .footnotes strong { color: var(--text-mid); }
+    .footnotes a { color: var(--blue); text-decoration: none; border-bottom: 1px solid var(--blue-mid); }
+    .footnotes a:hover { border-color: var(--blue); }
+
+    footer { background: var(--surface); border-top: 1px solid var(--border); padding: 20px clamp(20px, 5vw, 48px); margin-top: auto; }
+    .footer-inner {
+      max-width: 1100px; margin: 0 auto;
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+    }
+    .footer-copy { font-size: 0.8rem; color: var(--text-faint); }
+    .footer-links { display: flex; gap: 20px; align-items: center; }
+    .footer-links a { font-size: 0.8rem; color: var(--text-muted); text-decoration: none; transition: color 0.15s; }
+    .footer-links a:hover { color: var(--blue); }
+    .footer-support{display:inline-flex;align-items:center;gap:5px;font-size:0.8rem;font-weight:500;color:#2563eb;text-decoration:none;padding:5px 11px;border:1px solid rgba(37,99,235,0.45);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
+    .footer-support:hover{color:#fff;background:#2563eb;border-color:#2563eb;}
+    .footer-support svg{flex-shrink:0;}
+
+    .embed-modal { position:fixed; inset:0; background:rgba(0,0,0,0.45); display:flex; align-items:center; justify-content:center; z-index:1000; }
+    .embed-modal-box { background:var(--surface); border-radius:10px; padding:24px; max-width:540px; width:90%; box-shadow:0 8px 32px rgba(0,0,0,0.18); }
+    .embed-modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+    .embed-modal-title { font-family:'Roboto Mono',monospace; font-weight:700; font-size:0.9rem; color:var(--text); }
+    .embed-close { background:none; border:none; font-size:1.1rem; color:var(--text-muted); cursor:pointer; padding:2px 6px; border-radius:4px; }
+    .embed-close:hover { color:var(--text); background:var(--bg); }
+    .embed-modal-box > p { font-size:0.83rem; color:var(--text-muted); margin-bottom:10px; }
+    .embed-textarea { width:100%; height:80px; font-family:'Roboto Mono',monospace; font-size:0.72rem; border:1px solid var(--border); border-radius:6px; padding:10px; resize:none; color:var(--text-mid); background:var(--bg); margin-bottom:12px; }
+    .embed-copy-btn { background:var(--blue); color:#fff; font-family:'Roboto Mono',monospace; font-size:0.8rem; font-weight:600; padding:7px 18px; border:none; border-radius:6px; cursor:pointer; transition:background 0.15s; }
+    .embed-copy-btn:hover { background:#1d4ed8; }
+
+    @media (max-width: 540px) { .brand-slash, .brand-section { display: none; } }
+
+    .stat-row { background: var(--surface); border-bottom: 1px solid var(--border); padding: clamp(16px, 3vw, 24px) clamp(20px, 5vw, 48px); }
+    .stat-row-inner { max-width: 1100px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 12px; }
+    .stat-pill { display: flex; flex-direction: column; gap: 2px; padding: 12px 18px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); flex: 1; min-width: 140px; }
+    .stat-pill .sp-num { font-family: 'Roboto Mono', monospace; font-size: 1.3rem; font-weight: 700; color: var(--text); letter-spacing: -0.03em; line-height: 1; }
+    .stat-pill .sp-num.blue { color: var(--blue); }
+    .stat-pill .sp-label { font-size: 0.75rem; color: var(--text-muted); line-height: 1.3; }
+
+    .charts-section { flex: 1; padding: clamp(32px, 5vw, 56px) clamp(20px, 5vw, 48px); }
+    .charts-inner { max-width: 1100px; margin: 0 auto; }
+    .section-label { font-family: 'Roboto Mono', monospace; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-faint); margin-bottom: 20px; }
+    .charts-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+    .chart-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); text-decoration: none; color: inherit; display: flex; flex-direction: column; overflow: hidden; transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s; }
+    .chart-card:hover { border-color: var(--blue); box-shadow: var(--shadow-md); transform: translateY(-3px); }
+    .chart-card-icon { height: 100px; background: var(--text); display: flex; align-items: center; justify-content: center; gap: 10px; padding: 0 24px; flex-shrink: 0; }
+    .icon-table { display: flex; flex-direction: column; gap: 5px; }
+    .icon-table-row { display: flex; gap: 4px; }
+    .icon-table-cell { height: 8px; border-radius: 2px; background: rgba(255,255,255,0.2); }
+    .icon-table-cell.header { background: #2563eb; }
+    .icon-table-cell.w1 { width: 52px; } .icon-table-cell.w2 { width: 28px; }
+    .icon-table-cell.w3 { width: 36px; } .icon-table-cell.w4 { width: 80px; }
+    .icon-bars { display: flex; align-items: flex-end; gap: 5px; height: 48px; }
+    .icon-bar { border-radius: 3px 3px 0 0; width: 14px; }
+    .chart-card-body { padding: 20px 24px 24px; flex: 1; display: flex; flex-direction: column; }
+    .chart-card-label { font-family: 'Roboto Mono', monospace; font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--blue); margin-bottom: 8px; }
+    .chart-card-title { font-family: 'Roboto Mono', monospace; font-size: 1.05rem; font-weight: 700; color: var(--text); letter-spacing: -0.02em; line-height: 1.25; margin-bottom: 10px; }
+    .chart-card-desc { font-size: 0.875rem; color: var(--text-muted); line-height: 1.6; flex: 1; margin-bottom: 20px; }
+    .chart-card-meta { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .chart-card-stat { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; color: var(--text-faint); }
+    .chart-card-cta { font-family: 'Roboto Mono', monospace; font-size: 0.78rem; font-weight: 700; color: var(--blue); display: flex; align-items: center; gap: 5px; transition: gap 0.15s; }
+    .chart-card:hover .chart-card-cta { gap: 9px; }
+
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <a href="/" class="back-link">← nycuriosity/data</a>
+    <div class="header-divider"></div>
+    <h1>Medicaid Provider Spending</h1>
+  </div>
+</header>
+
+<div class="hero">
+  <div class="hero-inner">
+    <div class="breadcrumb">
+      <a href="/">data.nycuriosity.com</a>
+      <span>›</span>
+      <span>Medicaid Provider Spending</span>
+    </div>
+    <div class="hero-meta">
+      <span class="hero-tag">Medicaid</span>
+      <span class="hero-updated">July 2026</span>
+    </div>
+    <h1>Medicaid's check register <span>is public, and almost nobody reads it</span></h1>
+    <p>
+      A February 2026 <a href="https://opendata.hhs.gov/datasets/medicaid-provider-spending/" target="_blank" rel="noopener">HHS Open Data release</a> put every Medicaid provider payment from 2018 through 2024 in one federal file: 238 million records covering who billed, for what procedure, and how much they were paid.
+      This project turns that file into answers for New York, Texas, and California, including a replication of the billing behind New York's $9 million EyePic fraud indictment.
+    </p>
+  </div>
+</div>
+
+<div class="stat-row">
+  <div class="stat-row-inner">
+    <div class="stat-pill">
+      <span class="sp-num blue">$330.1B</span>
+      <span class="sp-label">Paid to NY, TX, and CA providers, 2018-2024</span>
+    </div>
+    <div class="stat-pill">
+      <span class="sp-num blue">$34.1M</span>
+      <span class="sp-label">Paid to the six indicted EyePic companies</span>
+    </div>
+    <div class="stat-pill">
+      <span class="sp-num">97%</span>
+      <span class="sp-label">Their share of NY billing for code 68040 in 2024</span>
+    </div>
+    <div class="stat-pill">
+      <span class="sp-num">238M</span>
+      <span class="sp-label">Claim-line records analyzed</span>
+    </div>
+  </div>
+</div>
+
+<section class="charts-section">
+  <div class="charts-inner">
+    <p class="section-label">Charts in this post</p>
+    <div class="charts-grid">
+      <a class="chart-card" href="eyepic-case/">
+        <div class="chart-card-icon">
+          <div class="icon-bars">
+            <div class="icon-bar" style="height:18%; background:#2563eb;"></div>
+            <div class="icon-bar" style="height:26%; background:#2563eb;"></div>
+            <div class="icon-bar" style="height:42%; background:#3b82f6;"></div>
+            <div class="icon-bar" style="height:55%; background:#3b82f6;"></div>
+            <div class="icon-bar" style="height:62%; background:#60a5fa;"></div>
+            <div class="icon-bar" style="height:82%; background:#60a5fa;"></div>
+            <div class="icon-bar" style="height:78%; background:#93c5fd;"></div>
+          </div></div>
+        <div class="chart-card-body">
+          <div class="chart-card-label">Stacked Bar Chart</div>
+          <div class="chart-card-title">The $9M eye-care fraud was visible for years</div>
+          <div class="chart-card-desc">The six companies in New York's February 2026 Medicaid fraud indictment collected $34.1 million since 2018, and by 2024 were 97% of statewide billing for one eyelid procedure code.</div>
+          <div class="chart-card-meta">
+            <span class="chart-card-stat">6 companies · 7 years</span>
+            <span class="chart-card-cta">Explore →</span>
+          </div>
+        </div>
+      </a>
+      <a class="chart-card" href="spending-trend/">
+        <div class="chart-card-icon">
+          <svg viewBox="0 0 120 60" width="110" height="55" xmlns="http://www.w3.org/2000/svg">
+            <polyline points="5,45 25,32 45,24 65,22 85,17 105,15 115,16" fill="none" stroke="#2563eb" stroke-width="3" stroke-linecap="round"/>
+            <polyline points="5,55 25,54 45,48 65,30 85,28 105,26 115,23" fill="none" stroke="#c2410c" stroke-width="3" stroke-linecap="round"/>
+            <polyline points="5,48 25,47 45,46 65,44 85,45 105,40 115,40" fill="none" stroke="#9ca3af" stroke-width="3" stroke-linecap="round"/>
+          </svg></div>
+        <div class="chart-card-body">
+          <div class="chart-card-label">Line Chart</div>
+          <div class="chart-card-title">New York pays double California per enrollee</div>
+          <div class="chart-card-desc">Per-enrollee provider payments in New York reached $7,379 in 2024, against $3,239 in California and $5,464 in Texas, with reporting caveats that matter.</div>
+          <div class="chart-card-meta">
+            <span class="chart-card-stat">3 states · 2018-2024</span>
+            <span class="chart-card-cta">Explore →</span>
+          </div>
+        </div>
+      </a>
+      <a class="chart-card" href="concentration/">
+        <div class="chart-card-icon">
+          <svg viewBox="0 0 120 60" width="110" height="55" xmlns="http://www.w3.org/2000/svg">
+            <line x1="8" y1="55" x2="112" y2="5" stroke="#4b5563" stroke-width="2" stroke-dasharray="4,4"/>
+            <path d="M 8 55 Q 85 54 100 35 T 112 5" fill="none" stroke="#2563eb" stroke-width="3" stroke-linecap="round"/>
+          </svg></div>
+        <div class="chart-card-body">
+          <div class="chart-card-label">Line Chart</div>
+          <div class="chart-card-title">1% of NY billers collect 74% of the dollars</div>
+          <div class="chart-card-desc">Cumulative distribution curves show New York's Medicaid payments are far more concentrated in its largest billing organizations than Texas's or California's.</div>
+          <div class="chart-card-meta">
+            <span class="chart-card-stat">138,000 providers ranked</span>
+            <span class="chart-card-cta">Explore →</span>
+          </div>
+        </div>
+      </a>
+      <a class="chart-card" href="top-providers/">
+        <div class="chart-card-icon">
+          <div class="icon-table">
+            <div class="icon-table-row"><div class="icon-table-cell header w1"></div><div class="icon-table-cell header w2"></div><div class="icon-table-cell header w2"></div><div class="icon-table-cell header w3"></div></div>
+            <div class="icon-table-row"><div class="icon-table-cell w1"></div><div class="icon-table-cell w2"></div><div class="icon-table-cell w2"></div><div class="icon-table-cell w3"></div></div>
+            <div class="icon-table-row"><div class="icon-table-cell w1"></div><div class="icon-table-cell w2"></div><div class="icon-table-cell w2"></div><div class="icon-table-cell w3"></div></div>
+            <div class="icon-table-row"><div class="icon-table-cell w4"></div><div class="icon-table-cell w2"></div><div class="icon-table-cell w2"></div><div class="icon-table-cell w3"></div></div>
+          </div></div>
+        <div class="chart-card-body">
+          <div class="chart-card-label">Table</div>
+          <div class="chart-card-title">Home care dominates New York's top billers</div>
+          <div class="chart-card-desc">The 20 largest Medicaid billing organizations in each state. New York's biggest, a home-care payment processor, billed $7.2 billion over seven years.</div>
+          <div class="chart-card-meta">
+            <span class="chart-card-stat">60 organizations · sortable</span>
+            <span class="chart-card-cta">Explore →</span>
+          </div>
+        </div>
+      </a>
+      <a class="chart-card" href="outlier-screen/">
+        <div class="chart-card-icon">
+          <div class="icon-bars">
+            <div class="icon-bar" style="height:14%; background:rgba(255,255,255,0.25);"></div>
+            <div class="icon-bar" style="height:18%; background:rgba(255,255,255,0.25);"></div>
+            <div class="icon-bar" style="height:15%; background:rgba(255,255,255,0.25);"></div>
+            <div class="icon-bar" style="height:22%; background:rgba(255,255,255,0.25);"></div>
+            <div class="icon-bar" style="height:95%; background:#dc2626;"></div>
+            <div class="icon-bar" style="height:20%; background:rgba(255,255,255,0.25);"></div>
+            <div class="icon-bar" style="height:26%; background:rgba(255,255,255,0.25);"></div>
+          </div></div>
+        <div class="chart-card-body">
+          <div class="chart-card-label">Table</div>
+          <div class="chart-card-title">One query flags fivefold billing jumps</div>
+          <div class="chart-card-desc">A replicable screen surfaces every provider whose billing quintupled past $1 million in a single year. Most jumps are benign; the point is how easy looking is.</div>
+          <div class="chart-card-meta">
+            <span class="chart-card-stat">150 providers flagged</span>
+            <span class="chart-card-cta">Explore →</span>
+          </div>
+        </div>
+      </a>
+      <a class="chart-card" href="provider-lookup/">
+        <div class="chart-card-icon">
+          <svg viewBox="0 0 60 60" width="56" height="56" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="26" cy="26" r="15" fill="none" stroke="#2563eb" stroke-width="4"/>
+            <line x1="37" y1="37" x2="50" y2="50" stroke="#2563eb" stroke-width="5" stroke-linecap="round"/>
+          </svg></div>
+        <div class="chart-card-body">
+          <div class="chart-card-label">Searchable Table</div>
+          <div class="chart-card-title">Look up any provider's payments yourself</div>
+          <div class="chart-card-desc">Search 55,501 billing organizations in the three states by name, NPI, city, or specialty, with Medicaid payments for every year from 2018 to 2024.</div>
+          <div class="chart-card-meta">
+            <span class="chart-card-stat">55,501 providers · searchable</span>
+            <span class="chart-card-cta">Explore →</span>
+          </div>
+        </div>
+      </a>
+      <a class="chart-card" href="methodology/">
+        <div class="chart-card-icon">
+          <svg viewBox="0 0 48 60" width="46" height="58" xmlns="http://www.w3.org/2000/svg">
+            <rect x="2" y="2" width="44" height="56" rx="4" fill="none" stroke="#2563eb" stroke-width="3"/>
+            <line x1="10" y1="16" x2="38" y2="16" stroke="rgba(255,255,255,0.4)" stroke-width="3" stroke-linecap="round"/>
+            <line x1="10" y1="26" x2="38" y2="26" stroke="rgba(255,255,255,0.4)" stroke-width="3" stroke-linecap="round"/>
+            <line x1="10" y1="36" x2="30" y2="36" stroke="rgba(255,255,255,0.4)" stroke-width="3" stroke-linecap="round"/>
+            <line x1="10" y1="46" x2="24" y2="46" stroke="#2563eb" stroke-width="3" stroke-linecap="round"/>
+          </svg></div>
+        <div class="chart-card-body">
+          <div class="chart-card-label">Methodology</div>
+          <div class="chart-card-title">Every number here can be replicated</div>
+          <div class="chart-card-desc">Source files with checksums, the exact SQL for every chart, the junk-data cleaning rules, and the honest limits of what T-MSIS claims data can say.</div>
+          <div class="chart-card-meta">
+            <span class="chart-card-stat">Full pipeline · open data</span>
+            <span class="chart-card-cta">Explore →</span>
+          </div>
+        </div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-inner">
+    <span class="footer-copy">© NYCuriosity · Tal Roded</span>
+    <nav class="footer-links">
+      <a href="https://buymeacoffee.com/nycuriosity" class="footer-support" target="_blank" rel="noopener" aria-label="Support my work on Buy Me a Coffee"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>Support my work</a>
+      <a href="https://talroded.nycuriosity.com" target="_blank" rel="noopener">About</a>
+      <a href="https://www.nycuriosity.com" target="_blank" rel="noopener">Substack</a>
+      <a href="https://github.com/TalR24/nycur-data-website" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </div>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>A Simple Screen for Unusual Medicaid Billing Growth — NYCuriosity</title>
+  <meta name="description" content="150 providers in NY, TX, and CA whose Medicaid billing grew at least fivefold in a single year. A replicable screen anyone can run on public data.">
+  <meta property="og:type"        content="website">
+  <meta property="og:url"         content="https://data.nycuriosity.com/nycuriosity_substack_posts/medicaid_provider_spending/outlier-screen/">
+  <meta property="og:title"       content="A Simple Screen for Unusual Medicaid Billing Growth — NYCuriosity">
+  <meta property="og:description" content="150 providers in NY, TX, and CA whose Medicaid billing grew at least fivefold in a single year. A replicable screen anyone can run on public data.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue:       #2563eb;
+      --blue-hover: #1d4ed8;
+      --blue-light: #eff6ff;
+      --blue-mid:   #bfdbfe;
+      --text:       #111827;
+      --text-mid:   #374151;
+      --text-muted: #6b7280;
+      --text-faint: #9ca3af;
+      --bg:         #f8faff;
+      --surface:    #ffffff;
+      --border:     #e5e7eb;
+      --shadow-sm:  0 1px 3px rgba(17,24,39,0.08);
+      --shadow-md:  0 4px 16px rgba(37,99,235,0.10);
+      --radius:     10px;
+      --ny-color:   #2563eb;
+      --tx-color:   #c2410c;
+      --ca-color:   #6b7280;
+      --alert:     #dc2626;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: #111827;
+      border-bottom: 1px solid #1f2937;
+      padding: 0 clamp(20px, 5vw, 48px);
+    }
+    .header-inner {
+      max-width: 900px; margin: 0 auto; height: 56px;
+      display: flex; align-items: center; gap: 16px;
+    }
+    .back-link {
+      font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600;
+      color: #9ca3af; text-decoration: none; display: flex; align-items: center; gap: 5px;
+      padding: 4px 8px 4px 4px; border-radius: 5px; transition: color 0.15s, background 0.15s; white-space: nowrap;
+    }
+    .back-link:hover { color: #60a5fa; background: rgba(96,165,250,0.1); }
+    .header-divider { width: 1px; height: 20px; background: #374151; flex-shrink: 0; }
+    header h1 {
+      font-family: 'Roboto Mono', monospace; font-size: 0.95rem; font-weight: 700;
+      color: #e5e7eb; letter-spacing: -0.02em;
+    }
+
+    .pill-nav {
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      padding: 10px clamp(20px, 5vw, 48px);
+      display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+    }
+    .pill-nav a {
+      font-size: 0.78rem; font-family: 'Roboto Mono', monospace; font-weight: 600;
+      padding: 4px 12px; border-radius: 20px; text-decoration: none;
+      border: 1px solid var(--border); color: var(--text-muted); background: var(--bg);
+      transition: all 0.15s; white-space: nowrap;
+    }
+    .pill-nav a:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
+    .pill-nav a.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+    .pill-label { font-size: 0.72rem; color: var(--text-faint); font-family: 'Roboto Mono', monospace; white-space: nowrap; }
+
+    .hero {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: clamp(32px, 5vw, 52px) clamp(20px, 5vw, 48px);
+    }
+    .hero-inner { max-width: 900px; margin: 0 auto; }
+    .breadcrumb {
+      font-family: 'Roboto Mono', monospace; font-size: 0.72rem;
+      color: var(--text-faint); margin-bottom: 14px;
+      display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+    }
+    .breadcrumb a { color: var(--blue); text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+    .breadcrumb span:last-child { color: #FF6319; }
+    .hero-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .hero-tag {
+      font-family: 'Roboto Mono', monospace; font-size: 0.68rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.08em; color: #FF6319;
+      background: #fff4ed; border: 1px solid #ffd0b3; border-radius: 4px; padding: 3px 8px;
+    }
+    .hero-updated { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; color: var(--text-faint); }
+    .hero h1 {
+      font-family: 'Roboto Mono', monospace; font-size: clamp(1.4rem, 3vw, 1.85rem);
+      font-weight: 700; color: var(--text); letter-spacing: -0.03em; line-height: 1.25; margin-bottom: 10px;
+    }
+    .hero h1 span { color: var(--blue); }
+    .hero p { font-size: 0.975rem; color: var(--text-muted); max-width: 680px; line-height: 1.7; }
+    .hero p a { color: var(--blue); text-decoration: none; border-bottom: 1px solid var(--blue-mid); }
+    .hero p a:hover { border-color: var(--blue); }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600;
+      text-decoration: none; border-radius: 7px; padding: 8px 14px;
+      transition: background 0.15s, border-color 0.15s; cursor: pointer; border: none;
+    }
+    .btn-outline { background: var(--surface); color: var(--text-muted); border: 1.5px solid var(--border); }
+    .btn-outline:hover { color: var(--blue); border-color: var(--blue-mid); background: var(--blue-light); }
+
+    main { flex: 1; padding: clamp(28px, 4vw, 48px) clamp(20px, 5vw, 48px); }
+    .main-inner { max-width: 900px; margin: 0 auto; }
+
+    .chart-actions { display:flex; gap:8px; margin-bottom:16px; }
+    .action-btn { display:inline-flex; align-items:center; gap:6px; background:var(--surface); color:var(--text-muted); font-family:'Roboto Mono',monospace; font-size:0.75rem; font-weight:600; padding:6px 14px; border-radius:6px; border:1px solid var(--border); cursor:pointer; transition:all 0.15s; }
+    .action-btn:hover { border-color:var(--blue); color:var(--blue); background:var(--blue-light); }
+    .action-btn:disabled { opacity:0.6; cursor:not-allowed; }
+
+    #chart-box {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); box-shadow: var(--shadow-sm);
+      padding: 20px 20px 0; overflow: hidden;
+    }
+    .chart-title {
+      font-family: 'Roboto Mono', monospace; font-size: 0.95rem; font-weight: 700;
+      color: var(--text); letter-spacing: -0.02em; margin-bottom: 6px; line-height: 1.35;
+    }
+    .chart-subtitle { font-size: 0.82rem; color: var(--text-muted); margin-bottom: 18px; line-height: 1.55; }
+    .legend { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 18px; align-items: center; }
+    .legend-item { display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: var(--text-mid); font-weight: 500; }
+    .legend-swatch { width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0; }
+
+    .chart-attribution {
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+      padding: 12px 16px; border-top: 1px solid var(--border); background: var(--bg);
+      font-size: 0.78rem; color: var(--text-faint); font-family: 'Roboto Mono', monospace;
+      margin: 20px -20px 0;
+    }
+    .chart-attribution a { color: var(--blue); text-decoration: none; }
+    .chart-attribution a:hover { text-decoration: underline; }
+
+    .chart-block + .chart-block-wrap { margin-top: 28px; }
+
+    .context-box {
+      margin-top: 28px; padding: 16px 20px;
+      background: var(--blue-light); border: 1px solid var(--blue-mid); border-radius: var(--radius);
+    }
+    .context-box p { font-size: 0.85rem; color: var(--text-mid); line-height: 1.65; }
+    .context-box p + p { margin-top: 8px; }
+    .context-box strong { color: var(--text); }
+
+    .footnotes {
+      margin-top: 16px; padding: 14px 18px;
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    }
+    .footnotes p { font-size: 0.78rem; color: var(--text-muted); line-height: 1.6; }
+    .footnotes p + p { margin-top: 6px; }
+    .footnotes strong { color: var(--text-mid); }
+    .footnotes a { color: var(--blue); text-decoration: none; border-bottom: 1px solid var(--blue-mid); }
+    .footnotes a:hover { border-color: var(--blue); }
+
+    footer { background: var(--surface); border-top: 1px solid var(--border); padding: 20px clamp(20px, 5vw, 48px); margin-top: auto; }
+    .footer-inner {
+      max-width: 900px; margin: 0 auto;
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+    }
+    .footer-copy { font-size: 0.8rem; color: var(--text-faint); }
+    .footer-links { display: flex; gap: 20px; align-items: center; }
+    .footer-links a { font-size: 0.8rem; color: var(--text-muted); text-decoration: none; transition: color 0.15s; }
+    .footer-links a:hover { color: var(--blue); }
+    .footer-support{display:inline-flex;align-items:center;gap:5px;font-size:0.8rem;font-weight:500;color:#2563eb;text-decoration:none;padding:5px 11px;border:1px solid rgba(37,99,235,0.45);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
+    .footer-support:hover{color:#fff;background:#2563eb;border-color:#2563eb;}
+    .footer-support svg{flex-shrink:0;}
+
+    .embed-modal { position:fixed; inset:0; background:rgba(0,0,0,0.45); display:flex; align-items:center; justify-content:center; z-index:1000; }
+    .embed-modal-box { background:var(--surface); border-radius:10px; padding:24px; max-width:540px; width:90%; box-shadow:0 8px 32px rgba(0,0,0,0.18); }
+    .embed-modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+    .embed-modal-title { font-family:'Roboto Mono',monospace; font-weight:700; font-size:0.9rem; color:var(--text); }
+    .embed-close { background:none; border:none; font-size:1.1rem; color:var(--text-muted); cursor:pointer; padding:2px 6px; border-radius:4px; }
+    .embed-close:hover { color:var(--text); background:var(--bg); }
+    .embed-modal-box > p { font-size:0.83rem; color:var(--text-muted); margin-bottom:10px; }
+    .embed-textarea { width:100%; height:80px; font-family:'Roboto Mono',monospace; font-size:0.72rem; border:1px solid var(--border); border-radius:6px; padding:10px; resize:none; color:var(--text-mid); background:var(--bg); margin-bottom:12px; }
+    .embed-copy-btn { background:var(--blue); color:#fff; font-family:'Roboto Mono',monospace; font-size:0.8rem; font-weight:600; padding:7px 18px; border:none; border-radius:6px; cursor:pointer; transition:background 0.15s; }
+    .embed-copy-btn:hover { background:#1d4ed8; }
+
+    @media (max-width: 540px) { .brand-slash, .brand-section { display: none; } }
+
+    .state-tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+    .state-tab {
+      font-family: 'Roboto Mono', monospace; font-size: 0.78rem; font-weight: 600;
+      padding: 6px 16px; border-radius: 20px; border: 1.5px solid var(--border);
+      background: var(--surface); color: var(--text-muted); cursor: pointer; transition: all 0.15s;
+    }
+    .state-tab:hover { border-color: var(--blue); color: var(--blue); }
+    .state-tab.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    thead th {
+      font-family: 'Roboto Mono', monospace; font-size: 0.7rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);
+      text-align: left; padding: 10px 12px; border-bottom: 2px solid var(--border);
+      cursor: pointer; user-select: none; white-space: nowrap; background: var(--surface);
+    }
+    thead th.num { text-align: right; }
+    thead th .arrow { color: var(--blue); }
+    tbody td { padding: 9px 12px; border-bottom: 1px solid var(--border); color: var(--text-mid); vertical-align: top; }
+    tbody td.num { text-align: right; font-family: 'Roboto Mono', monospace; white-space: nowrap; }
+    tbody tr:hover { background: var(--blue-light); }
+    .provider-cell { font-weight: 600; color: var(--text); }
+    .npi-cell { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; color: var(--text-faint); }
+    .search-row { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+    .search-input {
+      flex: 1; min-width: 220px; font-family: 'Inter', sans-serif; font-size: 0.85rem;
+      padding: 9px 14px; border: 1.5px solid var(--border); border-radius: 8px;
+      background: var(--surface); color: var(--text); outline: none; transition: border-color 0.15s;
+    }
+    .search-input:focus { border-color: var(--blue); }
+    .result-count { font-family: 'Roboto Mono', monospace; font-size: 0.75rem; color: var(--text-faint); white-space: nowrap; }
+    .pager { display: flex; gap: 8px; align-items: center; justify-content: center; padding: 16px 0 20px; flex-wrap: wrap; }
+    .pager button {
+      font-family: 'Roboto Mono', monospace; font-size: 0.78rem; font-weight: 600;
+      padding: 5px 12px; border-radius: 6px; border: 1px solid var(--border);
+      background: var(--surface); color: var(--text-muted); cursor: pointer;
+    }
+    .pager button:hover:not(:disabled) { border-color: var(--blue); color: var(--blue); }
+    .pager button:disabled { opacity: 0.4; cursor: not-allowed; }
+    .pager .page-info { font-family: 'Roboto Mono', monospace; font-size: 0.75rem; color: var(--text-faint); }
+    .loading-note { font-family: 'Roboto Mono', monospace; font-size: 0.8rem; color: var(--text-faint); padding: 30px 0; text-align: center; }
+
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <a href="/nycuriosity_substack_posts/medicaid_provider_spending/" class="back-link">← medicaid-provider-spending</a>
+    <div class="header-divider"></div>
+    <h1>Outlier Screen</h1>
+  </div>
+</header>
+
+<div class="pill-nav">
+  <span class="pill-label">Visuals in this post:</span>
+  <a href="../eyepic-case/">EyePic Case</a>
+  <a href="../spending-trend/">Per-Enrollee Spending</a>
+  <a href="../concentration/">Concentration</a>
+  <a href="../top-providers/">Top Providers</a>
+  <a href="./" class="active">Outlier Screen</a>
+  <a href="../provider-lookup/">Provider Lookup</a>
+  <a href="../methodology/">Methodology</a>
+</div>
+
+<div class="hero">
+  <div class="hero-inner">
+    <div class="breadcrumb">
+      <a href="/">data.nycuriosity.com</a>
+      <span>›</span>
+      <a href="/nycuriosity_substack_posts/medicaid_provider_spending/">Medicaid Provider Spending</a>
+      <span>›</span>
+      <span>Outlier Screen</span>
+    </div>
+    <div class="hero-meta">
+      <span class="hero-tag">Medicaid</span>
+      <span class="hero-updated">July 2026</span>
+    </div>
+    <h1>One query surfaces <span>billing that grew fivefold in a year</span></h1>
+    <p>Anyone with the public claims file can run this screen: providers that jumped from six figures to over $1 million and at least five times their prior-year billing. Most jumps have ordinary explanations. The point is that the first pass at oversight takes one query, not a subpoena.</p>
+    <div class="hero-actions">
+      <a href="../data/outlier_growth.csv" download class="btn btn-outline">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download CSV
+      </a>
+    </div>
+  </div>
+</div>
+
+<main>
+  <div class="main-inner">
+    <div class="chart-actions">
+      <button class="action-btn" onclick="downloadChart(this)">&#11015; Download PNG</button>
+      <button class="action-btn" onclick="showEmbed()">&#60;/&#62; Embed</button>
+    </div>
+
+    <div id="chart-box" style="padding-bottom:0;">
+      <div class="chart-title">150 providers whose Medicaid billing grew at least fivefold in a single year</div>
+      <div class="chart-subtitle">Every provider in the three states that went from at least $100,000 in one year to at least $1 million and five times its prior billing the next. Click a column header to sort.</div>
+      <div class="state-tabs" id="stateTabs"></div>
+      <div class="table-wrap">
+        <table id="outTable">
+          <thead><tr>
+            <th data-k="p">Provider</th>
+            <th data-k="st">State</th>
+            <th data-k="sp">Specialty</th>
+            <th data-k="yr" class="num">Year</th>
+            <th data-k="prior" class="num">Prior Year</th>
+            <th data-k="paid" class="num">Paid</th>
+            <th data-k="g" class="num">Growth</th>
+          </tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="chart-attribution">
+        <span>Created by Tal Roded · NYCuriosity · Source: <a href="https://opendata.hhs.gov/datasets/medicaid-provider-spending/" target="_blank" rel="noopener">HHS Open Data, Medicaid Provider Spending by HCPCS</a></span>
+      </div>
+    </div>
+
+    <div class="context-box">
+      <p><strong>A screen is a starting point, not a verdict.</strong> Sudden billing growth has many legitimate causes: a new program, a merger, a state moving services into managed care, or simply better encounter reporting (which explains most extreme 2021 jumps in Texas). What a screen does is tell an auditor where to look first.</p>
+      <p><strong>The EyePic companies would have appeared on screens like this.</strong> Harlem Eye Care's billing grew nine-fold between 2018 and 2019; Graham Eye Care went from $1,704 in 2019 to over $1 million in 2020. Neither was charged with anything until 2026.</p>
+    </div>
+
+    <div class="footnotes">
+      <p><strong>Screen definition:</strong> providers with at least $100,000 in paid claims in the base year, at least $1 million the following year, and year-over-year growth of at least 5x. Sorted by growth multiple; the 150 largest fit those thresholds across NY, TX, and CA. Appearing here indicates only that billing grew quickly, not any wrongdoing.</p>
+      <p><strong>Sources:</strong> <a href="https://opendata.hhs.gov/datasets/medicaid-provider-spending/" target="_blank" rel="noopener">HHS Open Data, Medicaid Provider Spending by HCPCS</a>; <a href="https://npiregistry.cms.hhs.gov/" target="_blank" rel="noopener">CMS NPPES</a>. Author's analysis; replication steps in the <a href="../methodology/">methodology</a>.</p>
+    </div>
+  </div>
+</main>
+
+<div id="embedModal" class="embed-modal" style="display:none">
+  <div class="embed-modal-box">
+    <div class="embed-modal-header">
+      <span class="embed-modal-title">Embed this chart</span>
+      <button class="embed-close" onclick="closeEmbed()">✕</button>
+    </div>
+    <p>Copy and paste into your webpage:</p>
+    <textarea id="embedCode" class="embed-textarea" readonly></textarea>
+    <button class="embed-copy-btn" onclick="copyEmbed()">Copy code</button>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-inner">
+    <span class="footer-copy">© NYCuriosity · Tal Roded</span>
+    <nav class="footer-links">
+      <a href="https://buymeacoffee.com/nycuriosity" class="footer-support" target="_blank" rel="noopener" aria-label="Support my work on Buy Me a Coffee"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>Support my work</a>
+      <a href="https://talroded.nycuriosity.com" target="_blank" rel="noopener">About</a>
+      <a href="https://www.nycuriosity.com" target="_blank" rel="noopener">Substack</a>
+      <a href="https://github.com/TalR24/nycur-data-website" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </div>
+</footer>
+
+<script>
+  const ROWS = [{"st": "NY", "p": "City Of New York", "npi": "1104981356", "sp": "Local Education Agency (LEA)", "yr": "2019", "prior": 122759, "paid": 34398503, "g": 280.2}, {"st": "TX", "p": "Berry Family Services", "npi": "1639299274", "sp": "Case Management Agency", "yr": "2021", "prior": 173904, "paid": 23528617, "g": 135.3}, {"st": "TX", "p": "St. Giles Living Centers, Inc.", "npi": "1194893180", "sp": "Intellectual and/or Developmental Disabilities Community Based Residential Treatment Facility", "yr": "2021", "prior": 122920, "paid": 13030973, "g": 106.0}, {"st": "CA", "p": "Easter Seals Southern California, Inc", "npi": "1619255841", "sp": "Behavior Analyst", "yr": "2021", "prior": 194399, "paid": 20591677, "g": 105.9}, {"st": "CA", "p": "Sunterra Health, Inc.", "npi": "1619624616", "sp": "Home Delivered Meals", "yr": "2023", "prior": 233325, "paid": 23789131, "g": 102.0}, {"st": "NY", "p": "Human Care Services For Families And Children Inc", "npi": "1730369760", "sp": "Community/Behavioral Health Agency", "yr": "2022", "prior": 977006, "paid": 89692731, "g": 91.8}, {"st": "TX", "p": "Lifetime Living Inc.", "npi": "1215130497", "sp": "Case Management Agency", "yr": "2021", "prior": 187425, "paid": 14505855, "g": 77.4}, {"st": "NY", "p": "Chhuny, LLC", "npi": "1447641493", "sp": "Case Management Agency", "yr": "2019", "prior": 218571, "paid": 16711711, "g": 76.5}, {"st": "NY", "p": "Community Assistance Resources & Extended Services Inc", "npi": "1396049987", "sp": "Case Management Agency", "yr": "2021", "prior": 1612461, "paid": 112640024, "g": 69.9}, {"st": "TX", "p": "Gentech Laboratories LLC", "npi": "1518406636", "sp": "Clinical Medical Laboratory", "yr": "2022", "prior": 144269, "paid": 10067496, "g": 69.8}, {"st": "NY", "p": "Hamaspik Of Kings County, Inc.", "npi": "1700120888", "sp": "Home Modifications Contractor", "yr": "2020", "prior": 147230, "paid": 9552634, "g": 64.9}, {"st": "TX", "p": "Apple Homecare Medical Supply LLC", "npi": "1649259797", "sp": "Durable Medical Equipment & Medical Supplies", "yr": "2020", "prior": 125008, "paid": 7918216, "g": 63.3}, {"st": "NY", "p": "Yedei Chesed Inc", "npi": "1144423831", "sp": "Child Intellectual and/or Developmental Disabilities Respite Care", "yr": "2023", "prior": 222057, "paid": 14013525, "g": 63.1}, {"st": "CA", "p": "Celebrating Life Community Health Center", "npi": "1841913951", "sp": "Federally Qualified Health Center (FQHC)", "yr": "2024", "prior": 103937, "paid": 6165918, "g": 59.3}, {"st": "CA", "p": "Signal Diagnostics LLC", "npi": "1114431087", "sp": "Clinical Medical Laboratory", "yr": "2021", "prior": 272230, "paid": 15259193, "g": 56.1}, {"st": "CA", "p": "Centro De Salud De La Comunidad De San Ysidro Inc", "npi": "1558852947", "sp": "Federally Qualified Health Center (FQHC)", "yr": "2020", "prior": 119739, "paid": 6258850, "g": 52.3}, {"st": "CA", "p": "Infusion And Clinical Services, Inc", "npi": "1588153126", "sp": "Social Worker", "yr": "2022", "prior": 109565, "paid": 5725327, "g": 52.3}, {"st": "NY", "p": "Tradition Choice", "npi": "1568910677", "sp": "Home Health Agency", "yr": "2022", "prior": 773235, "paid": 39895132, "g": 51.6}, {"st": "CA", "p": "Kaiser Foundation Hospitals", "npi": "1710116116", "sp": "General Acute Care Hospital", "yr": "2024", "prior": 192536, "paid": 9569802, "g": 49.7}, {"st": "TX", "p": "Daybreak Community Services Texas LLC", "npi": "1437534559", "sp": "Community/Behavioral Health Agency", "yr": "2021", "prior": 1117629, "paid": 54285690, "g": 48.6}, {"st": "NY", "p": "Nyc Department Of Education", "npi": "1316338254", "sp": "Local Education Agency (LEA)", "yr": "2019", "prior": 157905, "paid": 7569540, "g": 47.9}, {"st": "NY", "p": "Jewish Board Of Family & Childrens Services Inc", "npi": "1689755662", "sp": "Community/Behavioral Health Agency", "yr": "2019", "prior": 169949, "paid": 7863712, "g": 46.3}, {"st": "TX", "p": "Texas Children'S Physician Group", "npi": "1861675506", "sp": "Pediatrics Physician", "yr": "2020", "prior": 163622, "paid": 7227981, "g": 44.2}, {"st": "CA", "p": "Wellspace Health", "npi": "1669982237", "sp": "Dental Clinic/Center", "yr": "2024", "prior": 925278, "paid": 39288192, "g": 42.5}, {"st": "NY", "p": "Greater Rochester Health Home Network, LLC", "npi": "1740554229", "sp": "Case Management Agency", "yr": "2019", "prior": 106030, "paid": 4274086, "g": 40.3}, {"st": "CA", "p": "Southern California Permanente Medical Group", "npi": "1952333460", "sp": "Health Maintenance Organization", "yr": "2024", "prior": 419848, "paid": 15467592, "g": 36.8}, {"st": "CA", "p": "Md Tox Laboratory", "npi": "1174882948", "sp": "Molecular Genetic Pathology (Medical Genetics) Physician", "yr": "2021", "prior": 136259, "paid": 5008074, "g": 36.8}, {"st": "NY", "p": "Help Home Health Care Agency LLC", "npi": "1164760468", "sp": "Home Health Agency", "yr": "2022", "prior": 211715, "paid": 7544243, "g": 35.6}, {"st": "NY", "p": "Suny Health Science Center At Syracuse", "npi": "1578554630", "sp": "Peritoneal Dialysis Registered Nurse", "yr": "2019", "prior": 260400, "paid": 9265869, "g": 35.6}, {"st": "NY", "p": "Centerlight Healthcare, Inc.", "npi": "1932227790", "sp": "PACE Provider Organization", "yr": "2019", "prior": 113674, "paid": 4044763, "g": 35.6}, {"st": "CA", "p": "County Of Lake", "npi": "1720292329", "sp": "Community/Behavioral Health Agency", "yr": "2023", "prior": 153211, "paid": 5372480, "g": 35.1}, {"st": "CA", "p": "Southern California Permanente Medical Group", "npi": "1316979834", "sp": "Health Maintenance Organization", "yr": "2024", "prior": 385790, "paid": 13190187, "g": 34.2}, {"st": "CA", "p": "County Of Placer", "npi": "1457478216", "sp": "Case Manager/Care Coordinator", "yr": "2022", "prior": 103082, "paid": 3494823, "g": 33.9}, {"st": "NY", "p": "Family Home Health Care Inc", "npi": "1033298948", "sp": "Home Health Agency", "yr": "2019", "prior": 142793, "paid": 4821613, "g": 33.8}, {"st": "CA", "p": "Premier Healthcare Services, LLC", "npi": "1275764417", "sp": "Home Health Agency", "yr": "2019", "prior": 140765, "paid": 4668727, "g": 33.2}, {"st": "CA", "p": "Mvml, Inc.", "npi": "1790386746", "sp": "Clinical Medical Laboratory", "yr": "2022", "prior": 760758, "paid": 24816971, "g": 32.6}, {"st": "NY", "p": "Licensed Behavior Analyst Professional Services Pllc", "npi": "1427502939", "sp": "Behavior Analyst", "yr": "2024", "prior": 215559, "paid": 6999457, "g": 32.5}, {"st": "NY", "p": "Eom Management LLC", "npi": "1255805404", "sp": "Home Health Agency", "yr": "2024", "prior": 161968, "paid": 4936638, "g": 30.5}, {"st": "CA", "p": "Ca Care Coordinators Ltd", "npi": "1588361158", "sp": "Case Management Agency", "yr": "2024", "prior": 437492, "paid": 13261235, "g": 30.3}, {"st": "NY", "p": "Always Compassionate Home Care Inc", "npi": "1790243434", "sp": "Home Health Agency", "yr": "2020", "prior": 229040, "paid": 6860626, "g": 30.0}, {"st": "NY", "p": "Nyu Langone Hospitals", "npi": "1437230034", "sp": "Oncology Clinic/Center", "yr": "2019", "prior": 217489, "paid": 6454703, "g": 29.7}, {"st": "NY", "p": "New York City Health And Hospitals Corporation", "npi": "1073535027", "sp": "Internal Medicine Physician", "yr": "2019", "prior": 305998, "paid": 8780023, "g": 28.7}, {"st": "TX", "p": "Kara Living Centers, Inc", "npi": "1417002346", "sp": "Mental Health Counselor", "yr": "2022", "prior": 133064, "paid": 3814094, "g": 28.7}, {"st": "NY", "p": "New York City Health And Hospitals Corporation", "npi": "1033124961", "sp": "Internal Medicine Physician", "yr": "2019", "prior": 214858, "paid": 6091016, "g": 28.3}, {"st": "TX", "p": "Daria Babineaux Md Pa", "npi": "1124312749", "sp": "Pediatrics Physician", "yr": "2021", "prior": 217967, "paid": 6177051, "g": 28.3}, {"st": "CA", "p": "United Health Centers Of The San Joaquin Valley", "npi": "1265087316", "sp": "Case Manager/Care Coordinator", "yr": "2021", "prior": 140926, "paid": 3848225, "g": 27.3}, {"st": "NY", "p": "Day Day Happy Social Daycare Inc", "npi": "1891460747", "sp": "Adult Day Care Clinic/Center", "yr": "2022", "prior": 191292, "paid": 5219138, "g": 27.3}, {"st": "NY", "p": "New York City Health And Hospitals Corporation", "npi": "1124032982", "sp": "Internal Medicine Physician", "yr": "2019", "prior": 238842, "paid": 6133549, "g": 25.7}, {"st": "NY", "p": "Visiting Nursing Association Of Western New York, Inc.", "npi": "1730268384", "sp": "Home Health Agency", "yr": "2019", "prior": 239112, "paid": 6114833, "g": 25.6}, {"st": "NY", "p": "Centrek Transportation LLC", "npi": "1669030615", "sp": "Non-emergency Medical Transport (VAN)", "yr": "2020", "prior": 477289, "paid": 11993893, "g": 25.1}, {"st": "CA", "p": "Permanente Medical Group Inc", "npi": "1073606299", "sp": "Anesthesiology Physician", "yr": "2024", "prior": 281343, "paid": 6784931, "g": 24.1}, {"st": "NY", "p": "New York City Health And Hospitals Corporation", "npi": "1356406136", "sp": "Internal Medicine Physician", "yr": "2019", "prior": 128229, "paid": 3086532, "g": 24.1}, {"st": "NY", "p": "Niagara Falls Memorial Medical Center", "npi": "1285717298", "sp": "Case Management Agency", "yr": "2019", "prior": 281185, "paid": 6710767, "g": 23.9}, {"st": "CA", "p": "Post Acute Care Partners, Inc", "npi": "1265100176", "sp": "In Home Supportive Care Agency", "yr": "2023", "prior": 136762, "paid": 3138568, "g": 22.9}, {"st": "CA", "p": "Via Care Community Health Center", "npi": "1962098640", "sp": "Case Manager/Care Coordinator", "yr": "2024", "prior": 347303, "paid": 7961701, "g": 22.9}, {"st": "NY", "p": "Four Season Medical Pllc", "npi": "1447785316", "sp": "Specialist", "yr": "2022", "prior": 170856, "paid": 3911779, "g": 22.9}, {"st": "CA", "p": "Serenity Care Health Group", "npi": "1245623156", "sp": "Chiropractor", "yr": "2024", "prior": 191404, "paid": 4381157, "g": 22.9}, {"st": "NY", "p": "New York City Health And Hospitals Corporation", "npi": "1023024882", "sp": "Internal Medicine Physician", "yr": "2019", "prior": 149212, "paid": 3390774, "g": 22.7}, {"st": "NY", "p": "Our Lady Of Lourdes Memorial Hospital Inc.", "npi": "1629087580", "sp": "General Acute Care Hospital", "yr": "2019", "prior": 141038, "paid": 3110794, "g": 22.1}, {"st": "CA", "p": "Kings County Behavioral Health", "npi": "1750715801", "sp": "Community/Behavioral Health Agency", "yr": "2023", "prior": 348599, "paid": 7616803, "g": 21.8}, {"st": "CA", "p": "El Proyecto Del Barrio, Inc.", "npi": "1154730828", "sp": "Federally Qualified Health Center (FQHC)", "yr": "2020", "prior": 698390, "paid": 15235490, "g": 21.8}, {"st": "CA", "p": "Illumination Health And Home", "npi": "1013256213", "sp": "Case Manager/Care Coordinator", "yr": "2022", "prior": 169400, "paid": 3675703, "g": 21.7}, {"st": "NY", "p": "Suffolk Primary Health, LLC", "npi": "1174965727", "sp": "Multi-Specialty Clinic/Center", "yr": "2022", "prior": 209756, "paid": 4521493, "g": 21.6}, {"st": "NY", "p": "Integrated Diagnostic Imaging & Cardiology Of Staten Island P.C.", "npi": "1174537948", "sp": "Cardiovascular Disease Physician", "yr": "2021", "prior": 160068, "paid": 3376128, "g": 21.1}, {"st": "NY", "p": "New York City Health And Hospitals Corporation", "npi": "1063426377", "sp": "Internal Medicine Physician", "yr": "2019", "prior": 427847, "paid": 8725129, "g": 20.4}, {"st": "CA", "p": "Community Health Centers Of The Central Coast Inc", "npi": "1003462102", "sp": "Federally Qualified Health Center (FQHC)", "yr": "2021", "prior": 290584, "paid": 5781531, "g": 19.9}, {"st": "NY", "p": "Community Healthcare Network, Inc", "npi": "1952518078", "sp": "Case Management Agency", "yr": "2019", "prior": 291342, "paid": 5724519, "g": 19.6}, {"st": "TX", "p": "Century Integrated Partners, Inc", "npi": "1447615711", "sp": "Emergency Medicine Physician", "yr": "2021", "prior": 250877, "paid": 4879802, "g": 19.5}, {"st": "CA", "p": "Community Medical Centers Inc", "npi": "1700373008", "sp": "Federally Qualified Health Center (FQHC)", "yr": "2019", "prior": 170056, "paid": 3286859, "g": 19.3}, {"st": "TX", "p": "Methodist Health Centers", "npi": "1871619254", "sp": "Ambulatory Surgical Clinic/Center", "yr": "2021", "prior": 201813, "paid": 3899810, "g": 19.3}, {"st": "NY", "p": "Queens Coordinated Care Partners", "npi": "1215292305", "sp": "Case Management Agency", "yr": "2019", "prior": 314274, "paid": 6030554, "g": 19.2}, {"st": "CA", "p": "Nurturing Care LLC", "npi": "1376229872", "sp": "Counselor", "yr": "2024", "prior": 183721, "paid": 3500118, "g": 19.1}, {"st": "NY", "p": "New York City Health And Hospitals Corporation", "npi": "1013924372", "sp": "Internal Medicine Physician", "yr": "2019", "prior": 280443, "paid": 5291178, "g": 18.9}, {"st": "NY", "p": "New York Psychotherapy And Counseling Center", "npi": "1902811342", "sp": "Community/Behavioral Health Agency", "yr": "2019", "prior": 774042, "paid": 14501664, "g": 18.7}, {"st": "CA", "p": "Permanente Medical Group Inc", "npi": "1235226531", "sp": "Anesthesiology Physician", "yr": "2024", "prior": 1579698, "paid": 29586010, "g": 18.7}, {"st": "NY", "p": "Americare Certified Special Services, Inc.", "npi": "1770513145", "sp": "Home Health Agency", "yr": "2024", "prior": 3304481, "paid": 61377398, "g": 18.6}, {"st": "CA", "p": "Cherish Hospice, Inc.", "npi": "1104451228", "sp": "Community Based Hospice Care Agency", "yr": "2024", "prior": 245507, "paid": 4542211, "g": 18.5}, {"st": "NY", "p": "Beth Israel Medical Center", "npi": "1174689665", "sp": "Psychiatric Hospital Unit", "yr": "2019", "prior": 1161612, "paid": 21392199, "g": 18.4}, {"st": "NY", "p": "Mount Sinai Hospital", "npi": "1245248939", "sp": "General Acute Care Hospital", "yr": "2019", "prior": 288613, "paid": 5305431, "g": 18.4}, {"st": "CA", "p": "Kaiser Foundation Hospitals", "npi": "1295880912", "sp": "General Acute Care Hospital", "yr": "2019", "prior": 229666, "paid": 4176322, "g": 18.2}, {"st": "CA", "p": "Golden Star Labs LLC", "npi": "1265182984", "sp": "Clinical Medical Laboratory", "yr": "2023", "prior": 491589, "paid": 8923218, "g": 18.2}, {"st": "CA", "p": "Anand Narayan Md Inc", "npi": "1477177210", "sp": "Rural Health Clinic/Center", "yr": "2022", "prior": 220579, "paid": 3992898, "g": 18.1}, {"st": "CA", "p": "Wilmington Urgent Care And Family Clinic Inc", "npi": "1972863611", "sp": "Urgent Care Clinic/Center", "yr": "2022", "prior": 215936, "paid": 3894432, "g": 18.0}, {"st": "CA", "p": "United Health Centers Of The San Joaquin Valley", "npi": "1780220822", "sp": "Case Manager/Care Coordinator", "yr": "2021", "prior": 252471, "paid": 4541964, "g": 18.0}, {"st": "NY", "p": "Albany Medical College", "npi": "1497921688", "sp": "Clinical Social Worker", "yr": "2024", "prior": 290691, "paid": 5164680, "g": 17.8}, {"st": "NY", "p": "Rochester General Hospital-Lab", "npi": "1477746063", "sp": "Clinical Medical Laboratory", "yr": "2021", "prior": 534924, "paid": 9460563, "g": 17.7}, {"st": "TX", "p": "Aoc Tx, LLC", "npi": "1952346876", "sp": "Case Management Agency", "yr": "2020", "prior": 1631416, "paid": 28783313, "g": 17.6}, {"st": "NY", "p": "Braverhood", "npi": "1619166741", "sp": "Developmentally Disabled Services Day Training Agency", "yr": "2022", "prior": 2893994, "paid": 49507361, "g": 17.1}, {"st": "NY", "p": "L&G Enterprises Usa LLC", "npi": "1366033318", "sp": "Home Health Agency", "yr": "2022", "prior": 200066, "paid": 3398696, "g": 17.0}, {"st": "TX", "p": "Pyra Med Health Services, LLC", "npi": "1740316561", "sp": "Home Health Agency", "yr": "2020", "prior": 216144, "paid": 3654833, "g": 16.9}, {"st": "TX", "p": "Tots In Tow, LLC", "npi": "1700286580", "sp": "Home Health Agency", "yr": "2023", "prior": 383681, "paid": 6469110, "g": 16.9}, {"st": "NY", "p": "Trustees Of Columbia University In The City Of New York", "npi": "1699289488", "sp": "Emergency Medicine Physician", "yr": "2019", "prior": 486855, "paid": 8054018, "g": 16.5}, {"st": "CA", "p": "Sd Healthcare Consulting LLC", "npi": "1083349781", "sp": "In Home Supportive Care Agency", "yr": "2024", "prior": 528479, "paid": 8723925, "g": 16.5}, {"st": "NY", "p": "Southwest Brooklyn Health Home, LLC", "npi": "1023354933", "sp": "Case Management Agency", "yr": "2019", "prior": 439281, "paid": 7223033, "g": 16.4}, {"st": "NY", "p": "Mary M. Gooley Hemophilia Center Inc", "npi": "1568428621", "sp": "Clinic/Center", "yr": "2021", "prior": 360637, "paid": 5910413, "g": 16.4}, {"st": "CA", "p": "Valley Healthcare Centers", "npi": "1790221703", "sp": "Rural Health Clinic/Center", "yr": "2019", "prior": 223498, "paid": 3653636, "g": 16.3}, {"st": "CA", "p": "Kaiser Foundation Hospitals", "npi": "1083784672", "sp": "General Acute Care Hospital", "yr": "2024", "prior": 376839, "paid": 6147205, "g": 16.3}, {"st": "CA", "p": "Socially Oriented United Living Inc.", "npi": "1356073902", "sp": "Respite Care", "yr": "2023", "prior": 735624, "paid": 11753722, "g": 16.0}, {"st": "CA", "p": "Kaiser Foundation Hospitals", "npi": "1477608271", "sp": "General Acute Care Hospital", "yr": "2019", "prior": 692633, "paid": 10816697, "g": 15.6}, {"st": "NY", "p": "Happy Life Home Health Agency Inc", "npi": "1538505623", "sp": "Home Health Agency", "yr": "2020", "prior": 201231, "paid": 3118919, "g": 15.5}, {"st": "NY", "p": "Coordinated Behavioral Care, Inc", "npi": "1730451071", "sp": "Case Management Agency", "yr": "2019", "prior": 1275531, "paid": 19679783, "g": 15.4}, {"st": "CA", "p": "Elica Health Centers", "npi": "1366051120", "sp": "Case Manager/Care Coordinator", "yr": "2022", "prior": 320287, "paid": 4927095, "g": 15.4}, {"st": "CA", "p": "David Desai Md Inc", "npi": "1174901128", "sp": "Psychiatry Physician", "yr": "2022", "prior": 222184, "paid": 3406721, "g": 15.3}, {"st": "CA", "p": "Spectra Clinical Laboratories, Inc", "npi": "1679686646", "sp": "Clinical Medical Laboratory", "yr": "2022", "prior": 380146, "paid": 5771116, "g": 15.2}, {"st": "TX", "p": "Oci Acquisition LLC", "npi": "1326297441", "sp": "Home Health Agency", "yr": "2021", "prior": 323750, "paid": 4863239, "g": 15.0}, {"st": "TX", "p": "Ector County Hospital District", "npi": "1740273994", "sp": "General Acute Care Hospital", "yr": "2021", "prior": 213662, "paid": 3178265, "g": 14.9}, {"st": "NY", "p": "Odyssey House, Inc", "npi": "1013976976", "sp": "Substance Use Disorder Rehabilitation Clinic/Center", "yr": "2023", "prior": 614369, "paid": 9067413, "g": 14.8}, {"st": "CA", "p": "Illumination Health And Home", "npi": "1073863056", "sp": "Case Management Agency", "yr": "2022", "prior": 412411, "paid": 6075988, "g": 14.7}, {"st": "NY", "p": "Oswego Hospital", "npi": "1871678458", "sp": "General Acute Care Hospital", "yr": "2019", "prior": 211739, "paid": 3101535, "g": 14.6}, {"st": "TX", "p": "Mcallen Hospitals L P", "npi": "1770573586", "sp": "Ambulatory Surgical Clinic/Center", "yr": "2020", "prior": 276785, "paid": 4026121, "g": 14.5}, {"st": "CA", "p": "Health Talent Strategies", "npi": "1952945628", "sp": "In Home Supportive Care Agency", "yr": "2021", "prior": 2691247, "paid": 39002135, "g": 14.5}, {"st": "NY", "p": "The Collaborative For Children And Families", "npi": "1417349622", "sp": "Case Manager/Care Coordinator", "yr": "2019", "prior": 633738, "paid": 9091713, "g": 14.3}, {"st": "NY", "p": "New York City Health And Hospitals Corporation", "npi": "1427063270", "sp": "Internal Medicine Physician", "yr": "2019", "prior": 605282, "paid": 8676733, "g": 14.3}, {"st": "CA", "p": "Herocare LLC", "npi": "1326607011", "sp": "Durable Medical Equipment & Medical Supplies", "yr": "2022", "prior": 396447, "paid": 5681390, "g": 14.3}, {"st": "CA", "p": "Southern California Permanente Medical Group", "npi": "1689606196", "sp": "Health Maintenance Organization", "yr": "2024", "prior": 1587962, "paid": 22666582, "g": 14.3}, {"st": "CA", "p": "Usa Biosciences LLC", "npi": "1548771736", "sp": "Clinical Medical Laboratory", "yr": "2024", "prior": 1136543, "paid": 16030288, "g": 14.1}, {"st": "TX", "p": "Hillcrest Baptist Medical Center", "npi": "1891882833", "sp": "General Acute Care Hospital", "yr": "2021", "prior": 236917, "paid": 3308873, "g": 14.0}, {"st": "NY", "p": "Erie County Medical Center Corporation", "npi": "1437197985", "sp": "End-Stage Renal Disease (ESRD) Treatment Clinic/Center", "yr": "2019", "prior": 449243, "paid": 6267243, "g": 14.0}, {"st": "NY", "p": "Agincare Homecare Services, Inc.", "npi": "1407370117", "sp": "Home Health Agency", "yr": "2019", "prior": 291341, "paid": 4051403, "g": 13.9}, {"st": "NY", "p": "Prime Home Health Services, LLC", "npi": "1841491412", "sp": "Home Health Agency", "yr": "2023", "prior": 345562, "paid": 4804238, "g": 13.9}, {"st": "NY", "p": "Kaleida Health", "npi": "1245365196", "sp": "General Acute Care Hospital", "yr": "2019", "prior": 235487, "paid": 3262577, "g": 13.9}, {"st": "NY", "p": "Family Respite Homecare Agency Inc.", "npi": "1548726284", "sp": "Home Health Agency", "yr": "2021", "prior": 224744, "paid": 3098125, "g": 13.8}, {"st": "CA", "p": "Expert Aba Consulting, LLC", "npi": "1235650516", "sp": "Behavior Analyst", "yr": "2019", "prior": 290055, "paid": 3991840, "g": 13.8}, {"st": "CA", "p": "Trinity Adhc, Inc.", "npi": "1003463993", "sp": "Adult Day Care Clinic/Center", "yr": "2021", "prior": 266924, "paid": 3670918, "g": 13.8}, {"st": "CA", "p": "Kaiser Foundation Hospitals", "npi": "1376698043", "sp": "General Acute Care Hospital", "yr": "2019", "prior": 666891, "paid": 9047095, "g": 13.6}, {"st": "TX", "p": "St Patrick Inc", "npi": "1487890125", "sp": "Home Health Agency", "yr": "2024", "prior": 239388, "paid": 3246434, "g": 13.6}, {"st": "TX", "p": "Segnik Group Inc", "npi": "1124012877", "sp": "Home Health Agency", "yr": "2021", "prior": 1290903, "paid": 17456084, "g": 13.5}, {"st": "CA", "p": "Kaiser Foundation Hospitals", "npi": "1518012301", "sp": "General Acute Care Hospital", "yr": "2019", "prior": 897300, "paid": 12089984, "g": 13.5}, {"st": "TX", "p": "St Davids Healthcare Partnership Lp Llp", "npi": "1629021845", "sp": "General Acute Care Hospital", "yr": "2021", "prior": 248328, "paid": 3341854, "g": 13.5}, {"st": "NY", "p": "Family Residencies & Essential Enterprises", "npi": "1134317498", "sp": "Intellectual and/or Developmental Disabilities Community Based Residential Treatment Facility", "yr": "2021", "prior": 528063, "paid": 7019628, "g": 13.3}, {"st": "NY", "p": "Royal Community Support LLC", "npi": "1265961668", "sp": "Developmentally Disabled Services Day Training Agency", "yr": "2019", "prior": 313009, "paid": 4132078, "g": 13.2}, {"st": "NY", "p": "Housing Works Services Ii, Inc", "npi": "1518529452", "sp": "Adult Day Care Clinic/Center", "yr": "2020", "prior": 316045, "paid": 4163627, "g": 13.2}, {"st": "NY", "p": "Community Care Management Partners LLC (Ccmp)", "npi": "1366780850", "sp": "Case Management Agency", "yr": "2019", "prior": 1109187, "paid": 14610602, "g": 13.2}, {"st": "NY", "p": "Rollin, Michael", "npi": "1144310087", "sp": "Nurse Practitioner", "yr": "2022", "prior": 323145, "paid": 4242694, "g": 13.1}, {"st": "NY", "p": "Love To Care Home Care, Inc.", "npi": "1033628110", "sp": "In Home Supportive Care Agency", "yr": "2024", "prior": 323375, "paid": 4239551, "g": 13.1}, {"st": "CA", "p": "Southern California Permanente Medical Group", "npi": "1396287082", "sp": "Clinical Medical Laboratory", "yr": "2020", "prior": 276851, "paid": 3629584, "g": 13.1}, {"st": "CA", "p": "Southern California Permanente Medical Group", "npi": "1891873303", "sp": "Clinical Medical Laboratory", "yr": "2020", "prior": 435080, "paid": 5657471, "g": 13.0}, {"st": "TX", "p": "Ascension Seton", "npi": "1447355771", "sp": "Ambulatory Surgical Clinic/Center", "yr": "2021", "prior": 474969, "paid": 6170231, "g": 13.0}, {"st": "NY", "p": "The Brookdale Hospital Medical Center", "npi": "1487724712", "sp": "General Acute Care Hospital", "yr": "2019", "prior": 244141, "paid": 3169369, "g": 13.0}, {"st": "NY", "p": "New York City Health And Hospitals Corporation", "npi": "1679587679", "sp": "Internal Medicine Physician", "yr": "2019", "prior": 931115, "paid": 11986869, "g": 12.9}, {"st": "NY", "p": "New York City Health And Hospitals Corporation", "npi": "1467469023", "sp": "Internal Medicine Physician", "yr": "2019", "prior": 568458, "paid": 7311090, "g": 12.9}, {"st": "TX", "p": "Dallas County Hospital District", "npi": "1932123247", "sp": "Ambulatory Surgical Clinic/Center", "yr": "2020", "prior": 610846, "paid": 7781428, "g": 12.7}, {"st": "TX", "p": "Tenet Hospitals Limited", "npi": "1972709970", "sp": "General Acute Care Hospital", "yr": "2021", "prior": 319581, "paid": 4066123, "g": 12.7}, {"st": "NY", "p": "Access: Supports For Living Inc", "npi": "1215122361", "sp": "Community/Behavioral Health Agency", "yr": "2019", "prior": 284088, "paid": 3607622, "g": 12.7}, {"st": "CA", "p": "Campos Espinoza, Domitilo", "npi": "1578215836", "sp": "Non-emergency Medical Transport (VAN)", "yr": "2024", "prior": 803722, "paid": 10176429, "g": 12.7}, {"st": "NY", "p": "North Country Transitional Living Services, Inc", "npi": "1538294699", "sp": "Mental Illness Community Based Residential Treatment Facility", "yr": "2019", "prior": 250166, "paid": 3132052, "g": 12.5}, {"st": "TX", "p": "Midland County Hospital District", "npi": "1255325817", "sp": "General Acute Care Hospital", "yr": "2021", "prior": 267217, "paid": 3328166, "g": 12.5}, {"st": "CA", "p": "Beverly Radiology Medical Group Iii", "npi": "1649599085", "sp": "Diagnostic Radiology Physician", "yr": "2019", "prior": 542403, "paid": 6745554, "g": 12.4}, {"st": "NY", "p": "New York City Health And Hospitals Corporation", "npi": "1801803903", "sp": "Internal Medicine Physician", "yr": "2019", "prior": 568287, "paid": 7065433, "g": 12.4}, {"st": "CA", "p": "Native American Mental Health Services Corporation", "npi": "1073919171", "sp": "Psychiatry Physician", "yr": "2022", "prior": 513976, "paid": 6378941, "g": 12.4}];
+  function fmtExact(n) { return '$' + Math.round(n).toLocaleString(); }
+  function fmt(n) {
+    if (n >= 1e9) return '$' + (n/1e9).toFixed(1).replace(/\.0$/,'') + 'B';
+    if (n >= 1e6) return '$' + (n/1e6).toFixed(1).replace(/\.0$/,'') + 'M';
+    if (n >= 1e3) return '$' + Math.round(n/1e3) + 'K';
+    return '$' + Math.round(n).toLocaleString();
+  }
+  let curState = 'ALL', sortKey = 'g', sortDir = -1;
+  const tabsEl = document.getElementById('stateTabs');
+  const tabDefs = [['ALL','All states'],['NY','New York'],['TX','Texas'],['CA','California']];
+  tabDefs.forEach(([s, label]) => {
+    const b = document.createElement('button');
+    b.className = 'state-tab' + (s === curState ? ' active' : '');
+    b.textContent = label;
+    b.onclick = () => { curState = s; document.querySelectorAll('.state-tab').forEach(x => x.classList.remove('active')); b.classList.add('active'); render(); };
+    tabsEl.appendChild(b);
+  });
+  document.querySelectorAll('#outTable thead th').forEach(th => {
+    th.onclick = () => {
+      const k = th.dataset.k;
+      if (sortKey === k) sortDir *= -1; else { sortKey = k; sortDir = (k === 'p' || k === 'sp' || k === 'st') ? 1 : -1; }
+      render();
+    };
+  });
+  function render() {
+    const rows = ROWS.filter(r => curState === 'ALL' || r.st === curState).slice().sort((a, b) => {
+      const va = a[sortKey], vb = b[sortKey];
+      return (typeof va === 'string' ? va.localeCompare(vb) : va - vb) * sortDir;
+    });
+    document.querySelectorAll('#outTable thead th').forEach(th => {
+      const base = th.textContent.replace(/ [\u2191\u2193]$/, '');
+      th.innerHTML = th.dataset.k === sortKey ? base + ' <span class="arrow">' + (sortDir === 1 ? '\u2191' : '\u2193') + '</span>' : base;
+    });
+    document.querySelector('#outTable tbody').innerHTML = rows.map(r => `
+      <tr>
+        <td><span class="provider-cell">${r.p}</span><br><span class="npi-cell">NPI ${r.npi}</span></td>
+        <td>${r.st}</td>
+        <td>${r.sp || ''}</td>
+        <td class="num">${r.yr}</td>
+        <td class="num">${fmt(r.prior)}</td>
+        <td class="num">${fmt(r.paid)}</td>
+        <td class="num" style="color:var(--alert); font-weight:600;">${r.g.toFixed(1)}x</td>
+      </tr>`).join('');
+  }
+  render();
+
+  async function downloadChart(btn) {
+    const orig = btn.innerHTML;
+    btn.innerHTML = '⏳ Capturing…'; btn.disabled = true;
+    try {
+      const el = document.getElementById('chart-box');
+      const canvas = await html2canvas(el, { backgroundColor:'#ffffff', scale:2, useCORS:true, logging:false });
+      const a = document.createElement('a');
+      a.download = 'medicaid-outlier-screen.png';
+      a.href = canvas.toDataURL('image/png'); a.click();
+    } finally { btn.innerHTML = orig; btn.disabled = false; }
+  }
+  function showEmbed() {
+    const url = location.origin + location.pathname;
+    document.getElementById('embedCode').value =
+      `<iframe src="${url}" width="900" height="1100" frameborder="0" style="border:1px solid #e5e7eb; border-radius:8px;" loading="lazy"></iframe>`;
+    document.getElementById('embedModal').style.display = 'flex';
+  }
+  function closeEmbed() { document.getElementById('embedModal').style.display = 'none'; }
+  function copyEmbed() {
+    const ta = document.getElementById('embedCode'); ta.select();
+    navigator.clipboard.writeText(ta.value).then(() => {
+      const btn = document.querySelector('.embed-copy-btn');
+      btn.textContent = '✓ Copied!';
+      setTimeout(() => btn.textContent = 'Copy code', 2000);
+    });
+  }
+</script>
+
+</body>
+</html>

@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Methodology: Medicaid Provider Spending — NYCuriosity</title>
+  <meta name="description" content="Sources, cleaning rules, SQL, and caveats behind NYCuriosity's Medicaid provider spending analysis. Every number can be replicated from public files.">
+  <meta property="og:type"        content="website">
+  <meta property="og:url"         content="https://data.nycuriosity.com/nycuriosity_substack_posts/medicaid_provider_spending/methodology/">
+  <meta property="og:title"       content="Methodology: Medicaid Provider Spending — NYCuriosity">
+  <meta property="og:description" content="Sources, cleaning rules, SQL, and caveats behind NYCuriosity's Medicaid provider spending analysis. Every number can be replicated from public files.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue:       #2563eb;
+      --blue-hover: #1d4ed8;
+      --blue-light: #eff6ff;
+      --blue-mid:   #bfdbfe;
+      --text:       #111827;
+      --text-mid:   #374151;
+      --text-muted: #6b7280;
+      --text-faint: #9ca3af;
+      --bg:         #f8faff;
+      --surface:    #ffffff;
+      --border:     #e5e7eb;
+      --shadow-sm:  0 1px 3px rgba(17,24,39,0.08);
+      --shadow-md:  0 4px 16px rgba(37,99,235,0.10);
+      --radius:     10px;
+      --ny-color:   #2563eb;
+      --tx-color:   #c2410c;
+      --ca-color:   #6b7280;
+      --alert:     #dc2626;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: #111827;
+      border-bottom: 1px solid #1f2937;
+      padding: 0 clamp(20px, 5vw, 48px);
+    }
+    .header-inner {
+      max-width: 900px; margin: 0 auto; height: 56px;
+      display: flex; align-items: center; gap: 16px;
+    }
+    .back-link {
+      font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600;
+      color: #9ca3af; text-decoration: none; display: flex; align-items: center; gap: 5px;
+      padding: 4px 8px 4px 4px; border-radius: 5px; transition: color 0.15s, background 0.15s; white-space: nowrap;
+    }
+    .back-link:hover { color: #60a5fa; background: rgba(96,165,250,0.1); }
+    .header-divider { width: 1px; height: 20px; background: #374151; flex-shrink: 0; }
+    header h1 {
+      font-family: 'Roboto Mono', monospace; font-size: 0.95rem; font-weight: 700;
+      color: #e5e7eb; letter-spacing: -0.02em;
+    }
+
+    .pill-nav {
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      padding: 10px clamp(20px, 5vw, 48px);
+      display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+    }
+    .pill-nav a {
+      font-size: 0.78rem; font-family: 'Roboto Mono', monospace; font-weight: 600;
+      padding: 4px 12px; border-radius: 20px; text-decoration: none;
+      border: 1px solid var(--border); color: var(--text-muted); background: var(--bg);
+      transition: all 0.15s; white-space: nowrap;
+    }
+    .pill-nav a:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
+    .pill-nav a.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+    .pill-label { font-size: 0.72rem; color: var(--text-faint); font-family: 'Roboto Mono', monospace; white-space: nowrap; }
+
+    .hero {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: clamp(32px, 5vw, 52px) clamp(20px, 5vw, 48px);
+    }
+    .hero-inner { max-width: 900px; margin: 0 auto; }
+    .breadcrumb {
+      font-family: 'Roboto Mono', monospace; font-size: 0.72rem;
+      color: var(--text-faint); margin-bottom: 14px;
+      display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+    }
+    .breadcrumb a { color: var(--blue); text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+    .breadcrumb span:last-child { color: #FF6319; }
+    .hero-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .hero-tag {
+      font-family: 'Roboto Mono', monospace; font-size: 0.68rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.08em; color: #FF6319;
+      background: #fff4ed; border: 1px solid #ffd0b3; border-radius: 4px; padding: 3px 8px;
+    }
+    .hero-updated { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; color: var(--text-faint); }
+    .hero h1 {
+      font-family: 'Roboto Mono', monospace; font-size: clamp(1.4rem, 3vw, 1.85rem);
+      font-weight: 700; color: var(--text); letter-spacing: -0.03em; line-height: 1.25; margin-bottom: 10px;
+    }
+    .hero h1 span { color: var(--blue); }
+    .hero p { font-size: 0.975rem; color: var(--text-muted); max-width: 680px; line-height: 1.7; }
+    .hero p a { color: var(--blue); text-decoration: none; border-bottom: 1px solid var(--blue-mid); }
+    .hero p a:hover { border-color: var(--blue); }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600;
+      text-decoration: none; border-radius: 7px; padding: 8px 14px;
+      transition: background 0.15s, border-color 0.15s; cursor: pointer; border: none;
+    }
+    .btn-outline { background: var(--surface); color: var(--text-muted); border: 1.5px solid var(--border); }
+    .btn-outline:hover { color: var(--blue); border-color: var(--blue-mid); background: var(--blue-light); }
+
+    main { flex: 1; padding: clamp(28px, 4vw, 48px) clamp(20px, 5vw, 48px); }
+    .main-inner { max-width: 900px; margin: 0 auto; }
+
+    .chart-actions { display:flex; gap:8px; margin-bottom:16px; }
+    .action-btn { display:inline-flex; align-items:center; gap:6px; background:var(--surface); color:var(--text-muted); font-family:'Roboto Mono',monospace; font-size:0.75rem; font-weight:600; padding:6px 14px; border-radius:6px; border:1px solid var(--border); cursor:pointer; transition:all 0.15s; }
+    .action-btn:hover { border-color:var(--blue); color:var(--blue); background:var(--blue-light); }
+    .action-btn:disabled { opacity:0.6; cursor:not-allowed; }
+
+    #chart-box {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); box-shadow: var(--shadow-sm);
+      padding: 20px 20px 0; overflow: hidden;
+    }
+    .chart-title {
+      font-family: 'Roboto Mono', monospace; font-size: 0.95rem; font-weight: 700;
+      color: var(--text); letter-spacing: -0.02em; margin-bottom: 6px; line-height: 1.35;
+    }
+    .chart-subtitle { font-size: 0.82rem; color: var(--text-muted); margin-bottom: 18px; line-height: 1.55; }
+    .legend { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 18px; align-items: center; }
+    .legend-item { display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: var(--text-mid); font-weight: 500; }
+    .legend-swatch { width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0; }
+
+    .chart-attribution {
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+      padding: 12px 16px; border-top: 1px solid var(--border); background: var(--bg);
+      font-size: 0.78rem; color: var(--text-faint); font-family: 'Roboto Mono', monospace;
+      margin: 20px -20px 0;
+    }
+    .chart-attribution a { color: var(--blue); text-decoration: none; }
+    .chart-attribution a:hover { text-decoration: underline; }
+
+    .chart-block + .chart-block-wrap { margin-top: 28px; }
+
+    .context-box {
+      margin-top: 28px; padding: 16px 20px;
+      background: var(--blue-light); border: 1px solid var(--blue-mid); border-radius: var(--radius);
+    }
+    .context-box p { font-size: 0.85rem; color: var(--text-mid); line-height: 1.65; }
+    .context-box p + p { margin-top: 8px; }
+    .context-box strong { color: var(--text); }
+
+    .footnotes {
+      margin-top: 16px; padding: 14px 18px;
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    }
+    .footnotes p { font-size: 0.78rem; color: var(--text-muted); line-height: 1.6; }
+    .footnotes p + p { margin-top: 6px; }
+    .footnotes strong { color: var(--text-mid); }
+    .footnotes a { color: var(--blue); text-decoration: none; border-bottom: 1px solid var(--blue-mid); }
+    .footnotes a:hover { border-color: var(--blue); }
+
+    footer { background: var(--surface); border-top: 1px solid var(--border); padding: 20px clamp(20px, 5vw, 48px); margin-top: auto; }
+    .footer-inner {
+      max-width: 900px; margin: 0 auto;
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+    }
+    .footer-copy { font-size: 0.8rem; color: var(--text-faint); }
+    .footer-links { display: flex; gap: 20px; align-items: center; }
+    .footer-links a { font-size: 0.8rem; color: var(--text-muted); text-decoration: none; transition: color 0.15s; }
+    .footer-links a:hover { color: var(--blue); }
+    .footer-support{display:inline-flex;align-items:center;gap:5px;font-size:0.8rem;font-weight:500;color:#2563eb;text-decoration:none;padding:5px 11px;border:1px solid rgba(37,99,235,0.45);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
+    .footer-support:hover{color:#fff;background:#2563eb;border-color:#2563eb;}
+    .footer-support svg{flex-shrink:0;}
+
+    .embed-modal { position:fixed; inset:0; background:rgba(0,0,0,0.45); display:flex; align-items:center; justify-content:center; z-index:1000; }
+    .embed-modal-box { background:var(--surface); border-radius:10px; padding:24px; max-width:540px; width:90%; box-shadow:0 8px 32px rgba(0,0,0,0.18); }
+    .embed-modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+    .embed-modal-title { font-family:'Roboto Mono',monospace; font-weight:700; font-size:0.9rem; color:var(--text); }
+    .embed-close { background:none; border:none; font-size:1.1rem; color:var(--text-muted); cursor:pointer; padding:2px 6px; border-radius:4px; }
+    .embed-close:hover { color:var(--text); background:var(--bg); }
+    .embed-modal-box > p { font-size:0.83rem; color:var(--text-muted); margin-bottom:10px; }
+    .embed-textarea { width:100%; height:80px; font-family:'Roboto Mono',monospace; font-size:0.72rem; border:1px solid var(--border); border-radius:6px; padding:10px; resize:none; color:var(--text-mid); background:var(--bg); margin-bottom:12px; }
+    .embed-copy-btn { background:var(--blue); color:#fff; font-family:'Roboto Mono',monospace; font-size:0.8rem; font-weight:600; padding:7px 18px; border:none; border-radius:6px; cursor:pointer; transition:background 0.15s; }
+    .embed-copy-btn:hover { background:#1d4ed8; }
+
+    @media (max-width: 540px) { .brand-slash, .brand-section { display: none; } }
+
+    .method-section { margin-bottom: 34px; }
+    .method-section h2 {
+      font-family: 'Roboto Mono', monospace; font-size: 1.05rem; font-weight: 700;
+      color: var(--text); letter-spacing: -0.02em; margin-bottom: 12px; line-height: 1.35;
+    }
+    .method-section p { font-size: 0.9rem; color: var(--text-mid); line-height: 1.7; margin-bottom: 10px; }
+    .method-section p a { color: var(--blue); text-decoration: none; border-bottom: 1px solid var(--blue-mid); }
+    .method-section p a:hover { border-color: var(--blue); }
+    .method-section ul { margin: 0 0 10px 20px; }
+    .method-section li { font-size: 0.9rem; color: var(--text-mid); line-height: 1.7; margin-bottom: 6px; }
+    .method-section code { font-family: 'Roboto Mono', monospace; font-size: 0.8em; background: var(--blue-light); padding: 1px 5px; border-radius: 4px; }
+    pre {
+      background: #111827; color: #e5e7eb; border-radius: 8px; padding: 16px 18px;
+      overflow-x: auto; font-family: 'Roboto Mono', monospace; font-size: 0.75rem;
+      line-height: 1.6; margin: 12px 0;
+    }
+    .method-table-wrap { overflow-x: auto; margin: 12px 0; }
+    .method-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    .method-table th {
+      font-family: 'Roboto Mono', monospace; font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.05em; color: var(--text-muted); text-align: left; padding: 8px 12px; border-bottom: 2px solid var(--border);
+    }
+    .method-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); color: var(--text-mid); }
+    .method-table td.mono { font-family: 'Roboto Mono', monospace; font-size: 0.75rem; }
+
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <a href="/nycuriosity_substack_posts/medicaid_provider_spending/" class="back-link">← medicaid-provider-spending</a>
+    <div class="header-divider"></div>
+    <h1>Methodology</h1>
+  </div>
+</header>
+
+<div class="pill-nav">
+  <span class="pill-label">Visuals in this post:</span>
+  <a href="../eyepic-case/">EyePic Case</a>
+  <a href="../spending-trend/">Per-Enrollee Spending</a>
+  <a href="../concentration/">Concentration</a>
+  <a href="../top-providers/">Top Providers</a>
+  <a href="../outlier-screen/">Outlier Screen</a>
+  <a href="../provider-lookup/">Provider Lookup</a>
+  <a href="./" class="active">Methodology</a>
+</div>
+
+<div class="hero">
+  <div class="hero-inner">
+    <div class="breadcrumb">
+      <a href="/">data.nycuriosity.com</a>
+      <span>›</span>
+      <a href="/nycuriosity_substack_posts/medicaid_provider_spending/">Medicaid Provider Spending</a>
+      <span>›</span>
+      <span>Methodology</span>
+    </div>
+    <div class="hero-meta">
+      <span class="hero-tag">Medicaid</span>
+      <span class="hero-updated">July 2026</span>
+    </div>
+    <h1>Every number here <span>can be replicated from public files</span></h1>
+    <p>This page documents the full pipeline: the federal claims file and its checksum, the registry join that assigns providers to states, the cleaning rule that removes $20 trillion of junk, the EyePic entity matching, and the honest limits of the data. A laptop and free software reproduce all of it.</p>
+  </div>
+</div>
+
+<main>
+  <div class="main-inner">
+    <div class="method-section">
+      <h2>The source is one federal file anyone can download</h2>
+      <p>All spending figures come from <a href="https://opendata.hhs.gov/datasets/medicaid-provider-spending/" target="_blank" rel="noopener">Medicaid Provider Spending by HCPCS</a>, published on HHS Open Data on February 9, 2026. It aggregates T-MSIS claim lines to billing NPI × servicing NPI × procedure code × month, from January 2018 through December 2024, for all states. Seven columns: two provider NPIs, the HCPCS code, the month, unique patients, claim lines, and total paid.</p>
+      <p>The file ships as an 11.5 GB CSV or a 3.1 GB Parquet file. The Parquet copy used here has SHA-256 checksum <code>f646d426126638dd0177cb14a86bfe7d7e9ed6b081a3e1c270bfe5070fb3fb94</code>, matching the published value, so you can verify you are analyzing the identical file.</p>
+      <p>Two companion files complete the pipeline: the <a href="https://download.cms.gov/nppes/NPI_Files.html" target="_blank" rel="noopener">CMS NPPES registry</a> (July 2026 monthly file), which maps every NPI to a name, practice state, and specialty, and the <a href="https://data.medicaid.gov/dataset/6165f45b-ca93-5bb5-9d06-db29c692a360" target="_blank" rel="noopener">CMS enrollment dataset</a> for per-enrollee denominators. Analysis ran in <a href="https://duckdb.org/" target="_blank" rel="noopener">DuckDB</a>, free and open source, on a laptop.</p>
+    </div>
+
+    <div class="method-section">
+      <h2>Four junk rows carry $20 trillion, so cleaning rules matter</h2>
+      <p>Summing the raw file's paid amounts gives $21.8 trillion, roughly four times what Medicaid actually spent nationally over these years. Nearly all of the excess sits in four rows attributed to "NPI" 5200000300, a state placeholder code, with the invalid procedure code "20". Real NPIs are ten digits starting with 1 or 2.</p>
+      <p>Every number in this project therefore uses one cleaning rule: <strong>keep only rows whose billing NPI is a well-formed ten-digit identifier starting with 1 or 2.</strong></p>
+      <pre>CREATE VIEW spending_clean AS
+SELECT * FROM spending
+WHERE billing_npi IS NOT NULL
+  AND regexp_matches(billing_npi, '^[12][0-9]{9}$');</pre>
+      <p>That leaves $1.10 trillion in nationally attributable payments. It is deliberately not a filter on payment size: six and seven figure single claim lines are sometimes real (gene and cell therapies bill $400,000 to $2 million per dose through these codes), so dropping "big" rows would delete real spending.</p>
+    </div>
+
+    <div class="method-section">
+      <h2>States come from the provider registry, not the claims</h2>
+      <p>The claims file has no state column. Providers are assigned to states by joining the billing NPI to its practice location in the NPPES registry:</p>
+      <pre>SELECT p.state, sum(s.paid) AS paid
+FROM spending_clean s
+JOIN providers p ON s.billing_npi = p.npi
+GROUP BY p.state;</pre>
+      <p>Three consequences. First, spending follows the biller's registered location, so a provider treating patients across state lines is counted once, in its home state. Second, rows with a blank or invalid billing NPI (about $400 billion nationally) cannot be attributed to any state and are excluded. Third, NPPES reflects current registrations; a provider that moved or deregistered since billing carries its current-file location.</p>
+    </div>
+
+    <div class="method-section">
+      <h2>The EyePic companies were matched by their legal names</h2>
+      <p>The <a href="https://ag.ny.gov/press-release/2026/attorney-general-james-and-comptroller-dinapoli-announce-takedown-9-million" target="_blank" rel="noopener">indictment</a> names seven companies. Six have NPIs, matched by legal business name in NPPES; MGBK Management, LLC is a management company with no NPI and no claims. All matched records are in Brooklyn or Manhattan with authorized officials consistent with the scheme described by prosecutors (none list the defendant himself).</p>
+      <div class="method-table-wrap"><table class="method-table">
+        <tr><th>Company (as indicted)</th><th>NPI</th><th>Paid 2018-2024 (dollars)</th></tr>
+        <tr><td>Harlem Eye Care, Inc.</td><td class="mono">1598274243</td><td class="mono">10,896,442</td></tr>
+        <tr><td>Graham Eye Care, LLC</td><td class="mono">1174039531</td><td class="mono">9,382,175</td></tr>
+        <tr><td>Family Eye Care Ophthalmology, P.C.</td><td class="mono">1013453315</td><td class="mono">8,543,005</td></tr>
+        <tr><td>Parkslope Eye Care, Inc.</td><td class="mono">1386120616</td><td class="mono">3,374,116</td></tr>
+        <tr><td>9th Street Vision Care, Inc.</td><td class="mono">1679943005</td><td class="mono">1,842,499</td></tr>
+        <tr><td>Flatbush Eye Care, Inc.</td><td class="mono">1427705755</td><td class="mono">74,671</td></tr>
+        <tr><td>MGBK Management, LLC</td><td class="mono">no NPI</td><td class="mono">0</td></tr>
+      </table></div>
+      <p>A second NPPES record also named Graham Eye Care LLC (NPI 1174110860) has no claims in the file. Payments shown are facts about Medicaid disbursements; they are not a measure of fraud, and the charges are allegations. The indictment covers January 2024 through July 2025; this dataset ends in December 2024, so the $7.6 million the six companies billed in 2024 is the visible overlap with the charged period, not the full $9 million alleged.</p>
+    </div>
+
+    <div class="method-section">
+      <h2>What this data can and cannot say</h2>
+      <ul>
+        <li><strong>It is a subset of Medicaid.</strong> Only outpatient and professional claim lines carrying HCPCS codes are included. Institutional per-diem claims, most pharmacy billing, and capitation payments are not, so state totals here are far below total Medicaid budgets.</li>
+        <li><strong>Managed care encounter completeness improved over time.</strong> Part of every state's growth, and most of Texas's 2020 to 2021 jump, reflects states getting better at reporting encounters to T-MSIS rather than new spending.</li>
+        <li><strong>2024 is preliminary.</strong> CMS flags 2024 as subject to change as states finalize submissions; December 2024 in particular is visibly incomplete for some billers.</li>
+        <li><strong>Patient counts do not sum.</strong> The patients field counts unique beneficiaries within each provider-procedure-month cell; summing cells overstates unique patients, so this project reports paid amounts and claim lines instead.</li>
+        <li><strong>Payments are not verdicts.</strong> Every provider-level figure is a record of what Medicaid paid, nothing more.</li>
+      </ul>
+    </div>
+
+    <div class="method-section">
+      <h2>Replicate it in an afternoon</h2>
+      <p>Download the Parquet file and the NPPES monthly file, install DuckDB, and load:</p>
+      <pre>CREATE TABLE spending AS
+SELECT BILLING_PROVIDER_NPI_NUM AS billing_npi,
+       SERVICING_PROVIDER_NPI_NUM AS servicing_npi,
+       HCPCS_CODE AS hcpcs, CLAIM_FROM_MONTH AS month,
+       TOTAL_PATIENTS AS patients,
+       TOTAL_CLAIM_LINES AS claim_lines,
+       TOTAL_PAID AS paid
+FROM 'medicaid-provider-spending.parquet';
+
+CREATE TABLE providers AS
+SELECT "NPI" AS npi,
+       "Provider Organization Name (Legal Business Name)" AS org_name,
+       "Provider Business Practice Location Address State Name" AS state,
+       "Healthcare Provider Taxonomy Code_1" AS taxonomy_code
+FROM read_csv('npidata_pfile_*.csv', header=true, all_varchar=true);</pre>
+      <p>Then any question in this project is a short query. How much did a company make?</p>
+      <pre>SELECT substr(month, 1, 4) AS yr, sum(paid)
+FROM spending_clean
+WHERE billing_npi = '1598274243'   -- Harlem Eye Care, Inc.
+GROUP BY 1 ORDER BY 1;</pre>
+      <p>The growth screen from the <a href="../outlier-screen/">outlier page</a>:</p>
+      <pre>WITH py AS (
+  SELECT billing_npi, substr(month,1,4) AS yr, sum(paid) AS paid
+  FROM spending_clean GROUP BY 1, 2
+)
+SELECT a.billing_npi, a.yr, b.paid AS prior, a.paid,
+       a.paid / b.paid AS growth
+FROM py a JOIN py b
+  ON a.billing_npi = b.billing_npi
+ AND cast(a.yr AS INT) = cast(b.yr AS INT) + 1
+WHERE b.paid >= 100000 AND a.paid >= 1000000
+  AND a.paid / b.paid >= 5
+ORDER BY growth DESC;</pre>
+      <p>Every chart's underlying CSV is in this project's <a href="https://github.com/TalR24/nycur-data-website/tree/main/nycuriosity_substack_posts/medicaid_provider_spending/data" target="_blank" rel="noopener">data folder on GitHub</a>.</p>
+    </div>
+
+    <div class="footnotes">
+      <p><strong>Sources:</strong> <a href="https://opendata.hhs.gov/datasets/medicaid-provider-spending/" target="_blank" rel="noopener">HHS Open Data, Medicaid Provider Spending by HCPCS</a> (2026-02-09 release); <a href="https://download.cms.gov/nppes/NPI_Files.html" target="_blank" rel="noopener">CMS NPPES Data Dissemination</a> (July 2026); <a href="https://data.medicaid.gov/dataset/6165f45b-ca93-5bb5-9d06-db29c692a360" target="_blank" rel="noopener">CMS State Medicaid and CHIP Enrollment Data</a> (June 2026 release); <a href="https://www.nucc.org/" target="_blank" rel="noopener">NUCC provider taxonomy</a> (v26.0); <a href="https://ag.ny.gov/press-release/2026/attorney-general-james-and-comptroller-dinapoli-announce-takedown-9-million" target="_blank" rel="noopener">NY Attorney General press release</a> (February 2026). Created by Tal Roded · NYCuriosity.</p>
+    </div>
+  </div>
+</main>
+
+<div id="embedModal" class="embed-modal" style="display:none">
+  <div class="embed-modal-box">
+    <div class="embed-modal-header">
+      <span class="embed-modal-title">Embed this chart</span>
+      <button class="embed-close" onclick="closeEmbed()">✕</button>
+    </div>
+    <p>Copy and paste into your webpage:</p>
+    <textarea id="embedCode" class="embed-textarea" readonly></textarea>
+    <button class="embed-copy-btn" onclick="copyEmbed()">Copy code</button>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-inner">
+    <span class="footer-copy">© NYCuriosity · Tal Roded</span>
+    <nav class="footer-links">
+      <a href="https://buymeacoffee.com/nycuriosity" class="footer-support" target="_blank" rel="noopener" aria-label="Support my work on Buy Me a Coffee"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>Support my work</a>
+      <a href="https://talroded.nycuriosity.com" target="_blank" rel="noopener">About</a>
+      <a href="https://www.nycuriosity.com" target="_blank" rel="noopener">Substack</a>
+      <a href="https://github.com/TalR24/nycur-data-website" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </div>
+</footer>
+
+<script>
+
+</script>
+
+</body>
+</html>

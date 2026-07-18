@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Medicaid Provider Payments per Enrollee: NY, TX, CA — NYCuriosity</title>
+  <meta name="description" content="New York's Medicaid provider payments per enrollee run more than double California's in federal T-MSIS claims data, 2018 to 2024.">
+  <meta property="og:type"        content="website">
+  <meta property="og:url"         content="https://data.nycuriosity.com/nycuriosity_substack_posts/medicaid_provider_spending/spending-trend/">
+  <meta property="og:title"       content="Medicaid Provider Payments per Enrollee: NY, TX, CA — NYCuriosity">
+  <meta property="og:description" content="New York's Medicaid provider payments per enrollee run more than double California's in federal T-MSIS claims data, 2018 to 2024.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue:       #2563eb;
+      --blue-hover: #1d4ed8;
+      --blue-light: #eff6ff;
+      --blue-mid:   #bfdbfe;
+      --text:       #111827;
+      --text-mid:   #374151;
+      --text-muted: #6b7280;
+      --text-faint: #9ca3af;
+      --bg:         #f8faff;
+      --surface:    #ffffff;
+      --border:     #e5e7eb;
+      --shadow-sm:  0 1px 3px rgba(17,24,39,0.08);
+      --shadow-md:  0 4px 16px rgba(37,99,235,0.10);
+      --radius:     10px;
+      --ny-color:   #2563eb;
+      --tx-color:   #c2410c;
+      --ca-color:   #6b7280;
+      --alert:     #dc2626;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: #111827;
+      border-bottom: 1px solid #1f2937;
+      padding: 0 clamp(20px, 5vw, 48px);
+    }
+    .header-inner {
+      max-width: 900px; margin: 0 auto; height: 56px;
+      display: flex; align-items: center; gap: 16px;
+    }
+    .back-link {
+      font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600;
+      color: #9ca3af; text-decoration: none; display: flex; align-items: center; gap: 5px;
+      padding: 4px 8px 4px 4px; border-radius: 5px; transition: color 0.15s, background 0.15s; white-space: nowrap;
+    }
+    .back-link:hover { color: #60a5fa; background: rgba(96,165,250,0.1); }
+    .header-divider { width: 1px; height: 20px; background: #374151; flex-shrink: 0; }
+    header h1 {
+      font-family: 'Roboto Mono', monospace; font-size: 0.95rem; font-weight: 700;
+      color: #e5e7eb; letter-spacing: -0.02em;
+    }
+
+    .pill-nav {
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      padding: 10px clamp(20px, 5vw, 48px);
+      display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+    }
+    .pill-nav a {
+      font-size: 0.78rem; font-family: 'Roboto Mono', monospace; font-weight: 600;
+      padding: 4px 12px; border-radius: 20px; text-decoration: none;
+      border: 1px solid var(--border); color: var(--text-muted); background: var(--bg);
+      transition: all 0.15s; white-space: nowrap;
+    }
+    .pill-nav a:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
+    .pill-nav a.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+    .pill-label { font-size: 0.72rem; color: var(--text-faint); font-family: 'Roboto Mono', monospace; white-space: nowrap; }
+
+    .hero {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: clamp(32px, 5vw, 52px) clamp(20px, 5vw, 48px);
+    }
+    .hero-inner { max-width: 900px; margin: 0 auto; }
+    .breadcrumb {
+      font-family: 'Roboto Mono', monospace; font-size: 0.72rem;
+      color: var(--text-faint); margin-bottom: 14px;
+      display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+    }
+    .breadcrumb a { color: var(--blue); text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+    .breadcrumb span:last-child { color: #FF6319; }
+    .hero-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .hero-tag {
+      font-family: 'Roboto Mono', monospace; font-size: 0.68rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.08em; color: #FF6319;
+      background: #fff4ed; border: 1px solid #ffd0b3; border-radius: 4px; padding: 3px 8px;
+    }
+    .hero-updated { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; color: var(--text-faint); }
+    .hero h1 {
+      font-family: 'Roboto Mono', monospace; font-size: clamp(1.4rem, 3vw, 1.85rem);
+      font-weight: 700; color: var(--text); letter-spacing: -0.03em; line-height: 1.25; margin-bottom: 10px;
+    }
+    .hero h1 span { color: var(--blue); }
+    .hero p { font-size: 0.975rem; color: var(--text-muted); max-width: 680px; line-height: 1.7; }
+    .hero p a { color: var(--blue); text-decoration: none; border-bottom: 1px solid var(--blue-mid); }
+    .hero p a:hover { border-color: var(--blue); }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600;
+      text-decoration: none; border-radius: 7px; padding: 8px 14px;
+      transition: background 0.15s, border-color 0.15s; cursor: pointer; border: none;
+    }
+    .btn-outline { background: var(--surface); color: var(--text-muted); border: 1.5px solid var(--border); }
+    .btn-outline:hover { color: var(--blue); border-color: var(--blue-mid); background: var(--blue-light); }
+
+    main { flex: 1; padding: clamp(28px, 4vw, 48px) clamp(20px, 5vw, 48px); }
+    .main-inner { max-width: 900px; margin: 0 auto; }
+
+    .chart-actions { display:flex; gap:8px; margin-bottom:16px; }
+    .action-btn { display:inline-flex; align-items:center; gap:6px; background:var(--surface); color:var(--text-muted); font-family:'Roboto Mono',monospace; font-size:0.75rem; font-weight:600; padding:6px 14px; border-radius:6px; border:1px solid var(--border); cursor:pointer; transition:all 0.15s; }
+    .action-btn:hover { border-color:var(--blue); color:var(--blue); background:var(--blue-light); }
+    .action-btn:disabled { opacity:0.6; cursor:not-allowed; }
+
+    #chart-box {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); box-shadow: var(--shadow-sm);
+      padding: 20px 20px 0; overflow: hidden;
+    }
+    .chart-title {
+      font-family: 'Roboto Mono', monospace; font-size: 0.95rem; font-weight: 700;
+      color: var(--text); letter-spacing: -0.02em; margin-bottom: 6px; line-height: 1.35;
+    }
+    .chart-subtitle { font-size: 0.82rem; color: var(--text-muted); margin-bottom: 18px; line-height: 1.55; }
+    .legend { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 18px; align-items: center; }
+    .legend-item { display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: var(--text-mid); font-weight: 500; }
+    .legend-swatch { width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0; }
+
+    .chart-attribution {
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+      padding: 12px 16px; border-top: 1px solid var(--border); background: var(--bg);
+      font-size: 0.78rem; color: var(--text-faint); font-family: 'Roboto Mono', monospace;
+      margin: 20px -20px 0;
+    }
+    .chart-attribution a { color: var(--blue); text-decoration: none; }
+    .chart-attribution a:hover { text-decoration: underline; }
+
+    .chart-block + .chart-block-wrap { margin-top: 28px; }
+
+    .context-box {
+      margin-top: 28px; padding: 16px 20px;
+      background: var(--blue-light); border: 1px solid var(--blue-mid); border-radius: var(--radius);
+    }
+    .context-box p { font-size: 0.85rem; color: var(--text-mid); line-height: 1.65; }
+    .context-box p + p { margin-top: 8px; }
+    .context-box strong { color: var(--text); }
+
+    .footnotes {
+      margin-top: 16px; padding: 14px 18px;
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    }
+    .footnotes p { font-size: 0.78rem; color: var(--text-muted); line-height: 1.6; }
+    .footnotes p + p { margin-top: 6px; }
+    .footnotes strong { color: var(--text-mid); }
+    .footnotes a { color: var(--blue); text-decoration: none; border-bottom: 1px solid var(--blue-mid); }
+    .footnotes a:hover { border-color: var(--blue); }
+
+    footer { background: var(--surface); border-top: 1px solid var(--border); padding: 20px clamp(20px, 5vw, 48px); margin-top: auto; }
+    .footer-inner {
+      max-width: 900px; margin: 0 auto;
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+    }
+    .footer-copy { font-size: 0.8rem; color: var(--text-faint); }
+    .footer-links { display: flex; gap: 20px; align-items: center; }
+    .footer-links a { font-size: 0.8rem; color: var(--text-muted); text-decoration: none; transition: color 0.15s; }
+    .footer-links a:hover { color: var(--blue); }
+    .footer-support{display:inline-flex;align-items:center;gap:5px;font-size:0.8rem;font-weight:500;color:#2563eb;text-decoration:none;padding:5px 11px;border:1px solid rgba(37,99,235,0.45);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
+    .footer-support:hover{color:#fff;background:#2563eb;border-color:#2563eb;}
+    .footer-support svg{flex-shrink:0;}
+
+    .embed-modal { position:fixed; inset:0; background:rgba(0,0,0,0.45); display:flex; align-items:center; justify-content:center; z-index:1000; }
+    .embed-modal-box { background:var(--surface); border-radius:10px; padding:24px; max-width:540px; width:90%; box-shadow:0 8px 32px rgba(0,0,0,0.18); }
+    .embed-modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+    .embed-modal-title { font-family:'Roboto Mono',monospace; font-weight:700; font-size:0.9rem; color:var(--text); }
+    .embed-close { background:none; border:none; font-size:1.1rem; color:var(--text-muted); cursor:pointer; padding:2px 6px; border-radius:4px; }
+    .embed-close:hover { color:var(--text); background:var(--bg); }
+    .embed-modal-box > p { font-size:0.83rem; color:var(--text-muted); margin-bottom:10px; }
+    .embed-textarea { width:100%; height:80px; font-family:'Roboto Mono',monospace; font-size:0.72rem; border:1px solid var(--border); border-radius:6px; padding:10px; resize:none; color:var(--text-mid); background:var(--bg); margin-bottom:12px; }
+    .embed-copy-btn { background:var(--blue); color:#fff; font-family:'Roboto Mono',monospace; font-size:0.8rem; font-weight:600; padding:7px 18px; border:none; border-radius:6px; cursor:pointer; transition:background 0.15s; }
+    .embed-copy-btn:hover { background:#1d4ed8; }
+
+    @media (max-width: 540px) { .brand-slash, .brand-section { display: none; } }
+
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <a href="/nycuriosity_substack_posts/medicaid_provider_spending/" class="back-link">← medicaid-provider-spending</a>
+    <div class="header-divider"></div>
+    <h1>Per-Enrollee Spending</h1>
+  </div>
+</header>
+
+<div class="pill-nav">
+  <span class="pill-label">Visuals in this post:</span>
+  <a href="../eyepic-case/">EyePic Case</a>
+  <a href="./" class="active">Per-Enrollee Spending</a>
+  <a href="../concentration/">Concentration</a>
+  <a href="../top-providers/">Top Providers</a>
+  <a href="../outlier-screen/">Outlier Screen</a>
+  <a href="../provider-lookup/">Provider Lookup</a>
+  <a href="../methodology/">Methodology</a>
+</div>
+
+<div class="hero">
+  <div class="hero-inner">
+    <div class="breadcrumb">
+      <a href="/">data.nycuriosity.com</a>
+      <span>›</span>
+      <a href="/nycuriosity_substack_posts/medicaid_provider_spending/">Medicaid Provider Spending</a>
+      <span>›</span>
+      <span>Per-Enrollee Spending</span>
+    </div>
+    <div class="hero-meta">
+      <span class="hero-tag">Medicaid</span>
+      <span class="hero-updated">July 2026</span>
+    </div>
+    <h1>New York pays providers <span>more than double per enrollee</span> what California does</h1>
+    <p>Dividing each state's Medicaid provider payments by its enrollment puts the three states on one scale. New York reached $7,379 per enrollee in 2024. The gap is partly real generosity, especially home care, and partly differences in what each state reports to the federal claims system.</p>
+    <div class="hero-actions">
+      <a href="../data/state_per_enrollee_annual.csv" download class="btn btn-outline">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download CSV
+      </a>
+    </div>
+  </div>
+</div>
+
+<main>
+  <div class="main-inner">
+    <div class="chart-actions">
+      <button class="action-btn" onclick="downloadChart(this)">&#11015; Download PNG</button>
+      <button class="action-btn" onclick="showEmbed()">&#60;/&#62; Embed</button>
+    </div>
+
+    <div id="chart-box">
+      <div class="chart-block">
+        <div class="chart-title">New York's provider payments per enrollee run more than double California's</div>
+        <div class="chart-subtitle">Medicaid paid amounts on HCPCS-coded claim lines per enrollee per year, 2018 to 2024. Dollars are payments to in-state providers divided by average monthly Medicaid and CHIP enrollment.</div>
+        <div style="position:relative; height:380px;"><canvas id="trendChart"></canvas></div>
+      </div>
+      <div class="chart-attribution">
+        <span>Created by Tal Roded · NYCuriosity · Sources: <a href="https://opendata.hhs.gov/datasets/medicaid-provider-spending/" target="_blank" rel="noopener">HHS Open Data</a>, <a href="https://data.medicaid.gov/" target="_blank" rel="noopener">CMS enrollment data</a></span>
+      </div>
+    </div>
+
+    <div class="context-box">
+      <p><strong>New York spent $7,379 per enrollee on these claims in 2024, against $3,239 in California and $5,464 in Texas.</strong> Some of the gap is real program generosity: New York's Medicaid covers more home care and personal assistance services than almost any state, and those services bill through exactly the codes this dataset captures.</p>
+      <p><strong>Read the Texas line carefully.</strong> Its jump from $1,607 in 2020 to $4,382 in 2021 is too fast to be a real spending change. States improved their T-MSIS managed care encounter reporting over this window, so part of every state's growth, and most of that Texas jump, is more complete data rather than more spending.</p>
+    </div>
+
+    <div class="footnotes">
+      <p><strong>What this measures:</strong> Medicaid and CHIP paid amounts on outpatient and professional claim lines carrying a HCPCS procedure code, attributed to states by the billing provider's practice location in the NPPES registry. It excludes institutional per-diem claims, most pharmacy billing, and payments that could not be tied to a valid billing NPI, so it is a large subset of Medicaid spending rather than the whole program.</p>
+      <p><strong>Denominator:</strong> average monthly Total Medicaid and CHIP Enrollment for each state and year from the CMS Performance Indicator dataset.</p>
+      <p><strong>2024 figures are preliminary</strong> and will change as states finalize T-MSIS submissions.</p>
+      <p><strong>Sources:</strong> <a href="https://opendata.hhs.gov/datasets/medicaid-provider-spending/" target="_blank" rel="noopener">HHS Open Data, Medicaid Provider Spending by HCPCS</a>; <a href="https://npiregistry.cms.hhs.gov/" target="_blank" rel="noopener">CMS NPPES</a>; <a href="https://data.medicaid.gov/dataset/6165f45b-ca93-5bb5-9d06-db29c692a360" target="_blank" rel="noopener">CMS State Medicaid and CHIP Applications, Eligibility Determinations, and Enrollment Data</a>. Author's analysis; replication steps in the <a href="../methodology/">methodology</a>.</p>
+    </div>
+  </div>
+</main>
+
+<div id="embedModal" class="embed-modal" style="display:none">
+  <div class="embed-modal-box">
+    <div class="embed-modal-header">
+      <span class="embed-modal-title">Embed this chart</span>
+      <button class="embed-close" onclick="closeEmbed()">✕</button>
+    </div>
+    <p>Copy and paste into your webpage:</p>
+    <textarea id="embedCode" class="embed-textarea" readonly></textarea>
+    <button class="embed-copy-btn" onclick="copyEmbed()">Copy code</button>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-inner">
+    <span class="footer-copy">© NYCuriosity · Tal Roded</span>
+    <nav class="footer-links">
+      <a href="https://buymeacoffee.com/nycuriosity" class="footer-support" target="_blank" rel="noopener" aria-label="Support my work on Buy Me a Coffee"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>Support my work</a>
+      <a href="https://talroded.nycuriosity.com" target="_blank" rel="noopener">About</a>
+      <a href="https://www.nycuriosity.com" target="_blank" rel="noopener">Substack</a>
+      <a href="https://github.com/TalR24/nycur-data-website" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </div>
+</footer>
+
+<script>
+  const TREND = {'years': ['2018', '2019', '2020', '2021', '2022', '2023', '2024'], 'NY': [2862, 4792, 6264, 6570, 7121, 7484, 7379], 'TX': [838, 925, 1607, 4382, 4620, 4787, 5464], 'CA': [2516, 2660, 2664, 2864, 2802, 3262, 3239]};
+  function fmt(n) {
+    if (n >= 1e9) return '$' + (n/1e9).toFixed(1).replace(/\.0$/,'') + 'B';
+    if (n >= 1e6) return '$' + (n/1e6).toFixed(1).replace(/\.0$/,'') + 'M';
+    if (n >= 1e3) return '$' + Math.round(n/1e3) + 'K';
+    return '$' + n.toLocaleString();
+  }
+
+  new Chart(document.getElementById('trendChart'), {
+    type: 'line',
+    data: {
+      labels: TREND.years,
+      datasets: [
+        { label: 'New York', data: TREND.NY, borderColor: '#2563eb', backgroundColor: '#2563eb', tension: 0, pointRadius: 3.5 },
+        { label: 'Texas', data: TREND.TX, borderColor: '#c2410c', backgroundColor: '#c2410c', tension: 0, pointRadius: 3.5 },
+        { label: 'California', data: TREND.CA, borderColor: '#6b7280', backgroundColor: '#6b7280', tension: 0, pointRadius: 3.5 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom', labels: { boxWidth: 12, font: { family: "'Inter', sans-serif", size: 12 } } },
+        tooltip: { callbacks: { label: c => c.dataset.label + ': $' + c.parsed.y.toLocaleString() + ' per enrollee' } }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { family: "'Roboto Mono', monospace", size: 11 } } },
+        y: { beginAtZero: true, ticks: { callback: v => '$' + v.toLocaleString(), font: { family: "'Roboto Mono', monospace", size: 11 } }, grid: { color: '#e5e7eb' } }
+      }
+    }
+  });
+
+  async function downloadChart(btn) {
+    const orig = btn.innerHTML;
+    btn.innerHTML = '⏳ Capturing…'; btn.disabled = true;
+    try {
+      const el = document.getElementById('chart-box');
+      const canvas = await html2canvas(el, { backgroundColor:'#ffffff', scale:2, useCORS:true, logging:false });
+      const a = document.createElement('a');
+      a.download = 'medicaid-per-enrollee-trend.png';
+      a.href = canvas.toDataURL('image/png'); a.click();
+    } finally { btn.innerHTML = orig; btn.disabled = false; }
+  }
+  function showEmbed() {
+    const url = location.origin + location.pathname;
+    document.getElementById('embedCode').value =
+      `<iframe src="${url}" width="900" height="800" frameborder="0" style="border:1px solid #e5e7eb; border-radius:8px;" loading="lazy"></iframe>`;
+    document.getElementById('embedModal').style.display = 'flex';
+  }
+  function closeEmbed() { document.getElementById('embedModal').style.display = 'none'; }
+  function copyEmbed() {
+    const ta = document.getElementById('embedCode'); ta.select();
+    navigator.clipboard.writeText(ta.value).then(() => {
+      const btn = document.querySelector('.embed-copy-btn');
+      btn.textContent = '✓ Copied!';
+      setTimeout(() => btn.textContent = 'Copy code', 2000);
+    });
+  }
+</script>
+
+</body>
+</html>
