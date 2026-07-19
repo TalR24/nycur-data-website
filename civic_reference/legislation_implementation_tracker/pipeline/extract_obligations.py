@@ -442,7 +442,9 @@ def main() -> None:
                        reverse=True),
         "obligations": flat,
     }
-    OUT_JSON.write_text(json.dumps(out, indent=1))
+    # compact separators: the file is large (8k+ obligations) and every
+    # tracker page fetches it; GitHub Pages gzips it over the wire
+    OUT_JSON.write_text(json.dumps(out, separators=(",", ":")))
 
     # CSV companion for the Download CSV button
     import csv as csvmod

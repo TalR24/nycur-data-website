@@ -260,7 +260,11 @@ def main() -> None:
                 "legistar_url": law.get("legistar_url"),
             })
 
-    # Stats + dedupe (same person listed twice on one bill)
+    # Stats + dedupe (same person listed twice on one bill).
+    # Legislation details are normalized into one lookup table keyed
+    # "tracker:matter_id" — a 40-sponsor law stores its title once, and each
+    # member keeps only {k, prime} references. Keeps members.json small.
+    leg_table: dict[str, dict] = {}
     out_members = []
     for m in roster:
         seen = set()
@@ -271,6 +275,10 @@ def main() -> None:
                 continue
             seen.add(k)
             legs.append(l)
+            tk = f'{l["tracker"]}:{l["matter_id"]}'
+            if tk not in leg_table:
+                leg_table[tk] = {kk: vv for kk, vv in l.items()
+                                 if kk not in ("tracker", "matter_id", "prime")}
         legs.sort(key=lambda l: (-(l["year"] or 0), l["label"] or ""))
         fiscal_legs = [l for l in legs if l["tracker"] == "fiscal"]
         impl_legs = [l for l in legs if l["tracker"] == "impl"]
@@ -292,16 +300,20 @@ def main() -> None:
         }
         rec = {k: v for k, v in m.items() if not k.startswith("_")}
         rec["stats"] = stats
+        rec["legislation"] = [
+            {"k": f'{l["tracker"]}:{l["matter_id"]}', "prime": l["prime"]}
+            for l in legs]
         out_members.append(rec)
 
     out_members.sort(key=lambda m: (not m["current"], m.get("district") or 99,
                                     m["full_name"]))
     OUT.write_text(json.dumps({
         "generated_at": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
+        "legislation": leg_table,
         "members": out_members,
         "unmatched_sponsors": dict(sorted(matcher.unmatched.items(),
                                           key=lambda x: -x[1])),
-    }, indent=1))
+    }, separators=(",", ":")))
     total_leg = sum(m["stats"]["legislation_total"] for m in out_members)
     with_any = sum(1 for m in out_members if m["stats"]["legislation_total"])
     print(f"Wrote {OUT}: {len(out_members)} members, "

@@ -475,8 +475,15 @@
       + '<div class="stat-pill"><span class="sp-num">' + (pct == null ? '—' : pct + '%') + '</span><span class="sp-label">Share of their enacted laws carrying at least one agency obligation</span></div>'
       + '</div>';
 
-    var fiscal = m.legislation.filter(function (l) { return l.tracker === 'fiscal'; });
-    var impl = m.legislation.filter(function (l) { return l.tracker === 'impl'; });
+    // per-member entries are {k: "tracker:matter_id", prime}; details live
+    // once in the DATA.legislation lookup table
+    var resolved = m.legislation.map(function (x) {
+      var parts = x.k.split(':');
+      var info = DATA.legislation[x.k] || {};
+      return Object.assign({ tracker: parts[0], matter_id: parts[1], prime: x.prime }, info);
+    });
+    var fiscal = resolved.filter(function (l) { return l.tracker === 'fiscal'; });
+    var impl = resolved.filter(function (l) { return l.tracker === 'impl'; });
 
     if (impl.length) {
       html += '<div class="section-head">Enacted laws in the Implementation Tracker (' + impl.length + ')</div>';
@@ -502,7 +509,7 @@
       });
     }
     if (!m.legislation.length) {
-      html += '<p class="profile-note">No legislation by this member appears in either tracker: no bill of theirs carries a non-zero fiscal impact statement, and none of their sponsored laws from 2024 on has been parsed for obligations.</p>';
+      html += '<p class="profile-note">No legislation by this member appears in either tracker: no bill of theirs carries a non-zero fiscal impact statement, and none of their sponsored laws since 2014 has been parsed for obligations.</p>';
     }
 
     html += footnotesHtml();
@@ -511,7 +518,7 @@
 
   function footnotesHtml() {
     return '<div class="footnotes">'
-      + '<p><strong>What counts:</strong> a member\'s profile includes every bill where they appear as prime sponsor or co-sponsor in the <a href="../../nyc_council_fiscal_impacts_tracker/">Fiscal Impacts Tracker</a> (bills with a non-zero fiscal impact statement, 2014 to present) or the <a href="../../legislation_implementation_tracker/">Implementation Tracker</a> (enacted local laws parsed for agency obligations, 2024 to present). Legislation outside those datasets does not appear, so totals understate a member\'s full legislative record.</p>'
+      + '<p><strong>What counts:</strong> a member\'s profile includes every bill where they appear as prime sponsor or co-sponsor in the <a href="../../nyc_council_fiscal_impacts_tracker/">Fiscal Impacts Tracker</a> (bills with a non-zero fiscal impact statement, 2014 to present) or the <a href="../../legislation_implementation_tracker/">Implementation Tracker</a> (enacted local laws parsed for agency obligations, 2014 to present). Legislation outside those datasets does not appear, so totals understate a member\'s full legislative record.</p>'
       + '<p><strong>Summed fiscal impacts overlap:</strong> a bill with 10 sponsors counts toward all 10 members\' totals, so member totals cannot be added together.</p>'
       + '<p><strong>Sponsor matching:</strong> the fiscal tracker records last names only; they are matched to members using service years, with ambiguous cases resolved manually. Roster of members, parties, and districts compiled from Wikipedia\'s New York City Council pages and council.nyc.gov; district boundaries from the NYC ArcGIS City Council Districts layer (2023 lines).</p>'
       + '</div>';
