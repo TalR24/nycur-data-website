@@ -54,24 +54,29 @@ jobs:
             git push
           fi
 
-      - name: Push members CSV to premium repo
+      - name: Push members CSV to premium repo and send member alerts
         env:
           PREMIUM_PUSH_TOKEN: ${{ secrets.PREMIUM_PUSH_TOKEN }}
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
         run: |
-          # obligations.csv is members-only: it lives in the private premium
-          # repo (served behind Cloudflare Access), never in this public repo
-          CSV=civic_reference/legislation_implementation_tracker/data/obligations.csv
-          if [ ! -f "$CSV" ]; then echo "No CSV generated; skipping."; exit 0; fi
+          # obligations.csv, alert subscriptions, and the alert state are
+          # members-only: they live in the private premium repo (served
+          # behind Cloudflare Access), never in this public repo
           git clone --depth 1 "https://TalR24:${PREMIUM_PUSH_TOKEN}@github.com/TalR24/nycur-data-premium.git" /tmp/premium
-          mkdir -p "/tmp/premium/civic_reference/legislation_implementation_tracker/data"
-          cp "$CSV" "/tmp/premium/$CSV"
+          CSV=civic_reference/legislation_implementation_tracker/data/obligations.csv
+          if [ -f "$CSV" ]; then
+            mkdir -p "/tmp/premium/civic_reference/legislation_implementation_tracker/data"
+            cp "$CSV" "/tmp/premium/$CSV"
+          fi
+          PREMIUM_DIR=/tmp/premium python3 civic_reference/nyc_council_legislation_trackers/pipeline/send_alerts.py
           cd /tmp/premium
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add "$CSV"
+          git add "$CSV" civic_reference/legislation_implementation_tracker/data/alerts_state.json
           if git diff --cached --quiet; then
-            echo "Members CSV unchanged."
+            echo "Premium data unchanged."
           else
-            git commit -m "Monthly legislation implementation members CSV refresh"
+            git commit -m "Monthly refresh: members CSV + alert state"
             git push
           fi

@@ -216,6 +216,7 @@ def match_agency(actor: str, lookup: dict[str, str],
     """Resolve a free-text actor name to (canonical_abbrev, full_name)."""
     if not actor:
         return None, None
+    raw_actor = actor
     # drop parenthetical asides the model sometimes appends
     actor = re.sub(r"\s*\([^)]*\)", "", actor).strip()
     if not actor:
@@ -259,6 +260,28 @@ def match_agency(actor: str, lookup: dict[str, str],
         if canon:
             full = agencies_by_canon.get(canon, {}).get("full_name", canon)
             return canon, full
+
+    # Last resort: an actor like "the enforcing agency (Department of
+    # Consumer and Worker Protection or designated agency)" names a concrete
+    # agency inside a parenthetical or an "X or Y" alternative. Match the
+    # parts; accept only when exactly ONE distinct agency emerges.
+    parts = []
+    for m in re.finditer(r"\(([^)]+)\)", raw_actor):
+        parts += re.split(r"\s+or\s+|,", m.group(1))
+    parts += re.split(r"\s+or\s+|,", re.sub(r"\([^)]*\)", "", raw_actor))
+    canons = set()
+    for p in parts:
+        p = p.strip()
+        if not p or is_vague_actor(p):
+            continue
+        for cand in (p, ACTOR_PREFIXES.sub("", p).strip()):
+            c = lookup.get(norm_lookup_key(cand))
+            if c:
+                canons.add(c)
+                break
+    if len(canons) == 1:
+        canon = canons.pop()
+        return canon, agencies_by_canon.get(canon, {}).get("full_name", canon)
     return None, None
 
 
