@@ -91,7 +91,8 @@
     .law-cell { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; font-weight: 600; color: var(--blue); white-space: nowrap; }
     .law-cell .file-no { display: block; color: var(--text-faint); font-weight: 400; margin-top: 2px; }
     .agency-cell.unspec { color: var(--text-faint); font-weight: 400; font-style: italic; }
-    .agency-cell { font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600; white-space: nowrap; }
+    .agency-cell { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; font-weight: 600; line-height: 1.45; min-width: 150px; max-width: 190px; overflow-wrap: break-word; }
+    .action-cell { min-width: 260px; }
     .type-badge { display: inline-block; font-family: 'Roboto Mono', monospace; font-size: 0.65rem; font-weight: 600; padding: 2px 8px; border-radius: 10px; background: var(--blue-light); color: var(--blue); border: 1px solid var(--blue-mid); white-space: nowrap; }
     .deadline-cell { font-family: 'Roboto Mono', monospace; font-size: 0.75rem; white-space: nowrap; }
     .deadline-cell.overdue { color: var(--red); font-weight: 600; }
@@ -322,11 +323,28 @@
     return Object.keys(seen).sort(function (a, b) { return seen[b] - seen[a]; });
   }
 
+  function agencyDisplay(o) {
+    if (o.agency === 'Unspecified') return 'Unspecified';
+    if (o.agency_matched) {
+      // full official name, minus the "New York City " prefix the dataset uses
+      return (o.agency_full || o.agency).replace(/^New York City /, '');
+    }
+    return o.agency;
+  }
+
   function buildFilters() {
     var fa = document.getElementById('fAgency');
+    var agLabel = {};
+    ALL.forEach(function (o) {
+      if (!agLabel[o.agency]) {
+        var full = agencyDisplay(o);
+        agLabel[o.agency] = (o.agency_matched && full !== o.agency)
+          ? full + ' (' + o.agency + ')' : full;
+      }
+    });
     uniqueSorted('agency').forEach(function (a) {
       var opt = document.createElement('option');
-      opt.value = a; opt.textContent = a;
+      opt.value = a; opt.textContent = agLabel[a] || a;
       fa.appendChild(opt);
     });
     var ft = document.getElementById('fType');
@@ -444,7 +462,7 @@
     var va, vb;
     switch (sortKey) {
       case 'law': va = a.enactment_date || ''; vb = b.enactment_date || ''; return sortDir * -va.localeCompare(vb);
-      case 'agency': va = a.agency || '￿'; vb = b.agency || '￿'; return sortDir * va.localeCompare(vb);
+      case 'agency': va = agencyDisplay(a) || '￿'; vb = agencyDisplay(b) || '￿'; return sortDir * va.localeCompare(vb);
       case 'action': va = a.action_summary || ''; vb = b.action_summary || ''; return sortDir * va.localeCompare(vb);
       case 'type': va = a.deliverable_type || ''; vb = b.deliverable_type || ''; return sortDir * va.localeCompare(vb);
       case 'recurrence': va = a.recurrence || ''; vb = b.recurrence || ''; return sortDir * va.localeCompare(vb);
@@ -473,8 +491,8 @@
       html += '<tr class="data-row" data-id="' + esc(o.obligation_id) + '">'
         + '<td class="law-cell">' + esc(o.law_number_display || o.file_number)
         + '<span class="file-no">' + esc(o.file_number) + '</span></td>'
-        + '<td class="agency-cell' + (o.agency === 'Unspecified' ? ' unspec' : '') + '" title="' + esc(o.agency_full) + '">' + esc(o.agency) + '</td>'
-        + '<td>' + esc(o.action_summary) + '</td>'
+        + '<td class="agency-cell' + (o.agency === 'Unspecified' ? ' unspec' : '') + '" title="' + esc(o.agency_matched ? o.agency + ' · ' + o.agency_full : o.agency_full) + '">' + esc(agencyDisplay(o)) + '</td>'
+        + '<td class="action-cell">' + esc(o.action_summary) + '</td>'
         + '<td><span class="type-badge">' + esc(o.deliverable_type) + '</span></td>'
         + '<td class="meta-cell" title="' + esc(o.committee || '') + '">' + esc((o.committee || '—').replace(/^Committee on /, '')) + '</td>'
         + '<td class="meta-cell">' + esc(o.prime_sponsor || '—') + '</td>'
