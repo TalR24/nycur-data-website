@@ -75,7 +75,7 @@ Return ONLY a JSON object with this exact structure (no markdown, no explanation
  "obligations": [
    {
      "actor_raw": "<the responsible entity exactly as the law names it, e.g. 'the department of transportation', 'the commissioner of health and mental hygiene', 'the mayor', 'a designated agency'>",
-     "actor_resolved": "<the actual agency name if the law defines 'the department'/'the commissioner' elsewhere in the text or via the administrative code title being amended; otherwise repeat actor_raw>",
+     "actor_resolved": "<the actual agency name. Laws almost always define generic references: check the definitions section ('the term department means...'), the administrative code title being amended, and 'established within the department of X' phrasing. NEVER return a bare generic like 'the department', 'the center', 'the office', 'the commission', 'the task force' - resolve it to the specific agency, or to the full name of the body the law creates (e.g. 'center for older workforce development'), or if genuinely undeterminable (e.g. 'an agency designated by the mayor') return exactly 'unspecified'>",
      "action_summary": "<one plain-English sentence: what must be done. Start with a verb, e.g. 'Establish a cultural passport program encouraging visitation to participating sites in each borough.'>",
      "deliverable_type": <one of: {deliverable_types}>,
      "citation": "<where the duty lives, e.g. 'NYC Admin. Code § 20-563.2(b)' if the law adds/amends that section, else 'Section 3 of the local law'>",
@@ -138,6 +138,77 @@ def normalize_quote(s: str) -> str:
 
 ACTOR_PREFIXES = re.compile(
     r"^(the\s+)?(new\s+york\s+city\s+|nyc\s+|city\s+)?", re.I)
+
+# Bare generic actor references that must never surface as agency tags.
+# When one of these survives unmatched, the record is labeled "Unspecified"
+# (the raw phrase stays visible as actor_raw in the row detail).
+VAGUE_ACTOR = re.compile(
+    r"^(the|a|an|each|every|any|such|all)?\s*"
+    r"(city\s+)?(center|department|office|commission|commissioner|agency|"
+    r"agencies|board|director|division|administrator|coordinator|"
+    r"task\s*force|taskforce|committee|panel|unit|entity|organization|"
+    r"chair|city|speaker|working\s+group|unspecified)s?$", re.I)
+
+# Phrases that describe an undetermined actor without naming one:
+# "the administering agency", "an office or agency designated by the mayor",
+# "the head of each agency", "each such agency".
+UNDETERMINED_PHRASES = re.compile(
+    r"^(the|an?|each|every|any)\s+"
+    r"((administering|supervising|designated|responsible|relevant|"
+    r"appropriate|applicable|implementing|contracted|lead)\s+"
+    r"(agency|office|entity|department|body)|"
+    r"(agency|office|entity|department|body)"
+    r"(,?\s+(office|entity|department)s?)*"
+    r"(\s+or\s+(agency|office|entity|department|entities|offices|agencies))*"
+    r"\s+(designated|selected|responsible|established|charged)\b|"
+    r"head\s+of\s+(each|every|the|any|such)\s+(city\s+)?agency|"
+    r"such\s+(city\s+)?(agency|office|department|entity))", re.I)
+
+
+def is_vague_actor(s: str) -> bool:
+    s = re.sub(r"\s*\([^)]*\)", "", (s or "")).strip()
+    return bool(VAGUE_ACTOR.match(s) or UNDETERMINED_PHRASES.match(s))
+
+
+# Curated per-law actor resolutions (pipeline/actor_overrides.json):
+# {matter_id: {actor_phrase: "resolved name" | "resolved | parent: X" | null}}
+# Built from a context pass that read each law's definitions. null means the
+# law genuinely leaves the actor undetermined -> tag Unspecified.
+_OVERRIDES_PATH = HERE / "actor_overrides.json"
+ACTOR_OVERRIDES: dict = (json.loads(_OVERRIDES_PATH.read_text())
+                         if _OVERRIDES_PATH.exists() else {})
+
+
+def resolve_actor(matter_id: str, actors: list[str], lookup: dict,
+                  agencies_by_canon: dict) -> tuple[str | None, str | None, str]:
+    """Resolve an actor through overrides, then the crosswalk.
+
+    `actors` are candidate phrasings in priority order (actor_raw first, then
+    the model's actor_resolved / a previously stored agency string).
+    Returns (canon, full, display_actor): canon/full are None when unmatched;
+    display_actor is what the agency tag falls back to ("Unspecified" for
+    vague or override-null actors, a created body's proper name otherwise)."""
+    ov = ACTOR_OVERRIDES.get(str(matter_id), {})
+    candidates = [a for a in actors if a]
+    for a in candidates:
+        if a in ov:
+            resolved = ov[a]
+            if resolved is None:
+                return None, None, "Unspecified"
+            main, _, parent = resolved.partition(" | parent: ")
+            canon, full = match_agency(main, lookup, agencies_by_canon)
+            if canon is None and parent:
+                canon, full = match_agency(parent, lookup, agencies_by_canon)
+            if canon:
+                return canon, full, main
+            # a created body with no matchable parent: keep its proper name
+            return None, None, main[:1].upper() + main[1:]
+    for a in candidates:
+        canon, full = match_agency(a, lookup, agencies_by_canon)
+        if canon:
+            return canon, full, a
+    fallback = next((a for a in candidates if not is_vague_actor(a)), None)
+    return None, None, (fallback if fallback else "Unspecified")
 
 
 def match_agency(actor: str, lookup: dict[str, str],
@@ -290,8 +361,10 @@ def extract_law(client, model: str, law: dict, text: str,
     obligations = []
     for i, o in enumerate(result.get("obligations", []), 1):
         quote_ok = normalize_quote(o.get("quote", "")) in norm_text
-        actor = o.get("actor_resolved") or o.get("actor_raw") or ""
-        canon, full = match_agency(actor, lookup, agencies_by_canon)
+        canon, full, actor = resolve_actor(
+            law["matter_id"],
+            [o.get("actor_raw") or "", o.get("actor_resolved") or ""],
+            lookup, agencies_by_canon)
         dtype = o.get("deliverable_type", "other")
         if dtype not in DELIVERABLE_TYPES:
             dtype = "other"
@@ -301,7 +374,9 @@ def extract_law(client, model: str, law: dict, text: str,
             "matter_id": law["matter_id"],
             "actor_raw": o.get("actor_raw", ""),
             "agency": canon or actor,
-            "agency_full": full or actor,
+            "agency_full": full or (
+                "Not specified in the law text" if actor == "Unspecified"
+                else actor),
             "agency_matched": canon is not None,
             "action_summary": o.get("action_summary", ""),
             "deliverable_type": dtype,

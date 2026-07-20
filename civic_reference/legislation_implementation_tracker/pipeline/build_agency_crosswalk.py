@@ -92,6 +92,7 @@ EXTRA_VARIANTS_BY_NAME = {
                                "health and hospitals corporation", "hhc",
                                "new york city health and hospitals corporation"],
     "Department of Social Services": ["division of aids services"],
+    "Board of Elections": ["board of elections in the city of new york"],
 }
 
 # Short canonical labels for orgs whose dataset row has no acronym, plus
@@ -102,6 +103,16 @@ CANONICAL_OVERRIDES = {
     "Office of the Mayor": "Mayor's Office",
     "Department for the Aging": "NYC Aging",
     "Fire Department Pension Fund and Related Funds": "Fire Pension Fund",
+}
+
+
+# Never allow these as lookup keys: a generic single word coming from an
+# org's stripped name ("New York City Center" -> "Center") false-matches
+# generic actor references in legislation ("the center", "the service").
+GENERIC_KEY_BLOCKLIST = {
+    "center", "city", "office", "board", "agency", "department", "commission",
+    "division", "committee", "panel", "unit", "service", "services", "system",
+    "trust", "fund", "authority", "corporation", "institute", "foundation",
 }
 
 
@@ -199,7 +210,7 @@ def main() -> None:
 
         for v in variants:
             key = norm(v)
-            if not key:
+            if not key or key in GENERIC_KEY_BLOCKLIST:
                 continue
             if key in lookup and lookup[key][1] != canon:
                 if prio > lookup[key][0]:

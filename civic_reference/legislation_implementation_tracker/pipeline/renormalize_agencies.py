@@ -18,7 +18,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-from extract_obligations import match_agency, CROSSWALK_JSON, EXTRACT_CACHE
+from extract_obligations import (resolve_actor, CROSSWALK_JSON, EXTRACT_CACHE)
 
 
 def main() -> None:
@@ -34,15 +34,20 @@ def main() -> None:
         for o in res.get("obligations", []):
             # actor_raw is the name as written in the law; the stored agency
             # string is the previous resolution (used as a fallback candidate)
-            canon, full = match_agency(o.get("actor_raw", ""), lookup, by_canon)
+            canon, full, display = resolve_actor(
+                res["matter_id"],
+                [o.get("actor_raw", ""), o.get("agency", "")],
+                lookup, by_canon)
             if canon is None:
-                canon, full = match_agency(o.get("agency", ""), lookup, by_canon)
-            if canon is None:
-                new = {"agency": o.get("agency"), "agency_full": o.get("agency_full"),
+                new = {"agency": display,
+                       "agency_full": ("Not specified in the law text"
+                                       if display == "Unspecified"
+                                       else display),
                        "agency_matched": False}
             else:
                 new = {"agency": canon, "agency_full": full, "agency_matched": True}
             if (new["agency"] != o.get("agency") or
+                    new["agency_full"] != o.get("agency_full") or
                     new["agency_matched"] != o.get("agency_matched")):
                 o.update(new)
                 changed = True
