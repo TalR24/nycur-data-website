@@ -61,6 +61,7 @@
     .filters { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 16px 18px; margin-bottom: 16px; display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
     .fgroup { display: flex; flex-direction: column; gap: 5px; flex: 1 1 140px; min-width: 130px; }
     .fgroup.wide { flex: 2 1 220px; min-width: 190px; }
+    .filters .msf { flex: 1 1 145px; min-width: 132px; }
     .fgroup label { font-family: 'Roboto Mono', monospace; font-size: 0.62rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); }
     .filters input[type="search"] { width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 7px; font-family: 'Inter', sans-serif; font-size: 0.85rem; background: var(--bg); color: var(--text); }
     .filters select { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 7px; font-family: 'Roboto Mono', monospace; font-size: 0.75rem; background: var(--bg); color: var(--text-mid); cursor: pointer; }
@@ -195,41 +196,14 @@
         <label for="fSearch">Search law # or text</label>
         <input type="search" id="fSearch" placeholder="e.g. LL 61 or security guards">
       </div>
-      <div class="fgroup">
-        <label for="fAgency">Agency</label>
-        <select id="fAgency"><option value="">All agencies</option></select>
-      </div>
-      <div class="fgroup">
-        <label for="fType">Deliverable</label>
-        <select id="fType"><option value="">All types</option></select>
-      </div>
-      <div class="fgroup">
-        <label for="fCommittee">Committee</label>
-        <select id="fCommittee"><option value="">All committees</option></select>
-      </div>
-      <div class="fgroup">
-        <label for="fSponsor">Prime sponsor</label>
-        <select id="fSponsor"><option value="">All sponsors</option></select>
-      </div>
-      <div class="fgroup">
-        <label for="fYear">Enacted</label>
-        <select id="fYear"><option value="">All years</option></select>
-      </div>
-      <div class="fgroup">
-        <label for="fRecur">Recurrence</label>
-        <select id="fRecur"><option value="">All recurrence</option></select>
-      </div>
-      <div class="fgroup">
-        <label for="fDeadline">Deadline</label>
-        <select id="fDeadline">
-          <option value="">All deadlines</option>
-          <option value="overdue">Past due</option>
-          <option value="next12">Due in next 12 months</option>
-          <option value="dated">Any dated deadline</option>
-          <option value="none">No dated deadline</option>
-        </select>
-      </div>
-      <button class="reset-btn" id="fReset">Reset filters</button>
+      <div id="msAgency"></div>
+      <div id="msType"></div>
+      <div id="msCommittee"></div>
+      <div id="msSponsor"></div>
+      <div id="msYear"></div>
+      <div id="msRecur"></div>
+      <div id="msDeadline"></div>
+      <button class="reset-btn" id="fReset">Reset all</button>
     </div>
 
     <div class="result-row">
@@ -290,6 +264,7 @@
   </div>
 </footer>
 
+<script src="../../nyc_council_legislation_trackers/assets/multiselect.js"></script>
 <script>
 (function () {
   var ALL = [];
@@ -331,8 +306,9 @@
     return o.agency;
   }
 
+  var MS = {};
+
   function buildFilters() {
-    var fa = document.getElementById('fAgency');
     var agLabel = {};
     ALL.forEach(function (o) {
       if (!agLabel[o.agency]) {
@@ -341,49 +317,40 @@
           ? full + ' (' + o.agency + ')' : full;
       }
     });
-    uniqueSorted('agency').forEach(function (a) {
-      var opt = document.createElement('option');
-      opt.value = a; opt.textContent = agLabel[a] || a;
-      fa.appendChild(opt);
-    });
-    var ft = document.getElementById('fType');
-    uniqueSorted('deliverable_type').forEach(function (t) {
-      var opt = document.createElement('option');
-      opt.value = t; opt.textContent = t;
-      ft.appendChild(opt);
-    });
-    var fr = document.getElementById('fRecur');
-    uniqueSorted('recurrence').forEach(function (t) {
-      var opt = document.createElement('option');
-      opt.value = t; opt.textContent = t;
-      fr.appendChild(opt);
-    });
-    var fc = document.getElementById('fCommittee');
-    uniqueSorted('committee').forEach(function (t) {
-      var opt = document.createElement('option');
-      opt.value = t; opt.textContent = t.replace(/^Committee on /, '');
-      fc.appendChild(opt);
-    });
-    var fs = document.getElementById('fSponsor');
-    uniqueSorted('prime_sponsor').forEach(function (t) {
-      var opt = document.createElement('option');
-      opt.value = t; opt.textContent = t;
-      fs.appendChild(opt);
-    });
-    var fy = document.getElementById('fYear');
+    function opts(key, labelFn) {
+      return uniqueSorted(key).map(function (v) {
+        return { v: v, l: labelFn ? labelFn(v) : v };
+      });
+    }
+    MS.agency = new MSFilter('msAgency', { label: 'Agency', allLabel: 'All agencies',
+      sort: 'alpha', onChange: applyFilters,
+      options: opts('agency', function (a) { return agLabel[a] || a; }) });
+    MS.type = new MSFilter('msType', { label: 'Deliverable', allLabel: 'All types',
+      sort: 'alpha', onChange: applyFilters, options: opts('deliverable_type') });
+    MS.committee = new MSFilter('msCommittee', { label: 'Committee', allLabel: 'All committees',
+      sort: 'alpha', onChange: applyFilters,
+      options: opts('committee', function (c) { return c.replace(/^Committee on /, ''); }) });
+    MS.sponsor = new MSFilter('msSponsor', { label: 'Prime sponsor', allLabel: 'All sponsors',
+      sort: 'alpha', onChange: applyFilters, options: opts('prime_sponsor') });
     var years = {};
     ALL.forEach(function (o) { if (o.enactment_date) years[o.enactment_date.slice(0, 4)] = 1; });
-    Object.keys(years).sort().reverse().forEach(function (y) {
-      var opt = document.createElement('option');
-      opt.value = y; opt.textContent = y;
-      fy.appendChild(opt);
-    });
-    var FIDS = ['fSearch', 'fAgency', 'fType', 'fCommittee', 'fSponsor', 'fYear', 'fRecur', 'fDeadline'];
-    FIDS.forEach(function (id) {
-      document.getElementById(id).addEventListener('input', applyFilters);
-    });
+    MS.year = new MSFilter('msYear', { label: 'Enacted', allLabel: 'All years',
+      sort: 'none', onChange: applyFilters,
+      options: Object.keys(years).sort().reverse().map(function (y) { return { v: y, l: y }; }) });
+    MS.recur = new MSFilter('msRecur', { label: 'Recurrence', allLabel: 'All recurrence',
+      sort: 'none', onChange: applyFilters, options: opts('recurrence') });
+    MS.deadline = new MSFilter('msDeadline', { label: 'Deadline', allLabel: 'All deadlines',
+      sort: 'none', onChange: applyFilters, options: [
+        { v: 'overdue', l: 'Past due' },
+        { v: 'next12', l: 'Due in next 12 months' },
+        { v: 'dated', l: 'Any dated deadline' },
+        { v: 'none', l: 'No dated deadline' }
+      ] });
+
+    document.getElementById('fSearch').addEventListener('input', applyFilters);
     document.getElementById('fReset').addEventListener('click', function () {
-      FIDS.forEach(function (id) { document.getElementById(id).value = ''; });
+      document.getElementById('fSearch').value = '';
+      Object.keys(MS).forEach(function (k) { MS[k].reset(); });
       applyFilters();
     });
     document.querySelectorAll('thead th').forEach(function (th) {
@@ -397,29 +364,26 @@
 
   function applyFilters() {
     var q = document.getElementById('fSearch').value.toLowerCase().trim();
-    var agency = document.getElementById('fAgency').value;
-    var type = document.getElementById('fType').value;
-    var committee = document.getElementById('fCommittee').value;
-    var sponsor = document.getElementById('fSponsor').value;
-    var year = document.getElementById('fYear').value;
-    var recur = document.getElementById('fRecur').value;
-    var dl = document.getElementById('fDeadline').value;
+    var dlSel = MS.deadline.selected();
     var today = new Date(); today.setHours(0, 0, 0, 0);
     var yearOut = new Date(today.getFullYear() + 1, today.getMonth(), today.getDate());
 
     var rows = ALL.filter(function (o) {
-      if (agency && o.agency !== agency) return false;
-      if (type && o.deliverable_type !== type) return false;
-      if (committee && o.committee !== committee) return false;
-      if (sponsor && o.prime_sponsor !== sponsor) return false;
-      if (year && (!o.enactment_date || o.enactment_date.slice(0, 4) !== year)) return false;
-      if (recur && o.recurrence !== recur) return false;
-      if (dl) {
+      if (!MS.agency.pass(o.agency)) return false;
+      if (!MS.type.pass(o.deliverable_type)) return false;
+      if (!MS.committee.pass(o.committee)) return false;
+      if (!MS.sponsor.pass(o.prime_sponsor)) return false;
+      if (!MS.year.pass(o.enactment_date ? o.enactment_date.slice(0, 4) : '')) return false;
+      if (!MS.recur.pass(o.recurrence)) return false;
+      if (dlSel !== null) {
+        // union semantics: the row passes if it satisfies ANY selected status
         var d = o.deadline_date ? new Date(o.deadline_date + 'T00:00:00') : null;
-        if (dl === 'dated' && !d) return false;
-        if (dl === 'none' && d) return false;
-        if (dl === 'overdue' && (!d || d >= today || o.recurrence !== 'one-time')) return false;
-        if (dl === 'next12' && (!d || d < today || d > yearOut)) return false;
+        var ok = false;
+        if (dlSel.has('dated') && d) ok = true;
+        if (dlSel.has('none') && !d) ok = true;
+        if (dlSel.has('overdue') && d && d < today && o.recurrence === 'one-time') ok = true;
+        if (dlSel.has('next12') && d && d >= today && d <= yearOut) ok = true;
+        if (!ok) return false;
       }
       if (q) {
         var hay = (o.action_summary + ' ' + o.agency + ' ' + o.agency_full + ' ' +

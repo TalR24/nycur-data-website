@@ -57,7 +57,8 @@
     main { flex: 1; padding: clamp(24px, 4vw, 40px) clamp(20px, 5vw, 48px); }
     .main-inner { max-width: 900px; margin: 0 auto; }
 
-    .filters { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 16px 18px; margin-bottom: 16px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    .filters { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 16px 18px; margin-bottom: 16px; display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+    .filters .msf { flex: 1 1 190px; min-width: 165px; }
     .filters select { flex: 1 1 170px; min-width: 150px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 7px; font-family: 'Roboto Mono', monospace; font-size: 0.75rem; background: var(--bg); color: var(--text-mid); cursor: pointer; }
     .filters select:focus { outline: 2px solid var(--blue-mid); border-color: var(--blue); }
     .reset-btn { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; font-weight: 600; color: var(--text-muted); background: none; border: 1px solid var(--border); border-radius: 7px; padding: 8px 12px; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
@@ -167,9 +168,9 @@
   <div class="main-inner">
 
     <div class="filters">
-      <select id="fAgency" aria-label="Filter by agency"><option value="">All agencies</option></select>
-      <select id="fType" aria-label="Filter by deliverable type"><option value="">All deliverable types</option></select>
-      <button class="reset-btn" id="fReset">Reset</button>
+      <div id="msAgency"></div>
+      <div id="msType"></div>
+      <button class="reset-btn" id="fReset">Reset all</button>
     </div>
 
     <div class="tab-row" id="tabRow">
@@ -201,6 +202,7 @@
   </div>
 </footer>
 
+<script src="../../nyc_council_legislation_trackers/assets/multiselect.js"></script>
 <script>
 (function () {
   var ALL = [];
@@ -222,29 +224,25 @@
       document.getElementById('content').innerHTML = '<p class="loading-note">Data failed to load.</p>';
     });
 
+  var MS = {};
+
   function buildFilters() {
-    var seen = {};
-    ALL.forEach(function (o) { if (o.agency_matched) seen[o.agency] = (seen[o.agency] || 0) + 1; });
-    var fa = document.getElementById('fAgency');
-    Object.keys(seen).sort(function (a, b) { return seen[b] - seen[a]; }).forEach(function (a) {
-      var opt = document.createElement('option');
-      opt.value = a; opt.textContent = a;
-      fa.appendChild(opt);
+    var agLabel = {};
+    ALL.forEach(function (o) {
+      if (!o.agency_matched || agLabel[o.agency]) return;
+      var full = (o.agency_full || o.agency).replace(/^New York City /, '');
+      agLabel[o.agency] = full !== o.agency ? full + ' (' + o.agency + ')' : full;
     });
     var types = {};
-    ALL.forEach(function (o) { types[o.deliverable_type] = (types[o.deliverable_type] || 0) + 1; });
-    var ft = document.getElementById('fType');
-    Object.keys(types).sort(function (a, b) { return types[b] - types[a]; }).forEach(function (t) {
-      var opt = document.createElement('option');
-      opt.value = t; opt.textContent = t;
-      ft.appendChild(opt);
-    });
-    ['fAgency', 'fType'].forEach(function (id) {
-      document.getElementById(id).addEventListener('input', render);
-    });
+    ALL.forEach(function (o) { types[o.deliverable_type] = 1; });
+    MS.agency = new MSFilter('msAgency', { label: 'Agency', allLabel: 'All agencies',
+      sort: 'alpha', onChange: render,
+      options: Object.keys(agLabel).map(function (a) { return { v: a, l: agLabel[a] }; }) });
+    MS.type = new MSFilter('msType', { label: 'Deliverable type', allLabel: 'All types',
+      sort: 'alpha', onChange: render,
+      options: Object.keys(types).map(function (t) { return { v: t, l: t }; }) });
     document.getElementById('fReset').addEventListener('click', function () {
-      document.getElementById('fAgency').value = '';
-      document.getElementById('fType').value = '';
+      Object.keys(MS).forEach(function (k) { MS[k].reset(); });
       render();
     });
     document.querySelectorAll('.tab-btn').forEach(function (b) {
@@ -258,11 +256,9 @@
   }
 
   function filtered() {
-    var agency = document.getElementById('fAgency').value;
-    var type = document.getElementById('fType').value;
     return ALL.filter(function (o) {
-      if (agency && o.agency !== agency) return false;
-      if (type && o.deliverable_type !== type) return false;
+      if (!MS.agency.pass(o.agency)) return false;
+      if (!MS.type.pass(o.deliverable_type)) return false;
       return true;
     });
   }
@@ -326,17 +322,21 @@
 
   function recurringHtml(items) {
     if (!items.length) return '';
-    var buckets = ['annual', 'biennial', 'quarterly', 'monthly', 'every N years', 'ongoing'];
     var labels = {
       annual: 'Annual', biennial: 'Biennial', quarterly: 'Quarterly',
-      monthly: 'Monthly', 'every N years': 'Multi-year cycle', ongoing: 'Ongoing duties'
+      monthly: 'Monthly', 'every n years': 'Multi-year cycle',
+      ongoing: 'Ongoing duties', semiannual: 'Semiannual', weekly: 'Weekly'
     };
+    // group by every cadence present, most common first
+    var counts = {};
+    items.forEach(function (o) { counts[o.recurrence] = (counts[o.recurrence] || 0) + 1; });
+    var buckets = Object.keys(counts).sort(function (a, b) { return counts[b] - counts[a]; });
     var html = '<div class="recur-section">';
     buckets.forEach(function (b) {
       var group = items.filter(function (o) { return o.recurrence === b; });
-      if (!group.length) return;
       group.sort(function (x, y) { return (x.agency || '').localeCompare(y.agency || ''); });
-      html += '<div class="recur-head">' + labels[b] + ' (' + group.length + ')</div>';
+      var label = labels[b] || (b.charAt(0).toUpperCase() + b.slice(1));
+      html += '<div class="recur-head">' + esc(label) + ' (' + group.length + ')</div>';
       group.forEach(function (o) { html += card(o, false); });
     });
     return html + '</div>';

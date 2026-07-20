@@ -65,6 +65,8 @@
     .filters input[type="search"] { flex: 2 1 240px; min-width: 200px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 7px; font-family: 'Inter', sans-serif; font-size: 0.85rem; background: var(--bg); color: var(--text); }
     .filters select { flex: 1 1 150px; min-width: 130px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 7px; font-family: 'Roboto Mono', monospace; font-size: 0.75rem; background: var(--bg); color: var(--text-mid); cursor: pointer; }
     .filters input:focus, .filters select:focus { outline: 2px solid var(--blue-mid); border-color: var(--blue); }
+    .filters { align-items: flex-end; }
+    .filters .msf { flex: 1 1 150px; min-width: 135px; }
     .result-count { font-family: 'Roboto Mono', monospace; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 12px; }
     .result-count strong { color: var(--blue); }
 
@@ -172,9 +174,11 @@
   </div>
 </footer>
 
+<script src="../../nyc_council_legislation_trackers/assets/multiselect.js"></script>
 <script>
 (function () {
   var DATA = null;
+  var MS = {};
 
   fetch('../data/obligations.json')
     .then(function (r) { return r.json(); })
@@ -200,7 +204,7 @@
     el.innerHTML =
       '<div class="filters">'
       + '<input type="search" id="fSearch" placeholder="Search laws by number, title, or sponsor…" aria-label="Search laws">'
-      + '<select id="fYear" aria-label="Filter by enactment year"><option value="">All years</option></select>'
+      + '<div id="msYear"></div>'
       + '<select id="fSort" aria-label="Sort laws">'
       + '<option value="newest">Newest first</option>'
       + '<option value="obligations">Most obligations</option>'
@@ -213,13 +217,10 @@
     DATA.laws.forEach(function (l) {
       if (l.enactment_date) years[l.enactment_date.slice(0, 4)] = 1;
     });
-    var fy = document.getElementById('fYear');
-    Object.keys(years).sort().forEach(function (y) {
-      var opt = document.createElement('option');
-      opt.value = y; opt.textContent = y;
-      fy.appendChild(opt);
-    });
-    ['fSearch', 'fYear', 'fSort'].forEach(function (id) {
+    MS.year = new MSFilter('msYear', { label: 'Enacted year', allLabel: 'All years',
+      sort: 'none', onChange: drawList,
+      options: Object.keys(years).sort().reverse().map(function (y) { return { v: y, l: y }; }) });
+    ['fSearch', 'fSort'].forEach(function (id) {
       document.getElementById(id).addEventListener('input', drawList);
     });
     drawList();
@@ -227,10 +228,9 @@
 
   function drawList() {
     var q = document.getElementById('fSearch').value.toLowerCase().trim();
-    var year = document.getElementById('fYear').value;
     var sort = document.getElementById('fSort').value;
     var rows = DATA.laws.filter(function (l) {
-      if (year && (!l.enactment_date || l.enactment_date.slice(0, 4) !== year)) return false;
+      if (!MS.year.pass(l.enactment_date ? l.enactment_date.slice(0, 4) : '')) return false;
       if (q) {
         var hay = (l.law_number_display + ' ' + l.file_number + ' ' + l.title + ' ' +
                    (l.summary || '') + ' ' + l.prime_sponsor + ' ' + (l.committee || '')).toLowerCase();

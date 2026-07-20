@@ -61,6 +61,7 @@
     .filters { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 16px 18px; margin-bottom: 16px; display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
     .fgroup { display: flex; flex-direction: column; gap: 5px; flex: 1 1 150px; min-width: 135px; }
     .fgroup label { font-family: 'Roboto Mono', monospace; font-size: 0.62rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); }
+    .filters .msf { flex: 1 1 150px; min-width: 135px; }
     .filters select { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 7px; font-family: 'Roboto Mono', monospace; font-size: 0.75rem; background: var(--bg); color: var(--text-mid); cursor: pointer; }
     .filters select:focus { outline: 2px solid var(--blue-mid); border-color: var(--blue); }
     .reset-btn { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; font-weight: 600; color: var(--text-muted); background: none; border: 1px solid var(--border); border-radius: 7px; padding: 8px 12px; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
@@ -173,31 +174,13 @@
   <div class="main-inner">
 
     <div class="filters">
-      <div class="fgroup">
-        <label for="fAgencyW">Agency</label>
-        <select id="fAgencyW"><option value="">All agencies</option></select>
-      </div>
-      <div class="fgroup">
-        <label for="fCommittee">Committee</label>
-        <select id="fCommittee"><option value="">All committees</option></select>
-      </div>
-      <div class="fgroup">
-        <label for="fSponsor">Prime sponsor</label>
-        <select id="fSponsor"><option value="">All sponsors</option></select>
-      </div>
-      <div class="fgroup">
-        <label for="fYear">Enacted year</label>
-        <select id="fYear"><option value="">All years</option></select>
-      </div>
-      <div class="fgroup">
-        <label for="fDeliv">Deliverable type</label>
-        <select id="fDeliv"><option value="">All types</option></select>
-      </div>
-      <div class="fgroup">
-        <label for="fRecur">Recurrence</label>
-        <select id="fRecur"><option value="">All recurrence</option></select>
-      </div>
-      <button class="reset-btn" id="fReset">Reset filters</button>
+      <div id="msAgency"></div>
+      <div id="msCommittee"></div>
+      <div id="msSponsor"></div>
+      <div id="msYear"></div>
+      <div id="msDeliv"></div>
+      <div id="msRecur"></div>
+      <button class="reset-btn" id="fReset">Reset all</button>
     </div>
 
     <div class="stat-strip">
@@ -262,6 +245,7 @@
   </div>
 </footer>
 
+<script src="../../nyc_council_legislation_trackers/assets/multiselect.js"></script>
 <script>
 var ALL = [];
 var BUCKETS = [
@@ -297,47 +281,38 @@ function uniqueSorted(key, fn) {
   return Object.keys(seen).sort(function (a, b) { return seen[b] - seen[a]; });
 }
 
-var FILTER_IDS = ['fAgencyW', 'fCommittee', 'fSponsor', 'fYear', 'fDeliv', 'fRecur'];
+var MS = {};
 
 function buildFilters() {
-  var agCount = {}, agLabel = {};
+  var agLabel = {};
   ALL.forEach(function (o) {
-    if (!o.agency_matched) return;
-    agCount[o.agency] = (agCount[o.agency] || 0) + 1;
-    if (!agLabel[o.agency]) {
-      var full = (o.agency_full || o.agency).replace(/^New York City /, '');
-      agLabel[o.agency] = full !== o.agency ? full + ' (' + o.agency + ')' : full;
-    }
+    if (!o.agency_matched || agLabel[o.agency]) return;
+    var full = (o.agency_full || o.agency).replace(/^New York City /, '');
+    agLabel[o.agency] = full !== o.agency ? full + ' (' + o.agency + ')' : full;
   });
-  var fa = document.getElementById('fAgencyW');
-  Object.keys(agCount).sort(function (a, b) { return agCount[b] - agCount[a]; })
-    .forEach(function (a) {
-      var opt = document.createElement('option');
-      opt.value = a; opt.textContent = agLabel[a];
-      fa.appendChild(opt);
-    });
-  fillSelect('fCommittee', uniqueSorted('committee'));
-  fillSelect('fSponsor', uniqueSorted('prime_sponsor'));
-  fillSelect('fYear', uniqueSorted(null, function (o) {
-    return o.enactment_date ? o.enactment_date.slice(0, 4) : null;
-  }).sort().reverse());
-  fillSelect('fDeliv', uniqueSorted('deliverable_type'));
-  fillSelect('fRecur', uniqueSorted('recurrence'));
-  FILTER_IDS.forEach(function (id) {
-    document.getElementById(id).addEventListener('input', render);
-  });
+  function opts(values, labelFn) {
+    return values.map(function (v) { return { v: v, l: labelFn ? labelFn(v) : v }; });
+  }
+  MS.agency = new MSFilter('msAgency', { label: 'Agency', allLabel: 'All agencies',
+    sort: 'alpha', onChange: render,
+    options: opts(Object.keys(agLabel), function (a) { return agLabel[a]; }) });
+  MS.committee = new MSFilter('msCommittee', { label: 'Committee', allLabel: 'All committees',
+    sort: 'alpha', onChange: render,
+    options: opts(uniqueSorted('committee'), function (c) { return c.replace(/^Committee on /, ''); }) });
+  MS.sponsor = new MSFilter('msSponsor', { label: 'Prime sponsor', allLabel: 'All sponsors',
+    sort: 'alpha', onChange: render, options: opts(uniqueSorted('prime_sponsor')) });
+  MS.year = new MSFilter('msYear', { label: 'Enacted year', allLabel: 'All years',
+    sort: 'none', onChange: render,
+    options: opts(uniqueSorted(null, function (o) {
+      return o.enactment_date ? o.enactment_date.slice(0, 4) : null;
+    }).sort().reverse()) });
+  MS.deliv = new MSFilter('msDeliv', { label: 'Deliverable type', allLabel: 'All types',
+    sort: 'alpha', onChange: render, options: opts(uniqueSorted('deliverable_type')) });
+  MS.recur = new MSFilter('msRecur', { label: 'Recurrence', allLabel: 'All recurrence',
+    sort: 'none', onChange: render, options: opts(uniqueSorted('recurrence')) });
   document.getElementById('fReset').addEventListener('click', function () {
-    FILTER_IDS.forEach(function (id) { document.getElementById(id).value = ''; });
+    Object.keys(MS).forEach(function (k) { MS[k].reset(); });
     render();
-  });
-}
-
-function fillSelect(id, values) {
-  var sel = document.getElementById(id);
-  values.forEach(function (v) {
-    var opt = document.createElement('option');
-    opt.value = v; opt.textContent = v;
-    sel.appendChild(opt);
   });
 }
 
@@ -357,20 +332,13 @@ function bucketOf(type) {
 }
 
 function render() {
-  var agency = document.getElementById('fAgencyW').value;
-  var committee = document.getElementById('fCommittee').value;
-  var sponsor = document.getElementById('fSponsor').value;
-  var year = document.getElementById('fYear').value;
-  var deliv = document.getElementById('fDeliv').value;
-  var recur = document.getElementById('fRecur').value;
-
   var rows = ALL.filter(function (o) {
-    if (agency && o.agency !== agency) return false;
-    if (committee && o.committee !== committee) return false;
-    if (sponsor && o.prime_sponsor !== sponsor) return false;
-    if (year && (!o.enactment_date || o.enactment_date.slice(0, 4) !== year)) return false;
-    if (deliv && o.deliverable_type !== deliv) return false;
-    if (recur && o.recurrence !== recur) return false;
+    if (!MS.agency.pass(o.agency)) return false;
+    if (!MS.committee.pass(o.committee)) return false;
+    if (!MS.sponsor.pass(o.prime_sponsor)) return false;
+    if (!MS.year.pass(o.enactment_date ? o.enactment_date.slice(0, 4) : '')) return false;
+    if (!MS.deliv.pass(o.deliverable_type)) return false;
+    if (!MS.recur.pass(o.recurrence)) return false;
     return true;
   });
 
@@ -419,12 +387,15 @@ function render() {
   area.innerHTML = html;
 
   var filterBits = [];
-  if (agency) filterBits.push(agency);
-  if (committee) filterBits.push(committee);
-  if (sponsor) filterBits.push('prime sponsor ' + sponsor);
-  if (year) filterBits.push('enacted ' + year);
-  if (deliv) filterBits.push(deliv);
-  if (recur) filterBits.push(recur + ' duties');
+  [['agency', 'agencies'], ['committee', 'committees'], ['sponsor', 'sponsors'],
+   ['year', 'years'], ['deliv', 'deliverable types'], ['recur', 'recurrence values']]
+    .forEach(function (pair) {
+      var sel = MS[pair[0]].selected();
+      if (sel !== null) {
+        filterBits.push(sel.size <= 2 ? Array.from(sel).join(', ')
+          : sel.size + ' ' + pair[1]);
+      }
+    });
   document.getElementById('chartSub').textContent = filterBits.length
     ? 'Filtered to ' + filterBits.join(' · ') + '. Top 20 agencies.'
     : 'Local laws enacted 2014 to present, top 20 agencies.';

@@ -308,6 +308,28 @@ def resolve_effective_date(clause: dict, enactment_date: str | None) -> str | No
     return None
 
 
+# The model phrases the same cadence several ways; collapse synonyms so the
+# recurrence filters stay short and their frequency ordering meaningful.
+RECURRENCE_ALIASES = {
+    "every 2 years": "biennial",
+    "three times annual": "three times a year",
+    "three times annually": "three times a year",
+    "every 6 months": "semiannual",
+    "every 180 days": "semiannual",
+    "semi-annual": "semiannual",
+    "twice a year": "semiannual",
+    "every 90 days": "quarterly",
+    "every 60 days": "every 2 months",
+    "monthly and annual": "multiple schedules",
+    "quarterly, semi-annual, and annual": "multiple schedules",
+}
+
+
+def normalize_recurrence(r: str | None) -> str:
+    r = (r or "one-time").strip().lower()
+    return RECURRENCE_ALIASES.get(r, r)
+
+
 def sanitize_deadline(deadline_date: str | None,
                       enactment_date: str | None) -> str | None:
     """Reject impossible deadline dates.
@@ -435,7 +457,7 @@ def extract_law(client, model: str, law: dict, text: str,
             "deadline_kind": (o.get("deadline") or {}).get("kind", "none"),
             "deadline_text": (o.get("deadline") or {}).get("text"),
             "deadline_date": deadline_date,
-            "recurrence": o.get("recurrence", "one-time"),
+            "recurrence": normalize_recurrence(o.get("recurrence")),
             "affected_groups": o.get("affected_groups", []),
         })
 
@@ -544,9 +566,10 @@ def main() -> None:
             "obligation_count": len(res["obligations"]),
         })
         for o in res["obligations"]:
-            # guard also applies to previously cached extractions
+            # guards also apply to previously cached extractions
             o["deadline_date"] = sanitize_deadline(
                 o.get("deadline_date"), law.get("enactment_date"))
+            o["recurrence"] = normalize_recurrence(o.get("recurrence"))
             flat.append({
                 **o,
                 "file_number": law["file_number"],
