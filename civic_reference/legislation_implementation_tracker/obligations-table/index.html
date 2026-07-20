@@ -238,7 +238,6 @@
         <span class="qs"><span class="n" id="qsAgencies">–</span><span class="l">agencies</span></span>
         <span class="qs"><span class="n" id="qsLaws">–</span><span class="l">laws</span></span>
         <span class="qs"><span class="n" id="qsDated">–</span><span class="l">dated deadlines</span></span>
-        <span class="qs"><span class="n red" id="qsOverdue">–</span><span class="l">past due</span></span>
         <span class="qs"><span class="n" id="qsRecurring">–</span><span class="l">recurring</span></span>
       </div>
     </div>
@@ -436,21 +435,16 @@
     document.getElementById('resultCount').innerHTML =
       'Showing <strong>' + rows.length.toLocaleString() + '</strong> of ' +
       ALL.length.toLocaleString() + ' obligations';
-    var agSet = {}, lawSet = {}, dated = 0, overdue = 0, recurring = 0;
+    var agSet = {}, lawSet = {}, dated = 0, recurring = 0;
     rows.forEach(function (o) {
       if (o.agency_matched) agSet[o.agency] = 1;
       lawSet[o.matter_id] = 1;
-      if (o.deadline_date) {
-        dated++;
-        if (o.recurrence === 'one-time' &&
-            new Date(o.deadline_date + 'T00:00:00') < today) overdue++;
-      }
+      if (o.deadline_date) dated++;
       if (o.recurrence !== 'one-time') recurring++;
     });
     document.getElementById('qsAgencies').textContent = Object.keys(agSet).length.toLocaleString();
     document.getElementById('qsLaws').textContent = Object.keys(lawSet).length.toLocaleString();
     document.getElementById('qsDated').textContent = dated.toLocaleString();
-    document.getElementById('qsOverdue').textContent = overdue.toLocaleString();
     document.getElementById('qsRecurring').textContent = recurring.toLocaleString();
     document.querySelectorAll('thead th').forEach(function (th) {
       var arrow = th.querySelector('.arrow');

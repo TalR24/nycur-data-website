@@ -308,6 +308,31 @@ def resolve_effective_date(clause: dict, enactment_date: str | None) -> str | No
     return None
 
 
+def sanitize_deadline(deadline_date: str | None,
+                      enactment_date: str | None) -> str | None:
+    """Reject impossible deadline dates.
+
+    A law cannot set a deadline earlier than its own enactment: such dates
+    are extraction artifacts (usually a historical date mentioned in the code
+    section being amended) or clauses that lapsed before signing. Also rejects
+    malformed dates ("12-01") and anything more than 40 years out. The
+    deadline clause text is preserved on the record either way.
+    """
+    if not deadline_date:
+        return None
+    if not re.match(r"^\d{4}-\d{2}-\d{2}$", deadline_date):
+        return None
+    try:
+        datetime.strptime(deadline_date, "%Y-%m-%d")
+    except ValueError:
+        return None
+    if enactment_date and deadline_date < enactment_date:
+        return None
+    if enactment_date and int(deadline_date[:4]) > int(enactment_date[:4]) + 40:
+        return None
+    return deadline_date
+
+
 def resolve_deadline(dl: dict, enactment_date: str | None,
                      effective_date: str | None) -> str | None:
     kind = (dl or {}).get("kind")
@@ -391,7 +416,8 @@ def extract_law(client, model: str, law: dict, text: str,
         dtype = o.get("deliverable_type", "other")
         if dtype not in DELIVERABLE_TYPES:
             dtype = "other"
-        deadline_date = resolve_deadline(o.get("deadline", {}), enactment, effective)
+        deadline_date = sanitize_deadline(
+            resolve_deadline(o.get("deadline", {}), enactment, effective), enactment)
         obligations.append({
             "obligation_id": f"{law['matter_id']}-{i:02d}",
             "matter_id": law["matter_id"],
@@ -518,6 +544,9 @@ def main() -> None:
             "obligation_count": len(res["obligations"]),
         })
         for o in res["obligations"]:
+            # guard also applies to previously cached extractions
+            o["deadline_date"] = sanitize_deadline(
+                o.get("deadline_date"), law.get("enactment_date"))
             flat.append({
                 **o,
                 "file_number": law["file_number"],
