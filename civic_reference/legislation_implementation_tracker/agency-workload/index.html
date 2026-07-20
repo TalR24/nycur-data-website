@@ -58,8 +58,10 @@
     main { flex: 1; padding: clamp(24px, 4vw, 40px) clamp(20px, 5vw, 48px); }
     .main-inner { max-width: 900px; margin: 0 auto; }
 
-    .filters { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 16px 18px; margin-bottom: 16px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-    .filters select { flex: 1 1 160px; min-width: 140px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 7px; font-family: 'Roboto Mono', monospace; font-size: 0.75rem; background: var(--bg); color: var(--text-mid); cursor: pointer; }
+    .filters { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 16px 18px; margin-bottom: 16px; display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+    .fgroup { display: flex; flex-direction: column; gap: 5px; flex: 1 1 150px; min-width: 135px; }
+    .fgroup label { font-family: 'Roboto Mono', monospace; font-size: 0.62rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); }
+    .filters select { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 7px; font-family: 'Roboto Mono', monospace; font-size: 0.75rem; background: var(--bg); color: var(--text-mid); cursor: pointer; }
     .filters select:focus { outline: 2px solid var(--blue-mid); border-color: var(--blue); }
     .reset-btn { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; font-weight: 600; color: var(--text-muted); background: none; border: 1px solid var(--border); border-radius: 7px; padding: 8px 12px; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
     .reset-btn:hover { color: #dc2626; border-color: #dc2626; }
@@ -171,11 +173,31 @@
   <div class="main-inner">
 
     <div class="filters">
-      <select id="fCommittee" aria-label="Filter by committee"><option value="">All committees</option></select>
-      <select id="fSponsor" aria-label="Filter by prime sponsor"><option value="">All prime sponsors</option></select>
-      <select id="fYear" aria-label="Filter by enactment year"><option value="">All enactment years</option></select>
-      <select id="fRecur" aria-label="Filter by recurrence"><option value="">All recurrence</option></select>
-      <button class="reset-btn" id="fReset">Reset</button>
+      <div class="fgroup">
+        <label for="fAgencyW">Agency</label>
+        <select id="fAgencyW"><option value="">All agencies</option></select>
+      </div>
+      <div class="fgroup">
+        <label for="fCommittee">Committee</label>
+        <select id="fCommittee"><option value="">All committees</option></select>
+      </div>
+      <div class="fgroup">
+        <label for="fSponsor">Prime sponsor</label>
+        <select id="fSponsor"><option value="">All sponsors</option></select>
+      </div>
+      <div class="fgroup">
+        <label for="fYear">Enacted year</label>
+        <select id="fYear"><option value="">All years</option></select>
+      </div>
+      <div class="fgroup">
+        <label for="fDeliv">Deliverable type</label>
+        <select id="fDeliv"><option value="">All types</option></select>
+      </div>
+      <div class="fgroup">
+        <label for="fRecur">Recurrence</label>
+        <select id="fRecur"><option value="">All recurrence</option></select>
+      </div>
+      <button class="reset-btn" id="fReset">Reset filters</button>
     </div>
 
     <div class="stat-strip">
@@ -275,20 +297,37 @@ function uniqueSorted(key, fn) {
   return Object.keys(seen).sort(function (a, b) { return seen[b] - seen[a]; });
 }
 
+var FILTER_IDS = ['fAgencyW', 'fCommittee', 'fSponsor', 'fYear', 'fDeliv', 'fRecur'];
+
 function buildFilters() {
+  var agCount = {}, agLabel = {};
+  ALL.forEach(function (o) {
+    if (!o.agency_matched) return;
+    agCount[o.agency] = (agCount[o.agency] || 0) + 1;
+    if (!agLabel[o.agency]) {
+      var full = (o.agency_full || o.agency).replace(/^New York City /, '');
+      agLabel[o.agency] = full !== o.agency ? full + ' (' + o.agency + ')' : full;
+    }
+  });
+  var fa = document.getElementById('fAgencyW');
+  Object.keys(agCount).sort(function (a, b) { return agCount[b] - agCount[a]; })
+    .forEach(function (a) {
+      var opt = document.createElement('option');
+      opt.value = a; opt.textContent = agLabel[a];
+      fa.appendChild(opt);
+    });
   fillSelect('fCommittee', uniqueSorted('committee'));
   fillSelect('fSponsor', uniqueSorted('prime_sponsor'));
   fillSelect('fYear', uniqueSorted(null, function (o) {
     return o.enactment_date ? o.enactment_date.slice(0, 4) : null;
-  }).sort());
+  }).sort().reverse());
+  fillSelect('fDeliv', uniqueSorted('deliverable_type'));
   fillSelect('fRecur', uniqueSorted('recurrence'));
-  ['fCommittee', 'fSponsor', 'fYear', 'fRecur'].forEach(function (id) {
+  FILTER_IDS.forEach(function (id) {
     document.getElementById(id).addEventListener('input', render);
   });
   document.getElementById('fReset').addEventListener('click', function () {
-    ['fCommittee', 'fSponsor', 'fYear', 'fRecur'].forEach(function (id) {
-      document.getElementById(id).value = '';
-    });
+    FILTER_IDS.forEach(function (id) { document.getElementById(id).value = ''; });
     render();
   });
 }
@@ -318,15 +357,19 @@ function bucketOf(type) {
 }
 
 function render() {
+  var agency = document.getElementById('fAgencyW').value;
   var committee = document.getElementById('fCommittee').value;
   var sponsor = document.getElementById('fSponsor').value;
   var year = document.getElementById('fYear').value;
+  var deliv = document.getElementById('fDeliv').value;
   var recur = document.getElementById('fRecur').value;
 
   var rows = ALL.filter(function (o) {
+    if (agency && o.agency !== agency) return false;
     if (committee && o.committee !== committee) return false;
     if (sponsor && o.prime_sponsor !== sponsor) return false;
     if (year && (!o.enactment_date || o.enactment_date.slice(0, 4) !== year)) return false;
+    if (deliv && o.deliverable_type !== deliv) return false;
     if (recur && o.recurrence !== recur) return false;
     return true;
   });
@@ -376,9 +419,11 @@ function render() {
   area.innerHTML = html;
 
   var filterBits = [];
+  if (agency) filterBits.push(agency);
   if (committee) filterBits.push(committee);
   if (sponsor) filterBits.push('prime sponsor ' + sponsor);
   if (year) filterBits.push('enacted ' + year);
+  if (deliv) filterBits.push(deliv);
   if (recur) filterBits.push(recur + ' duties');
   document.getElementById('chartSub').textContent = filterBits.length
     ? 'Filtered to ' + filterBits.join(' · ') + '. Top 20 agencies.'
