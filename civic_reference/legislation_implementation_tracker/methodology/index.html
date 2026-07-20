@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Methodology — NYC Legislation Implementation Tracker — NYCuriosity</title>
+  <meta name="description" content="How the NYC Legislation Implementation Tracker works: where the law text comes from, what counts as an agency obligation, how quotes are verified, how deadlines are computed, and how agencies are identified and normalized.">
+  <meta property="og:type"        content="website">
+  <meta property="og:url"         content="https://data.nycuriosity.com/civic_reference/legislation_implementation_tracker/methodology/">
+  <meta property="og:title"       content="Methodology — NYC Legislation Implementation Tracker">
+  <meta property="og:description" content="How the tracker turns 2,100+ enacted local laws into a verified database of agency obligations.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --blue: #2563eb; --blue-hover: #1d4ed8; --blue-light: #eff6ff; --blue-mid: #bfdbfe;
+      --text: #111827; --text-mid: #374151; --text-muted: #6b7280; --text-faint: #9ca3af;
+      --bg: #f8faff; --surface: #ffffff; --border: #e5e7eb;
+      --shadow-sm: 0 1px 3px rgba(17,24,39,0.08); --radius: 10px; --red: #dc2626;
+    }
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
+
+    header { background: #111827; border-bottom: 1px solid #1f2937; padding: 0 clamp(20px, 5vw, 48px); }
+    .header-inner { max-width: 1100px; margin: 0 auto; height: 56px; display: flex; align-items: center; gap: 16px; }
+    .back-link { font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600; color: #9ca3af; text-decoration: none; white-space: nowrap; }
+    .back-link:hover { color: #60a5fa; }
+    .header-divider { width: 1px; height: 20px; background: #374151; }
+    header h1 { font-family: 'Roboto Mono', monospace; font-size: 0.95rem; font-weight: 700; color: #e5e7eb; letter-spacing: -0.02em; }
+
+    .pill-nav { background: var(--surface); border-bottom: 1px solid var(--border); padding: 10px clamp(20px, 5vw, 48px); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .pill-nav a { font-size: 0.78rem; font-family: 'Roboto Mono', monospace; font-weight: 600; padding: 4px 12px; border-radius: 20px; text-decoration: none; border: 1px solid var(--border); color: var(--text-muted); background: var(--bg); transition: all 0.15s; white-space: nowrap; }
+    .pill-nav a:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
+    .pill-nav a.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+    .pill-label { font-size: 0.72rem; color: var(--text-faint); font-family: 'Roboto Mono', monospace; white-space: nowrap; }
+
+    .hero { background: var(--surface); border-bottom: 1px solid var(--border); padding: clamp(28px, 4vw, 44px) clamp(20px, 5vw, 48px); }
+    .hero-inner { max-width: 1100px; margin: 0 auto; }
+    .breadcrumb { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; color: var(--text-faint); margin-bottom: 14px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .breadcrumb a { color: var(--blue); text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+    .breadcrumb span:last-child { color: #FF6319; }
+    .hero-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .hero-tag { font-family: 'Roboto Mono', monospace; font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #FF6319; background: #fff4ed; border: 1px solid #ffd0b3; border-radius: 4px; padding: 3px 8px; }
+    .hero h1 { font-family: 'Roboto Mono', monospace; font-size: clamp(1.4rem, 3vw, 1.8rem); font-weight: 700; letter-spacing: -0.03em; line-height: 1.25; margin-bottom: 10px; }
+    .hero h1 span { color: var(--blue); }
+    .hero p { font-size: 0.95rem; color: var(--text-muted); max-width: 720px; line-height: 1.7; }
+
+    main { flex: 1; padding: clamp(24px, 4vw, 40px) clamp(20px, 5vw, 48px); }
+    .main-inner { max-width: 780px; margin: 0 auto; }
+    .m-section { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 22px 26px; margin-bottom: 16px; }
+    .m-section h2 { font-family: 'Roboto Mono', monospace; font-size: 1rem; font-weight: 700; letter-spacing: -0.02em; line-height: 1.35; margin-bottom: 10px; }
+    .m-section p { font-size: 0.9rem; color: var(--text-mid); line-height: 1.75; margin-bottom: 10px; }
+    .m-section p:last-child { margin-bottom: 0; }
+    .m-section a { color: var(--blue); text-decoration: none; border-bottom: 1px solid var(--blue-mid); }
+    .m-section a:hover { border-color: var(--blue); }
+    .m-section ul { margin: 0 0 10px 20px; }
+    .m-section li { font-size: 0.9rem; color: var(--text-mid); line-height: 1.7; margin-bottom: 6px; }
+    .m-section code { font-family: 'Roboto Mono', monospace; font-size: 0.8rem; background: var(--bg); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; }
+    .type-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px; margin-bottom: 10px; }
+    .type-chip { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; padding: 5px 10px; border-radius: 6px; background: var(--blue-light); border: 1px solid var(--blue-mid); color: var(--text-mid); }
+
+    footer { background: var(--surface); border-top: 1px solid var(--border); padding: 20px clamp(20px, 5vw, 48px); }
+    .footer-inner { max-width: 1100px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+    .footer-copy { font-size: 0.8rem; color: var(--text-faint); }
+    .footer-links { display: flex; gap: 20px; align-items: center; }
+    .footer-links a { font-size: 0.8rem; color: var(--text-muted); text-decoration: none; }
+    .footer-links a:hover { color: var(--blue); }
+    .footer-support { display: inline-flex; align-items: center; gap: 5px; font-size: 0.8rem; font-weight: 500; color: #2563eb; text-decoration: none; padding: 5px 11px; border: 1px solid rgba(37,99,235,0.45); border-radius: 6px; transition: color .15s, border-color .15s, background .15s; vertical-align: middle; }
+    .footer-support:hover { color: #fff; background: #2563eb; border-color: #2563eb; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <a href="../" class="back-link">← legislation_implementation_tracker</a>
+    <div class="header-divider"></div>
+    <h1>Methodology</h1>
+  </div>
+</header>
+
+<div class="pill-nav">
+  <span class="pill-label">Views in this tool:</span>
+  <a href="../obligations-table/">Obligations Table</a>
+  <a href="../agency-workload/">Agency Workload</a>
+  <a href="../deadline-timeline/">Deadline Timeline</a>
+  <a href="../law/">Law Explorer</a>
+  <a href="./" class="active">Methodology</a>
+</div>
+
+<div class="hero">
+  <div class="hero-inner">
+    <div class="breadcrumb">
+      <a href="/">data.nycuriosity.com</a>
+      <span>›</span>
+      <a href="../">NYC Legislation Implementation Tracker</a>
+      <span>›</span>
+      <span>Methodology</span>
+    </div>
+    <div class="hero-meta">
+      <span class="hero-tag">Civic Reference</span>
+    </div>
+    <h1>How 2,100 laws become <span>a verified obligations database</span></h1>
+    <p>
+      Every number on this tracker traces back to the enacted text of a local law. This page explains
+      each step: where the text comes from, what counts as an obligation, how every quote is checked,
+      how deadlines are computed, and how agencies are identified.
+    </p>
+  </div>
+</div>
+
+<main>
+  <div class="main-inner">
+
+    <div class="m-section">
+      <h2>The source is the enacted law text itself, not summaries</h2>
+      <p>
+        The tracker covers every Introduction enacted as a local law from January 2014 to the present,
+        enumerated from <a href="https://legistar.council.nyc.gov" target="_blank" rel="noopener">NYC Legistar</a>
+        and refreshed monthly. For each law it reads the full enacted text as published on the law's
+        Legistar page, the version signed into law, not the bill summary, the committee report, or press
+        coverage. Fiscal impact statements are a separate document and feed the companion
+        <a href="../../nyc_council_fiscal_impacts_tracker/">Fiscal Impacts Tracker</a>.
+      </p>
+    </div>
+
+    <div class="m-section">
+      <h2>An obligation is a mandatory duty placed on city government</h2>
+      <p>
+        Each law is parsed into individual obligations: one record per distinct duty the law imposes on a
+        NYC government entity, an agency, office, commission, board, or officer. The rules:
+      </p>
+      <ul>
+        <li><strong>Mandatory language only.</strong> "Shall", "must", "is required to". Permissive language ("may") counts only when other provisions clearly presume the action will happen, such as employers being required to follow "rules of the department".</li>
+        <li><strong>City government only.</strong> Duties the law places on private parties (employers, landlords, businesses) appear only through the agency work they create: the enforcement, rulemaking, or notices the law assigns to government.</li>
+        <li><strong>One record per duty.</strong> A recurring annual report is one obligation with annual recurrence, not one per year. A duty shared by several named agencies becomes one record per agency.</li>
+        <li><strong>Consultation is not responsibility.</strong> "In consultation with" agencies are not credited with the duty; only the lead agency is.</li>
+        <li><strong>Street co-namings collapse to one DOT record.</strong> Designating a street name implies DOT fabricates and installs the signs, a single signage obligation rather than one per honoree.</li>
+      </ul>
+    </div>
+
+    <div class="m-section">
+      <h2>Extraction is done by a language model, then checked mechanically</h2>
+      <p>
+        Obligations are extracted with Claude (Anthropic's Haiku model), which reads each law and returns
+        the responsible entity, a plain-language action summary, the deliverable type, the citation, the
+        deadline clause, the recurrence, and a verbatim quote of the operative statutory language.
+      </p>
+      <p>
+        The quote is the honesty anchor: every quoted passage is mechanically string-checked against the
+        law text, after normalizing whitespace and typography, and re-extracted once if it fails. 95% of
+        quotes verify exactly; records whose quote could not be verified verbatim are flagged in the
+        interface as possibly paraphrased. Interpretation of statutory language ultimately requires human
+        review, so treat the tracker as a research aid rather than legal advice.
+      </p>
+    </div>
+
+    <div class="m-section">
+      <h2>Deadlines are computed in code, never estimated by the model</h2>
+      <p>
+        The model reports only the deadline's structure, a fixed date or an offset such as "within 180 days
+        of the effective date". All date arithmetic happens in code, chained from the enactment date recorded
+        on Legistar: enactment date plus the effective-date clause plus the deadline offset. Months convert
+        at 30 days and years at 365, so a computed date can differ from an agency's own reading by a few days.
+      </p>
+      <p>
+        A past-due deadline means the date passed, not that the agency failed to deliver. The tracker does
+        not yet check whether each report or rule was actually produced; it tells you what to go ask for.
+      </p>
+    </div>
+
+    <div class="m-section">
+      <h2>Every deliverable falls into one of fourteen types</h2>
+      <div class="type-grid">
+        <span class="type-chip">rulemaking</span>
+        <span class="type-chip">report</span>
+        <span class="type-chip">study or audit</span>
+        <span class="type-chip">plan or strategy</span>
+        <span class="type-chip">program or service</span>
+        <span class="type-chip">database or data publication</span>
+        <span class="type-chip">signage or installation</span>
+        <span class="type-chip">outreach or education</span>
+        <span class="type-chip">training</span>
+        <span class="type-chip">enforcement or inspection</span>
+        <span class="type-chip">monitoring or testing</span>
+        <span class="type-chip">notice or posting</span>
+        <span class="type-chip">designation or staffing</span>
+        <span class="type-chip">other</span>
+      </div>
+      <p>
+        Reports lead the count, followed by rulemaking, new programs and services, and data publication.
+        The <a href="../agency-workload/">agency workload chart</a> groups these into five buckets for readability.
+      </p>
+    </div>
+
+    <div class="m-section">
+      <h2>Agency names are normalized so every variation groups as one agency</h2>
+      <p>
+        Laws refer to the same agency many ways: "DOT", "the department of transportation", "the commissioner".
+        Every responsible entity is resolved through a crosswalk built from NYC Open Data's
+        <a href="https://data.cityofnewyork.us/City-Government/NYC-Agencies-and-Governance-Organizations/t3jq-9nkf/about_data" target="_blank" rel="noopener">NYC Agencies and Governance Organizations</a>
+        dataset, roughly 700 name variants mapping to canonical abbreviations, including renames
+        (Department of Consumer Affairs to DCWP, DoITT to OTI). Generic references such as "the department"
+        are resolved from each law's own definitions section; a curated per-law resolution table covers the
+        cases where the definition lives elsewhere in the code. When a law names an agency inside a
+        conditional phrase ("the enforcing agency (Department of Consumer and Worker Protection or designated
+        agency)"), the resolution is accepted only when exactly one concrete agency emerges.
+      </p>
+      <p>
+        77% of obligations resolve to a canonical agency. The rest are either real bodies the dataset does
+        not list (shown as written, such as "the chief privacy officer") or genuinely undetermined actors,
+        "an agency designated by the mayor", "each agency", which are labeled <em>Unspecified</em> rather
+        than passed off as agencies. The exact phrase the law uses is always preserved in the record detail.
+      </p>
+    </div>
+
+    <div class="m-section">
+      <h2>Council members are matched to their legislation by service years</h2>
+      <p>
+        The <a href="../../nyc_council_legislation_trackers/council-members/">Council Members page</a> joins
+        this tracker and the fiscal tracker to a roster of all 123 members who served from 2014 on, compiled
+        from official Council and election records. Sponsor names are matched with service-year checks so
+        same-surname members in different eras attribute correctly; when years cannot distinguish two
+        candidates, the sponsorship is left unmatched rather than guessed. State legislation resolutions,
+        whose sponsors are state legislators, are excluded entirely.
+      </p>
+    </div>
+
+    <div class="m-section">
+      <h2>Known limitations</h2>
+      <ul>
+        <li>One law, Local Law 47 of 2022, appends the entire recodified Fire Code and exceeds what the model can read at once; its obligations were extracted from the law's enacting sections and effective-date clause only.</li>
+        <li>Counts measure distinct obligations, not their difficulty or cost. A one-time report and a permanent enforcement duty each count once.</li>
+        <li>A handful of obligations name several agencies in a single duty; where the law itself does not divide the work, neither does the tracker.</li>
+        <li>Deadline dates inherit any imprecision in the law's own drafting, and effective-date provisions with contingencies (collective bargaining carve-outs, agency certifications) are computed from the primary rule.</li>
+      </ul>
+    </div>
+
+    <div class="m-section">
+      <h2>The data refreshes monthly and is fully downloadable</h2>
+      <p>
+        A monthly job ingests newly enacted laws, extracts their obligations, and rebuilds every view,
+        including the member profiles. Members can <a href="https://premium.nycuriosity.com/civic_reference/legislation_implementation_tracker/data/obligations.csv">download the full CSV</a> and set up
+        <a href="https://premium.nycuriosity.com/civic_reference/legislation_implementation_tracker/alerts/">personalized alerts</a>
+        for the agencies, council members, and keywords they follow. The underlying pipeline code is public in the
+        <a href="https://github.com/TalR24/nycur-data-website" target="_blank" rel="noopener">site's GitHub repository</a>.
+      </p>
+      <p>
+        <em>Concept credit: this tracker adapts the implementation-checklist approach Marci Dale prototyped for
+        federal legislation in
+        <a href="https://marcidale.substack.com/p/what-if-every-new-law-came-with-a" target="_blank" rel="noopener">"What if every new law came with a checklist?"</a></em>
+      </p>
+    </div>
+
+  </div>
+</main>
+
+<footer>
+  <div class="footer-inner">
+    <span class="footer-copy">© NYCuriosity · Tal Roded</span>
+    <nav class="footer-links">
+      <a href="https://buymeacoffee.com/nycuriosity" class="footer-support" target="_blank" rel="noopener" aria-label="Support my work on Buy Me a Coffee"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>Support my work</a>
+      <a href="https://talroded.nycuriosity.com" target="_blank" rel="noopener">About</a>
+      <a href="https://www.nycuriosity.com" target="_blank" rel="noopener">Substack</a>
+      <a href="https://github.com/TalR24/nycur-data-website" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </div>
+</footer>
+
+</body>
+</html>

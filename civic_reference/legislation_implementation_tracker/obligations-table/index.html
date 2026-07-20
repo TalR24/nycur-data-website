@@ -58,19 +58,29 @@
     main { flex: 1; padding: clamp(24px, 4vw, 40px) clamp(20px, 5vw, 48px); }
     .main-inner { max-width: 1100px; margin: 0 auto; }
 
-    .filters { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 16px 18px; margin-bottom: 16px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-    .filters input[type="search"] { flex: 2 1 220px; min-width: 180px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 7px; font-family: 'Inter', sans-serif; font-size: 0.85rem; background: var(--bg); color: var(--text); }
-    .filters select { flex: 1 1 150px; min-width: 130px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 7px; font-family: 'Roboto Mono', monospace; font-size: 0.75rem; background: var(--bg); color: var(--text-mid); cursor: pointer; }
+    .filters { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 16px 18px; margin-bottom: 16px; display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+    .fgroup { display: flex; flex-direction: column; gap: 5px; flex: 1 1 140px; min-width: 130px; }
+    .fgroup.wide { flex: 2 1 220px; min-width: 190px; }
+    .fgroup label { font-family: 'Roboto Mono', monospace; font-size: 0.62rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); }
+    .filters input[type="search"] { width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 7px; font-family: 'Inter', sans-serif; font-size: 0.85rem; background: var(--bg); color: var(--text); }
+    .filters select { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 7px; font-family: 'Roboto Mono', monospace; font-size: 0.75rem; background: var(--bg); color: var(--text-mid); cursor: pointer; }
     .filters input:focus, .filters select:focus { outline: 2px solid var(--blue-mid); border-color: var(--blue); }
-    .reset-btn { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; font-weight: 600; color: var(--text-muted); background: none; border: 1px solid var(--border); border-radius: 7px; padding: 8px 12px; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+    .reset-btn { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; font-weight: 600; color: var(--text-muted); background: none; border: 1px solid var(--border); border-radius: 7px; padding: 9px 12px; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
     .reset-btn:hover { color: var(--red); border-color: var(--red); }
 
-    .result-count { font-family: 'Roboto Mono', monospace; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 12px; }
+    .result-row { display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 10px 18px; margin-bottom: 12px; }
+    .result-count { font-family: 'Roboto Mono', monospace; font-size: 0.75rem; color: var(--text-muted); }
     .result-count strong { color: var(--blue); }
+    .quick-stats { display: flex; gap: 18px; flex-wrap: wrap; }
+    .qs { display: flex; flex-direction: column; align-items: flex-end; }
+    .qs .n { font-family: 'Roboto Mono', monospace; font-size: 0.9rem; font-weight: 700; color: var(--blue); line-height: 1.1; }
+    .qs .n.red { color: var(--red); }
+    .qs .l { font-size: 0.64rem; color: var(--text-muted); }
 
     #chart-box { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); overflow: hidden; }
     .table-scroll { overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; min-width: 860px; }
+    table { width: 100%; border-collapse: collapse; min-width: 1220px; }
+    .meta-cell { font-size: 0.76rem; color: var(--text-muted); white-space: nowrap; max-width: 150px; overflow: hidden; text-overflow: ellipsis; }
     thead th { font-family: 'Roboto Mono', monospace; font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); text-align: left; padding: 12px 14px; border-bottom: 2px solid var(--border); background: var(--bg); white-space: nowrap; cursor: pointer; user-select: none; }
     thead th:hover { color: var(--blue); }
     thead th .arrow { font-size: 0.6rem; margin-left: 3px; }
@@ -141,6 +151,7 @@
   <a href="../agency-workload/">Agency Workload</a>
   <a href="../deadline-timeline/">Deadline Timeline</a>
   <a href="../law/">Law Explorer</a>
+  <a href="../methodology/">Methodology</a>
 </div>
 
 <div class="hero">
@@ -179,21 +190,57 @@
   <div class="main-inner">
 
     <div class="filters">
-      <input type="search" id="fSearch" placeholder="Search obligations, laws, agencies…" aria-label="Search obligations">
-      <select id="fAgency" aria-label="Filter by agency"><option value="">All agencies</option></select>
-      <select id="fType" aria-label="Filter by deliverable type"><option value="">All deliverable types</option></select>
-      <select id="fRecur" aria-label="Filter by recurrence"><option value="">All recurrence</option></select>
-      <select id="fDeadline" aria-label="Filter by deadline">
-        <option value="">All deadlines</option>
-        <option value="overdue">Past due</option>
-        <option value="next12">Due in next 12 months</option>
-        <option value="dated">Any dated deadline</option>
-        <option value="none">No dated deadline</option>
-      </select>
-      <button class="reset-btn" id="fReset">Reset</button>
+      <div class="fgroup wide">
+        <label for="fSearch">Search law # or text</label>
+        <input type="search" id="fSearch" placeholder="e.g. LL 61 or security guards">
+      </div>
+      <div class="fgroup">
+        <label for="fAgency">Agency</label>
+        <select id="fAgency"><option value="">All agencies</option></select>
+      </div>
+      <div class="fgroup">
+        <label for="fType">Deliverable</label>
+        <select id="fType"><option value="">All types</option></select>
+      </div>
+      <div class="fgroup">
+        <label for="fCommittee">Committee</label>
+        <select id="fCommittee"><option value="">All committees</option></select>
+      </div>
+      <div class="fgroup">
+        <label for="fSponsor">Prime sponsor</label>
+        <select id="fSponsor"><option value="">All sponsors</option></select>
+      </div>
+      <div class="fgroup">
+        <label for="fYear">Enacted</label>
+        <select id="fYear"><option value="">All years</option></select>
+      </div>
+      <div class="fgroup">
+        <label for="fRecur">Recurrence</label>
+        <select id="fRecur"><option value="">All recurrence</option></select>
+      </div>
+      <div class="fgroup">
+        <label for="fDeadline">Deadline</label>
+        <select id="fDeadline">
+          <option value="">All deadlines</option>
+          <option value="overdue">Past due</option>
+          <option value="next12">Due in next 12 months</option>
+          <option value="dated">Any dated deadline</option>
+          <option value="none">No dated deadline</option>
+        </select>
+      </div>
+      <button class="reset-btn" id="fReset">Reset filters</button>
     </div>
 
-    <p class="result-count" id="resultCount"></p>
+    <div class="result-row">
+      <p class="result-count" id="resultCount"></p>
+      <div class="quick-stats">
+        <span class="qs"><span class="n" id="qsAgencies">–</span><span class="l">agencies</span></span>
+        <span class="qs"><span class="n" id="qsLaws">–</span><span class="l">laws</span></span>
+        <span class="qs"><span class="n" id="qsDated">–</span><span class="l">dated deadlines</span></span>
+        <span class="qs"><span class="n red" id="qsOverdue">–</span><span class="l">past due</span></span>
+        <span class="qs"><span class="n" id="qsRecurring">–</span><span class="l">recurring</span></span>
+      </div>
+    </div>
 
     <div id="chart-box">
       <div class="table-scroll">
@@ -204,12 +251,15 @@
               <th data-sort="agency">Agency<span class="arrow"></span></th>
               <th data-sort="action">Required action<span class="arrow"></span></th>
               <th data-sort="type">Type<span class="arrow"></span></th>
+              <th data-sort="committee">Committee<span class="arrow"></span></th>
+              <th data-sort="sponsor">Prime sponsor<span class="arrow"></span></th>
+              <th data-sort="enacted">Enacted<span class="arrow"></span></th>
               <th data-sort="deadline">Deadline<span class="arrow"></span></th>
               <th data-sort="recurrence">Recurrence<span class="arrow"></span></th>
             </tr>
           </thead>
           <tbody id="tbody">
-            <tr><td colspan="6"><p class="loading-note">Loading obligations…</p></td></tr>
+            <tr><td colspan="9"><p class="loading-note">Loading obligations…</p></td></tr>
           </tbody>
         </table>
       </div>
@@ -291,13 +341,32 @@
       opt.value = t; opt.textContent = t;
       fr.appendChild(opt);
     });
-    ['fSearch', 'fAgency', 'fType', 'fRecur', 'fDeadline'].forEach(function (id) {
+    var fc = document.getElementById('fCommittee');
+    uniqueSorted('committee').forEach(function (t) {
+      var opt = document.createElement('option');
+      opt.value = t; opt.textContent = t.replace(/^Committee on /, '');
+      fc.appendChild(opt);
+    });
+    var fs = document.getElementById('fSponsor');
+    uniqueSorted('prime_sponsor').forEach(function (t) {
+      var opt = document.createElement('option');
+      opt.value = t; opt.textContent = t;
+      fs.appendChild(opt);
+    });
+    var fy = document.getElementById('fYear');
+    var years = {};
+    ALL.forEach(function (o) { if (o.enactment_date) years[o.enactment_date.slice(0, 4)] = 1; });
+    Object.keys(years).sort().reverse().forEach(function (y) {
+      var opt = document.createElement('option');
+      opt.value = y; opt.textContent = y;
+      fy.appendChild(opt);
+    });
+    var FIDS = ['fSearch', 'fAgency', 'fType', 'fCommittee', 'fSponsor', 'fYear', 'fRecur', 'fDeadline'];
+    FIDS.forEach(function (id) {
       document.getElementById(id).addEventListener('input', applyFilters);
     });
     document.getElementById('fReset').addEventListener('click', function () {
-      ['fSearch', 'fAgency', 'fType', 'fRecur', 'fDeadline'].forEach(function (id) {
-        document.getElementById(id).value = '';
-      });
+      FIDS.forEach(function (id) { document.getElementById(id).value = ''; });
       applyFilters();
     });
     document.querySelectorAll('thead th').forEach(function (th) {
@@ -313,6 +382,9 @@
     var q = document.getElementById('fSearch').value.toLowerCase().trim();
     var agency = document.getElementById('fAgency').value;
     var type = document.getElementById('fType').value;
+    var committee = document.getElementById('fCommittee').value;
+    var sponsor = document.getElementById('fSponsor').value;
+    var year = document.getElementById('fYear').value;
     var recur = document.getElementById('fRecur').value;
     var dl = document.getElementById('fDeadline').value;
     var today = new Date(); today.setHours(0, 0, 0, 0);
@@ -321,6 +393,9 @@
     var rows = ALL.filter(function (o) {
       if (agency && o.agency !== agency) return false;
       if (type && o.deliverable_type !== type) return false;
+      if (committee && o.committee !== committee) return false;
+      if (sponsor && o.prime_sponsor !== sponsor) return false;
+      if (year && (!o.enactment_date || o.enactment_date.slice(0, 4) !== year)) return false;
       if (recur && o.recurrence !== recur) return false;
       if (dl) {
         var d = o.deadline_date ? new Date(o.deadline_date + 'T00:00:00') : null;
@@ -343,6 +418,22 @@
     document.getElementById('resultCount').innerHTML =
       'Showing <strong>' + rows.length.toLocaleString() + '</strong> of ' +
       ALL.length.toLocaleString() + ' obligations';
+    var agSet = {}, lawSet = {}, dated = 0, overdue = 0, recurring = 0;
+    rows.forEach(function (o) {
+      if (o.agency_matched) agSet[o.agency] = 1;
+      lawSet[o.matter_id] = 1;
+      if (o.deadline_date) {
+        dated++;
+        if (o.recurrence === 'one-time' &&
+            new Date(o.deadline_date + 'T00:00:00') < today) overdue++;
+      }
+      if (o.recurrence !== 'one-time') recurring++;
+    });
+    document.getElementById('qsAgencies').textContent = Object.keys(agSet).length.toLocaleString();
+    document.getElementById('qsLaws').textContent = Object.keys(lawSet).length.toLocaleString();
+    document.getElementById('qsDated').textContent = dated.toLocaleString();
+    document.getElementById('qsOverdue').textContent = overdue.toLocaleString();
+    document.getElementById('qsRecurring').textContent = recurring.toLocaleString();
     document.querySelectorAll('thead th').forEach(function (th) {
       var arrow = th.querySelector('.arrow');
       arrow.textContent = th.getAttribute('data-sort') === sortKey ? (sortDir === 1 ? '▲' : '▼') : '';
@@ -357,6 +448,9 @@
       case 'action': va = a.action_summary || ''; vb = b.action_summary || ''; return sortDir * va.localeCompare(vb);
       case 'type': va = a.deliverable_type || ''; vb = b.deliverable_type || ''; return sortDir * va.localeCompare(vb);
       case 'recurrence': va = a.recurrence || ''; vb = b.recurrence || ''; return sortDir * va.localeCompare(vb);
+      case 'committee': va = a.committee || '￿'; vb = b.committee || '￿'; return sortDir * va.localeCompare(vb);
+      case 'sponsor': va = a.prime_sponsor || '￿'; vb = b.prime_sponsor || '￿'; return sortDir * va.localeCompare(vb);
+      case 'enacted': va = a.enactment_date || ''; vb = b.enactment_date || ''; return sortDir * -va.localeCompare(vb);
       case 'deadline':
       default:
         va = a.deadline_date || '9999-12-31'; vb = b.deadline_date || '9999-12-31';
@@ -368,7 +462,7 @@
     var today = new Date(); today.setHours(0, 0, 0, 0);
     var html = '';
     if (!rows.length) {
-      html = '<tr><td colspan="6"><p class="loading-note">No obligations match these filters.</p></td></tr>';
+      html = '<tr><td colspan="9"><p class="loading-note">No obligations match these filters.</p></td></tr>';
     }
     rows.forEach(function (o) {
       var d = o.deadline_date ? new Date(o.deadline_date + 'T00:00:00') : null;
@@ -382,6 +476,9 @@
         + '<td class="agency-cell' + (o.agency === 'Unspecified' ? ' unspec' : '') + '" title="' + esc(o.agency_full) + '">' + esc(o.agency) + '</td>'
         + '<td>' + esc(o.action_summary) + '</td>'
         + '<td><span class="type-badge">' + esc(o.deliverable_type) + '</span></td>'
+        + '<td class="meta-cell" title="' + esc(o.committee || '') + '">' + esc((o.committee || '—').replace(/^Committee on /, '')) + '</td>'
+        + '<td class="meta-cell">' + esc(o.prime_sponsor || '—') + '</td>'
+        + '<td class="deadline-cell">' + (o.enactment_date ? fmtDate(o.enactment_date) : '—') + '</td>'
         + '<td class="deadline-cell ' + dlClass + '">' + dlText + '</td>'
         + '<td class="recur-cell">' + esc(o.recurrence) + '</td>'
         + '</tr>';
@@ -406,7 +503,7 @@
     }
     var groups = (o.affected_groups && o.affected_groups.length)
       ? '<div class="detail-block"><h4>Affected groups</h4><p>' + esc(o.affected_groups.join(', ')) + '</p></div>' : '';
-    return '<tr class="detail-row"><td colspan="6"><div class="detail-grid">'
+    return '<tr class="detail-row"><td colspan="9"><div class="detail-grid">'
       + quoteBlock
       + '<div class="detail-block"><h4>Law</h4><p>' + esc(o.law_title || '') + '</p></div>'
       + '<div class="detail-block"><h4>Responsible entity as written</h4><p>' + esc(o.actor_raw || o.agency_full) + '</p></div>'
