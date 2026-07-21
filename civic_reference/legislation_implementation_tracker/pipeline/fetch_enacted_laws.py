@@ -212,6 +212,34 @@ def _strip_text_html(fragment: str) -> str:
     return "\n".join(lines)
 
 
+def _merge_name_suffixes(sponsors: list[str]) -> list[str]:
+    """
+    Re-attach name suffixes severed by the comma split ("Rafael Salamanca,
+    Jr." arrives as two entries).
+    """
+    merged: list[str] = []
+    for s in sponsors:
+        if re.fullmatch(r"(Jr|Sr|II|III|IV)\.?", s) and merged:
+            merged[-1] = merged[-1] + ", " + s
+        else:
+            merged.append(s)
+    return merged
+
+
+def _normalize_record(rec: dict) -> dict:
+    """
+    Repair a previously saved record in place: records cached before the
+    suffix re-merge fix carry "Jr."-style fragments as separate sponsor
+    entries, and --incremental would otherwise preserve them forever.
+    """
+    merged = _merge_name_suffixes(rec.get("sponsors", []))
+    if merged != rec.get("sponsors"):
+        rec["sponsors"] = merged
+        rec["prime_sponsor"] = merged[0] if merged else ""
+        rec["sponsor_count"] = len(merged)
+    return rec
+
+
 def parse_detail_page(html: str, matter_id: str, guid: str) -> dict:
     committee = ""
     c = re.search(r'id="ctl00_ContentPlaceHolder1_hypInControlOf[^"]*"[^>]*>([^<]+)<',
@@ -223,15 +251,7 @@ def parse_detail_page(html: str, matter_id: str, guid: str) -> dict:
     sponsors = [s.strip() for s in sponsors_raw.split(",") if s.strip()]
     # Drop trailing "(in conjunction with the Mayor)" style suffixes from list
     sponsors = [s for s in sponsors if not s.startswith("(")]
-    # Re-attach name suffixes severed by the comma split ("Rafael Salamanca,
-    # Jr." arrives as two entries)
-    merged: list[str] = []
-    for s in sponsors:
-        if re.fullmatch(r"(Jr|Sr|II|III|IV)\.?", s) and merged:
-            merged[-1] = merged[-1] + ", " + s
-        else:
-            merged.append(s)
-    sponsors = merged
+    sponsors = _merge_name_suffixes(sponsors)
 
     indexes_raw = _span(html, "lblIndexes2")
     indexes = [i.strip() for i in indexes_raw.split(",") if i.strip()]
@@ -312,7 +332,7 @@ def main() -> None:
     prior: dict[str, dict] = {}
     if args.incremental and LAWS_JSON.exists():
         for rec in json.loads(LAWS_JSON.read_text()).get("laws", []):
-            prior[rec["matter_id"]] = rec
+            prior[rec["matter_id"]] = _normalize_record(rec)
 
     session = create_session()
 
@@ -333,7 +353,7 @@ def main() -> None:
             records.append(prior[mid])
             continue
         if args.incremental and cache_file.exists():
-            records.append(json.loads(cache_file.read_text()))
+            records.append(_normalize_record(json.loads(cache_file.read_text())))
             continue
 
         rec = fetch_law(session, mid, guid)

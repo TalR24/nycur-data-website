@@ -126,6 +126,15 @@
     .leg-title { font-size: 0.83rem; color: var(--text-mid); line-height: 1.55; }
     .profile-note { font-size: 0.78rem; color: var(--text-muted); line-height: 1.6; margin-top: 6px; }
 
+    /* Voting record */
+    .vote-pills { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+    .vote-pill { display: flex; flex-direction: column; gap: 2px; padding: 9px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); min-width: 108px; }
+    .vote-pill .vp-num { font-family: 'Roboto Mono', monospace; font-size: 1rem; font-weight: 700; color: var(--blue); letter-spacing: -0.02em; line-height: 1; }
+    .vote-pill .vp-num.neg { color: var(--red); }
+    .vote-pill .vp-num.mut { color: var(--text-mid); }
+    .vote-pill .vp-label { font-size: 0.68rem; color: var(--text-muted); }
+    .vote-law { font-family: 'Roboto Mono', monospace; font-size: 0.66rem; color: var(--text-faint); }
+
     .footnotes { margin-top: 24px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; }
     .footnotes p { font-size: 0.8rem; color: var(--text-muted); line-height: 1.65; margin-bottom: 10px; }
     .footnotes p:last-child { margin-bottom: 0; }
@@ -213,6 +222,17 @@
   var DATA = null, MAP = null;
   var viewMode = 'cards';
   var selectedDistrict = null;
+  var votesPromise = null; // member_votes.json, fetched once on first profile open
+
+  function fetchVotes() {
+    if (!votesPromise) {
+      votesPromise = fetch('../data/member_votes.json').then(function (r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      });
+    }
+    return votesPromise;
+  }
 
   Promise.all([
     fetch('../data/members.json').then(function (r) { return r.json(); }),
@@ -512,14 +532,54 @@
       html += '<p class="profile-note">No legislation by this member appears in either tracker: no bill of theirs carries a non-zero fiscal impact statement, and none of their sponsored laws since 2014 has been parsed for obligations.</p>';
     }
 
+    html += '<div id="voteSection"><p class="profile-note">Loading voting record…</p></div>';
     html += footnotesHtml();
     document.getElementById('mainContent').innerHTML = html;
+    renderVotes(m.id);
+  }
+
+  function renderVotes(id) {
+    fetchVotes().then(function (v) {
+      var el = document.getElementById('voteSection');
+      if (!el) return;
+      var startYear = (v.coverage || '2014').slice(0, 4);
+      var rec = v.members[id];
+      var html = '<div class="section-head">Voting record (' + startYear + ' on)</div>';
+      if (!rec) {
+        el.innerHTML = html + '<p class="profile-note">No recorded votes in the archive (coverage begins ' + startYear + ').</p>';
+        return;
+      }
+      var t = rec.totals;
+      html += '<div class="vote-pills">'
+        + '<div class="vote-pill"><span class="vp-num">' + t.affirmative.toLocaleString() + '</span><span class="vp-label">Affirmative</span></div>'
+        + '<div class="vote-pill"><span class="vp-num neg">' + t.negative.toLocaleString() + '</span><span class="vp-label">Negative</span></div>'
+        + '<div class="vote-pill"><span class="vp-num mut">' + t.absent.toLocaleString() + '</span><span class="vp-label">Absent</span></div>'
+        + '<div class="vote-pill"><span class="vp-num mut">' + t.other.toLocaleString() + '</span><span class="vp-label">Excused or other</span></div>'
+        + '</div>';
+      if (rec.negative_votes.length) {
+        html += '<div class="section-head">Votes against (' + rec.negative_votes.length + ')</div>';
+        rec.negative_votes.forEach(function (nv) {
+          var inner = '<div class="leg-top"><span class="leg-label">' + esc(nv.file) + '</span>'
+            + (nv.law ? '<span class="vote-law">' + esc(nv.law) + '</span>' : '')
+            + '<span class="leg-num">' + esc(nv.date) + '</span></div>'
+            + '<div class="leg-title">' + esc(nv.item) + '</div>';
+          html += nv.matter_id
+            ? '<a class="leg-item" href="../../legislation_implementation_tracker/law/?law=' + encodeURIComponent(nv.matter_id) + '">' + inner + '</a>'
+            : '<div class="leg-item">' + inner + '</div>';
+        });
+      }
+      el.innerHTML = html;
+    }).catch(function () {
+      var el = document.getElementById('voteSection');
+      if (el) el.innerHTML = '<p class="profile-note">Voting record failed to load.</p>';
+    });
   }
 
   function footnotesHtml() {
     return '<div class="footnotes">'
       + '<p><strong>What counts:</strong> a member\'s profile includes every bill where they appear as prime sponsor or co-sponsor in the <a href="../../nyc_council_fiscal_impacts_tracker/">Fiscal Impacts Tracker</a> (bills with a non-zero fiscal impact statement, 2014 to present) or the <a href="../../legislation_implementation_tracker/">Implementation Tracker</a> (enacted local laws parsed for agency obligations, 2014 to present). Legislation outside those datasets does not appear, so totals understate a member\'s full legislative record.</p>'
       + '<p><strong>Summed fiscal impacts overlap:</strong> a bill with 10 sponsors counts toward all 10 members\' totals, so member totals cannot be added together.</p>'
+      + '<p><strong>Voting records:</strong> recorded committee and full-council votes on introductions (bills), compiled from the <a href="https://github.com/jehiah/nyc_legislation" target="_blank" rel="noopener">jehiah/nyc_legislation</a> archive of NYC Council Legistar data. Coverage begins in 2014; votes on resolutions and land use items are not included. The "excused or other" count bundles excused, medical, parental, bereavement, jury duty, conflict, abstain, and non-voting entries.</p>'
       + '<p><strong>Sponsor matching:</strong> the fiscal tracker records last names only; they are matched to members using service years, with ambiguous cases resolved manually. Roster of members, parties, and districts compiled from Wikipedia\'s New York City Council pages and council.nyc.gov; district boundaries from the NYC ArcGIS City Council Districts layer (2023 lines).</p>'
       + '</div>';
   }
