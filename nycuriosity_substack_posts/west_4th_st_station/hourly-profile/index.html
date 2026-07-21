@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>West 4th Street Hourly Ridership Rhythms — NYCuriosity</title>
+  <meta name="description" content="Hour-by-hour ridership at West 4th Street–Washington Square in 2025: arrivals versus departures, and how the station's late-night profile compares to Wall St, Grand Central, and Bedford Av.">
+  <meta property="og:type"        content="website">
+  <meta property="og:url"         content="https://data.nycuriosity.com/nycuriosity_substack_posts/west_4th_st_station/hourly-profile/">
+  <meta property="og:title"       content="West 4th Street Hourly Ridership Rhythms — NYCuriosity">
+  <meta property="og:description" content="Hour-by-hour ridership at West 4th Street–Washington Square in 2025: arrivals versus departures, and how the station's late-night profile compares to Wall St, Grand Central, and Bedford Av.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue:       #2563eb;
+      --blue-hover: #1d4ed8;
+      --blue-light: #eff6ff;
+      --blue-mid:   #bfdbfe;
+      --text:       #111827;
+      --text-mid:   #374151;
+      --text-muted: #6b7280;
+      --text-faint: #9ca3af;
+      --bg:         #f8faff;
+      --surface:    #ffffff;
+      --border:     #e5e7eb;
+      --shadow-sm:  0 1px 3px rgba(17,24,39,0.08);
+      --shadow-md:  0 4px 16px rgba(37,99,235,0.10);
+      --radius:     10px;
+      --entries-color:  #2563eb;
+      --arrivals-color: #c2410c;
+      --wall-color:     #c2410c;
+      --gct-color:      #6b7280;
+      --bedford-color:  #16a34a;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: #111827;
+      border-bottom: 1px solid #1f2937;
+      padding: 0 clamp(20px, 5vw, 48px);
+    }
+    .header-inner {
+      max-width: 900px; margin: 0 auto; height: 56px;
+      display: flex; align-items: center; gap: 16px;
+    }
+    .back-link {
+      font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600;
+      color: #9ca3af; text-decoration: none; display: flex; align-items: center; gap: 5px;
+      padding: 4px 8px 4px 4px; border-radius: 5px; transition: color 0.15s, background 0.15s; white-space: nowrap;
+    }
+    .back-link:hover { color: #60a5fa; background: rgba(96,165,250,0.1); }
+    .header-divider { width: 1px; height: 20px; background: #374151; flex-shrink: 0; }
+    header h1 {
+      font-family: 'Roboto Mono', monospace; font-size: 0.95rem; font-weight: 700;
+      color: #e5e7eb; letter-spacing: -0.02em;
+    }
+
+    .pill-nav {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 10px clamp(20px, 5vw, 48px);
+      display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+    }
+    .pill-nav a {
+      font-size: 0.78rem; font-family: 'Roboto Mono', monospace; font-weight: 600;
+      padding: 4px 12px; border-radius: 20px; text-decoration: none;
+      border: 1px solid var(--border); color: var(--text-muted); background: var(--bg);
+      transition: all 0.15s; white-space: nowrap;
+    }
+    .pill-nav a:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
+    .pill-nav a.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+    .pill-label { font-size: 0.72rem; color: var(--text-faint); font-family: 'Roboto Mono', monospace; white-space: nowrap; }
+
+    .hero {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: clamp(32px, 5vw, 52px) clamp(20px, 5vw, 48px);
+    }
+    .hero-inner { max-width: 900px; margin: 0 auto; }
+    .breadcrumb {
+      font-family: 'Roboto Mono', monospace; font-size: 0.72rem;
+      color: var(--text-faint); margin-bottom: 14px;
+      display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+    }
+    .breadcrumb a { color: var(--blue); text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+    .breadcrumb span:last-child { color: #FF6319; }
+    .hero-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .hero-tag {
+      font-family: 'Roboto Mono', monospace; font-size: 0.68rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.08em; color: #FF6319;
+      background: #fff4ed; border: 1px solid #ffd0b3; border-radius: 4px; padding: 3px 8px;
+    }
+    .hero-updated { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; color: var(--text-faint); }
+    .hero h1 {
+      font-family: 'Roboto Mono', monospace; font-size: clamp(1.4rem, 3vw, 1.85rem);
+      font-weight: 700; color: var(--text); letter-spacing: -0.03em; line-height: 1.2; margin-bottom: 10px;
+    }
+    .hero h1 span { color: var(--blue); }
+    .hero p { font-size: 0.975rem; color: var(--text-muted); max-width: 680px; line-height: 1.7; }
+    .hero p a { color: var(--blue); text-decoration: none; border-bottom: 1px solid var(--blue-mid); }
+    .hero p a:hover { border-color: var(--blue); }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600;
+      text-decoration: none; border-radius: 7px; padding: 8px 14px;
+      transition: background 0.15s, border-color 0.15s; cursor: pointer; border: none;
+    }
+    .btn-outline { background: var(--surface); color: var(--text-muted); border: 1.5px solid var(--border); }
+    .btn-outline:hover { color: var(--blue); border-color: var(--blue-mid); background: var(--blue-light); }
+
+    main { flex: 1; padding: clamp(28px, 4vw, 48px) clamp(20px, 5vw, 48px); }
+    .main-inner { max-width: 900px; margin: 0 auto; }
+
+    .chart-actions { display: flex; gap: 8px; margin-bottom: 16px; }
+    .chart-actions.later { margin-top: 40px; }
+    .action-btn { display: inline-flex; align-items: center; gap: 6px; background: var(--surface); color: var(--text-muted); font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600; padding: 6px 14px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; transition: all 0.15s; }
+    .action-btn:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
+    .action-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .chart-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+    }
+    .chart-pad { padding: clamp(20px, 4vw, 32px); }
+    .chart-title {
+      font-family: 'Roboto Mono', monospace; font-size: 1rem; font-weight: 700;
+      letter-spacing: -0.02em; margin-bottom: 4px;
+    }
+    .chart-subtitle { font-size: 0.83rem; color: var(--text-muted); margin-bottom: 14px; }
+
+    .day-toggle { display: inline-flex; gap: 0; margin-bottom: 16px; border: 1px solid var(--border); border-radius: 7px; overflow: hidden; }
+    .day-toggle button {
+      font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600;
+      padding: 6px 16px; border: none; cursor: pointer; background: var(--bg); color: var(--text-muted);
+      transition: all 0.15s;
+    }
+    .day-toggle button.active { background: var(--blue); color: #fff; }
+
+    .legend { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 14px; align-items: center; }
+    .legend-item { display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: var(--text-mid); font-weight: 500; }
+    .legend-swatch { width: 22px; height: 14px; flex-shrink: 0; }
+
+    .chart-svg-wrap { width: 100%; overflow-x: auto; }
+    .chart-svg-wrap svg { width: 100%; height: auto; min-width: 520px; display: block; }
+    .axis-label { font-family: 'Roboto Mono', monospace; font-size: 11px; fill: #9ca3af; }
+    .annot { font-family: 'Inter', sans-serif; font-size: 11px; fill: #6b7280; }
+
+    .chart-attribution {
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+      padding: 12px 16px; border-top: 1px solid var(--border); background: var(--bg);
+      font-size: 0.78rem; color: var(--text-faint); font-family: 'Roboto Mono', monospace;
+    }
+
+    .context-box {
+      margin-top: 28px; padding: 16px 20px;
+      background: var(--blue-light); border: 1px solid var(--blue-mid); border-radius: var(--radius);
+    }
+    .context-box p { font-size: 0.85rem; color: var(--text-mid); line-height: 1.65; }
+    .context-box p + p { margin-top: 8px; }
+    .context-box strong { color: var(--text); }
+
+    .footnotes {
+      margin-top: 16px; padding: 14px 18px;
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    }
+    .footnotes p { font-size: 0.78rem; color: var(--text-muted); line-height: 1.6; }
+    .footnotes p + p { margin-top: 6px; }
+    .footnotes strong { color: var(--text-mid); }
+    .footnotes a { color: var(--blue); text-decoration: none; border-bottom: 1px solid var(--blue-mid); }
+    .footnotes a:hover { border-color: var(--blue); }
+
+    .embed-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+    .embed-modal-box { background: var(--surface); border-radius: 10px; padding: 24px; max-width: 540px; width: 90%; box-shadow: 0 8px 32px rgba(0,0,0,0.18); }
+    .embed-modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+    .embed-modal-title { font-family: 'Roboto Mono', monospace; font-weight: 700; font-size: 0.9rem; color: var(--text); }
+    .embed-close { background: none; border: none; font-size: 1.1rem; color: var(--text-muted); cursor: pointer; padding: 2px 6px; border-radius: 4px; }
+    .embed-close:hover { color: var(--text); background: var(--bg); }
+    .embed-modal-box > p { font-size: 0.83rem; color: var(--text-muted); margin-bottom: 10px; }
+    .embed-textarea { width: 100%; height: 80px; font-family: 'Roboto Mono', monospace; font-size: 0.72rem; border: 1px solid var(--border); border-radius: 6px; padding: 10px; resize: none; color: var(--text-mid); background: var(--bg); margin-bottom: 12px; }
+    .embed-copy-btn { background: var(--blue); color: #fff; font-family: 'Roboto Mono', monospace; font-size: 0.8rem; font-weight: 600; padding: 7px 18px; border: none; border-radius: 6px; cursor: pointer; transition: background 0.15s; }
+    .embed-copy-btn:hover { background: #1d4ed8; }
+
+    footer { background: var(--surface); border-top: 1px solid var(--border); padding: 20px clamp(20px, 5vw, 48px); margin-top: auto; }
+    .footer-inner { max-width: 900px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+    .footer-copy { font-size: 0.8rem; color: var(--text-faint); }
+    .footer-links { display: flex; gap: 20px; align-items: center; }
+    .footer-links a { font-size: 0.8rem; color: var(--text-muted); text-decoration: none; transition: color 0.15s; }
+    .footer-links a:hover { color: var(--blue); }
+    .footer-support { display: inline-flex; align-items: center; gap: 5px; font-size: 0.8rem; font-weight: 500; color: #2563eb; text-decoration: none; padding: 5px 11px; border: 1px solid rgba(37,99,235,0.45); border-radius: 6px; transition: color .15s, border-color .15s, background .15s; vertical-align: middle; }
+    .footer-support:hover { color: #fff; background: #2563eb; border-color: #2563eb; }
+    .footer-support svg { flex-shrink: 0; }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="header-inner">
+    <a href="/nycuriosity_substack_posts/west_4th_st_station/" class="back-link">← west-4th-st-station</a>
+    <div class="header-divider"></div>
+    <h1>Hourly Rhythms</h1>
+  </div>
+</header>
+
+<!-- VISUALS NAV -->
+<div class="pill-nav">
+  <span class="pill-label">Visuals in this post:</span>
+  <a href="../annual-ridership/">Annual Ridership</a>
+  <a href="./" class="active">Hourly Rhythms</a>
+  <a href="../cost-comparison/">Then vs. Now Costs</a>
+  <a href="../station-timeline/">Station Timeline</a>
+</div>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-inner">
+    <div class="breadcrumb">
+      <a href="/">data.nycuriosity.com</a>
+      <span>›</span>
+      <a href="/nycuriosity_substack_posts/west_4th_st_station/">West 4th St Station</a>
+      <span>›</span>
+      <span>Hourly Rhythms</span>
+    </div>
+    <div class="hero-meta">
+      <span class="hero-tag">Transit</span>
+      <span class="hero-updated">July 2026</span>
+    </div>
+    <h1>The Station That <span>Stays Up Late</span></h1>
+    <p>
+      Two ways of reading the station's daily pulse from 2025 data. First, when riders arrive at West 4th
+      versus when they leave through it. Second, how its hour-by-hour shape compares with an office district
+      (Wall St), a commuter hub (Grand Central), and Brooklyn's nightlife stop (Bedford Av). West 4th keeps
+      a bigger share of its riders past 9pm than any of them.
+    </p>
+    <div class="hero-actions">
+      <a href="https://premium.nycuriosity.com/nycuriosity_substack_posts/west_4th_st_station/data/hourly_od_2025.csv" class="btn btn-outline">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Arrivals CSV (members)
+      </a>
+      <a href="https://premium.nycuriosity.com/nycuriosity_substack_posts/west_4th_st_station/data/hourly_stations_2025.csv" class="btn btn-outline">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Station comparison CSV (members)
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- CHARTS -->
+<main>
+  <div class="main-inner">
+
+    <!-- ── Chart 1: arrivals vs departures ── -->
+    <div class="chart-actions">
+      <button class="action-btn" onclick="downloadBox(this, 'odBox', 'west-4th-street-arrivals-vs-departures.png')">&#11015; Download PNG</button>
+      <button class="action-btn" onclick="showEmbed()">&#60;/&#62; Embed</button>
+    </div>
+
+    <div class="chart-box" id="odBox">
+      <div class="chart-pad">
+        <div class="chart-title">Riders arrive at West 4th all day, then pour back in at night</div>
+        <div class="chart-subtitle">Average riders per hour at W 4 St–Wash Sq, 2025. Trips arriving at the station vs. trips departing from it, by the hour the rider entered the system.</div>
+        <div class="day-toggle" id="odToggle">
+          <button class="active" onclick="setOdDay('weekday', this)">Weekday</button>
+          <button onclick="setOdDay('weekend', this)">Weekend</button>
+        </div>
+        <div class="legend">
+          <div class="legend-item">
+            <svg class="legend-swatch" viewBox="0 0 22 14"><line x1="0" y1="7" x2="22" y2="7" stroke="#2563eb" stroke-width="3"/></svg>
+            Departing riders (entries at W 4 St)
+          </div>
+          <div class="legend-item">
+            <svg class="legend-swatch" viewBox="0 0 22 14"><line x1="0" y1="7" x2="22" y2="7" stroke="#c2410c" stroke-width="3" stroke-dasharray="5,4"/></svg>
+            Arriving riders (destination estimate)
+          </div>
+        </div>
+        <div class="chart-svg-wrap">
+          <svg id="odChart" viewBox="0 0 720 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Line chart of average hourly arrivals and departures at West 4th Street in 2025. Arrivals peak in the morning and evening; departures dominate late at night."></svg>
+        </div>
+      </div>
+      <div class="chart-attribution">
+        <span>Created by Tal Roded · NYCuriosity · Source: MTA via data.ny.gov</span>
+      </div>
+    </div>
+
+    <div class="context-box">
+      <p><strong>The Village runs a trade surplus in people.</strong> On an average 2025 weekday, arrivals at West 4th beat departures from 4am through 6pm, peaking with the 8am and 5pm rushes. After 7pm the flow reverses: the 9pm hour sends out 2.4 departing riders for every arriving one, and the midnight hour nearly 6 to 1. Riders come to the neighborhood all day and the subway takes them home at night.</p>
+    </div>
+
+    <!-- ── Chart 2: four-station comparison ── -->
+    <div class="chart-actions later">
+      <button class="action-btn" onclick="downloadBox(this, 'cmpBox', 'west-4th-street-station-comparison.png')">&#11015; Download PNG</button>
+    </div>
+
+    <div class="chart-box" id="cmpBox">
+      <div class="chart-pad">
+        <div class="chart-title">After 9pm, West 4th out-rides Wall St, Grand Central, and even Bedford Av</div>
+        <div class="chart-subtitle">Share of each station's daily entries occurring in each hour, 2025. Percentages, so stations of very different sizes can be compared by shape.</div>
+        <div class="day-toggle" id="cmpToggle">
+          <button class="active" onclick="setCmpDay('weekday', this)">Weekday</button>
+          <button onclick="setCmpDay('weekend', this)">Weekend</button>
+        </div>
+        <div class="legend">
+          <div class="legend-item">
+            <svg class="legend-swatch" viewBox="0 0 22 14"><line x1="0" y1="7" x2="22" y2="7" stroke="#2563eb" stroke-width="3.5"/></svg>
+            W 4 St–Wash Sq
+          </div>
+          <div class="legend-item">
+            <svg class="legend-swatch" viewBox="0 0 22 14"><line x1="0" y1="7" x2="22" y2="7" stroke="#c2410c" stroke-width="2.5"/></svg>
+            Wall St (4,5)
+          </div>
+          <div class="legend-item">
+            <svg class="legend-swatch" viewBox="0 0 22 14"><line x1="0" y1="7" x2="22" y2="7" stroke="#6b7280" stroke-width="2.5"/></svg>
+            Grand Central-42 St
+          </div>
+          <div class="legend-item">
+            <svg class="legend-swatch" viewBox="0 0 22 14"><line x1="0" y1="7" x2="22" y2="7" stroke="#16a34a" stroke-width="2.5"/></svg>
+            Bedford Av (L)
+          </div>
+        </div>
+        <div class="chart-svg-wrap">
+          <svg id="cmpChart" viewBox="0 0 720 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Line chart comparing the hourly ridership shape of West 4th Street, Wall Street, Grand Central, and Bedford Avenue in 2025. West 4th Street keeps the largest share of riders late at night."></svg>
+        </div>
+      </div>
+      <div class="chart-attribution">
+        <span>Created by Tal Roded · NYCuriosity · Source: MTA via data.ny.gov</span>
+      </div>
+    </div>
+
+    <div class="context-box">
+      <p><strong>Commuter stations empty out; West 4th refills.</strong> Wall St pushes 16.5% of its weekday riders through the turnstiles in the 5pm hour alone, then collapses: 2.2% at 9pm, 1.1% at 11pm. West 4th's evening is a plateau, holding around 7% of its day from 7pm through 9pm and 4.2% even at 11pm, nearly four times Wall St's share.</p>
+      <p><strong>On weekends it beats the nightlife benchmark.</strong> The hours from midnight to 2am carry 9.5% of West 4th's weekend riders, ahead of Bedford Av's 6.4% and roughly triple Grand Central's 2.9%.</p>
+    </div>
+
+    <div class="footnotes">
+      <p><strong>Arrivals and departures</strong> (first chart) are from the <a href="https://data.ny.gov/d/y2qv-fytt" target="_blank" rel="noopener">MTA Subway Origin-Destination Ridership Estimate: 2025</a>: average ridership by hour and day of week with W 4 St–Wash Sq as the trip's inferred destination (arrivals) or origin (departures), averaged across all 2025 weekdays or weekend days. The hour is when the rider tapped into the system, so arrivals land at West 4th roughly 15 to 30 minutes after the hour shown. The MTA infers each rider's destination from their next tap; arrivals are modeled estimates, shown dashed.</p>
+      <p><strong>Station comparison</strong> (second chart) is from the <a href="https://data.ny.gov/d/5wq4-mkjj" target="_blank" rel="noopener">MTA Subway Hourly Ridership: Beginning 2025</a> dataset: each station's total 2025 entries by hour, expressed as a share of that station's weekday or weekend total. In absolute terms Grand Central is far larger (30.5M weekday entries in 2025 vs. 9.0M at West 4th); shares isolate the shape of each station's day.</p>
+      <p><strong>Sources:</strong> Author's analysis of MTA data via data.ny.gov.</p>
+    </div>
+
+  </div>
+</main>
+
+<!-- EMBED MODAL -->
+<div id="embedModal" class="embed-modal" style="display:none">
+  <div class="embed-modal-box">
+    <div class="embed-modal-header">
+      <span class="embed-modal-title">Embed this chart</span>
+      <button class="embed-close" onclick="closeEmbed()">✕</button>
+    </div>
+    <p>Copy and paste into your webpage:</p>
+    <textarea id="embedCode" class="embed-textarea" readonly></textarea>
+    <button class="embed-copy-btn" onclick="copyEmbed()">Copy code</button>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <span class="footer-copy">© NYCuriosity · Tal Roded</span>
+    <nav class="footer-links">
+      <a href="https://buymeacoffee.com/nycuriosity" class="footer-support" target="_blank" rel="noopener" aria-label="Support my work on Buy Me a Coffee"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>Support my work</a>
+      <a href="https://talroded.nycuriosity.com" target="_blank" rel="noopener">About</a>
+      <a href="https://www.nycuriosity.com" target="_blank" rel="noopener">Substack</a>
+      <a href="https://github.com/TalR24/nycur-data-website" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </div>
+</footer>
+
+<script>
+  // Average riders per hour at W 4 St, 2025 (MTA O-D estimate; hour = system entry hour)
+  const OD_DATA = {
+    weekday: {
+      departures: [620,273,128,72,56,106,321,783,1778,1263,841,885,1174,1456,1813,2608,2988,3303,2973,2435,2347,2455,1975,1435],
+      arrivals:   [108,51,34,52,146,579,1283,2197,3047,2417,1979,1775,1798,1949,2092,2221,2489,3591,3149,1955,1286,1022,709,344]
+    },
+    weekend: {
+      departures: [1437,844,498,247,140,102,130,188,267,440,679,943,1359,1706,1926,2178,2317,2279,2225,2158,1931,2016,1801,1531],
+      arrivals:   [360,172,94,72,88,197,376,557,853,1357,1867,2117,2302,2407,2417,2383,2464,2486,2220,1684,1250,991,777,460]
+    }
+  };
+
+  // Share of each station's daily entries by hour, 2025 (percent)
+  const CMP_DATA = {
+    weekday: {
+      'w4':      [1.81,0.8,0.38,0.21,0.16,0.31,0.94,2.3,5.23,3.71,2.47,2.59,3.44,4.27,5.32,7.66,8.77,9.69,8.71,7.14,6.89,7.2,5.79,4.21],
+      'wall':    [0.73,0.14,0.07,0.06,0.07,0.32,1.15,3.95,7.35,4.74,3.49,3.62,4.12,4.63,5.72,7.79,11.24,16.45,10.61,5.39,3.24,2.21,1.81,1.11],
+      'gct':     [0.77,0.23,0.1,0.05,0.06,0.66,2.25,5.55,8.77,6.0,3.82,3.49,3.71,4.03,4.9,6.35,8.95,14.56,10.56,5.74,3.56,2.54,2.02,1.33],
+      'bedford': [0.92,0.35,0.18,0.1,0.13,0.4,1.65,5.38,11.88,8.65,4.57,3.92,3.9,4.17,4.63,5.47,6.12,7.67,8.0,6.19,4.89,4.15,3.93,2.73]
+    },
+    weekend: {
+      'w4':      [4.9,2.88,1.7,0.85,0.48,0.35,0.44,0.64,0.91,1.5,2.31,3.21,4.62,5.8,6.56,7.43,7.9,7.77,7.58,7.35,6.58,6.87,6.14,5.21],
+      'wall':    [1.77,0.68,0.28,0.15,0.14,0.25,0.55,1.33,2.25,3.79,5.6,7.16,8.15,8.1,8.11,8.97,8.76,8.83,7.46,5.71,4.06,3.33,2.71,1.88],
+      'gct':     [1.85,0.76,0.3,0.14,0.13,0.21,0.9,1.55,2.39,3.79,5.74,7.1,7.74,7.38,7.44,7.84,8.08,8.16,7.54,6.26,4.95,4.01,3.34,2.39],
+      'bedford': [3.44,1.84,1.09,0.58,0.34,0.2,0.36,0.69,1.31,2.27,3.5,4.85,6.09,7.11,7.62,8.13,8.59,8.65,8.33,7.03,5.5,4.6,4.32,3.55]
+    }
+  };
+  const CMP_STYLE = [
+    { key: 'w4',      color: '#2563eb', width: 3.5 },
+    { key: 'wall',    color: '#c2410c', width: 2.5 },
+    { key: 'gct',     color: '#6b7280', width: 2.5 },
+    { key: 'bedford', color: '#16a34a', width: 2.5 }
+  ];
+
+  const NS = 'http://www.w3.org/2000/svg';
+  const W = 720, H = 360, PADL = 48, PADR = 20, PADT = 18, PADB = 40;
+  const plotW = W - PADL - PADR, plotH = H - PADT - PADB;
+  const xFor = h => PADL + h / 23 * plotW;
+  const HOUR_TICKS = [0, 3, 6, 9, 12, 15, 18, 21, 23];
+  const hourLabel = h => h === 0 ? '12am' : h === 12 ? '12pm' : h === 23 ? '11pm' : h < 12 ? h + 'am' : (h - 12) + 'pm';
+
+  function mkEl(svgNode, tag, attrs, txt) {
+    const node = document.createElementNS(NS, tag);
+    for (const k in attrs) node.setAttribute(k, attrs[k]);
+    if (txt !== undefined) node.textContent = txt;
+    svgNode.appendChild(node);
+    return node;
+  }
+
+  function drawFrame(svgNode, ymax, ystep, fmt) {
+    while (svgNode.firstChild) svgNode.removeChild(svgNode.firstChild);
+    const yFor = v => PADT + plotH - v / ymax * plotH;
+    for (let v = 0; v <= ymax; v += ystep) {
+      mkEl(svgNode, 'line', { x1: PADL, y1: yFor(v), x2: W - PADR, y2: yFor(v), stroke: '#e5e7eb', 'stroke-width': 1 });
+      mkEl(svgNode, 'text', { x: PADL - 8, y: yFor(v) + 4, 'text-anchor': 'end', class: 'axis-label' }, fmt(v));
+    }
+    HOUR_TICKS.forEach(h => {
+      mkEl(svgNode, 'text', { x: xFor(h), y: H - PADB + 22, 'text-anchor': 'middle', class: 'axis-label' }, hourLabel(h));
+    });
+    return yFor;
+  }
+
+  function drawLine(svgNode, series, yFor, color, width, dash) {
+    const attrs = {
+      points: series.map((v, h) => xFor(h) + ',' + yFor(v)).join(' '),
+      fill: 'none', stroke: color, 'stroke-width': width, 'stroke-linejoin': 'round', 'stroke-linecap': 'round'
+    };
+    if (dash) attrs['stroke-dasharray'] = dash;
+    mkEl(svgNode, 'polyline', attrs);
+  }
+
+  let odDay = 'weekday';
+  function renderOd() {
+    const svgNode = document.getElementById('odChart');
+    const ymax = 4000;
+    const yFor = drawFrame(svgNode, ymax, 1000, v => v === 0 ? '0' : (v / 1000) + 'k');
+    drawLine(svgNode, OD_DATA[odDay].arrivals, yFor, '#c2410c', 2.5, '6,5');
+    drawLine(svgNode, OD_DATA[odDay].departures, yFor, '#2563eb', 3);
+    if (odDay === 'weekday') {
+      mkEl(svgNode, 'text', { x: xFor(17) - 8, y: yFor(3591) - 10, 'text-anchor': 'end', class: 'annot' }, '5pm: arrivals peak (3,591/hr)');
+      mkEl(svgNode, 'text', { x: xFor(21), y: yFor(2455) - 26, 'text-anchor': 'middle', class: 'annot' }, '9pm: 2.4 departures');
+      mkEl(svgNode, 'text', { x: xFor(21), y: yFor(2455) - 12, 'text-anchor': 'middle', class: 'annot' }, 'per arrival');
+    } else {
+      mkEl(svgNode, 'text', { x: xFor(1), y: yFor(1437) - 22, 'text-anchor': 'start', class: 'annot' }, 'Midnight-1am: 1,437 riders');
+      mkEl(svgNode, 'text', { x: xFor(1), y: yFor(1437) - 8, 'text-anchor': 'start', class: 'annot' }, 'head home through W 4 St');
+    }
+  }
+  function setOdDay(day, btn) {
+    odDay = day;
+    document.querySelectorAll('#odToggle button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderOd();
+  }
+
+  let cmpDay = 'weekday';
+  function renderCmp() {
+    const svgNode = document.getElementById('cmpChart');
+    const ymax = cmpDay === 'weekday' ? 18 : 10;
+    const ystep = cmpDay === 'weekday' ? 3 : 2;
+    const yFor = drawFrame(svgNode, ymax, ystep, v => v + '%');
+    CMP_STYLE.slice().reverse().forEach(s => {
+      drawLine(svgNode, CMP_DATA[cmpDay][s.key], yFor, s.color, s.width);
+    });
+    if (cmpDay === 'weekday') {
+      mkEl(svgNode, 'text', { x: xFor(17) - 8, y: yFor(16.45) + 2, 'text-anchor': 'end', class: 'annot' }, 'Wall St, 5pm: 16.5% of its day');
+      mkEl(svgNode, 'text', { x: xFor(21), y: yFor(7.2) - 24, 'text-anchor': 'middle', class: 'annot' }, '9pm: W 4 St 7.2%,');
+      mkEl(svgNode, 'text', { x: xFor(21), y: yFor(7.2) - 10, 'text-anchor': 'middle', class: 'annot' }, 'Wall St 2.2%');
+    } else {
+      mkEl(svgNode, 'text', { x: xFor(0) + 6, y: yFor(4.9) - 12, 'text-anchor': 'start', class: 'annot' }, 'Midnight: W 4 St keeps 4.9% of its weekend');
+    }
+  }
+  function setCmpDay(day, btn) {
+    cmpDay = day;
+    document.querySelectorAll('#cmpToggle button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderCmp();
+  }
+
+  renderOd();
+  renderCmp();
+
+  async function downloadBox(btn, boxId, filename) {
+    const orig = btn.innerHTML;
+    btn.innerHTML = '⏳ Capturing…'; btn.disabled = true;
+    try {
+      const box = document.getElementById(boxId);
+      const canvas = await html2canvas(box, { backgroundColor:'#ffffff', scale:2, useCORS:true, logging:false });
+      const a = document.createElement('a');
+      a.download = filename;
+      a.href = canvas.toDataURL('image/png'); a.click();
+    } finally { btn.innerHTML = orig; btn.disabled = false; }
+  }
+  function showEmbed() {
+    const url = location.origin + location.pathname;
+    document.getElementById('embedCode').value =
+      `<iframe src="${url}" width="900" height="1650" frameborder="0" style="border:1px solid #e5e7eb; border-radius:8px;" loading="lazy"></iframe>`;
+    document.getElementById('embedModal').style.display = 'flex';
+  }
+  function closeEmbed() { document.getElementById('embedModal').style.display = 'none'; }
+  function copyEmbed() {
+    const ta = document.getElementById('embedCode'); ta.select();
+    navigator.clipboard.writeText(ta.value).then(() => {
+      const btn = document.querySelector('.embed-copy-btn');
+      btn.textContent = '✓ Copied!';
+      setTimeout(() => btn.textContent = 'Copy code', 2000);
+    });
+  }
+</script>
+
+</body>
+</html>
