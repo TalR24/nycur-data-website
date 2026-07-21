@@ -51,6 +51,9 @@
     .hero h1 span { color: var(--blue); }
     .hero p { font-size: 0.95rem; color: var(--text-muted); max-width: 720px; line-height: 1.7; }
     .hero-actions { margin-top: 18px; display: flex; gap: 10px; flex-wrap: wrap; }
+    .law-meta-row { display: flex; flex-wrap: wrap; gap: 10px; }
+    .law-meta-chip { font-family: 'Roboto Mono', monospace; font-size: 0.7rem; color: var(--text-mid); background: var(--bg); border: 1px solid var(--border); border-radius: 7px; padding: 6px 10px; }
+    .law-meta-chip strong { color: var(--text); }
     .btn { font-family: 'Roboto Mono', monospace; font-size: 0.78rem; font-weight: 600; padding: 8px 14px; border-radius: 7px; text-decoration: none; display: inline-flex; align-items: center; gap: 7px; cursor: pointer; border: 1.5px solid var(--blue); transition: all 0.15s; }
     .btn-outline { color: var(--blue); background: var(--surface); }
     .btn-outline:hover { background: var(--blue-light); }
@@ -484,8 +487,22 @@
       (m.party || '') + (m.borough ? ' · ' + m.borough : '')
       + ' · Sessions: ' + (m.sessions || []).join(', ')
       + (m.notes ? ' · ' + m.notes : '');
+    var chips = [];
+    if (m.term_start || m.term_end) {
+      chips.push('<span class="law-meta-chip"><strong>Term:</strong> ' +
+        esc((m.term_start || '').slice(0, 10) || '?') + ' to ' +
+        (m.current ? 'present' : esc((m.term_end || '').slice(0, 10) || '?')) + '</span>');
+    }
+    if (m.district_office) {
+      chips.push('<span class="law-meta-chip"><strong>District office:</strong> ' + esc(m.district_office) + '</span>');
+    }
+    var links = ['<a class="btn btn-outline" href="./">All members</a>'];
+    if (m.website) links.push('<a class="btn btn-outline" href="' + esc(m.website) + '" target="_blank" rel="noopener">Official website ↗</a>');
+    if (m.email) links.push('<a class="btn btn-outline" href="mailto:' + esc(m.email) + '">' + esc(m.email) + '</a>');
+    if (m.intro_nyc_slug) links.push('<a class="btn btn-outline" href="https://intro.nyc/councilmembers/' + esc(m.intro_nyc_slug) + '" target="_blank" rel="noopener">intro.nyc ↗</a>');
     document.getElementById('profileMeta').innerHTML =
-      '<div class="hero-actions"><a class="btn btn-outline" href="./">All members</a></div>';
+      (chips.length ? '<div class="law-meta-row" style="margin-top:14px">' + chips.join('') + '</div>' : '')
+      + '<div class="hero-actions">' + links.join('') + '</div>';
 
     var pct = s.impl_pct_with_obligations;
     var html = '<div class="profile-stats">'
