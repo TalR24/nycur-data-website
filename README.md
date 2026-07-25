@@ -142,7 +142,7 @@ Page types and how the button attaches:
 │   │   ├── index.html                             → Hub (explainer, stat pills, view cards)
 │   │   ├── README.md                              → Full project reference doc
 │   │   ├── data/
-│   │   │   ├── directory.csv                      → Canonical org source (328 rows)
+│   │   │   ├── directory.csv                      → Canonical org source (329 rows)
 │   │   │   ├── connect_submissions.csv            → Connect directory seed data
 │   │   │   ├── build_affinity.py                  → directory.csv → affinity/directory/search JSON
 │   │   │   ├── build_people.py                    → connect_submissions.csv → connect.json
