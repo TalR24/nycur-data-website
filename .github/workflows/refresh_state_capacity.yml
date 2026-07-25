@@ -80,17 +80,6 @@ jobs:
         working-directory: civic_reference/state_capacity_ecosystem
         run: python3 data/build_people.py
 
-      - name: Email new Connect entries
-        if: steps.check.outputs.connect_changed == 'true'
-        working-directory: civic_reference/state_capacity_ecosystem
-        env:
-          GMAIL_USER: ${{ secrets.GMAIL_USER }}
-          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
-        run: |
-          python3 data/notify_new_connect.py \
-            /tmp/connect_prev.json \
-            data/connect.json
-
       # ── Commit and push whatever changed ──
 
       - name: Commit and push
@@ -146,3 +135,16 @@ jobs:
 
           git commit -m "Data: auto-refresh — ${SUMMARY} [$(date -u '+%Y-%m-%d')]"
           git push
+
+      # ── Email notifications last: a Gmail failure must never block the data commit ──
+
+      - name: Email new Connect entries
+        if: steps.check.outputs.connect_changed == 'true'
+        working-directory: civic_reference/state_capacity_ecosystem
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+        run: |
+          python3 data/notify_new_connect.py \
+            /tmp/connect_prev.json \
+            data/connect.json
