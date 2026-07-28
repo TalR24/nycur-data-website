@@ -193,7 +193,7 @@
     .footer-support:hover { color: #fff; background: #2563eb; border-color: #2563eb; }
     .footer-support svg { flex-shrink: 0; }
   </style>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
 </head>
 <body>
 
@@ -369,10 +369,10 @@
     btn.innerHTML = '⏳ Capturing…'; btn.disabled = true;
     try {
       const box = document.getElementById(boxId);
-      const canvas = await html2canvas(box, { backgroundColor:'#ffffff', scale:2, useCORS:true, logging:false });
+      const dataUrl = await htmlToImage.toPng(box, { backgroundColor: '#ffffff', pixelRatio: 2 });
       const a = document.createElement('a');
       a.download = filename;
-      a.href = canvas.toDataURL('image/png'); a.click();
+      a.href = dataUrl; a.click();
     } finally { btn.innerHTML = orig; btn.disabled = false; }
   }
   function showEmbed() {

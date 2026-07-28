@@ -353,7 +353,7 @@
     .embed-copy-btn { background:var(--blue); color:#fff; font-family:'Roboto Mono',monospace; font-size:0.8rem; font-weight:600; padding:7px 18px; border:none; border-radius:6px; cursor:pointer; transition:background 0.15s; }
     .embed-copy-btn:hover { background:#1d4ed8; }
   </style>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
 <style id="support-btn-css">
 .header-actions{display:flex;align-items:center;gap:14px;}
 .header-link{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border:1px solid rgba(255,255,255,0.15);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
@@ -674,17 +674,10 @@
     try {
       if (document.fonts && document.fonts.ready) { try { await document.fonts.ready; } catch (e) {} }
       const el = document.getElementById(boxId || 'chart-box');
-      const canvas = await html2canvas(el, {
-        backgroundColor: '#ffffff', scale: 2, useCORS: true, logging: false,
-        onclone: (doc) => {
-          doc.querySelectorAll('.bar-value, .bar-label, .bar-label .sublabel, .seg-pct, .seg-pct-outside, .agency-name, .agency-meta, .recovery-line').forEach(n => {
-            n.style.letterSpacing = '0.02em';
-          });
-        }
-      });
+      const dataUrl = await htmlToImage.toPng(el, { backgroundColor: '#ffffff', pixelRatio: 2 });
       const a = document.createElement('a');
       a.download = filename || 'chart.png';
-      a.href = canvas.toDataURL('image/png'); a.click();
+      a.href = dataUrl; a.click();
     } finally { btn.innerHTML = orig; btn.disabled = false; }
   }
   function showEmbed() {

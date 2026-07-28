@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -406,10 +406,10 @@ async function downloadChart(btn) {
   btn.innerHTML = '⏳ Capturing…'; btn.disabled = true;
   try {
     var el = document.getElementById('chart-box');
-    var canvas = await html2canvas(el, { backgroundColor: '#ffffff', scale: 2, useCORS: true, logging: false });
+    var dataUrl = await htmlToImage.toPng(el, { backgroundColor: '#ffffff', pixelRatio: 2 });
     var a = document.createElement('a');
     a.download = 'nyc-agency-workload.png';
-    a.href = canvas.toDataURL('image/png'); a.click();
+    a.href = dataUrl; a.click();
   } finally { btn.innerHTML = orig; btn.disabled = false; }
 }
 

@@ -102,7 +102,7 @@
     .embed-copy-btn { background:var(--blue); color:#fff; font-family:'Roboto Mono',monospace; font-size:0.8rem; font-weight:600; padding:7px 18px; border:none; border-radius:6px; cursor:pointer; transition:background 0.15s; }
     .embed-copy-btn:hover { background:#1d4ed8; }
   </style>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
 </head>
 <body>
 
@@ -260,9 +260,9 @@
     const orig = btn.innerHTML; btn.innerHTML = '⏳ Capturing…'; btn.disabled = true;
     try {
       const elx = document.getElementById('chart-box');
-      const canvas = await html2canvas(elx, { backgroundColor:'#ffffff', scale:2, useCORS:true, logging:false });
+      const dataUrl = await htmlToImage.toPng(elx, { backgroundColor: '#ffffff', pixelRatio: 2 });
       const a = document.createElement('a'); a.download = 'nyc-late-contracts-by-year.png';
-      a.href = canvas.toDataURL('image/png'); a.click();
+      a.href = dataUrl; a.click();
     } finally { btn.innerHTML = orig; btn.disabled = false; }
   }
   function showEmbed() {

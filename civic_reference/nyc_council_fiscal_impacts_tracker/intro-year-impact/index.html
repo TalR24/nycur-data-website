@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -553,10 +553,10 @@ document.getElementById('reset-btn').addEventListener('click', () => {
 
 // ── DOWNLOAD PNG ──────────────────────────────────────────────────────────────
 document.getElementById('dl-btn').addEventListener('click', () => {
-  html2canvas(document.getElementById('chart-box'), { scale: 2, backgroundColor: '#ffffff' })
-    .then(canvas => {
-      const a = document.createElement('a');
-      a.href = canvas.toDataURL('image/png');
+  captureBoxPng(document.getElementById('chart-box'), '#ffffff')
+      .then(dataUrl => {
+        const a = document.createElement('a');
+        a.href = dataUrl;
       a.download = 'fiscal-impact-by-intro-year.png';
       a.click();
     });
@@ -579,6 +579,28 @@ document.getElementById('copy-embed').addEventListener('click', () => {
 document.getElementById('embed-modal').addEventListener('click', e => {
   if (e.target === e.currentTarget) e.currentTarget.classList.remove('open');
 });
+</script>
+<script>
+// Capture helper: html-to-image clones the DOM, and cloned <canvas> elements
+// (Chart.js) come out blank — swap each canvas for a snapshot <img> during
+// capture, then restore.
+async function captureBoxPng(box, bg) {
+  const swaps = [];
+  box.querySelectorAll('canvas').forEach(c => {
+    const img = document.createElement('img');
+    img.src = c.toDataURL('image/png');
+    img.style.width = c.style.width || (c.clientWidth + 'px');
+    img.style.height = c.style.height || (c.clientHeight + 'px');
+    c.parentNode.insertBefore(img, c);
+    c.style.display = 'none';
+    swaps.push([c, img]);
+  });
+  try {
+    return await htmlToImage.toPng(box, { backgroundColor: bg, pixelRatio: 2 });
+  } finally {
+    swaps.forEach(([c, img]) => { img.remove(); c.style.display = ''; });
+  }
+}
 </script>
 </body>
 </html>
