@@ -300,7 +300,7 @@ Required GitHub secrets: `GMAIL_USER`, `GMAIL_APP_PASSWORD`. Requires repo Workf
 ### Manual push (for HTML/code changes)
 
 ```bash
-cd /Users/troded/Library/CloudStorage/OneDrive-Microsoft/Desktop/nycur/data_website
+cd /Users/troded/nycur/data_website
 git add <explicit file paths>
 git commit -m "..."
 git push

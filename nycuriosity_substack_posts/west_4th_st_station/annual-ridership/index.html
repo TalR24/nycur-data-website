@@ -368,6 +368,9 @@
     el('text', { x: xFor(d.year), y: H - PADB + 22, 'text-anchor': 'middle', class: 'axis-label' }, "'" + String(d.year).slice(2));
   });
 
+  // vertical 2020 pandemic marker (drawn before the series so it sits behind them)
+  el('line', { x1: xFor(2020), y1: PADT, x2: xFor(2020), y2: PADT + plotH, stroke: '#dc2626', 'stroke-width': 1.5, 'stroke-dasharray': '6,5' });
+
   // arrivals line (dashed, estimate)
   el('polyline', {
     points: ARRIVALS.map(d => xFor(d.year) + ',' + yFor(d.v)).join(' '),
@@ -384,15 +387,15 @@
 
   // key point labels
   el('text', { x: xFor(2019), y: yFor(13998455) - 10, 'text-anchor': 'middle', class: 'pt-label', fill: '#2563eb' }, '14.0M');
-  el('text', { x: xFor(2020), y: yFor(4513321) + 20, 'text-anchor': 'middle', class: 'pt-label', fill: '#2563eb' }, '4.5M');
+  el('text', { x: xFor(2020) - 8, y: yFor(4513321) + 16, 'text-anchor': 'end', class: 'pt-label', fill: '#2563eb' }, '4.5M');
   el('text', { x: xFor(2017), y: yFor(12726517) - 10, 'text-anchor': 'middle', class: 'pt-label', fill: '#2563eb' }, '12.7M');
   // endpoint labels, offset so they never collide (arrivals above, entries below)
   el('text', { x: xFor(2025) + 8, y: yFor(12590411) - 6, 'text-anchor': 'start', class: 'pt-label', fill: '#c2410c' }, '12.6M');
   el('text', { x: xFor(2025) + 8, y: yFor(12051684) + 16, 'text-anchor': 'start', class: 'pt-label', fill: '#2563eb' }, '12.1M');
 
-  // annotations
-  el('text', { x: xFor(2020) + 8, y: yFor(4513321) - 34, class: 'annot' }, 'COVID-19:');
-  el('text', { x: xFor(2020) + 8, y: yFor(4513321) - 20, class: 'annot' }, '-68% in one year');
+  // annotations (COVID note pinned near the top of the plot, beside the 2020 marker)
+  el('text', { x: xFor(2020) + 8, y: PADT + 14, class: 'annot' }, 'COVID-19:');
+  el('text', { x: xFor(2020) + 8, y: PADT + 28, class: 'annot' }, '-68% in one year');
   el('text', { x: xFor(2023) + 6, y: yFor(14400000), class: 'annot' }, '2025 = 86% of the 2019 peak');
 
   async function downloadChart(btn) {
