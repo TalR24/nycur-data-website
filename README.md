@@ -24,15 +24,15 @@ Full architecture, deploy steps, and the approved Buy Me a Coffee copy are in th
 
 Standalone reference tools, listed in homepage order. New tools live under `/civic_reference/`; the CB Resolutions Dashboard predates that convention and is served from `/cb-resolutions/`.
 
-### [State Capacity Ecosystem](https://data.nycuriosity.com/civic_reference/state_capacity_ecosystem/)
+### [State Capacity Ecosystem](https://data.nycuriosity.com/state_capacity_ecosystem/)
 Directory, segment view, affinity network, and matchmaking for 300+ organizations working on state capacity — research, advocacy, GovTech, philanthropy, fellowships, digital services, investors, and ecosystem-builders. Underlying database curated by Henry Grunzweig. Affinity score combines description TF-IDF, shared problem statements, named funders, and segment overlap, with semantic search powered by a precomputed TF-IDF index.
 
-- [`/civic_reference/state_capacity_ecosystem/`](https://data.nycuriosity.com/civic_reference/state_capacity_ecosystem/) — hub
-- [`/civic_reference/state_capacity_ecosystem/directory/`](https://data.nycuriosity.com/civic_reference/state_capacity_ecosystem/directory/) — searchable, filterable org table
-- [`/civic_reference/state_capacity_ecosystem/network/`](https://data.nycuriosity.com/civic_reference/state_capacity_ecosystem/network/) — D3 force-directed affinity graph + semantic search with geographic boosting
-- [`/civic_reference/state_capacity_ecosystem/connect/`](https://data.nycuriosity.com/civic_reference/state_capacity_ecosystem/connect/) — directory of people and orgs working on specific problems, with self-submission form and intro request flow
-- [`/civic_reference/state_capacity_ecosystem/methodology/`](https://data.nycuriosity.com/civic_reference/state_capacity_ecosystem/methodology/) — scoring formula, taxonomy, inclusion criteria
-- [`/civic_reference/state_capacity_ecosystem/events/`](https://data.nycuriosity.com/civic_reference/state_capacity_ecosystem/events/) — state capacity hackathons, with per-event pages covering overview, tracks, judges, and the projects produced (e.g. `events/civic-tech-build-night/`)
+- [`/state_capacity_ecosystem/`](https://data.nycuriosity.com/state_capacity_ecosystem/) — hub
+- [`/state_capacity_ecosystem/directory/`](https://data.nycuriosity.com/state_capacity_ecosystem/directory/) — searchable, filterable org table
+- [`/state_capacity_ecosystem/network/`](https://data.nycuriosity.com/state_capacity_ecosystem/network/) — D3 force-directed affinity graph + semantic search with geographic boosting
+- [`/state_capacity_ecosystem/connect/`](https://data.nycuriosity.com/state_capacity_ecosystem/connect/) — directory of people and orgs working on specific problems, with self-submission form and intro request flow
+- [`/state_capacity_ecosystem/methodology/`](https://data.nycuriosity.com/state_capacity_ecosystem/methodology/) — scoring formula, taxonomy, inclusion criteria
+- [`/state_capacity_ecosystem/events/`](https://data.nycuriosity.com/state_capacity_ecosystem/events/) — state capacity hackathons, with per-event pages covering overview, tracks, judges, and the projects produced (e.g. `events/civic-tech-build-night/`)
 
 ### [NYC Council Fiscal Impacts Tracker](https://data.nycuriosity.com/civic_reference/nyc_council_fiscal_impacts_tracker/)
 Estimated fiscal impact of every NYC Council bill with a Finance Division impact statement. Filterable by agency, committee, sponsor, and fiscal year, with cost/revenue/capital breakdowns and per-bill detail panels.
@@ -107,7 +107,7 @@ Static site hosted on GitHub Pages at a custom domain (`data.nycuriosity.com`). 
 - [html2canvas](https://html2canvas.hertzen.com/) — Download PNG buttons on chart pages
 - [Google Fonts](https://fonts.google.com/) — Roboto Mono, Inter
 
-**Legacy redirects:** the Fiscal Impacts Tracker and Gov Bodies Explorer originally lived at top-level paths. The old folders (`/nyc_council_fiscal_impacts_tracker/`, `/nyc-gov-bodies-explorer/`) now contain only meta-refresh redirect stubs that preserve query strings and hashes — keep them so old links keep working.
+**Legacy redirects:** the Fiscal Impacts Tracker and Gov Bodies Explorer originally lived at top-level paths, and the State Capacity Ecosystem originally lived under `/civic_reference/`. The old folders (`/nyc_council_fiscal_impacts_tracker/`, `/nyc-gov-bodies-explorer/`, `/civic_reference/state_capacity_ecosystem/` and its subpages) now contain only meta-refresh redirect stubs that preserve query strings and hashes — keep them so old links keep working.
 
 ### Site chrome & shared components
 
@@ -124,7 +124,7 @@ Page types and how the button attaches:
 - **Hub pages** (brand + `.header-link`) → header pills **and** footer pill.
 - **Post/hub pages** with a `.footer-links` container → footer pill.
 - **Inline `·`-separated footers** (cb-resolutions, mcb3 topics charts) → a plain inline "Support my work" link matching the sibling text links (no pill).
-- **Skip:** the 8 meta-refresh redirect stubs; and chrome-less pages that have no header/footer — `civic_reference/cb_member_guide/{index,handout}.html` and `civic_reference/state_capacity_ecosystem/events/civic-tech-build-night/tideline/` (add a footer first if these ever need the button).
+- **Skip:** the 19 meta-refresh redirect stubs; and chrome-less pages that have no header/footer — `civic_reference/cb_member_guide/{index,handout}.html` and `state_capacity_ecosystem/events/civic-tech-build-night/tideline/` (add a footer first if these ever need the button).
 
 ---
 
@@ -137,23 +137,26 @@ Page types and how the button attaches:
 │
 ├── .github/workflows/                             → Scheduled data refresh workflows (see below)
 │
+├── state_capacity_ecosystem/                      → SCE tool (top-level since Jul 2026;
+│   │                                                old /civic_reference/ URLs redirect)
+│   ├── index.html                                 → Hub (explainer, stat pills, view cards)
+│   ├── README.md                                  → Full project reference doc
+│   ├── data/
+│   │   ├── directory.csv                          → Canonical org source (329 rows)
+│   │   ├── connect_submissions.csv                → Connect directory seed data
+│   │   ├── build_affinity.py                      → directory.csv → affinity/directory/search JSON
+│   │   ├── build_people.py                        → connect_submissions.csv → connect.json
+│   │   ├── update_stats.py                        → Patches hardcoded stat strings after rebuild
+│   │   ├── notify_new_connect.py                  → Emails new Connect entries
+│   │   └── *.json                                 → Generated data bundles
+│   ├── directory/  network/  connect/  methodology/
+│   ├── substack/                                  → Posts hub + companion prototypes
+│   └── events/                                    → Hackathons hub + per-event pages
+│       ├── index.html                             → Events hub (event cards)
+│       └── civic-tech-build-night/                → Event page + projects (incl. rehosted
+│                                                    TIDELINE dashboard under tideline/)
+│
 ├── civic_reference/                               → Standalone interactive tools
-│   ├── state_capacity_ecosystem/
-│   │   ├── index.html                             → Hub (explainer, stat pills, view cards)
-│   │   ├── README.md                              → Full project reference doc
-│   │   ├── data/
-│   │   │   ├── directory.csv                      → Canonical org source (329 rows)
-│   │   │   ├── connect_submissions.csv            → Connect directory seed data
-│   │   │   ├── build_affinity.py                  → directory.csv → affinity/directory/search JSON
-│   │   │   ├── build_people.py                    → connect_submissions.csv → connect.json
-│   │   │   ├── update_stats.py                    → Patches hardcoded stat strings after rebuild
-│   │   │   ├── notify_new_connect.py              → Emails new Connect entries
-│   │   │   └── *.json                             → Generated data bundles
-│   │   ├── directory/  network/  connect/  methodology/
-│   │   └── events/                                → Hackathons hub + per-event pages
-│   │       ├── index.html                         → Events hub (event cards)
-│   │       └── civic-tech-build-night/            → Event page + projects (incl. rehosted
-│   │                                                TIDELINE dashboard under tideline/)
 │   ├── cb_member_guide/                           → CB member field guide (slide deck + handout)
 │   ├── nyc_council_fiscal_impacts_tracker/
 │   │   ├── index.html                             → Members-only teaser (full tool + data live in

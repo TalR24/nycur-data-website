@@ -29,7 +29,7 @@ jobs:
 
       - name: Check for CSV changes
         id: check
-        working-directory: civic_reference/state_capacity_ecosystem
+        working-directory: state_capacity_ecosystem
         run: |
           DIR_CSV_TIME=$(git log -1 --format="%ct" -- data/directory.csv)
           AFF_JSON_TIME=$(git log -1 --format="%ct" -- data/affinity.json)
@@ -59,12 +59,12 @@ jobs:
 
       - name: Rebuild org JSON files
         if: steps.check.outputs.org_changed == 'true'
-        working-directory: civic_reference/state_capacity_ecosystem
+        working-directory: state_capacity_ecosystem
         run: python3 data/build_affinity.py
 
       - name: Update hardcoded stat strings
         if: steps.check.outputs.org_changed == 'true'
-        working-directory: civic_reference/state_capacity_ecosystem
+        working-directory: state_capacity_ecosystem
         run: python3 data/update_stats.py
 
       # ── Connect pipeline (connect_submissions.csv → connect.json + email notifications) ──
@@ -72,12 +72,12 @@ jobs:
       - name: Snapshot previous Connect entries (before rebuild)
         if: steps.check.outputs.connect_changed == 'true'
         run: |
-          git show HEAD:civic_reference/state_capacity_ecosystem/data/connect.json \
+          git show HEAD:state_capacity_ecosystem/data/connect.json \
             > /tmp/connect_prev.json 2>/dev/null || echo "[]" > /tmp/connect_prev.json
 
       - name: Rebuild Connect JSON
         if: steps.check.outputs.connect_changed == 'true'
-        working-directory: civic_reference/state_capacity_ecosystem
+        working-directory: state_capacity_ecosystem
         run: python3 data/build_people.py
 
       # ── Commit and push whatever changed ──
@@ -91,7 +91,7 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          BASE="civic_reference/state_capacity_ecosystem"
+          BASE="state_capacity_ecosystem"
 
           if [ "$ORG_CHANGED" = "true" ]; then
             git add \
@@ -140,7 +140,7 @@ jobs:
 
       - name: Email new Connect entries
         if: steps.check.outputs.connect_changed == 'true'
-        working-directory: civic_reference/state_capacity_ecosystem
+        working-directory: state_capacity_ecosystem
         env:
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}

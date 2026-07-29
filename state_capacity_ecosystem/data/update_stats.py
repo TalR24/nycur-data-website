@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Patch hardcoded stat strings after a CSV rebuild.
-Run from civic_reference/state_capacity_ecosystem/ (not from data/).
+Run from state_capacity_ecosystem/ (not from data/).
 Called by the GitHub Actions refresh workflow after build_affinity.py and build_people.py.
 """
 import json

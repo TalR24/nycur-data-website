@@ -2,7 +2,7 @@
 
 **Last updated:** 2026-06-07
 **Maintainer:** Tal Roded (visualization layer) · Henry Grunzweig (curates the underlying database)
-**Live:** https://data.nycuriosity.com/civic_reference/state_capacity_ecosystem/
+**Live:** https://data.nycuriosity.com/state_capacity_ecosystem/
 
 This file is the single source of truth for the State Capacity Ecosystem tool. If you are a future Claude session (or future-Tal): **read this file first** before making changes. The companion local-only orientation file at `nycur/state_capacity_ecosystem_claude_ref.md` is a shorter pointer that auto-loads at session start.
 
@@ -16,7 +16,7 @@ The five public pages:
 
 | Page | URL | Purpose |
 |---|---|---|
-| **Hub** | `/civic_reference/state_capacity_ecosystem/` | Explainer, 4 stat pills, 3 view cards (Directory · Affinity Network · Connect), Methodology card, info panels |
+| **Hub** | `/state_capacity_ecosystem/` | Explainer, 4 stat pills, 3 view cards (Directory · Affinity Network · Connect), Methodology card, info panels |
 | **Directory** | `…/directory/` | Filterable, searchable table of every org. Semantic search via TF-IDF |
 | **Connect** | `…/connect/` | Directory of people and orgs indexed by problem, role, and help-type. 13-field self-submission form modal (mailto + clipboard). Intro request modal for facilitated contacts. Separate dataset from the org pages. |
 | **Affinity Network** | `…/network/` | D3 force-directed graph + natural-language semantic search with geographic boosting |
@@ -31,7 +31,7 @@ The five public pages:
 ## Quick start for a new session
 
 1. **Read this README first.** Don't guess at file structure or weights — they've been deliberately set.
-2. **Check the live site** before making changes — `https://data.nycuriosity.com/civic_reference/state_capacity_ecosystem/`. The deployed state may differ from your local working copy.
+2. **Check the live site** before making changes — `https://data.nycuriosity.com/state_capacity_ecosystem/`. The deployed state may differ from your local working copy.
 3. **Identify which file you need to edit** from the file map below. The five subpages are independent HTML files; changes to shared concepts (colors, taxonomy, copy) must be made in **all** of them.
 4. **For data refreshes:** drop the new CSV in `data/directory.csv` and run `python3 data/build_affinity.py`. Don't hand-edit `affinity.json`, `directory.json`, or `affinity_search.json` — they're regenerated from the CSV.
 5. **Push to GitHub** when done. Live in ~1 min via GitHub Pages.
@@ -41,7 +41,7 @@ The five public pages:
 ## File layout
 
 ```
-data_website/civic_reference/state_capacity_ecosystem/
+data_website/state_capacity_ecosystem/
 ├── README.md                        ← THIS FILE
 ├── index.html                       ← Hub: pills, 4 explore cards, methodology card, info panels
 ├── data/
@@ -113,7 +113,7 @@ The CSV columns are read by name (`csv.DictReader`) in `build_affinity.py`. If t
 ## Build pipeline
 
 ```bash
-cd data_website/civic_reference/state_capacity_ecosystem
+cd data_website/state_capacity_ecosystem
 python3 data/build_affinity.py
 ```
 
@@ -428,7 +428,7 @@ Stat-pills in the hub hero ARE dynamic (read from `affinity.json` at load). **It
 
 1. **`data_website/index.html`** (data website homepage) — `card-stat` span inside the State Capacity Ecosystem card: `"N orgs · 11 segments · N problem topics"`
 2. **`data_website/README.md`** — file tree entry: `directory.csv → Canonical org source (N rows)`
-3. **`civic_reference/state_capacity_ecosystem/index.html`** (hub) — any hardcoded counts in card descriptions or bubble stat text (currently "300+" — only update if it crosses a round-number threshold)
+3. **`state_capacity_ecosystem/index.html`** (hub) — any hardcoded counts in card descriptions or bubble stat text (currently "300+" — only update if it crosses a round-number threshold)
 4. **`methodology/index.html`** — three locations:
    - Data Fields bullet: `"N specific issues nested under the Problem Areas"`
    - Funder limitation callout: `"Approximately N of N orgs have at least one named funder detected"`
@@ -513,6 +513,7 @@ These are concrete, half-done tasks, not parking-lot ideas. Pick them up when th
 
 | Date | Commit | Summary |
 |---|---|---|
+| 2026-07-29 | — | Move: tool relocated from `civic_reference/state_capacity_ecosystem/` to top-level `state_capacity_ecosystem/` (live URL now data.nycuriosity.com/state_capacity_ecosystem/). All 11 old URLs (hub + every subpage) serve meta-refresh redirect stubs that preserve query/hash. Rewrote path references in og:url metas, the daily refresh workflow, `.gitignore`, homepage card, sitemap, and both READMEs. Internal links were already relative, so pages needed no link surgery. |
 | 2026-07-29 | — | Substack: add first multi-prototype post page at `substack/mamdani-ai-priorities/` for the forthcoming "The Secret Weapon for Mamdani's Priorities" post (AI x mayoral priorities). Four priority sections (groceries, ownership/small business, housing, good jobs) with 9 prototype slots: the NYC Grocery Access siting tool live (linked at its original URL), 8 dashed `.pending` slots awaiting collaborator uploads via the work repo's `substack_projects/` drop folder. Hub card now points at the post page instead of the grocery tool directly (one card per post; decision #22 amended). Post-URL row is a `.pending` placeholder. |
 | 2026-07-28 | — | Substack: add Substack page. New `substack/index.html` posts hub (card grid of companion prototypes + subscribe CTA, chrome copied from the events hub) and first companion tool at `substack/nyc-grocery-access-site-prototype/` (self-contained full-screen interactive prototype scoring vacant city-owned lots for supermarket siting; hosted as-is with no chrome injected, tideline-style). Substack pill added to the nav on all six subpages (order now Directory · Connect · Affinity · Events · Substack · Methodology · ← Hub) and a fifth Substack explore bubble added to the hub. Decision #22 documents the section pattern. |
 | 2026-06-29 | — | Docs: end-of-session sync. Added an "Open items" section (Claude-artifact card pending a title/desc; build-night "Read about it" link still a placeholder; Community link pending a URL), decision #21 (cross-promo loop pattern + SCE Substack target + no-Community-yet rule), and the SCE Substack to external pointers. Refreshed the local ref doc's dataset stat (328 orgs / 1,759 edges) and added the build-night recap facts + open items. |
@@ -581,7 +582,7 @@ These are concrete, half-done tasks, not parking-lot ideas. Pick them up when th
 | 2026-05-10 | `abf8940` | Refresh with May 2026 dataset (225 → 304 orgs); add Problem Statements column |
 | 2026-04 | `9f5294a` | Initial State Capacity Ecosystem tool |
 
-Use `git log --oneline -- civic_reference/state_capacity_ecosystem/` for the full history.
+Use `git log --oneline -- state_capacity_ecosystem/` for the full history.
 
 ---
 

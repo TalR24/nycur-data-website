@@ -1,0 +1,1191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Directory — State Capacity Ecosystem · NYCuriosity Data</title>
+  <meta name="description" content="Directory of organizations working on state capacity. Search by name or filter by segment, geographic focus, or problem statement to find relevant orgs.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+    :root {
+      --blue:#2563eb; --blue-hover:#1d4ed8; --blue-light:#eff6ff; --blue-mid:#bfdbfe;
+      --orange:#FF6319; --text:#111827; --text-mid:#374151; --text-muted:#6b7280; --text-faint:#9ca3af;
+      --bg:#f8faff; --surface:#ffffff; --border:#e5e7eb; --border-mid:#d1d5db;
+      --shadow-sm:0 1px 3px rgba(17,24,39,0.08); --shadow-md:0 4px 16px rgba(37,99,235,0.10);
+      --radius:10px;
+    }
+    body { font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; display:flex; flex-direction:column; }
+
+    /* HEADER */
+    header { background:#111827; border-bottom:1px solid #1f2937; padding:0 clamp(16px,4vw,48px); }
+    .header-inner { max-width:1300px; margin:0 auto; height:60px; display:flex; align-items:center; justify-content:space-between; gap:16px; }
+    .brand { display:flex; align-items:baseline; gap:6px; text-decoration:none; }
+    .brand-name { font-family:'Roboto Mono',monospace; font-size:0.95rem; font-weight:700; color:#60a5fa; letter-spacing:-0.02em; }
+    .brand-slash { font-family:'Roboto Mono',monospace; font-size:0.95rem; color:#4b5563; }
+    .brand-section { font-family:'Roboto Mono',monospace; font-size:0.95rem; font-weight:600; color:#e5e7eb; }
+    .header-link { font-size:0.78rem; font-weight:500; color:#9ca3af; text-decoration:none; display:flex; align-items:center; gap:5px; transition:color 0.15s; }
+    .header-link:hover { color:#60a5fa; }
+
+    /* BREADCRUMB */
+    .breadcrumb { padding:14px clamp(16px,4vw,48px) 0; }
+    .breadcrumb-inner { max-width:1300px; margin:0 auto; display:flex; align-items:center; gap:6px; font-family:'Roboto Mono',monospace; font-size:0.72rem; font-weight:500; color:var(--text-faint); }
+    .breadcrumb a { color:var(--text-faint); text-decoration:none; transition:color 0.15s; }
+    .breadcrumb a:hover { color:var(--blue); }
+    .breadcrumb .current { color:var(--orange); }
+    .breadcrumb-sep { color:var(--border-mid); }
+
+    /* HERO */
+    .hero { padding:14px clamp(16px,4vw,48px) 0; }
+    .hero-inner { max-width:1300px; margin:0 auto; padding-bottom:14px; }
+    .hero h1 { font-family:'Roboto Mono',monospace; font-size:clamp(1.2rem,3vw,1.7rem); font-weight:700; color:var(--text); letter-spacing:-0.03em; line-height:1.2; margin-bottom:6px; }
+    .hero h1 span { color:var(--blue); }
+    .hero p { font-size:0.88rem; color:var(--text-muted); max-width:780px; line-height:1.6; }
+
+    /* PILL NAV */
+    .chart-nav { background:var(--surface); border-bottom:1px solid var(--border); padding:10px clamp(16px,4vw,48px); display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+    .chart-nav-label { font-size:0.75rem; color:#FF6319; font-weight:500; white-space:nowrap; margin-right:4px; }
+    .chart-nav a { font-size:0.78rem; font-family:'Roboto Mono',monospace; font-weight:600; padding:4px 12px; border-radius:20px; text-decoration:none; border:1px solid var(--border); color:var(--text-muted); background:var(--bg); transition:all 0.15s; white-space:nowrap; }
+    .chart-nav a:hover { border-color:var(--blue); color:var(--blue); background:var(--blue-light); }
+    .chart-nav a.active { background:var(--blue); color:#fff; border-color:var(--blue); }
+
+    /* MAIN */
+    .main { flex:1; padding:clamp(16px,3vw,28px) clamp(16px,4vw,48px) clamp(40px,6vw,64px); }
+    .main-inner { max-width:1300px; margin:0 auto; }
+
+    /* FILTERS */
+    .filter-section {
+      background:var(--surface);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      padding:16px 20px;
+      margin-bottom:14px;
+      box-shadow:var(--shadow-sm);
+    }
+    .filter-row { display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end; }
+    .filter-group { display:flex; flex-direction:column; gap:5px; min-width:160px; }
+    .filter-group.search { flex:1; min-width:240px; }
+    .filter-label {
+      font-family:'Roboto Mono',monospace;
+      font-size:0.62rem; font-weight:700; text-transform:uppercase;
+      letter-spacing:0.08em; color:var(--text-muted);
+    }
+    .filter-input, .filter-select {
+      height:34px; border:1px solid var(--border-mid); border-radius:6px;
+      padding:0 10px; font-size:0.82rem; font-family:'Inter',sans-serif;
+      color:var(--text); background:var(--bg);
+      outline:none; transition:border-color 0.15s; width:100%;
+    }
+    .filter-input:focus, .filter-select:focus { border-color:var(--blue); }
+    .btn-reset {
+      height:34px; padding:0 14px;
+      background:transparent; border:1px solid var(--border-mid); border-radius:6px;
+      font-size:0.78rem; font-family:'Roboto Mono',monospace;
+      color:var(--text-muted); cursor:pointer;
+      transition:all 0.15s; white-space:nowrap;
+    }
+    .btn-reset:hover { border-color:var(--blue); color:var(--blue); }
+
+    /* MULTI-SELECT */
+    .ms-wrap { position:relative; }
+    .ms-btn { width:100%; display:flex; align-items:center; justify-content:space-between; gap:6px; font-family:'Inter',sans-serif; font-size:0.82rem; color:var(--text); background:var(--bg); border:1px solid var(--border-mid); border-radius:6px; padding:0 10px; height:34px; cursor:pointer; transition:border-color 0.15s; text-align:left; }
+    .ms-btn:hover, .ms-btn.open { border-color:var(--blue); }
+    .ms-btn-text { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .ms-caret { font-size:0.55rem; color:var(--text-faint); flex-shrink:0; transition:transform 0.15s; }
+    .ms-btn.open .ms-caret { transform:rotate(180deg); }
+    .ms-drop { position:absolute; top:calc(100% + 4px); left:0; min-width:100%; max-width:280px; background:var(--surface); border:1px solid var(--border-mid); border-radius:8px; box-shadow:0 4px 20px rgba(0,0,0,0.13); z-index:500; display:none; }
+    .ms-drop.open { display:block; }
+    .ms-acts { display:flex; gap:6px; padding:8px 10px 6px; border-bottom:1px solid var(--border); }
+    .ms-act { font-family:'Roboto Mono',monospace; font-size:0.65rem; font-weight:600; background:none; border:1px solid var(--border); border-radius:4px; padding:3px 8px; cursor:pointer; color:var(--text-muted); transition:all 0.1s; }
+    .ms-act:hover { border-color:var(--blue); color:var(--blue); background:var(--blue-light); }
+    .ms-list { max-height:240px; overflow-y:auto; padding:4px 0; }
+    .ms-item { display:flex; align-items:center; gap:8px; padding:5px 12px; cursor:pointer; user-select:none; }
+    .ms-item:hover { background:var(--blue-light); }
+    .ms-item input { width:13px; height:13px; accent-color:var(--blue); cursor:pointer; flex-shrink:0; }
+    .ms-item span { font-size:0.82rem; color:var(--text-mid); line-height:1.3; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+    /* RESULTS BAR */
+    .results-bar { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:12px; padding:0 2px; }
+    .results-count { font-family:'Roboto Mono',monospace; font-size:0.78rem; color:var(--text-muted); }
+    .results-count strong { color:var(--text); }
+    .download-link { font-family:'Roboto Mono',monospace; font-size:0.74rem; color:var(--blue); text-decoration:none; padding:4px 10px; border:1px solid var(--blue-mid); border-radius:6px; background:var(--blue-light); }
+    .download-link:hover { background:var(--blue); color:#fff; }
+    .hero-cta { margin-top:16px; }
+    .hero-cta-btn {
+      display:inline-flex; align-items:center; gap:8px;
+      font-family:'Roboto Mono',monospace; font-size:0.88rem; font-weight:700;
+      color:#fff; background:var(--orange); border:none; border-radius:8px;
+      padding:10px 22px; cursor:pointer; text-decoration:none;
+      box-shadow:0 4px 14px rgba(255,99,25,0.34);
+      transition:transform 0.15s, box-shadow 0.15s;
+      letter-spacing:-0.01em;
+    }
+    .hero-cta-btn:hover { transform:translateY(-2px); box-shadow:0 8px 20px rgba(255,99,25,0.44); }
+
+    /* TABLE */
+    .table-wrap { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow-sm); overflow:hidden; }
+    .table-scroll { overflow-x:auto; }
+    table { width:100%; border-collapse:collapse; font-size:0.85rem; }
+    thead th {
+      background:#f9fafb;
+      border-bottom:1.5px solid var(--border-mid);
+      padding:10px 12px;
+      text-align:left;
+      font-family:'Roboto Mono',monospace;
+      font-size:0.66rem; font-weight:700; text-transform:uppercase; letter-spacing:0.06em;
+      color:var(--text-muted);
+      white-space:nowrap;
+      cursor:pointer; user-select:none;
+      transition:color 0.15s;
+    }
+    thead th:hover { color:var(--blue); }
+    thead th.sorted { color:var(--blue); }
+    thead th .sort-icon { margin-left:4px; opacity:0.5; }
+    thead th.sorted .sort-icon { opacity:1; }
+
+    tbody tr { border-bottom:1px solid var(--border); cursor:pointer; transition:background 0.1s; }
+    tbody tr:last-child { border-bottom:none; }
+    tbody tr:hover { background:var(--blue-light); }
+    tbody tr.expanded { background:var(--blue-light); }
+
+    td { padding:11px 12px; vertical-align:top; color:var(--text-mid); }
+    td.name-cell { font-weight:600; color:var(--text); max-width:260px; }
+    td.name-cell .org-name { line-height:1.4; }
+
+    .seg-tag {
+      display:inline-block;
+      font-family:'Roboto Mono',monospace;
+      font-size:0.66rem; font-weight:700;
+      padding:2px 8px; border-radius:4px;
+      color:#fff; white-space:nowrap;
+    }
+    .seg-tag.secondary { color:var(--text-mid); background:#f3f4f6; font-weight:600; }
+    .focus-tag {
+      display:inline-block;
+      font-family:'Roboto Mono',monospace;
+      font-size:0.62rem; font-weight:700;
+      padding:1px 6px; border-radius:3px;
+      background:#fff4ed; color:#c2410c; border:1px solid #fed7aa;
+      margin-right:3px; margin-bottom:2px;
+    }
+    .problem-tag {
+      display:inline-block;
+      font-family:'Inter',sans-serif;
+      font-size:0.72rem; font-weight:500;
+      padding:2px 8px; border-radius:12px;
+      background:var(--blue-light); color:var(--blue); border:1px solid var(--blue-mid);
+      margin-right:4px; margin-bottom:4px;
+      line-height:1.4;
+    }
+    .area-tag {
+      display:inline-block;
+      font-family:'Inter',sans-serif;
+      font-size:0.72rem; font-weight:500;
+      padding:2px 8px; border-radius:12px;
+      background:#fff4ed; color:#c2410c; border:1px solid #fed7aa;
+      margin-right:4px; margin-bottom:4px;
+      line-height:1.4;
+    }
+    .problem-tag-list { display:flex; flex-wrap:wrap; gap:0; margin-top:2px; }
+    td.desc-cell { min-width:300px; }
+    td.desc-cell .desc-text {
+      display:-webkit-box;
+      -webkit-line-clamp:2;
+      -webkit-box-orient:vertical;
+      overflow:hidden;
+      font-size:0.82rem;
+      line-height:1.45;
+      color:var(--text-muted);
+    }
+    td.tag-cell { max-width:240px; }
+    .funder-mini {
+      font-family:'Roboto Mono',monospace;
+      font-size:0.7rem; color:var(--text-muted);
+      line-height:1.5;
+    }
+
+    .expand-icon { color:var(--text-faint); line-height:1; transition:transform 0.2s; display:flex; align-items:center; justify-content:center; }
+    tr.expanded .expand-icon { transform:rotate(180deg); color:var(--blue); }
+
+    /* DETAIL ROW */
+    .detail-row { background:var(--blue-light) !important; }
+    .detail-row td { padding:0; }
+    .detail-panel { padding:18px 24px 22px; border-top:1px solid var(--blue-mid); }
+    .detail-grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-bottom:14px; }
+    @media (max-width: 768px) { .detail-grid { grid-template-columns:1fr; } }
+    .detail-section h4 {
+      font-family:'Roboto Mono',monospace;
+      font-size:0.7rem; font-weight:700; text-transform:uppercase;
+      letter-spacing:0.08em; color:var(--orange);
+      margin-bottom:10px;
+    }
+    .detail-field { display:flex; flex-direction:column; gap:2px; margin-bottom:8px; }
+    .detail-field-label { font-size:0.7rem; color:var(--text-faint); font-weight:500; }
+    .detail-field-value { font-size:0.85rem; color:var(--text-mid); line-height:1.55; }
+    .detail-narrative { font-size:0.86rem; line-height:1.65; color:var(--text-mid); }
+    .detail-link {
+      display:inline-flex; align-items:center; gap:5px;
+      font-size:0.78rem; font-weight:600;
+      color:var(--blue); text-decoration:none;
+      padding:6px 12px; border:1px solid var(--blue-mid);
+      border-radius:6px; background:var(--blue-light);
+      transition:all 0.15s;
+      margin-top:6px; margin-right:8px;
+    }
+    .detail-link:hover { background:var(--blue); color:#fff; }
+
+    /* PAGINATION */
+    .pagination { display:flex; align-items:center; justify-content:center; gap:6px; padding:16px; border-top:1px solid var(--border); }
+    .page-btn { height:30px; min-width:30px; padding:0 10px; border:1px solid var(--border-mid); border-radius:6px; font-size:0.8rem; font-family:'Roboto Mono',monospace; background:var(--surface); color:var(--text-mid); cursor:pointer; transition:all 0.15s; }
+    .page-btn:hover { border-color:var(--blue); color:var(--blue); }
+    .page-btn.active { background:var(--blue); border-color:var(--blue); color:#fff; }
+    .page-btn:disabled { opacity:0.4; cursor:default; }
+
+    /* EMPTY/LOADING */
+    .state-msg { text-align:center; padding:48px 24px; color:var(--text-faint); }
+    .state-msg h3 { font-family:'Roboto Mono',monospace; font-size:1rem; margin-bottom:6px; color:var(--text-muted); }
+    .state-msg p { font-size:0.85rem; }
+
+    /* FOOTER */
+    footer { background:var(--surface); border-top:1px solid var(--border); padding:18px clamp(16px,4vw,48px); }
+    .footer-inner { max-width:1300px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; }
+    .footer-copy { font-size:0.78rem; color:var(--text-faint); }
+    .footer-links { display:flex; gap:18px; }
+    .footer-links a { font-size:0.78rem; color:var(--text-muted); text-decoration:none; transition:color 0.15s; }
+    .footer-links a:hover { color:var(--blue); }
+
+    @media (max-width: 640px) {
+      .brand-slash, .brand-section { display:none; }
+      td.name-cell { max-width:160px; }
+    }
+
+    /* SUGGEST-AN-ORG FORM OVERLAY */
+    .sf-overlay {
+      display:none; position:fixed; inset:0;
+      background:rgba(17,24,39,0.82); z-index:1000;
+      overflow-y:auto; padding:32px 16px;
+      justify-content:center; align-items:flex-start;
+    }
+    .sf-overlay.open { display:flex; }
+    .sf-modal {
+      background:var(--surface); border-radius:12px;
+      width:100%; max-width:680px;
+      box-shadow:0 24px 64px rgba(0,0,0,0.35);
+      overflow:hidden; margin:auto;
+      max-height:calc(100vh - 64px);
+      display:flex; flex-direction:column;
+    }
+    .sf-hdr {
+      background:#111827; padding:20px 28px;
+      display:flex; align-items:center; justify-content:space-between;
+      flex-shrink:0;
+    }
+    .sf-hdr-title { font-family:'Roboto Mono',monospace; font-size:0.95rem; font-weight:700; color:#e5e7eb; letter-spacing:-0.02em; }
+    .sf-close { background:none; border:none; color:#9ca3af; font-size:1.4rem; cursor:pointer; padding:0 4px; line-height:1; transition:color 0.15s; }
+    .sf-close:hover { color:#fff; }
+    .sf-body { padding:28px 32px; overflow-y:auto; flex:1; min-height:0; }
+    .sf-intro { font-size:0.84rem; color:var(--text-muted); line-height:1.6; margin-bottom:24px; }
+    .sf-section { margin-bottom:20px; }
+    .sf-prompt {
+      font-family:'Roboto Mono',monospace; font-size:0.82rem; font-weight:700;
+      color:var(--text); margin-bottom:10px; display:flex; align-items:center; gap:5px; flex-wrap:wrap;
+    }
+    .sf-req { color:var(--orange); }
+    .sf-prompt-sub { font-size:0.72rem; color:var(--text-muted); font-weight:400; }
+    .sf-text-input {
+      width:100%; height:38px; border:1px solid var(--border-mid); border-radius:6px;
+      padding:0 12px; font-size:0.88rem; font-family:'Inter',sans-serif;
+      color:var(--text); background:var(--bg);
+      outline:none; transition:border-color 0.15s;
+    }
+    .sf-text-input:focus { border-color:var(--blue); }
+    .sf-chips { display:flex; flex-wrap:wrap; gap:7px; }
+    .sf-chip {
+      padding:5px 13px; border:1.5px solid var(--border-mid); border-radius:999px;
+      font-size:0.81rem; font-family:'Inter',sans-serif; font-weight:500;
+      color:var(--text-mid); background:var(--bg);
+      cursor:pointer; user-select:none;
+      transition:border-color 0.15s, background 0.15s, color 0.15s;
+      white-space:nowrap;
+    }
+    .sf-chip:hover { border-color:var(--blue); color:var(--blue); background:var(--blue-light); }
+    .sf-chip.on { border-color:var(--blue); background:var(--blue); color:#fff; }
+    .sf-chip.on:hover { background:var(--blue-hover); }
+    .sf-schip {
+      padding:5px 16px; border:1.5px solid var(--border-mid); border-radius:6px;
+      font-size:0.81rem; font-family:'Inter',sans-serif; font-weight:500;
+      color:var(--text-mid); background:var(--bg);
+      cursor:pointer; user-select:none;
+      transition:border-color 0.15s, background 0.15s, color 0.15s;
+      white-space:nowrap;
+    }
+    .sf-schip:hover { border-color:var(--blue); color:var(--blue); background:var(--blue-light); }
+    .sf-schip.on { border-color:var(--orange); background:var(--orange); color:#fff; }
+    .sf-single-chips { display:flex; flex-wrap:wrap; gap:7px; }
+    .sf-textarea {
+      width:100%; border:1px solid var(--border-mid); border-radius:6px;
+      padding:10px 12px; font-size:0.88rem; font-family:'Inter',sans-serif;
+      color:var(--text); background:var(--bg); resize:vertical; min-height:88px;
+      outline:none; transition:border-color 0.15s; line-height:1.5;
+    }
+    .sf-textarea:focus { border-color:var(--blue); }
+    .sf-char-row { display:flex; justify-content:flex-end; margin-top:4px; }
+    .sf-char-count { font-family:'Roboto Mono',monospace; font-size:0.68rem; color:var(--text-faint); }
+    .sf-char-count.warn { color:#d97706; }
+    .sf-char-count.over { color:#dc2626; }
+    .sf-error-msg { font-size:0.74rem; color:#dc2626; font-family:'Roboto Mono',monospace; margin-top:7px; display:none; }
+    .sf-error-msg.show { display:block; }
+    .sf-conditional { display:none; margin-top:10px; }
+    .sf-conditional.show { display:block; }
+    .sf-divider { border:none; border-top:1px solid var(--border); margin:22px 0; }
+    .sf-footer {
+      padding:20px 32px 28px; border-top:1px solid var(--border);
+      display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;
+      flex-shrink:0;
+    }
+    .sf-submit-btn {
+      display:inline-flex; align-items:center; gap:8px;
+      font-family:'Roboto Mono',monospace; font-size:0.88rem; font-weight:700;
+      color:#fff; background:var(--orange); border:none; border-radius:8px;
+      padding:12px 24px; cursor:pointer;
+      box-shadow:0 4px 12px rgba(255,99,25,0.30);
+      transition:transform 0.15s, box-shadow 0.15s;
+    }
+    .sf-submit-btn:hover:not(:disabled) { transform:translateY(-1px); box-shadow:0 6px 18px rgba(255,99,25,0.42); }
+    .sf-submit-btn:disabled { opacity:0.6; cursor:not-allowed; }
+    .sf-footer-note { font-size:0.75rem; color:var(--text-muted); line-height:1.5; flex:1; }
+    .sf-success { text-align:center; padding:52px 32px 48px; }
+    .sf-success-check { font-size:2.6rem; color:#16a34a; margin-bottom:14px; line-height:1; }
+    .sf-success-title { font-family:'Roboto Mono',monospace; font-size:1.05rem; font-weight:700; color:var(--text); margin-bottom:10px; }
+    .sf-success-text { font-size:0.88rem; color:var(--text-muted); line-height:1.65; margin-bottom:24px; max-width:440px; margin-left:auto; margin-right:auto; }
+    .sf-copy-btn {
+      display:inline-flex; align-items:center; gap:7px;
+      font-family:'Roboto Mono',monospace; font-size:0.8rem; font-weight:600;
+      color:var(--blue); background:var(--blue-light);
+      border:1px solid var(--blue-mid); border-radius:6px;
+      padding:8px 16px; cursor:pointer; transition:all 0.15s; margin-right:8px;
+    }
+    .sf-copy-btn:hover { background:var(--blue); color:#fff; }
+    .sf-done-btn {
+      display:inline-flex; align-items:center; gap:7px;
+      font-family:'Roboto Mono',monospace; font-size:0.8rem; font-weight:600;
+      color:var(--text-muted); background:var(--bg);
+      border:1px solid var(--border-mid); border-radius:6px;
+      padding:8px 16px; cursor:pointer; transition:all 0.15s;
+    }
+    .sf-done-btn:hover { border-color:var(--text-mid); color:var(--text); }
+    @media (max-width:640px) {
+      .sf-body, .sf-footer { padding-left:20px; padding-right:20px; }
+      .sf-hdr { padding:16px 20px; }
+    }
+  </style>
+<style id="support-btn-css">
+.header-actions{display:flex;align-items:center;gap:14px;}
+.header-link{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border:1px solid rgba(255,255,255,0.15);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
+.header-link:hover{color:#fff;border-color:rgba(255,255,255,0.35);background:rgba(255,255,255,0.08);}
+.header-link svg{flex-shrink:0;}
+.support-link{display:inline-flex;align-items:center;gap:5px;font-size:0.8rem;font-weight:500;color:#93c5fd;text-decoration:none;padding:5px 11px;border:1px solid rgba(37,99,235,0.45);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
+.support-link:hover{color:#fff;background:#2563eb;border-color:#2563eb;}
+.support-link svg{flex-shrink:0;}
+.footer-support{display:inline-flex;align-items:center;gap:5px;font-size:0.8rem;font-weight:500;color:#2563eb;text-decoration:none;padding:5px 11px;border:1px solid rgba(37,99,235,0.45);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
+.footer-support:hover{color:#fff;background:#2563eb;border-color:#2563eb;}
+.footer-support svg{flex-shrink:0;}
+.footer-support{vertical-align:middle;}
+.footer-links{align-items:center;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <a href="/" class="brand"><span class="brand-name">nycuriosity</span><span class="brand-slash">/</span><span class="brand-section">data</span></a>
+    <div class="header-actions">
+      <a href="https://talroded.nycuriosity.com" class="header-link" target="_blank" rel="noopener"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>About</a>
+      <a href="https://www.nycuriosity.com" class="header-link" target="_blank" rel="noopener">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v4H4z"/><path d="M4 10h16v10l-8-4-8 4z"/></svg>
+      Substack
+    </a>
+    </div>
+  </div>
+</header>
+
+<div class="breadcrumb">
+  <div class="breadcrumb-inner">
+    <a href="/">NYCuriosity Data</a>
+    <span class="breadcrumb-sep">/</span>
+    <a href="../">State Capacity Ecosystem</a>
+    <span class="breadcrumb-sep">/</span>
+    <span class="current">Directory</span>
+  </div>
+</div>
+
+<div class="hero">
+  <div class="hero-inner">
+    <h1><span>Directory</span></h1>
+    <p>Every org in the database. Search by name or use the filters to narrow by segment, geographic focus, or problem statement. Click any row for the full description.</p>
+    <div class="hero-cta">
+      <button class="hero-cta-btn" type="button" onclick="openOF()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Suggest an org →
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="chart-nav">
+  <span class="chart-nav-label">Views in this tool:</span>
+  <a href="./" class="active">Directory</a>
+  <a href="../connect/">Connect</a>
+  <a href="../network/">Affinity</a>
+  <a href="../events/">Events</a>
+  <a href="../substack/">Substack</a>
+  <a href="../methodology/">Methodology</a>
+  <a href="../">← Hub</a>
+</div>
+
+<div class="main">
+  <div class="main-inner">
+
+    <!-- FILTERS -->
+    <div class="filter-section">
+      <div class="filter-row">
+        <div class="filter-group search">
+          <label class="filter-label" for="f-search">Search by name</label>
+          <input id="f-search" type="text" class="filter-input" placeholder="e.g. Code for America, Niskanen Center, New America…">
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Primary segment</label>
+          <div id="ms-seg"></div>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Geography</label>
+          <div id="ms-focus"></div>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Problem area</label>
+          <div id="ms-area"></div>
+        </div>
+        <div class="filter-group">
+          <label class="filter-label">Problem topic</label>
+          <div id="ms-problem"></div>
+        </div>
+        <button class="btn-reset" id="btn-reset">Reset</button>
+      </div>
+    </div>
+
+    <!-- RESULTS BAR -->
+    <div class="results-bar">
+      <div class="results-count" id="results-count">Loading…</div>
+      <a class="download-link" href="../data/directory.csv" download>Download CSV ↓</a>
+    </div>
+
+    <!-- TABLE -->
+    <div class="table-wrap">
+      <div class="table-scroll">
+        <table id="main-table">
+          <thead>
+            <tr>
+              <th data-col="name">Organization <i class="sort-icon">↕</i></th>
+              <th data-col="primary_segment" style="width:80px">Segment <i class="sort-icon">↕</i></th>
+              <th style="min-width:320px">Description</th>
+              <th style="width:130px">Problem Area</th>
+              <th>Problem Statement</th>
+              <th style="width:28px"></th>
+            </tr>
+          </thead>
+          <tbody id="table-body">
+            <tr><td colspan="6"><div class="state-msg"><h3>Loading data…</h3></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pagination" id="pagination"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- STAY CONNECTED -->
+<div style="background:var(--surface); border-top:1px solid var(--border);">
+  <div style="max-width:1300px; margin:0 auto; padding:18px clamp(16px,4vw,48px); display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap;">
+    <span style="font-family:'Roboto Mono',monospace; font-size:0.82rem; font-weight:600; color:var(--text);">Stay in the loop on state capacity events and tools.</span>
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      <a href="https://statecapacityecosystem.substack.com/" target="_blank" rel="noopener" style="font-family:'Roboto Mono',monospace; font-size:0.78rem; font-weight:600; text-decoration:none; padding:7px 14px; border-radius:7px; border:1px solid #fcd0b7; background:#fff4ed; color:#FF6719;">Subscribe to our Substack ↗</a>
+      <a href="../" style="font-family:'Roboto Mono',monospace; font-size:0.78rem; font-weight:600; text-decoration:none; padding:7px 14px; border-radius:7px; border:1px solid var(--blue-mid); background:var(--blue-light); color:var(--blue);">Explore the Hub →</a>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-inner">
+    <span class="footer-copy">Created by Tal Roded · NYCuriosity</span>
+    <div class="footer-links">
+      <a href="https://buymeacoffee.com/nycuriosity" class="footer-support" target="_blank" rel="noopener" aria-label="Support my work on Buy Me a Coffee"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>Support my work</a>
+      <a href="../data/directory.csv" download>Download CSV</a>
+      <a href="https://airtable.com/appo3EaOAi7JjI2VZ/shrAswoPpY3sbZIY7/tblcsGZwPK5O5TXjb/viwQZffbnIJ8f4zjT" target="_blank" rel="noopener">Source: Airtable</a>
+      <a href="../">← Back to hub</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+const SEGMENT_COLORS = {
+  "Research":"#2563eb","Government":"#0891b2","Philanthropy":"#dc2626","Fellowships":"#d97706",
+  "Community":"#7c3aed","GovTech":"#16a34a","Advocacy":"#db2777",
+  "Digital Services & Consulting":"#0d9488","Investor":"#9333ea",
+  "Capacity Building":"#ca8a04","Ecosystems":"#65a30d"
+};
+
+let allOrgs = [];
+let filtered = [];
+let sortCol = "name";
+let sortDir = 1;
+let page = 1;
+const PAGE_SIZE = 25;
+let expandedId = null;
+
+// MultiSelect — opening one closes the others; clicking outside closes any open dropdown.
+class MS {
+  static _registry = [];
+  constructor(id, ph, onChange) {
+    this.el = document.getElementById(id);
+    this.ph = ph; this.onChange = onChange;
+    this.selected = new Set(); this.opts = []; this._open = false;
+    MS._registry.push(this);
+    this._init();
+  }
+  _init() {
+    this.el.classList.add("ms-wrap");
+    this.btn = Object.assign(document.createElement("button"), {type:"button", className:"ms-btn"});
+    this.btn.innerHTML = `<span class="ms-btn-text">All ${this.ph}</span><span class="ms-caret">▼</span>`;
+    this._txt = this.btn.querySelector(".ms-btn-text");
+    this.drop = Object.assign(document.createElement("div"), {className:"ms-drop"});
+    const acts = Object.assign(document.createElement("div"), {className:"ms-acts"});
+    const mk = (t, fn) => { const b = Object.assign(document.createElement("button"), {type:"button", className:"ms-act", textContent:t}); b.addEventListener("click", e => { e.stopPropagation(); fn(); }); return b; };
+    acts.append(mk("Select all", () => this._all()), mk("Clear", () => this._clear()));
+    this.list = Object.assign(document.createElement("div"), {className:"ms-list"});
+    this.drop.append(acts, this.list);
+    this.el.append(this.btn, this.drop);
+    this.btn.addEventListener("click", e => { e.stopPropagation(); this._toggle(); });
+    document.addEventListener("click", () => this._close());
+    this.drop.addEventListener("click", e => e.stopPropagation());
+  }
+  _toggle() { this._open ? this._close() : this._show(); }
+  _show()  {
+    // Close any sibling dropdown so only one is open at a time
+    for (const m of MS._registry) if (m !== this && m._open) m._close();
+    this._open = true; this.btn.classList.add("open"); this.drop.classList.add("open");
+  }
+  _close() { this._open = false; this.btn.classList.remove("open"); this.drop.classList.remove("open"); }
+  _all()   { this.selected = new Set(this.opts.map(o => o.v)); this._sync(); this._upd(); this.onChange(); }
+  _clear() { this.selected.clear(); this._sync(); this._upd(); this.onChange(); }
+  _sync()  { this.list.querySelectorAll("input").forEach(cb => cb.checked = this.selected.has(cb.value)); }
+  _upd()   { const n = this.selected.size, t = this.opts.length; this._txt.textContent = (n===0||n===t) ? `All ${this.ph}` : `${n} selected`; }
+  setOptions(opts) {
+    this.opts = opts.map(o => typeof o === "string" ? {v:o, l:o} : {v:o.value, l:o.label});
+    this.list.innerHTML = "";
+    this.opts.forEach(({v,l}) => {
+      const item = document.createElement("label");
+      item.className = "ms-item";
+      const cb = Object.assign(document.createElement("input"), {type:"checkbox", value:v});
+      cb.addEventListener("change", () => { cb.checked ? this.selected.add(v) : this.selected.delete(v); this._upd(); this.onChange(); });
+      item.append(cb, Object.assign(document.createElement("span"), {textContent:l}));
+      this.list.appendChild(item);
+    });
+    this._upd();
+  }
+  get() { return (this.selected.size === 0 || this.selected.size === this.opts.length) ? new Set() : new Set(this.selected); }
+  reset() { this._clear(); }
+}
+
+const onChange = () => { expandedId = null; applyFilters(); };
+const msSeg     = new MS("ms-seg", "Segments", onChange);
+const msFocus   = new MS("ms-focus", "Geographies", onChange);
+const msArea    = new MS("ms-area", "Areas",    onChange);
+const msProblem = new MS("ms-problem", "Topics", onChange);
+
+function normArea(a) { return a === "Verticals" ? "Domains" : a; }
+
+fetch("../data/directory.json")
+  .then(r => r.json())
+  .then(orgs => {
+    allOrgs = orgs;
+    populateFilters();
+    applyFilters();
+  }).catch(err => {
+    document.getElementById("table-body").innerHTML =
+      `<tr><td colspan="6"><div class="state-msg"><h3>Could not load data</h3><p>${err.message}</p></div></td></tr>`;
+  });
+
+function populateFilters() {
+  const segs = new Set(), focuses = new Set(), areas = new Set();
+  const problemMap = new Map(); // lowercase key → first-seen canonical form
+  for (const o of allOrgs) {
+    if (o.primary_segment) segs.add(o.primary_segment);
+    (o.focus || []).forEach(f => focuses.add(f));
+    (o.problem_statements || []).forEach(p => {
+      const key = p.toLowerCase();
+      if (!problemMap.has(key)) problemMap.set(key, p);
+    });
+    (o.problem_areas || []).forEach(a => areas.add(normArea(a)));
+  }
+  msSeg.setOptions([...segs].sort());
+  msFocus.setOptions([...focuses].sort());
+  msArea.setOptions([...areas].sort());
+  msProblem.setOptions([...problemMap.values()].sort());
+}
+
+function applyFilters() {
+  const rawQ = document.getElementById("f-search").value.trim();
+  const segF = msSeg.get(), focF = msFocus.get(), areaF = msArea.get(), probF = msProblem.get();
+  const probFLower = probF.size ? new Set([...probF].map(f => f.toLowerCase())) : new Set();
+
+  // Pre-filter by faceted filters
+  let pool = allOrgs.filter(o => {
+    if (segF.size && !segF.has(o.primary_segment)) return false;
+    if (focF.size && !(o.focus || []).some(f => focF.has(f))) return false;
+    if (areaF.size && !(o.problem_areas || []).some(a => areaF.has(normArea(a)))) return false;
+    if (probFLower.size && !(o.problem_statements || []).some(p => probFLower.has(p.toLowerCase()))) return false;
+    return true;
+  });
+
+  if (rawQ) {
+    const lq = rawQ.toLowerCase();
+    pool = pool.filter(o => o.name.toLowerCase().includes(lq));
+  } else {
+    pool.sort((a, b) => {
+      const va = (a[sortCol] || "").toString().toLowerCase();
+      const vb = (b[sortCol] || "").toString().toLowerCase();
+      if (va < vb) return -sortDir;
+      if (va > vb) return  sortDir;
+      return 0;
+    });
+  }
+
+  filtered = pool;
+  page = 1;
+  updateResultsBar();
+  renderTable();
+  renderPagination();
+}
+
+function updateResultsBar() {
+  document.getElementById("results-count").innerHTML =
+    `Showing <strong>${filtered.length}</strong> of <strong>${allOrgs.length}</strong> orgs`;
+}
+
+function renderTable() {
+  const tbody = document.getElementById("table-body");
+  const start = (page - 1) * PAGE_SIZE;
+  const slice = filtered.slice(start, start + PAGE_SIZE);
+  if (slice.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6"><div class="state-msg"><h3>No orgs match the current filters</h3><p>Try clearing one of the filters above.</p></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = slice.map(renderRow).join("");
+  tbody.querySelectorAll("tr.data-row").forEach(tr => {
+    tr.addEventListener("click", () => toggleDetail(+tr.dataset.id));
+  });
+}
+
+function renderRow(o) {
+  const expanded = expandedId === o.id;
+  const segColor = SEGMENT_COLORS[o.primary_segment] || "#6b7280";
+  const otherSegs = (o.segments || []).filter(s => s !== o.primary_segment);
+  const otherSegHtml = otherSegs.slice(0,3).map(s => `<span class="seg-tag secondary">${esc(s)}</span>`).join(" ") +
+    (otherSegs.length > 3 ? ` <span class="funder-mini">+${otherSegs.length - 3}</span>` : "");
+
+  const rawDesc = o.description || "";
+  const truncDesc = rawDesc.length > 180 ? rawDesc.slice(0, 180).trimEnd() + "…" : rawDesc;
+  const descHtml = rawDesc
+    ? `<div class="desc-text">${esc(truncDesc)}</div>`
+    : `<span class="funder-mini" style="color:var(--text-faint)">—</span>`;
+
+  const areas = (o.problem_areas || []).map(normArea);
+  const areaHtml = areas.length
+    ? areas.slice(0, 3).map(a => `<span class="area-tag">${esc(a)}</span>`).join("") +
+      (areas.length > 3 ? ` <span class="funder-mini">+${areas.length - 3}</span>` : "")
+    : `<span class="funder-mini" style="color:var(--text-faint)">—</span>`;
+
+  const problems = o.problem_statements || [];
+  const problemHtml = problems.length
+    ? problems.slice(0, 3).map(p => `<span class="problem-tag">${esc(p)}</span>`).join("") +
+      (problems.length > 3 ? ` <span class="funder-mini">+${problems.length - 3}</span>` : "")
+    : `<span class="funder-mini" style="color:var(--text-faint)">—</span>`;
+
+  return `<tr class="data-row${expanded ? " expanded" : ""}" data-id="${o.id}">
+    <td class="name-cell"><div class="org-name">${esc(o.name)}</div></td>
+    <td><span class="seg-tag" style="background:${segColor}">${esc(o.primary_segment)}</span></td>
+    <td class="desc-cell">${descHtml}</td>
+    <td class="tag-cell">${areaHtml}</td>
+    <td class="tag-cell">${problemHtml}</td>
+    <td style="text-align:center"><span class="expand-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span></td>
+  </tr>
+  ${expanded ? renderDetailRow(o) : ""}`;
+}
+
+function renderDetailRow(o) {
+  const linkHtml = o.website
+    ? `<a href="${esc(httpify(o.website))}" target="_blank" rel="noopener" class="detail-link" onclick="event.stopPropagation()">
+         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+         ${esc(o.website)}
+       </a>`
+    : "";
+  const networkLink = `<a href="../network/?id=${o.id}" class="detail-link" onclick="event.stopPropagation()" style="background:var(--orange);color:#fff;border-color:var(--orange)">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="18" cy="18" r="3"/><circle cx="18" cy="6" r="3"/><line x1="9" y1="6" x2="15" y2="6"/><line x1="6" y1="9" x2="6" y2="15"/><line x1="18" y1="9" x2="18" y2="15"/></svg>
+    See in network
+  </a>`;
+
+  const focHtml = (o.focus || []).map(f => `<span class="focus-tag">${esc(f)}</span>`).join("");
+  const fndHtml = (o.named_funders || []).length
+    ? `<span class="detail-field-value">${(o.named_funders||[]).map(esc).join(", ")}</span>`
+    : `<span class="detail-field-value" style="color:var(--text-faint)">—</span>`;
+
+  const problems = o.problem_statements || [];
+  const problemHtml = problems.length
+    ? `<div class="problem-tag-list">${problems.map(p => `<span class="problem-tag">${esc(p)}</span>`).join("")}</div>`
+    : `<span class="detail-field-value" style="color:var(--text-faint)">—</span>`;
+  const areas = (o.problem_areas || []).map(normArea);
+  const areaHtml = areas.length
+    ? `<div class="problem-tag-list">${areas.map(a => `<span class="problem-tag" style="background:#fff4ed;color:#c2410c;border-color:#fed7aa">${esc(a)}</span>`).join("")}</div>`
+    : `<span class="detail-field-value" style="color:var(--text-faint)">—</span>`;
+
+  return `<tr class="detail-row">
+    <td colspan="6">
+      <div class="detail-panel">
+        <div class="detail-grid">
+          <div class="detail-section">
+            <h4>What they do</h4>
+            <p class="detail-narrative">${esc(o.description || "—")}</p>
+            <div class="detail-field" style="margin-top:14px">
+              <span class="detail-field-label">Problem areas</span>
+              ${areaHtml}
+            </div>
+            <div class="detail-field" style="margin-top:10px">
+              <span class="detail-field-label">Problem topics</span>
+              ${problemHtml}
+            </div>
+          </div>
+          <div class="detail-section">
+            <h4>Organization</h4>
+            <div class="detail-field">
+              <span class="detail-field-label">Primary segment</span>
+              <span class="detail-field-value"><strong>${esc(o.primary_segment)}</strong></span>
+            </div>
+            ${(o.segments||[]).filter(s => s !== o.primary_segment).length ? `<div class="detail-field">
+              <span class="detail-field-label">Secondary segments</span>
+              <span class="detail-field-value">${(o.segments||[]).filter(s => s !== o.primary_segment).map(esc).join(", ")}</span>
+            </div>` : ""}
+            <div class="detail-field">
+              <span class="detail-field-label">Geography</span>
+              <span class="detail-field-value">${focHtml || "—"}</span>
+            </div>
+            <div class="detail-field">
+              <span class="detail-field-label">Funding model</span>
+              <span class="detail-field-value">${esc(o.funding_model || "—")}</span>
+            </div>
+            <div class="detail-field">
+              <span class="detail-field-label">Funding detail</span>
+              <span class="detail-field-value">${esc(o.funding_detail || "—")}</span>
+            </div>
+            <div class="detail-field">
+              <span class="detail-field-label">Named funders detected</span>
+              ${fndHtml}
+            </div>
+          </div>
+        </div>
+        ${linkHtml}${networkLink}
+      </div>
+    </td>
+  </tr>`;
+}
+
+function toggleDetail(id) {
+  expandedId = (expandedId === id) ? null : id;
+  renderTable();
+}
+
+function httpify(u) {
+  if (!u) return "";
+  if (/^https?:\/\//.test(u)) return u;
+  return "https://" + u;
+}
+function esc(s) { return (s||"").toString().replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+
+// Sorting
+document.getElementById("main-table").addEventListener("click", e => {
+  const th = e.target.closest("th[data-col]");
+  if (!th) return;
+  const col = th.dataset.col;
+  if (sortCol === col) sortDir = -sortDir;
+  else { sortCol = col; sortDir = 1; }
+  document.querySelectorAll("thead th").forEach(t => t.classList.remove("sorted"));
+  th.classList.add("sorted");
+  th.querySelector(".sort-icon").textContent = sortDir === 1 ? "↑" : "↓";
+  applyFilters();
+});
+
+// Pagination
+function renderPagination() {
+  const total = Math.ceil(filtered.length / PAGE_SIZE);
+  const pag = document.getElementById("pagination");
+  if (total <= 1) { pag.innerHTML = ""; return; }
+  let html = `<button class="page-btn" onclick="goPage(${page-1})" ${page===1?"disabled":""}>‹</button>`;
+  for (let i = 1; i <= total; i++) {
+    if (i === 1 || i === total || Math.abs(i - page) <= 2) {
+      html += `<button class="page-btn ${i===page?"active":""}" onclick="goPage(${i})">${i}</button>`;
+    } else if (Math.abs(i - page) === 3) {
+      html += `<span style="color:var(--text-faint);padding:0 4px">…</span>`;
+    }
+  }
+  html += `<button class="page-btn" onclick="goPage(${page+1})" ${page===total?"disabled":""}>›</button>`;
+  pag.innerHTML = html;
+}
+function goPage(p) {
+  const total = Math.ceil(filtered.length / PAGE_SIZE);
+  page = Math.max(1, Math.min(p, total));
+  expandedId = null;
+  renderTable(); renderPagination();
+  window.scrollTo({top: document.querySelector(".table-wrap").offsetTop - 20, behavior:"smooth"});
+}
+window.goPage = goPage;
+
+// Wiring
+document.getElementById("f-search").addEventListener("input", () => { expandedId = null; applyFilters(); });
+document.getElementById("btn-reset").addEventListener("click", () => {
+  [msSeg, msFocus, msArea, msProblem].forEach(m => m.reset());
+  document.getElementById("f-search").value = "";
+  expandedId = null;
+  applyFilters();
+});
+</script>
+
+<!-- SUGGEST-AN-ORG FORM OVERLAY -->
+<div class="sf-overlay" id="of-overlay" role="dialog" aria-modal="true" aria-labelledby="of-title">
+  <div class="sf-modal">
+    <div class="sf-hdr">
+      <span class="sf-hdr-title" id="of-title">Suggest an organization</span>
+      <button class="sf-close" type="button" onclick="closeOF()" aria-label="Close">×</button>
+    </div>
+
+    <!-- Form body -->
+    <div class="sf-body" id="of-form-body">
+      <p class="sf-intro">
+        Add an organization working on state capacity to the directory. Submissions are reviewed before going live.
+        Fields marked <span style="color:var(--orange)">*</span> are required.
+      </p>
+
+      <!-- Organization Name -->
+      <div class="sf-section">
+        <div class="sf-prompt">Organization Name <span class="sf-req">*</span></div>
+        <input id="of-name" type="text" class="sf-text-input" maxlength="120" placeholder="Name of the organization">
+        <div id="of-name-err" class="sf-error-msg">Please enter the organization name.</div>
+      </div>
+
+      <hr class="sf-divider">
+
+      <!-- Primary Segment (single) -->
+      <div class="sf-section">
+        <div class="sf-prompt">Primary Segment <span class="sf-req">*</span></div>
+        <div class="sf-single-chips" id="of-primary-chips"></div>
+        <div class="sf-conditional" id="of-primary-other-cond">
+          <input id="of-primary-other" type="text" class="sf-text-input" maxlength="80" placeholder="Other primary segment…">
+        </div>
+        <div id="of-primary-err" class="sf-error-msg">Please select a primary segment.</div>
+      </div>
+
+      <!-- Secondary Segment(s) (multi) -->
+      <div class="sf-section">
+        <div class="sf-prompt">Secondary Segment(s) <span class="sf-prompt-sub">optional — select all that apply</span></div>
+        <div class="sf-chips" id="of-secondary-chips"></div>
+        <div class="sf-conditional" id="of-secondary-other-cond">
+          <input id="of-secondary-other" type="text" class="sf-text-input" maxlength="80" placeholder="Other secondary segment…">
+        </div>
+      </div>
+
+      <hr class="sf-divider">
+
+      <!-- Focus(es) (multi) -->
+      <div class="sf-section">
+        <div class="sf-prompt">Focus(es) <span class="sf-req">*</span> <span class="sf-prompt-sub">select all that apply</span></div>
+        <div class="sf-chips" id="of-focus-chips"></div>
+        <div id="of-focus-err" class="sf-error-msg">Please select at least one focus.</div>
+      </div>
+
+      <hr class="sf-divider">
+
+      <!-- Description -->
+      <div class="sf-section">
+        <div class="sf-prompt">Description <span class="sf-req">*</span></div>
+        <textarea id="of-desc" class="sf-textarea" maxlength="2000" rows="4" placeholder="What the organization does and how it works on state capacity." oninput="ofCharCount('of-desc','of-desc-ct',2000)"></textarea>
+        <div class="sf-char-row"><span id="of-desc-ct" class="sf-char-count">2000 left</span></div>
+        <div id="of-desc-err" class="sf-error-msg">Please enter a description.</div>
+      </div>
+
+      <hr class="sf-divider">
+
+      <!-- Funding Model (multi) -->
+      <div class="sf-section">
+        <div class="sf-prompt">Funding Model <span class="sf-req">*</span> <span class="sf-prompt-sub">select all that apply</span></div>
+        <div class="sf-chips" id="of-funding-chips"></div>
+        <div id="of-funding-err" class="sf-error-msg">Please select at least one funding model.</div>
+      </div>
+
+      <!-- Funding Detail -->
+      <div class="sf-section">
+        <div class="sf-prompt">Funding Detail <span class="sf-req">*</span></div>
+        <input id="of-funding-detail" type="text" class="sf-text-input" maxlength="200" placeholder="e.g. key funders, fund size, or backing details">
+        <div id="of-funding-detail-err" class="sf-error-msg">Please enter a funding detail.</div>
+      </div>
+
+      <hr class="sf-divider">
+
+      <!-- URL -->
+      <div class="sf-section">
+        <div class="sf-prompt">URL <span class="sf-req">*</span></div>
+        <input id="of-url" type="text" class="sf-text-input" maxlength="200" placeholder="https://example.org">
+        <div id="of-url-err" class="sf-error-msg">Please enter a valid URL.</div>
+      </div>
+    </div><!-- /of-form-body -->
+
+    <!-- Success state -->
+    <div class="sf-success" id="of-success" style="display:none">
+      <div class="sf-success-check">✓</div>
+      <div class="sf-success-title">Submitted!</div>
+      <div class="sf-success-text">
+        Thanks — your suggestion has been recorded for review. Once approved, the organization will appear in the directory.
+        You can copy your responses below for your records.
+      </div>
+      <div>
+        <button class="sf-copy-btn" type="button" onclick="ofCopy()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Copy to clipboard
+        </button>
+        <button class="sf-done-btn" type="button" onclick="closeOF()">Done</button>
+      </div>
+    </div>
+
+    <div class="sf-footer" id="of-form-footer">
+      <div class="sf-footer-note">Reviewed before going live. No account needed.</div>
+      <button class="sf-submit-btn" type="button" id="of-submit-btn" onclick="ofSubmit()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        Submit
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── SUGGEST-AN-ORG FORM ─────────────────────────────────────────────────────
+// Submits directly to the existing Google Form's response endpoint (no backend).
+const OF_ACTION = "https://docs.google.com/forms/d/e/1FAIpQLSfNEvdYrdQERvaFxzGLS6B7AWxobKKNB0pZ84B_PTSx8C12ng/formResponse";
+const OF_ENTRY = {
+  name:          "entry.25692851",
+  primary:       "entry.152334999",
+  secondary:     "entry.514677553",
+  focus:         "entry.2004892464",
+  description:   "entry.1914941085",
+  fundingModel:  "entry.1136140786",
+  fundingDetail: "entry.1055362927",
+  url:           "entry.1077186634",
+};
+const OF_SEGMENTS = ["Research","Government","Philanthropy","Fellowships","Community","Advocacy","GovTech","Digital Services & Consulting","Investor","Training","Other"];
+const OF_FOCUS    = ["Federal","State","Local"];
+const OF_FUNDING  = ["Philanthropy","Volunteer","Government","University","Private","Corporate Philanthropy","VC-backed; Seed stage","VC-backed; Early stage","VC-backed; Growth stage","VC-backed; Mature stage"];
+
+let _ofLastText = "";
+
+function ofMkChips(containerId, opts, multi, onChange) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = "";
+  opts.forEach(v => {
+    const chip = document.createElement("span");
+    chip.className = multi ? "sf-chip" : "sf-schip";
+    chip.textContent = v;
+    chip.dataset.val = v;
+    chip.tabIndex = 0;
+    chip.addEventListener("click", () => {
+      if (!multi) el.querySelectorAll(".sf-schip").forEach(c => c.classList.remove("on"));
+      chip.classList.toggle("on");
+      if (onChange) onChange();
+    });
+    chip.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); chip.click(); } });
+    el.appendChild(chip);
+  });
+}
+function ofGetChips(containerId) {
+  return [...document.querySelectorAll(`#${containerId} .sf-chip.on`)].map(c => c.dataset.val);
+}
+function ofGetSingle(containerId) {
+  const on = document.querySelector(`#${containerId} .sf-schip.on`);
+  return on ? on.dataset.val : "";
+}
+function ofPrimaryOtherSwitch() {
+  document.getElementById("of-primary-other-cond").classList.toggle("show", ofGetSingle("of-primary-chips") === "Other");
+}
+function ofSecondaryOtherSwitch() {
+  document.getElementById("of-secondary-other-cond").classList.toggle("show", ofGetChips("of-secondary-chips").includes("Other"));
+}
+function ofCharCount(inputId, countId, max) {
+  const val = document.getElementById(inputId).value || "";
+  const rem = max - val.length;
+  const ct = document.getElementById(countId);
+  ct.textContent = rem + " left";
+  ct.classList.toggle("warn", rem < 80 && rem >= 0);
+  ct.classList.toggle("over", rem < 0);
+}
+
+function ofValidate() {
+  let ok = true;
+  const show = (id, cond) => { const e = document.getElementById(id); if (e) e.classList.toggle("show", !cond); if (!cond) ok = false; };
+  show("of-name-err", document.getElementById("of-name").value.trim().length > 0);
+  const primary = ofGetSingle("of-primary-chips");
+  const primaryOk = primary !== "" && (primary !== "Other" || document.getElementById("of-primary-other").value.trim().length > 0);
+  show("of-primary-err", primaryOk);
+  show("of-focus-err", ofGetChips("of-focus-chips").length > 0);
+  show("of-desc-err", document.getElementById("of-desc").value.trim().length > 0);
+  show("of-funding-err", ofGetChips("of-funding-chips").length > 0);
+  show("of-funding-detail-err", document.getElementById("of-funding-detail").value.trim().length > 0);
+  show("of-url-err", document.getElementById("of-url").value.trim().length > 0);
+  return ok;
+}
+
+function ofBuildText() {
+  const primary = ofGetSingle("of-primary-chips");
+  const primaryVal = primary === "Other" ? `Other: ${document.getElementById("of-primary-other").value.trim()}` : primary;
+  const sec = ofGetChips("of-secondary-chips").map(s => s === "Other" ? `Other: ${document.getElementById("of-secondary-other").value.trim()}` : s);
+  return [
+    `Organization Name: ${document.getElementById("of-name").value.trim()}`,
+    `Primary Segment: ${primaryVal}`,
+    sec.length ? `Secondary Segment(s): ${sec.join(", ")}` : "",
+    `Focus(es): ${ofGetChips("of-focus-chips").join(", ")}`,
+    `Description: ${document.getElementById("of-desc").value.trim()}`,
+    `Funding Model: ${ofGetChips("of-funding-chips").join(", ")}`,
+    `Funding Detail: ${document.getElementById("of-funding-detail").value.trim()}`,
+    `URL: ${document.getElementById("of-url").value.trim()}`,
+  ].filter(Boolean).join("\n");
+}
+
+function ofBuildFormData() {
+  const fd = new FormData();
+  fd.append(OF_ENTRY.name, document.getElementById("of-name").value.trim());
+
+  // Primary Segment (radio, with Other)
+  const primary = ofGetSingle("of-primary-chips");
+  if (primary === "Other") {
+    fd.append(OF_ENTRY.primary, "__other_option__");
+    fd.append(OF_ENTRY.primary + ".other_option_response", document.getElementById("of-primary-other").value.trim());
+  } else if (primary) {
+    fd.append(OF_ENTRY.primary, primary);
+  }
+
+  // Secondary Segment(s) (checkbox, with Other)
+  ofGetChips("of-secondary-chips").forEach(v => {
+    if (v === "Other") {
+      fd.append(OF_ENTRY.secondary, "__other_option__");
+      fd.append(OF_ENTRY.secondary + ".other_option_response", document.getElementById("of-secondary-other").value.trim());
+    } else {
+      fd.append(OF_ENTRY.secondary, v);
+    }
+  });
+
+  // Focus(es) (checkbox)
+  ofGetChips("of-focus-chips").forEach(v => fd.append(OF_ENTRY.focus, v));
+  fd.append(OF_ENTRY.description, document.getElementById("of-desc").value.trim());
+  ofGetChips("of-funding-chips").forEach(v => fd.append(OF_ENTRY.fundingModel, v));
+  fd.append(OF_ENTRY.fundingDetail, document.getElementById("of-funding-detail").value.trim());
+  fd.append(OF_ENTRY.url, document.getElementById("of-url").value.trim());
+  // Google Forms housekeeping fields — improve acceptance of programmatic submissions.
+  fd.append("fvv", "1");
+  fd.append("pageHistory", "0");
+  return fd;
+}
+
+async function ofSubmit() {
+  if (!ofValidate()) {
+    document.querySelector("#of-overlay .sf-error-msg.show")?.scrollIntoView({ block: "center", behavior: "smooth" });
+    return;
+  }
+  const btn = document.getElementById("of-submit-btn");
+  const origHtml = btn.innerHTML;
+  btn.disabled = true;
+  btn.textContent = "Submitting…";
+  _ofLastText = ofBuildText();
+  try {
+    // Google Forms does not send CORS headers; no-cors fires the request and
+    // returns an opaque response, so we optimistically show success.
+    await fetch(OF_ACTION, { method: "POST", mode: "no-cors", body: ofBuildFormData() });
+    ofShowSuccess();
+  } catch (e) {
+    console.error("Suggest-an-org submit error:", e);
+    btn.disabled = false;
+    btn.innerHTML = origHtml;
+    alert("Submission failed — please try again, or copy your responses and send them directly.");
+  }
+}
+
+function ofShowSuccess() {
+  document.getElementById("of-form-body").style.display = "none";
+  document.getElementById("of-form-footer").style.display = "none";
+  document.getElementById("of-success").style.display = "block";
+}
+
+async function ofCopy() {
+  const btn = document.querySelector("#of-success .sf-copy-btn");
+  try {
+    await navigator.clipboard.writeText(_ofLastText);
+    const orig = btn.innerHTML;
+    btn.textContent = "Copied!";
+    setTimeout(() => { btn.innerHTML = orig; }, 1800);
+  } catch (e) {
+    prompt("Copy the text below:", _ofLastText);
+  }
+}
+
+function openOF() {
+  document.getElementById("of-form-body").style.display = "";
+  document.getElementById("of-form-footer").style.display = "";
+  document.getElementById("of-success").style.display = "none";
+  document.querySelectorAll("#of-overlay .sf-error-msg").forEach(e => e.classList.remove("show"));
+  document.querySelectorAll("#of-overlay .sf-chip.on, #of-overlay .sf-schip.on").forEach(c => c.classList.remove("on"));
+  ["of-name","of-primary-other","of-secondary-other","of-desc","of-funding-detail","of-url"].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = "";
+  });
+  document.getElementById("of-primary-other-cond").classList.remove("show");
+  document.getElementById("of-secondary-other-cond").classList.remove("show");
+  const ct = document.getElementById("of-desc-ct"); if (ct) { ct.textContent = "2000 left"; ct.classList.remove("warn","over"); }
+  const btn = document.getElementById("of-submit-btn");
+  if (btn) { btn.disabled = false; btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Submit'; }
+  document.getElementById("of-form-body").scrollTop = 0;
+  document.getElementById("of-overlay").classList.add("open");
+  document.body.style.overflow = "hidden";
+  requestAnimationFrame(() => document.getElementById("of-name").focus());
+}
+
+function closeOF() {
+  document.getElementById("of-overlay").classList.remove("open");
+  document.body.style.overflow = "";
+}
+
+document.getElementById("of-overlay").addEventListener("click", e => {
+  if (e.target === document.getElementById("of-overlay")) closeOF();
+});
+document.addEventListener("keydown", e => {
+  if (e.key === "Escape" && document.getElementById("of-overlay").classList.contains("open")) closeOF();
+});
+
+(function initOF() {
+  ofMkChips("of-primary-chips",   OF_SEGMENTS, false, ofPrimaryOtherSwitch);
+  ofMkChips("of-secondary-chips", OF_SEGMENTS, true,  ofSecondaryOtherSwitch);
+  ofMkChips("of-focus-chips",     OF_FOCUS,    true);
+  ofMkChips("of-funding-chips",   OF_FUNDING,  true);
+})();
+
+// Deep link: /directory/?add=1 auto-opens the Suggest-an-organization form
+// (mirrors /connect/?add=1). Used by the hub's "Add to Directory" CTA.
+if (new URLSearchParams(window.location.search).get("add") === "1") openOF();
+</script>
+</body>
+</html>
