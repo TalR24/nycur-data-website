@@ -4,12 +4,12 @@
   <meta charset="UTF-8">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Manhattan Community Board Scorecard — NYCuriosity</title>
-  <meta name="description" content="A prototype public dashboard for community board accountability: meeting lengths from 820 YouTube recordings across all 12 Manhattan boards, plus records coverage in Block Party's archive.">
+  <title>NYC Community Board Scorecard, All 59 Boards — NYCuriosity</title>
+  <meta name="description" content="A prototype public dashboard for community board accountability across all 59 NYC boards: meeting lengths from 2,192 YouTube recordings, records coverage, and the 19 boards with no channel at all.">
   <meta property="og:type"        content="website">
   <meta property="og:url"         content="https://data.nycuriosity.com/cb-tools/board-scorecard/">
-  <meta property="og:title"       content="Manhattan Community Board Scorecard — NYCuriosity">
-  <meta property="og:description" content="A prototype public dashboard for community board accountability: meeting lengths from 820 YouTube recordings across all 12 Manhattan boards, plus records coverage in Block Party's archive.">
+  <meta property="og:title"       content="NYC Community Board Scorecard, All 59 Boards — NYCuriosity">
+  <meta property="og:description" content="A prototype public dashboard for community board accountability across all 59 NYC boards: meeting lengths from 2,192 YouTube recordings, records coverage, and the 19 boards with no channel at all.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
@@ -20,7 +20,6 @@
       --text: #111827; --text-mid: #374151; --text-muted: #6b7280; --text-faint: #9ca3af;
       --bg: #f8faff; --surface: #ffffff; --border: #e5e7eb;
       --shadow-sm: 0 1px 3px rgba(17,24,39,0.08); --radius: 10px;
-      --green: #16a34a; --rust: #c2410c;
     }
     body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
     header { background: #111827; border-bottom: 1px solid #1f2937; padding: 0 clamp(20px, 5vw, 48px); }
@@ -50,7 +49,7 @@
     .hero p a:hover { border-color: var(--blue); }
     .stat-row { background: var(--surface); border-bottom: 1px solid var(--border); padding: clamp(16px, 3vw, 24px) clamp(20px, 5vw, 48px); }
     .stat-row-inner { max-width: 1000px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 12px; }
-    .stat-pill { display: flex; flex-direction: column; gap: 2px; padding: 12px 18px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); flex: 1; min-width: 140px; }
+    .stat-pill { display: flex; flex-direction: column; gap: 2px; padding: 12px 18px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); flex: 1; min-width: 135px; }
     .stat-pill .sp-num { font-family: 'Roboto Mono', monospace; font-size: 1.25rem; font-weight: 700; letter-spacing: -0.03em; line-height: 1; }
     .stat-pill .sp-num.blue { color: var(--blue); }
     .stat-pill .sp-label { font-size: 0.73rem; color: var(--text-muted); line-height: 1.3; }
@@ -60,14 +59,34 @@
     .section-heading:first-child { margin-top: 0; }
     .section-sub { font-size: 0.86rem; color: var(--text-muted); margin-bottom: 16px; max-width: 720px; line-height: 1.6; }
     .box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: clamp(18px, 3vw, 26px); }
-    .chart { display: flex; flex-direction: column; gap: 7px; }
-    .bar-row { display: grid; grid-template-columns: 60px 1fr 64px; align-items: center; gap: 10px; }
-    .bar-label { font-size: 0.8rem; color: var(--text-mid); font-weight: 500; text-align: right; font-family: 'Roboto Mono', monospace; }
-    .bar-track { height: 17px; background: var(--border); border-radius: 3px; overflow: hidden; }
-    .bar-fill { height: 100%; border-radius: 3px; background: var(--blue); transition: width 0.6s cubic-bezier(0.4,0,0.2,1); }
-    .bar-value { font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600; color: var(--text-muted); }
+
+    /* filters */
+    .filter-controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
+    .fc-btn { font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600; padding: 6px 14px; border-radius: 6px; border: 1.5px solid var(--border); background: var(--surface); color: var(--text-muted); cursor: pointer; transition: all 0.15s; }
+    .fc-btn:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
+    .boro-chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+    .boro-chip { display: inline-flex; align-items: center; gap: 7px; font-size: 0.82rem; font-weight: 600; padding: 6px 14px; border-radius: 20px; border: 1.5px solid; cursor: pointer; transition: all 0.15s; background: var(--surface); }
+    .boro-dot { width: 11px; height: 11px; border-radius: 3px; flex-shrink: 0; }
+    .cb-groups { display: flex; flex-direction: column; gap: 10px; }
+    .cb-group { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+    .cb-group-label { font-family: 'Roboto Mono', monospace; font-size: 0.7rem; font-weight: 700; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.06em; min-width: 108px; }
+    .cb-chip { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; font-weight: 600; padding: 3px 9px; border-radius: 14px; border: 1.5px solid var(--border); color: var(--text-faint); background: var(--bg); cursor: pointer; transition: all 0.12s; }
+
+    /* chart */
+    .legend { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 18px; align-items: center; }
+    .legend-item { display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: var(--text-mid); font-weight: 500; }
+    .legend-swatch { width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0; }
+    .chart { display: flex; flex-direction: column; gap: 6px; }
+    .bar-row { display: grid; grid-template-columns: 130px 1fr 64px; align-items: center; gap: 10px; }
+    .bar-label { font-size: 0.78rem; color: var(--text-mid); font-weight: 500; text-align: right; font-family: 'Roboto Mono', monospace; white-space: nowrap; }
+    .bar-track { height: 15px; background: var(--border); border-radius: 3px; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 3px; }
+    .bar-value { font-family: 'Roboto Mono', monospace; font-size: 0.73rem; font-weight: 600; color: var(--text-muted); }
+    @media (max-width: 560px) { .bar-row { grid-template-columns: 92px 1fr 56px; } .bar-label { font-size: 0.66rem; } }
+    .chart-empty { font-size: 0.86rem; color: var(--text-faint); padding: 18px 0; text-align: center; }
+
     .table-wrap { width: 100%; overflow-x: auto; }
-    table { border-collapse: collapse; width: 100%; min-width: 760px; }
+    table { border-collapse: collapse; width: 100%; min-width: 780px; }
     thead th { font-family: 'Roboto Mono', monospace; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); text-align: left; padding: 9px 10px; border-bottom: 2px solid var(--border); background: var(--bg); white-space: nowrap; }
     thead th.num, td.num { text-align: right; }
     tbody td { font-size: 0.84rem; color: var(--text-mid); padding: 9px 10px; border-bottom: 1px solid var(--border); }
@@ -75,6 +94,8 @@
     tbody tr:hover { background: var(--bg); }
     tbody a { color: var(--blue); text-decoration: none; border-bottom: 1px solid var(--blue-mid); }
     tbody a:hover { border-color: var(--blue); }
+    .row-dot { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 8px; vertical-align: baseline; }
+    .no-channel { color: var(--text-faint); font-style: italic; font-size: 0.8rem; }
     .chart-attribution { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 12px 16px 0; margin-top: 14px; border-top: 1px solid var(--border); font-size: 0.78rem; color: var(--text-faint); font-family: 'Roboto Mono', monospace; }
     .context-box { margin-top: 28px; padding: 16px 20px; background: var(--blue-light); border: 1px solid var(--blue-mid); border-radius: var(--radius); }
     .context-box p { font-size: 0.85rem; color: var(--text-mid); line-height: 1.65; }
@@ -100,7 +121,7 @@
 
 <header>
   <div class="header-inner">
-    <a href="/cb-tools/" class="back-link">← cb-tools</a>
+    <a href="/cb-tools/" class="back-link">&larr; cb-tools</a>
     <div class="header-divider"></div>
     <h1>Board Scorecard</h1>
   </div>
@@ -117,49 +138,62 @@
   <div class="hero-inner">
     <div class="breadcrumb">
       <a href="/">data.nycuriosity.com</a>
-      <span>›</span>
-      <a href="/cb-tools/">CB Resolutions</a>
-      <span>›</span>
+      <span>&rsaquo;</span>
+      <a href="/cb-tools/">CB Tools</a>
+      <span>&rsaquo;</span>
       <span>Board Scorecard</span>
     </div>
     <div class="hero-meta">
       <span class="hero-tag">Prototype</span>
       <span class="hero-updated">July 2026</span>
     </div>
-    <h1>Nobody Measures Community Board Meetings. <span>So We Started, With 820 of Them.</span></h1>
+    <h1>Nobody Measures Community Board Meetings. <span>So We Measured 2,192 of Them, Citywide.</span></h1>
     <p>
-      A prototype of the public dashboard recommended in NYCuriosity's community boards article: one
-      place to see how every board is doing. This first cut covers Manhattan's 12 boards using two
-      sources that already exist, the boards' own YouTube channels (meeting lengths, measured from
-      820 recent recordings) and
+      A prototype of the public dashboard recommended in NYCuriosity's community boards article,
+      now covering all 59 boards in the five boroughs. Two sources that already exist do the work:
+      each board's own YouTube channel (meeting lengths measured from 2,192 recordings) and
       <a href="https://blockparty.studio/" target="_blank" rel="noopener">Block Party's archive</a>
-      (records coverage). The metrics the article proposes that nobody currently collects, minutes
-      timeliness, member attendance, and hybrid reliability, are exactly the gap this page makes visible.
+      (records coverage). The dashboard's most important finding is its gaps: 19 boards publish no
+      recordings of their own at all, and the metrics the article proposes, minutes timeliness,
+      member attendance, and hybrid reliability, are collected by nobody.
     </p>
   </div>
 </div>
 
 <div class="stat-row">
   <div class="stat-row-inner">
-    <div class="stat-pill"><span class="sp-num blue">115 min</span><span class="sp-label">Average meeting across 820 sampled recordings</span></div>
-    <div class="stat-pill"><span class="sp-num blue">42%</span><span class="sp-label">Of sampled meetings ran two hours or longer</span></div>
-    <div class="stat-pill"><span class="sp-num">6.6 hrs</span><span class="sp-label">Longest single meeting in the sample (a CB3 SLA committee)</span></div>
-    <div class="stat-pill"><span class="sp-num">6,817</span><span class="sp-label">Manhattan meeting transcripts in Block Party's archive</span></div>
+    <div class="stat-pill"><span class="sp-num blue" id="pillBoards">–</span><span class="sp-label">Boards selected</span></div>
+    <div class="stat-pill"><span class="sp-num blue" id="pillMeetings">–</span><span class="sp-label">Meetings measured</span></div>
+    <div class="stat-pill"><span class="sp-num" id="pillAvg">–</span><span class="sp-label">Average meeting length</span></div>
+    <div class="stat-pill"><span class="sp-num" id="pillOver">–</span><span class="sp-label">Ran two hours or longer</span></div>
+    <div class="stat-pill"><span class="sp-num" id="pillBP">–</span><span class="sp-label">Block Party transcripts</span></div>
   </div>
 </div>
 
 <main>
   <div class="main-inner">
 
-    <div class="section-heading">Average meeting length by board</div>
-    <p class="section-sub">Meeting-like videos of 20 minutes or longer, up to the ~80 most recent per board channel. Weeknight meetings typically start at 6:00 or 6:30 PM; a 140-minute average means volunteers regularly out past 9.</p>
+    <div class="section-heading">Choose boroughs and boards</div>
+    <p class="section-sub">Everything below recomputes from your selection: the stat pills, the chart, and the table. Boards in gray have no board-run YouTube channel, so they carry no meeting-length data.</p>
     <div class="box">
+      <div class="filter-controls">
+        <button class="fc-btn" id="selAll">Select all</button>
+        <button class="fc-btn" id="selNone">Select none</button>
+      </div>
+      <div class="boro-chips" id="boroChips"></div>
+      <div class="cb-groups" id="cbGroups"></div>
+    </div>
+
+    <div class="section-heading">Average meeting length by board</div>
+    <p class="section-sub">Meeting-titled videos of 20 minutes or longer, up to roughly the 70 to 80 most recent per board channel. Weeknight meetings typically start at 6:00 or 6:30 PM. Boards with no channel are listed in the table below but cannot appear here.</p>
+    <div class="box">
+      <div class="legend" id="chartLegend"></div>
       <div class="chart" id="lenChart"></div>
-      <div class="chart-attribution"><span>Created by Tal Roded · NYCuriosity · Source: boards' public YouTube channels, collected July 2026</span></div>
+      <div class="chart-attribution"><span>Created by Tal Roded &middot; NYCuriosity &middot; Source: boards' public YouTube channels, collected July 2026</span></div>
     </div>
 
     <div class="section-heading">The scorecard</div>
-    <p class="section-sub">Click the longest meeting to watch it. Sample sizes vary because some boards' videos are restricted or removed; CB12 in particular blocks most metadata access.</p>
+    <p class="section-sub">Click a longest meeting to watch it. Sample sizes vary: some channels restrict video metadata, and a few boards' channels hold only a handful of recordings.</p>
     <div class="box">
       <div class="table-wrap">
         <table>
@@ -172,14 +206,14 @@
     </div>
 
     <div class="context-box">
-      <p><strong>What belongs on this dashboard that nobody collects:</strong> whether minutes are posted within the Open Meetings Law's two-week window, per-member attendance, whether a working hybrid option exists, and how many members of the public actually attend. Boards' own records contain all of it. The point of this prototype is that the measurable part took one afternoon; the missing columns are a policy choice, not a technical problem.</p>
-      <p><strong>Every Manhattan board is on YouTube and in Block Party.</strong> All 12 boards publish recordings, and Block Party has processed 6,817 Manhattan meeting transcripts. The raw material for accountability metrics already exists; a borough president's office or the CEC could maintain this citywide.</p>
+      <p><strong>19 boards publish no recordings of their own.</strong> Every Manhattan board runs a YouTube channel; six Bronx boards, five Brooklyn boards, six Queens boards, and two Staten Island boards do not (borough public-access broadcasts and one-off third-party uploads exist for some, but they are not the board's own record). For those neighborhoods, there is no systematic way to watch your board work.</p>
+      <p><strong>What belongs on this dashboard that nobody collects:</strong> whether minutes are posted within the Open Meetings Law's two-week window, per-member attendance, whether a working hybrid option exists, and how many members of the public attend. The measurable part of this prototype took two afternoons; the missing columns are a policy choice, not a technical problem. A borough president's office or the CEC could maintain this citywide.</p>
     </div>
 
     <div class="footnotes">
-      <p><strong>Method:</strong> Author's analysis of the 12 Manhattan community board YouTube channels (videos and live streams tabs), collected July 2026. Sample = meeting-titled videos of at least 20 minutes, up to roughly the 80 most recent per channel; durations from YouTube metadata. Clips, promos, and non-meeting videos excluded by title filter. 108 videos (mostly CB11 and CB12) had restricted metadata and are excluded, which is why sample sizes differ. Full-board versus committee splits are approximate because boards title videos inconsistently.</p>
+      <p><strong>Method:</strong> Author's analysis of the 40 board-run YouTube channels found across the 59 community boards (videos and live streams tabs), collected July 2026. Sample = meeting-titled videos of at least 20 minutes, up to roughly the 80 most recent per Manhattan channel and 70 per other channel; durations from YouTube metadata. Clips, promos, and non-meeting videos excluded by title filter. About 300 videos had restricted metadata (concentrated in a few Queens channels plus CB11 and CB12 in Manhattan) and are excluded, which is why sample sizes differ. Channels not run by the board itself (borough public-access TV, news clips, personal uploads) are not counted as a board channel. Boards with very small samples (Brooklyn CB16 and CB18, Queens CB8 and CB14) reflect near-empty channels, not collection failures.</p>
       <p><strong>Sources:</strong> the boards' public YouTube channels; <a href="https://blockparty.studio/Archive" target="_blank" rel="noopener">Block Party archive</a> transcript counts by board (July 2026). Related reading: <a href="https://www.nyc.gov/assets/communityboards/downloads/FINAL-Future-of-CBs-Report.pdf" target="_blank" rel="noopener">Future of Community Boards Working Group report</a> (2021) on board resourcing.</p>
-      <p>Created by Tal Roded · NYCuriosity · Part of the <a href="/cb-tools/">CB Resolutions Dashboard</a> prototypes.</p>
+      <p>Created by Tal Roded &middot; NYCuriosity &middot; Part of the <a href="/cb-tools/">NYC Community Board Tools</a> prototypes.</p>
     </div>
 
   </div>
@@ -187,7 +221,7 @@
 
 <footer>
   <div class="footer-inner">
-    <span class="footer-copy">© NYCuriosity · Tal Roded</span>
+    <span class="footer-copy">&copy; NYCuriosity &middot; Tal Roded</span>
     <nav class="footer-links">
       <a href="https://buymeacoffee.com/nycuriosity" class="footer-support" target="_blank" rel="noopener" aria-label="Support my work on Buy Me a Coffee"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>Support my work</a>
       <a href="https://talroded.nycuriosity.com" target="_blank" rel="noopener">About</a>
@@ -198,53 +232,196 @@
 </footer>
 
 <script>
-  const BOARD_STATS = [
-    {cb:1, sampled:77, avg:131, median:132, longest:287, longestId:"FeWhkJMVOfs", longestTitle:"3/16 Environmental Protection Committee - 2026", bp:685},
-    {cb:2, sampled:79, avg:140, median:129, longest:329, longestId:"zfJaMw_0WAw", longestTitle:"Manhattan CB2 May 5, 2026 - SLA 1 Committee Meeting", bp:659},
-    {cb:3, sampled:78, avg:128, median:120, longest:398, longestId:"WFP4b4u21K8", longestTitle:"CB 3 - SLA Licensing & Outdoor Dining Committee (12/8/25)", bp:425},
-    {cb:4, sampled:79, avg:124, median:121, longest:255, longestId:"tzHdkWZmWB0", longestTitle:"MCB4 - October 2025 - Waterfront, Parks, and Environment Committee", bp:671},
-    {cb:5, sampled:78, avg:111, median:108, longest:254, longestId:"mKM8YJRIdB8", longestTitle:"June 21st 2021 - JOINT Transportation & Environment, and Land Use", bp:499},
-    {cb:6, sampled:80, avg:100, median:98, longest:228, longestId:"ZogYXtTyMyQ", longestTitle:"Manhattan Community Board Six - Business Affairs & Licensing Committee", bp:589},
-    {cb:7, sampled:78, avg:102, median:95, longest:185, longestId:"NLLvfPmyTgc", longestTitle:"Manhattan Community Board 7: Youth, Education & Libraries Committee", bp:679},
-    {cb:8, sampled:79, avg:97, median:84, longest:204, longestId:"NImX8r6Ydcs", longestTitle:"February 2026 CB8M Health, Seniors, and Social Services Committee", bp:791},
-    {cb:9, sampled:80, avg:107, median:104, longest:213, longestId:"ucw7YxmrwpI", longestTitle:"MCB9 - Executive Committee Meeting December 2025", bp:340},
-    {cb:10, sampled:60, avg:115, median:112, longest:225, longestId:"uoVJ_1NJM_Q", longestTitle:"June 2020 Executive Committee Meeting", bp:69},
-    {cb:11, sampled:40, avg:114, median:106, longest:196, longestId:"pJ5Bmj4A42g", longestTitle:"CB11M Licenses & Permits Committee Meeting - June 3, 2026", bp:631},
-    {cb:12, sampled:12, avg:129, median:135, longest:194, longestId:"ytOa7dKRNkM", longestTitle:"Health & Environment January 2021 virtual meeting", bp:779}
-  ];
-  const MAX_AVG = 140;
+const BOARDS = [
+  {id:"M1", boro:"MN", num:1, channel:true, sampled:77, totmin:10063, over2h:44, avg:131, median:132, longest:287, longestId:"FeWhkJMVOfs", longestTitle:"3/16 Environmental Protection Committee - 2026", bp:685},
+  {id:"M2", boro:"MN", num:2, channel:true, sampled:79, totmin:11071, over2h:45, avg:140, median:129, longest:329, longestId:"zfJaMw_0WAw", longestTitle:"Manhattan CB2 May 5, 2026 - SLA 1 Committee Meeting", bp:659},
+  {id:"M3", boro:"MN", num:3, channel:true, sampled:78, totmin:9968, over2h:38, avg:128, median:120, longest:398, longestId:"WFP4b4u21K8", longestTitle:"CB 3 - SLA Licensing & Outdoor Dining Committee (12/8/25)", bp:425},
+  {id:"M4", boro:"MN", num:4, channel:true, sampled:79, totmin:9759, over2h:42, avg:124, median:121, longest:255, longestId:"tzHdkWZmWB0", longestTitle:"MCB4 - October 2025 - Waterfront, Parks, and Environment Committee", bp:671},
+  {id:"M5", boro:"MN", num:5, channel:true, sampled:78, totmin:8622, over2h:32, avg:111, median:108, longest:254, longestId:"mKM8YJRIdB8", longestTitle:"June 21st 2021 - JOINT Transportation & Environment, and Land Use, Hou", bp:499},
+  {id:"M6", boro:"MN", num:6, channel:true, sampled:80, totmin:8022, over2h:20, avg:100, median:98, longest:228, longestId:"ZogYXtTyMyQ", longestTitle:"Manhattan Community Board Six - Business Affairs & Licensing Committee", bp:589},
+  {id:"M7", boro:"MN", num:7, channel:true, sampled:78, totmin:7972, over2h:27, avg:102, median:95, longest:185, longestId:"NLLvfPmyTgc", longestTitle:"Manhattan Community Board 7: Youth, Education & Libraries Committee \u2014 ", bp:679},
+  {id:"M8", boro:"MN", num:8, channel:true, sampled:79, totmin:7662, over2h:27, avg:97, median:84, longest:204, longestId:"NImX8r6Ydcs", longestTitle:"February 2026 CB8M Health, Seniors, and Social Services Committee Meet", bp:791},
+  {id:"M9", boro:"MN", num:9, channel:true, sampled:80, totmin:8532, over2h:25, avg:107, median:104, longest:213, longestId:"ucw7YxmrwpI", longestTitle:"MCB9 - Executive Committee Meeting December 2025", bp:340},
+  {id:"M10", boro:"MN", num:10, channel:true, sampled:60, totmin:6877, over2h:23, avg:115, median:112, longest:225, longestId:"uoVJ_1NJM_Q", longestTitle:"June 2020 Executive Committee Meeting", bp:69},
+  {id:"M11", boro:"MN", num:11, channel:true, sampled:40, totmin:4551, over2h:16, avg:114, median:106, longest:196, longestId:"pJ5Bmj4A42g", longestTitle:"CB11M Licenses & Permits Committee Meeting - June 3, 2026", bp:631},
+  {id:"M12", boro:"MN", num:12, channel:true, sampled:12, totmin:1544, over2h:7, avg:129, median:135, longest:194, longestId:"ytOa7dKRNkM", longestTitle:"Health & Environment January  2021 virtual meeting", bp:779},
+  {id:"BX1", boro:"BX", num:1, channel:true, sampled:59, totmin:4264, over2h:7, avg:72, median:68, longest:146, longestId:"1GuxYnsC__g", longestTitle:"Bronx Community Board #1 - January 2026 Economic Development, Land Use", bp:0},
+  {id:"BX2", boro:"BX", num:2, channel:true, sampled:70, totmin:5535, over2h:11, avg:79, median:74, longest:154, longestId:"jHjrhRBDTqo", longestTitle:"Full Board Committee Meeting 10/27/2021", bp:91},
+  {id:"BX3", boro:"BX", num:3, channel:false, sampled:0, totmin:0, over2h:0, avg:null, median:null, longest:null, longestId:null, longestTitle:null, bp:66},
+  {id:"BX4", boro:"BX", num:4, channel:false, sampled:0, totmin:0, over2h:0, avg:null, median:null, longest:null, longestId:null, longestTitle:null, bp:0},
+  {id:"BX5", boro:"BX", num:5, channel:false, sampled:0, totmin:0, over2h:0, avg:null, median:null, longest:null, longestId:null, longestTitle:null, bp:0},
+  {id:"BX6", boro:"BX", num:6, channel:false, sampled:0, totmin:0, over2h:0, avg:null, median:null, longest:null, longestId:null, longestTitle:null, bp:3},
+  {id:"BX7", boro:"BX", num:7, channel:true, sampled:69, totmin:5267, over2h:10, avg:76, median:77, longest:150, longestId:"afnhYJbNrsU", longestTitle:"Bronx Community Board 7's May 2023 General Board Meeting", bp:164},
+  {id:"BX8", boro:"BX", num:8, channel:true, sampled:67, totmin:5817, over2h:14, avg:87, median:84, longest:186, longestId:"PtLQ2tzItM8", longestTitle:"Regular Board - June 24, 2026", bp:0},
+  {id:"BX9", boro:"BX", num:9, channel:false, sampled:0, totmin:0, over2h:0, avg:null, median:null, longest:null, longestId:null, longestTitle:null, bp:0},
+  {id:"BX10", boro:"BX", num:10, channel:false, sampled:0, totmin:0, over2h:0, avg:null, median:null, longest:null, longestId:null, longestTitle:null, bp:0},
+  {id:"BX11", boro:"BX", num:11, channel:true, sampled:60, totmin:3710, over2h:4, avg:62, median:57, longest:160, longestId:"-7mweNsfCCU", longestTitle:"Public Hearing and Full Board 6/2024", bp:534},
+  {id:"BX12", boro:"BX", num:12, channel:true, sampled:65, totmin:6271, over2h:12, avg:96, median:88, longest:416, longestId:"_mQclqFC-SU", longestTitle:"BxCB12 Executive Committee Meeting May 19, 2025", bp:290},
+  {id:"BK1", boro:"BK", num:1, channel:false, sampled:0, totmin:0, over2h:0, avg:null, median:null, longest:null, longestId:null, longestTitle:null, bp:205},
+  {id:"BK2", boro:"BK", num:2, channel:true, sampled:70, totmin:7362, over2h:20, avg:105, median:93, longest:226, longestId:"cp3nDv4O86I", longestTitle:"2023.01.04 - BKCB2 Health, Environment & Social Services Committee Mee", bp:246},
+  {id:"BK3", boro:"BK", num:3, channel:false, sampled:0, totmin:0, over2h:0, avg:null, median:null, longest:null, longestId:null, longestTitle:null, bp:0},
+  {id:"BK4", boro:"BK", num:4, channel:true, sampled:65, totmin:10738, over2h:57, avg:165, median:169, longest:243, longestId:"OAYepSAUKwI", longestTitle:"December 2021 Full Board Meeting", bp:72},
+  {id:"BK5", boro:"BK", num:5, channel:true, sampled:27, totmin:2503, over2h:5, avg:93, median:99, longest:161, longestId:"m5qdSwlSjoU", longestTitle:"ENY Community Weighs in on Development Proposal   CB5 Land Use Meeting", bp:0},
+  {id:"BK6", boro:"BK", num:6, channel:false, sampled:0, totmin:0, over2h:0, avg:null, median:null, longest:null, longestId:null, longestTitle:null, bp:75},
+  {id:"BK7", boro:"BK", num:7, channel:true, sampled:69, totmin:6690, over2h:13, avg:97, median:92, longest:186, longestId:"N3EvqJUDoeg", longestTitle:"CB7 June Board Meeting", bp:279},
+  {id:"BK8", boro:"BK", num:8, channel:true, sampled:69, totmin:7182, over2h:27, avg:104, median:109, longest:235, longestId:"pt7TGdUUYzs", longestTitle:"Land Use Committee 11.04.2021", bp:170},
+  {id:"BK9", boro:"BK", num:9, channel:true, sampled:69, totmin:7201, over2h:22, avg:104, median:99, longest:203, longestId:"UWmMvsC9L50", longestTitle:"October 2023 City of Yes Economic Opportunity Subcommittee", bp:544},
+  {id:"BK10", boro:"BK", num:10, channel:true, sampled:68, totmin:5146, over2h:12, avg:76, median:70, longest:162, longestId:"qtxV1SIHkRc", longestTitle:"CB10 Zoning and Land Use Committee June 8, 2026", bp:315},
+  {id:"BK11", boro:"BK", num:11, channel:true, sampled:63, totmin:3381, over2h:0, avg:54, median:51, longest:109, longestId:"UwOkQz4wV9Q", longestTitle:"CB 11 Transportation Committee - 1-26-2023", bp:81},
+  {id:"BK12", boro:"BK", num:12, channel:false, sampled:0, totmin:0, over2h:0, avg:null, median:null, longest:null, longestId:null, longestTitle:null, bp:0},
+  {id:"BK13", boro:"BK", num:13, channel:true, sampled:63, totmin:5166, over2h:13, avg:82, median:79, longest:166, longestId:"dOjq5_-VuwE", longestTitle:"Land Use Committee meeting", bp:155},
+  {id:"BK14", boro:"BK", num:14, channel:true, sampled:68, totmin:6557, over2h:14, avg:96, median:95, longest:210, longestId:"9A7J8dGzfaI", longestTitle:"CB14 Transition Committee Meeting", bp:283},
+  {id:"BK15", boro:"BK", num:15, channel:false, sampled:0, totmin:0, over2h:0, avg:null, median:null, longest:null, longestId:null, longestTitle:null, bp:0},
+  {id:"BK16", boro:"BK", num:16, channel:true, sampled:1, totmin:127, over2h:1, avg:127, median:127, longest:127, longestId:"pn9l3XptrnY", longestTitle:"Brooklyn Community Board 16-September  27, 2022 Public Hearing", bp:0},
+  {id:"BK17", boro:"BK", num:17, channel:true, sampled:69, totmin:5717, over2h:12, avg:83, median:80, longest:163, longestId:"xAUsMVxngFs", longestTitle:"PUBLIC HEARINGGENERAL BOARD MEETING 9/17/25", bp:0},
+  {id:"BK18", boro:"BK", num:18, channel:true, sampled:1, totmin:127, over2h:1, avg:127, median:127, longest:127, longestId:"WYupW7EFW1Y", longestTitle:"Community Board 18 April Meeting", bp:0},
+  {id:"Q1", boro:"QN", num:1, channel:true, sampled:67, totmin:6005, over2h:15, avg:90, median:63, longest:371, longestId:"w76z-z8kULI", longestTitle:"Community Board 1 Board Meeting", bp:248},
+  {id:"Q2", boro:"QN", num:2, channel:true, sampled:48, totmin:5212, over2h:16, avg:109, median:89, longest:288, longestId:"HJyLet1J10g", longestTitle:"Queens CB 2 - June 2021 Full Community Board CB2 Board  Meeting - 2021", bp:139},
+  {id:"Q3", boro:"QN", num:3, channel:true, sampled:28, totmin:4582, over2h:22, avg:164, median:163, longest:267, longestId:"vhmxi18ZyHs", longestTitle:"Queens CB3 September 2021 Board Meeting", bp:67},
+  {id:"Q4", boro:"QN", num:4, channel:false, sampled:0, totmin:0, over2h:0, avg:null, median:null, longest:null, longestId:null, longestTitle:null, bp:23},
+  {id:"Q5", boro:"QN", num:5, channel:true, sampled:35, totmin:3843, over2h:13, avg:110, median:104, longest:160, longestId:"5n8Vo7vknys", longestTitle:"Queens Community Board 5 June 2025 Meeting", bp:82},
+  {id:"Q6", boro:"QN", num:6, channel:true, sampled:33, totmin:3095, over2h:9, avg:94, median:86, longest:179, longestId:"PMn_N4m2t4E", longestTitle:"Queens Community Board 6 Meeting - April 16, 2026", bp:203},
+  {id:"Q7", boro:"QN", num:7, channel:false, sampled:0, totmin:0, over2h:0, avg:null, median:null, longest:null, longestId:null, longestTitle:null, bp:0},
+  {id:"Q8", boro:"QN", num:8, channel:true, sampled:1, totmin:53, over2h:0, avg:53, median:53, longest:53, longestId:"ItCiGC4-Sk8", longestTitle:"December Board Meeting", bp:2},
+  {id:"Q9", boro:"QN", num:9, channel:false, sampled:0, totmin:0, over2h:0, avg:null, median:null, longest:null, longestId:null, longestTitle:null, bp:0},
+  {id:"Q10", boro:"QN", num:10, channel:true, sampled:29, totmin:3301, over2h:10, avg:114, median:111, longest:165, longestId:"V47egfLK3aU", longestTitle:"February 2024 Monthly Board Meeting", bp:53},
+  {id:"Q11", boro:"QN", num:11, channel:false, sampled:0, totmin:0, over2h:0, avg:null, median:null, longest:null, longestId:null, longestTitle:null, bp:0},
+  {id:"Q12", boro:"QN", num:12, channel:false, sampled:0, totmin:0, over2h:0, avg:null, median:null, longest:null, longestId:null, longestTitle:null, bp:0},
+  {id:"Q13", boro:"QN", num:13, channel:false, sampled:0, totmin:0, over2h:0, avg:null, median:null, longest:null, longestId:null, longestTitle:null, bp:1},
+  {id:"Q14", boro:"QN", num:14, channel:true, sampled:3, totmin:475, over2h:3, avg:158, median:163, longest:170, longestId:"5Q81KHC6l70", longestTitle:"March 2026 Community Board 14 Queens Monthly Meeting", bp:0},
+  {id:"SI1", boro:"SI", num:1, channel:false, sampled:0, totmin:0, over2h:0, avg:null, median:null, longest:null, longestId:null, longestTitle:null, bp:0},
+  {id:"SI2", boro:"SI", num:2, channel:true, sampled:36, totmin:2064, over2h:1, avg:57, median:56, longest:156, longestId:"JwabbNLW6x0", longestTitle:"Public Hearing and May Monthly Meeting", bp:105},
+  {id:"SI3", boro:"SI", num:3, channel:false, sampled:0, totmin:0, over2h:0, avg:null, median:null, longest:null, longestId:null, longestTitle:null, bp:0},
+];
 
-  const lenChart = document.getElementById("lenChart");
-  [...BOARD_STATS].sort((a, b) => b.avg - a.avg).forEach(b => {
-    const row = document.createElement("div");
-    row.className = "bar-row";
-    row.innerHTML = `
-      <div class="bar-label">CB ${b.cb}</div>
-      <div class="bar-track"><div class="bar-fill" style="width:0%" data-pct="${(b.avg / MAX_AVG * 100).toFixed(1)}"></div></div>
-      <div class="bar-value">${b.avg} min</div>`;
-    lenChart.appendChild(row);
-  });
-  requestAnimationFrame(() => { setTimeout(() => {
-    document.querySelectorAll(".bar-fill").forEach(node => { node.style.width = node.dataset.pct + "%"; });
-  }, 80); });
+  const BORO = {
+    MN: { label: "Manhattan",     color: "#2563eb" },
+    BK: { label: "Brooklyn",      color: "#c2410c" },
+    QN: { label: "Queens",        color: "#16a34a" },
+    BX: { label: "Bronx",         color: "#7c3aed" },
+    SI: { label: "Staten Island", color: "#db2777" }
+  };
+  const BORO_ORDER = ["MN", "BK", "QN", "BX", "SI"];
 
+  function boardName(b) { return BORO[b.boro].label + " CB " + b.num; }
   function fmtH(mins) {
     const h = Math.floor(mins / 60), m = mins % 60;
-    return h ? `${h}h ${String(m).padStart(2, "0")}m` : `${m}m`;
+    return h ? h + "h " + String(m).padStart(2, "0") + "m" : m + "m";
   }
-  const scoreRows = document.getElementById("scoreRows");
-  BOARD_STATS.forEach(b => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td><strong>Manhattan CB ${b.cb}</strong></td>
-      <td class="num">${b.sampled}</td>
-      <td class="num">${fmtH(b.avg)}</td>
-      <td class="num">${fmtH(b.median)}</td>
-      <td class="num">${fmtH(b.longest)}</td>
-      <td><a href="https://www.youtube.com/watch?v=${b.longestId}" target="_blank" rel="noopener">${b.longestTitle}</a></td>
-      <td class="num">${b.bp.toLocaleString()}</td>`;
-    scoreRows.appendChild(tr);
+
+  let picked = new Set(BOARDS.map(b => b.id));
+
+  // legend (fixed, image order)
+  const legendEl = document.getElementById("chartLegend");
+  BORO_ORDER.forEach(k => {
+    const d = document.createElement("div");
+    d.className = "legend-item";
+    d.innerHTML = '<span class="legend-swatch" style="background:' + BORO[k].color + '"></span> ' + BORO[k].label;
+    legendEl.appendChild(d);
   });
+
+  function renderChips() {
+    const bc = document.getElementById("boroChips");
+    bc.innerHTML = "";
+    BORO_ORDER.forEach(k => {
+      const members = BOARDS.filter(b => b.boro === k);
+      const on = members.filter(b => picked.has(b.id)).length;
+      const chip = document.createElement("button");
+      chip.className = "boro-chip";
+      const c = BORO[k].color;
+      if (on === members.length) { chip.style.background = c; chip.style.borderColor = c; chip.style.color = "#fff"; }
+      else if (on > 0) { chip.style.background = "#fff"; chip.style.borderColor = c; chip.style.color = c; }
+      else { chip.style.background = "var(--bg)"; chip.style.borderColor = "var(--border)"; chip.style.color = "var(--text-faint)"; }
+      chip.innerHTML = '<span class="boro-dot" style="background:' + (on > 0 ? (on === members.length ? "rgba(255,255,255,0.85)" : c) : "#d1d5db") + '"></span>' + BORO[k].label + " (" + on + "/" + members.length + ")";
+      chip.onclick = () => {
+        const allOn = on === members.length;
+        members.forEach(b => { if (allOn) picked.delete(b.id); else picked.add(b.id); });
+        renderAll();
+      };
+      bc.appendChild(chip);
+    });
+
+    const cg = document.getElementById("cbGroups");
+    cg.innerHTML = "";
+    BORO_ORDER.forEach(k => {
+      const row = document.createElement("div");
+      row.className = "cb-group";
+      row.innerHTML = '<span class="cb-group-label">' + BORO[k].label + '</span>';
+      BOARDS.filter(b => b.boro === k).forEach(b => {
+        const c = BORO[k].color;
+        const chip = document.createElement("button");
+        chip.className = "cb-chip";
+        chip.textContent = "CB " + b.num;
+        if (picked.has(b.id)) { chip.style.background = c; chip.style.borderColor = c; chip.style.color = "#fff"; }
+        if (!b.channel) chip.title = "No board-run YouTube channel found";
+        chip.onclick = () => { picked.has(b.id) ? picked.delete(b.id) : picked.add(b.id); renderAll(); };
+        row.appendChild(chip);
+      });
+      cg.appendChild(row);
+    });
+  }
+
+  function renderPills() {
+    const sel = BOARDS.filter(b => picked.has(b.id));
+    const meetings = sel.reduce((a, b) => a + b.sampled, 0);
+    const totmin = sel.reduce((a, b) => a + b.totmin, 0);
+    const over = sel.reduce((a, b) => a + b.over2h, 0);
+    document.getElementById("pillBoards").textContent = sel.length + " of 59";
+    document.getElementById("pillMeetings").textContent = meetings.toLocaleString();
+    document.getElementById("pillAvg").textContent = meetings ? Math.round(totmin / meetings) + " min" : "–";
+    document.getElementById("pillOver").textContent = meetings ? Math.round(100 * over / meetings) + "%" : "–";
+    document.getElementById("pillBP").textContent = sel.reduce((a, b) => a + b.bp, 0).toLocaleString();
+  }
+
+  function renderChart() {
+    const el = document.getElementById("lenChart");
+    el.innerHTML = "";
+    const sel = BOARDS.filter(b => picked.has(b.id) && b.sampled > 0).sort((a, b) => b.avg - a.avg);
+    if (!sel.length) { el.innerHTML = '<div class="chart-empty">No boards with meeting data selected.</div>'; return; }
+    const maxAvg = Math.max(...sel.map(b => b.avg));
+    sel.forEach(b => {
+      const row = document.createElement("div");
+      row.className = "bar-row";
+      row.innerHTML =
+        '<div class="bar-label">' + BORO[b.boro].label.replace("Staten Island", "S.I.") + " CB " + b.num + '</div>' +
+        '<div class="bar-track"><div class="bar-fill" style="width:' + (b.avg / maxAvg * 100).toFixed(1) + '%; background:' + BORO[b.boro].color + '"></div></div>' +
+        '<div class="bar-value">' + b.avg + ' min</div>';
+      el.appendChild(row);
+    });
+  }
+
+  function renderTable() {
+    const tb = document.getElementById("scoreRows");
+    tb.innerHTML = "";
+    BOARDS.filter(b => picked.has(b.id)).forEach(b => {
+      const tr = document.createElement("tr");
+      const dot = '<span class="row-dot" style="background:' + BORO[b.boro].color + '"></span>';
+      if (b.sampled > 0) {
+        tr.innerHTML =
+          "<td>" + dot + "<strong>" + boardName(b) + "</strong></td>" +
+          '<td class="num">' + b.sampled + "</td>" +
+          '<td class="num">' + fmtH(b.avg) + "</td>" +
+          '<td class="num">' + fmtH(b.median) + "</td>" +
+          '<td class="num">' + fmtH(b.longest) + "</td>" +
+          '<td><a href="https://www.youtube.com/watch?v=' + b.longestId + '" target="_blank" rel="noopener">' + b.longestTitle + "</a></td>" +
+          '<td class="num">' + b.bp.toLocaleString() + "</td>";
+      } else {
+        tr.innerHTML =
+          "<td>" + dot + "<strong>" + boardName(b) + "</strong></td>" +
+          '<td class="num">0</td><td class="num">–</td><td class="num">–</td><td class="num">–</td>' +
+          '<td class="no-channel">No board-run YouTube channel found</td>' +
+          '<td class="num">' + b.bp.toLocaleString() + "</td>";
+      }
+      tb.appendChild(tr);
+    });
+  }
+
+  function renderAll() { renderChips(); renderPills(); renderChart(); renderTable(); }
+
+  document.getElementById("selAll").onclick = () => { picked = new Set(BOARDS.map(b => b.id)); renderAll(); };
+  document.getElementById("selNone").onclick = () => { picked = new Set(); renderAll(); };
+
+  renderAll();
 </script>
 
 </body>
