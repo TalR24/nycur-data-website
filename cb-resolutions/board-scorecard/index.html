@@ -2,250 +2,26 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Manhattan Community Board Scorecard — NYCuriosity</title>
-  <meta name="description" content="A prototype public dashboard for community board accountability: meeting lengths from 820 YouTube recordings across all 12 Manhattan boards, plus records coverage in Block Party's archive.">
-  <meta property="og:type"        content="website">
-  <meta property="og:url"         content="https://data.nycuriosity.com/cb-resolutions/board-scorecard/">
-  <meta property="og:title"       content="Manhattan Community Board Scorecard — NYCuriosity">
-  <meta property="og:description" content="A prototype public dashboard for community board accountability: meeting lengths from 820 YouTube recordings across all 12 Manhattan boards, plus records coverage in Block Party's archive.">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <title>Moved — NYCuriosity Data</title>
+  <meta name="robots" content="noindex">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="canonical" href="https://data.nycuriosity.com/cb-tools/board-scorecard/">
+  <meta http-equiv="refresh" content="0; url=/cb-tools/board-scorecard/">
+  <script>
+    // Preserve any query string and hash from the old URL
+    location.replace('/cb-tools/board-scorecard/' + location.search + location.hash);
+  </script>
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    :root {
-      --blue: #2563eb; --blue-hover: #1d4ed8; --blue-light: #eff6ff; --blue-mid: #bfdbfe;
-      --text: #111827; --text-mid: #374151; --text-muted: #6b7280; --text-faint: #9ca3af;
-      --bg: #f8faff; --surface: #ffffff; --border: #e5e7eb;
-      --shadow-sm: 0 1px 3px rgba(17,24,39,0.08); --radius: 10px;
-      --green: #16a34a; --rust: #c2410c;
-    }
-    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
-    header { background: #111827; border-bottom: 1px solid #1f2937; padding: 0 clamp(20px, 5vw, 48px); }
-    .header-inner { max-width: 1000px; margin: 0 auto; height: 56px; display: flex; align-items: center; gap: 16px; }
-    .back-link { font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600; color: #9ca3af; text-decoration: none; display: flex; align-items: center; gap: 5px; padding: 4px 8px 4px 4px; border-radius: 5px; transition: color 0.15s, background 0.15s; white-space: nowrap; }
-    .back-link:hover { color: #60a5fa; background: rgba(96,165,250,0.1); }
-    .header-divider { width: 1px; height: 20px; background: #374151; flex-shrink: 0; }
-    header h1 { font-family: 'Roboto Mono', monospace; font-size: 0.95rem; font-weight: 700; color: #e5e7eb; letter-spacing: -0.02em; }
-    .pill-nav { background: var(--surface); border-bottom: 1px solid var(--border); padding: 10px clamp(20px, 5vw, 48px); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-    .pill-nav a { font-size: 0.78rem; font-family: 'Roboto Mono', monospace; font-weight: 600; padding: 4px 12px; border-radius: 20px; text-decoration: none; border: 1px solid var(--border); color: var(--text-muted); background: var(--bg); transition: all 0.15s; white-space: nowrap; }
-    .pill-nav a:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
-    .pill-nav a.active { background: var(--blue); color: #fff; border-color: var(--blue); }
-    .pill-label { font-size: 0.72rem; color: var(--text-faint); font-family: 'Roboto Mono', monospace; white-space: nowrap; }
-    .hero { background: var(--surface); border-bottom: 1px solid var(--border); padding: clamp(32px, 5vw, 52px) clamp(20px, 5vw, 48px); }
-    .hero-inner { max-width: 1000px; margin: 0 auto; }
-    .breadcrumb { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; color: var(--text-faint); margin-bottom: 14px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-    .breadcrumb a { color: var(--blue); text-decoration: none; }
-    .breadcrumb a:hover { text-decoration: underline; }
-    .breadcrumb span:last-child { color: #FF6319; }
-    .hero-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 14px; }
-    .hero-tag { font-family: 'Roboto Mono', monospace; font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #FF6319; background: #fff4ed; border: 1px solid #ffd0b3; border-radius: 4px; padding: 3px 8px; }
-    .hero-updated { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; color: var(--text-faint); }
-    .hero h1 { font-family: 'Roboto Mono', monospace; font-size: clamp(1.4rem, 3vw, 1.85rem); font-weight: 700; letter-spacing: -0.03em; line-height: 1.2; margin-bottom: 10px; }
-    .hero h1 span { color: var(--blue); }
-    .hero p { font-size: 0.975rem; color: var(--text-muted); max-width: 720px; line-height: 1.7; }
-    .hero p a { color: var(--blue); text-decoration: none; border-bottom: 1px solid var(--blue-mid); }
-    .hero p a:hover { border-color: var(--blue); }
-    .stat-row { background: var(--surface); border-bottom: 1px solid var(--border); padding: clamp(16px, 3vw, 24px) clamp(20px, 5vw, 48px); }
-    .stat-row-inner { max-width: 1000px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 12px; }
-    .stat-pill { display: flex; flex-direction: column; gap: 2px; padding: 12px 18px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); flex: 1; min-width: 140px; }
-    .stat-pill .sp-num { font-family: 'Roboto Mono', monospace; font-size: 1.25rem; font-weight: 700; letter-spacing: -0.03em; line-height: 1; }
-    .stat-pill .sp-num.blue { color: var(--blue); }
-    .stat-pill .sp-label { font-size: 0.73rem; color: var(--text-muted); line-height: 1.3; }
-    main { flex: 1; padding: clamp(28px, 4vw, 48px) clamp(20px, 5vw, 48px); }
-    .main-inner { max-width: 1000px; margin: 0 auto; }
-    .section-heading { font-family: 'Roboto Mono', monospace; font-size: 1.05rem; font-weight: 700; letter-spacing: -0.02em; margin: 36px 0 6px; }
-    .section-heading:first-child { margin-top: 0; }
-    .section-sub { font-size: 0.86rem; color: var(--text-muted); margin-bottom: 16px; max-width: 720px; line-height: 1.6; }
-    .box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: clamp(18px, 3vw, 26px); }
-    .chart { display: flex; flex-direction: column; gap: 7px; }
-    .bar-row { display: grid; grid-template-columns: 60px 1fr 64px; align-items: center; gap: 10px; }
-    .bar-label { font-size: 0.8rem; color: var(--text-mid); font-weight: 500; text-align: right; font-family: 'Roboto Mono', monospace; }
-    .bar-track { height: 17px; background: var(--border); border-radius: 3px; overflow: hidden; }
-    .bar-fill { height: 100%; border-radius: 3px; background: var(--blue); transition: width 0.6s cubic-bezier(0.4,0,0.2,1); }
-    .bar-value { font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600; color: var(--text-muted); }
-    .table-wrap { width: 100%; overflow-x: auto; }
-    table { border-collapse: collapse; width: 100%; min-width: 760px; }
-    thead th { font-family: 'Roboto Mono', monospace; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); text-align: left; padding: 9px 10px; border-bottom: 2px solid var(--border); background: var(--bg); white-space: nowrap; }
-    thead th.num, td.num { text-align: right; }
-    tbody td { font-size: 0.84rem; color: var(--text-mid); padding: 9px 10px; border-bottom: 1px solid var(--border); }
-    tbody td.num { font-family: 'Roboto Mono', monospace; font-size: 0.78rem; white-space: nowrap; }
-    tbody tr:hover { background: var(--bg); }
-    tbody a { color: var(--blue); text-decoration: none; border-bottom: 1px solid var(--blue-mid); }
-    tbody a:hover { border-color: var(--blue); }
-    .chart-attribution { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 12px 16px 0; margin-top: 14px; border-top: 1px solid var(--border); font-size: 0.78rem; color: var(--text-faint); font-family: 'Roboto Mono', monospace; }
-    .context-box { margin-top: 28px; padding: 16px 20px; background: var(--blue-light); border: 1px solid var(--blue-mid); border-radius: var(--radius); }
-    .context-box p { font-size: 0.85rem; color: var(--text-mid); line-height: 1.65; }
-    .context-box p + p { margin-top: 8px; }
-    .context-box strong { color: var(--text); }
-    .footnotes { margin-top: 16px; padding: 14px 18px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
-    .footnotes p { font-size: 0.78rem; color: var(--text-muted); line-height: 1.6; }
-    .footnotes p + p { margin-top: 6px; }
-    .footnotes strong { color: var(--text-mid); }
-    .footnotes a { color: var(--blue); text-decoration: none; border-bottom: 1px solid var(--blue-mid); }
-    footer { background: var(--surface); border-top: 1px solid var(--border); padding: 20px clamp(20px, 5vw, 48px); margin-top: auto; }
-    .footer-inner { max-width: 1000px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
-    .footer-copy { font-size: 0.8rem; color: var(--text-faint); }
-    .footer-links { display: flex; gap: 20px; align-items: center; }
-    .footer-links a { font-size: 0.8rem; color: var(--text-muted); text-decoration: none; transition: color 0.15s; }
-    .footer-links a:hover { color: var(--blue); }
-    .footer-support { display: inline-flex; align-items: center; gap: 5px; font-size: 0.8rem; font-weight: 500; color: #2563eb; text-decoration: none; padding: 5px 11px; border: 1px solid rgba(37,99,235,0.45); border-radius: 6px; transition: color .15s, border-color .15s, background .15s; vertical-align: middle; }
-    .footer-support:hover { color: #fff; background: #2563eb; border-color: #2563eb; }
-    .footer-support svg { flex-shrink: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; padding: 60px 24px; max-width: 600px; margin: 0 auto; color: #374151; line-height: 1.6; }
+    h1 { font-family: 'Roboto Mono', monospace; font-size: 1.1rem; color: #111827; margin-bottom: 12px; letter-spacing: -0.02em; }
+    p { margin-bottom: 14px; }
+    a { color: #2563eb; text-decoration: none; border-bottom: 1px solid #bfdbfe; word-break: break-all; }
+    a:hover { background: #eff6ff; }
   </style>
 </head>
 <body>
-
-<header>
-  <div class="header-inner">
-    <a href="/cb-resolutions/" class="back-link">← cb-resolutions</a>
-    <div class="header-divider"></div>
-    <h1>Board Scorecard</h1>
-  </div>
-</header>
-
-<div class="pill-nav">
-  <span class="pill-label">Prototypes:</span>
-  <a href="../roberts-rules-helper/">Robert's Rules Helper</a>
-  <a href="../meeting-review/">Meeting Review</a>
-  <a href="./" class="active">Board Scorecard</a>
-</div>
-
-<div class="hero">
-  <div class="hero-inner">
-    <div class="breadcrumb">
-      <a href="/">data.nycuriosity.com</a>
-      <span>›</span>
-      <a href="/cb-resolutions/">CB Resolutions</a>
-      <span>›</span>
-      <span>Board Scorecard</span>
-    </div>
-    <div class="hero-meta">
-      <span class="hero-tag">Prototype</span>
-      <span class="hero-updated">July 2026</span>
-    </div>
-    <h1>Nobody Measures Community Board Meetings. <span>So We Started, With 820 of Them.</span></h1>
-    <p>
-      A prototype of the public dashboard recommended in NYCuriosity's community boards article: one
-      place to see how every board is doing. This first cut covers Manhattan's 12 boards using two
-      sources that already exist, the boards' own YouTube channels (meeting lengths, measured from
-      820 recent recordings) and
-      <a href="https://blockparty.studio/" target="_blank" rel="noopener">Block Party's archive</a>
-      (records coverage). The metrics the article proposes that nobody currently collects, minutes
-      timeliness, member attendance, and hybrid reliability, are exactly the gap this page makes visible.
-    </p>
-  </div>
-</div>
-
-<div class="stat-row">
-  <div class="stat-row-inner">
-    <div class="stat-pill"><span class="sp-num blue">115 min</span><span class="sp-label">Average meeting across 820 sampled recordings</span></div>
-    <div class="stat-pill"><span class="sp-num blue">42%</span><span class="sp-label">Of sampled meetings ran two hours or longer</span></div>
-    <div class="stat-pill"><span class="sp-num">6.6 hrs</span><span class="sp-label">Longest single meeting in the sample (a CB3 SLA committee)</span></div>
-    <div class="stat-pill"><span class="sp-num">6,817</span><span class="sp-label">Manhattan meeting transcripts in Block Party's archive</span></div>
-  </div>
-</div>
-
-<main>
-  <div class="main-inner">
-
-    <div class="section-heading">Average meeting length by board</div>
-    <p class="section-sub">Meeting-like videos of 20 minutes or longer, up to the ~80 most recent per board channel. Weeknight meetings typically start at 6:00 or 6:30 PM; a 140-minute average means volunteers regularly out past 9.</p>
-    <div class="box">
-      <div class="chart" id="lenChart"></div>
-      <div class="chart-attribution"><span>Created by Tal Roded · NYCuriosity · Source: boards' public YouTube channels, collected July 2026</span></div>
-    </div>
-
-    <div class="section-heading">The scorecard</div>
-    <p class="section-sub">Click the longest meeting to watch it. Sample sizes vary because some boards' videos are restricted or removed; CB12 in particular blocks most metadata access.</p>
-    <div class="box">
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr><th>Board</th><th class="num">Sampled</th><th class="num">Avg</th><th class="num">Median</th><th class="num">Longest</th><th>Longest meeting</th><th class="num">Block Party transcripts</th></tr>
-          </thead>
-          <tbody id="scoreRows"></tbody>
-        </table>
-      </div>
-    </div>
-
-    <div class="context-box">
-      <p><strong>What belongs on this dashboard that nobody collects:</strong> whether minutes are posted within the Open Meetings Law's two-week window, per-member attendance, whether a working hybrid option exists, and how many members of the public actually attend. Boards' own records contain all of it. The point of this prototype is that the measurable part took one afternoon; the missing columns are a policy choice, not a technical problem.</p>
-      <p><strong>Every Manhattan board is on YouTube and in Block Party.</strong> All 12 boards publish recordings, and Block Party has processed 6,817 Manhattan meeting transcripts. The raw material for accountability metrics already exists; a borough president's office or the CEC could maintain this citywide.</p>
-    </div>
-
-    <div class="footnotes">
-      <p><strong>Method:</strong> Author's analysis of the 12 Manhattan community board YouTube channels (videos and live streams tabs), collected July 2026. Sample = meeting-titled videos of at least 20 minutes, up to roughly the 80 most recent per channel; durations from YouTube metadata. Clips, promos, and non-meeting videos excluded by title filter. 108 videos (mostly CB11 and CB12) had restricted metadata and are excluded, which is why sample sizes differ. Full-board versus committee splits are approximate because boards title videos inconsistently.</p>
-      <p><strong>Sources:</strong> the boards' public YouTube channels; <a href="https://blockparty.studio/Archive" target="_blank" rel="noopener">Block Party archive</a> transcript counts by board (July 2026). Related reading: <a href="https://www.nyc.gov/assets/communityboards/downloads/FINAL-Future-of-CBs-Report.pdf" target="_blank" rel="noopener">Future of Community Boards Working Group report</a> (2021) on board resourcing.</p>
-      <p>Created by Tal Roded · NYCuriosity · Part of the <a href="/cb-resolutions/">CB Resolutions Dashboard</a> prototypes.</p>
-    </div>
-
-  </div>
-</main>
-
-<footer>
-  <div class="footer-inner">
-    <span class="footer-copy">© NYCuriosity · Tal Roded</span>
-    <nav class="footer-links">
-      <a href="https://buymeacoffee.com/nycuriosity" class="footer-support" target="_blank" rel="noopener" aria-label="Support my work on Buy Me a Coffee"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>Support my work</a>
-      <a href="https://talroded.nycuriosity.com" target="_blank" rel="noopener">About</a>
-      <a href="https://www.nycuriosity.com" target="_blank" rel="noopener">Substack</a>
-      <a href="https://github.com/TalR24/nycur-data-website" target="_blank" rel="noopener">GitHub</a>
-    </nav>
-  </div>
-</footer>
-
-<script>
-  const BOARD_STATS = [
-    {cb:1, sampled:77, avg:131, median:132, longest:287, longestId:"FeWhkJMVOfs", longestTitle:"3/16 Environmental Protection Committee - 2026", bp:685},
-    {cb:2, sampled:79, avg:140, median:129, longest:329, longestId:"zfJaMw_0WAw", longestTitle:"Manhattan CB2 May 5, 2026 - SLA 1 Committee Meeting", bp:659},
-    {cb:3, sampled:78, avg:128, median:120, longest:398, longestId:"WFP4b4u21K8", longestTitle:"CB 3 - SLA Licensing & Outdoor Dining Committee (12/8/25)", bp:425},
-    {cb:4, sampled:79, avg:124, median:121, longest:255, longestId:"tzHdkWZmWB0", longestTitle:"MCB4 - October 2025 - Waterfront, Parks, and Environment Committee", bp:671},
-    {cb:5, sampled:78, avg:111, median:108, longest:254, longestId:"mKM8YJRIdB8", longestTitle:"June 21st 2021 - JOINT Transportation & Environment, and Land Use", bp:499},
-    {cb:6, sampled:80, avg:100, median:98, longest:228, longestId:"ZogYXtTyMyQ", longestTitle:"Manhattan Community Board Six - Business Affairs & Licensing Committee", bp:589},
-    {cb:7, sampled:78, avg:102, median:95, longest:185, longestId:"NLLvfPmyTgc", longestTitle:"Manhattan Community Board 7: Youth, Education & Libraries Committee", bp:679},
-    {cb:8, sampled:79, avg:97, median:84, longest:204, longestId:"NImX8r6Ydcs", longestTitle:"February 2026 CB8M Health, Seniors, and Social Services Committee", bp:791},
-    {cb:9, sampled:80, avg:107, median:104, longest:213, longestId:"ucw7YxmrwpI", longestTitle:"MCB9 - Executive Committee Meeting December 2025", bp:340},
-    {cb:10, sampled:60, avg:115, median:112, longest:225, longestId:"uoVJ_1NJM_Q", longestTitle:"June 2020 Executive Committee Meeting", bp:69},
-    {cb:11, sampled:40, avg:114, median:106, longest:196, longestId:"pJ5Bmj4A42g", longestTitle:"CB11M Licenses & Permits Committee Meeting - June 3, 2026", bp:631},
-    {cb:12, sampled:12, avg:129, median:135, longest:194, longestId:"ytOa7dKRNkM", longestTitle:"Health & Environment January 2021 virtual meeting", bp:779}
-  ];
-  const MAX_AVG = 140;
-
-  const lenChart = document.getElementById("lenChart");
-  [...BOARD_STATS].sort((a, b) => b.avg - a.avg).forEach(b => {
-    const row = document.createElement("div");
-    row.className = "bar-row";
-    row.innerHTML = `
-      <div class="bar-label">CB ${b.cb}</div>
-      <div class="bar-track"><div class="bar-fill" style="width:0%" data-pct="${(b.avg / MAX_AVG * 100).toFixed(1)}"></div></div>
-      <div class="bar-value">${b.avg} min</div>`;
-    lenChart.appendChild(row);
-  });
-  requestAnimationFrame(() => { setTimeout(() => {
-    document.querySelectorAll(".bar-fill").forEach(node => { node.style.width = node.dataset.pct + "%"; });
-  }, 80); });
-
-  function fmtH(mins) {
-    const h = Math.floor(mins / 60), m = mins % 60;
-    return h ? `${h}h ${String(m).padStart(2, "0")}m` : `${m}m`;
-  }
-  const scoreRows = document.getElementById("scoreRows");
-  BOARD_STATS.forEach(b => {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td><strong>Manhattan CB ${b.cb}</strong></td>
-      <td class="num">${b.sampled}</td>
-      <td class="num">${fmtH(b.avg)}</td>
-      <td class="num">${fmtH(b.median)}</td>
-      <td class="num">${fmtH(b.longest)}</td>
-      <td><a href="https://www.youtube.com/watch?v=${b.longestId}" target="_blank" rel="noopener">${b.longestTitle}</a></td>
-      <td class="num">${b.bp.toLocaleString()}</td>`;
-    scoreRows.appendChild(tr);
-  });
-</script>
-
+  <h1>This page has moved</h1>
+  <p>It now lives at <a href="/cb-tools/board-scorecard/">data.nycuriosity.com/cb-tools/board-scorecard/</a>. You are being redirected.</p>
 </body>
 </html>
