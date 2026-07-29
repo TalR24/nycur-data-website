@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Secret Weapon for Mamdani's Priorities — State Capacity Ecosystem · NYCuriosity Data</title>
+  <meta name="description" content="Prototypes built in hours, each for a few dollars in token spend, against Mayor Mamdani's stated priorities: cheaper groceries, worker ownership, affordable housing, and good jobs.">
+  <meta property="og:type"        content="website">
+  <meta property="og:url"         content="https://data.nycuriosity.com/civic_reference/state_capacity_ecosystem/substack/mamdani-ai-priorities/">
+  <meta property="og:title"       content="The Secret Weapon for Mamdani's Priorities — State Capacity Ecosystem">
+  <meta property="og:description" content="Prototypes built in hours against Mayor Mamdani's stated priorities: cheaper groceries, worker ownership, affordable housing, and good jobs.">
+  <meta property="og:image"       content="https://data.nycuriosity.com/website_logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+    :root {
+      --blue:#2563eb; --blue-hover:#1d4ed8; --blue-light:#eff6ff; --blue-mid:#bfdbfe;
+      --orange:#FF6319; --orange-light:#fff4ed;
+      --text:#111827; --text-mid:#374151; --text-muted:#6b7280; --text-faint:#9ca3af;
+      --bg:#f8faff; --surface:#ffffff; --border:#e5e7eb; --border-mid:#d1d5db;
+      --shadow-sm:0 1px 3px rgba(17,24,39,0.08);
+      --shadow-md:0 4px 16px rgba(37,99,235,0.10);
+      --radius:10px;
+    }
+    body { font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; display:flex; flex-direction:column; }
+
+    header { background:#111827; border-bottom:1px solid #1f2937; padding:0 clamp(16px,4vw,48px); }
+    .header-inner { max-width:1300px; margin:0 auto; height:60px; display:flex; align-items:center; justify-content:space-between; gap:16px; }
+    .brand { display:flex; align-items:baseline; gap:6px; text-decoration:none; }
+    .brand-name { font-family:'Roboto Mono',monospace; font-size:0.95rem; font-weight:700; color:#60a5fa; letter-spacing:-0.02em; }
+    .brand-slash { font-family:'Roboto Mono',monospace; font-size:0.95rem; color:#4b5563; }
+    .brand-section { font-family:'Roboto Mono',monospace; font-size:0.95rem; font-weight:600; color:#e5e7eb; }
+    .header-link { font-size:0.78rem; font-weight:500; color:#9ca3af; text-decoration:none; display:flex; align-items:center; gap:5px; transition:color 0.15s; }
+    .header-link:hover { color:#60a5fa; }
+
+    .breadcrumb { padding:14px clamp(16px,4vw,48px) 0; }
+    .breadcrumb-inner { max-width:1300px; margin:0 auto; display:flex; align-items:center; gap:6px; font-family:'Roboto Mono',monospace; font-size:0.72rem; font-weight:500; color:var(--text-faint); flex-wrap:wrap; }
+    .breadcrumb a { color:var(--text-faint); text-decoration:none; transition:color 0.15s; }
+    .breadcrumb a:hover { color:var(--blue); }
+    .breadcrumb .current { color:var(--orange); }
+    .breadcrumb-sep { color:var(--border-mid); }
+
+    .hero { padding:14px clamp(16px,4vw,48px) 0; }
+    .hero-inner { max-width:1300px; margin:0 auto; padding-bottom:14px; }
+    .hero h1 { font-family:'Roboto Mono',monospace; font-size:clamp(1.2rem,3vw,1.7rem); font-weight:700; color:var(--text); letter-spacing:-0.03em; line-height:1.2; margin-bottom:6px; }
+    .hero h1 span { color:var(--blue); }
+    .hero .hero-sub { font-family:'Roboto Mono',monospace; font-size:0.85rem; font-weight:600; color:var(--text-mid); margin-bottom:10px; }
+    .hero p { font-size:0.92rem; color:var(--text-muted); max-width:780px; line-height:1.7; }
+    .hero p a { color:var(--blue); text-decoration:none; border-bottom:1px solid var(--blue-mid); }
+    .hero p a:hover { background:var(--blue-light); }
+    .post-link-row { margin-top:12px; display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .post-link { display:inline-flex; align-items:center; gap:6px; font-family:'Roboto Mono',monospace; font-size:0.78rem; font-weight:600; color:var(--orange); text-decoration:none; padding:6px 12px; border:1px solid #fcd0b7; border-radius:6px; background:var(--orange-light); transition:all 0.15s; }
+    .post-link:hover { background:var(--orange); color:#fff; }
+    .post-link.pending { color:var(--text-faint); border-color:var(--border); background:var(--surface); pointer-events:none; }
+
+    .chart-nav { background:var(--surface); border-bottom:1px solid var(--border); padding:10px clamp(16px,4vw,48px); display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+    .chart-nav-label { font-size:0.75rem; color:#FF6319; font-weight:500; white-space:nowrap; margin-right:4px; }
+    .chart-nav a { font-size:0.78rem; font-family:'Roboto Mono',monospace; font-weight:600; padding:4px 12px; border-radius:20px; text-decoration:none; border:1px solid var(--border); color:var(--text-muted); background:var(--bg); transition:all 0.15s; white-space:nowrap; }
+    .chart-nav a:hover { border-color:var(--blue); color:var(--blue); background:var(--blue-light); }
+    .chart-nav a.active { background:var(--blue); color:#fff; border-color:var(--blue); }
+
+    .main { flex:1; padding:clamp(20px,3vw,32px) clamp(16px,4vw,48px) clamp(40px,6vw,64px); }
+    .main-inner { max-width:1300px; margin:0 auto; }
+
+    .priority { margin-bottom:36px; }
+    .priority:last-of-type { margin-bottom:0; }
+    .section-label {
+      font-family:'Roboto Mono',monospace;
+      font-size:0.72rem; font-weight:700; text-transform:uppercase;
+      letter-spacing:0.1em; color:var(--orange);
+      margin:0 0 8px;
+    }
+    .section-lead { font-size:0.9rem; color:var(--text-muted); line-height:1.7; max-width:820px; margin-bottom:16px; }
+
+    /* CARD GRID */
+    .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:20px; }
+    .card {
+      background:var(--surface);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow-sm);
+      display:flex; flex-direction:column;
+      text-decoration:none; color:inherit;
+      overflow:hidden;
+      transition:border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+    }
+    a.card:hover { border-color:var(--blue); box-shadow:var(--shadow-md); transform:translateY(-2px); }
+    .card-preview { height:150px; background:#0f172a; position:relative; overflow:hidden; }
+    .card-preview svg { width:100%; height:100%; display:block; }
+    .card-body { padding:16px 20px 20px; flex:1; display:flex; flex-direction:column; }
+    .card-cat {
+      font-family:'Roboto Mono',monospace;
+      font-size:0.65rem; font-weight:700; text-transform:uppercase;
+      letter-spacing:0.08em; color:var(--blue);
+      margin-bottom:8px;
+    }
+    .card-title {
+      font-family:'Roboto Mono',monospace;
+      font-size:1rem; font-weight:700; color:var(--text);
+      line-height:1.3; margin-bottom:8px; letter-spacing:-0.02em;
+    }
+    .card-desc { font-size:0.85rem; color:var(--text-muted); line-height:1.6; flex:1; margin-bottom:14px; }
+    .card-meta { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .card-stat { font-family:'Roboto Mono',monospace; font-size:0.72rem; color:var(--orange); font-weight:500; }
+    .card-cta { font-family:'Roboto Mono',monospace; font-size:0.75rem; font-weight:600; color:var(--blue); display:flex; align-items:center; gap:4px; transition:gap 0.15s; }
+    a.card:hover .card-cta { gap:7px; }
+
+    /* PENDING (not yet uploaded) */
+    .card.pending { border-style:dashed; border-color:var(--border-mid); box-shadow:none; background:#fdfdfd; }
+    .card.pending .card-cat { color:var(--text-faint); }
+    .card.pending .card-cta { color:var(--text-faint); }
+    .pending-preview { height:150px; background:#f3f4f6; display:flex; align-items:center; justify-content:center; }
+    .pending-preview span { font-family:'Roboto Mono',monospace; font-size:0.72rem; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:var(--text-faint); border:1px dashed var(--border-mid); border-radius:20px; padding:6px 14px; }
+
+    /* INFO PANEL */
+    .text-panel {
+      background:var(--surface); border:1px solid var(--border);
+      border-left:3px solid var(--orange);
+      border-radius:8px; padding:20px 24px; margin-top:36px;
+      display:flex; align-items:center; justify-content:space-between; gap:24px; flex-wrap:wrap;
+    }
+    .text-panel p { font-size:0.9rem; color:var(--text-mid); line-height:1.7; margin-bottom:0; }
+    .text-panel strong { color:var(--text); font-weight:600; }
+    .info-link {
+      display:inline-flex; align-items:center; gap:6px;
+      font-family:'Roboto Mono',monospace; font-size:0.78rem; font-weight:600;
+      color:var(--blue); text-decoration:none;
+      padding:6px 12px; border:1px solid var(--blue-mid); border-radius:6px;
+      background:var(--blue-light); transition:all 0.15s; flex-shrink:0; white-space:nowrap;
+    }
+    .info-link:hover { background:var(--blue); color:#fff; }
+
+    footer { background:var(--surface); border-top:1px solid var(--border); padding:18px clamp(16px,4vw,48px); }
+    .footer-inner { max-width:1300px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; }
+    .footer-copy { font-size:0.78rem; color:var(--text-faint); }
+    .footer-links { display:flex; gap:18px; align-items:center; }
+    .footer-links a { font-size:0.78rem; color:var(--text-muted); text-decoration:none; transition:color 0.15s; }
+    .footer-links a:hover { color:var(--blue); }
+
+    @media (max-width: 640px) { .brand-slash, .brand-section { display:none; } }
+  </style>
+<style id="support-btn-css">
+.header-actions{display:flex;align-items:center;gap:14px;}
+.header-link{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border:1px solid rgba(255,255,255,0.15);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
+.header-link:hover{color:#fff;border-color:rgba(255,255,255,0.35);background:rgba(255,255,255,0.08);}
+.header-link svg{flex-shrink:0;}
+.support-link{display:inline-flex;align-items:center;gap:5px;font-size:0.8rem;font-weight:500;color:#93c5fd;text-decoration:none;padding:5px 11px;border:1px solid rgba(37,99,235,0.45);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
+.support-link:hover{color:#fff;background:#2563eb;border-color:#2563eb;}
+.support-link svg{flex-shrink:0;}
+.footer-support{display:inline-flex;align-items:center;gap:5px;font-size:0.8rem;font-weight:500;color:#2563eb;text-decoration:none;padding:5px 11px;border:1px solid rgba(37,99,235,0.45);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
+.footer-support:hover{color:#fff;background:#2563eb;border-color:#2563eb;}
+.footer-support svg{flex-shrink:0;}
+.footer-support{vertical-align:middle;}
+.footer-links{align-items:center;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <a href="/" class="brand"><span class="brand-name">nycuriosity</span><span class="brand-slash">/</span><span class="brand-section">data</span></a>
+    <div class="header-actions">
+      <a href="https://talroded.nycuriosity.com" class="header-link" target="_blank" rel="noopener"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>About</a>
+      <a href="https://www.nycuriosity.com" class="header-link" target="_blank" rel="noopener">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v4H4z"/><path d="M4 10h16v10l-8-4-8 4z"/></svg>
+      Substack
+    </a>
+    </div>
+  </div>
+</header>
+
+<div class="breadcrumb">
+  <div class="breadcrumb-inner">
+    <a href="/">NYCuriosity Data</a>
+    <span class="breadcrumb-sep">/</span>
+    <a href="../../">State Capacity Ecosystem</a>
+    <span class="breadcrumb-sep">/</span>
+    <a href="../">Substack</a>
+    <span class="breadcrumb-sep">/</span>
+    <span class="current">Mamdani AI Priorities</span>
+  </div>
+</div>
+
+<div class="hero">
+  <div class="hero-inner">
+    <h1>The <span>Secret Weapon</span> for Mamdani's Priorities</h1>
+    <div class="hero-sub">How AI can make groceries cheaper, expand worker ownership, and open pathways to good jobs</div>
+    <p>Mayor Mamdani's affordability agenda runs through a government that moves on paperwork: applications, licenses, benefit rules, inspection records. That is exactly the work AI made cheap almost overnight. The prototypes below were each built in hours, for a few dollars in token spend, against the mayor's stated priorities. The full argument is in the post; the working tools live here.</p>
+    <div class="post-link-row">
+      <!-- Swap href for the published SCE Substack post URL, change text to "Read the post ↗", and remove the .pending class -->
+      <a class="post-link pending" href="#">Post coming ↗</a>
+    </div>
+  </div>
+</div>
+
+<div class="chart-nav">
+  <span class="chart-nav-label">Views in this tool:</span>
+  <a href="../../directory/">Directory</a>
+  <a href="../../connect/">Connect</a>
+  <a href="../../network/">Affinity</a>
+  <a href="../../events/">Events</a>
+  <a href="../" class="active">Substack</a>
+  <a href="../../methodology/">Methodology</a>
+  <a href="../../">← Hub</a>
+</div>
+
+<div class="main">
+  <div class="main-inner">
+
+    <!-- PRIORITY 1: GROCERIES -->
+    <div class="priority">
+      <div class="section-label">Priority 01 · Making groceries cheaper</div>
+      <p class="section-lead">Food is one of the fastest-rising costs for working New Yorkers, and it hits hardest in the neighborhoods with the fewest options. The mayor's pilot of city-owned grocery stores raises three operational questions: where to put the five stores, what counts as cheap groceries, and how to publicize outcomes and hold vendors to account.</p>
+      <div class="grid">
+
+        <a class="card" href="../nyc-grocery-access-site-prototype/">
+          <div class="card-preview">
+            <svg viewBox="0 0 340 150" xmlns="http://www.w3.org/2000/svg">
+              <rect width="340" height="150" fill="#0c1320"/>
+              <text x="18" y="24" font-family="'Roboto Mono',monospace" font-size="8.5" font-weight="700" letter-spacing="0.6" fill="#FF6319">LIVE · INTERACTIVE MAP</text>
+              <text x="18" y="46" font-family="Inter,sans-serif" font-size="14" font-weight="600" fill="#e6ebf3">Grocery Store Siting Tool</text>
+              <line x1="18" y1="58" x2="322" y2="58" stroke="#26344c" stroke-width="1"/>
+              <rect x="18" y="68" width="180" height="64" rx="4" fill="#121c2b" stroke="#26344c"/>
+              <circle cx="52"  cy="90"  r="5"   fill="#ff7847" opacity="0.9"/>
+              <circle cx="88"  cy="112" r="4"   fill="#f2a33c" opacity="0.9"/>
+              <circle cx="126" cy="82"  r="3.5" fill="#f2a33c" opacity="0.8"/>
+              <circle cx="150" cy="118" r="4.5" fill="#ff7847" opacity="0.85"/>
+              <circle cx="70"  cy="124" r="3"   fill="#5f7799" opacity="0.8"/>
+              <circle cx="168" cy="94"  r="3"   fill="#5f7799" opacity="0.8"/>
+              <text x="206" y="78" font-family="'Roboto Mono',monospace" font-size="7" font-weight="700" fill="#8fa0b8">SCORE WEIGHTS</text>
+              <rect x="206" y="84"  width="116" height="5" rx="2.5" fill="#26344c"/>
+              <rect x="206" y="84"  width="82"  height="5" rx="2.5" fill="#f2a33c"/>
+              <rect x="206" y="96"  width="116" height="5" rx="2.5" fill="#26344c"/>
+              <rect x="206" y="96"  width="58"  height="5" rx="2.5" fill="#4fc3d9"/>
+              <rect x="206" y="108" width="116" height="5" rx="2.5" fill="#26344c"/>
+              <rect x="206" y="108" width="94"  height="5" rx="2.5" fill="#ff7847"/>
+              <text x="206" y="130" font-family="'Roboto Mono',monospace" font-size="7" font-weight="700" fill="#6fbf8f">TOP 10 SITES RE-RANK LIVE</text>
+            </svg>
+          </div>
+          <div class="card-body">
+            <div class="card-cat">Live · Interactive map</div>
+            <div class="card-title">Grocery store siting tool</div>
+            <div class="card-desc">Identifies disadvantaged census tracts with high food insecurity and strong transit connectivity, then scores vacant city-owned lots as candidate store sites. Adjust the scoring weights and the top sites re-rank live. Built on public data; illustrative, not an acquisition list.</div>
+            <div class="card-meta">
+              <span class="card-stat">Full screen</span>
+              <span class="card-cta">Open the prototype →</span>
+            </div>
+          </div>
+        </a>
+
+        <div class="card pending">
+          <div class="pending-preview"><span>In the works</span></div>
+          <div class="card-body">
+            <div class="card-cat">Coming · Index</div>
+            <div class="card-title">Grocery pricing index</div>
+            <div class="card-desc">Puts a working definition behind "cheap groceries" and tracks store prices against it, so the pilot's central promise is measurable.</div>
+            <div class="card-meta">
+              <span class="card-stat">&nbsp;</span>
+              <span class="card-cta">Shipping soon</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card pending">
+          <div class="pending-preview"><span>In the works</span></div>
+          <div class="card-body">
+            <div class="card-cat">Coming · Dashboard</div>
+            <div class="card-title">Grocery accountability dashboard</div>
+            <div class="card-desc">Publicizes outcomes from the city-owned store pilot and gives the public a way to hold vendors to account.</div>
+            <div class="card-meta">
+              <span class="card-stat">&nbsp;</span>
+              <span class="card-cta">Shipping soon</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- PRIORITY 2: OWNERSHIP + SMALL BUSINESS -->
+    <div class="priority">
+      <div class="section-label">Priority 02 · Expanding ownership and making small business easier</div>
+      <p class="section-lead">Worker cooperatives and small businesses build stable, local wealth while offering real worker say, but they are hard to start and run. These tools cut the upfront cost of incorporating, help owners navigate licenses, inspections, and fines across dozens of agencies, and look ahead to the hundreds of thousands of businesses projected to close in the coming Silver Tsunami.</p>
+      <div class="grid">
+
+        <div class="card pending">
+          <div class="pending-preview"><span>In the works</span></div>
+          <div class="card-body">
+            <div class="card-cat">Coming · Document drafter</div>
+            <div class="card-title">Incorporation document drafter</div>
+            <div class="card-desc">AI drafts bylaws, governance, and incorporation documents, lowering the upfront cost of starting a cooperative or small business.</div>
+            <div class="card-meta">
+              <span class="card-stat">&nbsp;</span>
+              <span class="card-cta">Shipping soon</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card pending">
+          <div class="pending-preview"><span>In the works</span></div>
+          <div class="card-body">
+            <div class="card-cat">Coming · Guide</div>
+            <div class="card-title">Summons navigator for business owners</div>
+            <div class="card-desc">Plain-language guides for cooperatives and small businesses that receive a summons, complementing reforms from the OPEN for Small Business plan.</div>
+            <div class="card-meta">
+              <span class="card-stat">&nbsp;</span>
+              <span class="card-cta">Shipping soon</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card pending">
+          <div class="pending-preview"><span>In the works</span></div>
+          <div class="card-body">
+            <div class="card-cat">Coming · Dashboard</div>
+            <div class="card-title">Conversion candidates dashboard</div>
+            <div class="card-desc">Uses public records to surface businesses likely to close in the Silver Tsunami that could instead convert to worker ownership.</div>
+            <div class="card-meta">
+              <span class="card-stat">&nbsp;</span>
+              <span class="card-cta">Shipping soon</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- PRIORITY 3: HOUSING -->
+    <div class="priority">
+      <div class="section-label">Priority 03 · Building affordable housing</div>
+      <p class="section-lead">The mayor's Block by Block plan aims for 200,000 new affordable homes, but builders currently navigate 40 approval processes across 18 offices and agencies, according to his COGE charter revision committee.</p>
+      <div class="grid">
+
+        <div class="card pending">
+          <div class="pending-preview"><span>In the works</span></div>
+          <div class="card-body">
+            <div class="card-cat">Coming · Navigator</div>
+            <div class="card-title">Housing approval pathway navigator</div>
+            <div class="card-desc">Aggregates the rules and regulations builders must comply with and maps the pathway from idea to official approval, with real public data and real-world examples of projects to build new homes.</div>
+            <div class="card-meta">
+              <span class="card-stat">&nbsp;</span>
+              <span class="card-cta">Shipping soon</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- PRIORITY 4: GOOD JOBS -->
+    <div class="priority">
+      <div class="section-label">Priority 04 · Opening pathways to good jobs</div>
+      <p class="section-lead">Only a third of NYC residents work in what the Comptroller's office calls a "good job," and most recent growth has landed in low-wage work. These tools make the city's fragmented workforce development efforts navigable.</p>
+      <div class="grid">
+
+        <div class="card pending">
+          <div class="pending-preview"><span>In the works</span></div>
+          <div class="card-body">
+            <div class="card-cat">Coming · Copilot</div>
+            <div class="card-title">Workforce navigation copilot</div>
+            <div class="card-desc">An AI copilot that helps New Yorkers find their way through the city's workforce development programs and apply for jobs.</div>
+            <div class="card-meta">
+              <span class="card-stat">&nbsp;</span>
+              <span class="card-cta">Shipping soon</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card pending">
+          <div class="pending-preview"><span>In the works</span></div>
+          <div class="card-body">
+            <div class="card-cat">Coming · Assistant</div>
+            <div class="card-title">Enrollment and eligibility assistant</div>
+            <div class="card-desc">AI help with the paperwork that stands between a qualified New Yorker and a benefit, training program, or job placement.</div>
+            <div class="card-meta">
+              <span class="card-stat">&nbsp;</span>
+              <span class="card-cta">Shipping soon</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="text-panel">
+      <p><strong>Built by the State Capacity Ecosystem team and collaborators.</strong> Each prototype here was built in hours with AI against a stated mayoral priority. Are you a government practitioner, a technologist curious about civic work, or an expert with a reaction to the post? We want to hear from you.</p>
+      <a href="../../connect/" class="info-link">Get in touch →</a>
+    </div>
+
+  </div>
+</div>
+
+<!-- STAY CONNECTED -->
+<div style="background:var(--surface); border-top:1px solid var(--border);">
+  <div style="max-width:1300px; margin:0 auto; padding:18px clamp(16px,4vw,48px); display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap;">
+    <span style="font-family:'Roboto Mono',monospace; font-size:0.82rem; font-weight:600; color:var(--text);">Stay in the loop on state capacity events and tools.</span>
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      <a href="https://statecapacityecosystem.substack.com/" target="_blank" rel="noopener" style="font-family:'Roboto Mono',monospace; font-size:0.78rem; font-weight:600; text-decoration:none; padding:7px 14px; border-radius:7px; border:1px solid #fcd0b7; background:#fff4ed; color:#FF6719;">Subscribe to our Substack ↗</a>
+      <a href="../../" style="font-family:'Roboto Mono',monospace; font-size:0.78rem; font-weight:600; text-decoration:none; padding:7px 14px; border-radius:7px; border:1px solid var(--blue-mid); background:var(--blue-light); color:var(--blue);">Explore the Hub →</a>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-inner">
+    <span class="footer-copy">Created by Tal Roded · NYCuriosity</span>
+    <div class="footer-links">
+      <a href="https://buymeacoffee.com/nycuriosity" class="footer-support" target="_blank" rel="noopener" aria-label="Support my work on Buy Me a Coffee"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>Support my work</a>
+      <a href="https://www.nycuriosity.com" target="_blank" rel="noopener">Substack</a>
+      <a href="../">← Substack hub</a>
+      <a href="/">← All datasets</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
