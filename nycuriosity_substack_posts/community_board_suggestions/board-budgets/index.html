@@ -126,7 +126,21 @@
     main { flex: 1; padding: clamp(28px, 4vw, 48px) clamp(20px, 5vw, 48px); }
     .main-inner { max-width: 900px; margin: 0 auto; }
 
-    .chart-actions { display: flex; gap: 8px; margin-bottom: 16px; }
+    .chart-actions { display: flex; gap: 8px; margin-bottom: 12px; }
+    .view-toggle { display: flex; gap: 8px; margin-bottom: 16px; align-items: center; flex-wrap: wrap; }
+    .view-label { font-size: 0.72rem; color: var(--text-faint); font-family: 'Roboto Mono', monospace; white-space: nowrap; }
+    .view-btn {
+      font-size: 0.78rem; font-family: 'Roboto Mono', monospace; font-weight: 600;
+      padding: 4px 12px; border-radius: 20px; border: 1px solid var(--border);
+      color: var(--text-muted); background: var(--bg); cursor: pointer;
+      transition: all 0.15s; white-space: nowrap;
+    }
+    .view-btn:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
+    .view-btn.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+    .divider-row {
+      text-align: center; font-family: 'Roboto Mono', monospace; font-size: 0.72rem;
+      color: var(--text-faint); padding: 8px 0; letter-spacing: 0.08em;
+    }
     .action-btn { display: inline-flex; align-items: center; gap: 6px; background: var(--surface); color: var(--text-muted); font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600; padding: 6px 14px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; transition: all 0.15s; }
     .action-btn:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
     .action-btn:disabled { opacity: 0.6; cursor: not-allowed; }
@@ -277,9 +291,15 @@
       <button class="action-btn" onclick="showEmbed()">&#60;/&#62; Embed</button>
     </div>
 
+    <div class="view-toggle">
+      <span class="view-label">View:</span>
+      <button class="view-btn active" id="viewAllBtn" onclick="setView('all')">All 59 boards</button>
+      <button class="view-btn" id="viewEndsBtn" onclick="setView('ends')">Top 5 vs. bottom 5</button>
+    </div>
+
     <div class="chart-box" id="budgetBox">
       <div class="chart-pad">
-        <div class="chart-title">FY2027 adopted budget, all 59 community boards</div>
+        <div class="chart-title" id="chartTitle">FY2027 adopted budget, all 59 community boards</div>
         <div class="chart-subtitle">Each board is its own agency in the City's expense budget. Bars show the full adopted appropriation: staff salaries plus other-than-personal-services (rent, supplies, technology).</div>
         <div class="legend">
           <div class="legend-item"><span class="legend-swatch" style="background:var(--mn)"></span> Manhattan</div>
@@ -404,7 +424,8 @@
   }
 
   const chartEl = document.getElementById("budgetChart");
-  BOARDS.forEach(item => {
+
+  function barRow(item) {
     const pct = (item.v / MAX_VAL * 100).toFixed(2);
     const row = document.createElement("div");
     row.className = "bar-row";
@@ -415,16 +436,36 @@
       </div>
       <div class="bar-value">${fmtDollars(item.v)}</div>
     `;
-    chartEl.appendChild(row);
-  });
+    return row;
+  }
 
-  requestAnimationFrame(() => {
-    setTimeout(() => {
-      document.querySelectorAll(".bar-fill").forEach(node => {
-        node.style.width = node.dataset.pct + "%";
-      });
-    }, 80);
-  });
+  function setView(mode) {
+    document.getElementById("viewAllBtn").classList.toggle("active", mode === "all");
+    document.getElementById("viewEndsBtn").classList.toggle("active", mode === "ends");
+    document.getElementById("chartTitle").textContent = mode === "all"
+      ? "FY2027 adopted budget, all 59 community boards"
+      : "FY2027 adopted budget, the 5 smallest and 5 largest boards";
+    chartEl.innerHTML = "";
+    if (mode === "all") {
+      BOARDS.forEach(item => chartEl.appendChild(barRow(item)));
+    } else {
+      BOARDS.slice(0, 5).forEach(item => chartEl.appendChild(barRow(item)));
+      const gap = document.createElement("div");
+      gap.className = "divider-row";
+      gap.textContent = "\u00b7 \u00b7 \u00b7 49 boards in between \u00b7 \u00b7 \u00b7";
+      chartEl.appendChild(gap);
+      BOARDS.slice(-5).forEach(item => chartEl.appendChild(barRow(item)));
+    }
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        document.querySelectorAll(".bar-fill").forEach(node => {
+          node.style.width = node.dataset.pct + "%";
+        });
+      }, 80);
+    });
+  }
+
+  setView("all");
 
   async function downloadBox(btn, boxId, filename) {
     const orig = btn.innerHTML;
