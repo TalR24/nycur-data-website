@@ -513,6 +513,7 @@ These are concrete, half-done tasks, not parking-lot ideas. Pick them up when th
 
 | Date | Commit | Summary |
 |---|---|---|
+| 2026-07-30 | — | Hub: added Sourabh Chakraborty (LinkedIn: chakrabortysourabh) to the "Stay in touch" strip, under Jeremie. Four people now listed after the publication row. |
 | 2026-07-30 | — | Events: build-night "Post coming ↗" placeholder replaced with the live recap link ("AI should be a tool for inclusive building", Jun 30 2026) as "Read the recap ↗". |
 | 2026-07-30 | — | Substack: post published as "The PIT Crew is the tip of the iceberg" on the SCE Substack. Post page retitled to match (h1, title/og metas, hero subtitle = the post's subtitle), "Post coming ↗" placeholder swapped for the live link, hub card kicker now "July 2026 · Post + prototypes" with the new title in text and preview SVG. Note the publication's real domain is henrygrunzweig.substack.com (statecapacityecosystem.substack.com redirects to the profile). |
 | 2026-07-30 | — | Substack: Mamdani post cards decluttered at Tal's request — removed the orange `.card-stat` spans ("Full screen", "Built by Sourabh Chakraborty") and the "· LIVE" kicker suffix (and "LIVE ·" in the preview SVGs); CTA now right-aligned alone. Builder credit intentionally lives on the prototype pages' footers only, not the cards — do not re-add card credits. |
