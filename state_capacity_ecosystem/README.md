@@ -505,7 +505,7 @@ For changes where placement/labeling/UX is ambiguous (e.g., "add a new section t
 These are concrete, half-done tasks, not parking-lot ideas. Pick them up when the user supplies what's missing.
 
 1. **Claude artifact project not yet added to the build-night page.** The user wants a project hosted at a `claude.ai/public/artifacts/...` link added as a build-night `.proj-card`, but Claude artifacts render client-side, so WebFetch returns only an empty shell (no title/description). **Need from user:** a title + one-line description (or the artifact source to rehost like TIDELINE). It would also be the only `claude.ai` outbound link in the tool — a published artifact is fine (it's a hosted mini-app, not a Claude *conversation*, which decision #6 bans).
-2. **Build-night "Read about it" link is a placeholder.** The writeup row is `Post coming ↗` (`<a class="post-link pending" href="#">`). Swap in the SCE Substack recap URL when published and remove the `.pending` class.
+2. ~~Build-night "Read about it" placeholder~~ — RESOLVED 2026-07-30: now links the recap "AI should be a tool for inclusive building" (https://henrygrunzweig.substack.com/p/ai-is-a-tool-for-inclusive-building) as "Read the recap ↗".
 3. **No "Community" link in the cross-promo loop** (see decision #21). Add a "Join our Community" CTA to the "Stay connected" strip + Connect success nudge once the user has a URL. Don't invent one.
 4. ~~Mamdani AI priorities post URL placeholder~~ — RESOLVED 2026-07-30. The post published as **"The PIT Crew is the tip of the iceberg"** (https://henrygrunzweig.substack.com/p/the-pit-crew-is-the-tip-of-the-iceberg); the post page hero, title metas, "Read the post ↗" link, and hub card were updated to match. Prototype set stays final at 3.
 
@@ -513,6 +513,7 @@ These are concrete, half-done tasks, not parking-lot ideas. Pick them up when th
 
 | Date | Commit | Summary |
 |---|---|---|
+| 2026-07-30 | — | Events: build-night "Post coming ↗" placeholder replaced with the live recap link ("AI should be a tool for inclusive building", Jun 30 2026) as "Read the recap ↗". |
 | 2026-07-30 | — | Substack: post published as "The PIT Crew is the tip of the iceberg" on the SCE Substack. Post page retitled to match (h1, title/og metas, hero subtitle = the post's subtitle), "Post coming ↗" placeholder swapped for the live link, hub card kicker now "July 2026 · Post + prototypes" with the new title in text and preview SVG. Note the publication's real domain is henrygrunzweig.substack.com (statecapacityecosystem.substack.com redirects to the profile). |
 | 2026-07-30 | — | Substack: Mamdani post cards decluttered at Tal's request — removed the orange `.card-stat` spans ("Full screen", "Built by Sourabh Chakraborty") and the "· LIVE" kicker suffix (and "LIVE ·" in the preview SVGs); CTA now right-aligned alone. Builder credit intentionally lives on the prototype pages' footers only, not the cards — do not re-add card credits. |
 | 2026-07-30 | — | Substack: Mamdani post page layout — the three prototype cards now sit in one row (single `repeat(3,1fr)` grid, stacking below 1020px). Priority names moved into the card kickers; one combined section lead replaces the three per-priority sections. |
