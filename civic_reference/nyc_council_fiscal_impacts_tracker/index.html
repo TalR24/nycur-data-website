@@ -824,7 +824,28 @@ async function loadData() {
     }
 
     populateFilters();
+
+    // Deep link: ?intro=692 (or ?intro=Int.%20No.%20692) filters to that bill,
+    // expands its row, and scrolls to the table. Matches on the digit sequence
+    // with leading zeros stripped, since file_number formats vary
+    // ("Int. No. 692" / "Int. 579" / "Int. No. 0296").
+    const introParam = new URLSearchParams(location.search).get("intro");
+    let introMatch = null;
+    if (introParam) {
+      const digits = (introParam.match(/\d+/) || [""])[0].replace(/^0+/, "");
+      introMatch = digits ? allRecords.find(r => {
+        const d = ((r.file_number || "").match(/\d+/) || [""])[0].replace(/^0+/, "");
+        return d === digits;
+      }) : null;
+      document.getElementById("f-search").value = introMatch ? introMatch.file_number : introParam;
+      if (introMatch) expandedId = introMatch.matter_id;
+    }
+
     applyFilters();
+
+    if (introParam) {
+      document.getElementById("main-table").scrollIntoView({ behavior: "smooth" });
+    }
 
   } catch (e) {
     document.getElementById("table-body").innerHTML =
