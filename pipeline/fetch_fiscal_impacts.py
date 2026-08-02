@@ -188,7 +188,7 @@ def search_legistar_all(session: requests.Session) -> list[tuple[str, str]]:
         "ctl00$ContentPlaceHolder1$btnSearch":    "Search Legislation",
     }
 
-    r2 = session.post(f"{BASE_URL}/Legislation.aspx", data=post_data, timeout=30)
+    r2 = session.post(f"{BASE_URL}/Legislation.aspx", data=post_data, timeout=120)
     r2.raise_for_status()
 
     seen:   set[str]           = set()
@@ -242,7 +242,7 @@ def search_legistar_all(session: requests.Session) -> list[tuple[str, str]]:
             "ctl00$ContentPlaceHolder1$lstTypeBasic": "All Types",
             "ctl00$ContentPlaceHolder1$chkAttachments": "on",
         }
-        rn = session.post(f"{BASE_URL}/Legislation.aspx", data=page_data, timeout=30)
+        rn = session.post(f"{BASE_URL}/Legislation.aspx", data=page_data, timeout=120)
         rn.raise_for_status()
 
         before = len(unique)
@@ -441,7 +441,7 @@ def download_docx(
         return local
 
     url = f"{BASE_URL}/View.ashx?M=F&ID={att_id}&GUID={att_guid}"
-    r = session.get(url, timeout=30)
+    r = session.get(url, timeout=120)
     r.raise_for_status()
 
     if len(r.content) < 100:
