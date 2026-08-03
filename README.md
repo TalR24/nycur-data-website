@@ -28,11 +28,11 @@ Standalone reference tools, listed in homepage order. New tools live under `/civ
 Directory, segment view, affinity network, and matchmaking for 300+ organizations working on state capacity — research, advocacy, GovTech, philanthropy, fellowships, digital services, investors, and ecosystem-builders. Underlying database curated by Henry Grunzweig. Affinity score combines description TF-IDF, shared problem statements, named funders, and segment overlap, with semantic search powered by a precomputed TF-IDF index.
 
 - [`/state_capacity_ecosystem/`](https://data.nycuriosity.com/state_capacity_ecosystem/) — hub
-- [`/state_capacity_ecosystem/directory/`](https://data.nycuriosity.com/state_capacity_ecosystem/directory/) — searchable, filterable org table
-- [`/state_capacity_ecosystem/network/`](https://data.nycuriosity.com/state_capacity_ecosystem/network/) — D3 force-directed affinity graph + semantic search with geographic boosting
-- [`/state_capacity_ecosystem/connect/`](https://data.nycuriosity.com/state_capacity_ecosystem/connect/) — directory of people and orgs working on specific problems, with self-submission form and intro request flow
-- [`/state_capacity_ecosystem/methodology/`](https://data.nycuriosity.com/state_capacity_ecosystem/methodology/) — scoring formula, taxonomy, inclusion criteria
-- [`/state_capacity_ecosystem/events/`](https://data.nycuriosity.com/state_capacity_ecosystem/events/) — state capacity hackathons, with per-event pages covering overview, tracks, judges, and the projects produced (e.g. `events/civic-tech-build-night/`)
+- [`/state_capacity_ecosystem/ecosystem/directory/`](https://data.nycuriosity.com/state_capacity_ecosystem/ecosystem/directory/) — searchable, filterable org table
+- [`/state_capacity_ecosystem/ecosystem/network/`](https://data.nycuriosity.com/state_capacity_ecosystem/ecosystem/network/) — D3 force-directed affinity graph + semantic search with geographic boosting
+- [`/state_capacity_ecosystem/ecosystem/connect/`](https://data.nycuriosity.com/state_capacity_ecosystem/ecosystem/connect/) — directory of people and orgs working on specific problems, with self-submission form and intro request flow
+- [`/state_capacity_ecosystem/ecosystem/methodology/`](https://data.nycuriosity.com/state_capacity_ecosystem/ecosystem/methodology/) — scoring formula, taxonomy, inclusion criteria
+- [`/state_capacity_ecosystem/policy-programs/events/`](https://data.nycuriosity.com/state_capacity_ecosystem/policy-programs/events/) — state capacity hackathons, with per-event pages covering overview, tracks, judges, and the projects produced (e.g. `events/civic-tech-build-night/`)
 
 ### [NYC Council Fiscal Impacts Tracker](https://data.nycuriosity.com/civic_reference/nyc_council_fiscal_impacts_tracker/)
 Estimated fiscal impact of every NYC Council bill with a Finance Division impact statement. Filterable by agency, committee, sponsor, and fiscal year, with cost/revenue/capital breakdowns and per-bill detail panels.
@@ -124,7 +124,7 @@ Page types and how the button attaches:
 - **Hub pages** (brand + `.header-link`) → header pills **and** footer pill.
 - **Post/hub pages** with a `.footer-links` container → footer pill.
 - **Inline `·`-separated footers** (cb-resolutions, mcb3 topics charts) → a plain inline "Support my work" link matching the sibling text links (no pill).
-- **Skip:** the 19 meta-refresh redirect stubs; and chrome-less pages that have no header/footer — `civic_reference/cb_member_guide/{index,handout}.html` and `state_capacity_ecosystem/events/civic-tech-build-night/tideline/` (add a footer first if these ever need the button).
+- **Skip:** the 32 meta-refresh redirect stubs; and chrome-less pages that have no header/footer — `civic_reference/cb_member_guide/{index,handout}.html` and `state_capacity_ecosystem/policy-programs/events/civic-tech-build-night/tideline/` (add a footer first if these ever need the button).
 
 ---
 

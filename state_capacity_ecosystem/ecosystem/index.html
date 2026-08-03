@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ecosystem Hub — State Capacity Ecosystem</title>
+  <meta name="description" content="An interactive map of 300+ organizations working on state capacity: research, advocacy, GovTech, philanthropy, fellowships, and digital services across federal, state, and city government.">
+  <meta property="og:type"        content="website">
+  <meta property="og:url"         content="https://data.nycuriosity.com/state_capacity_ecosystem/ecosystem/">
+  <meta property="og:title"       content="Ecosystem Hub — State Capacity Ecosystem">
+  <meta property="og:description" content="Browse 300+ organizations working on state capacity, then see who's likely to collaborate via an affinity graph built from mission, funders, and problem statements.">
+  <meta property="og:image"       content="https://data.nycuriosity.com/website_logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue:        #2563eb;
+      --blue-hover:  #1d4ed8;
+      --blue-light:  #eff6ff;
+      --blue-mid:    #bfdbfe;
+      --orange:      #FF6319;
+      --orange-light:#fff4ed;
+      --text:        #111827;
+      --text-mid:    #374151;
+      --text-muted:  #6b7280;
+      --text-faint:  #9ca3af;
+      --bg:          #f8faff;
+      --surface:     #ffffff;
+      --border:      #e5e7eb;
+      --border-mid:  #d1d5db;
+      --shadow-sm:   0 1px 3px rgba(17,24,39,0.08);
+      --shadow-md:   0 4px 16px rgba(37,99,235,0.10);
+      --radius:      10px;
+    }
+    body { font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; display:flex; flex-direction:column; }
+
+    /* HEADER */
+    header { background:#111827; border-bottom:1px solid #1f2937; padding:0 clamp(16px,4vw,48px); }
+    .header-inner { max-width:1300px; margin:0 auto; height:60px; display:flex; align-items:center; justify-content:space-between; gap:16px; }
+    .brand { display:flex; align-items:baseline; gap:6px; text-decoration:none; }
+    .brand-name { font-family:'Roboto Mono',monospace; font-size:0.95rem; font-weight:700; color:#60a5fa; letter-spacing:-0.02em; }
+    .brand-slash { font-family:'Roboto Mono',monospace; font-size:0.95rem; color:#4b5563; }
+    .brand-section { font-family:'Roboto Mono',monospace; font-size:0.95rem; font-weight:600; color:#e5e7eb; }
+    .header-link { font-size:0.78rem; font-weight:500; color:#9ca3af; text-decoration:none; display:flex; align-items:center; gap:5px; transition:color 0.15s; }
+    .header-link:hover { color:#60a5fa; }
+
+    /* BREADCRUMB */
+    .breadcrumb { padding:14px clamp(16px,4vw,48px) 0; }
+    .breadcrumb-inner { max-width:1300px; margin:0 auto; display:flex; align-items:center; gap:6px; font-family:'Roboto Mono',monospace; font-size:0.72rem; font-weight:500; color:var(--text-faint); }
+    .breadcrumb a { color:var(--text-faint); text-decoration:none; transition:color 0.15s; }
+    .breadcrumb a:hover { color:var(--blue); }
+    .breadcrumb .current { color:var(--orange); }
+    .breadcrumb-sep { color:var(--border-mid); }
+
+    /* HERO */
+    .hero { padding:clamp(20px,4vw,40px) clamp(16px,4vw,48px) 0; }
+    .hero-inner { max-width:1300px; margin:0 auto; padding-bottom:4px; }
+    .hero h1 { font-family:'Roboto Mono',monospace; font-size:clamp(1.4rem,3.5vw,2.1rem); font-weight:700; color:var(--text); letter-spacing:-0.03em; line-height:1.2; margin-bottom:14px; }
+    .hero h1 span { color:var(--blue); }
+    .hero-lede { font-size:1rem; color:var(--text-mid); line-height:1.65; margin-bottom:16px; }
+    .hero-explainer { font-size:0.92rem; color:var(--text-muted); max-width:720px; line-height:1.7; margin-bottom:20px; }
+    .hero-explainer strong { color:var(--text-mid); font-weight:600; }
+    .hero-explainer a { color:var(--blue); text-decoration:none; border-bottom:1px solid var(--blue-mid); }
+    .hero-explainer a:hover { background:var(--blue-light); }
+
+    .stat-pills { display:flex; flex-wrap:wrap; gap:10px; margin-bottom:8px; }
+    .pill { background:var(--surface); border:1px solid var(--border); border-radius:999px; padding:6px 14px; display:flex; align-items:center; gap:8px; font-size:0.8rem; }
+    .pill-label { color:var(--text-muted); font-size:0.72rem; }
+    .pill-value { font-family:'Roboto Mono',monospace; font-weight:700; color:var(--text); }
+    .pill-value.blue { color:var(--blue); }
+    .pill-value.orange { color:var(--orange); }
+
+    /* MAIN */
+    .main { flex:1; padding:clamp(6px,1vw,12px) clamp(16px,4vw,48px) clamp(40px,6vw,64px); }
+    .main-inner { max-width:1300px; margin:0 auto; }
+
+    .section-label {
+      font-family:'Roboto Mono',monospace;
+      font-size:0.72rem; font-weight:700; text-transform:uppercase;
+      letter-spacing:0.1em; color:var(--orange);
+      margin:8px 0 16px;
+    }
+
+    /* CARD GRID */
+    .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:20px; }
+
+    .card {
+      background:var(--surface);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow-sm);
+      display:flex; flex-direction:column;
+      text-decoration:none; color:inherit;
+      overflow:hidden;
+      transition:border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+    }
+    .card:hover { border-color:var(--blue); box-shadow:var(--shadow-md); transform:translateY(-2px); }
+    .card-preview { height:160px; background:#0f172a; position:relative; overflow:hidden; }
+    .card-preview svg { width:100%; height:100%; display:block; }
+    .card-body { padding:18px 22px 22px; flex:1; display:flex; flex-direction:column; }
+    .card-cat {
+      font-family:'Roboto Mono',monospace;
+      font-size:0.65rem; font-weight:700; text-transform:uppercase;
+      letter-spacing:0.08em; color:var(--blue);
+      margin-bottom:8px;
+    }
+    .card-title {
+      font-family:'Roboto Mono',monospace;
+      font-size:1.02rem; font-weight:700; color:var(--text);
+      line-height:1.3; margin-bottom:8px; letter-spacing:-0.02em;
+    }
+    .card-desc { font-size:0.86rem; color:var(--text-muted); line-height:1.6; flex:1; margin-bottom:14px; }
+    .card-meta { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .card-stat { font-family:'Roboto Mono',monospace; font-size:0.72rem; color:var(--orange); font-weight:500; }
+    .card-cta { font-family:'Roboto Mono',monospace; font-size:0.75rem; font-weight:600; color:var(--blue); display:flex; align-items:center; gap:4px; transition:gap 0.15s; }
+    .card:hover .card-cta { gap:7px; }
+
+    /* INFO PANEL — about + add an org */
+    .info-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:24px; }
+    @media (max-width: 720px) { .info-grid { grid-template-columns:1fr; } }
+    .info-panel {
+      background:var(--surface);
+      border:1px solid var(--border);
+      border-left:3px solid var(--orange);
+      border-radius:8px;
+      padding:16px 20px;
+    }
+    .info-panel h3 {
+      font-family:'Roboto Mono',monospace;
+      font-size:0.74rem; font-weight:700; text-transform:uppercase;
+      letter-spacing:0.08em; color:var(--orange);
+      margin-bottom:8px;
+    }
+    .info-panel p { font-size:0.86rem; color:var(--text-muted); line-height:1.65; margin-bottom:10px; }
+    .info-panel a { color:var(--blue); text-decoration:none; font-weight:500; border-bottom:1px solid var(--blue-mid); }
+    .info-panel a:hover { background:var(--blue-light); }
+    .info-link {
+      display:inline-flex; align-items:center; gap:6px;
+      font-family:'Roboto Mono',monospace;
+      font-size:0.78rem; font-weight:600;
+      color:var(--blue); text-decoration:none;
+      padding:6px 12px;
+      border:1px solid var(--blue-mid);
+      border-radius:6px;
+      background:var(--blue-light);
+      transition:all 0.15s;
+      margin-top:4px;
+    }
+    .info-link:hover { background:var(--blue); color:#fff; }
+
+    /* SEGMENT BAR — small viz on hub */
+    /* FOOTER */
+    footer { background:var(--surface); border-top:1px solid var(--border); padding:18px clamp(16px,4vw,48px); }
+    .footer-inner { max-width:1300px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; }
+    .footer-copy { font-size:0.78rem; color:var(--text-faint); }
+    .footer-links { display:flex; gap:18px; }
+    .footer-links a { font-size:0.78rem; color:var(--text-muted); text-decoration:none; transition:color 0.15s; }
+    .footer-links a:hover { color:var(--blue); }
+
+    @media (max-width: 640px) { .brand-slash, .brand-section { display:none; } }
+
+    /* HERO CTA */
+    .hero-cta { margin:22px 0 10px; display:flex; flex-wrap:wrap; gap:12px; align-items:center; }
+    .hero-cta-btn {
+      display:inline-flex; align-items:center; gap:10px;
+      font-family:'Roboto Mono',monospace; font-size:1rem; font-weight:700;
+      color:#fff; background:var(--orange); border:none; border-radius:8px;
+      padding:14px 28px; cursor:pointer; text-decoration:none;
+      box-shadow:0 4px 16px rgba(255,99,25,0.38);
+      transition:transform 0.15s, box-shadow 0.15s;
+      letter-spacing:-0.01em;
+    }
+    .hero-cta-btn:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(255,99,25,0.48); }
+
+    @media (max-width:640px) {
+      .hero-cta-btn { font-size:0.88rem; padding:12px 20px; }
+    }
+
+    /* MAD LIBS OVERLAY */
+    .ml-overlay {
+      display:none; position:fixed; inset:0;
+      background:rgba(17,24,39,0.78); z-index:1000;
+      overflow-y:auto; padding:32px 16px;
+      justify-content:center; align-items:flex-start;
+    }
+    .ml-modal {
+      background:var(--surface); border-radius:12px;
+      width:100%; max-width:900px;
+      box-shadow:0 24px 64px rgba(0,0,0,0.35);
+    }
+    .ml-modal-hdr {
+      background:#111827; padding:20px 28px;
+      display:flex; align-items:center; justify-content:space-between;
+      border-radius:12px 12px 0 0;
+    }
+    .ml-modal-title {
+      font-family:'Roboto Mono',monospace; font-size:1rem; font-weight:700;
+      color:#e5e7eb; letter-spacing:-0.02em;
+    }
+    .ml-modal-close {
+      background:none; border:none; color:#9ca3af; font-size:1.4rem;
+      cursor:pointer; padding:0 4px; line-height:1; transition:color 0.15s;
+    }
+    .ml-modal-close:hover { color:#fff; }
+    .ml-modal-body { padding:28px 32px 0; }
+    .ml-sentence {
+      font-size:clamp(0.98rem,2.1vw,1.2rem); line-height:2.5;
+      color:var(--text); font-family:'Inter',sans-serif;
+      background:var(--bg); border-radius:10px; padding:20px 24px;
+      border:1px solid var(--border); margin-bottom:0;
+    }
+    .ml-prose { color:var(--text-mid); }
+    .ml-token { display:inline-block; position:relative; vertical-align:middle; }
+    .ml-tok-btn {
+      font-family:'Roboto Mono',monospace; font-size:0.84em; font-weight:700;
+      color:var(--orange); background:var(--orange-light);
+      border:1px solid #fed7aa; border-radius:5px;
+      padding:3px 11px; margin:0 3px; cursor:pointer;
+      white-space:nowrap; transition:background 0.15s, border-color 0.15s;
+    }
+    .ml-tok-btn:hover, .ml-tok-btn.open { background:#ffe4ce; border-color:var(--orange); }
+    .ml-tok-btn.ml-tok-set { color:#1d4ed8; background:var(--blue-light); border-color:var(--blue-mid); }
+    .ml-tok-btn.ml-tok-set:hover, .ml-tok-btn.ml-tok-set.open { background:#dbeafe; border-color:var(--blue); }
+    .ml-tok-drop {
+      display:none; position:absolute; top:calc(100% + 5px); left:0;
+      min-width:220px; max-width:340px;
+      background:var(--surface); border:1px solid var(--border-mid);
+      border-radius:8px; box-shadow:0 8px 28px rgba(0,0,0,0.18);
+      z-index:200; overflow:hidden;
+    }
+    .ml-tok-drop.open { display:block; }
+    .ml-tok-acts {
+      display:flex; gap:6px; padding:8px 10px 6px;
+      border-bottom:1px solid var(--border);
+      background:var(--surface); position:sticky; top:0;
+    }
+    .ml-tok-act {
+      font-family:'Roboto Mono',monospace; font-size:0.65rem; font-weight:600;
+      background:none; border:1px solid var(--border); border-radius:4px;
+      padding:3px 8px; cursor:pointer; color:var(--text-muted); transition:all 0.1s;
+    }
+    .ml-tok-act:hover { border-color:var(--orange); color:var(--orange); background:var(--orange-light); }
+    .ml-tok-list { max-height:240px; overflow-y:auto; }
+    .ml-tok-item {
+      display:flex; align-items:center; gap:8px;
+      padding:6px 12px; cursor:pointer; font-size:0.83rem; color:var(--text-mid);
+      user-select:none; transition:background 0.1s;
+    }
+    .ml-tok-item:hover { background:var(--blue-light); }
+    .ml-tok-item input { accent-color:var(--orange); width:13px; height:13px; flex-shrink:0; cursor:pointer; }
+    .ml-results { padding:16px 32px 28px; min-height:300px; }
+    .ml-results-hdr {
+      font-family:'Roboto Mono',monospace; font-size:0.73rem;
+      color:var(--text-muted); padding-bottom:12px; margin-bottom:12px;
+      border-bottom:1px solid var(--border);
+    }
+    .ml-results-n { color:var(--text); font-weight:700; font-size:0.88rem; }
+    .ml-results-sub { color:var(--text-faint); }
+    .ml-card {
+      background:var(--bg); border:1px solid var(--border); border-radius:8px;
+      padding:14px 18px; margin-bottom:8px; transition:border-color 0.15s;
+    }
+    .ml-card:hover { border-color:var(--blue-mid); }
+    .ml-card-person { border-left:3px solid var(--orange); }
+    .ml-card-org    { border-left:3px solid var(--blue); }
+    .ml-card-type {
+      font-family:'Roboto Mono',monospace; font-size:0.62rem; font-weight:700;
+      text-transform:uppercase; letter-spacing:0.06em; margin-bottom:4px;
+    }
+    .ml-card-person .ml-card-type { color:var(--orange); }
+    .ml-card-org    .ml-card-type { color:var(--blue); }
+    .ml-card-name { font-size:0.92rem; font-weight:600; color:var(--text); margin-bottom:2px; }
+    .ml-card-name a { color:var(--text); text-decoration:none; }
+    .ml-card-name a:hover { color:var(--blue); }
+    .ml-card-sub { font-size:0.78rem; color:var(--text-muted); margin-bottom:7px; }
+    .ml-card-chips { display:flex; flex-wrap:wrap; gap:4px; }
+    .ml-chip { font-size:0.68rem; padding:2px 8px; border-radius:10px; white-space:nowrap; }
+    .ml-chip-blue   { background:var(--blue-light); color:var(--blue); border:1px solid var(--blue-mid); }
+    .ml-chip-orange { background:var(--orange-light); color:var(--orange); border:1px solid #fed7aa; }
+    .ml-chip-green  { background:#f0fdf4; color:#16a34a; border:1px solid #bbf7d0; }
+    .ml-more { font-size:0.8rem; color:var(--text-faint); padding:10px 0 2px; text-align:center; }
+    .ml-more a { color:var(--blue); text-decoration:none; }
+    .ml-more a:hover { text-decoration:underline; }
+    .ml-empty { text-align:center; padding:28px; color:var(--text-faint); font-size:0.85rem; }
+    @media (max-width:640px) {
+      .ml-modal-body, .ml-results { padding-left:16px; padding-right:16px; }
+      .ml-sentence { font-size:0.9rem; line-height:2.3; padding:14px 16px; }
+    }
+
+    /* EXPLORE BUBBLES */
+    .explore-bubbles { display:flex; flex-direction:column; gap:12px; margin-bottom:8px; }
+    .explore-bubble {
+      display:flex; align-items:stretch;
+      background:var(--surface); border:1.5px solid var(--border);
+      border-radius:var(--radius);
+      text-decoration:none; color:inherit; overflow:hidden;
+      transition:border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+    }
+    .explore-bubble:hover { border-color:var(--blue); box-shadow:var(--shadow-md); transform:translateX(4px); }
+    .bubble-preview { width:240px; flex-shrink:0; background:#0f172a; overflow:hidden; }
+    .bubble-preview svg { width:100%; height:100%; min-height:140px; display:block; }
+    .bubble-body { flex:1; padding:18px 22px 20px; display:flex; flex-direction:column; }
+    .bubble-cat {
+      font-family:'Roboto Mono',monospace; font-size:0.65rem; font-weight:700;
+      text-transform:uppercase; letter-spacing:0.08em; color:var(--blue); margin-bottom:6px;
+    }
+    .bubble-title {
+      font-family:'Roboto Mono',monospace; font-size:1.02rem; font-weight:700;
+      color:var(--text); line-height:1.2; letter-spacing:-0.02em; margin-bottom:8px;
+    }
+    .bubble-desc { font-size:0.86rem; color:var(--text-muted); line-height:1.6; flex:1; margin-bottom:14px; }
+    .bubble-cta {
+      font-family:'Roboto Mono',monospace; font-size:0.75rem; font-weight:600;
+      color:var(--blue); display:flex; align-items:center; gap:4px; transition:gap 0.15s;
+    }
+    .explore-bubble:hover .bubble-cta { gap:7px; }
+    @media (max-width:640px) {
+      .bubble-preview { width:100%; min-height:110px; }
+      .explore-bubble { flex-direction:column; }
+    }
+
+    /* TEXT PANELS (who gets included / problem statements) */
+    .text-panel {
+      background:var(--surface); border:1px solid var(--border);
+      border-left:3px solid var(--orange);
+      border-radius:8px; padding:20px 24px; margin-bottom:8px;
+    }
+    .text-panel p { font-size:0.9rem; color:var(--text-mid); line-height:1.7; margin-bottom:12px; }
+    .text-panel p:last-child { margin-bottom:0; }
+    .text-panel strong { color:var(--text); font-weight:600; }
+    .text-panel em { color:var(--text-mid); }
+    .sit-grid { display:flex; flex-direction:column; gap:10px; }
+    .sit-row { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+    .sit-name { font-family:'Roboto Mono',monospace; font-size:0.84rem; font-weight:600; color:var(--text); min-width:140px; }
+    .sit-links { display:flex; gap:8px; flex-wrap:wrap; }
+    .sit-btn { font-family:'Roboto Mono',monospace; font-size:0.75rem; font-weight:600; text-decoration:none; padding:4px 11px; border-radius:6px; border:1px solid; transition:all 0.15s; white-space:nowrap; }
+    .sit-sub { color:#FF6719; border-color:#fcd0b7; background:#fff4ed; }
+    .sit-sub:hover { background:#FF6719; color:#fff; border-color:#FF6719; }
+    .sit-li { color:#0A66C2; border-color:#bfdbfe; background:#eff6ff; }
+    .sit-li:hover { background:#0A66C2; color:#fff; border-color:#0A66C2; }
+    .seg-list {
+      margin:14px 0; padding-left:0; list-style:none;
+      display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
+      gap:8px 20px;
+    }
+    .seg-list li {
+      font-size:0.86rem; color:var(--text-mid); line-height:1.55;
+      padding-left:12px; border-left:2px solid var(--border-mid);
+    }
+    .seg-list li strong { color:var(--text); font-weight:600; display:block; margin-bottom:2px; }
+  </style>
+<style id="ribbon-css">
+.ribbon{background:var(--surface);border-bottom:1px solid var(--border);padding:0 clamp(16px,4vw,48px);position:relative;z-index:80;}
+.ribbon-inner{max-width:1300px;margin:0 auto;display:flex;align-items:stretch;}
+.ribbon-item{position:relative;flex-shrink:0;}
+.ribbon-link{display:flex;align-items:center;gap:6px;padding:13px 14px 11px;font-family:'Roboto Mono',monospace;font-size:0.78rem;font-weight:600;color:var(--text-mid);text-decoration:none;border-bottom:2px solid transparent;white-space:nowrap;transition:color .15s,border-color .15s;}
+.ribbon-item:hover .ribbon-link,.ribbon-link:focus{color:var(--blue);}
+.ribbon-link.active{color:var(--orange);border-bottom-color:var(--orange);}
+.ribbon-caret{font-size:0.55rem;color:var(--text-faint);transform:translateY(1px);}
+.ribbon-drop{display:none;position:absolute;top:100%;left:0;min-width:235px;background:var(--surface);border:1px solid var(--border-mid);border-radius:0 0 8px 8px;box-shadow:0 14px 34px rgba(17,24,39,0.16);z-index:90;padding:6px 0;}
+.ribbon-item:hover .ribbon-drop,.ribbon-item:focus-within .ribbon-drop{display:block;}
+.ribbon-drop a{display:block;padding:8px 16px;font-size:0.82rem;color:var(--text-mid);text-decoration:none;transition:background .1s,color .1s;}
+.ribbon-drop a:hover{background:var(--blue-light);color:var(--blue);}
+@media (max-width:720px){.ribbon-inner{overflow-x:auto;}.ribbon-drop{display:none !important;}}
+</style>
+<style id="support-btn-css">
+.header-actions{display:flex;align-items:center;gap:14px;}
+.header-link{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border:1px solid rgba(255,255,255,0.15);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
+.header-link:hover{color:#fff;border-color:rgba(255,255,255,0.35);background:rgba(255,255,255,0.08);}
+.header-link svg{flex-shrink:0;}
+.support-link{display:inline-flex;align-items:center;gap:5px;font-size:0.8rem;font-weight:500;color:#93c5fd;text-decoration:none;padding:5px 11px;border:1px solid rgba(37,99,235,0.45);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
+.support-link:hover{color:#fff;background:#2563eb;border-color:#2563eb;}
+.support-link svg{flex-shrink:0;}
+.footer-support{display:inline-flex;align-items:center;gap:5px;font-size:0.8rem;font-weight:500;color:#2563eb;text-decoration:none;padding:5px 11px;border:1px solid rgba(37,99,235,0.45);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
+.footer-support:hover{color:#fff;background:#2563eb;border-color:#2563eb;}
+.footer-support svg{flex-shrink:0;}
+.footer-support{vertical-align:middle;}
+.footer-links{align-items:center;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <a href="/" class="brand" aria-label="NYCuriosity Data home">
+      <span class="brand-name">nycuriosity</span>
+      <span class="brand-slash">/</span>
+      <span class="brand-section">data</span>
+    </a>
+    <div class="header-actions">
+      <a href="https://talroded.nycuriosity.com" class="header-link" target="_blank" rel="noopener"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>About</a>
+      <a href="https://www.nycuriosity.com" class="header-link" target="_blank" rel="noopener">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v4H4z"/><path d="M4 10h16v10l-8-4-8 4z"/></svg>
+      Substack
+    </a>
+    </div>
+  </div>
+</header>
+
+<!-- PILLAR RIBBON -->
+<nav class="ribbon" aria-label="State Capacity Ecosystem sections">
+  <div class="ribbon-inner">
+    <div class="ribbon-item"><a class="ribbon-link" href="/state_capacity_ecosystem/">Home</a></div>
+    <div class="ribbon-item">
+      <a class="ribbon-link active" href="/state_capacity_ecosystem/ecosystem/">Ecosystem Hub <span class="ribbon-caret">▾</span></a>
+      <div class="ribbon-drop">
+        <a href="/state_capacity_ecosystem/ecosystem/?search=1">Search the Ecosystem</a>
+        <a href="/state_capacity_ecosystem/ecosystem/directory/">Directory</a>
+        <a href="/state_capacity_ecosystem/ecosystem/network/">Affinity Network</a>
+        <a href="/state_capacity_ecosystem/ecosystem/connect/">Connect</a>
+        <a href="/state_capacity_ecosystem/ecosystem/methodology/">Methodology</a>
+      </div>
+    </div>
+    <div class="ribbon-item">
+      <a class="ribbon-link" href="/state_capacity_ecosystem/community/">Community <span class="ribbon-caret">▾</span></a>
+      <div class="ribbon-drop">
+        <a href="/state_capacity_ecosystem/ecosystem/connect/?add=1">Add Yourself to Connect</a>
+        <a href="/state_capacity_ecosystem/community/#organizers">Meet the Organizers</a>
+      </div>
+    </div>
+    <div class="ribbon-item">
+      <a class="ribbon-link" href="/state_capacity_ecosystem/platform/">Platform <span class="ribbon-caret">▾</span></a>
+      <div class="ribbon-drop">
+        <a href="/state_capacity_ecosystem/platform/#playbooks">Playbooks</a>
+        <a href="/state_capacity_ecosystem/policy-programs/events/sponsor-checklist/">Sponsor Checklist</a>
+        <a href="/state_capacity_ecosystem/platform/#prototypes">Prototypes &amp; Tools</a>
+      </div>
+    </div>
+    <div class="ribbon-item">
+      <a class="ribbon-link" href="/state_capacity_ecosystem/policy-programs/">Policy &amp; Programs <span class="ribbon-caret">▾</span></a>
+      <div class="ribbon-drop">
+        <a href="/state_capacity_ecosystem/policy-programs/substack/">Substack Posts &amp; Tools</a>
+        <a href="/state_capacity_ecosystem/policy-programs/events/">Events</a>
+        <a href="https://statecapacityecosystem.substack.com/" target="_blank" rel="noopener">Subscribe to the Substack ↗</a>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<div class="breadcrumb">
+  <div class="breadcrumb-inner">
+    <a href="/">NYCuriosity Data</a>
+    <span class="breadcrumb-sep">/</span>
+    <a href="/state_capacity_ecosystem/">State Capacity Ecosystem</a>
+    <span class="breadcrumb-sep">/</span>
+    <span class="current">Ecosystem Hub</span>
+  </div>
+</div>
+
+<div class="hero">
+  <div class="hero-inner">
+    <h1>Ecosystem <span>Hub</span></h1>
+    <p class="hero-lede">We are inspired by the ideas of Jennifer Pahlka: Good policy fails because the practitioners, technologists, researchers, and funders working to fix government are operating in silos, without a clear view of each other and with few collaboration pathways. We built a clear Directory of who is doing what. We added a collaborator map so you can Connect with the practitioners, technologists, researchers, and funders who can actually move your work forward. And we are hosting Events to make sure connections happen in real life.</p>
+    <div class="hero-cta">
+      <button class="hero-cta-btn" onclick="openMadLibs()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        Search The Ecosystem (Beta)
+      </button>
+      <a class="hero-cta-btn" href="./directory/?add=1"
+         style="background:var(--blue-light);color:var(--blue);border:1.5px solid var(--blue-mid);box-shadow:none;"
+         onmouseover="this.style.background='var(--blue)';this.style.color='#fff';"
+         onmouseout="this.style.background='var(--blue-light)';this.style.color='var(--blue)';">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add to Directory
+      </a>
+      <a class="hero-cta-btn" href="./connect/?add=1"
+         style="background:var(--orange-light);color:var(--orange);border:1.5px solid #fed7aa;box-shadow:none;"
+         onmouseover="this.style.background='var(--orange)';this.style.color='#fff';"
+         onmouseout="this.style.background='var(--orange-light)';this.style.color='var(--orange)';">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add to Connect
+      </a>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+  <div class="main-inner">
+
+    <div class="section-label" style="margin-top:4px;">Explore the ecosystem</div>
+
+    <div class="explore-bubbles">
+
+      <a class="explore-bubble" href="./directory/">
+        <div class="bubble-preview">
+          <svg viewBox="0 0 320 160" xmlns="http://www.w3.org/2000/svg">
+            <rect width="320" height="160" fill="#0f172a"/>
+            <text x="16" y="20" font-family="'Roboto Mono',monospace" font-size="8" font-weight="700" letter-spacing="0.6" fill="#FF6319">SEARCHABLE DIRECTORY · 300+ ORGS</text>
+            <rect x="16" y="28" width="288" height="14" rx="3" fill="#1e293b" stroke="#334155"/>
+            <text x="22" y="38" font-family="'Roboto Mono',monospace" font-size="7" fill="#94a3b8">Search org name · description · funder…</text>
+            <rect x="16" y="48" width="50" height="11" rx="5" fill="#2563eb"/>
+            <text x="41" y="56" font-family="'Roboto Mono',monospace" font-size="6.5" fill="#fff" text-anchor="middle">Research</text>
+            <rect x="70" y="48" width="56" height="11" rx="5" fill="#1e293b" stroke="#334155"/>
+            <text x="98" y="56" font-family="'Roboto Mono',monospace" font-size="6.5" fill="#94a3b8" text-anchor="middle">GovTech</text>
+            <rect x="130" y="48" width="60" height="11" rx="5" fill="#1e293b" stroke="#334155"/>
+            <text x="160" y="56" font-family="'Roboto Mono',monospace" font-size="6.5" fill="#94a3b8" text-anchor="middle">Advocacy</text>
+            <rect x="194" y="48" width="64" height="11" rx="5" fill="#1e293b" stroke="#334155"/>
+            <text x="226" y="56" font-family="'Roboto Mono',monospace" font-size="6.5" fill="#94a3b8" text-anchor="middle">Fellowships</text>
+            <rect x="16" y="66"  width="288" height="16" rx="2" fill="#1e293b"/>
+            <text x="22" y="76"  font-family="Inter,sans-serif" font-size="7" fill="#e2e8f0">Federation of American Scientists</text>
+            <text x="298" y="76" font-family="'Roboto Mono',monospace" font-size="6.5" fill="#60a5fa" text-anchor="end">Research</text>
+            <rect x="16" y="84"  width="288" height="16" rx="2" fill="#1e293b"/>
+            <text x="22" y="94"  font-family="Inter,sans-serif" font-size="7" fill="#e2e8f0">Code for America</text>
+            <text x="298" y="94" font-family="'Roboto Mono',monospace" font-size="6.5" fill="#60a5fa" text-anchor="end">Digital Svc.</text>
+            <rect x="16" y="102" width="288" height="16" rx="2" fill="#1e293b"/>
+            <text x="22" y="112" font-family="Inter,sans-serif" font-size="7" fill="#e2e8f0">Niskanen Center</text>
+            <text x="298" y="112" font-family="'Roboto Mono',monospace" font-size="6.5" fill="#60a5fa" text-anchor="end">Research</text>
+            <rect x="16" y="120" width="288" height="16" rx="2" fill="#1e293b"/>
+            <text x="22" y="130" font-family="Inter,sans-serif" font-size="7" fill="#e2e8f0">U.S. Digital Corps</text>
+            <text x="298" y="130" font-family="'Roboto Mono',monospace" font-size="6.5" fill="#60a5fa" text-anchor="end">Fellowships</text>
+            <rect x="16" y="138" width="288" height="14" rx="2" fill="#1e293b" opacity="0.5"/>
+          </svg>
+        </div>
+        <div class="bubble-body">
+          <div class="bubble-cat">Directory</div>
+          <div class="bubble-title">Browse Organizations</div>
+          <div class="bubble-desc">Searchable, sortable table of every org in the database. Filter by segment, geographic focus, or problem statement. Click any row for the full description, funding detail, and a link out.</div>
+          <div class="bubble-cta">Open Directory →</div>
+        </div>
+      </a>
+
+      <a class="explore-bubble" href="./connect/">
+        <div class="bubble-preview">
+          <svg viewBox="0 0 320 160" xmlns="http://www.w3.org/2000/svg">
+            <rect width="320" height="160" fill="#0f172a"/>
+            <text x="16" y="20" font-family="'Roboto Mono',monospace" font-size="8" font-weight="700" letter-spacing="0.6" fill="#FF6319">CONNECT · PRACTITIONERS</text>
+            <g font-family="Inter,sans-serif" font-size="7" fill="#e2e8f0">
+              <circle cx="28" cy="44" r="7" fill="#2563eb"/>
+              <text x="42" y="42">Tal Roded</text>
+              <text x="42" y="51" font-size="6" fill="#94a3b8">NYCuriosity · Technologist</text>
+              <rect x="178" y="36" width="74" height="11" rx="5" fill="#fff4ed" stroke="#fed7aa"/>
+              <text x="215" y="44" font-size="6.5" fill="#c2410c" text-anchor="middle">Transparency</text>
+              <rect x="256" y="36" width="48" height="11" rx="5" fill="#1e293b" stroke="#334155"/>
+              <text x="280" y="44" font-size="6.5" fill="#60a5fa" text-anchor="middle">Local</text>
+              <circle cx="28" cy="68" r="7" fill="#16a34a"/>
+              <text x="42" y="66">Nathan Storey</text>
+              <text x="42" y="75" font-size="6" fill="#94a3b8">NYC OTI · Technologist</text>
+              <rect x="178" y="60" width="74" height="11" rx="5" fill="#fff4ed" stroke="#fed7aa"/>
+              <text x="215" y="68" font-size="6.5" fill="#c2410c" text-anchor="middle">Data Integration</text>
+              <rect x="256" y="60" width="48" height="11" rx="5" fill="#1e293b" stroke="#334155"/>
+              <text x="280" y="68" font-size="6.5" fill="#60a5fa" text-anchor="middle">Local</text>
+              <circle cx="28" cy="92" r="7" fill="#7c3aed"/>
+              <text x="42" y="90">Researcher</text>
+              <text x="42" y="99" font-size="6" fill="#94a3b8">University · Benefits access</text>
+              <rect x="178" y="84" width="74" height="11" rx="5" fill="#fff4ed" stroke="#fed7aa"/>
+              <text x="215" y="92" font-size="6.5" fill="#c2410c" text-anchor="middle">Benefits Access</text>
+              <rect x="256" y="84" width="48" height="11" rx="5" fill="#1e293b" stroke="#334155"/>
+              <text x="280" y="92" font-size="6.5" fill="#60a5fa" text-anchor="middle">Federal</text>
+              <circle cx="28" cy="116" r="7" fill="#d97706"/>
+              <text x="42" y="114">Government practitioner</text>
+              <text x="42" y="123" font-size="6" fill="#94a3b8">State agency · Hiring</text>
+              <rect x="178" y="108" width="74" height="11" rx="5" fill="#fff4ed" stroke="#fed7aa"/>
+              <text x="215" y="116" font-size="6.5" fill="#c2410c" text-anchor="middle">Talent Pipeline</text>
+              <rect x="256" y="108" width="48" height="11" rx="5" fill="#1e293b" stroke="#334155"/>
+              <text x="280" y="116" font-size="6.5" fill="#60a5fa" text-anchor="middle">State</text>
+            </g>
+            <rect x="16" y="138" width="288" height="14" rx="7" fill="#FF6319"/>
+            <text x="160" y="147" font-family="'Roboto Mono',monospace" font-size="6.5" font-weight="700" fill="#fff" text-anchor="middle">+ SUBMIT YOURSELF TO THE DIRECTORY</text>
+          </svg>
+        </div>
+        <div class="bubble-body">
+          <div class="bubble-cat">Connect</div>
+          <div class="bubble-title">Find Collaborators And Opportunities</div>
+          <div class="bubble-desc">Practitioners and problem statements indexed by what people are working on and what kind of help they're looking for. Filter by role, geography, problem area, or topic to find collaborators and potential partners.</div>
+          <div class="bubble-cta">Open Connect →</div>
+        </div>
+      </a>
+
+      <a class="explore-bubble" href="./network/">
+        <div class="bubble-preview">
+          <svg viewBox="0 0 320 160" xmlns="http://www.w3.org/2000/svg">
+            <rect width="320" height="160" fill="#0f172a"/>
+            <text x="16" y="20" font-family="'Roboto Mono',monospace" font-size="8" font-weight="700" letter-spacing="0.6" fill="#FF6319">AFFINITY · SEMANTIC SEARCH</text>
+            <g stroke="#334155" stroke-width="1" fill="none" opacity="0.7">
+              <line x1="80"  y1="60"  x2="120" y2="80"/>
+              <line x1="120" y1="80"  x2="160" y2="60"/>
+              <line x1="160" y1="60"  x2="200" y2="90"/>
+              <line x1="200" y1="90"  x2="240" y2="70"/>
+              <line x1="80"  y1="60"  x2="100" y2="110"/>
+              <line x1="100" y1="110" x2="150" y2="120"/>
+              <line x1="150" y1="120" x2="200" y2="90"/>
+              <line x1="120" y1="80"  x2="100" y2="110"/>
+              <line x1="200" y1="90"  x2="220" y2="125"/>
+              <line x1="160" y1="60"  x2="220" y2="125"/>
+              <line x1="240" y1="70"  x2="270" y2="100"/>
+              <line x1="270" y1="100" x2="220" y2="125"/>
+              <line x1="60"  y1="100" x2="100" y2="110"/>
+              <line x1="60"  y1="100" x2="80"  y2="60"/>
+            </g>
+            <circle cx="80"  cy="60"  r="7"  fill="#2563eb"/>
+            <circle cx="120" cy="80"  r="9"  fill="#2563eb"/>
+            <circle cx="160" cy="60"  r="6"  fill="#16a34a"/>
+            <circle cx="200" cy="90"  r="10" fill="#dc2626"/>
+            <circle cx="240" cy="70"  r="6"  fill="#dc2626"/>
+            <circle cx="270" cy="100" r="5"  fill="#d97706"/>
+            <circle cx="220" cy="125" r="7"  fill="#d97706"/>
+            <circle cx="150" cy="120" r="5"  fill="#7c3aed"/>
+            <circle cx="100" cy="110" r="6"  fill="#7c3aed"/>
+            <circle cx="60"  cy="100" r="5"  fill="#0891b2"/>
+            <rect x="16"  y="138" width="6" height="6" rx="3" fill="#2563eb"/>
+            <text x="26"  y="144" font-family="'Roboto Mono',monospace" font-size="6.5" fill="#94a3b8">Research</text>
+            <rect x="76"  y="138" width="6" height="6" rx="3" fill="#dc2626"/>
+            <text x="86"  y="144" font-family="'Roboto Mono',monospace" font-size="6.5" fill="#94a3b8">Philanthropy</text>
+            <rect x="148" y="138" width="6" height="6" rx="3" fill="#16a34a"/>
+            <text x="158" y="144" font-family="'Roboto Mono',monospace" font-size="6.5" fill="#94a3b8">GovTech</text>
+            <rect x="208" y="138" width="6" height="6" rx="3" fill="#d97706"/>
+            <text x="218" y="144" font-family="'Roboto Mono',monospace" font-size="6.5" fill="#94a3b8">Fellowships</text>
+            <rect x="270" y="138" width="6" height="6" rx="3" fill="#7c3aed"/>
+            <text x="280" y="144" font-family="'Roboto Mono',monospace" font-size="6.5" fill="#94a3b8">Community</text>
+          </svg>
+        </div>
+        <div class="bubble-body">
+          <div class="bubble-cat">Affinity</div>
+          <div class="bubble-title">Find Surprising Org Relationships</div>
+          <div class="bubble-desc">A map of which orgs are working on the same underlying problems. Type a question like "where should I work on procurement in NYC?" and the search ranks orgs by semantic relevance and highlights the top matches. Or click through the graph: thicker edges mean the two orgs share a stronger combination of described work, problem statements, and funders.</div>
+          <div class="bubble-cta">Open Network →</div>
+        </div>
+      </a>
+
+    </div>
+
+    <div class="section-label" style="margin-top:24px;">How we built this</div>
+    <div class="text-panel" style="border-left-color:var(--blue);display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap;">
+      <p style="margin-bottom:0">Inclusion criteria, segment taxonomy, problem statement methodology, and how the Connect directory is curated, all documented on the Methodology page.</p>
+      <a href="./methodology/" class="info-link" style="flex-shrink:0;white-space:nowrap;margin-left:auto;">Read →</a>
+    </div>
+
+    <div class="section-label" style="margin-top:24px;">Submit feedback</div>
+    <div class="text-panel" style="border-left-color:var(--orange);display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap;">
+      <p style="margin-bottom:0">Org is misclassified? Feature isn't working? Have a suggestion for the Directory, Connect, or the tool overall? We read everything.</p>
+      <a href="mailto:statecapacityecosystem@gmail.com?subject=State%20Capacity%20Ecosystem%20Feedback" class="info-link" style="flex-shrink:0;white-space:nowrap;background:var(--orange-light);border-color:#fed7aa;color:var(--orange);" onmouseover="this.style.background='var(--orange)';this.style.color='#fff';" onmouseout="this.style.background='var(--orange-light)';this.style.color='var(--orange)';">Send Feedback →</a>
+    </div>
+
+  </div>
+</div>
+
+<!-- STAY CONNECTED -->
+<div style="background:var(--surface); border-top:1px solid var(--border);">
+  <div style="max-width:1300px; margin:0 auto; padding:18px clamp(16px,4vw,48px); display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap;">
+    <span style="font-family:'Roboto Mono',monospace; font-size:0.82rem; font-weight:600; color:var(--text);">Stay in the loop on state capacity events and tools.</span>
+    <div style="display:flex; gap:10px; flex-wrap:wrap;">
+      <a href="https://statecapacityecosystem.substack.com/" target="_blank" rel="noopener" style="font-family:'Roboto Mono',monospace; font-size:0.78rem; font-weight:600; text-decoration:none; padding:7px 14px; border-radius:7px; border:1px solid #fcd0b7; background:#fff4ed; color:#FF6719;">Subscribe to our Substack ↗</a>
+      <a href="./connect/?add=1" style="font-family:'Roboto Mono',monospace; font-size:0.78rem; font-weight:600; text-decoration:none; padding:7px 14px; border-radius:7px; border:1px solid var(--blue-mid); background:var(--blue-light); color:var(--blue);">Add Yourself to Connect →</a>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-inner">
+    <span class="footer-copy">Created by Tal Roded · NYCuriosity</span>
+    <div class="footer-links">
+      <a href="https://buymeacoffee.com/nycuriosity" class="footer-support" target="_blank" rel="noopener" aria-label="Support my work on Buy Me a Coffee"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>Support my work</a>
+      <a href="https://www.nycuriosity.com" target="_blank" rel="noopener">Substack</a>
+      <a href="https://airtable.com/appo3EaOAi7JjI2VZ/shrAswoPpY3sbZIY7/tblcsGZwPK5O5TXjb/viwQZffbnIJ8f4zjT" target="_blank" rel="noopener">Source: Airtable</a>
+      <a href="/">← All datasets</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+const SEGMENT_COLORS = {
+  "Research":                       "#2563eb",
+  "Government":                     "#0891b2",
+  "Philanthropy":                   "#dc2626",
+  "Fellowships":                    "#d97706",
+  "Community":                      "#7c3aed",
+  "GovTech":                        "#16a34a",
+  "Advocacy":                       "#db2777",
+  "Digital Services & Consulting":  "#0d9488",
+  "Investor":                       "#9333ea",
+  "Capacity Building":              "#ca8a04",
+  "Ecosystems":                     "#65a30d",
+};
+
+const ROLE_TO_SEGS = {
+  "Advocate":               ["Advocacy"],
+  "Capacity Builder":       ["Capacity Building"],
+  "Fellowship Program":     ["Fellowships"],
+  "Funder":                 ["Philanthropy","Investor"],
+  "Government Practitioner":["Government"],
+  "Media":                  [],
+  "Researcher":             ["Research"],
+  "Technologist":           ["GovTech","Digital Services & Consulting"],
+  "Other":                  [],
+};
+const ML_ROLES = Object.keys(ROLE_TO_SEGS);
+
+const OFFERING_TO_SEGS = {
+  "Expertise":            ["Research","Digital Services & Consulting","Capacity Building"],
+  "Funding / Investment": ["Philanthropy","Investor"],
+  "Grant / Challenge":    ["Philanthropy"],
+  "Job / Fellowship":     ["Fellowships","Capacity Building"],
+  "Problem to Solve":     ["Government","GovTech"],
+  "Tool / Product":       ["GovTech"],
+  // "Collaboration Opportunity","Interesting Conversation","Other" → no segment constraint
+};
+
+let _mlOrgs = [], _mlPeople = [], _mlReady = false;
+const _mlToks = {};
+
+function openMadLibs() {
+  const ov = document.getElementById('ml-overlay');
+  ov.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  if (!_mlReady) {
+    document.getElementById('ml-results-hdr').textContent = 'Loading data…';
+    Promise.all([
+      fetch('../data/directory.json').then(r => r.json()).catch(() => []),
+      fetch('../data/connect.json').then(r => r.json()).catch(() => [])
+    ]).then(([orgs, ppl]) => {
+      _mlOrgs = orgs; _mlPeople = ppl; _mlReady = true;
+      _mlInitToks();
+      _mlSearch();
+    });
+  }
+}
+function closeMadLibs() {
+  document.getElementById('ml-overlay').style.display = 'none';
+  document.body.style.overflow = '';
+}
+window.openMadLibs = openMadLibs;
+window.closeMadLibs = closeMadLibs;
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeMadLibs(); });
+if (new URLSearchParams(location.search).get('search')) openMadLibs();
+
+function _mlInitToks() {
+  _mkTok('ml-t-myrole',   ML_ROLES, 'single', 'Role');
+  _mkTok('ml-t-offering', [
+    "Collaboration Opportunity","Expertise","Funding / Investment","Grant / Challenge",
+    "Interesting Conversation","Job / Fellowship","Problem to Solve","Tool / Product","Other"
+  ], 'multi', 'any collaboration opp');
+  const areas  = [...new Set(_mlOrgs.flatMap(o => o.problem_areas || []))].sort();
+  const topics = [...new Set(_mlOrgs.flatMap(o => o.problem_statements || []))].sort();
+  _mkTok('ml-t-problem', [...areas, ...topics], 'multi', 'any problem');
+  _mkTok('ml-t-geo', ["Federal","State","City","Outside US"], 'multi', 'any geography');
+}
+
+function _mkTok(id, opts, mode, ph) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const tok = { el, opts, mode, ph, sel: mode==='single' ? null : new Set(), _open:false, btn:null, drop:null };
+  _mlToks[id] = tok;
+
+  const btn = document.createElement('button');
+  btn.type = 'button'; btn.className = 'ml-tok-btn';
+  tok.btn = btn;
+
+  const drop = document.createElement('div');
+  drop.className = 'ml-tok-drop';
+  tok.drop = drop;
+  drop.addEventListener('click', e => e.stopPropagation());
+
+  if (mode === 'multi') {
+    const acts = document.createElement('div');
+    acts.className = 'ml-tok-acts';
+    const mkA = (label, fn) => {
+      const b = document.createElement('button');
+      b.type='button'; b.className='ml-tok-act'; b.textContent=label;
+      b.addEventListener('click', e => { e.stopPropagation(); fn(); });
+      return b;
+    };
+    acts.append(
+      mkA('Any', () => { tok.sel.clear(); _syncTok(tok); _mlSearch(); }),
+      mkA('All', () => { opts.forEach(o => tok.sel.add(o)); _syncTok(tok); _mlSearch(); })
+    );
+    drop.appendChild(acts);
+  }
+
+  const list = document.createElement('div');
+  list.className = 'ml-tok-list';
+  opts.forEach(o => {
+    const item = document.createElement('div');
+    item.className = 'ml-tok-item';
+    if (mode === 'multi') {
+      const cb = document.createElement('input');
+      cb.type = 'checkbox'; cb.value = o;
+      cb.addEventListener('change', () => { cb.checked ? tok.sel.add(o) : tok.sel.delete(o); _syncTok(tok); _mlSearch(); });
+      item.append(cb, document.createTextNode(o));
+    } else {
+      item.textContent = o;
+      item.addEventListener('click', e => { e.stopPropagation(); tok.sel = o; _syncTok(tok); _closeTok(tok); _mlSearch(); });
+    }
+    list.appendChild(item);
+  });
+  drop.appendChild(list);
+
+  btn.addEventListener('click', e => { e.stopPropagation(); _togTok(tok); });
+  _syncTok(tok);
+  el.append(btn, drop);
+  document.addEventListener('click', () => _closeTok(tok));
+}
+
+function _syncTok(tok) {
+  if (!tok.btn) return;
+  let lbl;
+  if (tok.mode === 'single') {
+    lbl = tok.sel || `[${tok.ph}]`;
+    tok.btn.classList.toggle('ml-tok-set', !!tok.sel);
+  } else {
+    const n = tok.sel.size;
+    lbl = n === 0 ? `[${tok.ph}]` : n === 1 ? [...tok.sel][0] : `${n} selected`;
+    tok.btn.classList.toggle('ml-tok-set', n > 0);
+  }
+  tok.btn.textContent = lbl;
+}
+function _togTok(tok) { tok._open ? _closeTok(tok) : _openTok(tok); }
+function _openTok(tok) {
+  Object.values(_mlToks).forEach(t => { if (t !== tok) _closeTok(t); });
+  tok._open = true; tok.btn.classList.add('open'); tok.drop.classList.add('open');
+}
+function _closeTok(tok) { tok._open = false; tok.btn?.classList.remove('open'); tok.drop?.classList.remove('open'); }
+function _mlGet(id) { const t = _mlToks[id]; if (!t) return null; return t.mode==='single' ? t.sel : (t.sel.size > 0 ? t.sel : null); }
+
+function _mlSearch() {
+  if (!_mlReady) return;
+  const myRole   = _mlGet('ml-t-myrole');
+  const offering = _mlGet('ml-t-offering');
+  const problems = _mlGet('ml-t-problem');
+  const geos     = _mlGet('ml-t-geo');
+
+  const people = _mlPeople.filter(p => {
+    if (offering) {
+      const pOffs = Array.isArray(p.offering) ? p.offering : (p.offering ? p.offering.split(", ").map(s=>s.trim()) : (p.help_source ? [p.help_source] : []));
+      if (!pOffs.some(o => offering.has(o))) return false;
+    }
+    if (problems) {
+      const pAreas  = p.problem_areas  || (p.problem_area  ? [p.problem_area]  : []);
+      const pTopics = p.problem_topics || (p.problem_topic ? [p.problem_topic] : []);
+      if (!pAreas.some(a => problems.has(a)) && !pTopics.some(t => problems.has(t))) return false;
+    }
+    if (geos) {
+      const pGeos = [...(p.geography||[]), ...(p.jurisdictions||[])];
+      if (!pGeos.some(j => geos.has(j))) return false;
+    }
+    return true;
+  });
+
+  const targetSegs = myRole ? new Set(ROLE_TO_SEGS[myRole]||[]) : null;
+
+  // Build an org-segment constraint from selected offerings. Only offerings with
+  // a known segment mapping contribute; "Collaboration Opportunity" etc. do not.
+  let offeringSegs = null;
+  if (offering) {
+    const segs = new Set();
+    let hasConstraint = false;
+    for (const o of offering) {
+      if (OFFERING_TO_SEGS[o]) { OFFERING_TO_SEGS[o].forEach(s => segs.add(s)); hasConstraint = true; }
+    }
+    if (hasConstraint) offeringSegs = segs;
+  }
+
+  const orgs = _mlOrgs.filter(o => {
+    if (targetSegs && targetSegs.size > 0 && !targetSegs.has(o.primary_segment)) return false;
+    if (offeringSegs && !(o.segments||[]).some(s => offeringSegs.has(s))) return false;
+    if (problems && !((o.problem_areas||[]).some(a => problems.has(a)) || (o.problem_statements||[]).some(t => problems.has(t)))) return false;
+    if (geos && !(o.focus||[]).some(f => geos.has(f))) return false;
+    return true;
+  });
+
+  _mlRender(people, orgs);
+}
+
+function _mlRender(ppl, orgs) {
+  const hdr  = document.getElementById('ml-results-hdr');
+  const list = document.getElementById('ml-results-list');
+  const allEmpty = Object.values(_mlToks).every(t => t.mode==='single' ? !t.sel : t.sel.size===0);
+
+  if (allEmpty) {
+    hdr.innerHTML = 'Select a value above to find matching practitioners and organizations.';
+    list.innerHTML = '';
+    return;
+  }
+  const total = ppl.length + orgs.length;
+  if (total === 0) {
+    hdr.innerHTML = 'No matches. Try broadening your selections.';
+    list.innerHTML = '<div class="ml-empty">Try selecting "Any" for one or more filters above.</div>';
+    return;
+  }
+  hdr.innerHTML = `<span class="ml-results-n">${total}</span> <span class="ml-results-sub">match${total!==1?'es':''} &mdash; ${ppl.length} practitioner${ppl.length!==1?'s':''} &middot; ${orgs.length} org${orgs.length!==1?'s':''}</span>`;
+
+  const e2   = s => (s||'').toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  const http = u => !u ? '' : /^https?:\/\//.test(u) ? u : 'https://'+u;
+
+  const pCards = ppl.slice(0,8).map(p =>
+    `<div class="ml-card ml-card-person">
+      <div class="ml-card-type">Practitioner</div>
+      <div class="ml-card-name">${e2(p.name)}</div>
+      <div class="ml-card-sub">${e2(p.organization||'')}${p.role?' &middot; '+e2(p.role):''}</div>
+      <div class="ml-card-chips">
+        ${(p.problem_topics||[p.problem_topic].filter(Boolean)).slice(0,2).map(t=>`<span class="ml-chip ml-chip-blue">${e2(t)}</span>`).join('')}
+        ${(p.geography||p.jurisdictions||[]).map(j=>`<span class="ml-chip ml-chip-orange">${e2(j)}</span>`).join('')}
+        ${(Array.isArray(p.offering)?p.offering:[p.offering||p.help_source].filter(Boolean)).slice(0,1).map(o=>`<span class="ml-chip ml-chip-green">${e2(o)}</span>`).join('')}
+      </div>
+    </div>`
+  );
+
+  const oCards = orgs.slice(0,8).map(o =>
+    `<div class="ml-card ml-card-org">
+      <div class="ml-card-type">Organization</div>
+      <div class="ml-card-name">${o.website?`<a href="${e2(http(o.website))}" target="_blank" rel="noopener">${e2(o.name)} ↗</a>`:e2(o.name)}</div>
+      <div class="ml-card-sub">${e2(o.primary_segment||'')}${o.funding_model?' &middot; '+e2(o.funding_model):''}</div>
+      <div class="ml-card-chips">
+        ${(o.problem_statements||[]).slice(0,3).map(t=>`<span class="ml-chip ml-chip-blue">${e2(t)}</span>`).join('')}
+        ${(o.focus||[]).map(f=>`<span class="ml-chip ml-chip-orange">${e2(f)}</span>`).join('')}
+      </div>
+    </div>`
+  );
+
+  list.innerHTML = [...pCards, ...oCards].join('');
+  if (total > 16) {
+    list.innerHTML += `<div class="ml-more">Showing top 16 of ${total}. <a href="./connect/">Connect</a> and the <a href="./directory/">Directory</a> have full search.</div>`;
+  }
+}
+</script>
+
+<!-- MAD LIBS OVERLAY -->
+<div id="ml-overlay" class="ml-overlay" onclick="if(event.target===this)closeMadLibs()">
+  <div class="ml-modal">
+    <div class="ml-modal-hdr">
+      <span class="ml-modal-title">Who are you looking for?</span>
+      <button class="ml-modal-close" onclick="closeMadLibs()" aria-label="Close">✕</button>
+    </div>
+    <div class="ml-modal-body">
+      <div class="ml-sentence">
+        <span class="ml-prose">I am a </span><span class="ml-token" id="ml-t-myrole"></span>
+        <span class="ml-prose"> seeking </span><span class="ml-token" id="ml-t-offering"></span>
+        <span class="ml-prose"> on </span><span class="ml-token" id="ml-t-problem"></span>
+        <span class="ml-prose"> in </span><span class="ml-token" id="ml-t-geo"></span>
+        <span class="ml-prose">.</span>
+      </div>
+    </div>
+    <div class="ml-results" id="ml-results-section">
+      <div class="ml-results-hdr" id="ml-results-hdr">Select a value above to find matching practitioners and organizations.</div>
+      <div id="ml-results-list"></div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

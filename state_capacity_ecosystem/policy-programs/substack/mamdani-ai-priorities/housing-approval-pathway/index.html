@@ -1,0 +1,610 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>NYC Affordable Housing Approvals Navigator</title>
+<!--
+  NYC AFFORDABLE HOUSING APPROVALS NAVIGATOR — prototype v3
+  Demo sites are REAL projects from two NYC Open Data sources,
+  fetched July 2026:
+  - DOB NOW: Build Job Application Filings (w9ak-ipjd) and
+    Approved Permits (rbx6-tga4)
+  - HPD Affordable Housing Production by Building (hg8x-zxpr)
+  Lot identifiers, unit counts, income-band mixes, the (E) flag,
+  and filing/approval dates are actual recorded values. The
+  rules engine remains a model.
+
+  Self-contained vanilla-JS build of the React prototype in the
+  civic-ai-priorities repo; content and behavior are unchanged.
+-->
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Public+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+body { margin: 0; }
+
+.anv {
+  --ink: #17263B; --paper: #F3F5F4; --line: #C9D1CE; --stamp: #BE3A2B;
+  --real: #1F6B5A; --hpd: #9A5B00; --grid: rgba(23,38,59,0.05);
+  font-family: 'Public Sans', system-ui, sans-serif; color: var(--ink);
+  background: linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px), var(--paper);
+  background-size: 24px 24px, 24px 24px, auto;
+  min-height: 100vh; padding: 40px 20px 60px;
+}
+.anv h1, .anv h2, .anv .anv-phase-name, .anv .anv-big {
+  font-family: 'Barlow Condensed', sans-serif; text-transform: uppercase; letter-spacing: 0.02em;
+}
+.anv-head { max-width: 880px; margin: 0 auto 28px; }
+.anv-eyebrow { font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--hpd); margin-bottom: 8px; }
+.anv h1 { font-size: 46px; font-weight: 700; margin: 0 0 10px; line-height: 0.98; }
+.anv-sub { max-width: 680px; font-size: 16px; line-height: 1.55; margin: 0; }
+
+.anv-panel { max-width: 880px; margin: 0 auto 26px; background: #fff; border: 1.5px solid var(--ink); padding: 26px 28px 30px; box-shadow: 5px 5px 0 rgba(23,38,59,0.12); }
+.anv-steptag { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #6b7680; margin-bottom: 6px; }
+.anv h2 { font-size: 30px; margin: 0 0 8px; font-weight: 600; }
+.anv-note { font-size: 13.5px; color: #55606a; max-width: 700px; margin: 0 0 16px; }
+
+.anv-addr-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
+.anv-addr { text-align: left; background: #fff; border: 1.5px solid var(--line); padding: 14px 16px; cursor: pointer; font-family: inherit; transition: border-color .15s, background .15s; }
+.anv-addr:hover { border-color: var(--ink); }
+.anv-addr.sel { border-color: var(--ink); background: #F7F2EA; box-shadow: inset 3px 0 0 var(--hpd); }
+.anv-addr-main { display: block; font-weight: 600; font-size: 15px; }
+.anv-addr-hint { display: block; font-size: 12.5px; color: #6b7680; margin-top: 3px; }
+
+.anv-dossier { margin-top: 20px; border: 1.5px dashed var(--ink); padding: 16px 18px; animation: anvIn .35s ease; }
+@keyframes anvIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .anv-dossier { animation: none; } }
+.anv-dossier-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; font-family: 'Barlow Condensed', sans-serif; text-transform: uppercase; font-weight: 600; font-size: 18px; flex-wrap: wrap; gap: 4px; }
+.anv-dossier-src { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--real); text-transform: none; font-weight: 500; }
+.anv-facts { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px; }
+.anv-fact { background: #F6F8F7; border: 1px solid var(--line); padding: 9px 11px; }
+.anv-fact.flag { border-color: var(--hpd); background: #FBF5EC; }
+.anv-fact-k { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: #6b7680; }
+.anv-fact-v { display: block; font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 500; margin: 2px 0; }
+.anv-fact.flag .anv-fact-v { color: var(--hpd); }
+.anv-fact-src { font-size: 10.5px; font-family: 'IBM Plex Mono', monospace; color: #8a949d; }
+.anv-brmix { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #55606a; margin-top: 8px; }
+
+.anv-filing { margin-top: 14px; border-left: 3px solid var(--real); background: #F2F7F5; padding: 10px 14px; }
+.anv-filing-head { font-family: 'Barlow Condensed', sans-serif; text-transform: uppercase; font-weight: 600; font-size: 15px; color: var(--real); }
+.anv-filing-body { font-size: 13.5px; line-height: 1.5; }
+.anv-filing-body p { margin: 4px 0; }
+.anv-filing-num { font-family: 'IBM Plex Mono', monospace; font-weight: 500; }
+.anv-filing-dates { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--real); font-weight: 500; }
+
+.anv-qs { display: flex; flex-direction: column; gap: 14px; margin-top: 14px; }
+.anv-q { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; justify-content: space-between; border-bottom: 1px solid #E4E9E7; padding-bottom: 12px; }
+.anv-q-label { font-size: 14.5px; font-weight: 500; max-width: 420px; }
+.anv-q-opts { display: flex; gap: 6px; flex-wrap: wrap; }
+.anv-opt { font-family: inherit; font-size: 13px; padding: 7px 14px; background: #fff; border: 1.5px solid var(--line); cursor: pointer; }
+.anv-opt:hover { border-color: var(--ink); }
+.anv-opt.sel { background: var(--ink); color: #fff; border-color: var(--ink); }
+.anv-go { margin-top: 20px; width: 100%; padding: 14px; font-family: 'Barlow Condensed', sans-serif; font-size: 20px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; background: var(--hpd); color: #fff; border: none; cursor: pointer; }
+.anv-go:disabled { background: #B9C2BF; cursor: not-allowed; }
+
+.anv-summary { display: flex; gap: 34px; margin: 14px 0 24px; flex-wrap: wrap; }
+.anv-summary > div { display: flex; align-items: baseline; gap: 8px; }
+.anv-big { font-size: 40px; font-weight: 700; }
+.anv-summary span:last-child { font-size: 13px; color: #55606a; max-width: 190px; line-height: 1.2; }
+
+.anv-banner { border: 1.5px solid var(--ink); padding: 14px 16px; margin-bottom: 16px; font-size: 14px; line-height: 1.5; }
+.anv-banner.warn { background: #FBF7EA; }
+.anv-banner.disc { background: #FBF1EF; border-color: var(--stamp); }
+.anv-banner.real { background: #F2F7F5; border-color: var(--real); }
+.anv-banner p { margin: 6px 0 10px; }
+.anv-banner-stamp { display: inline-block; font-family: 'Barlow Condensed', sans-serif; text-transform: uppercase; font-weight: 700; font-size: 18px; color: var(--stamp); border: 2px solid var(--stamp); padding: 2px 10px; transform: rotate(-1.5deg); }
+
+.anv-phase { margin-bottom: 26px; }
+.anv-phase-head { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 10px; }
+.anv-phase-id { font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 22px; background: var(--ink); color: #fff; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.anv-phase-name { font-size: 21px; font-weight: 600; }
+.anv-phase-note { font-size: 12.5px; color: #6b7680; max-width: 640px; }
+.anv-cards { display: flex; flex-direction: column; gap: 10px; border-left: 2px solid var(--ink); margin-left: 16px; padding-left: 18px; }
+.anv-card { border: 1px solid var(--line); background: #FBFCFB; padding: 12px 14px; }
+.anv-card-top { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 6px; flex-wrap: wrap; }
+.anv-chip { color: #fff; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: .06em; padding: 3px 8px; text-transform: uppercase; }
+.anv-days { font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; color: #55606a; max-width: 460px; text-align: right; }
+.anv-real { color: var(--real); font-weight: 500; }
+.anv-badge { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: var(--real); border: 1px solid var(--real); padding: 1px 6px; margin-left: 8px; vertical-align: middle; }
+.anv-card-name { font-weight: 600; font-size: 15px; margin-bottom: 4px; }
+.anv-card-because { font-size: 13.5px; line-height: 1.5; }
+.anv-req { font-weight: 600; color: var(--stamp); text-transform: uppercase; font-size: 11px; letter-spacing: .06em; margin-right: 4px; }
+.anv-card-foot { display: flex; gap: 14px; margin-top: 8px; flex-wrap: wrap; }
+.anv-src { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #6b7680; }
+.anv-gate { font-size: 11px; color: var(--stamp); font-weight: 600; }
+
+.anv-legend { font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; color: var(--real); margin: 4px 0 10px; }
+.anv-disclaimer { font-size: 12px; color: #6b7680; border-top: 1px solid var(--line); padding-top: 14px; margin-top: 8px; line-height: 1.5; }
+.anv-reset { margin-top: 16px; font-family: inherit; font-size: 13px; padding: 9px 18px; background: #fff; border: 1.5px solid var(--ink); cursor: pointer; }
+.anv-foot { max-width: 880px; margin: 10px auto 0; font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #8a949d; }
+@media (max-width: 560px) { .anv h1 { font-size: 34px; } .anv-panel { padding: 20px 16px 24px; } }
+</style>
+</head>
+<body>
+
+<div class="anv">
+  <header class="anv-head">
+    <div class="anv-eyebrow">Prototype v3 · Affordable housing edition · Built on real HPD + DOB NOW records</div>
+    <h1>NYC Affordable Housing Approvals Navigator</h1>
+    <p class="anv-sub">
+      For nonprofit sponsors, HDFCs, and small mission-driven developers: pick a real project pulled
+      from public data (July 2026), set your financing and site facts, and see every
+      approval between you and lease-up — including the ones the subsidy itself triggers.
+    </p>
+  </header>
+
+  <section class="anv-panel">
+    <div class="anv-steptag">Step 1 — Site</div>
+    <h2>Where is the project?</h2>
+    <p class="anv-note">
+      Three real projects: an HPD-financed supportive-scale building from the Affordable Housing
+      Production dataset, an HPD-owned NB from DOB NOW whose filing references the HUB consultation,
+      and a private infill at the 485-x/UAP scale. Recorded values shown verbatim.
+    </p>
+    <div class="anv-addr-row" id="addr-row"></div>
+    <div id="dossier"></div>
+  </section>
+
+  <section class="anv-panel" id="panel-q" hidden>
+    <div class="anv-steptag">Step 2 — Project &amp; financing</div>
+    <h2>How is it financed, and what are you building?</h2>
+    <p class="anv-note" id="q-note"></p>
+    <div class="anv-qs" id="qs"></div>
+    <button class="anv-go" id="go" disabled>Answer all questions to continue</button>
+  </section>
+
+  <section class="anv-panel anv-roadmap" id="panel-road" hidden></section>
+
+  <footer class="anv-foot">
+    Real data: HPD Affordable Housing Production by Building (hg8x-zxpr) · DOB NOW Job Filings (w9ak-ipjd) &amp; Approved Permits (rbx6-tga4), fetched July 2026 · Production adds: GeoSearch · PLUTO · ZAP · LPC · FEMA · OER · Local Law 44 · Built by Sourabh Chakraborty
+  </footer>
+</div>
+
+<script>
+var SAMPLE_STATS = {
+  n: 23, standardMedian: 13, standardP80: 85, profCertMedian: 1,
+  pulled: "July 2026",
+};
+
+var DEMO_SITES = [
+  {
+    id: "vansinderen",
+    address: "729 Van Sinderen Avenue, Brooklyn",
+    nta: "East New York (BK-05)",
+    hint: "Real 193-unit HPD new-construction project",
+    ids: { "Building ID": "1014907", "Council District": "42", "Postcode": "11207" },
+    unitMix: { "Extremely low income": 136, "Very low income": 20, "Low income": 36, "Other": 1, "Total (all rental, all counted)": 193 },
+    brMix: "108 studios · 45 one-BR · 40 two-BR",
+    prevailingWage: "Non Prevailing Wage (recorded)",
+    filing: {
+      num: "HPD project 75917 — \"HOUSING PLUS\"", type: "New Construction",
+      desc: "Supportive-scale rental: 136 extremely-low-income units of 193 total, studio-heavy unit mix",
+      milestone: "Project start (= financing closing) recorded 03/31/2026",
+      source: "HPD Affordable Housing Production by Building",
+    },
+    prefill: { jobType: "nb", stories: 8, units: "11+", demolition: false, deepExcavation: true, curbCut: false, sewer: true, historic: false, floodAE: false, citySubsidy: true, federalFunds: false, mihUap: false, farPath: "aor" },
+    prefillNote: "The HPD record carries units and income bands, not building form — answer stories and site-work from what you know of the project.",
+  },
+  {
+    id: "parkplace",
+    address: "1831 Park Place, Brooklyn",
+    nta: "Ocean Hill",
+    hint: "Real HPD-owned NB — HUB consultation on record",
+    ids: { BBL: "3014640079", BIN: "3039356", "Block / Lot": "1464 / 79", Owner: "NYC HPD (recorded)" },
+    filing: {
+      num: "B00629915-I1-FO-EA", type: "New Building (foundation & earthwork)",
+      desc: "Job description reads: \"Affordable Housing Development, HUB Consultation Meeting Accepted 10/04/21… in conjunction with NB #321600754\"",
+      milestone: "Plan approved 2023-07-03 → permit issued 2024-09-20 (445 days)",
+      source: "DOB NOW: Build – Approved Permits",
+    },
+    prefill: { jobType: "nb", stories: 4, units: "11+", demolition: false, deepExcavation: true, curbCut: false, sewer: true, historic: false, floodAE: false, citySubsidy: true, federalFunds: false, mihUap: false, farPath: "aor" },
+    prefillNote: "The recorded HPD ownership and HUB reference point to a city-subsidized job; stories aren't in the record.",
+  },
+  {
+    id: "saratoga",
+    address: "546 Saratoga Avenue, Brooklyn",
+    nta: "Brownsville",
+    hint: "Real private 7-story, 17-unit NB — the 485-x/UAP-scale infill",
+    ids: { BBL: "3035140153", BIN: "3255205", "Block / Lot": "3514 / 153" },
+    filing: {
+      num: "B00587983-I1-EW-SP", type: "New Building (sprinkler work type)",
+      desc: "Sprinkler system throughout a new 7-story mixed-use building with 17 dwelling units, filed with NB job B00561383",
+      milestone: "Approved 2025-10-27 → issued 2025-10-30 (3 days)",
+      source: "DOB NOW: Build – Approved Permits",
+    },
+    prefill: { jobType: "nb", stories: 7, units: "11+", demolition: true, deepExcavation: true, curbCut: false, sewer: true, historic: false, floodAE: false, citySubsidy: false, federalFunds: false, mihUap: true, farPath: "aor" },
+    prefillNote: "The record doesn't state whether this project is affordable — treat the affordability questions as a what-if.",
+  },
+];
+
+var AGENCIES = {
+  HPD: { label: "HPD", color: "#9A5B00" },
+  HDC: { label: "HPD / HDC", color: "#9A5B00" },
+  DOB: { label: "DOB", color: "#24548F" },
+  LPC: { label: "LPC", color: "#7A4A2B" },
+  DEP: { label: "DEP", color: "#1F6B5A" },
+  DOT: { label: "DOT", color: "#4E5D2A" },
+  OER: { label: "OER", color: "#6B4E7A" },
+  FDNY: { label: "FDNY", color: "#8F2F2F" },
+  DCP: { label: "DCP / CPC", color: "#3A3A3A" },
+  HUD: { label: "HUD", color: "#4A4A6B" },
+};
+
+var PHASES = [
+  { id: "A", name: "Financing, land use & pre-development", note: "For subsidized projects the loan closing — not plan exam — is usually the critical path. HPD counts production at the closing." },
+  { id: "B", name: "Design & plan approval", note: "Plan exam runs here. Real sample: standard plan-exam work-type approvals ran a median 13 days." },
+  { id: "C", name: "Construction permits", note: "Most run in parallel once plans are approved — but subsidized jobs typically can't pull permits until the closing." },
+  { id: "D", name: "Marketing, inspections & closeout", note: "Affordable projects add HPD marketing and the Housing Connect lottery before lease-up." },
+];
+
+var RULES = [
+  /* ---- affordable-specific (Phase A) ---- */
+  {
+    id: "hpd-program", when: function (_, p) { return p.citySubsidy; }, phase: "A", agency: "HPD",
+    name: "HPD/HDC financing program & term sheet",
+    because: function () { return "City-subsidized projects must fit an HPD/HDC program (ELLA, Supportive Housing Loan Program, Mix & Match, Open Door…) whose term sheet drives design, AMI bands, and underwriting."; },
+    source: "HPD term sheets", timeline: { est: "RFP/pipeline dependent — often 12–24+ mo. to closing" },
+  },
+  {
+    id: "hpd-hub", when: function (_, p) { return p.citySubsidy && p.jobType === "nb"; }, phase: "A", agency: "HPD",
+    name: "HPD Housing Development HUB consultation & design review",
+    because: function () { return "HPD new-construction projects route through the HUB for interagency design/predevelopment review. Real example: the 1831 Park Place filing records \"HUB Consultation Meeting Accepted 10/04/21\" in its job description."; },
+    source: "HPD Design Guidelines", timeline: { est: "runs within predevelopment" },
+    realBadge: "referenced in real filing", gates: "loan closing",
+  },
+  {
+    id: "env-review", when: function (_, p) { return p.citySubsidy || p.federalFunds; }, phase: "A",
+    agency: function (p) { return p.federalFunds ? "HUD" : "DCP"; },
+    name: "Environmental review (CEQR; NEPA if federal funds)",
+    because: function (_, p) { return "Public financing triggers environmental review before the funding action" + (p.federalFunds ? "; federal funds (HOME, PBV, FHA) add NEPA review through HUD" : "") + "."; },
+    source: "CEQR (62 RCNY Ch. 5); 24 CFR Part 58", timeline: { est: "est. 2–12 mo. depending on findings" }, gates: "loan closing",
+  },
+  {
+    id: "davis-bacon", when: function (_, p) { return p.federalFunds; }, phase: "A", agency: "HUD",
+    name: "Davis-Bacon / prevailing wage determination",
+    because: function () { return "Federal funds generally attach Davis-Bacon prevailing wages, reshaping the construction budget before closing. (The HPD production dataset records this per building — 729 Van Sinderen is recorded \"Non Prevailing Wage.\")"; },
+    source: "40 USC §3141 et seq.", timeline: { est: "determination at closing; compliance throughout" },
+    realBadge: "field exists in real dataset",
+  },
+  {
+    id: "closing", when: function (_, p) { return p.citySubsidy; }, phase: "A", agency: "HDC",
+    name: "Loan closing & regulatory agreement recorded",
+    because: function () { return "The financing closing — with a regulatory agreement recorded against the property — is the milestone HPD itself counts production at, and it gates construction start. Real example: 729 Van Sinderen's recorded project start is 03/31/2026, the closing date."; },
+    source: "HPD/HDC loan documents", timeline: { real: "1831 Park Place: 445d between plan approval and foundation-permit issuance — consistent with waiting on closing (cause not stated in record)" },
+    realBadge: "milestone in real records", gates: "construction permits",
+  },
+  {
+    id: "tax", when: function () { return true; }, phase: "A", agency: "HPD",
+    name: "Tax exemption election (485-x, Article XI, or 420-c)",
+    because: function (_, p) {
+      return p.citySubsidy
+        ? "Subsidized projects typically pair with Article XI (HDFC) or 420-c (nonprofit/LIHTC) full or partial exemptions, approved alongside the closing."
+        : "Private affordable rentals typically elect 485-x (421-a's successor), which sets affordability shares, AMI caps, and wage standards by project size.";
+    },
+    source: "RPTL §485-x; PHFL Art. XI; RPTL §420-c", timeline: { est: "election pre-closing; certification post-completion" },
+  },
+  {
+    id: "lpc", when: function (_, p) { return p.historic; }, phase: "A", agency: "LPC",
+    name: "LPC permit (Certificate of Appropriateness or CNE)",
+    because: function () { return "Site reported in a historic district — LPC must approve exterior work before DOB approves plans."; },
+    source: "NYC Admin Code §25-305", timeline: { est: "est. 45–120d" }, gates: "DOB plan approval",
+  },
+  {
+    id: "acp5", when: function (_, p) { return p.demolition; }, phase: "A", agency: "DEP",
+    name: "Asbestos assessment (ACP5 / ACP7)",
+    because: function () { return "Demolition of an existing structure requires an asbestos investigation filed with DEP before DOB issues the demo permit."; },
+    source: "15 RCNY Ch. 1", timeline: { est: "est. 14–30d" },
+  },
+
+  /* ---- Phase B ---- */
+  {
+    id: "dob-plan", when: function (_, p) { return p.jobType === "nb"; }, phase: "B", agency: "DOB",
+    name: "New Building job filing & plan examination (DOB NOW)",
+    because: function (_, p) { return "Every new building requires an NB filing and plan-exam approval." + (p.floodAE ? " AE flood zone adds Appendix G flood-resistant construction review." : ""); },
+    source: "NYC Building Code §107",
+    timeline: { real: "work-type approvals: median " + SAMPLE_STATS.standardMedian + "d / 80th pct " + SAMPLE_STATS.standardP80 + "d (n=" + SAMPLE_STATS.n + " sample)", est: "master NB plan exam typically longer; not in sample" },
+  },
+  {
+    id: "mih-uap", when: function (_, p) { return p.mihUap; }, phase: "B", agency: "HPD",
+    name: "MIH / UAP affordability compliance on plans",
+    because: function () { return "Bonus floor area under Mandatory Inclusionary Housing or the Universal Affordability Preference requires the restricted units mapped on plans and certified with HPD before DOB approval."; },
+    source: "ZR §23-90; ZR §23-154 (UAP)", timeline: { est: "runs within plan exam" },
+  },
+  {
+    id: "dep-connect", when: function (_, p) { return p.sewer; }, phase: "B", agency: "DEP",
+    name: "Site / house connection proposal (sewer & water)",
+    because: function () { return "New connections to city sewer and water mains require DEP certification of the connection proposal."; },
+    source: "15 RCNY Ch. 31", timeline: { est: "est. 45–90d" },
+  },
+  {
+    id: "bpp", when: function (_, p) { return p.jobType === "nb"; }, phase: "B", agency: "DOT",
+    name: "Builder's Pavement Plan",
+    because: function () { return "New buildings fronting a mapped street must file a BPP covering sidewalk, curb, and roadway restoration."; },
+    source: "Admin Code §19-113", timeline: { est: "est. 30–60d" },
+  },
+
+  /* ---- Phase C ---- */
+  {
+    id: "demo", when: function (_, p) { return p.demolition; }, phase: "C", agency: "DOB",
+    name: "Full demolition permit",
+    because: function () { return "Removing the existing structure requires a DM permit with site safety plan and utility disconnects."; },
+    source: "NYC BC §3306", timeline: { est: "est. 30–60d" }, deps: "ACP5",
+  },
+  {
+    id: "curbcut", when: function (_, p) { return p.curbCut; }, phase: "C", agency: "DOT",
+    name: "Curb cut / driveway permit",
+    because: function () { return "A new curb cut needs a DOT highway permit plus DOB review. Real sample range: 6–281 days filing→approval."; },
+    source: "34 RCNY §2-07", timeline: { real: "sample: 6d, 13d, 281d observed" },
+  },
+  {
+    id: "shed", when: function (_, p) { return p.jobType === "nb"; }, phase: "C", agency: "DOB",
+    name: "Sidewalk shed & construction fence permits",
+    because: function () { return "Construction adjacent to the sidewalk requires protective structures before general construction."; },
+    source: "NYC BC §3307",
+    timeline: { real: "prof-cert filings: median " + SAMPLE_STATS.profCertMedian + "d in sample — sheds/fences are routinely professionally certified" },
+  },
+  {
+    id: "soe", when: function (_, p) { return p.deepExcavation; }, phase: "C", agency: "DOB",
+    name: "Support of excavation / underpinning (special inspections)",
+    because: function () { return "Excavation deeper than 5 ft near adjacent structures triggers SOE design, TR1 special inspections, and adjoining-owner protections. Real example: an SOE filing for a 5-story building approved in 23 days."; },
+    source: "NYC BC §3304; §1704", timeline: { real: "sample SOE filing: 23d" },
+  },
+  {
+    id: "sprinkler", when: function (_, p) { return p.stories >= 3 || p.units !== "1-2"; }, phase: "C", agency: "DOB",
+    name: "Sprinkler / standpipe work permits",
+    because: function () { return "Multifamily new buildings require sprinklered construction, permitted as separate work types. Real example: 546 Saratoga's sprinkler work type — approval to issuance in 3 days."; },
+    source: "NYC BC §903; §905", timeline: { est: "est. 21–45d" },
+  },
+  {
+    id: "backflow", when: function (_, p) { return p.sewer && (p.stories >= 3 || p.units !== "1-2"); }, phase: "C", agency: "DEP",
+    name: "Backflow prevention device approval",
+    because: function () { return "Sprinklered buildings on city water require a DEP-approved backflow preventer."; },
+    source: "15 RCNY §20-08", timeline: { est: "est. 30–75d" }, deps: "site connection",
+  },
+  {
+    id: "elevator", when: function (_, p) { return p.stories >= 7; }, phase: "C", agency: "DOB",
+    name: "Elevator application & permit (DOB NOW: Elevators)",
+    because: function () { return "Residential buildings above six stories require an elevator, filed separately from the NB job."; },
+    source: "MDL §51; NYC BC Ch. 30", timeline: { est: "est. 45–90d" },
+  },
+
+  /* ---- Phase D ---- */
+  {
+    id: "marketing", when: function () { return true; }, phase: "D", agency: "HPD",
+    name: "Marketing plan approval & Housing Connect lottery",
+    because: function () { return "Affordable units must be marketed under an HPD-approved plan through the Housing Connect lottery — typically approved ~6 months before completion, with lease-up gated on it."; },
+    source: "HPD Marketing Handbook", timeline: { est: "plan ~6 mo. pre-completion; lottery/lease-up 3–9 mo." }, gates: "lease-up",
+  },
+  {
+    id: "fdny", when: function (_, p) { return p.stories >= 4 || p.units === "11+"; }, phase: "D", agency: "FDNY",
+    name: "FDNY inspections & letter of approval",
+    because: function () { return "Fire alarm and standpipe systems require FDNY inspection and approval before the CO."; },
+    source: "FC §901; 3 RCNY", timeline: { est: "est. 30–75d" }, deps: "sprinkler/standpipe",
+  },
+  {
+    id: "co", when: function () { return true; }, phase: "D", agency: "DOB",
+    name: "Final inspections & Certificate of Occupancy",
+    because: function () { return "All work types must be signed off before DOB issues the CO. In the sample, filing→sign-off for completed jobs commonly ran 1–4 years end to end."; },
+    source: "NYC BC §111", timeline: { real: "sample end-to-end (filing→LOC/sign-off): ~10–50 months observed" }, deps: "DOB plan approval",
+  },
+];
+
+var QUESTIONS = [
+  { key: "jobType", label: "What are you building?", options: [
+    { v: "nb", t: "New building" }, { v: "alt", t: "Major alteration / conversion" }, { v: "reno", t: "Preservation / rehab" }] },
+  { key: "citySubsidy", label: "City subsidy from HPD or HDC (loan, RFP site, tax credits)?", options: [
+    { v: true, t: "Yes" }, { v: false, t: "No — private/inclusionary only" }] },
+  { key: "federalFunds", label: "Federal funds (HOME, project-based Section 8, FHA)?", options: [
+    { v: true, t: "Yes" }, { v: false, t: "No" }] },
+  { key: "mihUap", label: "Using MIH or UAP bonus floor area?", options: [
+    { v: true, t: "Yes" }, { v: false, t: "No" }] },
+  { key: "stories", label: "How many stories?", options: [
+    { v: 2, t: "1–2" }, { v: 4, t: "3–6" }, { v: 8, t: "7+" }] },
+  { key: "units", label: "How many dwelling units?", options: [
+    { v: "1-2", t: "1–2" }, { v: "3-10", t: "3–10" }, { v: "11+", t: "11+" }] },
+  { key: "demolition", label: "Demolishing an existing structure?", options: [
+    { v: true, t: "Yes" }, { v: false, t: "No" }] },
+  { key: "deepExcavation", label: "Excavating deeper than 5 feet?", options: [
+    { v: true, t: "Yes" }, { v: false, t: "No / not sure" }] },
+  { key: "curbCut", label: "Adding a curb cut or driveway?", options: [
+    { v: true, t: "Yes" }, { v: false, t: "No" }] },
+  { key: "sewer", label: "New connection to city sewer & water?", options: [
+    { v: true, t: "Yes" }, { v: false, t: "No" }] },
+  { key: "historic", label: "Site in a historic district? (check ZoLa)", options: [
+    { v: true, t: "Yes" }, { v: false, t: "No" }] },
+  { key: "floodAE", label: "Site in an AE flood zone? (check FEMA / ZoLa)", options: [
+    { v: true, t: "Yes" }, { v: false, t: "No" }] },
+  { key: "farPath", label: "As-of-right zoning, or discretionary action needed?", options: [
+    { v: "aor", t: "As-of-right" }, { v: "disc", t: "Rezoning / disposition / variance" }] },
+];
+
+/* ---------------- state & rendering ---------------- */
+
+var state = { site: null, answers: {}, stage: "address" };
+
+var addrRowEl = document.getElementById("addr-row");
+var dossierEl = document.getElementById("dossier");
+var panelQEl = document.getElementById("panel-q");
+var qNoteEl = document.getElementById("q-note");
+var qsEl = document.getElementById("qs");
+var goEl = document.getElementById("go");
+var panelRoadEl = document.getElementById("panel-road");
+
+function answeredAll() {
+  return QUESTIONS.every(function (q) { return state.answers[q.key] !== undefined; });
+}
+
+function agencyOf(r) {
+  return typeof r.agency === "function" ? r.agency(state.answers) : r.agency;
+}
+
+function computeResults() {
+  var triggered = RULES.filter(function (r) { return r.when(state.site, state.answers); });
+  var byPhase = PHASES.map(function (ph) {
+    return { id: ph.id, name: ph.name, note: ph.note, items: triggered.filter(function (r) { return r.phase === ph.id; }) };
+  }).filter(function (ph) { return ph.items.length; });
+  var agencies = [];
+  triggered.forEach(function (r) {
+    var a = agencyOf(r);
+    if (agencies.indexOf(a) === -1) agencies.push(a);
+  });
+  return { triggered: triggered, byPhase: byPhase, agencies: agencies };
+}
+
+function factHtml(k, v, src, flag) {
+  return '<div class="anv-fact' + (flag ? " flag" : "") + '">' +
+    '<span class="anv-fact-k">' + k + '</span>' +
+    '<span class="anv-fact-v">' + v + '</span>' +
+    '<span class="anv-fact-src">' + src + '</span></div>';
+}
+
+function renderSites() {
+  addrRowEl.innerHTML = DEMO_SITES.map(function (s) {
+    return '<button class="anv-addr' + (state.site && state.site.id === s.id ? " sel" : "") + '" data-site="' + s.id + '">' +
+      '<span class="anv-addr-main">' + s.address + '</span>' +
+      '<span class="anv-addr-hint">' + s.hint + '</span></button>';
+  }).join("");
+}
+
+function renderDossier() {
+  var site = state.site;
+  if (!site) { dossierEl.innerHTML = ""; return; }
+  var html = '<div class="anv-dossier">';
+  html += '<div class="anv-dossier-head"><span>Site dossier</span>' +
+    '<span class="anv-dossier-src">real values · ' + site.filing.source + ', fetched ' + SAMPLE_STATS.pulled + '</span></div>';
+  html += '<div class="anv-facts">';
+  Object.keys(site.ids).forEach(function (k) { html += factHtml(k, site.ids[k], "recorded", false); });
+  if (site.prevailingWage) html += factHtml("Prevailing wage status", site.prevailingWage, "HPD dataset", false);
+  html += '</div>';
+  if (site.unitMix) {
+    html += '<div class="anv-facts" style="margin-top:10px">';
+    Object.keys(site.unitMix).forEach(function (k) {
+      html += factHtml(k, site.unitMix[k] + " units", "HPD dataset", k.indexOf("Extremely") === 0);
+    });
+    html += '</div>';
+  }
+  if (site.brMix) html += '<div class="anv-brmix">Bedroom mix (recorded): ' + site.brMix + '</div>';
+  html += '<div class="anv-filing"><div class="anv-filing-head">Actual record on this project</div>' +
+    '<div class="anv-filing-body"><span class="anv-filing-num">' + site.filing.num + '</span> · ' + site.filing.type +
+    '<p>' + site.filing.desc + '.</p>' +
+    '<span class="anv-filing-dates">' + site.filing.milestone + '</span></div></div>';
+  html += '</div>';
+  dossierEl.innerHTML = html;
+}
+
+function renderQuestions() {
+  var site = state.site;
+  panelQEl.hidden = !site;
+  if (!site) return;
+  qNoteEl.textContent = site.prefillNote + " Historic-district and flood status aren't in these datasets, so the prototype asks; production would auto-resolve from the LPC and FEMA layers.";
+  qsEl.innerHTML = QUESTIONS.map(function (q, qi) {
+    return '<div class="anv-q"><div class="anv-q-label">' + q.label + '</div>' +
+      '<div class="anv-q-opts">' + q.options.map(function (o, oi) {
+        return '<button class="anv-opt' + (state.answers[q.key] === o.v ? " sel" : "") + '" data-q="' + qi + '" data-o="' + oi + '">' + o.t + '</button>';
+      }).join("") + '</div></div>';
+  }).join("");
+  var ok = answeredAll();
+  goEl.disabled = !ok;
+  goEl.textContent = ok ? "Generate approval roadmap" : "Answer all questions to continue";
+}
+
+function cardHtml(r) {
+  var ag = agencyOf(r);
+  var html = '<div class="anv-card">';
+  html += '<div class="anv-card-top"><span class="anv-chip" style="background:' + AGENCIES[ag].color + '">' + AGENCIES[ag].label + '</span>' +
+    '<span class="anv-days">' + (r.timeline.real ? '<span class="anv-real">◉ ' + r.timeline.real + '</span>' : (r.timeline.est || "")) + '</span></div>';
+  html += '<div class="anv-card-name">' + r.name + (r.realBadge ? '<span class="anv-badge">◉ ' + r.realBadge + '</span>' : "") + '</div>';
+  html += '<div class="anv-card-because"><span class="anv-req">Required because</span> ' + r.because(state.site, state.answers) + '</div>';
+  html += '<div class="anv-card-foot"><span class="anv-src">' + r.source + '</span>';
+  if (r.timeline.real && r.timeline.est) html += '<span class="anv-src">' + r.timeline.est + '</span>';
+  if (r.gates) html += '<span class="anv-gate">⛔ gates ' + r.gates + '</span>';
+  if (r.deps) html += '<span class="anv-gate">after: ' + r.deps + '</span>';
+  html += '</div></div>';
+  return html;
+}
+
+function renderRoadmap() {
+  var show = state.stage === "roadmap" && state.site && answeredAll();
+  panelRoadEl.hidden = !show;
+  if (!show) { panelRoadEl.innerHTML = ""; return; }
+  var res = computeResults();
+  var a = state.answers;
+  var html = '<div class="anv-steptag">Step 3 — Roadmap</div><h2>Your approval roadmap</h2>';
+
+  if (a.jobType && a.jobType !== "nb") {
+    html += '<div class="anv-banner warn"><strong>Prototype scope.</strong> This build models new construction in depth. Preservation, rehab, and conversion deals (most of HPD’s pipeline by unit count) follow a different path — the production tool would branch fully here.</div>';
+  }
+
+  if (a.farPath === "disc") {
+    html += '<div class="anv-banner disc"><div class="anv-banner-stamp">Discretionary path</div>' +
+      '<p>A rezoning, variance, or city-site disposition puts you in ULURP/BSA territory — public, political processes typically running 12–24+ months before anything below. Note that affordable projects hit this lane often: dispositions of city-owned sites (most HPD RFP sites) require ULURP and UDAAP designation even when the building itself is as-of-right.</p>' +
+      '<span class="anv-chip" style="background:' + AGENCIES.DCP.color + '">DCP / CPC · BSA · Council</span></div>';
+  }
+
+  if (a.citySubsidy) {
+    html += '<div class="anv-banner real"><strong>◉ Real timeline signal.</strong> In the DOB NOW records behind this prototype, the HPD-financed foundation permit at 1831 Park Place sat 445 days between plan approval and issuance; a comparable private filing took 3 days. The records don’t state the cause, but the pattern is consistent with construction waiting on the financing closing — which is why this roadmap treats the closing, not plan exam, as your likely critical path.</div>';
+  }
+
+  html += '<div class="anv-summary">' +
+    '<div><span class="anv-big">' + res.triggered.length + '</span><span>approvals</span></div>' +
+    '<div><span class="anv-big">' + res.agencies.length + '</span><span>agencies</span></div>' +
+    '<div><span class="anv-big">' + SAMPLE_STATS.standardMedian + 'd</span><span>median plan-exam work-type approval (real, n=' + SAMPLE_STATS.n + ')</span></div></div>';
+
+  res.byPhase.forEach(function (ph) {
+    html += '<div class="anv-phase"><div class="anv-phase-head"><span class="anv-phase-id">' + ph.id + '</span>' +
+      '<div><div class="anv-phase-name">' + ph.name + '</div><div class="anv-phase-note">' + ph.note + '</div></div></div>' +
+      '<div class="anv-cards">' + ph.items.map(cardHtml).join("") + '</div></div>';
+  });
+
+  html += '<div class="anv-legend">◉ = value, milestone, or benchmark drawn from real HPD / DOB NOW records (' + SAMPLE_STATS.pulled + '); unmarked timelines are modeled estimates.</div>';
+  html += '<div class="anv-disclaimer">Orientation, not legal, financing, or code advice. Program terms (485-x, term sheets, MIH/UAP) change; verify against current HPD/DOF guidance. Timeline benchmarks come from a small (' + SAMPLE_STATS.n + '-filing) Brooklyn DOB NOW sample and describe work-type approvals, not master plan exams or closings. “Not listed” does not mean “not required.”</div>';
+  html += '<button class="anv-reset" id="reset">Start over</button>';
+
+  panelRoadEl.innerHTML = html;
+}
+
+function renderAll() {
+  renderSites();
+  renderDossier();
+  renderQuestions();
+  renderRoadmap();
+}
+
+addrRowEl.addEventListener("click", function (e) {
+  var b = e.target.closest("[data-site]");
+  if (!b) return;
+  var site = DEMO_SITES.filter(function (s) { return s.id === b.getAttribute("data-site"); })[0];
+  state.site = site;
+  state.answers = {};
+  state.stage = "interview";
+  renderAll();
+});
+
+qsEl.addEventListener("click", function (e) {
+  var b = e.target.closest("[data-q]");
+  if (!b) return;
+  var q = QUESTIONS[Number(b.getAttribute("data-q"))];
+  state.answers[q.key] = q.options[Number(b.getAttribute("data-o"))].v;
+  renderQuestions();
+  renderRoadmap();
+});
+
+goEl.addEventListener("click", function () {
+  if (!answeredAll()) return;
+  state.stage = "roadmap";
+  renderRoadmap();
+});
+
+panelRoadEl.addEventListener("click", function (e) {
+  if (!e.target.closest("#reset")) return;
+  state.site = null;
+  state.answers = {};
+  state.stage = "address";
+  renderAll();
+});
+
+renderAll();
+</script>
+</body>
+</html>

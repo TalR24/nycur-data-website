@@ -10,13 +10,25 @@ This file is the single source of truth for the State Capacity Ecosystem tool. I
 
 ## What this tool is
 
-A six-page visualization layer over Henry Grunzweig's **State Capacity Ecosystem Database** (an external Airtable curated by Henry, not Tal) plus a separate **Connect** directory (people and orgs) that Tal curates and grows via user self-submission. NYCuriosity does not curate the underlying org data — we only build views on top of Henry's CSV export. The Connect directory has a different source (`connect_submissions.csv` in `data/`) and grows via an in-page 13-field form modal.
+A visualization layer (homepage + four pillar landing pages + seven view/content pages) over Henry Grunzweig's **State Capacity Ecosystem Database** (an external Airtable curated by Henry, not Tal) plus a separate **Connect** directory (people and orgs) that Tal curates and grows via user self-submission. NYCuriosity does not curate the underlying org data — we only build views on top of Henry's CSV export. The Connect directory has a different source (`connect_submissions.csv` in `data/`) and grows via an in-page 13-field form modal.
 
-The five public pages:
+**Site architecture (Aug 2026 revamp):** the site is organized around four pillars — Ecosystem Hub, Community, Platform, Policy & Programs. The homepage is a hero (name + mission + vision) followed by one banner strip per pillar. A pillar ribbon nav (Home + the four pillars, each with a hover dropdown to its subpages) sits directly below the dark site header on **every chrome page** — it replaced the old pill nav (`chart-nav`) entirely. The legacy subpages physically moved under their pillars: `directory/`, `network/`, `connect/`, `methodology/` → `ecosystem/…`; `events/…`, `substack/…` → `policy-programs/…`. All 13 old URLs serve meta-refresh redirect stubs that preserve query/hash.
+
+The public pages:
 
 | Page | URL | Purpose |
 |---|---|---|
-| **Hub** | `/state_capacity_ecosystem/` | Explainer, 4 stat pills, 3 view cards (Directory · Affinity Network · Connect), Methodology card, info panels |
+| **Home** | `/state_capacity_ecosystem/` | Hero (name, mission, vision) + four pillar banner strips (Ecosystem Hub · Community · Platform · Policy & Programs), each with a blurb and key links. Static, no JS. |
+| **Ecosystem Hub** | `…/ecosystem/` | Pillar landing: the old hub content. Search-the-Ecosystem Mad Libs modal (auto-opens via `?search=1`), Add to Directory / Add to Connect CTAs, 3 explore bubbles (Directory · Connect · Affinity), Methodology panel, feedback panel |
+| **Community** | `…/community/` | Pillar landing: get-involved action cards (add to Connect, browse Connect, events), Slack interest panel (mailto; no Slack URL exists yet), organizers list (moved from the old hub's "Stay in touch"), feedback panel |
+| **Platform** | `…/platform/` | Pillar landing: playbooks (Sponsor Checklist live, Event Playbook pending card) + prototypes & tools cards (grocery siting, summons navigator, housing approvals navigator, TIDELINE with builder credit) |
+| **Policy & Programs** | `…/policy-programs/` | Pillar landing: Substack + Events explore bubbles (moved from the old hub) + subscribe panel |
+| **Directory** | `…/ecosystem/directory/` | (see below) |
+| **Affinity Network** | `…/ecosystem/network/` | (see below) |
+| **Connect** | `…/ecosystem/connect/` | (see below) |
+| **Methodology** | `…/ecosystem/methodology/` | (see below) |
+| **Events** | `…/policy-programs/events/` | (see below; incl. `civic-tech-build-night/`, its `tideline/`, and `sponsor-checklist/`) |
+| **Substack** | `…/policy-programs/substack/` | (see below; incl. `mamdani-ai-priorities/` + nested prototypes and `nyc-grocery-access-site-prototype/`) |
 | **Directory** | `…/directory/` | Filterable, searchable table of every org. Semantic search via TF-IDF |
 | **Connect** | `…/connect/` | Directory of people and orgs indexed by problem, role, and help-type. 13-field self-submission form modal (mailto + clipboard). Intro request modal for facilitated contacts. Separate dataset from the org pages. |
 | **Affinity Network** | `…/network/` | D3 force-directed graph + natural-language semantic search with geographic boosting |
@@ -24,7 +36,7 @@ The five public pages:
 | **Events** | `…/events/` | Events hub listing state capacity hackathons as cards. Each event links to its own subpage (`…/events/<event-slug>/`) with overview, logistics, tracks, projects produced, Substack writeups, and Luma archive. |
 | **Substack** | `…/substack/` | Posts hub for the SCE Substack: card grid, one card per post, plus a subscribe CTA. A single-tool post links its card straight to the tool at `…/substack/<post-slug>/`. A multi-prototype post links to a chromed post page at `…/substack/<post-slug>/` that groups prototype cards by theme (live tools link out, unbuilt ones are dashed `.pending` slots). First post page: `substack/mamdani-ai-priorities/` (4 mayoral priorities, 9 prototype slots, the NYC Grocery Access siting tool live at its original `substack/nyc-grocery-access-site-prototype/` URL). |
 
-**Pill-nav order across all subpages:** Directory · Connect · Affinity · Events · Substack · Methodology · ← Hub
+**Nav on all chrome pages:** the pillar ribbon (Home · Ecosystem Hub ▾ · Community ▾ · Platform ▾ · Policy & Programs ▾). The pill nav (`chart-nav`) was removed Aug 2026.
 
 ---
 
@@ -43,7 +55,19 @@ The five public pages:
 ```
 data_website/state_capacity_ecosystem/
 ├── README.md                        ← THIS FILE
-├── index.html                       ← Hub: pills, 4 explore cards, methodology card, info panels
+├── index.html                       ← Home: hero (mission/vision) + 4 pillar strips + ribbon nav. No JS.
+├── ecosystem/
+│   └── index.html                   ← Ecosystem Hub pillar landing (old hub content: Mad Libs
+│                                      search modal with ?search=1 auto-open, CTAs, 3 explore
+│                                      bubbles, methodology + feedback panels)
+├── community/
+│   └── index.html                   ← Community pillar landing (action cards, Slack interest
+│                                      panel, organizers, feedback)
+├── platform/
+│   └── index.html                   ← Platform pillar landing (playbooks + prototypes cards)
+├── policy-programs/
+│   └── index.html                   ← Policy & Programs pillar landing (Substack + Events
+│                                      bubbles, subscribe panel)
 ├── data/
 │   ├── directory.csv                ← Canonical org source (replace to refresh)
 │   ├── build_affinity.py            ← CSV → affinity.json + directory.json + affinity_search.json
@@ -55,19 +79,25 @@ data_website/state_capacity_ecosystem/
 │   ├── update_stats.py              ← Patches hardcoded stat strings in HTML/MD after org rebuild
 │   ├── notify_new_connect.py        ← Emails new Connect entries whose contact field has an @
 │   └── connect.json                 ← Flat people bundle for the /connect/ page
-├── directory/
-│   └── index.html                   ← Filterable table. Reads ../data/directory.json + affinity_search.json
-├── network/
+├── ecosystem/directory/
+│   └── index.html                   ← Filterable table. Reads /state_capacity_ecosystem/data/ JSON
+├── ecosystem/network/
 │   └── index.html                   ← D3 force-directed graph + NL search bar.
-│                                     Reads ../data/affinity.json + affinity_search.json + connect.json.
+│                                     Reads /state_capacity_ecosystem/data/ JSON.
 │                                     Supports ?id=N deep-link from directory.
-├── connect/
+├── ecosystem/connect/
 │   └── index.html                   ← Connect directory + 9-column table + 12-field self-submission
-│                                     form modal + intro request modal. Reads ../data/connect.json.
+│                                     form modal + intro request modal. Reads connect.json.
 │                                     Submissions post to Airtable via REST API.
-├── methodology/
+├── ecosystem/methodology/
 │   └── index.html                   ← Long-form scoring + taxonomy write-up
-└── events/
+├── directory/ connect/ network/ methodology/ events/ substack/
+│                                    ← 13 meta-refresh redirect stubs at the pre-Aug-2026 URLs
+│                                      (also nested: events/civic-tech-build-night{,/tideline},
+│                                      events/sponsor-checklist, substack/mamdani-ai-priorities
+│                                      {,/summons-navigator,/housing-approval-pathway},
+│                                      substack/nyc-grocery-access-site-prototype)
+└── policy-programs/events/
     ├── index.html                   ← Events hub: one card per event
     ├── sponsor-checklist/
     │   └── index.html               ← Hackathon sponsor responsibility checklist
@@ -332,7 +362,7 @@ These were arrived at via user feedback over multiple sessions. Don't reintroduc
 5. **"Henry Grunzweig"** is the curator's name (no 'e' between 'z' and 'w'). Earlier sessions used "Henry Tolchard" and "Henry Grunzeweig" — both were wrong. Corrected to "Grunzweig" May 2026. Watch for this when refreshing data or writing prose.
 6. **No links to Claude conversations** anywhere on the public site. (Previously the methodology page linked to a Claude convo for weight rationale — removed.)
 7. **The methodology page has no "Refreshing the data" section.** That's internal workflow, doesn't belong in public-facing docs.
-8. **Pill-nav order:** Directory · Connect · Affinity · Events · Substack · Methodology · ← Hub. Applies to every subpage including the affinity network page (the Methodology pill was briefly removed from the network page mid-May 2026 and then restored at user request — keep it). The **Events** pill was added June 2026 when the Events page launched, and moved ahead of Methodology later that month at user request. The **Substack** pill was added July 2026 when the Substack page launched, slotted between Events and Methodology.
+8. **SUPERSEDED Aug 2026 (pillar revamp): pill nav removed everywhere in favor of the ribbon.** Historical: **Pill-nav order:** Directory · Connect · Affinity · Events · Substack · Methodology · ← Hub. Applies to every subpage including the affinity network page (the Methodology pill was briefly removed from the network page mid-May 2026 and then restored at user request — keep it). The **Events** pill was added June 2026 when the Events page launched, and moved ahead of Methodology later that month at user request. The **Substack** pill was added July 2026 when the Substack page launched, slotted between Events and Methodology.
 9. **Org labels appear below every visible bubble** in the network view (not just top-N by degree). 9.5px / weight 600 / white halo. DOM-sorted by ascending degree so high-degree labels paint on top of overlaps.
 10. **No segment labels rendered inside the map.** Earlier versions drew uppercase segment names at the cluster centroid (counter-scaled with zoom). Removed May 2026 — they competed with org names for attention and segment identity is already conveyed by node color + the segment filter chips above the graph.
 11. **Multi-select dropdowns close siblings on open.** `MS._registry` static array tracks all instances; `_show()` closes any other open dropdown first. Used on the directory page (Primary segment · Geography · Problem area · Problem topic) and on the network page (Geography · Problem area · Problem topic — added May 2026).
@@ -348,7 +378,8 @@ These were arrived at via user feedback over multiple sessions. Don't reintroduc
 21. **Cross-promo loop points at the SCE Substack + the Hub (no Community link yet).** A "Stay connected" strip (Subscribe to our Substack ↗ + Explore the Hub →) sits directly above the `<footer>` on every subpage (directory, connect, network, methodology, events hub, event detail). The Connect form success state has a "While you're here" subscribe/Hub nudge, and the hub's "Stay in touch" section leads with a publication-level "State Capacity Ecosystem Substack · Subscribe" row. **Substack target:** https://statecapacityecosystem.substack.com/ (the tool's own publication — NOT NYCuriosity, NOT an organizer's personal Substack). The strips are intentionally **self-contained inline styles** (they reference `:root` design tokens that exist on every page), so there is no per-page CSS class to keep in sync — edit the inline block if restyling. **There is no "Community" link yet:** when the user provides one (Discord/Slack/Luma/etc.), add a "Join our Community" CTA alongside the Substack button in the strip and the Connect success nudge. Don't invent a Community URL.
 
 22. **Substack section = posts hub + as-is companion prototypes.** `substack/index.html` is the posts hub (chrome copied from the events hub: breadcrumb, hero, chart-nav with Substack active, card grid, subscribe text-panel, Stay-connected strip, footer). Each companion tool lives at `substack/<post-slug>/index.html` and is hosted **as-is with no chrome injected** — these are self-contained full-screen apps (like the rehosted TIDELINE under events), and wrapping them breaks their layouts. To add a post's tool: drop the standalone HTML at `substack/<post-slug>/index.html`, add a card to `substack/index.html`, and link the specific post URL from the card or panel once published. The publication is the SCE Substack (decision #21's target), never NYCuriosity. **Multi-prototype posts (added 2026-07-29):** a post that ships several prototypes gets a chromed post page at `substack/<post-slug>/index.html` (SCE chrome, breadcrumb one level deeper, pill nav with Substack active) whose card grid groups prototypes by theme; each live tool nests at `substack/<post-slug>/<tool-slug>/` as-is, unbuilt tools are dashed `.pending` card slots, and the hub carries ONE card per post pointing at the post page (the grocery prototype predates this pattern and keeps its top-level `substack/nyc-grocery-access-site-prototype/` URL, linked from the mamdani-ai-priorities post page). Collaborator prototypes arrive via the private work repo's `substack_projects/` drop folder (`TalR24/state-capacity-ecosystem`); verify the `PROJECT.md` permission line + credits (decision #20) before publishing.
-23. **No "Buy Me a Coffee" / Support button in the HEADER of the subpages.** Removed July 2026 at user request from the header (`.header-actions`) of every subpage: directory, connect, events, methodology, network. Do NOT re-add it to these subpage headers — even though the shared site-chrome convention (and the `reference_website_chrome.md` memory) puts a Support button in the header elsewhere, this tool's subpages are a deliberate exception. The **footer** support link (`.footer-support`) stays. The hub `index.html` was left untouched.
+23. **Pillar architecture + ribbon nav (Aug 2026 revamp).** The homepage is a hero (name/mission/vision) + four pillar banner strips; each pillar has a landing page (`ecosystem/`, `community/`, `platform/`, `policy-programs/`) and a ribbon nav entry with a hover dropdown to its subpages. Ribbon markup + `<style id="ribbon-css">` are copy-paste identical across the five pages (root-absolute hrefs, `.active` class marks the current pillar; dropdowns are CSS hover/focus-within, disabled below 720px where the ribbon becomes a horizontal scroll row). Pillar accent colors: Ecosystem Hub `#2563eb`, Community `#7c3aed`, Platform `#16a34a`, Policy & Programs `#d97706` (orange stays reserved for site chrome). The old hub content lives on at `ecosystem/` (search modal auto-opens via `?search=1`); the "Stay in touch" organizer rows moved to `community/#organizers`; the Events and Substack explore bubbles moved to `policy-programs/`. **The legacy subpages moved under their pillars** (`ecosystem/{directory,network,connect,methodology}/`, `policy-programs/{events,substack}/…`) with the ribbon replacing the pill nav on every chrome page, breadcrumbs gaining the pillar level, and 13 redirect stubs at the old URLs (the `civic_reference/` stubs from the July move were retargeted to the final URLs so they do not chain). Data stayed at `state_capacity_ecosystem/data/`; moved pages reference it root-absolutely. Prototype pages (tideline, grocery, the two navigators) are hosted as-is and were moved without content changes. Mission/vision copy on the homepage was drafted by Claude and approved by Tal Aug 2026; swap in the team's final language when the "mission-vision" CRM project lands. The Community page's Slack panel is a mailto interest link only — no Slack URL exists yet (decision #21 still holds: don't invent one).
+24. **No "Buy Me a Coffee" / Support button in the HEADER of the subpages.** Removed July 2026 at user request from the header (`.header-actions`) of every subpage: directory, connect, events, methodology, network. Do NOT re-add it to these subpage headers — even though the shared site-chrome convention (and the `reference_website_chrome.md` memory) puts a Support button in the header elsewhere, this tool's subpages are a deliberate exception. The **footer** support link (`.footer-support`) stays. The hub `index.html` was left untouched.
 
 ---
 
@@ -434,8 +465,8 @@ Stat-pills in the hub hero ARE dynamic (read from `affinity.json` at load). **It
 
 1. **`data_website/index.html`** (data website homepage) — `card-stat` span inside the State Capacity Ecosystem card: `"N orgs · 11 segments · N problem topics"`
 2. **`data_website/README.md`** — file tree entry: `directory.csv → Canonical org source (N rows)`
-3. **`state_capacity_ecosystem/index.html`** (hub) — any hardcoded counts in card descriptions or bubble stat text (currently "300+" — only update if it crosses a round-number threshold)
-4. **`methodology/index.html`** — three locations:
+3. **`state_capacity_ecosystem/index.html`** (homepage) and **`ecosystem/index.html`** (Ecosystem Hub) — hardcoded "300+" mentions in strip/bubble copy; only update if the org count crosses a round-number threshold
+4. **`ecosystem/methodology/index.html`** — three locations:
    - Data Fields bullet: `"N specific issues nested under the Problem Areas"`
    - Funder limitation callout: `"Approximately N of N orgs have at least one named funder detected"`
    - Published-dataset stats line: `"N nodes and N edges, with a maximum edge score of X and a median of Y"`
@@ -512,13 +543,16 @@ These are concrete, half-done tasks, not parking-lot ideas. Pick them up when th
 
 1. **Claude artifact project not yet added to the build-night page.** The user wants a project hosted at a `claude.ai/public/artifacts/...` link added as a build-night `.proj-card`, but Claude artifacts render client-side, so WebFetch returns only an empty shell (no title/description). **Need from user:** a title + one-line description (or the artifact source to rehost like TIDELINE). It would also be the only `claude.ai` outbound link in the tool — a published artifact is fine (it's a hosted mini-app, not a Claude *conversation*, which decision #6 bans).
 2. ~~Build-night "Read about it" placeholder~~ — RESOLVED 2026-07-30: now links the recap "AI should be a tool for inclusive building" (https://henrygrunzweig.substack.com/p/ai-is-a-tool-for-inclusive-building) as "Read the recap ↗".
-3. **No "Community" link in the cross-promo loop** (see decision #21). Add a "Join our Community" CTA to the "Stay connected" strip + Connect success nudge once the user has a URL. Don't invent one.
+3. **No "Community" link in the cross-promo loop** (see decision #21). Add a "Join our Community" CTA to the "Stay connected" strip + Connect success nudge once the user has a URL. Don't invent one. (Partially superseded Aug 2026: the `community/` pillar page now exists and the ribbon links it — but the Slack URL itself is still pending, and the per-subpage "Stay connected" strips still have no Community CTA.)
+5. ~~Aug 2026 pillar revamp pending review~~ — RESOLVED 2026-08-03: Tal approved and the revamp published same day, including the full move of legacy subpages under their pillars and ribbon rollout. Still open from it: swap the homepage mission/vision draft for the team's final language when confirmed (CRM "mission-vision" project).
 4. ~~Mamdani AI priorities post URL placeholder~~ — RESOLVED 2026-07-30. The post published as **"The PIT Crew is the tip of the iceberg"** (https://henrygrunzweig.substack.com/p/the-pit-crew-is-the-tip-of-the-iceberg); the post page hero, title metas, "Read the post ↗" link, and hub card were updated to match. Prototype set stays final at 3.
 
 ## Recent change log
 
 | Date | Commit | Summary |
 |---|---|---|
+| 2026-08-03 | — | **Pillar revamp phase 2 (published same day after Tal's approval):** legacy subpages moved under their pillars — `ecosystem/{directory,network,connect,methodology}/`, `policy-programs/{events,substack}/…` — with the ribbon replacing the pill nav on all 9 chrome pages, breadcrumbs gaining the pillar level, data fetches switched to root-absolute `/state_capacity_ecosystem/data/…`, og:url metas updated, 13 redirect stubs at the old URLs, `civic_reference/` stubs retargeted to skip chains, sitemap/repo-README/`update_stats.py`/refresh-workflow paths updated (the workflow now stages `ecosystem/methodology/index.html`). |
+| 2026-08-03 | — | **Pillar revamp phase 1.** Homepage rewritten as hero (name + DRAFT mission/vision) + four pillar banner strips. New pillar landing pages: `ecosystem/` (old hub content incl. the Mad Libs search modal, now auto-opening via `?search=1`; header Support button removed to match subpage convention; inherited em dashes fixed), `community/` (action cards, Slack mailto interest panel, organizers moved from the hub's "Stay in touch"), `platform/` (Sponsor Checklist + pending Event Playbook cards; prototype cards for grocery siting, summons navigator, housing approvals navigator, TIDELINE with builder credit), `policy-programs/` (Events + Substack bubbles moved from the hub, subscribe panel). Ribbon nav (Home + 4 pillars with hover dropdowns) added to those five pages; legacy subpages keep the pill nav pending rollout decision. Decision #23 documents the architecture. |
 | 2026-08-03 | — | Events: added the Hackathon Sponsor Responsibility Checklist at `events/sponsor-checklist/` (content from Henry's Claude artifact, kept verbatim; restyled to site chrome: dark-thead table with orange timing column + blue-mid phase separators, ✓/○ ownership marks, benefits cards, Print / Save PDF button with print CSS, contact panel citing the build-night stats). Events hub: host/co-organize text panel now reads "Want to sponsor, host, or co-organize an event?" with a second Sponsor Checklist → button. Not an event page: it is a resource subpage, so no card in the events grid and no change to decision #19's template flow. |
 | 2026-07-30 | — | Hub: added Sourabh Chakraborty (LinkedIn: chakrabortysourabh) to the "Stay in touch" strip, under Jeremie. Four people now listed after the publication row. |
 | 2026-07-30 | — | Events: build-night "Post coming ↗" placeholder replaced with the live recap link ("AI should be a tool for inclusive building", Jun 30 2026) as "Read the recap ↗". |
