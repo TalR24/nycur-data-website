@@ -1,0 +1,36 @@
+name: Site Health
+
+on:
+  schedule:
+    - cron: "0 11 * * 1"   # Mondays ~6-7am ET
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Print report only, never email"
+        type: boolean
+        default: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Playwright
+        run: |
+          pip install playwright
+          playwright install --with-deps chromium
+
+      - name: Crawl and check live site
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+        run: |
+          python3 site_health/check_site.py ${{ inputs.dry_run && '--dry-run' || '' }}
