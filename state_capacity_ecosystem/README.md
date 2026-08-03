@@ -69,6 +69,12 @@ data_website/state_capacity_ecosystem/
 │   └── index.html                   ← Long-form scoring + taxonomy write-up
 └── events/
     ├── index.html                   ← Events hub: one card per event
+    ├── sponsor-checklist/
+    │   └── index.html               ← Hackathon sponsor responsibility checklist
+    │                                  (content by Henry, Aug 2026): who owns what
+    │                                  (Lead Sponsor / Cosponsor / SCE) + benefits.
+    │                                  Static, no JS beyond window.print(). Linked
+    │                                  from the events-hub host/sponsor text panel.
     └── civic-tech-build-night/
         ├── index.html               ← Event detail page. Template for new events
         │                             (copy the folder; HTML comments at top mark
@@ -513,6 +519,7 @@ These are concrete, half-done tasks, not parking-lot ideas. Pick them up when th
 
 | Date | Commit | Summary |
 |---|---|---|
+| 2026-08-03 | — | Events: added the Hackathon Sponsor Responsibility Checklist at `events/sponsor-checklist/` (content from Henry's Claude artifact, kept verbatim; restyled to site chrome: dark-thead table with orange timing column + blue-mid phase separators, ✓/○ ownership marks, benefits cards, Print / Save PDF button with print CSS, contact panel citing the build-night stats). Events hub: host/co-organize text panel now reads "Want to sponsor, host, or co-organize an event?" with a second Sponsor Checklist → button. Not an event page: it is a resource subpage, so no card in the events grid and no change to decision #19's template flow. |
 | 2026-07-30 | — | Hub: added Sourabh Chakraborty (LinkedIn: chakrabortysourabh) to the "Stay in touch" strip, under Jeremie. Four people now listed after the publication row. |
 | 2026-07-30 | — | Events: build-night "Post coming ↗" placeholder replaced with the live recap link ("AI should be a tool for inclusive building", Jun 30 2026) as "Read the recap ↗". |
 | 2026-07-30 | — | Substack: post published as "The PIT Crew is the tip of the iceberg" on the SCE Substack. Post page retitled to match (h1, title/og metas, hero subtitle = the post's subtitle), "Post coming ↗" placeholder swapped for the live link, hub card kicker now "July 2026 · Post + prototypes" with the new title in text and preview SVG. Note the publication's real domain is henrygrunzweig.substack.com (statecapacityecosystem.substack.com redirects to the profile). |
