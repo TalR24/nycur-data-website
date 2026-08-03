@@ -100,7 +100,8 @@ def check_page(page, url):
         for text in page.evaluate(STUCK_LOADING_JS):
             problems.append(f'stuck on "{text}"')
     except Exception as e:
-        problems.append(f"load failed: {str(e)[:200]}")
+        if "Download is starting" not in str(e):  # a download link is a working file, not a broken page
+            problems.append(f"load failed: {str(e)[:200]}")
     finally:
         page.remove_listener("console", on_console)
         page.remove_listener("pageerror", on_pageerror)
@@ -125,7 +126,8 @@ def collect_links(page):
             continue
         absu = urldefrag(urljoin(page.url, h)).url
         if same_origin(absu) and not absu.lower().endswith(
-            (".csv", ".json", ".png", ".svg", ".pdf", ".zip", ".xlsx", ".pptx", ".ics")
+            (".csv", ".json", ".png", ".svg", ".pdf", ".zip", ".xlsx", ".pptx",
+             ".ics", ".py", ".js", ".css", ".txt", ".md", ".jpg", ".jpeg", ".gif")
         ):
             out.add(absu.rstrip("?"))
     return out
