@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Methodology &amp; Coverage — CB Member Tracker — NYCuriosity</title>
+  <meta name="description" content="Where the CB Member Tracker's data comes from, board by board: the CAU dataset, the Bronx BP roster, each board's own website, and what each source can and cannot say.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://data.nycuriosity.com/cb-tools/member-tracker/methodology/">
+  <meta property="og:title" content="Methodology &amp; Coverage — CB Member Tracker — NYCuriosity">
+  <meta property="og:description" content="Where the CB Member Tracker's data comes from, board by board: the CAU dataset, the Bronx BP roster, each board's own website, and what each source can and cannot say.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --blue: #2563eb; --blue-hover: #1d4ed8; --blue-light: #eff6ff; --blue-mid: #bfdbfe;
+      --text: #111827; --text-mid: #374151; --text-muted: #6b7280; --text-faint: #9ca3af;
+      --bg: #f8faff; --surface: #ffffff; --border: #e5e7eb;
+      --shadow-sm: 0 1px 3px rgba(17,24,39,0.08); --radius: 10px;
+      --green: #16a34a; --red: #dc2626; --orange: #FF6319;
+    }
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
+    header { background: #111827; border-bottom: 1px solid #1f2937; padding: 0 clamp(20px, 5vw, 48px); }
+    .header-inner { max-width: 1000px; margin: 0 auto; height: 56px; display: flex; align-items: center; gap: 16px; }
+    .back-link { font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600; color: #9ca3af; text-decoration: none; white-space: nowrap; }
+    .back-link:hover { color: #60a5fa; }
+    .header-divider { width: 1px; height: 20px; background: #374151; }
+    header h1 { font-family: 'Roboto Mono', monospace; font-size: 0.95rem; font-weight: 700; color: #e5e7eb; letter-spacing: -0.02em; }
+
+    .pill-nav { background: var(--surface); border-bottom: 1px solid var(--border); padding: 10px clamp(20px, 5vw, 48px); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .pill-nav a { font-size: 0.78rem; font-family: 'Roboto Mono', monospace; font-weight: 600; padding: 4px 12px; border-radius: 20px; text-decoration: none; border: 1px solid var(--border); color: var(--text-muted); background: var(--bg); transition: all 0.15s; white-space: nowrap; }
+    .pill-nav a:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
+    .pill-nav a.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+    .pill-label { font-size: 0.72rem; color: var(--text-faint); font-family: 'Roboto Mono', monospace; white-space: nowrap; }
+
+    .hero { background: var(--surface); border-bottom: 1px solid var(--border); padding: clamp(28px, 4vw, 44px) clamp(20px, 5vw, 48px); }
+    .hero-inner { max-width: 1000px; margin: 0 auto; }
+    .breadcrumb { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; color: var(--text-faint); margin-bottom: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
+    .breadcrumb a { color: var(--text-muted); text-decoration: none; }
+    .breadcrumb a:hover { color: var(--blue); }
+    .breadcrumb span.here { color: var(--orange); font-weight: 600; }
+    .hero h1 { font-family: 'Roboto Mono', monospace; font-size: clamp(1.3rem, 3vw, 1.75rem); font-weight: 700; letter-spacing: -0.03em; line-height: 1.25; margin-bottom: 10px; }
+    .hero h1 span { color: var(--blue); }
+    .hero p { font-size: 0.95rem; color: var(--text-muted); max-width: 720px; line-height: 1.7; }
+
+    main { flex: 1; padding: clamp(24px, 4vw, 40px) clamp(20px, 5vw, 48px); }
+    .main-inner { max-width: 1000px; margin: 0 auto; }
+    .loading-note { font-family: 'Roboto Mono', monospace; font-size: 0.8rem; color: var(--text-faint); padding: 12px 0; }
+    .section-head { font-family: 'Roboto Mono', monospace; font-size: 0.85rem; font-weight: 700; margin: 28px 0 12px; }
+    .prose { font-size: 0.88rem; color: var(--text-mid); line-height: 1.7; max-width: 760px; }
+    .prose p { margin-bottom: 12px; }
+    .prose a { color: var(--blue); text-decoration: none; }
+    .prose a:hover { text-decoration: underline; }
+    .prose strong { color: var(--text); }
+
+    table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+    th { font-family: 'Roboto Mono', monospace; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-faint); text-align: left; padding: 8px 9px; border-bottom: 2px solid var(--border); position: sticky; top: 0; background: var(--surface); }
+    td { padding: 7px 9px; border-bottom: 1px solid var(--border); color: var(--text-mid); }
+    td.nm { font-family: 'Roboto Mono', monospace; font-weight: 600; color: var(--text); white-space: nowrap; }
+    td.nm a { color: inherit; text-decoration: none; }
+    td.nm a:hover { color: var(--blue); }
+    .cov { font-family: 'Roboto Mono', monospace; font-size: 0.68rem; font-weight: 600; }
+    .cov.ok { color: var(--green); }
+    .cov.part { color: var(--orange); }
+    .cov.no { color: var(--text-faint); }
+    .table-scroll { overflow-x: auto; background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 6px 10px; max-height: 560px; overflow-y: auto; }
+
+    .footnotes { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 18px; font-size: 0.78rem; color: var(--text-muted); line-height: 1.65; margin-top: 20px; }
+    .footnotes a { color: var(--blue); text-decoration: none; }
+    .footnotes p { margin-bottom: 8px; }
+    .footnotes p:last-child { margin-bottom: 0; }
+
+    footer { background: var(--surface); border-top: 1px solid var(--border); padding: 20px clamp(20px, 5vw, 48px); }
+    .footer-inner { max-width: 1000px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+    .footer-copy { font-size: 0.8rem; color: var(--text-faint); }
+    .footer-links { display: flex; gap: 20px; align-items: center; }
+    .footer-links a { font-size: 0.8rem; color: var(--text-muted); text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+    .footer-links a:hover { color: var(--blue); }
+    .footer-support { font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600; color: var(--blue); border: 1px solid var(--blue-mid); border-radius: 16px; padding: 4px 12px; background: var(--blue-light); }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <a href="../" class="back-link">← member-tracker</a>
+    <div class="header-divider"></div>
+    <h1>Methodology &amp; Coverage</h1>
+  </div>
+</header>
+
+<div class="pill-nav">
+  <span class="pill-label">In this tool:</span>
+  <a href="../">Map &amp; Boards</a>
+  <a href="../openings/">Upcoming Openings</a>
+  <a href="../alerts/">Email Alerts</a>
+  <a href="./" class="active">Methodology &amp; Coverage</a>
+</div>
+
+<div class="hero">
+  <div class="hero-inner">
+    <div class="breadcrumb">
+      <a href="/">data.nycuriosity.com</a>
+      <span>›</span>
+      <a href="../../">cb-tools</a>
+      <span>›</span>
+      <a href="../">Member Tracker</a>
+      <span>›</span>
+      <span class="here">Methodology</span>
+    </div>
+    <h1>No one publishes this data in one place, <span>so coverage varies and this page says exactly how</span></h1>
+    <p>
+      New York has no citywide roster of community board members. This tracker assembles one from
+      three source types with very different reliability, and labels every board with what its
+      sources actually support.
+    </p>
+  </div>
+</div>
+
+<main>
+  <div class="main-inner">
+
+    <div class="section-head">The three source layers</div>
+    <div class="prose">
+      <p><strong>1. The CAU dataset (all 59 boards).</strong> The Mayor's Community Affairs Unit
+      publishes the <a href="https://data.cityofnewyork.us/City-Government/NYC-Community-Boards/ruf7-3wgc" target="_blank" rel="noopener">NYC Community Boards dataset</a>
+      with each board's chair, district manager, office contacts, and meeting schedule. It is the
+      only citywide, machine-readable source and supplies the leadership baseline for every board.</p>
+      <p><strong>2. Borough president rosters (Bronx only, today).</strong> The Bronx BP publishes a
+      <a href="https://data.cityofnewyork.us/City-Government/Bronx-Community-Boards/wbau-xy7g" target="_blank" rel="noopener">full member roster</a>
+      with per-member term-expiration dates and recommending officials, the only machine-readable
+      term data in the city. Queens and Manhattan have dormant Open Data rosters last updated in
+      2018-2019; if those offices resume publishing, the tracker will pick them up.</p>
+      <p><strong>3. Each board's own website (rosters, officers, committees).</strong> A monthly
+      crawl reads every board's site, 55 on the shared nyc.gov platform, the rest on a city
+      WordPress install or independent domains, and extracts whatever the board publishes: full
+      rosters on the best sites, committee chairs on about half, nothing machine-readable on a few.
+      Every extracted name must appear verbatim in the page text; the pipeline never fills gaps by
+      inference. What is missing on a board's page below is missing at the source.</p>
+      <p><strong>Chair links.</strong> LinkedIn profile and news links on chair cards come from
+      public web searches, matched manually to the chair's board role, never scraped from LinkedIn.
+      A link is only shown when the match is confident; absence means no confident public match,
+      not that none exists.</p>
+      <p><strong>Manhattan resolution archives.</strong> Board pages for the 11 Manhattan boards
+      with published minutes include resolution counts and recent decisions from
+      <a href="https://blockparty.studio" target="_blank" rel="noopener">Block Party</a>, which
+      extracts every resolution from board minutes. Vote tallies there are board-level counts;
+      no NYC community board publishes how individual members voted.</p>
+      <p><strong>Term-limit modeling.</strong> The four-consecutive-term cap (Charter §2800, 2018
+      ballot Question 3) started with terms beginning April 1, 2019, so the first forced wave lands
+      March 31, 2027 and the five-term April 2020 class follows in 2030. Boards outside the Bronx
+      show this structural clock rather than per-member dates, and the pages label which one you
+      are looking at.</p>
+    </div>
+
+    <div class="section-head">Coverage, board by board</div>
+    <div class="table-scroll" id="covTable"><p class="loading-note">Loading coverage…</p></div>
+
+    <div class="footnotes">
+      <p><strong>Refresh cadence:</strong> the pipeline re-fetches the CAU and Bronx datasets and
+      re-crawls all 59 board sites monthly, re-extracting only boards whose pages changed.
+      <a href="../alerts/">Member alerts</a> fire on the diffs.</p>
+      <p><strong>Known limits:</strong> Manhattan CB 7's site is a JavaScript app the crawler cannot
+      read, so its roster is not covered. The Bronx roster reflects its latest published year and
+      seats past their printed expiration may have been reappointed since. CAU chair names lag
+      board elections by up to a few months.</p>
+      <p><strong>Pipeline code:</strong> open source in the
+      <a href="https://github.com/TalR24/nycur-data-website" target="_blank" rel="noopener">site repository</a>
+      under <code>cb-tools/member-tracker/pipeline/</code>.</p>
+      <p><strong>Created by Tal Roded · NYCuriosity.</strong></p>
+    </div>
+
+  </div>
+</main>
+
+<footer>
+  <div class="footer-inner">
+    <span class="footer-copy">© NYCuriosity · Tal Roded</span>
+    <nav class="footer-links">
+      <a href="https://buymeacoffee.com/nycuriosity" class="footer-support" target="_blank" rel="noopener" aria-label="Support my work on Buy Me a Coffee"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>Support my work</a>
+      <a href="https://talroded.nycuriosity.com" target="_blank" rel="noopener">About</a>
+      <a href="https://www.nycuriosity.com" target="_blank" rel="noopener">Substack</a>
+      <a href="https://github.com/TalR24/nycur-data-website" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://www.youtube.com/@nycuriosity-yt" target="_blank" rel="noopener">YouTube</a>
+    </nav>
+  </div>
+</footer>
+
+<script>
+(function () {
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  Promise.all([
+    fetch('../data/boards.json').then(function (r) { return r.json(); }),
+    fetch('../data/members.json').then(function (r) { return r.json(); })
+  ]).then(function (res) {
+    var counts = {};
+    res[1].members.forEach(function (m) {
+      if (m.source !== 'cau') counts[m.cd] = (counts[m.cd] || 0) + 1;
+    });
+    var rows = res[0].boards.map(function (b) {
+      var roster;
+      if (b.coverage.roster === 'full') roster = '<span class="cov ok">' + (counts[b.cd] || 0) + ' members</span>';
+      else if (b.coverage.roster === 'partial') roster = '<span class="cov part">leaders only (' + (counts[b.cd] || 0) + ')</span>';
+      else roster = '<span class="cov no">not published</span>';
+      var comm = {
+        assignments: '<span class="cov ok">full assignments</span>',
+        chairs: '<span class="cov ok">chairs named</span>',
+        list: '<span class="cov part">list only</span>',
+        none: '<span class="cov no">not published</span>'
+      }[b.coverage.committees];
+      var terms = b.coverage.terms === 'confirmed'
+        ? '<span class="cov ok">confirmed dates</span>'
+        : '<span class="cov no">modeled waves</span>';
+      var votes = b.block_party ? '<span class="cov ok">✓</span>' : '<span class="cov no">—</span>';
+      return '<tr><td class="nm"><a href="../board/?cd=' + b.cd + '">' + esc(b.name) + '</a></td>'
+        + '<td><span class="cov ok">✓ CAU</span></td>'
+        + '<td>' + roster + '</td>'
+        + '<td>' + comm + '</td>'
+        + '<td>' + terms + '</td>'
+        + '<td>' + votes + '</td></tr>';
+    }).join('');
+    document.getElementById('covTable').innerHTML =
+      '<table><thead><tr><th>Board</th><th>Chair &amp; DM</th><th>Roster</th><th>Committees</th><th>Term dates</th><th>Resolutions</th></tr></thead><tbody>'
+      + rows + '</tbody></table>';
+  }).catch(function () {
+    document.getElementById('covTable').innerHTML = '<p class="loading-note">Data failed to load.</p>';
+  });
+})();
+</script>
+
+</body>
+</html>

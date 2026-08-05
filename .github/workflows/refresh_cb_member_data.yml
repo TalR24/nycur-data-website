@@ -1,0 +1,76 @@
+name: Refresh CB member tracker data
+
+on:
+  schedule:
+    - cron: "23 11 5 * *" # monthly, 5th at 11:23 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install dependencies
+        run: pip install -r cb-tools/member-tracker/pipeline/requirements.txt
+
+      - name: Fetch Open Data sources (CAU boards + Bronx roster)
+        working-directory: cb-tools/member-tracker
+        run: python3 pipeline/fetch_open_data.py
+
+      - name: Crawl board websites
+        working-directory: cb-tools/member-tracker
+        run: python3 pipeline/fetch_board_pages.py
+
+      - name: Extract rosters (changed boards only)
+        working-directory: cb-tools/member-tracker
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: python3 pipeline/extract_rosters.py
+
+      - name: Rebuild tracker data
+        working-directory: cb-tools/member-tracker
+        run: python3 pipeline/build_tracker_data.py
+
+      - name: Commit refreshed data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add cb-tools/member-tracker/data/boards.json \
+                  cb-tools/member-tracker/data/members.json \
+                  cb-tools/member-tracker/pipeline/extracted/rosters
+          if git diff --cached --quiet; then
+            echo "No data changes."
+          else
+            git commit -m "Refresh CB member tracker data"
+            git push
+          fi
+
+      # Alerts run LAST so a Gmail failure can never block the data commit
+      # (pattern from refresh_state_capacity.yml).
+      - name: Send CB alerts and push state to premium repo
+        env:
+          PREMIUM_PUSH_TOKEN: ${{ secrets.PREMIUM_PUSH_TOKEN }}
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+        run: |
+          git clone --depth 1 "https://x-access-token:${PREMIUM_PUSH_TOKEN}@github.com/TalR24/nycur-data-premium.git" /tmp/premium
+          cd cb-tools/member-tracker
+          PREMIUM_DIR=/tmp/premium python3 pipeline/send_cb_alerts.py
+          cd /tmp/premium
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add cb-tools/member-tracker/data/cb_alerts_state.json
+          if git diff --cached --quiet; then
+            echo "No alert state change."
+          else
+            git commit -m "Update CB alert state"
+            git push
+          fi

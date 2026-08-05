@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CB Member Tracker — NYCuriosity</title>
+  <meta name="description" content="Who serves on all 59 NYC community boards: chairs, district managers, committees, rosters, and the term-limit clock behind upcoming openings.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://data.nycuriosity.com/cb-tools/member-tracker/">
+  <meta property="og:title" content="CB Member Tracker — NYCuriosity">
+  <meta property="og:description" content="Who serves on all 59 NYC community boards: chairs, district managers, committees, rosters, and the term-limit clock behind upcoming openings.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --blue: #2563eb; --blue-hover: #1d4ed8; --blue-light: #eff6ff; --blue-mid: #bfdbfe;
+      --text: #111827; --text-mid: #374151; --text-muted: #6b7280; --text-faint: #9ca3af;
+      --bg: #f8faff; --surface: #ffffff; --border: #e5e7eb;
+      --shadow-sm: 0 1px 3px rgba(17,24,39,0.08); --radius: 10px;
+      --green: #16a34a; --red: #dc2626; --orange: #FF6319;
+    }
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
+    header { background: #111827; border-bottom: 1px solid #1f2937; padding: 0 clamp(20px, 5vw, 48px); }
+    .header-inner { max-width: 1100px; margin: 0 auto; height: 56px; display: flex; align-items: center; gap: 16px; }
+    .back-link { font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600; color: #9ca3af; text-decoration: none; white-space: nowrap; }
+    .back-link:hover { color: #60a5fa; }
+    .header-divider { width: 1px; height: 20px; background: #374151; }
+    header h1 { font-family: 'Roboto Mono', monospace; font-size: 0.95rem; font-weight: 700; color: #e5e7eb; letter-spacing: -0.02em; }
+
+    .pill-nav { background: var(--surface); border-bottom: 1px solid var(--border); padding: 10px clamp(20px, 5vw, 48px); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .pill-nav a { font-size: 0.78rem; font-family: 'Roboto Mono', monospace; font-weight: 600; padding: 4px 12px; border-radius: 20px; text-decoration: none; border: 1px solid var(--border); color: var(--text-muted); background: var(--bg); transition: all 0.15s; white-space: nowrap; }
+    .pill-nav a:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
+    .pill-nav a.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+    .pill-label { font-size: 0.72rem; color: var(--text-faint); font-family: 'Roboto Mono', monospace; white-space: nowrap; }
+
+    .hero { background: var(--surface); border-bottom: 1px solid var(--border); padding: clamp(28px, 4vw, 44px) clamp(20px, 5vw, 48px); }
+    .hero-inner { max-width: 1100px; margin: 0 auto; }
+    .breadcrumb { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; color: var(--text-faint); margin-bottom: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
+    .breadcrumb a { color: var(--text-muted); text-decoration: none; }
+    .breadcrumb a:hover { color: var(--blue); }
+    .breadcrumb span.here { color: var(--orange); font-weight: 600; }
+    .hero-meta { display: flex; gap: 10px; align-items: center; margin-bottom: 12px; flex-wrap: wrap; }
+    .hero-tag { font-family: 'Roboto Mono', monospace; font-size: 0.68rem; font-weight: 700; color: var(--orange); border: 1px solid var(--orange); border-radius: 12px; padding: 3px 10px; }
+    .hero-updated { font-family: 'Roboto Mono', monospace; font-size: 0.7rem; color: var(--text-faint); }
+    .hero h1 { font-family: 'Roboto Mono', monospace; font-size: clamp(1.3rem, 3vw, 1.8rem); font-weight: 700; letter-spacing: -0.03em; line-height: 1.25; margin-bottom: 10px; }
+    .hero h1 span { color: var(--blue); }
+    .hero p { font-size: 0.95rem; color: var(--text-muted); max-width: 720px; line-height: 1.7; }
+    .hero-pills { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 18px; }
+    .stat-pill { display: flex; flex-direction: column; gap: 2px; padding: 12px 18px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); min-width: 140px; }
+    .stat-pill .sp-num { font-family: 'Roboto Mono', monospace; font-size: 1.2rem; font-weight: 700; color: var(--blue); letter-spacing: -0.03em; line-height: 1; }
+    .stat-pill .sp-label { font-size: 0.72rem; color: var(--text-muted); line-height: 1.3; }
+
+    main { flex: 1; padding: clamp(24px, 4vw, 40px) clamp(20px, 5vw, 48px); }
+    .main-inner { max-width: 1100px; margin: 0 auto; }
+    .loading-note { font-family: 'Roboto Mono', monospace; font-size: 0.8rem; color: var(--text-faint); padding: 12px 0; }
+    .section-head { font-family: 'Roboto Mono', monospace; font-size: 0.85rem; font-weight: 700; margin: 28px 0 12px; }
+
+    /* Map */
+    .map-wrap { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(280px, 1fr); gap: 18px; align-items: start; }
+    .map-box { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 14px; }
+    .map-box svg { width: 100%; height: auto; display: block; }
+    .district-shape { fill: var(--blue-light); stroke: var(--blue); stroke-width: 0.7; cursor: pointer; transition: fill 0.12s; }
+    .district-shape:hover { fill: var(--blue-mid); }
+    .district-shape.selected { fill: var(--blue); }
+    .district-label { font-family: 'Roboto Mono', monospace; font-size: 10px; font-weight: 600; fill: var(--text-mid); pointer-events: none; }
+    .district-shape.selected + .district-label { fill: #fff; }
+    .map-panel { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 18px 20px; position: sticky; top: 12px; }
+    .map-panel h3 { font-family: 'Roboto Mono', monospace; font-size: 0.95rem; font-weight: 700; margin-bottom: 4px; }
+    .map-panel .sub { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 12px; line-height: 1.5; }
+    .mp-section { font-family: 'Roboto Mono', monospace; font-size: 0.66rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-faint); margin: 14px 0 8px; }
+    .mp-row { display: flex; align-items: baseline; gap: 8px; padding: 7px 10px; border: 1px solid var(--border); border-radius: 7px; margin-bottom: 6px; flex-wrap: wrap; }
+    .mp-row .nm { font-family: 'Roboto Mono', monospace; font-size: 0.78rem; font-weight: 600; }
+    .mp-row .rl { font-size: 0.7rem; color: var(--text-faint); margin-left: auto; }
+    .map-hint { font-family: 'Roboto Mono', monospace; font-size: 0.75rem; color: var(--text-faint); line-height: 1.6; }
+    .mp-cta { display: inline-flex; margin-top: 10px; font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600; color: var(--blue); text-decoration: none; }
+    .mp-cta:hover { text-decoration: underline; }
+
+    /* Search */
+    .search-box { width: 100%; max-width: 480px; padding: 10px 14px; border: 1.5px solid var(--border); border-radius: 8px; font-family: 'Inter', sans-serif; font-size: 0.9rem; background: var(--surface); }
+    .search-box:focus { outline: none; border-color: var(--blue); }
+    .search-results { margin-top: 12px; }
+    .sr-row { display: flex; align-items: baseline; gap: 10px; padding: 9px 12px; border: 1px solid var(--border); border-radius: 7px; margin-bottom: 6px; background: var(--surface); text-decoration: none; color: inherit; flex-wrap: wrap; transition: border-color 0.12s; }
+    .sr-row:hover { border-color: var(--blue); }
+    .sr-row .nm { font-family: 'Roboto Mono', monospace; font-size: 0.8rem; font-weight: 600; }
+    .sr-row .bd { font-family: 'Roboto Mono', monospace; font-size: 0.7rem; color: var(--blue); }
+    .sr-row .rl { font-size: 0.72rem; color: var(--text-muted); margin-left: auto; }
+
+    /* Boards grid */
+    .board-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+    .board-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 14px 16px; text-decoration: none; color: inherit; display: flex; flex-direction: column; gap: 6px; transition: border-color 0.15s, transform 0.12s; }
+    .board-card:hover { border-color: var(--blue); transform: translateY(-2px); }
+    .bc-name { font-family: 'Roboto Mono', monospace; font-size: 0.88rem; font-weight: 700; letter-spacing: -0.02em; }
+    .bc-hood { font-size: 0.7rem; color: var(--text-muted); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .bc-chair { font-family: 'Roboto Mono', monospace; font-size: 0.7rem; color: var(--text-mid); margin-top: 2px; }
+    .bc-chair b { font-weight: 600; }
+    .bc-chips { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 4px; }
+    .chip { font-family: 'Roboto Mono', monospace; font-size: 0.6rem; font-weight: 600; padding: 2px 8px; border-radius: 10px; border: 1px solid var(--border); color: var(--text-faint); background: var(--bg); }
+    .chip.ok { color: var(--green); border-color: #a7f3d0; background: #ecfdf5; }
+    .chip.tc { color: var(--blue); border-color: var(--blue-mid); background: var(--blue-light); }
+
+    footer { background: var(--surface); border-top: 1px solid var(--border); padding: 20px clamp(20px, 5vw, 48px); }
+    .footer-inner { max-width: 1100px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+    .footer-copy { font-size: 0.8rem; color: var(--text-faint); }
+    .footer-links { display: flex; gap: 20px; align-items: center; }
+    .footer-links a { font-size: 0.8rem; color: var(--text-muted); text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+    .footer-links a:hover { color: var(--blue); }
+    .footer-support { font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600; color: var(--blue); border: 1px solid var(--blue-mid); border-radius: 16px; padding: 4px 12px; background: var(--blue-light); }
+
+    @media (max-width: 760px) {
+      .map-wrap { grid-template-columns: 1fr; }
+      .map-panel { position: static; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <a href="../" class="back-link">← cb-tools</a>
+    <div class="header-divider"></div>
+    <h1>CB Member Tracker</h1>
+  </div>
+</header>
+
+<div class="pill-nav">
+  <span class="pill-label">In this tool:</span>
+  <a href="./" class="active">Map &amp; Boards</a>
+  <a href="openings/">Upcoming Openings</a>
+  <a href="alerts/">Email Alerts</a>
+  <a href="methodology/">Methodology &amp; Coverage</a>
+</div>
+
+<div class="hero">
+  <div class="hero-inner">
+    <div class="breadcrumb">
+      <a href="/">data.nycuriosity.com</a>
+      <span>›</span>
+      <a href="../">cb-tools</a>
+      <span>›</span>
+      <span class="here">Member Tracker</span>
+    </div>
+    <div class="hero-meta">
+      <span class="hero-tag">Civic Reference</span>
+      <span class="hero-updated" id="heroUpdated"></span>
+    </div>
+    <h1>Every community board runs on people <span>you can actually look up</span></h1>
+    <p>
+      Chairs, district managers, committee leadership, and published rosters for all 59 NYC
+      community boards, joined with the term-limit clock that forces the first wave of chair and
+      seat turnover in spring 2027. Click a district on the map, search a name, or browse the
+      boards below.
+    </p>
+    <div class="hero-pills" id="heroPills"></div>
+  </div>
+</div>
+
+<main>
+  <div class="main-inner">
+    <div class="map-wrap">
+      <div class="map-box" id="mapBox"><p class="loading-note">Loading map…</p></div>
+      <div class="map-panel" id="mapPanel">
+        <p class="map-hint">Click a community district to see who runs its board: chair, district
+        manager, officers, and committee chairs, with a link to the full board page.</p>
+      </div>
+    </div>
+
+    <div class="section-head">Search everyone the tracker knows</div>
+    <input type="search" class="search-box" id="memberSearch" placeholder="Search members, chairs, committees…">
+    <div class="search-results" id="searchResults"></div>
+
+    <div class="section-head" id="boardsHead">All 59 boards</div>
+    <div class="board-grid" id="boardGrid"><p class="loading-note">Loading boards…</p></div>
+  </div>
+</main>
+
+<footer>
+  <div class="footer-inner">
+    <span class="footer-copy">© NYCuriosity · Tal Roded</span>
+    <nav class="footer-links">
+      <a href="https://buymeacoffee.com/nycuriosity" class="footer-support" target="_blank" rel="noopener" aria-label="Support my work on Buy Me a Coffee"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>Support my work</a>
+      <a href="https://talroded.nycuriosity.com" target="_blank" rel="noopener">About</a>
+      <a href="https://www.nycuriosity.com" target="_blank" rel="noopener">Substack</a>
+      <a href="https://github.com/TalR24/nycur-data-website" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://www.youtube.com/@nycuriosity-yt" target="_blank" rel="noopener">YouTube</a>
+    </nav>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var BOARDS = null, MEMBERS = null, MAPDATA = null;
+  var byCd = {};
+
+  Promise.all([
+    fetch('data/boards.json').then(function (r) { return r.json(); }),
+    fetch('data/members.json').then(function (r) { return r.json(); }),
+    fetch('data/cd_map.json').then(function (r) { return r.json(); })
+  ]).then(function (res) {
+    BOARDS = res[0]; MEMBERS = res[1]; MAPDATA = res[2];
+    BOARDS.boards.forEach(function (b) { byCd[b.cd] = b; });
+    if (BOARDS.generated) {
+      var months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+      var g = new Date(BOARDS.generated + 'T12:00:00');
+      document.getElementById('heroUpdated').textContent = 'Updated ' + months[g.getMonth()] + ' ' + g.getFullYear();
+    }
+    buildPills();
+    buildMap();
+    buildGrid();
+    wireSearch();
+    var params = new URLSearchParams(location.search);
+    var cd = parseInt(params.get('cd') || '', 10);
+    if (byCd[cd]) selectDistrict(cd);
+  }).catch(function () {
+    document.getElementById('mapBox').innerHTML = '<p class="loading-note">Data failed to load.</p>';
+    document.getElementById('boardGrid').innerHTML = '<p class="loading-note">Data failed to load.</p>';
+  });
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function buildPills() {
+    var nMembers = MEMBERS.members.length;
+    var nCommittees = 0, nChairsKnown = 0;
+    BOARDS.boards.forEach(function (b) {
+      nCommittees += (b.committees || []).length;
+      if (b.chair && b.chair.name) nChairsKnown += 1;
+    });
+    document.getElementById('heroPills').innerHTML =
+      '<div class="stat-pill"><span class="sp-num">59</span><span class="sp-label">community boards</span></div>'
+      + '<div class="stat-pill"><span class="sp-num">' + nChairsKnown + '</span><span class="sp-label">board chairs tracked</span></div>'
+      + '<div class="stat-pill"><span class="sp-num">' + nMembers.toLocaleString() + '</span><span class="sp-label">people on published rosters</span></div>'
+      + '<div class="stat-pill"><span class="sp-num">' + nCommittees.toLocaleString() + '</span><span class="sp-label">committees catalogued</span></div>';
+  }
+
+  /* ── Map ─────────────────────────────────────────────── */
+
+  function buildMap() {
+    var svg = '<svg viewBox="' + MAPDATA.viewBox + '" role="img" aria-label="Map of the 59 NYC community districts">';
+    MAPDATA.districts.forEach(function (d) {
+      var title = (byCd[d.cd] ? byCd[d.cd].name : d.borough + ' CB ' + d.number);
+      svg += '<path class="district-shape" d="' + d.path + '" data-cd="' + d.cd + '"><title>' + esc(title) + '</title></path>'
+        + '<text class="district-label" x="' + d.cx + '" y="' + d.cy + '" text-anchor="middle">' + d.number + '</text>';
+    });
+    svg += '</svg>';
+    document.getElementById('mapBox').innerHTML = svg;
+    document.querySelectorAll('.district-shape').forEach(function (p) {
+      p.addEventListener('click', function () {
+        selectDistrict(parseInt(p.getAttribute('data-cd'), 10));
+      });
+    });
+  }
+
+  function selectDistrict(cd) {
+    document.querySelectorAll('.district-shape').forEach(function (p) {
+      p.classList.toggle('selected', parseInt(p.getAttribute('data-cd'), 10) === cd);
+    });
+    var b = byCd[cd];
+    if (!b) return;
+    var html = '<h3>' + esc(b.name) + '</h3>'
+      + '<p class="sub">' + esc(b.neighborhoods || '') + '</p>';
+    html += '<div class="mp-section">Leadership</div>';
+    if (b.chair && b.chair.name) {
+      html += '<div class="mp-row"><span class="nm">' + esc(b.chair.name) + '</span><span class="rl">Chair</span></div>';
+    }
+    if (b.district_manager) {
+      html += '<div class="mp-row"><span class="nm">' + esc(b.district_manager) + '</span><span class="rl">District Manager (staff)</span></div>';
+    }
+    var extraOfficers = (b.officers || []).filter(function (o) {
+      return !/^chair$/i.test(o.role);
+    }).slice(0, 5);
+    extraOfficers.forEach(function (o) {
+      html += '<div class="mp-row"><span class="nm">' + esc(o.name) + '</span><span class="rl">' + esc(o.role) + '</span></div>';
+    });
+    var chaired = (b.committees || []).filter(function (c) { return c.chair; });
+    if (chaired.length) {
+      html += '<div class="mp-section">Committee chairs</div>';
+      chaired.slice(0, 6).forEach(function (c) {
+        html += '<div class="mp-row"><span class="nm">' + esc(c.chair) + '</span><span class="rl">' + esc(c.name) + '</span></div>';
+      });
+      if (chaired.length > 6) {
+        html += '<p class="map-hint">+ ' + (chaired.length - 6) + ' more on the board page</p>';
+      }
+    } else if ((b.committees || []).length) {
+      html += '<p class="map-hint">' + b.committees.length + ' committees listed; chairs not published on the board’s site.</p>';
+    }
+    html += '<a class="mp-cta" href="board/?cd=' + cd + '">Full board page →</a>';
+    document.getElementById('mapPanel').innerHTML = html;
+  }
+
+  /* ── Boards grid ─────────────────────────────────────── */
+
+  function buildGrid() {
+    var html = '';
+    BOARDS.boards.forEach(function (b) {
+      var chips = '';
+      if (b.coverage.roster === 'full') chips += '<span class="chip ok">roster ✓</span>';
+      if (b.coverage.committees !== 'none') chips += '<span class="chip ok">committees ✓</span>';
+      if (b.coverage.terms === 'confirmed') chips += '<span class="chip tc">term dates ✓</span>';
+      if (b.block_party) chips += '<span class="chip tc">votes archive</span>';
+      html += '<a class="board-card" href="board/?cd=' + b.cd + '">'
+        + '<span class="bc-name">' + esc(b.name) + '</span>'
+        + '<span class="bc-hood">' + esc(b.neighborhoods || '') + '</span>'
+        + '<span class="bc-chair">Chair: <b>' + esc((b.chair && b.chair.name) || 'not published') + '</b></span>'
+        + '<span class="bc-chips">' + chips + '</span>'
+        + '</a>';
+    });
+    document.getElementById('boardGrid').innerHTML = html;
+  }
+
+  /* ── Search ──────────────────────────────────────────── */
+
+  function wireSearch() {
+    var input = document.getElementById('memberSearch');
+    var out = document.getElementById('searchResults');
+    input.addEventListener('input', function () {
+      var q = input.value.trim().toLowerCase();
+      if (q.length < 2) { out.innerHTML = ''; return; }
+      var hits = [];
+      MEMBERS.members.forEach(function (m) {
+        var blob = (m.name + ' ' + (m.roles || []).join(' ')).toLowerCase();
+        if (blob.indexOf(q) !== -1) hits.push(m);
+      });
+      BOARDS.boards.forEach(function (b) {
+        (b.committees || []).forEach(function (c) {
+          if (c.name.toLowerCase().indexOf(q) !== -1) {
+            hits.push({ cd: b.cd, name: c.name + ' Committee', roles: [c.chair ? 'Chair: ' + c.chair : 'committee'], _committee: true });
+          }
+        });
+      });
+      var html = hits.slice(0, 30).map(function (m) {
+        var b = byCd[m.cd];
+        return '<a class="sr-row" href="board/?cd=' + m.cd + '">'
+          + '<span class="nm">' + esc(m.name) + '</span>'
+          + '<span class="bd">' + esc(b ? b.name : '') + '</span>'
+          + '<span class="rl">' + esc((m.roles || []).slice(0, 2).join(' · ') || (m._committee ? '' : 'Member')) + '</span>'
+          + '</a>';
+      }).join('');
+      out.innerHTML = html || '<p class="loading-note">No matches on published rosters. Coverage varies by board; see Methodology.</p>';
+    });
+  }
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Board Profile — CB Member Tracker — NYCuriosity</title>
+  <meta name="description" content="Leadership, committees, published roster, term clock, and recent decisions for an NYC community board.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://data.nycuriosity.com/cb-tools/member-tracker/board/">
+  <meta property="og:title" content="Board Profile — CB Member Tracker — NYCuriosity">
+  <meta property="og:description" content="Leadership, committees, published roster, term clock, and recent decisions for an NYC community board.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --blue: #2563eb; --blue-hover: #1d4ed8; --blue-light: #eff6ff; --blue-mid: #bfdbfe;
+      --text: #111827; --text-mid: #374151; --text-muted: #6b7280; --text-faint: #9ca3af;
+      --bg: #f8faff; --surface: #ffffff; --border: #e5e7eb;
+      --shadow-sm: 0 1px 3px rgba(17,24,39,0.08); --radius: 10px;
+      --green: #16a34a; --red: #dc2626; --orange: #FF6319;
+    }
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
+    header { background: #111827; border-bottom: 1px solid #1f2937; padding: 0 clamp(20px, 5vw, 48px); }
+    .header-inner { max-width: 1000px; margin: 0 auto; height: 56px; display: flex; align-items: center; gap: 16px; }
+    .back-link { font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600; color: #9ca3af; text-decoration: none; white-space: nowrap; }
+    .back-link:hover { color: #60a5fa; }
+    .header-divider { width: 1px; height: 20px; background: #374151; }
+    header h1 { font-family: 'Roboto Mono', monospace; font-size: 0.95rem; font-weight: 700; color: #e5e7eb; letter-spacing: -0.02em; }
+
+    .pill-nav { background: var(--surface); border-bottom: 1px solid var(--border); padding: 10px clamp(20px, 5vw, 48px); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .pill-nav a { font-size: 0.78rem; font-family: 'Roboto Mono', monospace; font-weight: 600; padding: 4px 12px; border-radius: 20px; text-decoration: none; border: 1px solid var(--border); color: var(--text-muted); background: var(--bg); transition: all 0.15s; white-space: nowrap; }
+    .pill-nav a:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
+    .pill-label { font-size: 0.72rem; color: var(--text-faint); font-family: 'Roboto Mono', monospace; white-space: nowrap; }
+
+    .hero { background: var(--surface); border-bottom: 1px solid var(--border); padding: clamp(26px, 4vw, 40px) clamp(20px, 5vw, 48px); }
+    .hero-inner { max-width: 1000px; margin: 0 auto; }
+    .breadcrumb { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; color: var(--text-faint); margin-bottom: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
+    .breadcrumb a { color: var(--text-muted); text-decoration: none; }
+    .breadcrumb a:hover { color: var(--blue); }
+    .breadcrumb span.here { color: var(--orange); font-weight: 600; }
+    .hero h1 { font-family: 'Roboto Mono', monospace; font-size: clamp(1.25rem, 3vw, 1.7rem); font-weight: 700; letter-spacing: -0.03em; line-height: 1.25; margin-bottom: 8px; }
+    .hero h1 span { color: var(--blue); }
+    .hero p { font-size: 0.92rem; color: var(--text-muted); max-width: 720px; line-height: 1.65; }
+    .hero-pills { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px; }
+    .stat-pill { display: flex; flex-direction: column; gap: 2px; padding: 11px 16px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); min-width: 130px; }
+    .stat-pill .sp-num { font-family: 'Roboto Mono', monospace; font-size: 1.15rem; font-weight: 700; color: var(--blue); letter-spacing: -0.03em; line-height: 1; }
+    .stat-pill .sp-label { font-size: 0.7rem; color: var(--text-muted); line-height: 1.3; }
+
+    main { flex: 1; padding: clamp(24px, 4vw, 40px) clamp(20px, 5vw, 48px); }
+    .main-inner { max-width: 1000px; margin: 0 auto; }
+    .loading-note { font-family: 'Roboto Mono', monospace; font-size: 0.8rem; color: var(--text-faint); padding: 12px 0; }
+    .section-head { font-family: 'Roboto Mono', monospace; font-size: 0.85rem; font-weight: 700; margin: 26px 0 12px; }
+    .panel { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 16px 18px; margin-bottom: 12px; }
+
+    .chair-card { display: flex; flex-direction: column; gap: 8px; }
+    .cc-top { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+    .cc-name { font-family: 'Roboto Mono', monospace; font-size: 1.05rem; font-weight: 700; }
+    .cc-role { font-family: 'Roboto Mono', monospace; font-size: 0.68rem; font-weight: 700; color: var(--blue); border: 1px solid var(--blue-mid); background: var(--blue-light); border-radius: 10px; padding: 2px 9px; }
+    .cc-note { font-size: 0.78rem; color: var(--red); }
+    .cc-links { display: flex; gap: 8px; flex-wrap: wrap; }
+    .link-chip { font-family: 'Roboto Mono', monospace; font-size: 0.7rem; font-weight: 600; padding: 4px 11px; border-radius: 14px; border: 1px solid var(--border); background: var(--bg); color: var(--text-mid); text-decoration: none; }
+    .link-chip:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
+    .news-item { font-size: 0.8rem; color: var(--text-mid); line-height: 1.55; padding: 6px 0; border-top: 1px dashed var(--border); }
+    .news-item:first-of-type { border-top: 0; }
+    .news-item a { color: var(--blue); text-decoration: none; }
+    .news-item a:hover { text-decoration: underline; }
+    .news-item .meta { font-family: 'Roboto Mono', monospace; font-size: 0.65rem; color: var(--text-faint); }
+
+    .officer-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px; }
+    .officer-row { display: flex; flex-direction: column; gap: 2px; padding: 9px 12px; border: 1px solid var(--border); border-radius: 7px; background: var(--surface); }
+    .officer-row .nm { font-family: 'Roboto Mono', monospace; font-size: 0.78rem; font-weight: 600; }
+    .officer-row .rl { font-size: 0.68rem; color: var(--text-faint); }
+
+    .committee-row { display: flex; align-items: baseline; gap: 10px; padding: 9px 12px; border: 1px solid var(--border); border-radius: 7px; margin-bottom: 6px; background: var(--surface); flex-wrap: wrap; }
+    .committee-row .cn { font-family: 'Roboto Mono', monospace; font-size: 0.8rem; font-weight: 600; }
+    .committee-row .ch { font-size: 0.75rem; color: var(--text-mid); margin-left: auto; }
+    .committee-row .ch b { font-weight: 600; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    th { font-family: 'Roboto Mono', monospace; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-faint); text-align: left; padding: 8px 10px; border-bottom: 2px solid var(--border); }
+    td { padding: 8px 10px; border-bottom: 1px solid var(--border); color: var(--text-mid); }
+    td.nm { font-family: 'Roboto Mono', monospace; font-weight: 600; color: var(--text); }
+    td.num { font-family: 'Roboto Mono', monospace; white-space: nowrap; }
+    .roster-filter { width: 100%; max-width: 380px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 7px; font-family: 'Inter', sans-serif; font-size: 0.85rem; background: var(--bg); margin-bottom: 10px; }
+    .table-scroll { overflow-x: auto; }
+
+    .context-box { background: var(--blue-light); border: 1px solid var(--blue-mid); border-radius: var(--radius); padding: 14px 18px; font-size: 0.85rem; color: var(--text-mid); line-height: 1.65; margin: 14px 0; }
+    .context-box b { color: var(--text); }
+    .context-box a { color: var(--blue); }
+
+    .yr-bars { display: flex; align-items: flex-end; gap: 3px; height: 64px; margin: 10px 0 4px; }
+    .yr-col { display: flex; flex-direction: column; align-items: center; gap: 3px; flex: 1; min-width: 0; }
+    .yr-bar { width: 100%; max-width: 26px; background: var(--blue); border-radius: 2px 2px 0 0; }
+    .yr-lab { font-family: 'Roboto Mono', monospace; font-size: 0.55rem; color: var(--text-faint); }
+
+    .footnotes { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 18px; font-size: 0.78rem; color: var(--text-muted); line-height: 1.65; margin-top: 20px; }
+    .footnotes a { color: var(--blue); text-decoration: none; }
+    .footnotes p { margin-bottom: 8px; }
+    .footnotes p:last-child { margin-bottom: 0; }
+
+    footer { background: var(--surface); border-top: 1px solid var(--border); padding: 20px clamp(20px, 5vw, 48px); }
+    .footer-inner { max-width: 1000px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+    .footer-copy { font-size: 0.8rem; color: var(--text-faint); }
+    .footer-links { display: flex; gap: 20px; align-items: center; }
+    .footer-links a { font-size: 0.8rem; color: var(--text-muted); text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+    .footer-links a:hover { color: var(--blue); }
+    .footer-support { font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600; color: var(--blue); border: 1px solid var(--blue-mid); border-radius: 16px; padding: 4px 12px; background: var(--blue-light); }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <a href="../" class="back-link">← member-tracker</a>
+    <div class="header-divider"></div>
+    <h1 id="headerTitle">Board Profile</h1>
+  </div>
+</header>
+
+<div class="pill-nav">
+  <span class="pill-label">In this tool:</span>
+  <a href="../">Map &amp; Boards</a>
+  <a href="../openings/">Upcoming Openings</a>
+  <a href="../alerts/">Email Alerts</a>
+  <a href="../methodology/">Methodology &amp; Coverage</a>
+</div>
+
+<div class="hero">
+  <div class="hero-inner">
+    <div class="breadcrumb">
+      <a href="/">data.nycuriosity.com</a>
+      <span>›</span>
+      <a href="../../">cb-tools</a>
+      <span>›</span>
+      <a href="../">Member Tracker</a>
+      <span>›</span>
+      <span class="here" id="crumbBoard">Board</span>
+    </div>
+    <h1 id="heroTitle">Loading board…</h1>
+    <p id="heroDesc"></p>
+    <div class="hero-pills" id="heroPills"></div>
+  </div>
+</div>
+
+<main>
+  <div class="main-inner" id="mainContent">
+    <p class="loading-note">Loading…</p>
+  </div>
+</main>
+
+<footer>
+  <div class="footer-inner">
+    <span class="footer-copy">© NYCuriosity · Tal Roded</span>
+    <nav class="footer-links">
+      <a href="https://buymeacoffee.com/nycuriosity" class="footer-support" target="_blank" rel="noopener" aria-label="Support my work on Buy Me a Coffee"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>Support my work</a>
+      <a href="https://talroded.nycuriosity.com" target="_blank" rel="noopener">About</a>
+      <a href="https://www.nycuriosity.com" target="_blank" rel="noopener">Substack</a>
+      <a href="https://github.com/TalR24/nycur-data-website" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://www.youtube.com/@nycuriosity-yt" target="_blank" rel="noopener">YouTube</a>
+    </nav>
+  </div>
+</footer>
+
+<script>
+(function () {
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  Promise.all([
+    fetch('../data/boards.json').then(function (r) { return r.json(); }),
+    fetch('../data/members.json').then(function (r) { return r.json(); })
+  ]).then(function (res) {
+    var params = new URLSearchParams(location.search);
+    var cd = parseInt(params.get('cd') || '', 10);
+    var board = null;
+    res[0].boards.forEach(function (b) { if (b.cd === cd) board = b; });
+    if (!board) {
+      document.getElementById('mainContent').innerHTML =
+        '<p class="loading-note">Unknown board. <a href="../">Back to the map</a>.</p>';
+      document.getElementById('heroTitle').textContent = 'Board not found';
+      return;
+    }
+    var members = res[1].members.filter(function (m) { return m.cd === cd; });
+    render(board, members, res[0].term_rules);
+  }).catch(function () {
+    document.getElementById('mainContent').innerHTML = '<p class="loading-note">Data failed to load.</p>';
+  });
+
+  function render(b, members, rules) {
+    document.title = b.name + ' — CB Member Tracker — NYCuriosity';
+    document.getElementById('headerTitle').textContent = b.name;
+    document.getElementById('crumbBoard').textContent = b.name;
+    document.getElementById('heroTitle').innerHTML =
+      esc(b.name) + ' <span>' + esc((b.chair && b.chair.name) ? 'is chaired by ' + b.chair.name : '') + '</span>';
+    document.getElementById('heroDesc').textContent = b.neighborhoods || '';
+
+    var realMembers = members.filter(function (m) { return m.source !== 'cau'; });
+    var pills = '<div class="stat-pill"><span class="sp-num">'
+      + (realMembers.length || '—') + '</span><span class="sp-label">people on the published roster</span></div>'
+      + '<div class="stat-pill"><span class="sp-num">' + (b.committees || []).length + '</span><span class="sp-label">committees</span></div>';
+    if (b.board_meeting) {
+      pills += '<div class="stat-pill"><span class="sp-num" style="font-size:0.82rem;line-height:1.3">' + esc(b.board_meeting) + '</span><span class="sp-label">full board meets</span></div>';
+    }
+    document.getElementById('heroPills').innerHTML = pills;
+
+    var html = '';
+
+    /* Leadership */
+    html += '<div class="section-head">Leadership</div>';
+    html += '<div class="panel chair-card">';
+    if (b.chair && b.chair.name) {
+      html += '<div class="cc-top"><span class="cc-name">' + esc(b.chair.name) + '</span><span class="cc-role">CHAIR</span></div>';
+      if (b.chair.status_note) {
+        html += '<p class="cc-note">' + esc(b.chair.status_note) + '</p>';
+      }
+      var links = '';
+      if (b.chair.linkedin) {
+        links += '<a class="link-chip" href="' + esc(b.chair.linkedin) + '" target="_blank" rel="noopener">LinkedIn ↗</a>';
+      }
+      if (b.website) {
+        links += '<a class="link-chip" href="' + esc(b.website) + '" target="_blank" rel="noopener">Board website ↗</a>';
+      }
+      if (links) html += '<div class="cc-links">' + links + '</div>';
+      (b.chair.news || []).forEach(function (n) {
+        html += '<div class="news-item"><a href="' + esc(n.url) + '" target="_blank" rel="noopener">' + esc(n.title) + '</a> <span class="meta">' + esc(n.outlet || '') + (n.year ? ' · ' + n.year : '') + '</span></div>';
+      });
+    } else {
+      html += '<p class="loading-note">Chair not published in the CAU dataset.</p>';
+    }
+    html += '</div>';
+
+    var others = [];
+    if (b.district_manager) others.push({ name: b.district_manager, role: 'District Manager (staff)' });
+    (b.officers || []).forEach(function (o) {
+      if (!/^chair$/i.test(o.role)) others.push(o);
+    });
+    if (others.length) {
+      html += '<div class="officer-grid">' + others.map(function (o) {
+        return '<div class="officer-row"><span class="nm">' + esc(o.name) + '</span><span class="rl">' + esc(o.role) + '</span></div>';
+      }).join('') + '</div>';
+    }
+
+    /* Term clock */
+    html += '<div class="section-head">Term clock</div>';
+    var projected = b.term_clock && b.term_clock.projected_expirations;
+    if (projected) {
+      var dates = Object.keys(projected).sort();
+      html += '<div class="context-box"><b>This board’s seats split into reappointment classes:</b> '
+        + dates.map(function (d) { return '<b>' + projected[d] + '</b> seats next expire ' + d; }).join('; ')
+        + ', projected from the per-member term dates the Bronx BP publishes (roster year '
+        + b.term_clock.bronx_roster_year + '), assuming reappointment. Terms run ' + esc(rules.term_runs) + '. '
+        + '<a href="../openings/">See the openings outlook →</a></div>';
+    } else {
+      html += '<div class="context-box">No per-member term dates are published for this board. '
+        + 'Structurally: half the board comes up for reappointment every April, and members serving '
+        + 'continuously since April 2019 hit the four-term limit on <b>March 31, 2027</b> (the April 2020 '
+        + 'class gets five terms, pushing its wave to 2030). '
+        + '<a href="../openings/">See the openings outlook →</a></div>';
+    }
+
+    /* Committees */
+    html += '<div class="section-head">Committees</div>';
+    if ((b.committees || []).length) {
+      b.committees.forEach(function (c) {
+        html += '<div class="committee-row"><span class="cn">' + esc(c.name) + '</span>'
+          + '<span class="ch">' + (c.chair ? 'Chair: <b>' + esc(c.chair) + '</b>' : 'chair not published') + '</span></div>';
+      });
+    } else {
+      html += '<p class="loading-note">This board does not publish its committee list on the pages the tracker reads; check the <a href="' + esc(b.website || '#') + '">board website</a>.</p>';
+    }
+
+    /* Roster */
+    html += '<div class="section-head">Published roster</div>';
+    if (realMembers.length) {
+      var showTerms = realMembers.some(function (m) { return m.term_expires; });
+      html += '<input type="search" class="roster-filter" id="rosterFilter" placeholder="Filter roster…">';
+      html += '<div class="table-scroll"><table id="rosterTable"><thead><tr><th>Name</th><th>Roles</th>'
+        + (showTerms ? '<th>Term expires</th><th>Recommended by</th>' : '')
+        + '</tr></thead><tbody>';
+      realMembers.forEach(function (m) {
+        html += '<tr data-name="' + esc((m.name + ' ' + (m.roles || []).join(' ')).toLowerCase()) + '">'
+          + '<td class="nm">' + esc(m.name) + '</td>'
+          + '<td>' + esc((m.roles || []).join(', ') || '—') + '</td>'
+          + (showTerms
+            ? '<td class="num">' + esc(m.term_expires || '—') + '</td><td>' + esc((m.recommending_official || '—').replace('Bronx Borough President ', 'BP ').replace('Council Member', 'CM')) + '</td>'
+            : '')
+          + '</tr>';
+      });
+      html += '</tbody></table></div>';
+    } else {
+      html += '<p class="loading-note">No machine-readable roster on this board’s website. The chair above comes from the citywide CAU dataset; coverage details are on the <a href="../methodology/">methodology page</a>.</p>';
+    }
+
+    /* Block Party activity */
+    if (b.block_party) {
+      html += '<div class="section-head">What this board has been deciding</div>';
+      var bp = b.block_party;
+      html += '<div class="panel">';
+      var years = Object.keys(bp.by_year || {}).sort();
+      if (years.length) {
+        var mx = 0;
+        years.forEach(function (y) { if (bp.by_year[y] > mx) mx = bp.by_year[y]; });
+        html += '<div class="yr-bars">' + years.map(function (y) {
+          var h = Math.max(3, Math.round(52 * bp.by_year[y] / mx));
+          return '<div class="yr-col"><div class="yr-bar" style="height:' + h + 'px" title="' + y + ': ' + bp.by_year[y] + ' resolutions"></div><span class="yr-lab">' + y.slice(2) + '</span></div>';
+        }).join('') + '</div>';
+        html += '<p class="loading-note">Resolutions per year since 2015 · ' + bp.total_resolutions.toLocaleString() + ' total in the archive (' + bp.first_year + '–' + bp.last_year + ')</p>';
+      }
+      (bp.recent || []).slice(0, 6).forEach(function (r) {
+        html += '<div class="news-item">' + (r.url ? '<a href="' + esc(r.url) + '" target="_blank" rel="noopener">' + esc(r.title) + '</a>' : esc(r.title))
+          + ' <span class="meta">' + esc(r.date) + '</span></div>';
+      });
+      html += '</div>';
+      html += '<div class="context-box">Resolution archive from <a href="https://blockparty.studio" target="_blank" rel="noopener">Block Party</a>, which extracts every published resolution from Manhattan board minutes back to the 2000s. Vote tallies in the archive are board-level counts; boards do not publish how individual members voted.</div>';
+    }
+
+    /* Sources */
+    html += '<div class="footnotes"><p><strong>Sources:</strong> board chair and district manager from the '
+      + '<a href="https://data.cityofnewyork.us/City-Government/NYC-Community-Boards/ruf7-3wgc" target="_blank" rel="noopener">NYC Community Boards dataset</a> (Community Affairs Unit); '
+      + 'roster, officers, and committees read from the board’s own website'
+      + (b.roster_sources && b.roster_sources.length ? ' (' + b.roster_sources.map(function (u, i) { return '<a href="' + esc(u) + '" target="_blank" rel="noopener">page ' + (i + 1) + '</a>'; }).join(', ') + ')' : '')
+      + (b.cd >= 201 && b.cd <= 212 ? '; member names and term dates from the <a href="https://data.cityofnewyork.us/City-Government/Bronx-Community-Boards/wbau-xy7g" target="_blank" rel="noopener">Bronx BP roster dataset</a>' : '')
+      + '.</p>'
+      + (b.roster_as_of ? '<p><strong>Roster freshness:</strong> the board’s site stamps this roster ' + esc(b.roster_as_of) + '.</p>' : '')
+      + '<p><strong>Coverage:</strong> boards publish different amounts of information; what’s missing here is missing at the source. The <a href="../methodology/">methodology page</a> maps coverage for all 59 boards.</p>'
+      + '</div>';
+
+    document.getElementById('mainContent').innerHTML = html;
+
+    var rf = document.getElementById('rosterFilter');
+    if (rf) {
+      rf.addEventListener('input', function () {
+        var q = rf.value.trim().toLowerCase();
+        document.querySelectorAll('#rosterTable tbody tr').forEach(function (tr) {
+          tr.style.display = !q || tr.getAttribute('data-name').indexOf(q) !== -1 ? '' : 'none';
+        });
+      });
+    }
+  }
+})();
+</script>
+
+</body>
+</html>

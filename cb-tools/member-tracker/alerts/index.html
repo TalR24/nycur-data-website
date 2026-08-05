@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CB Alerts — CB Member Tracker — NYCuriosity</title>
+  <meta name="description" content="Email alerts when an NYC community board you watch gets a new chair, district manager, committee chair, or roster change.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://data.nycuriosity.com/cb-tools/member-tracker/alerts/">
+  <meta property="og:title" content="CB Alerts — CB Member Tracker — NYCuriosity">
+  <meta property="og:description" content="Email alerts when an NYC community board you watch gets a new chair, district manager, committee chair, or roster change.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --blue: #2563eb; --blue-hover: #1d4ed8; --blue-light: #eff6ff; --blue-mid: #bfdbfe;
+      --text: #111827; --text-mid: #374151; --text-muted: #6b7280; --text-faint: #9ca3af;
+      --bg: #f8faff; --surface: #ffffff; --border: #e5e7eb;
+      --shadow-sm: 0 1px 3px rgba(17,24,39,0.08); --radius: 10px; --orange: #FF6319;
+    }
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
+    header { background: #111827; border-bottom: 1px solid #1f2937; padding: 0 clamp(20px, 5vw, 48px); }
+    .header-inner { max-width: 900px; margin: 0 auto; height: 56px; display: flex; align-items: center; gap: 16px; }
+    .back-link { font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600; color: #9ca3af; text-decoration: none; white-space: nowrap; }
+    .back-link:hover { color: #60a5fa; }
+    .header-divider { width: 1px; height: 20px; background: #374151; }
+    header h1 { font-family: 'Roboto Mono', monospace; font-size: 0.95rem; font-weight: 700; color: #e5e7eb; letter-spacing: -0.02em; }
+
+    .pill-nav { background: var(--surface); border-bottom: 1px solid var(--border); padding: 10px clamp(20px, 5vw, 48px); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .pill-nav a { font-size: 0.78rem; font-family: 'Roboto Mono', monospace; font-weight: 600; padding: 4px 12px; border-radius: 20px; text-decoration: none; border: 1px solid var(--border); color: var(--text-muted); background: var(--bg); transition: all 0.15s; white-space: nowrap; }
+    .pill-nav a:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
+    .pill-nav a.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+    .pill-label { font-size: 0.72rem; color: var(--text-faint); font-family: 'Roboto Mono', monospace; white-space: nowrap; }
+
+    .hero { background: var(--surface); border-bottom: 1px solid var(--border); padding: clamp(28px, 4vw, 44px) clamp(20px, 5vw, 48px); }
+    .hero-inner { max-width: 900px; margin: 0 auto; }
+    .breadcrumb { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; color: var(--text-faint); margin-bottom: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
+    .breadcrumb a { color: var(--text-muted); text-decoration: none; }
+    .breadcrumb a:hover { color: var(--blue); }
+    .breadcrumb span.here { color: var(--orange); font-weight: 600; }
+    .hero-tag { display: inline-block; font-family: 'Roboto Mono', monospace; font-size: 0.68rem; font-weight: 700; color: var(--orange); border: 1px solid var(--orange); border-radius: 12px; padding: 3px 10px; margin-bottom: 12px; }
+    .hero h1 { font-family: 'Roboto Mono', monospace; font-size: clamp(1.3rem, 3vw, 1.7rem); font-weight: 700; letter-spacing: -0.03em; line-height: 1.25; margin-bottom: 10px; }
+    .hero h1 span { color: var(--blue); }
+    .hero p { font-size: 0.95rem; color: var(--text-muted); max-width: 680px; line-height: 1.7; }
+
+    main { flex: 1; padding: clamp(24px, 4vw, 40px) clamp(20px, 5vw, 48px); }
+    .main-inner { max-width: 900px; margin: 0 auto; }
+    .choice-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+    .choice { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 22px 24px; display: flex; flex-direction: column; gap: 10px; }
+    .choice h2 { font-family: 'Roboto Mono', monospace; font-size: 1rem; font-weight: 700; }
+    .choice p { font-size: 0.85rem; color: var(--text-muted); line-height: 1.65; flex: 1; }
+    .btn { font-family: 'Roboto Mono', monospace; font-size: 0.8rem; font-weight: 600; padding: 10px 18px; border-radius: 7px; cursor: pointer; border: 1.5px solid var(--blue); text-decoration: none; display: inline-flex; align-items: center; gap: 7px; align-self: flex-start; }
+    .btn-solid { background: var(--blue); color: #fff; }
+    .btn-solid:hover { background: var(--blue-hover); }
+    .btn-outline { color: var(--blue); background: var(--surface); }
+    .btn-outline:hover { background: var(--blue-light); }
+    .example { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 18px 20px; margin-top: 18px; }
+    .example h3 { font-family: 'Roboto Mono', monospace; font-size: 0.8rem; font-weight: 700; margin-bottom: 10px; }
+    .example pre { font-family: 'Roboto Mono', monospace; font-size: 0.74rem; color: var(--text-mid); line-height: 1.7; white-space: pre-wrap; background: var(--bg); border: 1px solid var(--border); border-radius: 7px; padding: 12px 14px; }
+    .fine { font-size: 0.78rem; color: var(--text-muted); line-height: 1.65; margin-top: 16px; }
+    .fine a { color: var(--blue); text-decoration: none; }
+
+    footer { background: var(--surface); border-top: 1px solid var(--border); padding: 20px clamp(20px, 5vw, 48px); }
+    .footer-inner { max-width: 900px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+    .footer-copy { font-size: 0.8rem; color: var(--text-faint); }
+    .footer-links { display: flex; gap: 20px; align-items: center; }
+    .footer-links a { font-size: 0.8rem; color: var(--text-muted); text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+    .footer-links a:hover { color: var(--blue); }
+    .footer-support { font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600; color: var(--blue); border: 1px solid var(--blue-mid); border-radius: 16px; padding: 4px 12px; background: var(--blue-light); }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <a href="../" class="back-link">← member-tracker</a>
+    <div class="header-divider"></div>
+    <h1>Community Board Alerts</h1>
+  </div>
+</header>
+
+<div class="pill-nav">
+  <span class="pill-label">In this tool:</span>
+  <a href="../">Map &amp; Boards</a>
+  <a href="../openings/">Upcoming Openings</a>
+  <a href="./" class="active">Email Alerts</a>
+  <a href="../methodology/">Methodology &amp; Coverage</a>
+</div>
+
+<div class="hero">
+  <div class="hero-inner">
+    <div class="breadcrumb">
+      <a href="/">data.nycuriosity.com</a>
+      <span>›</span>
+      <a href="../../">cb-tools</a>
+      <span>›</span>
+      <a href="../">Member Tracker</a>
+      <span>›</span>
+      <span class="here">Alerts</span>
+    </div>
+    <span class="hero-tag">Members</span>
+    <h1>One email a month when a board you watch <span>changes hands</span></h1>
+    <p>
+      NYCuriosity members pick boards or whole boroughs. When the monthly refresh finds a new
+      chair, a new district manager, a committee chair handoff, or members joining or leaving a
+      published roster, members get a single email listing every match.
+    </p>
+  </div>
+</div>
+
+<main>
+  <div class="main-inner">
+    <div class="choice-grid">
+      <div class="choice">
+        <h2>Already a member?</h2>
+        <p>
+          Sign in with the email on your membership. You will get a one-time code by email, then
+          land on the alert preferences page to pick your boards, boroughs, and change types.
+        </p>
+        <a class="btn btn-solid" href="https://premium.nycuriosity.com/cb-tools/member-tracker/alerts/">Sign in and set alerts →</a>
+      </div>
+      <div class="choice">
+        <h2>Not a member yet?</h2>
+        <p>
+          Membership supports NYCuriosity's reporting and includes community board alerts,
+          legislation alerts, and CSV downloads of every dataset on this site. Join on Buy Me a
+          Coffee; access follows within a day or two.
+        </p>
+        <a class="btn btn-outline" href="https://buymeacoffee.com/nycuriosity" target="_blank" rel="noopener">Become a member →</a>
+      </div>
+    </div>
+
+    <div class="example">
+      <h3>What an alert looks like</h3>
+      <pre>2 changes on the community boards you watch:
+
+- Manhattan CB 3: chair is now [name] (was [name])
+  Board page: data.nycuriosity.com/cb-tools/member-tracker/board/?cd=103
+
+- Brooklyn CB 6: Transportation committee chair is now [name]
+  Board page: data.nycuriosity.com/cb-tools/member-tracker/board/?cd=306</pre>
+    </div>
+
+    <p class="fine">
+      Sign-in is a one-time email code through Cloudflare Access; there is no password. If your code
+      never arrives or your membership email changed, reply to any NYCuriosity email or write to
+      <a href="mailto:troded24@gmail.com">troded24@gmail.com</a>.
+    </p>
+  </div>
+</main>
+
+<footer>
+  <div class="footer-inner">
+    <span class="footer-copy">© NYCuriosity · Tal Roded</span>
+    <nav class="footer-links">
+      <a href="https://buymeacoffee.com/nycuriosity" class="footer-support" target="_blank" rel="noopener" aria-label="Support my work on Buy Me a Coffee"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>Support my work</a>
+      <a href="https://talroded.nycuriosity.com" target="_blank" rel="noopener">About</a>
+      <a href="https://www.nycuriosity.com" target="_blank" rel="noopener">Substack</a>
+      <a href="https://github.com/TalR24/nycur-data-website" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://www.youtube.com/@nycuriosity-yt" target="_blank" rel="noopener">YouTube</a>
+    </nav>
+  </div>
+</footer>
+
+</body>
+</html>

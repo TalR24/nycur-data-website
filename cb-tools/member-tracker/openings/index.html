@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Upcoming Openings — CB Member Tracker — NYCuriosity</title>
+  <meta name="description" content="Term limits force the first citywide wave of NYC community board turnover on March 31, 2027. How the clock works and where seats are confirmed to expire.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://data.nycuriosity.com/cb-tools/member-tracker/openings/">
+  <meta property="og:title" content="Upcoming Openings — CB Member Tracker — NYCuriosity">
+  <meta property="og:description" content="Term limits force the first citywide wave of NYC community board turnover on March 31, 2027. How the clock works and where seats are confirmed to expire.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --blue: #2563eb; --blue-hover: #1d4ed8; --blue-light: #eff6ff; --blue-mid: #bfdbfe;
+      --text: #111827; --text-mid: #374151; --text-muted: #6b7280; --text-faint: #9ca3af;
+      --bg: #f8faff; --surface: #ffffff; --border: #e5e7eb;
+      --shadow-sm: 0 1px 3px rgba(17,24,39,0.08); --radius: 10px;
+      --green: #16a34a; --red: #dc2626; --orange: #FF6319;
+    }
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
+    header { background: #111827; border-bottom: 1px solid #1f2937; padding: 0 clamp(20px, 5vw, 48px); }
+    .header-inner { max-width: 1000px; margin: 0 auto; height: 56px; display: flex; align-items: center; gap: 16px; }
+    .back-link { font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600; color: #9ca3af; text-decoration: none; white-space: nowrap; }
+    .back-link:hover { color: #60a5fa; }
+    .header-divider { width: 1px; height: 20px; background: #374151; }
+    header h1 { font-family: 'Roboto Mono', monospace; font-size: 0.95rem; font-weight: 700; color: #e5e7eb; letter-spacing: -0.02em; }
+
+    .pill-nav { background: var(--surface); border-bottom: 1px solid var(--border); padding: 10px clamp(20px, 5vw, 48px); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .pill-nav a { font-size: 0.78rem; font-family: 'Roboto Mono', monospace; font-weight: 600; padding: 4px 12px; border-radius: 20px; text-decoration: none; border: 1px solid var(--border); color: var(--text-muted); background: var(--bg); transition: all 0.15s; white-space: nowrap; }
+    .pill-nav a:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
+    .pill-nav a.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+    .pill-label { font-size: 0.72rem; color: var(--text-faint); font-family: 'Roboto Mono', monospace; white-space: nowrap; }
+
+    .hero { background: var(--surface); border-bottom: 1px solid var(--border); padding: clamp(28px, 4vw, 44px) clamp(20px, 5vw, 48px); }
+    .hero-inner { max-width: 1000px; margin: 0 auto; }
+    .breadcrumb { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; color: var(--text-faint); margin-bottom: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
+    .breadcrumb a { color: var(--text-muted); text-decoration: none; }
+    .breadcrumb a:hover { color: var(--blue); }
+    .breadcrumb span.here { color: var(--orange); font-weight: 600; }
+    .hero h1 { font-family: 'Roboto Mono', monospace; font-size: clamp(1.3rem, 3vw, 1.75rem); font-weight: 700; letter-spacing: -0.03em; line-height: 1.25; margin-bottom: 10px; }
+    .hero h1 span { color: var(--blue); }
+    .hero p { font-size: 0.95rem; color: var(--text-muted); max-width: 720px; line-height: 1.7; }
+
+    main { flex: 1; padding: clamp(24px, 4vw, 40px) clamp(20px, 5vw, 48px); }
+    .main-inner { max-width: 1000px; margin: 0 auto; }
+    .loading-note { font-family: 'Roboto Mono', monospace; font-size: 0.8rem; color: var(--text-faint); padding: 12px 0; }
+    .section-head { font-family: 'Roboto Mono', monospace; font-size: 0.85rem; font-weight: 700; margin: 28px 0 12px; }
+
+    .rule-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+    .rule-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 16px 18px; }
+    .rule-card .num { font-family: 'Roboto Mono', monospace; font-size: 1.3rem; font-weight: 700; color: var(--blue); letter-spacing: -0.03em; }
+    .rule-card .lab { font-size: 0.78rem; color: var(--text-muted); line-height: 1.5; margin-top: 4px; }
+
+    .timeline { position: relative; margin: 18px 0 6px; padding-left: 4px; }
+    .tl-track { position: relative; height: 6px; background: var(--blue-light); border: 1px solid var(--blue-mid); border-radius: 3px; margin: 34px 0 40px; }
+    .tl-event { position: absolute; top: -32px; transform: translateX(-50%); text-align: center; }
+    .tl-event.below { top: 12px; }
+    .tl-event .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--blue); border: 2px solid #fff; box-shadow: 0 0 0 1.5px var(--blue); margin: 0 auto; }
+    .tl-event.below .dot { margin-bottom: 4px; }
+    .tl-event:not(.below) .dot { margin-top: 4px; }
+    .tl-event .yr { display: block; font-family: 'Roboto Mono', monospace; font-size: 0.72rem; font-weight: 700; color: var(--text); white-space: nowrap; }
+    .tl-event .what { display: block; font-size: 0.65rem; color: var(--text-muted); white-space: nowrap; }
+    .tl-event.wave .dot { background: var(--orange); box-shadow: 0 0 0 1.5px var(--orange); }
+
+    .context-box { background: var(--blue-light); border: 1px solid var(--blue-mid); border-radius: var(--radius); padding: 14px 18px; font-size: 0.85rem; color: var(--text-mid); line-height: 1.65; margin: 14px 0; }
+    .context-box b { color: var(--text); }
+    .context-box a { color: var(--blue); }
+
+    table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    th { font-family: 'Roboto Mono', monospace; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-faint); text-align: left; padding: 8px 10px; border-bottom: 2px solid var(--border); }
+    th.num, td.num { text-align: right; }
+    td { padding: 8px 10px; border-bottom: 1px solid var(--border); color: var(--text-mid); }
+    td.nm { font-family: 'Roboto Mono', monospace; font-weight: 600; color: var(--text); }
+    td.nm a { color: inherit; text-decoration: none; }
+    td.nm a:hover { color: var(--blue); }
+    td.num { font-family: 'Roboto Mono', monospace; }
+    .table-scroll { overflow-x: auto; background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 6px 10px; }
+
+    .bp-links { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+    .bp-link { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 13px 15px; text-decoration: none; color: inherit; transition: border-color 0.12s; }
+    .bp-link:hover { border-color: var(--blue); }
+    .bp-link .b { font-family: 'Roboto Mono', monospace; font-size: 0.8rem; font-weight: 700; }
+    .bp-link .u { font-size: 0.7rem; color: var(--text-muted); margin-top: 2px; display: block; }
+
+    .footnotes { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 18px; font-size: 0.78rem; color: var(--text-muted); line-height: 1.65; margin-top: 20px; }
+    .footnotes a { color: var(--blue); text-decoration: none; }
+    .footnotes p { margin-bottom: 8px; }
+    .footnotes p:last-child { margin-bottom: 0; }
+
+    footer { background: var(--surface); border-top: 1px solid var(--border); padding: 20px clamp(20px, 5vw, 48px); }
+    .footer-inner { max-width: 1000px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+    .footer-copy { font-size: 0.8rem; color: var(--text-faint); }
+    .footer-links { display: flex; gap: 20px; align-items: center; }
+    .footer-links a { font-size: 0.8rem; color: var(--text-muted); text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+    .footer-links a:hover { color: var(--blue); }
+    .footer-support { font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600; color: var(--blue); border: 1px solid var(--blue-mid); border-radius: 16px; padding: 4px 12px; background: var(--blue-light); }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <a href="../" class="back-link">← member-tracker</a>
+    <div class="header-divider"></div>
+    <h1>Upcoming Openings</h1>
+  </div>
+</header>
+
+<div class="pill-nav">
+  <span class="pill-label">In this tool:</span>
+  <a href="../">Map &amp; Boards</a>
+  <a href="./" class="active">Upcoming Openings</a>
+  <a href="../alerts/">Email Alerts</a>
+  <a href="../methodology/">Methodology &amp; Coverage</a>
+</div>
+
+<div class="hero">
+  <div class="hero-inner">
+    <div class="breadcrumb">
+      <a href="/">data.nycuriosity.com</a>
+      <span>›</span>
+      <a href="../../">cb-tools</a>
+      <span>›</span>
+      <a href="../">Member Tracker</a>
+      <span>›</span>
+      <span class="here">Upcoming Openings</span>
+    </div>
+    <h1>Term limits force the first citywide turnover wave <span>on March 31, 2027</span></h1>
+    <p>
+      Voters capped community board service at four consecutive two-year terms in 2018. The clock
+      started with terms beginning April 1, 2019, which means members who have served continuously
+      since then must give up their seats, including chairs and committee chairs, when their fourth
+      term ends in spring 2027. If you have ever wanted a seat, the application window before that
+      wave is the best odds in a decade.
+    </p>
+  </div>
+</div>
+
+<main>
+  <div class="main-inner">
+
+    <div class="section-head">The rules, exactly</div>
+    <div class="rule-grid">
+      <div class="rule-card"><div class="num">2 years</div><div class="lab">per term, running April 1 to March 31; half of each board is appointed every year</div></div>
+      <div class="rule-card"><div class="num">4 terms</div><div class="lab">maximum consecutive terms for terms beginning on or after April 1, 2019</div></div>
+      <div class="rule-card"><div class="num">5 terms</div><div class="lab">for the class whose term began April 1, 2020, staggering the turnover so both halves don't churn at once</div></div>
+      <div class="rule-card"><div class="num">1 term off</div><div class="lab">sitting out restores eligibility; the limit is on consecutive service, not lifetime service</div></div>
+    </div>
+
+    <div class="section-head">The clock</div>
+    <div class="timeline">
+      <div class="tl-track">
+        <div class="tl-event" style="left: 4%"><span class="yr">Nov 2018</span><span class="what">Question 3 passes, 72.6%</span><div class="dot"></div></div>
+        <div class="tl-event below" style="left: 22%"><div class="dot"></div><span class="yr">Apr 2019</span><span class="what">clock starts (4-term class)</span></div>
+        <div class="tl-event" style="left: 38%"><span class="yr">Apr 2020</span><span class="what">5-term class starts</span><div class="dot"></div></div>
+        <div class="tl-event below" style="left: 62%"><div class="dot"></div><span class="yr">Today</span><span class="what">2026</span></div>
+        <div class="tl-event wave" style="left: 78%"><span class="yr">Mar 31, 2027</span><span class="what">first forced wave</span><div class="dot"></div></div>
+        <div class="tl-event wave below" style="left: 94%"><div class="dot"></div><span class="yr">Mar 31, 2030</span><span class="what">second wave</span></div>
+      </div>
+    </div>
+
+    <div class="context-box">
+      <b>What the 2027 wave means in practice:</b> every member appointed in April 2019 who has been
+      reappointed continuously since then terms out on March 31, 2027. Chairs and committee chairs
+      are not exempt; boards whose leadership dates from that class will be electing new leadership
+      in 2027. The April 2020 class got a fifth term precisely so 2027 and 2028 would not empty
+      boards back to back; its wave lands in 2030.
+    </div>
+
+    <div class="section-head">Seat classes by next expiration, where a borough publishes term dates</div>
+    <p style="font-size:0.85rem; color:var(--text-muted); line-height:1.65; max-width:720px; margin-bottom:12px;">
+      Only the Bronx BP publishes a machine-readable roster with per-member term-expiration dates.
+      Rolling each published date forward in two-year terms shows how every Bronx board's seats
+      split between the upcoming expiration classes; the other four boroughs publish no term
+      dates, so their pages show the structural wave math instead of guesses.
+    </p>
+    <div class="table-scroll" id="bronxTable"><p class="loading-note">Loading Bronx term data…</p></div>
+
+    <div class="section-head">Want a seat? Apply through your borough president</div>
+    <div class="bp-links">
+      <a class="bp-link" href="https://www.manhattanbp.nyc.gov/communityboards/" target="_blank" rel="noopener"><span class="b">Manhattan</span><span class="u">manhattanbp.nyc.gov — applications typically open winter, due early spring</span></a>
+      <a class="bp-link" href="https://bronxboropres.nyc.gov/community/community_boards.php" target="_blank" rel="noopener"><span class="b">Bronx</span><span class="u">bronxboropres.nyc.gov</span></a>
+      <a class="bp-link" href="https://www.brooklynbp.nyc.gov/community-boards/" target="_blank" rel="noopener"><span class="b">Brooklyn</span><span class="u">brooklynbp.nyc.gov</span></a>
+      <a class="bp-link" href="https://www.queensbp.nyc.gov/community-boards/" target="_blank" rel="noopener"><span class="b">Queens</span><span class="u">queensbp.nyc.gov</span></a>
+      <a class="bp-link" href="https://www.statenislandusa.com/cbapplication.html" target="_blank" rel="noopener"><span class="b">Staten Island</span><span class="u">statenislandusa.com</span></a>
+    </div>
+
+    <div class="context-box">
+      Want to hear when a specific board's leadership actually turns over?
+      <a href="../alerts/"><b>Set a member alert</b></a> and the tracker emails you when a watched
+      board gets a new chair, district manager, or committee chair.
+    </div>
+
+    <div class="footnotes">
+      <p><strong>Authority:</strong> NYC Charter §2800, amended by
+        <a href="https://ballotpedia.org/New_York,_New_York,_Question_3,_Community_Boards_City_Charter_Amendment_(November_2018)" target="_blank" rel="noopener">ballot Question 3</a>
+        (approved November 6, 2018, 72.59% to 27.41%). The amendment caps service at four consecutive
+        two-year terms for terms beginning on or after April 1, 2019, with a five-term allowance for
+        terms commencing April 1, 2020, adopted, in the amendment's own words, to avoid significant
+        simultaneous turnover in 2027 and 2028.</p>
+      <p><strong>Bronx data:</strong>
+        <a href="https://data.cityofnewyork.us/City-Government/Bronx-Community-Boards/wbau-xy7g" target="_blank" rel="noopener">Bronx Community Boards dataset</a>,
+        Bronx Borough President. Latest published roster year shown in the table; seats whose dates
+        have already passed may have been reappointed since publication.</p>
+      <p><strong>Created by Tal Roded · NYCuriosity.</strong></p>
+    </div>
+
+  </div>
+</main>
+
+<footer>
+  <div class="footer-inner">
+    <span class="footer-copy">© NYCuriosity · Tal Roded</span>
+    <nav class="footer-links">
+      <a href="https://buymeacoffee.com/nycuriosity" class="footer-support" target="_blank" rel="noopener" aria-label="Support my work on Buy Me a Coffee"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>Support my work</a>
+      <a href="https://talroded.nycuriosity.com" target="_blank" rel="noopener">About</a>
+      <a href="https://www.nycuriosity.com" target="_blank" rel="noopener">Substack</a>
+      <a href="https://github.com/TalR24/nycur-data-website" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://www.youtube.com/@nycuriosity-yt" target="_blank" rel="noopener">YouTube</a>
+    </nav>
+  </div>
+</footer>
+
+<script>
+(function () {
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  fetch('../data/boards.json').then(function (r) { return r.json(); }).then(function (doc) {
+    var bronx = doc.boards.filter(function (b) {
+      return b.term_clock && b.term_clock.projected_expirations;
+    });
+    var out = document.getElementById('bronxTable');
+    if (!bronx.length) {
+      out.innerHTML = '<p class="loading-note">No confirmed term data in the current build.</p>';
+      return;
+    }
+    var dates = {};
+    bronx.forEach(function (b) {
+      Object.keys(b.term_clock.projected_expirations).forEach(function (d) { dates[d] = 1; });
+    });
+    var dateList = Object.keys(dates).sort();
+    var html = '<table><thead><tr><th>Board</th>';
+    dateList.forEach(function (d) { html += '<th class="num">class of ' + esc(d) + '</th>'; });
+    html += '</tr></thead><tbody>';
+    bronx.forEach(function (b) {
+      html += '<tr><td class="nm"><a href="../board/?cd=' + b.cd + '">' + esc(b.name) + '</a></td>';
+      dateList.forEach(function (d) {
+        var n = b.term_clock.projected_expirations[d];
+        html += '<td class="num">' + (n ? n : '—') + '</td>';
+      });
+      html += '</tr>';
+    });
+    html += '</tbody></table>'
+      + '<p class="loading-note">Seats per next-expiration class, projected from the Bronx BP roster (roster year '
+      + (bronx[0].term_clock.bronx_roster_year || '') + ') by rolling each published term date forward in two-year terms, assuming reappointment.</p>';
+    out.innerHTML = html;
+  }).catch(function () {
+    document.getElementById('bronxTable').innerHTML = '<p class="loading-note">Data failed to load.</p>';
+  });
+})();
+</script>
+
+</body>
+</html>
