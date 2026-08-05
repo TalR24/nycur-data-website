@@ -91,6 +91,16 @@
     .bar-val { font-family: 'Roboto Mono', monospace; font-size: 0.73rem; font-weight: 600; color: var(--text); }
     .loading-note { font-family: 'Roboto Mono', monospace; font-size: 0.85rem; color: var(--text-faint); padding: 40px; text-align: center; }
 
+    .chart-tooltip {
+      display: none; position: fixed; z-index: 60; pointer-events: none;
+      background: #111827; color: #f9fafb; border-radius: 7px; padding: 8px 12px;
+      font-family: 'Roboto Mono', monospace; font-size: 0.72rem; line-height: 1.5;
+      max-width: 320px; box-shadow: 0 4px 16px rgba(17,24,39,0.35);
+    }
+    .chart-tooltip .tt-name { font-weight: 700; }
+    .chart-tooltip .tt-count { color: #93c5fd; }
+    .chart-tooltip .tt-seg { color: #d1d5db; }
+
     .chart-attribution { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 12px 16px; border-top: 1px solid var(--border); background: var(--bg); font-size: 0.78rem; color: var(--text-faint); font-family: 'Roboto Mono', monospace; }
     .chart-attribution a { color: var(--blue); text-decoration: none; }
 
@@ -377,10 +387,10 @@ function render() {
     BUCKETS.forEach(function (b) {
       var n = r.segs[b.key] || 0;
       if (!n) return;
-      segsHtml += '<div class="bar-seg" title="' + b.label + ': ' + n + '" style="background:' + b.color + ';width:' + (n / max * 100) + '%"></div>';
+      segsHtml += '<div class="bar-seg" data-seg="' + esc(b.label) + ': ' + n + '" style="background:' + b.color + ';width:' + (n / max * 100) + '%"></div>';
     });
-    html += '<div class="bar-row">'
-      + '<span class="bar-label" title="' + esc(r.full) + '">' + esc(r.agency) + '</span>'
+    html += '<div class="bar-row" data-full="' + esc(r.full || r.agency) + '" data-total="' + r.total + '">'
+      + '<span class="bar-label">' + esc(r.agency) + '</span>'
       + '<div class="bar-track">' + segsHtml + '</div>'
       + '<span class="bar-val">' + r.total.toLocaleString() + '</span>'
       + '</div>';
@@ -435,6 +445,36 @@ function esc(s) {
   return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
     .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
+
+// Hover tooltip: full agency name + obligation count anywhere on a bar row,
+// plus the hovered segment's deliverable breakdown when over a colored segment.
+(function () {
+  var tip = document.createElement('div');
+  tip.className = 'chart-tooltip';
+  document.body.appendChild(tip);
+  var chartArea = document.getElementById('chartArea');
+
+  chartArea.addEventListener('mousemove', function (e) {
+    var row = e.target.closest ? e.target.closest('.bar-row') : null;
+    if (!row) { tip.style.display = 'none'; return; }
+    var html = '<span class="tt-name">' + esc(row.getAttribute('data-full')) + '</span><br>'
+      + '<span class="tt-count">' + Number(row.getAttribute('data-total')).toLocaleString() + ' obligations</span>';
+    var seg = e.target.closest('.bar-seg');
+    if (seg && seg.getAttribute('data-seg')) {
+      html += '<br><span class="tt-seg">' + esc(seg.getAttribute('data-seg')) + '</span>';
+    }
+    tip.innerHTML = html;
+    tip.style.display = 'block';
+    var pad = 14;
+    var w = tip.offsetWidth, h = tip.offsetHeight;
+    var x = e.clientX + pad, y = e.clientY + pad;
+    if (x + w > window.innerWidth - 8) x = e.clientX - w - pad;
+    if (y + h > window.innerHeight - 8) y = e.clientY - h - pad;
+    tip.style.left = x + 'px';
+    tip.style.top = y + 'px';
+  });
+  chartArea.addEventListener('mouseleave', function () { tip.style.display = 'none'; });
+})();
 </script>
 
 </body>
