@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Council Obligations — NYCuriosity</title>
+  <meta name="description" content="Charts from NYCuriosity's analysis of the administrative obligations NYC Council laws place on city agencies: 8,261 obligations extracted from 2,138 local laws enacted since 2014.">
+  <meta property="og:type"        content="website">
+  <meta property="og:url"         content="https://data.nycuriosity.com/nycuriosity_substack_posts/council_obligations/">
+  <meta property="og:title"       content="Council Obligations — NYCuriosity">
+  <meta property="og:description" content="Charts from NYCuriosity's analysis of the administrative obligations NYC Council laws place on city agencies.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue:       #2563eb;
+      --blue-hover: #1d4ed8;
+      --blue-light: #eff6ff;
+      --blue-mid:   #bfdbfe;
+      --text:       #111827;
+      --text-mid:   #374151;
+      --text-muted: #6b7280;
+      --text-faint: #9ca3af;
+      --bg:         #f8faff;
+      --surface:    #ffffff;
+      --border:     #e5e7eb;
+      --shadow-sm:  0 1px 3px rgba(17,24,39,0.08);
+      --shadow-md:  0 4px 20px rgba(37,99,235,0.13);
+      --radius:     10px;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── HEADER ──────────────────────────────────────────── */
+    header {
+      background: #111827;
+      border-bottom: 1px solid #1f2937;
+      padding: 0 clamp(20px, 5vw, 48px);
+    }
+    .header-inner {
+      max-width: 1100px; margin: 0 auto; height: 56px;
+      display: flex; align-items: center; gap: 16px;
+    }
+    .back-link {
+      font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600;
+      color: #9ca3af; text-decoration: none; display: flex; align-items: center; gap: 5px;
+      padding: 4px 8px 4px 4px; border-radius: 5px; transition: color 0.15s, background 0.15s; white-space: nowrap;
+    }
+    .back-link:hover { color: #60a5fa; background: rgba(96,165,250,0.1); }
+    .header-divider { width: 1px; height: 20px; background: #374151; flex-shrink: 0; }
+    header h1 {
+      font-family: 'Roboto Mono', monospace; font-size: 0.95rem; font-weight: 700;
+      color: #e5e7eb; letter-spacing: -0.02em;
+    }
+
+    /* ── HERO ────────────────────────────────────────────── */
+    .hero {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: clamp(32px, 5vw, 52px) clamp(20px, 5vw, 48px);
+    }
+    .hero-inner { max-width: 1100px; margin: 0 auto; }
+    .breadcrumb {
+      font-family: 'Roboto Mono', monospace; font-size: 0.72rem;
+      color: var(--text-faint); margin-bottom: 14px;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .breadcrumb a { color: var(--blue); text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+    .breadcrumb span:last-child { color: #FF6319; }
+    .hero-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .hero-tag {
+      font-family: 'Roboto Mono', monospace; font-size: 0.68rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.08em; color: #FF6319;
+      background: #fff4ed; border: 1px solid #ffd0b3; border-radius: 4px; padding: 3px 8px;
+    }
+    .hero-updated { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; color: var(--text-faint); }
+    .hero h1 {
+      font-family: 'Roboto Mono', monospace; font-size: clamp(1.5rem, 3.5vw, 2rem);
+      font-weight: 700; color: var(--text); letter-spacing: -0.03em; line-height: 1.2; margin-bottom: 10px;
+    }
+    .hero h1 span { color: var(--blue); }
+    .hero p { font-size: 0.975rem; color: var(--text-muted); max-width: 680px; line-height: 1.7; }
+    .hero p a { color: var(--blue); text-decoration: none; border-bottom: 1px solid var(--blue-mid); }
+    .hero p a:hover { border-color: var(--blue); }
+
+    /* ── STAT PILLS ──────────────────────────────────────── */
+    .stat-row {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: clamp(16px, 3vw, 24px) clamp(20px, 5vw, 48px);
+    }
+    .stat-row-inner { max-width: 1100px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 12px; }
+    .stat-pill {
+      display: flex; flex-direction: column; gap: 2px;
+      padding: 12px 18px; background: var(--bg); border: 1px solid var(--border);
+      border-radius: var(--radius); flex: 1; min-width: 140px;
+    }
+    .stat-pill .sp-num { font-family: 'Roboto Mono', monospace; font-size: 1.3rem; font-weight: 700; color: var(--text); letter-spacing: -0.03em; line-height: 1; }
+    .stat-pill .sp-num.blue { color: var(--blue); }
+    .stat-pill .sp-label { font-size: 0.75rem; color: var(--text-muted); line-height: 1.3; }
+
+    /* ── CHARTS SECTION ──────────────────────────────────── */
+    .charts-section {
+      flex: 1;
+      padding: clamp(32px, 5vw, 56px) clamp(20px, 5vw, 48px);
+    }
+    .charts-inner { max-width: 1100px; margin: 0 auto; }
+    .section-label {
+      font-family: 'Roboto Mono', monospace; font-size: 0.7rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-faint); margin-bottom: 20px;
+    }
+    .charts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 20px;
+    }
+
+    /* ── CHART CARD ──────────────────────────────────────── */
+    .chart-card {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+      text-decoration: none;
+      color: inherit;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+    }
+    .chart-card:hover {
+      border-color: var(--blue);
+      box-shadow: var(--shadow-md);
+      transform: translateY(-3px);
+    }
+
+    .chart-card-icon {
+      height: 100px;
+      background: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 0 24px;
+      flex-shrink: 0;
+    }
+
+    .chart-card-body { padding: 20px 24px 24px; flex: 1; display: flex; flex-direction: column; }
+    .chart-card-label {
+      font-family: 'Roboto Mono', monospace; font-size: 0.68rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.08em; color: var(--blue); margin-bottom: 8px;
+    }
+    .chart-card-title {
+      font-family: 'Roboto Mono', monospace; font-size: 1.05rem; font-weight: 700;
+      color: var(--text); letter-spacing: -0.02em; line-height: 1.25; margin-bottom: 10px;
+    }
+    .chart-card-desc {
+      font-size: 0.875rem; color: var(--text-muted); line-height: 1.6; flex: 1; margin-bottom: 20px;
+    }
+    .chart-card-meta {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    }
+    .chart-card-stat { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; color: var(--text-faint); }
+    .chart-card-cta {
+      font-family: 'Roboto Mono', monospace; font-size: 0.78rem; font-weight: 700;
+      color: var(--blue); display: flex; align-items: center; gap: 5px; transition: gap 0.15s;
+    }
+    .chart-card:hover .chart-card-cta { gap: 9px; }
+
+    /* ── FOOTER ──────────────────────────────────────────── */
+    footer { background: var(--surface); border-top: 1px solid var(--border); padding: 20px clamp(20px, 5vw, 48px); }
+    .footer-inner { max-width: 1100px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+    .footer-copy { font-size: 0.8rem; color: var(--text-faint); }
+    .footer-links { display: flex; gap: 20px; align-items: center; }
+    .footer-links a { font-size: 0.8rem; color: var(--text-muted); text-decoration: none; transition: color 0.15s; }
+    .footer-links a:hover { color: var(--blue); }
+    .footer-support { display: inline-flex; align-items: center; gap: 5px; font-size: 0.8rem; font-weight: 500; color: #2563eb; text-decoration: none; padding: 5px 11px; border: 1px solid rgba(37,99,235,0.45); border-radius: 6px; transition: color .15s, border-color .15s, background .15s; vertical-align: middle; }
+    .footer-support:hover { color: #fff; background: #2563eb; border-color: #2563eb; }
+    .footer-support svg { flex-shrink: 0; }
+  </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="header-inner">
+    <a href="/" class="back-link">← nycuriosity/data</a>
+    <div class="header-divider"></div>
+    <h1>Council Obligations</h1>
+  </div>
+</header>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-inner">
+    <div class="breadcrumb">
+      <a href="/">data.nycuriosity.com</a>
+      <span>›</span>
+      <span>Council Obligations</span>
+    </div>
+    <div class="hero-meta">
+      <span class="hero-tag">City Council</span>
+      <span class="hero-updated">August 2026</span>
+    </div>
+    <h1>What the Council Asks of <span>NYC Agencies</span></h1>
+    <p>
+      Every local law hands city agencies work: reports to write, rules to make, programs to run, inspections to
+      carry out. These charts measure that workload using the
+      <a href="/civic_reference/legislation_implementation_tracker/">NYCuriosity Legislation Implementation Tracker</a>,
+      which extracts every obligation from the text of the 2,138 local laws the Council has enacted since 2014.
+    </p>
+  </div>
+</div>
+
+<!-- STAT PILLS -->
+<div class="stat-row">
+  <div class="stat-row-inner">
+    <div class="stat-pill">
+      <span class="sp-num blue">8,261</span>
+      <span class="sp-label">Obligations extracted from law text</span>
+    </div>
+    <div class="stat-pill">
+      <span class="sp-num">2,138</span>
+      <span class="sp-label">Local laws enacted 2014–2026</span>
+    </div>
+    <div class="stat-pill">
+      <span class="sp-num blue">5,258</span>
+      <span class="sp-label">Standing recurring obligations today</span>
+    </div>
+    <div class="stat-pill">
+      <span class="sp-num">847</span>
+      <span class="sp-label">Reports due at least once a year</span>
+    </div>
+  </div>
+</div>
+
+<!-- CHARTS GRID -->
+<section class="charts-section">
+  <div class="charts-inner">
+    <p class="section-label">Charts in this post</p>
+    <div class="charts-grid">
+
+      <!-- The Standing-Obligation Stack -->
+      <a class="chart-card" href="recurring-stack/">
+        <div class="chart-card-icon">
+          <svg viewBox="0 0 150 60" width="150" height="60" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <polygon points="0,60 0,57 25,54 50,48 75,40 100,32 125,24 150,16 150,60" fill="#2563eb" opacity="0.9"/>
+            <polygon points="0,57 25,54 50,48 75,40 100,32 125,24 150,16 150,4 125,10 100,18 75,28 50,38 25,48 0,54" fill="#6b7280" opacity="0.75"/>
+          </svg>
+        </div>
+        <div class="chart-card-body">
+          <div class="chart-card-label">Area Chart</div>
+          <div class="chart-card-title">The Standing-Obligation Stack</div>
+          <div class="chart-card-desc">Recurring obligations never retire, so they stack: agencies carried 115 standing obligations from post-2014 Council laws at the end of 2014 and carry 5,258 today.</div>
+          <div class="chart-card-meta">
+            <span class="chart-card-stat">2014–2026 · 5,267 obligations</span>
+            <span class="chart-card-cta">Explore →</span>
+          </div>
+        </div>
+      </a>
+
+      <!-- Reports Every Year -->
+      <a class="chart-card" href="reports-every-year/">
+        <div class="chart-card-icon">
+          <svg viewBox="0 0 150 60" width="150" height="60" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <polyline points="4,54 28,50 52,43 76,35 100,26 124,17 146,8" fill="none" stroke="#2563eb" stroke-width="3" stroke-linejoin="round"/>
+            <circle cx="4" cy="54" r="3.5" fill="#2563eb"/>
+            <circle cx="52" cy="43" r="3.5" fill="#2563eb"/>
+            <circle cx="100" cy="26" r="3.5" fill="#2563eb"/>
+            <circle cx="146" cy="8" r="3.5" fill="#2563eb"/>
+          </svg>
+        </div>
+        <div class="chart-card-body">
+          <div class="chart-card-label">Line Chart</div>
+          <div class="chart-card-title">Reports Due Every Year</div>
+          <div class="chart-card-desc">The Council's favorite deliverable is a report. Agencies now owe 847 reports on at least an annual cadence, up from 14 at the end of 2014, 67 new ones a year on average.</div>
+          <div class="chart-card-meta">
+            <span class="chart-card-stat">2014–2026 · 847 reports</span>
+            <span class="chart-card-cta">Explore →</span>
+          </div>
+        </div>
+      </a>
+
+      <!-- Live tracker cross-link -->
+      <a class="chart-card" href="/civic_reference/legislation_implementation_tracker/">
+        <div class="chart-card-icon">
+          <svg viewBox="0 0 150 60" width="150" height="60" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <rect x="10" y="8" width="90" height="8" rx="2" fill="#2563eb"/>
+            <rect x="10" y="22" width="130" height="8" rx="2" fill="rgba(255,255,255,0.25)"/>
+            <rect x="10" y="36" width="62" height="8" rx="2" fill="rgba(255,255,255,0.25)"/>
+            <rect x="10" y="50" width="104" height="8" rx="2" fill="rgba(255,255,255,0.25)"/>
+          </svg>
+        </div>
+        <div class="chart-card-body">
+          <div class="chart-card-label">Interactive Tool</div>
+          <div class="chart-card-title">Legislation Implementation Tracker</div>
+          <div class="chart-card-desc">The tracker behind these charts: browse all 8,261 obligations by agency, deadline, and law, with per-law implementation checklists and member email alerts.</div>
+          <div class="chart-card-meta">
+            <span class="chart-card-stat">8,261 obligations · 5 views</span>
+            <span class="chart-card-cta">Open tracker →</span>
+          </div>
+        </div>
+      </a>
+
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <span class="footer-copy">© NYCuriosity · Tal Roded</span>
+    <nav class="footer-links">
+      <a href="https://buymeacoffee.com/nycuriosity" class="footer-support" target="_blank" rel="noopener" aria-label="Support my work on Buy Me a Coffee"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>Support my work</a>
+      <a href="https://talroded.nycuriosity.com" target="_blank" rel="noopener">About</a>
+      <a href="https://www.nycuriosity.com" target="_blank" rel="noopener">Substack</a>
+      <a href="https://github.com/TalR24/nycur-data-website" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://www.youtube.com/@nycuriosity-yt" target="_blank" rel="noopener">YouTube</a>
+    </nav>
+  </div>
+</footer>
+
+</body>
+</html>
