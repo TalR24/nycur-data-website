@@ -43,7 +43,11 @@ LAW_CACHE = CACHE / "laws"
 LAWS_JSON = DATA / "laws.json"
 
 BASE_URL = "https://legistar.council.nyc.gov"
-DEFAULT_YEARS = ["2024", "2025", "2026"]
+# Full tracker coverage. The Jul 2026 expansion to 2014 was run with an explicit
+# --years list while this default still said 2024-2026; the Aug 2026 monthly Action
+# then regenerated laws.json from the stale default and truncated the dataset.
+# Keep this spanning 2014 -> current year so CI refreshes never shrink coverage.
+DEFAULT_YEARS = [str(y) for y in range(2014, datetime.now().year + 1)]
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger("fetch_enacted_laws")
