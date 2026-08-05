@@ -100,6 +100,53 @@ def ring_area(ring: list) -> float:
     return abs(s) / 2
 
 
+def label_anchor(pts: list) -> tuple[float, float, float]:
+    """Pole of inaccessibility for a projected ring: the interior grid point
+    farthest from any edge, so labels sit visually centered even in long,
+    concave, or crescent-shaped districts (a vertex mean does not).
+    Returns (x, y, clearance)."""
+    xs = [p[0] for p in pts]
+    ys = [p[1] for p in pts]
+    x0, x1, y0, y1 = min(xs), max(xs), min(ys), max(ys)
+
+    def inside(px, py):
+        hit = False
+        j = len(pts) - 1
+        for i in range(len(pts)):
+            xi, yi = pts[i]
+            xj, yj = pts[j]
+            if (yi > py) != (yj > py) and px < (xj - xi) * (py - yi) / (yj - yi + 1e-12) + xi:
+                hit = not hit
+            j = i
+        return hit
+
+    def edge_dist(px, py):
+        best = float("inf")
+        j = len(pts) - 1
+        for i in range(len(pts)):
+            xi, yi = pts[i]
+            xj, yj = pts[j]
+            dx, dy = xj - xi, yj - yi
+            t = max(0.0, min(1.0, ((px - xi) * dx + (py - yi) * dy) / (dx * dx + dy * dy + 1e-12)))
+            best = min(best, math.hypot(px - (xi + t * dx), py - (yi + t * dy)))
+            j = i
+        return best
+
+    best_pt = (sum(xs) / len(xs), sum(ys) / len(ys))
+    best_d = edge_dist(*best_pt) if inside(*best_pt) else -1.0
+    steps = 28
+    for gy in range(1, steps):
+        py = y0 + (y1 - y0) * gy / steps
+        for gx in range(1, steps):
+            px = x0 + (x1 - x0) * gx / steps
+            if not inside(px, py):
+                continue
+            d = edge_dist(px, py)
+            if d > best_d:
+                best_d, best_pt = d, (px, py)
+    return best_pt[0], best_pt[1], max(best_d, 0.0)
+
+
 def main() -> None:
     rows = fetch()
     feats = []
@@ -135,7 +182,7 @@ def main() -> None:
     for cd, geom in feats:
         parts = []
         areas = []
-        centroids = []
+        ring_pts = []
         for ring in rings_of(geom):
             a = ring_area(ring)
             if a < MIN_RING_AREA:
@@ -147,24 +194,34 @@ def main() -> None:
             d = "M" + " ".join(f"{x} {y}" for x, y in pts) + "Z"
             parts.append(d)
             areas.append(a)
-            cx = sum(p[0] for p in pts) / len(pts)
-            cy = sum(p[1] for p in pts) / len(pts)
-            centroids.append((cx, cy))
-        main_i = areas.index(max(areas))
+            ring_pts.append(pts)
+        main_pts = ring_pts[areas.index(max(areas))]
+        ax, ay, clearance = label_anchor(main_pts)
         districts.append({
             "cd": cd,
             "borough": BOROUGHS[cd // 100],
             "number": cd % 100,
             "path": "".join(parts),
-            "cx": round(centroids[main_i][0], 1),
-            "cy": round(centroids[main_i][1], 1),
+            "cx": round(ax, 1),
+            "cy": round(ay, 1),
+            "r": round(clearance, 1),  # label clearance in px, for font tiering
         })
 
     districts.sort(key=lambda d: d["cd"])
+    borough_anchors = []
+    for code, bname in BOROUGHS.items():
+        ds = [d for d in districts if d["cd"] // 100 == code]
+        borough_anchors.append({
+            "name": bname,
+            "x": round(sum(d["cx"] for d in ds) / len(ds), 1),
+            "y": round(sum(d["cy"] for d in ds) / len(ds), 1),
+        })
+
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text(json.dumps({
         "viewBox": f"0 0 {int(WIDTH)} {int(height) + 1}",
         "source": "NYC Community Districts, NYC Open Data 5crt-au7u (EPSG:4326)",
+        "boroughs": borough_anchors,
         "districts": districts,
     }, separators=(",", ":")))
     size = OUT.stat().st_size

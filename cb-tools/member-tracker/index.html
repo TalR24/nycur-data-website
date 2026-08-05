@@ -60,13 +60,17 @@
 
     /* Map */
     .map-wrap { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(280px, 1fr); gap: 18px; align-items: start; }
-    .map-box { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 14px; }
+    .map-box { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 14px; position: relative; }
     .map-box svg { width: 100%; height: auto; display: block; }
-    .district-shape { fill: var(--blue-light); stroke: var(--blue); stroke-width: 0.7; cursor: pointer; transition: fill 0.12s; }
-    .district-shape:hover { fill: var(--blue-mid); }
-    .district-shape.selected { fill: var(--blue); }
-    .district-label { font-family: 'Roboto Mono', monospace; font-size: 10px; font-weight: 600; fill: var(--text-mid); pointer-events: none; }
-    .district-shape.selected + .district-label { fill: #fff; }
+    .district-shape { fill: var(--blue-light); stroke: #93c5fd; stroke-width: 0.8; stroke-linejoin: round; cursor: pointer; transition: fill 0.12s; }
+    .district-shape:hover { fill: var(--blue-mid); stroke: var(--blue); }
+    .district-shape.selected { fill: var(--blue); stroke: var(--blue-hover); }
+    .district-label { font-family: 'Roboto Mono', monospace; font-weight: 600; fill: #3556a8; pointer-events: none; }
+    .district-label.on-selected { fill: #fff; }
+    .borough-label { font-family: 'Roboto Mono', monospace; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; fill: var(--text-faint); opacity: 0.55; pointer-events: none; }
+    .map-tip { position: absolute; display: none; pointer-events: none; background: var(--text); color: #fff; font-family: 'Roboto Mono', monospace; font-size: 0.7rem; line-height: 1.5; padding: 6px 10px; border-radius: 6px; box-shadow: var(--shadow-md, 0 4px 16px rgba(37,99,235,0.10)); white-space: nowrap; z-index: 5; }
+    .map-tip .tip-sub { color: #cbd5e1; }
+    .map-hint-bar { font-family: 'Roboto Mono', monospace; font-size: 0.68rem; color: var(--text-faint); padding: 8px 4px 0; }
     .map-panel { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 18px 20px; position: sticky; top: 12px; }
     .map-panel h3 { font-family: 'Roboto Mono', monospace; font-size: 0.95rem; font-weight: 700; margin-bottom: 4px; }
     .map-panel .sub { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 12px; line-height: 1.5; }
@@ -242,22 +246,50 @@
   function buildMap() {
     var svg = '<svg viewBox="' + MAPDATA.viewBox + '" role="img" aria-label="Map of the 59 NYC community districts">';
     MAPDATA.districts.forEach(function (d) {
-      var title = (byCd[d.cd] ? byCd[d.cd].name : d.borough + ' CB ' + d.number);
-      svg += '<path class="district-shape" d="' + d.path + '" data-cd="' + d.cd + '"><title>' + esc(title) + '</title></path>'
-        + '<text class="district-label" x="' + d.cx + '" y="' + d.cy + '" text-anchor="middle">' + d.number + '</text>';
+      svg += '<path class="district-shape" d="' + d.path + '" data-cd="' + d.cd + '"></path>';
     });
-    svg += '</svg>';
-    document.getElementById('mapBox').innerHTML = svg;
-    document.querySelectorAll('.district-shape').forEach(function (p) {
-      p.addEventListener('click', function () {
-        selectDistrict(parseInt(p.getAttribute('data-cd'), 10));
+    (MAPDATA.boroughs || []).forEach(function (b) {
+      svg += '<text class="borough-label" font-size="13" x="' + b.x + '" y="' + b.y + '" text-anchor="middle" dy="0.35em">' + esc(b.name) + '</text>';
+    });
+    MAPDATA.districts.forEach(function (d) {
+      var clear = d.r || 10;
+      if (clear < 5) return; // too small to hold a number; the tooltip covers it
+      var size = clear >= 12 ? 11 : (clear >= 8 ? 9.5 : 8);
+      svg += '<text class="district-label" font-size="' + size + '" data-cd="' + d.cd + '" x="' + d.cx + '" y="' + d.cy + '" text-anchor="middle" dy="0.35em">' + d.number + '</text>';
+    });
+    svg += '</svg><div class="map-tip" id="mapTip"></div>'
+      + '<div class="map-hint-bar">Hover for board details · click to open its leadership panel</div>';
+    var box = document.getElementById('mapBox');
+    box.innerHTML = svg;
+
+    var tip = document.getElementById('mapTip');
+    box.querySelectorAll('.district-shape').forEach(function (p) {
+      var cd = parseInt(p.getAttribute('data-cd'), 10);
+      p.addEventListener('click', function () { selectDistrict(cd); });
+      p.addEventListener('mousemove', function (e) {
+        var b = byCd[cd];
+        if (!b) return;
+        tip.innerHTML = '<strong>' + esc(b.name) + '</strong><br>'
+          + '<span class="tip-sub">' + esc((b.chair && b.chair.name) ? 'Chair: ' + b.chair.name : 'Chair not published') + '</span>';
+        var r = box.getBoundingClientRect();
+        var x = e.clientX - r.left + 14;
+        var y = e.clientY - r.top + 14;
+        tip.style.display = 'block';
+        if (x + tip.offsetWidth > r.width - 8) x = e.clientX - r.left - tip.offsetWidth - 10;
+        if (y + tip.offsetHeight > r.height - 8) y = e.clientY - r.top - tip.offsetHeight - 10;
+        tip.style.left = x + 'px';
+        tip.style.top = y + 'px';
       });
+      p.addEventListener('mouseleave', function () { tip.style.display = 'none'; });
     });
   }
 
   function selectDistrict(cd) {
     document.querySelectorAll('.district-shape').forEach(function (p) {
       p.classList.toggle('selected', parseInt(p.getAttribute('data-cd'), 10) === cd);
+    });
+    document.querySelectorAll('.district-label').forEach(function (t) {
+      t.classList.toggle('on-selected', parseInt(t.getAttribute('data-cd'), 10) === cd);
     });
     var b = byCd[cd];
     if (!b) return;
