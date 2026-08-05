@@ -270,8 +270,10 @@
     if (b.district_manager) {
       html += '<div class="mp-row"><span class="nm">' + esc(b.district_manager) + '</span><span class="rl">District Manager (staff)</span></div>';
     }
+    var chairNameLc = ((b.chair && b.chair.name) || '').toLowerCase();
     var extraOfficers = (b.officers || []).filter(function (o) {
-      return !/^chair$/i.test(o.role);
+      if (/^(board\s+)?chair(person|man|woman)?$/i.test((o.role || '').trim())) return false;
+      return (o.name || '').toLowerCase() !== chairNameLc;
     }).slice(0, 5);
     extraOfficers.forEach(function (o) {
       html += '<div class="mp-row"><span class="nm">' + esc(o.name) + '</span><span class="rl">' + esc(o.role) + '</span></div>';

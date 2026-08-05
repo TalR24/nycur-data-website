@@ -236,8 +236,11 @@
 
     var others = [];
     if (b.district_manager) others.push({ name: b.district_manager, role: 'District Manager (staff)' });
+    var chairNameLc = ((b.chair && b.chair.name) || '').toLowerCase();
     (b.officers || []).forEach(function (o) {
-      if (!/^chair$/i.test(o.role)) others.push(o);
+      if (/^(board\s+)?chair(person|man|woman)?$/i.test((o.role || '').trim())) return;
+      if ((o.name || '').toLowerCase() === chairNameLc) return;
+      others.push(o);
     });
     if (others.length) {
       html += '<div class="officer-grid">' + others.map(function (o) {
