@@ -244,7 +244,7 @@
     .bar-fill { background: var(--blue); height: 100%; border-radius: 4px; width: 0; transition: width 0.7s ease; }
     .bar-val { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; font-weight: 600; color: var(--text); }
     .col-chart { display: flex; align-items: flex-end; gap: 6px; height: 150px; margin-top: 8px; }
-    .col-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; justify-content: flex-end; }
+    .col-item { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; justify-content: flex-end; }
     .col-bar { width: 100%; max-width: 46px; background: var(--blue); border-radius: 3px 3px 0 0; transition: height 0.7s ease; }
     .col-num { font-family: 'Roboto Mono', monospace; font-size: 0.68rem; font-weight: 600; color: var(--text-mid); }
     .col-label { font-family: 'Roboto Mono', monospace; font-size: 0.62rem; color: var(--text-faint); text-align: center; line-height: 1.2; }
@@ -252,6 +252,7 @@
     .loading-note { font-family: 'Roboto Mono', monospace; font-size: 0.8rem; color: var(--text-faint); padding: 20px 0; }
 
     @media (max-width: 640px) {
+      .col-num { display: none; }
       .bar-row { grid-template-columns: 104px 1fr 40px; }
       .header-actions { display: none; }
     }
@@ -460,9 +461,9 @@
 
       <div class="summary-box">
         <h3>The Council asks far more of agencies than it did in 2014</h3>
-        <p class="sub">Obligations created per half-year, by law enactment date.</p>
+        <p class="sub">Obligations created per year, by law enactment date.</p>
         <div id="chartTime"><p class="loading-note">Loading…</p></div>
-        <p class="chart-note">Grouped by the half-year in which each law was enacted. The current half-year is still filling in.</p>
+        <p class="chart-note">Grouped by the year in which each law was enacted. 2026 is still filling in.</p>
       </div>
 
       <div class="summary-box">
@@ -547,14 +548,13 @@
     var byType = countBy(obs, function (o) { return o.deliverable_type; });
     hbars('chartType', topN(byType, 13));
 
-    // Chart 3: obligations per half-year of enactment (columns)
-    var byHalf = countBy(obs.filter(function (o) { return o.enactment_date; }), function (o) {
-      var y = o.enactment_date.slice(0, 4);
-      var m = parseInt(o.enactment_date.slice(5, 7), 10);
-      return y + (m <= 6 ? ' H1' : ' H2');
+    // Chart 3: obligations per year of enactment (columns; yearly buckets keep
+    // the 2014-2026 span inside the box, where 26 half-year columns overflowed)
+    var byYear = countBy(obs.filter(function (o) { return o.enactment_date; }), function (o) {
+      return o.enactment_date.slice(0, 4);
     });
-    var halves = Object.keys(byHalf).sort().map(function (k) { return [k, byHalf[k]]; });
-    columns('chartTime', halves);
+    var years = Object.keys(byYear).sort().map(function (k) { return ["'" + k.slice(2), byYear[k]]; });
+    columns('chartTime', years);
 
     // Chart 4: by prime sponsor (top 10)
     var bySponsor = countBy(obs.filter(function (o) { return o.prime_sponsor; }),
