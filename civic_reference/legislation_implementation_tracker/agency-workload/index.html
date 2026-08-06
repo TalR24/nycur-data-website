@@ -105,6 +105,12 @@
     .bar-row { cursor: pointer; }
     .obl-section { margin-top: 20px; }
     .obl-hint { font-family: 'Roboto Mono', monospace; font-size: 0.78rem; color: var(--text-faint); background: var(--surface); border: 1.5px dashed var(--border); border-radius: var(--radius); padding: 14px 18px; }
+    .obl-search { display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 10px 14px; margin-bottom: 14px; }
+    .obl-search input { flex: 1; border: none; outline: none; background: none; font-family: 'Roboto Mono', monospace; font-size: 0.82rem; color: var(--text); }
+    .obl-search input::placeholder { color: var(--text-faint); }
+    .obl-search .os-count { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; color: var(--text-muted); white-space: nowrap; }
+    .obl-search .os-clear { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; color: var(--text-faint); background: none; border: none; cursor: pointer; padding: 2px 6px; }
+    .obl-search .os-clear:hover { color: #dc2626; }
     .obl-group { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); margin-bottom: 14px; overflow: hidden; }
     .obl-group-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 14px 18px; background: var(--bg); border-bottom: 1px solid var(--border); }
     .obl-group-head .g-name { font-family: 'Roboto Mono', monospace; font-weight: 700; font-size: 0.95rem; }
@@ -488,20 +494,26 @@ function renderOblList(rows) {
     box.innerHTML = '<p class="obl-hint">No obligations match the selected agencies and filters.</p>';
     return;
   }
-  var html = '';
+  var html = '<div class="obl-search">'
+    + '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>'
+    + '<input id="oblSearch" type="text" placeholder="Search these obligations (summary, law, citation, quote)" value="' + esc(oblQuery) + '">'
+    + '<span class="os-count" id="oblSearchCount"></span>'
+    + '<button class="os-clear" id="oblSearchClear" title="Clear search">✕</button>'
+    + '</div>';
   keys.forEach(function (k) {
     var g = groups[k];
     g.items.sort(function (a, b) { return (b.enactment_date || '').localeCompare(a.enactment_date || ''); });
-    html += '<div class="obl-group">'
+    html += '<div class="obl-group" data-agency="' + esc(k) + '">'
       + '<div class="obl-group-head"><span><span class="g-name">' + esc(k) + '</span>'
       + (g.full && g.full !== k ? ' <span class="g-full">' + esc(g.full) + '</span>' : '')
-      + '</span><span class="g-count">' + g.items.length.toLocaleString() + ' obligation' + (g.items.length === 1 ? '' : 's') + '</span></div>';
+      + '</span><span class="g-count" data-total="' + g.items.length + '">' + g.items.length.toLocaleString() + ' obligation' + (g.items.length === 1 ? '' : 's') + '</span></div>';
     g.items.forEach(function (o) {
       var chips = '<span class="obl-chip">' + esc(o.deliverable_type || 'other') + '</span>'
         + '<span class="obl-chip">' + esc(o.recurrence || '') + '</span>';
       if (o.deadline_date) chips += '<span class="obl-chip due">due ' + esc(o.deadline_date) + '</span>';
       else if (o.deadline_text) chips += '<span class="obl-chip due">' + esc(o.deadline_text.length > 60 ? o.deadline_text.slice(0, 57) + '…' : o.deadline_text) + '</span>';
-      html += '<div class="obl-item">'
+      var hay = [o.action_summary, o.quote, o.citation, o.law_number_display, o.file_number, o.law_title, o.deliverable_type, o.recurrence, o.deadline_text, o.prime_sponsor].join(' ').toLowerCase();
+      html += '<div class="obl-item" data-search="' + esc(hay) + '">'
         + '<div class="o-law"><a href="../law/?law=' + encodeURIComponent(o.matter_id) + '">' + esc(o.law_number_display || o.file_number) + '</a>'
         + ' · ' + esc((o.enactment_date || '').slice(0, 4)) + (o.citation ? ' · ' + esc(o.citation) : '') + '</div>'
         + '<div class="o-summary">' + esc(o.action_summary || '') + '</div>'
@@ -511,6 +523,35 @@ function renderOblList(rows) {
     html += '</div>';
   });
   box.innerHTML = html;
+  var inp = document.getElementById('oblSearch');
+  inp.addEventListener('input', function () { oblQuery = inp.value; applyOblSearch(); });
+  document.getElementById('oblSearchClear').addEventListener('click', function () {
+    oblQuery = ''; inp.value = ''; applyOblSearch(); inp.focus();
+  });
+  applyOblSearch();
+}
+
+var oblQuery = '';
+function applyOblSearch() {
+  var terms = oblQuery.toLowerCase().split(/\s+/).filter(Boolean);
+  var total = 0, shown = 0;
+  document.querySelectorAll('#oblSection .obl-group').forEach(function (g) {
+    var visible = 0;
+    g.querySelectorAll('.obl-item').forEach(function (item) {
+      var hay = item.getAttribute('data-search') || '';
+      var ok = terms.every(function (t) { return hay.indexOf(t) !== -1; });
+      item.style.display = ok ? '' : 'none';
+      total++; if (ok) { visible++; shown++; }
+    });
+    var count = g.querySelector('.g-count');
+    var all = parseInt(count.getAttribute('data-total'), 10);
+    count.textContent = terms.length && visible !== all
+      ? visible.toLocaleString() + ' of ' + all.toLocaleString() + ' match'
+      : all.toLocaleString() + ' obligation' + (all === 1 ? '' : 's');
+    g.style.display = (terms.length && visible === 0) ? 'none' : '';
+  });
+  var c = document.getElementById('oblSearchCount');
+  if (c) c.textContent = terms.length ? shown.toLocaleString() + ' of ' + total.toLocaleString() + ' match' : '';
 }
 
 // Bar click: select exactly that agency in the filter (click again to reset to all)
