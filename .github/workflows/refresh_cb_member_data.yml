@@ -29,6 +29,13 @@ jobs:
         working-directory: cb-tools/member-tracker
         run: python3 pipeline/fetch_board_pages.py
 
+      # The depth-2 pass finds roster/committee pages linked only from inner
+      # nav. Without it, page-hash sets never match the committed extractions
+      # and every board re-extracts from shallower pages, losing coverage.
+      - name: Deep-crawl inner pages
+        working-directory: cb-tools/member-tracker
+        run: python3 pipeline/recrawl_gaps.py
+
       - name: Extract rosters (changed boards only)
         working-directory: cb-tools/member-tracker
         env:
