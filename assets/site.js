@@ -186,6 +186,28 @@
     });
   }
 
+  var footerNav = document.querySelector('footer .footer-links');
+  if (footerNav && !footerNav.querySelector('a[href="/members/"]')) {
+    var memLink = document.createElement('a');
+    memLink.href = '/members/';
+    memLink.textContent = 'Memberships';
+    var xLink = document.createElement('a');
+    xLink.href = 'https://x.com/TalR24';
+    xLink.target = '_blank';
+    xLink.rel = 'noopener';
+    xLink.textContent = 'X';
+    var plainLinks = footerNav.querySelectorAll('a:not(.footer-support)');
+    var lastPlain = plainLinks.length ? plainLinks[plainLinks.length - 1] : null;
+    if (lastPlain) {
+      var anchor = lastPlain.nextSibling;
+      footerNav.insertBefore(memLink, anchor);
+      footerNav.insertBefore(xLink, anchor);
+    } else {
+      footerNav.appendChild(memLink);
+      footerNav.appendChild(xLink);
+    }
+  }
+
   if (isHome) return;
 
   fetch('/assets/related_work.json')
