@@ -336,6 +336,87 @@
       .card-featured .card-body { padding: 20px 24px 24px; }
     }
 
+    /* ── TOPIC FILTER PILLS ──────────────────────────────── */
+    .topic-filter { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 22px; }
+    .tf-pill {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.78rem; font-weight: 600;
+      padding: 5px 14px; border-radius: 20px;
+      border: 1px solid var(--border);
+      background: var(--surface); color: var(--text-muted);
+      cursor: pointer; transition: all 0.15s;
+    }
+    .tf-pill:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
+    .tf-pill.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+    .card[hidden], .card-featured[hidden] { display: none; }
+
+    /* ── START HERE SHELF ────────────────────────────────── */
+    .start-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+    .start-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+      padding: 18px 20px;
+      display: flex; flex-direction: column; gap: 7px;
+      text-decoration: none; color: inherit;
+      transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+    }
+    .start-card:hover { border-color: var(--blue); transform: translateY(-2px); box-shadow: var(--shadow-md); }
+    .start-tag {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.62rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.08em;
+      color: var(--orange);
+    }
+    .start-title { font-family: 'Roboto Mono', monospace; font-size: 0.9rem; font-weight: 700; line-height: 1.35; }
+    .start-desc { font-size: 0.82rem; color: var(--text-muted); line-height: 1.5; flex: 1; }
+    .start-cta { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; font-weight: 600; color: var(--blue); }
+
+    /* ── WHAT'S NEW STRIP ────────────────────────────────── */
+    .whats-new {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+      padding: 16px 20px;
+      display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap;
+    }
+    .wn-label {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.7rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.1em;
+      color: var(--orange); white-space: nowrap; padding-top: 2px;
+    }
+    .wn-list { list-style: none; flex: 1; min-width: 240px; display: flex; flex-direction: column; gap: 6px; }
+    .wn-list a { font-size: 0.85rem; color: var(--text-mid); text-decoration: none; line-height: 1.45; }
+    .wn-list a:hover { color: var(--blue); }
+    .wn-date { font-family: 'Roboto Mono', monospace; font-size: 0.7rem; color: var(--text-faint); margin-right: 8px; }
+    .wn-all {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.75rem; font-weight: 600;
+      color: var(--blue); text-decoration: none;
+      white-space: nowrap; padding-top: 2px;
+    }
+
+    /* ── SUITE CARD SUB-LINKS ────────────────────────────── */
+    .card-main { display: flex; flex-direction: column; flex: 1; text-decoration: none; color: inherit; }
+    .card-sublinks { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 24px 20px; }
+    .card-sublinks a {
+      font-family: 'Roboto Mono', monospace;
+      font-size: 0.7rem; font-weight: 600;
+      padding: 4px 11px; border-radius: 20px;
+      border: 1px solid var(--border);
+      background: var(--bg); color: var(--text-muted);
+      text-decoration: none; transition: all 0.15s;
+    }
+    .card-sublinks a:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
+
     /* ── FOOTER ──────────────────────────────────────────── */
     footer {
       background: var(--surface);
@@ -411,14 +492,60 @@
   <div class="hero-inner">
     <h1>Data behind the <span>stories</span></h1>
     <p>Interactive charts, searchable tables, and standalone civic tools behind NYCuriosity's data-driven analysis of NYC transit, streets, housing, and how the city governs itself.</p>
+    <div class="topic-filter" id="topic-filter" aria-label="Filter by topic">
+      <button class="tf-pill active" data-topic="all">All</button>
+      <button class="tf-pill" data-topic="transit">Transit &amp; Streets</button>
+      <button class="tf-pill" data-topic="cb">Community Boards</button>
+      <button class="tf-pill" data-topic="budget">Budget &amp; Policy</button>
+      <button class="tf-pill" data-topic="govtech">Government &amp; Technology</button>
+    </div>
   </div>
 </div>
 
 <!-- PROJECTS GRID -->
 <section class="projects-section">
   <div class="projects-inner">
+
+    <!-- START HERE -->
+    <div class="section-label">Start here</div>
+    <div class="start-grid">
+      <a class="start-card" href="/civic_reference/nyc_council_legislation_trackers/">
+        <span class="start-tag">Flagship tool</span>
+        <span class="start-title">NYC Council Legislation Trackers</span>
+        <span class="start-desc">What every Council law costs, and what it makes city agencies do.</span>
+        <span class="start-cta">Explore →</span>
+      </a>
+      <a class="start-card" href="/cb-tools/member-tracker/">
+        <span class="start-tag">Flagship tool</span>
+        <span class="start-title">CB Member Tracker</span>
+        <span class="start-desc">Who runs all 59 community boards, and whose terms expire in 2027.</span>
+        <span class="start-cta">Explore →</span>
+      </a>
+      <a class="start-card" href="/state_capacity_ecosystem/">
+        <span class="start-tag">Flagship tool</span>
+        <span class="start-title">State Capacity Ecosystem</span>
+        <span class="start-desc">329 organizations working on government effectiveness, mapped and searchable.</span>
+        <span class="start-cta">Explore →</span>
+      </a>
+      <a class="start-card" href="/nycuriosity_substack_posts/council_obligations/">
+        <span class="start-tag">Newest post hub</span>
+        <span class="start-title">What the Council Asks of NYC Agencies</span>
+        <span class="start-desc">8,194 obligations extracted from every local law since 2014.</span>
+        <span class="start-cta">Explore →</span>
+      </a>
+    </div>
+
+    <!-- WHAT'S NEW -->
+    <div class="whats-new">
+      <span class="wn-label">What's new</span>
+      <ul class="wn-list" id="wn-list"></ul>
+      <a class="wn-all" href="/new/">All updates →</a>
+    </div>
+
+    <div class="section-divider" id="tools"><span>Tools</span></div>
+
     <!-- State Capacity Ecosystem — featured full-width row -->
-    <a class="card card-featured" href="/state_capacity_ecosystem/">
+    <a class="card card-featured" href="/state_capacity_ecosystem/" data-topics="govtech">
         <div class="card-preview" style="background:#0f172a">
           <svg viewBox="0 0 300 140" xmlns="http://www.w3.org/2000/svg">
             <rect width="300" height="140" fill="#0f172a"/>
@@ -454,7 +581,7 @@
           </svg>
         </div>
         <div class="card-body">
-          <div class="card-category card-category--orange">Civic Reference</div>
+          <div class="card-category card-category--orange">Tool</div>
           <div class="card-title">State Capacity Ecosystem</div>
           <div class="card-desc">A directory of 300+ organizations working to make American government more effective, research, advocacy, GovTech, philanthropy, fellowships, digital services, and ecosystem-builders. Plus an affinity network with natural-language search: type "where should I work on procurement in NYC?" and the map ranks orgs by relevance.</div>
           <div class="card-meta">
@@ -464,12 +591,11 @@
         </div>
     </a>
 
-    <div class="section-divider"><span>Civic Reference</span></div>
-
     <div class="grid">
 
       <!-- CB Member Tracker -->
-      <a class="card" href="/cb-tools/member-tracker/">
+      <div class="card" data-topics="cb">
+      <a class="card-main" href="/cb-tools/member-tracker/">
         <div class="card-preview">
           <svg viewBox="0 0 300 140" xmlns="http://www.w3.org/2000/svg">
             <rect width="300" height="140" fill="#f8faff"/>
@@ -492,7 +618,7 @@
           </svg>
         </div>
         <div class="card-body">
-          <div class="card-category card-category--orange">Civic Reference</div>
+          <div class="card-category card-category--orange">Tool</div>
           <div class="card-title">CB Member Tracker: who runs all 59 community boards</div>
           <div class="card-desc">Chairs, district managers, committee leadership, and published rosters on a clickable district map, joined with the term-limit clock that forces the first citywide turnover wave in spring 2027. Members can set email alerts for boards they watch.</div>
           <div class="card-meta">
@@ -501,9 +627,15 @@
           </div>
         </div>
       </a>
+      <div class="card-sublinks">
+        <a href="/cb-tools/member-tracker/openings/">Term-limit openings</a>
+        <a href="/cb-tools/member-tracker/alerts/">Email alerts</a>
+        <a href="/cb-tools/member-tracker/methodology/">Methodology</a>
+      </div>
+      </div>
 
       <!-- NYC Community Board Member Guide -->
-      <a class="card" href="/civic_reference/cb_member_guide/">
+      <a class="card" href="/civic_reference/cb_member_guide/" data-topics="cb">
         <div class="card-preview">
           <svg viewBox="0 0 300 140" xmlns="http://www.w3.org/2000/svg">
             <rect width="300" height="140" fill="#111827"/>
@@ -525,7 +657,7 @@
           </svg>
         </div>
         <div class="card-body">
-          <div class="card-category card-category--orange">Civic Reference</div>
+          <div class="card-category card-category--orange">Tool</div>
           <div class="card-title">How to Be an Effective Community Board Member</div>
           <div class="card-desc">A presentation deck distilling NYCuriosity's Complete Guide to Community Boards: how a board works, Robert's Rules, resolutions, the District Needs Statement, and the three levers of real influence. Includes speaker notes and a printable one-page cheat sheet.</div>
           <div class="card-meta">
@@ -536,7 +668,8 @@
       </a>
 
       <!-- NYC Council Legislation Trackers (umbrella: fiscal impacts + implementation + members) -->
-      <a class="card" href="/civic_reference/nyc_council_legislation_trackers/">
+      <div class="card" data-topics="budget">
+      <a class="card-main" href="/civic_reference/nyc_council_legislation_trackers/">
         <div class="card-preview">
           <svg viewBox="0 0 300 140" xmlns="http://www.w3.org/2000/svg">
             <rect width="300" height="140" fill="#f8faff"/>
@@ -560,7 +693,7 @@
           </svg>
         </div>
         <div class="card-body">
-          <div class="card-category card-category--orange">Civic Reference</div>
+          <div class="card-category card-category--orange">Tool</div>
           <div class="card-title">NYC Council Legislation Trackers</div>
           <div class="card-desc">What Council legislation costs, and what it makes city agencies do. Two interactive trackers built from every fiscal impact statement since 2014 and every enacted local law since 2014, plus a legislation profile for every council member, browsable by district map.</div>
           <div class="card-meta">
@@ -569,9 +702,15 @@
           </div>
         </div>
       </a>
+      <div class="card-sublinks">
+        <a href="/civic_reference/legislation_implementation_tracker/">Implementation tracker</a>
+        <a href="/civic_reference/nyc_council_fiscal_impacts_tracker/">Fiscal impacts tracker</a>
+        <a href="/civic_reference/nyc_council_legislation_trackers/council-members/">Council members</a>
+      </div>
+      </div>
 
       <!-- NYC Government Bodies Explorer -->
-      <a class="card" href="/civic_reference/nyc-gov-bodies-explorer/">
+      <a class="card" href="/civic_reference/nyc-gov-bodies-explorer/" data-topics="budget govtech">
         <div class="card-preview">
           <svg viewBox="0 0 300 140" xmlns="http://www.w3.org/2000/svg">
             <rect width="300" height="140" fill="#f8faff"/>
@@ -609,7 +748,7 @@
           </svg>
         </div>
         <div class="card-body">
-          <div class="card-category card-category--orange">Civic Reference</div>
+          <div class="card-category card-category--orange">Tool</div>
           <div class="card-title">NYC Government Bodies Explorer</div>
           <div class="card-desc">Browse 61 New York City government bodies with FY2027 budget and headcount data. Searchable card grid with inline detail panels, plus a D3 treemap sized by budget or headcount.</div>
           <div class="card-meta">
@@ -620,7 +759,8 @@
       </a>
 
       <!-- NYC CB Resolutions Dashboard -->
-      <a class="card" href="/cb-tools/">
+      <div class="card" data-topics="cb">
+      <a class="card-main" href="/cb-tools/">
         <div class="card-preview">
           <svg viewBox="0 0 300 140" xmlns="http://www.w3.org/2000/svg">
             <rect width="300" height="140" fill="#f8faff"/>
@@ -641,7 +781,7 @@
           </svg>
         </div>
         <div class="card-body">
-          <div class="card-category card-category--orange">Civic Reference</div>
+          <div class="card-category card-category--orange">Tool</div>
           <div class="card-title">NYC Community Board Tools</div>
           <div class="card-desc">Working tools for better community board meetings: a Robert's Rules helper, an AI meeting review, a Manhattan board scorecard, and the <strong>Block Party</strong> resolutions archive with AI summarization and advanced search.</div>
           <div class="card-meta">
@@ -650,15 +790,22 @@
           </div>
         </div>
       </a>
+      <div class="card-sublinks">
+        <a href="/cb-tools/block-party/">Block Party archive</a>
+        <a href="/cb-tools/roberts-rules-helper/">Robert's Rules helper</a>
+        <a href="/cb-tools/meeting-review/">AI meeting review</a>
+        <a href="/cb-tools/board-scorecard/">Board scorecard</a>
+      </div>
+      </div>
 
     </div>
 
-    <div class="section-divider"><span>Substack Posts</span></div>
+    <div class="section-divider" id="posts"><span>Substack Posts</span></div>
 
     <div class="grid">
 
       <!-- Council Obligations card — newest -->
-      <a class="card" href="/nycuriosity_substack_posts/council_obligations/">
+      <a class="card" href="/nycuriosity_substack_posts/council_obligations/" data-topics="budget">
         <div class="card-preview">
           <svg viewBox="0 0 300 140" xmlns="http://www.w3.org/2000/svg">
             <rect width="300" height="140" fill="#f8faff"/>
@@ -684,7 +831,7 @@
       </a>
 
       <!-- Community Board Suggestions card -->
-      <a class="card" href="/nycuriosity_substack_posts/community_board_suggestions/">
+      <a class="card" href="/nycuriosity_substack_posts/community_board_suggestions/" data-topics="cb">
         <div class="card-preview">
           <svg viewBox="0 0 300 140" xmlns="http://www.w3.org/2000/svg">
             <rect width="300" height="140" fill="#f8faff"/>
@@ -714,7 +861,7 @@
       </a>
 
       <!-- West 4th St Station Deep Dive card -->
-      <a class="card" href="/nycuriosity_substack_posts/west_4th_st_station/">
+      <a class="card" href="/nycuriosity_substack_posts/west_4th_st_station/" data-topics="transit">
         <div class="card-preview">
           <svg viewBox="0 0 300 140" xmlns="http://www.w3.org/2000/svg">
             <rect width="300" height="140" fill="#f8faff"/>
@@ -742,7 +889,7 @@
       </a>
 
       <!-- Medicaid Provider Spending card -->
-      <a class="card" href="/nycuriosity_substack_posts/medicaid_provider_spending/">
+      <a class="card" href="/nycuriosity_substack_posts/medicaid_provider_spending/" data-topics="budget">
         <div class="card-preview">
           <svg viewBox="0 0 300 140" xmlns="http://www.w3.org/2000/svg">
             <rect width="300" height="140" fill="#f8faff"/>
@@ -774,7 +921,7 @@
       </a>
 
       <!-- State Capacity Has a New Toolkit card -->
-      <a class="card" href="/nycuriosity_substack_posts/state_capacity_ai/">
+      <a class="card" href="/nycuriosity_substack_posts/state_capacity_ai/" data-topics="govtech">
         <div class="card-preview">
           <svg viewBox="0 0 300 140" xmlns="http://www.w3.org/2000/svg">
             <rect width="300" height="140" fill="#f8faff"/>
@@ -803,7 +950,7 @@
       </a>
 
       <!-- New York Needs to Grow card — newest -->
-      <a class="card" href="/nycuriosity_substack_posts/nyc_building_strategies/">
+      <a class="card" href="/nycuriosity_substack_posts/nyc_building_strategies/" data-topics="transit">
         <div class="card-preview">
           <svg viewBox="0 0 300 140" xmlns="http://www.w3.org/2000/svg">
             <rect width="300" height="140" fill="#f8faff"/>
@@ -841,7 +988,7 @@
       </a>
 
       <!-- QueensWay vs QueensLink card — newest -->
-      <a class="card" href="/nycuriosity_substack_posts/queensway_vs_queenslink/">
+      <a class="card" href="/nycuriosity_substack_posts/queensway_vs_queenslink/" data-topics="transit">
         <div class="card-preview">
           <svg viewBox="0 0 300 140" xmlns="http://www.w3.org/2000/svg">
             <rect width="300" height="140" fill="#f8faff"/>
@@ -886,7 +1033,7 @@
       </a>
 
       <!-- Mamdani 100 Days card — newest -->
-      <a class="card" href="/nycuriosity_substack_posts/mamdani_100_days/">
+      <a class="card" href="/nycuriosity_substack_posts/mamdani_100_days/" data-topics="budget transit">
         <div class="card-preview">
           <svg viewBox="0 0 300 140" xmlns="http://www.w3.org/2000/svg">
             <rect width="300" height="140" fill="#f8faff"/>
@@ -922,7 +1069,7 @@
       </a>
 
       <!-- MCB3 History Analysis card — newest -->
-      <a class="card" href="/nycuriosity_substack_posts/mcb3_history_analysis/">
+      <a class="card" href="/nycuriosity_substack_posts/mcb3_history_analysis/" data-topics="cb">
         <div class="card-preview">
           <svg viewBox="0 0 300 140" xmlns="http://www.w3.org/2000/svg">
             <rect width="300" height="140" fill="#f8faff"/>
@@ -986,7 +1133,7 @@
       </a>
 
       <!-- CSO Reports 2026 card -->
-      <a class="card" href="/nycuriosity_substack_posts/cso_reports_2026/">
+      <a class="card" href="/nycuriosity_substack_posts/cso_reports_2026/" data-topics="budget">
         <div class="card-preview">
           <svg viewBox="0 0 300 140" xmlns="http://www.w3.org/2000/svg">
             <rect width="300" height="140" fill="#f8faff"/>
@@ -1024,7 +1171,7 @@
       </a>
 
       <!-- Streets Plan card — oldest -->
-      <a class="card" href="/nycuriosity_substack_posts/streets_plan_2026/">
+      <a class="card" href="/nycuriosity_substack_posts/streets_plan_2026/" data-topics="transit">
         <div class="card-preview">
           <svg viewBox="0 0 300 140" xmlns="http://www.w3.org/2000/svg">
             <rect width="300" height="140" fill="#f8faff"/>
@@ -1095,6 +1242,36 @@
     </nav>
   </div>
 </footer>
+
+<script>
+(function () {
+  fetch('/assets/whats-new.json')
+    .then(function (r) { return r.json(); })
+    .then(function (entries) {
+      entries.sort(function (a, b) { return b.date < a.date ? -1 : 1; });
+      var listEl = document.getElementById('wn-list');
+      if (!listEl) return;
+      listEl.innerHTML = entries.slice(0, 3).map(function (e) {
+        return '<li><a href="' + e.href + '"><span class="wn-date">' + e.label + '</span>' + e.title + '</a></li>';
+      }).join('');
+    })
+    .catch(function () {});
+
+  var pills = document.querySelectorAll('.tf-pill');
+  var cards = document.querySelectorAll('[data-topics]');
+  pills.forEach(function (pill) {
+    pill.addEventListener('click', function () {
+      pills.forEach(function (q) { q.classList.remove('active'); });
+      pill.classList.add('active');
+      var topic = pill.getAttribute('data-topic');
+      cards.forEach(function (card) {
+        var topicsAttr = card.getAttribute('data-topics') || '';
+        card.hidden = !(topic === 'all' || topicsAttr.split(' ').indexOf(topic) !== -1);
+      });
+    });
+  });
+})();
+</script>
 
 </body>
 </html>
