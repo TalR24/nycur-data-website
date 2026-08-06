@@ -570,7 +570,7 @@
       <h2 class="section-heading">Trackers and explorers I keep up to date</h2>
     </div>
 
-    <div class="grid">
+    <div class="grid" id="tools-grid">
 
       <!-- CB Member Tracker -->
       <div class="card" data-topics="cb">
@@ -1013,6 +1013,16 @@
       var sceCard = sceBand.querySelector('[data-topics]');
       sceBand.classList.toggle('band-hidden', !!sceCard && sceCard.classList.contains('hide-topic'));
     }
+
+    var toolsGrid = document.getElementById('tools-grid');
+    var toolsHead = document.getElementById('tools');
+    if (toolsGrid && toolsHead) {
+      var anyTool = Array.prototype.slice.call(toolsGrid.querySelectorAll('[data-topics]')).some(function (c) {
+        return !c.classList.contains('hide-topic');
+      });
+      toolsGrid.style.display = anyTool ? '' : 'none';
+      toolsHead.style.display = anyTool ? '' : 'none';
+    }
   }
 
   pills.forEach(function (pill) {
@@ -1033,6 +1043,15 @@
     resizeTimer = setTimeout(function () { if (!expanded && !controlsActive()) apply(); }, 150);
   });
 
+  var initTopic = new URLSearchParams(location.search).get('topic');
+  if (initTopic) {
+    var initPill = document.querySelector('.tf-pill[data-topic="' + initTopic.replace(/[^a-z]/g, '') + '"]');
+    if (initPill) {
+      pills.forEach(function (q) { q.classList.remove('active'); });
+      initPill.classList.add('active');
+      activeTopic = initPill.getAttribute('data-topic');
+    }
+  }
   apply();
 })();
 </script>
