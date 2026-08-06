@@ -87,8 +87,13 @@ def main() -> None:
     TEXT_CACHE.mkdir(parents=True, exist_ok=True)
     EXTRACT_CACHE.mkdir(parents=True, exist_ok=True)
 
+    limit = int(os.environ.get("REEXTRACT_LIMIT", "200"))
+    todo = dict(list(matters.items())[:limit])
+    deferred = {m: r for m, r in matters.items() if m not in todo}
+    if deferred:
+        print(f"processing {len(todo)} of {len(matters)} queued (REEXTRACT_LIMIT={limit})")
     failed: dict[str, str] = {}
-    for mid, reason in matters.items():
+    for mid, reason in todo.items():
         law = laws.get(mid)
         if not law:
             failed[mid] = reason + " [matter not in laws.json]"
@@ -123,9 +128,10 @@ def main() -> None:
             failed[mid] = reason + f" [failed: {e}]"
             print(f"{mid}: FAILED {e}")
 
-    queue["matters"] = failed
+    queue["matters"] = {**failed, **deferred}
     QUEUE.write_text(json.dumps(queue, indent=2) + "\n")
-    print(f"done: {len(matters) - len(failed)} re-extracted, {len(failed)} kept in queue")
+    print(f"done: {len(todo) - len(failed)} re-extracted, {len(failed)} failed, "
+          f"{len(deferred)} deferred to next run")
 
 
 if __name__ == "__main__":
