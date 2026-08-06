@@ -64,6 +64,17 @@ EXTRA_VARIANTS = {
 # Same idea, keyed by the dataset's name field (for orgs without an acronym
 # or whose common variants stem from the name).
 EXTRA_VARIANTS_BY_NAME = {
+    # OLTPS was MOCEJ's predecessor office; laws 2014-2021 name it directly.
+    # Mapped to MOCEJ like other renames (DCA->DCWP, DoITT->OTI). Added Aug 2026
+    # after the data audit found ~46 unmatched OLTPS-actor obligations.
+    "Mayor's Office of Climate and Environmental Justice": [
+        "office of long-term planning and sustainability",
+        "office of long term planning and sustainability",
+        "mayor's office of long-term planning and sustainability",
+        "mayor's office of long term planning and sustainability",
+        "director of long-term planning and sustainability",
+        "director of long term planning and sustainability",
+        "oltps"],
     "New York City Employee Retirement System": [
         "new york city employees' retirement system",
         "employees' retirement system", "employees retirement system"],
@@ -76,6 +87,10 @@ EXTRA_VARIANTS_BY_NAME = {
     "Teachers' Retirement System of City of New York": [
         "new york city teachers' retirement system", "nyc trs"],
     "Office of the Mayor": ["the mayor", "mayor"],
+    # DSNY's newer statutory phrasing (seen in 2025-2026 local laws; Aug 2026 audit)
+    "Department of Sanitation": [
+        "department of sanitation and solid waste management",
+        "commissioner of sanitation and solid waste management"],
     "NYC311": ["311 customer service center", "nyc 311",
                "311 customer service center established pursuant to section 23-301"],
     "Mayor's Office of Contract Services": [

@@ -100,7 +100,8 @@ RULES:
 - "Ongoing" recurrence is for continuous operational duties (maintain, enforce, operate, post and keep updated). "One-time" is for single deliverables.
 - The quote must be copied character-for-character from the law text — it will be mechanically checked, and paraphrased quotes are rejected.
 - deliverable_type: rulemaking = promulgating rules; report = periodic/one-time reporting to mayor/council/public; "database or data publication" includes websites, dashboards, posting datasets; "notice or posting" = required notices, translations, distributions of information; "monitoring or testing" = required sampling, testing, or ongoing measurement.
-- Street co-naming laws: designating a thoroughfare or public place name implies the department of transportation must fabricate and install the street name signs. Record ONE obligation for the department of transportation with deliverable_type "signage or installation" covering all designations in the law.
+- Street co-naming laws: designating a thoroughfare name implies the department of transportation must fabricate and install the street name signs. Record ONE obligation for the department of transportation with deliverable_type "signage or installation" covering all designations in the law. This DOT inference applies ONLY to streets and thoroughfares: a park or playground renaming implies the department of parks and recreation (not DOT), and other facility renamings imply the agency that operates the facility.
+- Amendment texts ("is amended to read as follows"): the restated body of the amended section is PRE-EXISTING law. Only newly added matter (in Legistar's published text, the underlined portions) can create obligations for this law. Never extract a duty whose operative language exists unchanged in the prior law.
 - "In consultation with X" or "in coordination with X" does not make X a duty-holder. Record the obligation only for the lead agency; list consulted agencies nowhere.
 - Permissive rulemaking ("the commissioner may promulgate rules") becomes an obligation ONLY when other provisions clearly presume the rules will exist (e.g. employers must follow "rules of the department"). Otherwise skip it.
 - If the actor is genuinely undetermined (e.g. "an agency designated by the mayor"), keep actor_resolved as written; do not guess.
@@ -312,6 +313,11 @@ def resolve_effective_date(clause: dict, enactment_date: str | None) -> str | No
 # recurrence filters stay short and their frequency ordering meaningful.
 RECURRENCE_ALIASES = {
     "every 2 years": "biennial",
+    # Council drafting uses "biannual" to mean twice-yearly (verified against
+    # laws pairing it with two dates per year, e.g. "each January 31 and July
+    # 31"; Aug 2026 data audit). Never map it to biennial.
+    "biannual": "semiannual",
+    "biannually": "semiannual",
     "three times annual": "three times a year",
     "three times annually": "three times a year",
     "every 6 months": "semiannual",
