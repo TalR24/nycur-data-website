@@ -30,6 +30,13 @@ jobs:
         working-directory: civic_reference/legislation_implementation_tracker
         run: python3 pipeline/fetch_enacted_laws.py --incremental
 
+      - name: Re-extract queued laws
+        working-directory: civic_reference/legislation_implementation_tracker
+        continue-on-error: true
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: python3 pipeline/reextract_queued.py
+
       - name: Extract obligations for new laws
         working-directory: civic_reference/legislation_implementation_tracker
         env:
