@@ -100,6 +100,25 @@
     .chart-tooltip .tt-name { font-weight: 700; }
     .chart-tooltip .tt-count { color: #93c5fd; }
     .chart-tooltip .tt-seg { color: #d1d5db; }
+    .chart-tooltip .tt-hint { color: #9ca3af; font-size: 0.66rem; }
+
+    .bar-row { cursor: pointer; }
+    .obl-section { margin-top: 20px; }
+    .obl-hint { font-family: 'Roboto Mono', monospace; font-size: 0.78rem; color: var(--text-faint); background: var(--surface); border: 1.5px dashed var(--border); border-radius: var(--radius); padding: 14px 18px; }
+    .obl-group { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); margin-bottom: 14px; overflow: hidden; }
+    .obl-group-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 14px 18px; background: var(--bg); border-bottom: 1px solid var(--border); }
+    .obl-group-head .g-name { font-family: 'Roboto Mono', monospace; font-weight: 700; font-size: 0.95rem; }
+    .obl-group-head .g-full { font-size: 0.8rem; color: var(--text-muted); }
+    .obl-group-head .g-count { font-family: 'Roboto Mono', monospace; font-size: 0.78rem; font-weight: 600; color: var(--blue); white-space: nowrap; }
+    .obl-item { padding: 12px 18px; border-bottom: 1px solid var(--border); }
+    .obl-item:last-child { border-bottom: none; }
+    .obl-item .o-law { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; }
+    .obl-item .o-law a { color: var(--blue); text-decoration: none; }
+    .obl-item .o-law a:hover { text-decoration: underline; }
+    .obl-item .o-summary { font-size: 0.85rem; color: var(--text-mid); line-height: 1.55; margin: 4px 0 6px; }
+    .obl-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .obl-chip { font-family: 'Roboto Mono', monospace; font-size: 0.64rem; padding: 2px 8px; border-radius: 10px; background: var(--blue-light); border: 1px solid var(--blue-mid); color: var(--text-mid); }
+    .obl-chip.due { background: #fff4ed; border-color: #ffd0b3; }
 
     .chart-attribution { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 12px 16px; border-top: 1px solid var(--border); background: var(--bg); font-size: 0.78rem; color: var(--text-faint); font-family: 'Roboto Mono', monospace; }
     .chart-attribution a { color: var(--blue); text-decoration: none; }
@@ -222,6 +241,10 @@
       <div class="chart-attribution">
         <span>Created by Tal Roded · NYCuriosity · Source: Author's analysis of enacted local law text from <a href="https://legistar.council.nyc.gov" target="_blank" rel="noopener">NYC Legistar</a></span>
       </div>
+    </div>
+
+    <div class="obl-section" id="oblSection">
+      <p class="obl-hint">Filter to one or more agencies above, or click a bar, and every matching obligation is listed here.</p>
     </div>
 
     <div class="footnotes">
@@ -397,6 +420,7 @@ function render() {
       + '</div>';
   });
   area.innerHTML = html;
+  renderOblList(rows);
 
   var filterBits = [];
   [['agency', 'agencies'], ['committee', 'committees'], ['sponsor', 'sponsors'],
@@ -447,6 +471,69 @@ function esc(s) {
     .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
+function renderOblList(rows) {
+  var box = document.getElementById('oblSection');
+  var sel = MS.agency.selected();
+  if (sel === null) {
+    box.innerHTML = '<p class="obl-hint">Filter to one or more agencies above, or click a bar, and every matching obligation is listed here.</p>';
+    return;
+  }
+  var groups = {};
+  rows.forEach(function (o) {
+    if (!sel.has(o.agency)) return;
+    (groups[o.agency] = groups[o.agency] || { full: o.agency_full || o.agency, items: [] }).items.push(o);
+  });
+  var keys = Object.keys(groups).sort(function (a, b) { return groups[b].items.length - groups[a].items.length; });
+  if (!keys.length) {
+    box.innerHTML = '<p class="obl-hint">No obligations match the selected agencies and filters.</p>';
+    return;
+  }
+  var html = '';
+  keys.forEach(function (k) {
+    var g = groups[k];
+    g.items.sort(function (a, b) { return (b.enactment_date || '').localeCompare(a.enactment_date || ''); });
+    html += '<div class="obl-group">'
+      + '<div class="obl-group-head"><span><span class="g-name">' + esc(k) + '</span>'
+      + (g.full && g.full !== k ? ' <span class="g-full">' + esc(g.full) + '</span>' : '')
+      + '</span><span class="g-count">' + g.items.length.toLocaleString() + ' obligation' + (g.items.length === 1 ? '' : 's') + '</span></div>';
+    g.items.forEach(function (o) {
+      var chips = '<span class="obl-chip">' + esc(o.deliverable_type || 'other') + '</span>'
+        + '<span class="obl-chip">' + esc(o.recurrence || '') + '</span>';
+      if (o.deadline_date) chips += '<span class="obl-chip due">due ' + esc(o.deadline_date) + '</span>';
+      else if (o.deadline_text) chips += '<span class="obl-chip due">' + esc(o.deadline_text.length > 60 ? o.deadline_text.slice(0, 57) + '…' : o.deadline_text) + '</span>';
+      html += '<div class="obl-item">'
+        + '<div class="o-law"><a href="../law/?law=' + encodeURIComponent(o.matter_id) + '">' + esc(o.law_number_display || o.file_number) + '</a>'
+        + ' · ' + esc((o.enactment_date || '').slice(0, 4)) + (o.citation ? ' · ' + esc(o.citation) : '') + '</div>'
+        + '<div class="o-summary">' + esc(o.action_summary || '') + '</div>'
+        + '<div class="obl-chips">' + chips + '</div>'
+        + '</div>';
+    });
+    html += '</div>';
+  });
+  box.innerHTML = html;
+}
+
+// Bar click: select exactly that agency in the filter (click again to reset to all)
+function setAgencySelection(only) {
+  var mount = document.getElementById('msAgency');
+  var inputs = mount.querySelectorAll('.msf-list input');
+  var cur = MS.agency.selected();
+  var reset = only === null || (cur !== null && cur.size === 1 && cur.has(only));
+  inputs.forEach(function (i) {
+    var want = reset ? true : (i.value === only);
+    i.checked = want;
+    MS.agency.checked[i.value] = want;
+  });
+  MS.agency.updateBtn();
+  render();
+}
+document.getElementById('chartArea').addEventListener('click', function (e) {
+  var row = e.target.closest ? e.target.closest('.bar-row') : null;
+  if (!row) return;
+  var label = row.querySelector('.bar-label');
+  if (label) setAgencySelection(label.textContent);
+});
+
 // Hover tooltip: full agency name + obligation count anywhere on a bar row,
 // plus the hovered segment's deliverable breakdown when over a colored segment.
 (function () {
@@ -464,6 +551,7 @@ function esc(s) {
     if (seg && seg.getAttribute('data-seg')) {
       html += '<br><span class="tt-seg">' + esc(seg.getAttribute('data-seg')) + '</span>';
     }
+    html += '<br><span class="tt-hint">Click to list this agency\'s obligations below</span>';
     tip.innerHTML = html;
     tip.style.display = 'block';
     var pad = 14;
