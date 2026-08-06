@@ -34,7 +34,6 @@
       '<a href="/">Home</a>' +
       '<a href="/#tools">All tools</a>' +
       '<a href="/#posts">All posts</a>' +
-      '<a href="/new/">What’s new</a>' +
       '<span class="sitenav-spacer"></span>' +
       '<a href="https://www.nycuriosity.com" target="_blank" rel="noopener">Substack</a>' +
       '</div>';
