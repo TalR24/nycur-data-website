@@ -133,7 +133,7 @@
       '<div class="sitenav-menu">' + postsHtml() + '</div>' +
       '</div>' +
       '<span class="sitenav-spacer"></span>' +
-      '<a class="nav-pill" href="https://www.nycuriosity.com" target="_blank" rel="noopener">Substack</a>' +
+      '<a class="nav-pill" href="/members/">Memberships</a>' +
       '</div>';
     header.insertAdjacentElement('afterend', bar);
 
