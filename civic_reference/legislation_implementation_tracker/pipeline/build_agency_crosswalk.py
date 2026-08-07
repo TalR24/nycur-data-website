@@ -106,7 +106,10 @@ EXTRA_VARIANTS_BY_NAME = {
     "NYC Health + Hospitals": ["correctional health services",
                                "health and hospitals corporation", "hhc",
                                "new york city health and hospitals corporation"],
-    "Department of Social Services": ["division of aids services"],
+    "Department of Social Services": ["division of aids services",
+                                  "department of social services/human resources administration",
+                                  "human resources administration/department of social services",
+                                  "department of social services/human resources administration (dss/hra)"],
     "Board of Elections": ["board of elections in the city of new york"],
 }
 

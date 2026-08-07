@@ -101,6 +101,8 @@ RULES:
 - The quote must be copied character-for-character from the law text — it will be mechanically checked, and paraphrased quotes are rejected.
 - deliverable_type: rulemaking = promulgating rules; report = periodic/one-time reporting to mayor/council/public; "database or data publication" includes websites, dashboards, posting datasets; "notice or posting" = required notices, translations, distributions of information; "monitoring or testing" = required sampling, testing, or ongoing measurement.
 - Street co-naming laws: designating a thoroughfare name implies the department of transportation must fabricate and install the street name signs. Record ONE obligation for the department of transportation with deliverable_type "signage or installation" covering all designations in the law. This DOT inference applies ONLY to streets and thoroughfares: a park or playground renaming implies the department of parks and recreation (not DOT), and other facility renamings imply the agency that operates the facility.
+- Square brackets mark DELETED matter. In NYC Council drafting, text enclosed in [brackets] is being struck from the code by this law. NEVER extract an obligation from text inside brackets: that duty is being repealed, not created. A bracketed span can run for several sentences, so check whether an unclosed "[" precedes the passage you are quoting. If the law strikes a duty and re-enacts it elsewhere in the same law, quote the re-enacted (unbracketed) copy.
+- Deadlines anchored to a recurring or per-case event (each application received, each hearing held, each review completed, the occurrence of a vacancy) are NOT effective-date deadlines. Use kind=days_after_other with no offset, even when the clause says "within 60 days". Only a clock the law expressly ties to enactment or the effective date gets days_after_enactment or days_after_effective.
 - Amendment texts ("is amended to read as follows"): the restated body of the amended section is PRE-EXISTING law. Only newly added matter (in Legistar's published text, the underlined portions) can create obligations for this law. Never extract a duty whose operative language exists unchanged in the prior law.
 - "In consultation with X" or "in coordination with X" does not make X a duty-holder. Record the obligation only for the lead agency; list consulted agencies nowhere.
 - Permissive rulemaking ("the commissioner may promulgate rules") becomes an obligation ONLY when other provisions clearly presume the rules will exist (e.g. employers must follow "rules of the department"). Otherwise skip it.
@@ -166,9 +168,43 @@ UNDETERMINED_PHRASES = re.compile(
     r"such\s+(city\s+)?(agency|office|department|entity))", re.I)
 
 
+# Actor phrases the law leaves open-ended even though they run long enough to
+# escape the patterns above: mayoral-designation constructions ("the department
+# or another agency designated by the mayor"), class references ("each agency
+# that provides the survey form"), and sentence fragments the extractor
+# occasionally lifts in place of an actor ("all solicitations for contracts...").
+OPEN_ENDED_ACTOR = re.compile(
+    r"(designated\s+by\s+the\s+mayor|as\s+the\s+mayor\s+(shall|may)\s+designate|"
+    r"as\s+may\s+be\s+designated|mayor\s+shall\s+designate|"
+    r"or\s+(another|other|such\s+other)\s+(agency|office|department|entity))", re.I)
+
+CLASS_ACTOR = re.compile(
+    r"^(each|every|any|all)\s+(city\s+)?"
+    r"(agency|agencies|office|offices|department|departments|entity|entities|"
+    r"person|website|websites|solicitation|solicitations|copies|owner|owners|"
+    r"animal\s+shelter|temporary\s+location|participating\s+agency|"
+    r"other\s+agencies|providers)\b", re.I)
+
+# An agency described only by what it does ("an agency that issues a notice of
+# violation") names no institution, and some phrases are not actors at all
+# ("Copies of any reports submitted to...", "There shall be an interagency
+# task force").
+DESCRIBED_AGENCY = re.compile(
+    r"^(an?|the|relevant|city)\s*(city\s+)?agenc(y|ies)\b.*\b(that|which|to\s+which|"
+    r"responsible\s+for|including)\b", re.I)
+
+NOT_AN_ACTOR = re.compile(
+    r"^(copies\s+of|for\s+city-owned|there\s+shall\s+be|all\s+solicitations)\b", re.I)
+
+
 def is_vague_actor(s: str) -> bool:
     s = re.sub(r"\s*\([^)]*\)", "", (s or "")).strip()
-    return bool(VAGUE_ACTOR.match(s) or UNDETERMINED_PHRASES.match(s))
+    if VAGUE_ACTOR.match(s) or UNDETERMINED_PHRASES.match(s):
+        return True
+    # A phrase that names no institution but describes one by role or class,
+    # or that is not an actor at all, must not surface as an agency tag.
+    return bool(OPEN_ENDED_ACTOR.search(s) or CLASS_ACTOR.match(s)
+                or DESCRIBED_AGENCY.match(s) or NOT_AN_ACTOR.match(s))
 
 
 # Curated per-law actor resolutions (pipeline/actor_overrides.json):
