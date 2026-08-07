@@ -382,12 +382,15 @@ def call_claude(client, model: str, prompt: str, retry_note: str | None = None):
     if retry_note:
         messages.append({"role": "assistant", "content": "{"})
         messages = [{"role": "user", "content": prompt + "\n\n" + retry_note}]
-    resp = client.messages.create(
+    # Streamed accumulation: required for attachment-scale laws (the plain
+    # create() call drops the connection on very large prompts) and harmless
+    # for normal ones.
+    with client.messages.stream(
         model=model,
         max_tokens=16000,
         messages=messages,
-    )
-    raw = resp.content[0].text.strip()
+    ) as stream:
+        raw = "".join(chunk for chunk in stream.text_stream).strip()
     raw = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw)
     return json.loads(raw)
 
