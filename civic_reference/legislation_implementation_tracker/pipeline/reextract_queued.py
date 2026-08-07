@@ -61,16 +61,43 @@ def fetch_page(url: str) -> str:
 
 
 def attachment_text(html: str) -> str | None:
-    """Download the first PDF attachment on a detail page and extract text."""
-    m = re.search(r'href="(View\.ashx\?M=F[^"]+)"', html)
-    if not m:
+    """Download PDF attachments from a detail page and extract text.
+
+    Legistar's View.ashx sometimes truncates large downloads; pypdf then dies
+    with "Stream has ended unexpectedly". Mitigations: verify the payload is a
+    complete PDF (%PDF header, %%EOF near the end), retry the download once,
+    parse in lenient mode (strict=False), and salvage per-page.
+    """
+    links = re.findall(r'href="(View\.ashx\?M=F[^"]+)"', html)
+    if not links:
         return None
     from pypdf import PdfReader
-    url = "https://legistar.council.nyc.gov/" + m.group(1).replace("&amp;", "&")
-    r = requests.get(url, headers={"User-Agent": UA}, timeout=300)
-    r.raise_for_status()
-    reader = PdfReader(io.BytesIO(r.content))
-    return "\n".join((page.extract_text() or "") for page in reader.pages)
+    for link in links[:3]:
+        url = "https://legistar.council.nyc.gov/" + link.replace("&amp;", "&")
+        for attempt in range(3):
+            try:
+                r = requests.get(url, headers={"User-Agent": UA}, timeout=600)
+                r.raise_for_status()
+                blob = r.content
+                if not blob.startswith(b"%PDF"):
+                    break  # not a PDF (error page); try next link
+                if b"%%EOF" not in blob[-2048:]:
+                    print(f"  attachment download truncated ({len(blob)} bytes), retrying")
+                    continue
+                reader = PdfReader(io.BytesIO(blob), strict=False)
+                pages = []
+                for page in reader.pages:
+                    try:
+                        pages.append(page.extract_text() or "")
+                    except Exception:
+                        pages.append("")
+                text = "\n".join(pages)
+                if len(text) > 500:
+                    return text
+                break  # parsed but no text layer; try next link
+            except Exception as e:
+                print(f"  attachment attempt {attempt + 1} failed: {e}")
+    return None
 
 
 def main() -> None:
