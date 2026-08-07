@@ -111,6 +111,10 @@ EXTRA_VARIANTS_BY_NAME = {
                                   "human resources administration/department of social services",
                                   "department of social services/human resources administration (dss/hra)"],
     "Board of Elections": ["board of elections in the city of new york"],
+    "Community Boards": ["community board", "each community board",
+                         "each such community board", "affected community board",
+                         "community boards and borough boards"],
+    "Borough Boards": ["borough board", "each borough board"],
 }
 
 # Short canonical labels for orgs whose dataset row has no acronym, plus

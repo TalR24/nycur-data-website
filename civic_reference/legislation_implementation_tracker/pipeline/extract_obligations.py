@@ -197,6 +197,19 @@ NOT_AN_ACTOR = re.compile(
     r"^(copies\s+of|for\s+city-owned|there\s+shall\s+be|all\s+solicitations)\b", re.I)
 
 
+# A duty the law places on every city agency (Charter s 1150 defines "agency"
+# to include community boards and other city bodies). This is a specific class,
+# not an undetermined actor, so it gets its own tag instead of "Unspecified" —
+# otherwise a citywide duty is invisible to every agency that has to do it.
+ALL_AGENCIES = re.compile(
+    r"^(the\s+)?(each|every|all)\s+(city\s+|nyc\s+|new\s+york\s+city\s+)?"
+    r"(government\s+|mayoral\s+)?agenc(y|ies)$", re.I)
+
+
+def is_all_agencies(s: str) -> bool:
+    return bool(ALL_AGENCIES.match(re.sub(r"\s*\([^)]*\)", "", (s or "")).strip()))
+
+
 def is_vague_actor(s: str) -> bool:
     s = re.sub(r"\s*\([^)]*\)", "", (s or "")).strip()
     if VAGUE_ACTOR.match(s) or UNDETERMINED_PHRASES.match(s):
@@ -244,6 +257,8 @@ def resolve_actor(matter_id: str, actors: list[str], lookup: dict,
         canon, full = match_agency(a, lookup, agencies_by_canon)
         if canon:
             return canon, full, a
+    if any(is_all_agencies(a) for a in candidates):
+        return None, None, "All agencies"
     fallback = next((a for a in candidates if not is_vague_actor(a)), None)
     return None, None, (fallback if fallback else "Unspecified")
 
@@ -492,6 +507,7 @@ def extract_law(client, model: str, law: dict, text: str,
             "agency": canon or actor,
             "agency_full": full or (
                 "Not specified in the law text" if actor == "Unspecified"
+                else "Every city agency" if actor == "All agencies"
                 else actor),
             "agency_matched": canon is not None,
             "action_summary": o.get("action_summary", ""),
@@ -549,7 +565,7 @@ def main() -> None:
         obs_by_matter: dict[str, list] = {}
         joined_keys = {"file_number", "law_number_display", "law_title",
                        "committee", "prime_sponsor", "enactment_date",
-                       "effective_date", "legistar_url"}
+                       "effective_date", "legistar_url", "law_sunset_date"}
         for o in prev.get("obligations", []):
             obs_by_matter.setdefault(o["matter_id"], []).append(
                 {k: v for k, v in o.items() if k not in joined_keys})
@@ -609,6 +625,8 @@ def main() -> None:
             "effective_date": res["effective_date"],
             "effective_clause_text": (res.get("effective_clause") or {}).get("text"),
             "obligation_count": len(res["obligations"]),
+            "sunset_clause": law.get("sunset_clause"),
+            "sunset_date": law.get("sunset_date"),
         })
         for o in res["obligations"]:
             # guards also apply to previously cached extractions
@@ -625,6 +643,7 @@ def main() -> None:
                 "enactment_date": law["enactment_date"],
                 "effective_date": res["effective_date"],
                 "legistar_url": law["legistar_url"],
+                "law_sunset_date": law.get("sunset_date"),
             })
 
     out = {

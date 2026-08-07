@@ -42,6 +42,8 @@ def main() -> None:
                 new = {"agency": display,
                        "agency_full": ("Not specified in the law text"
                                        if display == "Unspecified"
+                                       else "Every city agency"
+                                       if display == "All agencies"
                                        else display),
                        "agency_matched": False}
             else:

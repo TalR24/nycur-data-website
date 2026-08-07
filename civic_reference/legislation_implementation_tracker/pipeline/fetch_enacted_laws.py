@@ -30,7 +30,7 @@ import json
 import logging
 import re
 import time
-from datetime import datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 import requests
@@ -244,6 +244,59 @@ def _normalize_record(rec: dict) -> dict:
     return rec
 
 
+
+# A law that repeals itself on a date ("expires and is deemed repealed on
+# December 31, 2024") stops imposing its duties then. Without this, a sunset
+# law's recurring obligations read as permanent standing duties forever.
+SUNSET_CLAUSE = re.compile(
+    r"(shall expire and (?:be|is) deemed repealed|expires? and is deemed repealed|"
+    r"shall be deemed repealed on|this local law expires)[^.]{0,220}", re.I)
+_SUNSET_DATE = re.compile(
+    r"\b(January|February|March|April|May|June|July|August|September|October|"
+    r"November|December)\s+(\d{1,2}),\s*(\d{4})")
+_SUNSET_REL = re.compile(
+    r"\b(one|two|three|four|five|six|seven|eight|nine|ten|\d+)\s+(year|month)s?\s+"
+    r"after\s+(?:it becomes law|the effective date|its effective date|such effective date)", re.I)
+_MONTHS = {m: i + 1 for i, m in enumerate(
+    ["January", "February", "March", "April", "May", "June", "July", "August",
+     "September", "October", "November", "December"])}
+_NUMWORDS = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5,
+             "six": 6, "seven": 7, "eight": 8, "nine": 9, "ten": 10}
+
+
+def parse_sunset(text: str, enactment_date: str | None) -> tuple[str | None, str | None]:
+    """Return (clause_text, sunset_date) for a self-repealing law.
+
+    Only clauses that resolve to a calendar date produce a date; sunsets tied
+    to an event ("upon submission of the report") keep the clause with no date,
+    exactly as the tracker handles event-anchored deadlines.
+    """
+    flat = re.sub(r"\s+", " ", text or "")
+    m = SUNSET_CLAUSE.search(flat)
+    if not m:
+        return None, None
+    clause = m.group(0).strip()
+    dm = _SUNSET_DATE.search(clause)
+    if dm:
+        try:
+            return clause, date(int(dm.group(3)), _MONTHS[dm.group(1)],
+                                int(dm.group(2))).isoformat()
+        except ValueError:
+            return clause, None
+    rm = _SUNSET_REL.search(clause)
+    if rm and enactment_date:
+        n = _NUMWORDS.get(rm.group(1).lower())
+        if n is None:
+            n = int(rm.group(1))
+        days = n * 365 if rm.group(2).lower() == "year" else n * 30
+        try:
+            y, mo, dd = (int(x) for x in enactment_date[:10].split("-"))
+            return clause, (date(y, mo, dd) + timedelta(days=days)).isoformat()
+        except ValueError:
+            return clause, None
+    return clause, None
+
+
 def parse_detail_page(html: str, matter_id: str, guid: str) -> dict:
     committee = ""
     c = re.search(r'id="ctl00_ContentPlaceHolder1_hypInControlOf[^"]*"[^>]*>([^<]+)<',
@@ -299,6 +352,8 @@ def parse_detail_page(html: str, matter_id: str, guid: str) -> dict:
         "sponsor_count": len(sponsors),
         "enactment_date": enactment_date,
         "legistar_indexes": indexes,                     # e.g. "Report Required"
+        "sunset_clause": parse_sunset(text, enactment_date)[0],
+        "sunset_date": parse_sunset(text, enactment_date)[1],
         "text_chars": len(text),
         "text_sha1": hashlib.sha1(text.encode()).hexdigest() if text else "",
         "_text": text,  # stripped before writing laws.json
