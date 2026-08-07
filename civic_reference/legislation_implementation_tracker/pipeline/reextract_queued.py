@@ -60,43 +60,71 @@ def fetch_page(url: str) -> str:
     return r.text
 
 
-def attachment_text(html: str) -> str | None:
-    """Download PDF attachments from a detail page and extract text.
+def _docx_text(blob: bytes) -> str:
+    import zipfile
+    with zipfile.ZipFile(io.BytesIO(blob)) as z:
+        xml = z.read("word/document.xml").decode("utf-8", "ignore")
+    xml = re.sub(r"</w:p>", "\n", xml)
+    return re.sub(r"<[^>]+>", "", xml)
 
-    Legistar's View.ashx sometimes truncates large downloads; pypdf then dies
-    with "Stream has ended unexpectedly". Mitigations: verify the payload is a
-    complete PDF (%PDF header, %%EOF near the end), retry the download once,
-    parse in lenient mode (strict=False), and salvage per-page.
-    """
-    links = re.findall(r'href="(View\.ashx\?M=F[^"]+)"', html)
-    if not links:
-        return None
+
+def _pdf_text(blob: bytes) -> str:
     from pypdf import PdfReader
-    for link in links[:3]:
-        url = "https://legistar.council.nyc.gov/" + link.replace("&amp;", "&")
-        for attempt in range(3):
+    reader = PdfReader(io.BytesIO(blob), strict=False)
+    pages = []
+    for page in reader.pages:
+        try:
+            pages.append(page.extract_text() or "")
+        except Exception:
+            pages.append("")
+    return "\n".join(pages)
+
+
+def attachment_text(html: str) -> str | None:
+    """Extract the enacted law text from a detail page's attachments.
+
+    Selection matters: the first attachments are usually summaries, agendas,
+    and transcripts. Prefer, in order: an attachment named "Local Law ...",
+    then the bill text ("Int. No. ..."), then anything else. Formats: PDF
+    (pypdf, lenient, per-page salvage) and docx (zip + XML strip).
+    """
+    pairs = re.findall(r'href="(View\.ashx\?M=F[^"]+)"[^>]*>([^<]+)<', html)
+    if not pairs:
+        return None
+
+    def rank(name: str) -> int:
+        n = name.lower().strip()
+        if "local law" in n:
+            return 0
+        if n.startswith("int. no") and "summary" not in n:
+            return 1
+        if "summary" in n or "agenda" in n or "transcript" in n or "minutes" in n \
+                or "testimony" in n or "report" in n:
+            return 3
+        return 2
+
+    for url, name in sorted(pairs, key=lambda p: rank(p[1])):
+        full = "https://legistar.council.nyc.gov/" + url.replace("&amp;", "&")
+        for attempt in range(2):
             try:
-                r = requests.get(url, headers={"User-Agent": UA}, timeout=600)
+                r = requests.get(full, headers={"User-Agent": UA}, timeout=600)
                 r.raise_for_status()
                 blob = r.content
-                if not blob.startswith(b"%PDF"):
-                    break  # not a PDF (error page); try next link
-                if b"%%EOF" not in blob[-2048:]:
-                    print(f"  attachment download truncated ({len(blob)} bytes), retrying")
-                    continue
-                reader = PdfReader(io.BytesIO(blob), strict=False)
-                pages = []
-                for page in reader.pages:
-                    try:
-                        pages.append(page.extract_text() or "")
-                    except Exception:
-                        pages.append("")
-                text = "\n".join(pages)
+                if blob.startswith(b"%PDF"):
+                    if b"%%EOF" not in blob[-2048:]:
+                        print(f"  truncated download of {name!r}, retrying")
+                        continue
+                    text = _pdf_text(blob)
+                elif blob.startswith(b"PK"):
+                    text = _docx_text(blob)
+                else:
+                    break  # unknown format; next attachment
                 if len(text) > 500:
+                    print(f"  law text from attachment {name!r} ({len(text)} chars)")
                     return text
-                break  # parsed but no text layer; try next link
+                break
             except Exception as e:
-                print(f"  attachment attempt {attempt + 1} failed: {e}")
+                print(f"  attachment {name!r} attempt {attempt + 1} failed: {e}")
     return None
 
 
