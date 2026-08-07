@@ -40,7 +40,15 @@ import extract_obligations as eo  # noqa: E402
 QUEUE = HERE / "reextract_queue.json"
 TEXT_CACHE = HERE / "cache" / "text"
 EXTRACT_CACHE = HERE / "cache" / "extracted"
-MAX_CHARS = 380_000  # head+tail cap for attachment-scale laws (LL47 precedent)
+MAX_CHARS = 300_000  # head+tail cap for attachment-scale laws (LL47 precedent)
+
+
+def sanitize(text: str) -> str:
+    """PDF-extracted text carries invalid unicode and control characters that
+    can break the HTTP request body mid-send (the 'Stream has ended
+    unexpectedly' failures). Keep printable text plus newlines/tabs only."""
+    text = text.encode("utf-8", "ignore").decode("utf-8", "ignore")
+    return "".join(c for c in text if c == "\n" or c == "\t" or ord(c) >= 32)
 
 UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
@@ -111,6 +119,7 @@ def main() -> None:
             if len(text) < 500:
                 failed[mid] = reason + " [no usable text found]"
                 continue
+            text = sanitize(text)
             if len(text) > MAX_CHARS:
                 text = text[:MAX_CHARS - 30_000] + "\n[...]\n" + text[-30_000:]
                 truncated = True
