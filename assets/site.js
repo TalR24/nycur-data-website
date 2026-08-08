@@ -87,7 +87,13 @@
     '.relwork-card:hover{border-color:#2563eb;transform:translateY(-2px);box-shadow:0 4px 16px rgba(37,99,235,0.10);}' +
     '.relwork-tag{font-family:\'Roboto Mono\',monospace;font-size:0.62rem;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:#FF6319;}' +
     '.relwork-title{font-family:\'Roboto Mono\',monospace;font-size:0.85rem;font-weight:700;color:#111827;line-height:1.35;}' +
-    '.relwork-cta{font-family:\'Roboto Mono\',monospace;font-size:0.72rem;font-weight:600;color:#2563eb;margin-top:auto;padding-top:4px;}';
+    '.relwork-cta{font-family:\'Roboto Mono\',monospace;font-size:0.72rem;font-weight:600;color:#2563eb;margin-top:auto;padding-top:4px;}' +
+    /* The footer nav is a flex row with no wrap in every page's local CSS, so
+       on a 360px screen it measures 490px and pushes the whole page into
+       horizontal scroll. Patched here because site.js is the one stylesheet
+       shared across the site. Pages without site.js (SCE, /members/, redirect
+       stubs) still need this locally. */
+    '.footer-links{flex-wrap:wrap;}';
   document.head.appendChild(styleEl);
 
   function toolsHtml() {
