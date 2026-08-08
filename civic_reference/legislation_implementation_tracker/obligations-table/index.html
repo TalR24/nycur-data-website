@@ -109,6 +109,8 @@
     .detail-quote .cite { font-family: 'Roboto Mono', monospace; font-style: normal; font-size: 0.7rem; color: var(--text-muted); margin-top: 8px; }
     .unverified-note { font-size: 0.72rem; color: var(--text-muted); font-style: italic; margin-top: 6px; }
     .restated-note { font-size: 0.72rem; color: var(--text-muted); font-style: italic; margin-top: 6px; }
+    .restated-summary { font-size: 0.78rem; color: var(--text-muted); margin: 0 0 10px; }
+    .restated-summary a { color: var(--blue); }
     .detail-links { grid-column: 1 / -1; display: flex; gap: 14px; flex-wrap: wrap; }
     .detail-links a { font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600; color: var(--blue); text-decoration: none; }
     .detail-links a:hover { text-decoration: underline; }
@@ -217,6 +219,8 @@
         <span class="qs"><span class="n" id="qsRecurring">–</span><span class="l">recurring</span></span>
       </div>
     </div>
+
+    <p class="restated-summary" id="restatedSummary"></p>
 
     <div id="chart-box">
       <div class="table-scroll">
@@ -402,6 +406,12 @@
     document.getElementById('resultCount').innerHTML =
       'Showing <strong>' + rows.length.toLocaleString() + '</strong> of ' +
       ALL.length.toLocaleString() + ' obligations';
+    var restated = rows.filter(function (o) { return o.quotes_restated_text; }).length;
+    document.getElementById('restatedSummary').innerHTML = restated
+      ? restated.toLocaleString() + ' of these quote wording that predates the law shown, because '
+        + 'a law reprints the whole code section it amends. They are counted here and marked in the '
+        + 'row detail. <a href="../methodology/">How this is measured</a>'
+      : '';
     var agSet = {}, lawSet = {}, dated = 0, recurring = 0;
     rows.forEach(function (o) {
       if (o.agency_matched) agSet[o.agency] = 1;
