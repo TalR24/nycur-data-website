@@ -12,7 +12,8 @@
   <meta property="og:description" content="Every NYC community board's FY2027 adopted budget, ranked: a $234,000 spread between the best and worst funded boards, and a median of $383,130 to represent up to 200,000 people.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/chart.css">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -126,7 +127,6 @@
     main { flex: 1; padding: clamp(28px, 4vw, 48px) clamp(20px, 5vw, 48px); }
     .main-inner { max-width: 900px; margin: 0 auto; }
 
-    .chart-actions { display: flex; gap: 8px; margin-bottom: 12px; }
     .view-toggle { display: flex; gap: 8px; margin-bottom: 16px; align-items: center; flex-wrap: wrap; }
     .view-label { font-size: 0.72rem; color: var(--text-faint); font-family: 'Roboto Mono', monospace; white-space: nowrap; }
     .view-btn {
@@ -137,60 +137,13 @@
     }
     .view-btn:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
     .view-btn.active { background: var(--blue); color: #fff; border-color: var(--blue); }
-    .divider-row {
-      text-align: center; font-family: 'Roboto Mono', monospace; font-size: 0.72rem;
-      color: var(--text-faint); padding: 8px 0; letter-spacing: 0.08em;
-    }
-    .action-btn { display: inline-flex; align-items: center; gap: 6px; background: var(--surface); color: var(--text-muted); font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600; padding: 6px 14px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; transition: all 0.15s; }
-    .action-btn:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
-    .action-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
-    .chart-box {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow-sm);
-      overflow: hidden;
-    }
-    .chart-pad { padding: clamp(20px, 4vw, 32px); }
-    .chart-title {
-      font-family: 'Roboto Mono', monospace; font-size: 1rem; font-weight: 700;
-      letter-spacing: -0.02em; margin-bottom: 4px;
-    }
-    .chart-subtitle { font-size: 0.83rem; color: var(--text-muted); margin-bottom: 18px; }
 
-    .legend { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 18px; align-items: center; }
-    .legend-item { display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: var(--text-mid); font-weight: 500; }
-    .legend-swatch { width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0; }
 
     .chart { display: flex; flex-direction: column; gap: 6px; }
-    .bar-row {
-      display: grid;
-      grid-template-columns: 132px 1fr 76px;
-      align-items: center;
-      gap: 10px;
-    }
-    .bar-label {
-      font-size: 0.76rem; color: var(--text-mid); font-weight: 500;
-      line-height: 1.25; text-align: right; padding-right: 2px; white-space: nowrap;
-    }
-    .bar-track { height: 15px; background: var(--border); border-radius: 3px; overflow: hidden; position: relative; }
-    .bar-fill { height: 100%; border-radius: 3px; transition: width 0.6s cubic-bezier(0.4,0,0.2,1); }
-    .bar-value {
-      font-family: 'Roboto Mono', monospace; font-size: 0.72rem; font-weight: 600;
-      color: var(--text-muted); white-space: nowrap; text-align: left;
-    }
     @media (max-width: 560px) {
-      .bar-row { grid-template-columns: 96px 1fr 64px; }
-      .bar-label { font-size: 0.68rem; }
-      .bar-value { font-size: 0.66rem; }
     }
 
-    .chart-attribution {
-      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
-      padding: 12px 16px; border-top: 1px solid var(--border); background: var(--bg);
-      font-size: 0.78rem; color: var(--text-faint); font-family: 'Roboto Mono', monospace;
-    }
 
     .context-box {
       margin-top: 28px; padding: 16px 20px;
@@ -232,6 +185,7 @@
     .footer-support svg { flex-shrink: 0; }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
+  <script defer src="/assets/chart.js"></script>
   <script defer src="/assets/site.js"></script>
 </head>
 <body>
@@ -287,9 +241,9 @@
 <main>
   <div class="main-inner">
 
-    <div class="chart-actions">
-      <button class="action-btn" onclick="downloadBox(this, 'budgetBox', 'nyc-community-board-budgets-fy2027.png')">&#11015; Download PNG</button>
-      <button class="action-btn" onclick="showEmbed()">&#60;/&#62; Embed</button>
+    <div class="c-actions">
+      <button class="c-action-btn" onclick="downloadChart(this)">&#11015; Download PNG</button>
+      <button class="c-action-btn" onclick="showEmbed()">&#60;/&#62; Embed</button>
     </div>
 
     <div class="view-toggle">
@@ -298,23 +252,28 @@
       <button class="view-btn" id="viewEndsBtn" onclick="setView('ends')">Top 5 vs. bottom 5</button>
     </div>
 
-    <div class="chart-box" id="budgetBox">
-      <div class="chart-pad">
-        <div class="chart-title" id="chartTitle">FY2027 adopted budget, all 59 community boards</div>
-        <div class="chart-subtitle">Each board is its own agency in the City's expense budget. Bars show the full adopted appropriation: staff salaries plus other-than-personal-services (rent, supplies, technology).</div>
-        <div class="legend">
-          <div class="legend-item"><span class="legend-swatch" style="background:var(--mn)"></span> Manhattan</div>
-          <div class="legend-item"><span class="legend-swatch" style="background:var(--bk)"></span> Brooklyn</div>
-          <div class="legend-item"><span class="legend-swatch" style="background:var(--qn)"></span> Queens</div>
-          <div class="legend-item"><span class="legend-swatch" style="background:var(--bx)"></span> Bronx</div>
-          <div class="legend-item"><span class="legend-swatch" style="background:var(--si)"></span> Staten Island</div>
+    <figure class="chart-card" id="budgetBox" data-slug="nyc-community-board-budgets-fy2027">
+      <div class="c-head">
+        <h2 class="c-title" id="chartTitle">Four of the five best-funded community boards are in Manhattan</h2>
+        <p class="c-deck">FY2027 adopted budget for each of the 59 community boards, sorted smallest to largest. Every board is its own agency in the City's expense budget, so each bar covers <strong>staff salaries plus rent, supplies and technology</strong>.</p>
+        <ul class="c-legend">
+          <li class="c-legend-item"><span class="sw" style="background:var(--mn)"></span> Manhattan</li>
+          <li class="c-legend-item"><span class="sw" style="background:var(--bk)"></span> Brooklyn</li>
+          <li class="c-legend-item"><span class="sw" style="background:var(--qn)"></span> Queens</li>
+          <li class="c-legend-item"><span class="sw" style="background:var(--bx)"></span> Bronx</li>
+          <li class="c-legend-item"><span class="sw" style="background:var(--si)"></span> Staten Island</li>
+        </ul>
+      </div>
+      <div class="c-plot">
+        <div class="c-bars c-bars--compact" id="budgetChart"></div>
+      </div>
+      <figcaption class="c-foot">
+        <div class="c-foot-text">
+          <span>Source: <a href="https://data.cityofnewyork.us/City-Government/Expense-Budget/mwzb-yiwb" target="_blank" rel="noopener">NYC Open Data, Expense Budget</a> (FY2027 adopted)</span>
+          <span>Note: bars are sorted by budget, not by borough. The 59 boards together cost $22.3 million.</span>
         </div>
-        <div class="chart" id="budgetChart"></div>
-      </div>
-      <div class="chart-attribution">
-        <span>Created by Tal Roded · NYCuriosity · Source: NYC Open Data, Expense Budget (FY2027 adopted)</span>
-      </div>
-    </div>
+      </figcaption>
+    </figure>
 
     <div class="context-box">
       <p><strong>The whole system costs $22.3 million.</strong> All 59 boards combined amount to 0.019% of the City's $117.8 billion FY2027 budget. For that sum the Charter asks the boards to review every land use application in the city, negotiate every liquor license, submit budget priorities, and field constituent complaints year-round.</p>
@@ -430,13 +389,13 @@
   function barRow(item) {
     const pct = (item.v / MAX_VAL * 100).toFixed(2);
     const row = document.createElement("div");
-    row.className = "bar-row";
+    row.className = "c-bar-row";
     row.innerHTML = `
-      <div class="bar-label">${item.l}</div>
-      <div class="bar-track">
-        <div class="bar-fill" style="width:0%; background:${BORO_COLORS[item.b]}" data-pct="${pct}"></div>
+      <div class="c-bar-label">${item.l}</div>
+      <div class="c-bar-track">
+        <div class="c-bar-fill" style="width:0%; background:${BORO_COLORS[item.b]}" data-pct="${pct}"></div>
       </div>
-      <div class="bar-value">${fmtDollars(item.v)}</div>
+      <div class="c-bar-value">${fmtDollars(item.v)}</div>
     `;
     return row;
   }
@@ -445,22 +404,22 @@
     document.getElementById("viewAllBtn").classList.toggle("active", mode === "all");
     document.getElementById("viewEndsBtn").classList.toggle("active", mode === "ends");
     document.getElementById("chartTitle").textContent = mode === "all"
-      ? "FY2027 adopted budget, all 59 community boards"
-      : "FY2027 adopted budget, the 5 smallest and 5 largest boards";
+      ? "Four of the five best-funded community boards are in Manhattan"
+      : "The five largest boards run on 67% more than the five smallest";
     chartEl.innerHTML = "";
     if (mode === "all") {
       BOARDS.forEach(item => chartEl.appendChild(barRow(item)));
     } else {
       BOARDS.slice(0, 5).forEach(item => chartEl.appendChild(barRow(item)));
       const gap = document.createElement("div");
-      gap.className = "divider-row";
+      gap.className = "c-bar-divider";
       gap.textContent = "\u00b7 \u00b7 \u00b7 49 boards in between \u00b7 \u00b7 \u00b7";
       chartEl.appendChild(gap);
       BOARDS.slice(-5).forEach(item => chartEl.appendChild(barRow(item)));
     }
     requestAnimationFrame(() => {
       setTimeout(() => {
-        document.querySelectorAll(".bar-fill").forEach(node => {
+        document.querySelectorAll(".c-bar-fill").forEach(node => {
           node.style.width = node.dataset.pct + "%";
         });
       }, 80);
@@ -469,32 +428,6 @@
 
   setView("all");
 
-  async function downloadBox(btn, boxId, filename) {
-    const orig = btn.innerHTML;
-    btn.innerHTML = '⏳ Capturing…'; btn.disabled = true;
-    try {
-      const box = document.getElementById(boxId);
-      const dataUrl = await htmlToImage.toPng(box, { backgroundColor: '#ffffff', pixelRatio: 2 });
-      const a = document.createElement('a');
-      a.download = filename;
-      a.href = dataUrl; a.click();
-    } finally { btn.innerHTML = orig; btn.disabled = false; }
-  }
-  function showEmbed() {
-    const url = location.origin + location.pathname;
-    document.getElementById('embedCode').value =
-      `<iframe src="${url}" width="900" height="1800" frameborder="0" style="border:1px solid #e5e7eb; border-radius:8px;" loading="lazy"></iframe>`;
-    document.getElementById('embedModal').style.display = 'flex';
-  }
-  function closeEmbed() { document.getElementById('embedModal').style.display = 'none'; }
-  function copyEmbed() {
-    const ta = document.getElementById('embedCode'); ta.select();
-    navigator.clipboard.writeText(ta.value).then(() => {
-      const btn = document.querySelector('.embed-copy-btn');
-      btn.textContent = '✓ Copied!';
-      setTimeout(() => btn.textContent = 'Copy code', 2000);
-    });
-  }
 </script>
 
 </body>

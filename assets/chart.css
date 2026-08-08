@@ -1,0 +1,296 @@
+/* ==========================================================================
+   NYCuriosity chart system
+   --------------------------------------------------------------------------
+   Shared styling for every chart, table and visual on data.nycuriosity.com.
+
+   Every colour, size and dash pattern lives here as a custom property. A
+   rebrand should be a change to the :root block below and nothing else, so
+   never hardcode a chart colour or size in page HTML.
+
+   Load with:  <link rel="stylesheet" href="/assets/chart.css">
+   Pair with:  <script defer src="/assets/chart.js"></script>
+
+   Fonts required on the page (Inter 700 is new — older pages loaded only 600):
+   Roboto+Mono:wght@400;500;600;700 and Inter:wght@400;500;600;700
+   ========================================================================== */
+
+:root {
+  /* ---- type ------------------------------------------------------------ */
+  --c-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
+  --c-mono: 'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  /* ---- ink ------------------------------------------------------------- */
+  --c-ink:          #111827;  /* titles, emphasis */
+  --c-ink-2:        #374151;  /* deck, body */
+  --c-ink-3:        #6b7280;  /* axis ticks, source line. AA at 11px on white */
+  --c-ink-4:        #9ca3af;  /* decorative only. Never body text on white. */
+  --c-surface:      #ffffff;
+  --c-surface-2:    #fbfcfe;  /* chart footer ground */
+  --c-line:         #e5e7eb;  /* gridlines, borders */
+  --c-line-strong:  #cfd8e8;  /* zero baseline, one step darker than a gridline */
+  --c-radius:       10px;
+  --c-shadow:       0 1px 3px rgba(17,24,39,0.08);
+
+  /* ---- categorical: series different in kind. Max four, in this order. -- */
+  --c-cat-1: #2563eb;
+  --c-cat-2: #c2410c;
+  --c-cat-3: #6b7280;
+  --c-cat-4: #16a34a;
+  --c-alert: #dc2626;   /* outliers, negatives, urgent callouts */
+  --c-good:  #16a34a;
+
+  /* ---- sequential: ranked bars of 6+, choropleths. Rank encodes value. -- */
+  --c-seq-1:  #1e3a8a;
+  --c-seq-2:  #1e40af;
+  --c-seq-3:  #1d4ed8;
+  --c-seq-4:  #2563eb;
+  --c-seq-5:  #3b82f6;
+  --c-seq-6:  #519bf8;
+  --c-seq-7:  #60a5fa;
+  --c-seq-8:  #7db3fb;
+  --c-seq-9:  #93c5fd;
+  --c-seq-10: #aed4fe;
+  --c-seq-11: #bfdbfe;
+  /* Value labels sit white on steps 1-5 and navy on 6-11, where white text
+     drops below 3:1. chart.js seqLabelInk() applies this. */
+  --c-seq-ink-dark: #1e3a8a;
+  --c-residual:     #6b7280;  /* Unspecified / Other / Don't know. Always last. */
+
+  /* ---- diverging: data straddling a meaningful zero -------------------- */
+  --c-div-neg-3: #b91c1c;
+  --c-div-neg-2: #dc2626;
+  --c-div-neg-1: #fca5a5;
+  --c-div-zero:  #f3f4f6;
+  --c-div-pos-1: #93c5fd;
+  --c-div-pos-2: #3b82f6;
+  --c-div-pos-3: #1d4ed8;
+
+  /* ---- structural: never a data series --------------------------------- */
+  --c-signal: #FF6319;
+}
+
+/* ==========================================================================
+   THE CHART CARD
+   The capture target for PNG export. Head, plot and footer, in that order.
+   ========================================================================== */
+
+.chart-card {
+  background: var(--c-surface);
+  border: 1px solid var(--c-line);
+  border-radius: var(--c-radius);
+  box-shadow: var(--c-shadow);
+  overflow: hidden;
+  margin: 0;
+}
+
+.c-head { padding: clamp(20px, 3.4vw, 30px) clamp(18px, 3.4vw, 30px) 0; }
+
+.c-title {
+  font-family: var(--c-sans);
+  font-size: clamp(1.22rem, 2.45vw, 1.6rem);
+  font-weight: 700;
+  line-height: 1.24;
+  letter-spacing: -0.021em;
+  color: var(--c-ink);
+  text-wrap: balance;
+  margin: 0;
+}
+
+.c-deck {
+  font-family: var(--c-sans);
+  font-size: 0.94rem;
+  font-weight: 400;
+  line-height: 1.55;
+  color: var(--c-ink-2);
+  margin: 9px 0 0;
+  max-width: 70ch;
+}
+.c-deck strong { font-weight: 650; color: var(--c-ink); }
+
+/* Legend. Only when marks cannot be labeled directly. */
+.c-legend {
+  display: flex; flex-wrap: wrap; gap: 8px 20px;
+  margin: 16px 0 0; padding: 0; list-style: none;
+}
+.c-legend li,
+.c-legend .c-legend-item {
+  display: flex; align-items: center; gap: 8px;
+  font-family: var(--c-sans); font-size: 0.82rem; font-weight: 500; color: var(--c-ink-2);
+}
+.c-legend .sw { width: 13px; height: 13px; border-radius: 3px; flex-shrink: 0; display: block; }
+/* Dashed swatches are inline SVG <line>, never a CSS gradient. */
+.c-legend svg.sw { width: 22px; height: 14px; border-radius: 0; }
+
+.c-plot { padding: 18px clamp(18px, 3.4vw, 30px) clamp(14px, 2.2vw, 20px); }
+.c-plot > svg { width: 100%; height: auto; display: block; }
+.c-plot--scroll { overflow-x: auto; }
+
+/* ---- footer: source and note left, wordmark right ---------------------- */
+.c-foot {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  gap: 14px 20px; flex-wrap: wrap;
+  border-top: 1px solid var(--c-line);
+  background: var(--c-surface-2);
+  padding: 13px clamp(18px, 3.4vw, 30px) 15px;
+}
+.c-foot-text {
+  display: flex; flex-direction: column; gap: 3px;
+  font-family: var(--c-sans); font-size: 0.76rem; line-height: 1.5; color: var(--c-ink-3);
+  min-width: 0;
+}
+.c-foot-text a { color: var(--c-ink-3); text-decoration: underline; text-underline-offset: 2px; }
+.c-foot-text a:hover { color: var(--c-cat-1); }
+
+.c-mark { display: flex; align-items: center; gap: 7px; flex-shrink: 0; }
+.c-mark .c-mark-bars { display: flex; align-items: flex-end; gap: 2px; height: 13px; }
+.c-mark .c-mark-bars i { display: block; width: 3px; background: var(--c-ink); border-radius: 0.5px; }
+.c-mark .c-mark-wm {
+  font-family: var(--c-mono); font-size: 0.66rem; font-weight: 700;
+  letter-spacing: 0.145em; color: var(--c-ink); white-space: nowrap;
+}
+
+/* ==========================================================================
+   HTML BAR ROWS
+   Ranked comparison. Label / track / value, with an animated fill.
+   ========================================================================== */
+
+.c-bars {
+  display: flex; flex-direction: column;
+  gap: var(--c-bar-gap, 8px);
+}
+
+/* Compact: for long rankings (roughly 20 rows or more), where a full-height
+   bar would push the chart past a screen. The value moves outside the bar. */
+.c-bars--compact {
+  --c-bar-h: 15px;
+  --c-bar-gap: 5px;
+  --c-bar-label-w: 132px;
+}
+
+.c-bar-row {
+  display: grid;
+  grid-template-columns: var(--c-bar-label-w, 150px) 1fr auto;
+  align-items: center;
+  gap: 12px;
+}
+.c-bar-label {
+  font-family: var(--c-sans); font-size: 0.84rem; color: var(--c-ink);
+  text-align: right; line-height: 1.3; min-width: 0;
+}
+.c-bars--compact .c-bar-label { font-size: 0.76rem; }
+.c-bar-track {
+  position: relative; min-width: 0;
+  background: var(--c-line); border-radius: 2px;
+  height: var(--c-bar-h, 26px);
+}
+.c-bar-fill {
+  height: 100%; border-radius: 2px; width: 0;
+  background: var(--c-cat-1);
+  transition: width 0.9s cubic-bezier(0.4, 0, 0.2, 1);
+  display: flex; align-items: center; justify-content: flex-end;
+}
+@media (prefers-reduced-motion: reduce) { .c-bar-fill { transition: none; } }
+
+/* Value inside the bar, right aligned. chart.js moves it outside when the
+   bar is too short to hold it. */
+.c-bar-inval {
+  font-family: var(--c-mono); font-size: 0.75rem; font-weight: 600;
+  color: #fff; padding-right: 10px; white-space: nowrap;
+}
+.c-bar-value {
+  font-family: var(--c-mono); font-size: 0.75rem; font-weight: 600;
+  color: var(--c-ink); text-align: right; white-space: nowrap;
+}
+.c-bar-meta {
+  font-family: var(--c-mono); font-size: 0.66rem; color: var(--c-ink-3);
+  text-align: right; white-space: nowrap;
+}
+.c-bar-row--residual { margin-top: 6px; }
+.c-bar-divider {
+  font-family: var(--c-mono); font-size: 0.68rem; color: var(--c-ink-4);
+  text-align: center; padding: 8px 0; letter-spacing: 0.06em;
+}
+
+@media (max-width: 620px) {
+  .c-bar-row { grid-template-columns: 1fr; gap: 3px; }
+  .c-bar-label { text-align: left; }
+  .c-bar-value { text-align: left; }
+}
+
+/* ==========================================================================
+   SVG CHART PRIMITIVES
+   Applied as classes on SVG elements so pages stop inlining these values.
+   ========================================================================== */
+
+.c-grid      { stroke: var(--c-line); stroke-width: 1; }
+.c-baseline  { stroke: var(--c-line-strong); stroke-width: 1; }
+.c-tick {
+  font-family: var(--c-mono); font-size: 11px; fill: var(--c-ink-3);
+}
+.c-val {
+  font-family: var(--c-mono); font-size: 12px; font-weight: 600;
+}
+.c-annot {
+  font-family: var(--c-mono); font-size: 10px; fill: var(--c-ink-4);
+}
+.c-series      { fill: none; stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; }
+/* The dash vocabulary is exactly three patterns, each with a fixed meaning. */
+.c-dash-est    { stroke-dasharray: 6 4; }   /* projection, model, estimate */
+.c-dash-ref    { stroke-dasharray: 4 4; }   /* benchmark, target, event marker */
+.c-dash-leader { stroke-dasharray: 2 3; }   /* annotation leader line */
+.c-refline     { stroke: var(--c-ink-4); stroke-width: 1; }
+
+/* ==========================================================================
+   CHART ACTIONS
+   Sit outside and above the card so they stay out of the PNG.
+   ========================================================================== */
+
+.c-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+.c-action-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: var(--c-surface); color: var(--c-ink-3);
+  font-family: var(--c-mono); font-size: 0.75rem; font-weight: 600;
+  padding: 6px 14px; border-radius: 6px; border: 1px solid var(--c-line);
+  cursor: pointer; transition: color .15s, border-color .15s, background .15s;
+}
+.c-action-btn:hover { border-color: var(--c-cat-1); color: var(--c-cat-1); background: #eff6ff; }
+.c-action-btn:focus-visible { outline: 2px solid var(--c-cat-1); outline-offset: 2px; }
+.c-action-btn:disabled { opacity: .6; cursor: not-allowed; }
+
+/* ==========================================================================
+   SITE CHROME FIX (temporary)
+   .footer-links is a flex row with no wrap, so on a 360px screen it measures
+   490px and pushes the whole page into horizontal scroll. This predates the
+   chart system and affects every page on the site, not only migrated ones.
+   The permanent fix belongs in /assets/site.js, which already injects chrome
+   CSS on 72 pages; this rule covers pages as they migrate in the meantime.
+   ========================================================================== */
+
+.footer-links { flex-wrap: wrap; }
+
+/* ==========================================================================
+   LEGACY BRIDGE
+   Older pages use .chart-box / .chart-wrap with .chart-title / .chart-subtitle.
+   These rules lift them to the new type scale without a full rewrite, so a
+   page can be migrated in two steps. Remove a page's bridge once it uses
+   .chart-card markup directly.
+   ========================================================================== */
+
+.chart-box.c-upgraded .chart-title,
+.chart-wrap.c-upgraded .chart-wrap-title {
+  font-family: var(--c-sans);
+  font-size: clamp(1.22rem, 2.45vw, 1.6rem);
+  font-weight: 700;
+  line-height: 1.24;
+  letter-spacing: -0.021em;
+  color: var(--c-ink);
+  text-wrap: balance;
+}
+.chart-box.c-upgraded .chart-subtitle,
+.chart-wrap.c-upgraded .chart-wrap-sub {
+  font-family: var(--c-sans);
+  font-size: 0.94rem;
+  line-height: 1.55;
+  color: var(--c-ink-2);
+  max-width: 70ch;
+}
