@@ -15,8 +15,11 @@
   <meta name="twitter:image"      content="https://data.nycuriosity.com/website_logo.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/chart.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
+  <script defer src="/assets/chart.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -49,12 +52,6 @@
     .hero h2 { font-size:clamp(1.3rem,2.6vw,1.9rem); font-weight:700; letter-spacing:-0.03em; margin-bottom:10px; line-height:1.2; }
     .hero p { font-size:0.92rem; color:var(--text-muted); max-width:720px; line-height:1.7; }
 
-    .chart-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:28px; box-shadow:var(--shadow-sm); margin-bottom:24px; }
-
-    .chart-actions { display:flex; gap:8px; margin-bottom:14px; justify-content:flex-end; }
-    .action-btn { font-family:'Roboto Mono',monospace; font-size:0.72rem; font-weight:600; padding:5px 12px; border-radius:6px; border:1px solid var(--border-mid); background:var(--bg); color:var(--text-muted); cursor:pointer; transition:all 0.15s; }
-    .action-btn:hover { border-color:var(--blue); color:var(--blue); background:var(--blue-light); }
-
     .controls-row { display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin-bottom:20px; justify-content:space-between; }
     .controls-left { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
     .toggle-btn { font-family:'Roboto Mono',monospace; font-size:0.75rem; font-weight:600; padding:5px 14px; border-radius:20px; border:1px solid var(--border-mid); background:var(--bg); color:var(--text-muted); cursor:pointer; transition:all 0.15s; }
@@ -78,15 +75,7 @@
     .dropdown-dot { width:10px; height:10px; border-radius:2px; flex-shrink:0; }
     .dropdown-item-label { font-size:0.81rem; color:var(--text-mid); }
 
-    .chart-wrap { position:relative; width:100%; }
-
-    .legend-grid { display:flex; flex-wrap:wrap; gap:10px 24px; margin-top:18px; }
-    .legend-item { display:flex; align-items:center; gap:8px; font-size:0.8rem; color:var(--text-mid); }
-    .legend-swatch { width:20px; height:10px; border-radius:2px; flex-shrink:0; }
-
-    .caption { font-size:0.78rem; color:var(--text-faint); line-height:1.6; margin-top:14px; }
-    .caption a { color:var(--blue); text-decoration:none; }
-    .caption a:hover { text-decoration:underline; }
+    .canvas-box { position:relative; width:100%; }
 
     .methodology { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:24px 28px; }
     .methodology h3 { font-family:'Roboto Mono',monospace; font-size:0.82rem; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-faint); margin-bottom:14px; }
@@ -147,13 +136,23 @@
     <p>Which city agencies does MCB3 formally address in its resolutions, and which agencies are residents actually directing their 311 complaints to? The SLA commands 60% of MCB3's agency attention but receives zero 311 complaints. NYPD and HPD together handle 86% of resident complaints but appear in fewer than 12% of resolutions combined.</p>
   </div>
 
-  <div class="chart-card">
-    <div class="chart-actions">
-      <button class="action-btn" id="csvBtn" onclick="downloadCSV()">↓ CSV</button>
-      <button class="action-btn" onclick="downloadPNG()">↓ PNG</button>
-      <button class="action-btn" onclick="toggleEmbed()">Embed</button>
+  <div class="c-actions">
+    <button class="c-action-btn" onclick="downloadChart(this)">&#11015; Download PNG</button>
+    <button class="c-action-btn" onclick="showEmbed()">&#60;/&#62; Embed</button>
+    <button class="c-action-btn" id="csvBtn" onclick="downloadCSV()">&#11015; CSV of current view</button>
+  </div>
+
+  <figure class="chart-card" id="chart-box" data-slug="mcb3-vs-311-agencies">
+    <div class="c-head">
+      <h2 class="c-title">The State Liquor Authority draws 60% of MCB3's agency mentions and none of the district's 311 complaints</h2>
+      <p class="c-deck">Each agency's share of the 3,828 agency mentions in MCB3 resolutions, 2002&ndash;2025, against its share of the 652,684 311 service requests filed in Manhattan Community District 3. Percentages recompute over whichever agencies are selected.</p>
+      <ul class="c-legend">
+        <li class="c-legend-item"><span class="sw" style="background:#2563eb"></span> MCB3 resolutions (% of agency mentions)</li>
+        <li class="c-legend-item"><span class="sw" style="background:#f59e0b"></span> 311 complaints (% of CD3 complaints)</li>
+      </ul>
     </div>
 
+    <div class="c-plot">
     <div class="controls-row">
       <div class="controls-left">
         <button class="toggle-btn" id="sharedToggle" onclick="toggleSharedOnly()">Both datasets only</button>
@@ -176,31 +175,26 @@
       </div>
     </div>
 
-    <div class="chart-wrap">
+    <div class="canvas-box">
       <canvas id="mainChart"></canvas>
     </div>
-
-    <div class="legend-grid">
-      <div class="legend-item">
-        <div class="legend-swatch" style="background:#2563eb;"></div>
-        <span>MCB3 resolutions (% of agency mentions)</span>
-      </div>
-      <div class="legend-item">
-        <div class="legend-swatch" style="background:#f59e0b;"></div>
-        <span>311 complaints (% of CD3 complaints)</span>
-      </div>
     </div>
 
-    <p class="caption">Percentage share of agency mentions in MCB3 full-board resolutions (2002–2025) vs. percentage share of 311 service requests routed to each agency for Manhattan Community District 3 (all years). MCB3 percentages are computed among displayed agencies only; 311 percentages are computed among displayed agencies only. An MCB3 resolution may mention multiple agencies, so MCB3 counts do not sum to total resolutions. Source: NYC.gov MCB3 meeting minutes; <a href="https://data.cityofnewyork.us/Social-Services/311-Service-Requests-from-2010-to-Present/erm2-nwe9">NYC Open Data 311 Service Requests (erm2-nwe9)</a>.</p>
-  </div>
+    <figcaption class="c-foot">
+      <div class="c-foot-text">
+        <span>Source: NYC.gov MCB3 meeting minutes; <a href="https://data.cityofnewyork.us/Social-Services/311-Service-Requests-from-2010-to-Present/erm2-nwe9" target="_blank" rel="noopener">NYC Open Data 311 Service Requests (erm2-nwe9)</a></span>
+        <span>Note: percentages are computed among the displayed agencies only. A resolution may mention several agencies, so mentions exceed the number of resolutions.</span>
+      </div>
+    </figcaption>
+  </figure>
 
   <div id="embedModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:999;align-items:center;justify-content:center;">
     <div style="background:#fff;border-radius:10px;padding:28px;max-width:560px;width:90%;position:relative;">
       <div style="font-family:'Roboto Mono',monospace;font-size:0.82rem;font-weight:700;margin-bottom:12px;">Embed this chart</div>
       <textarea id="embedCode" readonly style="width:100%;height:90px;font-family:'Roboto Mono',monospace;font-size:0.7rem;border:1px solid #e5e7eb;border-radius:6px;padding:10px;resize:none;background:#f8faff;color:#374151;"></textarea>
       <div style="display:flex;gap:8px;margin-top:10px;">
-        <button onclick="copyEmbed()" style="font-family:'Roboto Mono',monospace;font-size:0.72rem;font-weight:600;padding:6px 14px;border-radius:6px;border:1px solid #2563eb;background:#2563eb;color:#fff;cursor:pointer;">Copy</button>
-        <button onclick="document.getElementById('embedModal').style.display='none'" style="font-family:'Roboto Mono',monospace;font-size:0.72rem;font-weight:600;padding:6px 14px;border-radius:6px;border:1px solid #d1d5db;background:#fff;color:#6b7280;cursor:pointer;">Close</button>
+        <button class="embed-copy-btn" onclick="copyEmbed()" style="font-family:'Roboto Mono',monospace;font-size:0.72rem;font-weight:600;padding:6px 14px;border-radius:6px;border:1px solid #2563eb;background:#2563eb;color:#fff;cursor:pointer;">Copy code</button>
+        <button onclick="closeEmbed()" style="font-family:'Roboto Mono',monospace;font-size:0.72rem;font-weight:600;padding:6px 14px;border-radius:6px;border:1px solid #d1d5db;background:#fff;color:#6b7280;cursor:pointer;">Close</button>
       </div>
     </div>
   </div>
@@ -227,6 +221,8 @@
 </footer>
 
 <script>
+document.addEventListener('DOMContentLoaded', function () {
+
 // Agency data: sorted by MCB3 abs count descending
 const AGENCIES = [
   { label: "SLA (State Liquor Authority)", short: "SLA",       mcb3Abs: 2285, abs311: 0,      color: "#2563eb" },
@@ -349,7 +345,7 @@ function computeHeight(n) {
 }
 
 let ad = getActiveData();
-document.querySelector('.chart-wrap').style.height = computeHeight(ad.labels.length);
+document.querySelector('.canvas-box').style.height = computeHeight(ad.labels.length);
 
 const chart = new Chart(ctx, {
   type: 'bar',
@@ -360,7 +356,6 @@ const chart = new Chart(ctx, {
         label: 'MCB3 resolutions %',
         data: ad.mcb3Data,
         backgroundColor: '#2563eb',
-        borderRadius: 3,
         barPercentage: 0.65,
         categoryPercentage: 0.85,
       },
@@ -368,7 +363,6 @@ const chart = new Chart(ctx, {
         label: '311 complaints %',
         data: ad.data311,
         backgroundColor: '#f59e0b',
-        borderRadius: 3,
         barPercentage: 0.65,
         categoryPercentage: 0.85,
       }
@@ -391,31 +385,24 @@ const chart = new Chart(ctx, {
             const label = item.datasetIndex === 0 ? 'MCB3' : '311';
             return `  ${label}: ${item.raw}%  (${raw.toLocaleString()} ${item.datasetIndex === 0 ? 'resolutions' : 'complaints'})`;
           }
-        },
-        backgroundColor: 'rgba(17,24,39,0.92)',
-        titleFont: { family: "'Roboto Mono', monospace", size: 11, weight: '700' },
-        bodyFont:  { family: "'Roboto Mono', monospace", size: 11 },
-        padding: 10,
-        cornerRadius: 6,
+        }
       }
     },
     scales: {
       x: {
-        grid: { color: '#f3f4f6', drawTicks: false },
+        grid: { drawTicks: false },
         border: { display: false },
-        ticks: {
-          font: { family: "'Roboto Mono', monospace", size: 10 },
-          color: '#9ca3af',
-          callback: v => v + '%',
-        },
+        ticks: { callback: v => v + '%' },
         max: 65,
       },
       y: {
         grid: { display: false },
         border: { display: false },
-        ticks: {
-          font: { family: "'Roboto Mono', monospace", size: 11 },
-          color: '#374151',
+        ticks: { font: { family: "'Inter', sans-serif", size: 11 } },
+        /* Reserve the label column outright. Chart.js measures it before the
+           webfont lands, which clips the longest agency name. */
+        afterFit(scale) {
+          scale.width = Math.max(scale.width, Math.min(215, scale.chart.width * 0.32));
         }
       }
     }
@@ -427,7 +414,7 @@ chart._absData = { mcb3Abs: ad.mcb3Abs, abs311: ad.abs311 };
 function updateChart() {
   ad = getActiveData();
   const n = ad.labels.length;
-  document.querySelector('.chart-wrap').style.height = computeHeight(n);
+  document.querySelector('.canvas-box').style.height = computeHeight(n);
   chart.data.labels = ad.labels;
   chart.data.datasets[0].data = ad.mcb3Data;
   chart.data.datasets[1].data = ad.data311;
@@ -463,52 +450,16 @@ function downloadCSV() {
   a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv); a.click();
 }
 
-function downloadPNG() {
-  const srcCanvas = chart.canvas;
-  const caption = 'MCB3 resolution agency mentions vs. 311 complaint recipients, Manhattan CD3. Source: NYC.gov MCB3 records; NYC Open Data 311 (erm2-nwe9). Created by Tal Roded · NYCuriosity';
-  const scale = 2;
-  const margin = 16 * scale;
-  const capH = 44 * scale;
-  const dpr = window.devicePixelRatio || 1;
-  const dw = srcCanvas.width / dpr;
-  const dh = srcCanvas.height / dpr;
-  const off = document.createElement('canvas');
-  off.width  = dw * scale + margin * 2;
-  off.height = dh * scale + capH + margin * 2;
-  const octx = off.getContext('2d');
-  octx.fillStyle = '#ffffff';
-  octx.fillRect(0, 0, off.width, off.height);
-  octx.save();
-  octx.scale(scale, scale);
-  octx.drawImage(srcCanvas, margin / scale, margin / scale, dw, dh);
-  octx.restore();
-  octx.font = `${10 * scale}px 'Roboto Mono', monospace`;
-  octx.fillStyle = '#9ca3af';
-  octx.textAlign = 'left';
-  const maxW = off.width - margin * 2;
-  const words = caption.split(' ');
-  let line = '';
-  let y = dh * scale + margin * 2 + 10;
-  words.forEach(w => {
-    const test = line ? line + ' ' + w : w;
-    if (octx.measureText(test).width > maxW) { octx.fillText(line, margin, y); y += 14 * scale; line = w; }
-    else { line = test; }
-  });
-  if (line) octx.fillText(line, margin, y);
-  const a = document.createElement('a');
-  a.download = 'mcb3-vs-311-agencies.png';
-  a.href = off.toDataURL('image/png');
-  a.click();
-}
-
-function toggleEmbed() {
-  const modal = document.getElementById('embedModal');
-  const code = `<iframe src="https://data.nycuriosity.com/nycuriosity_substack_posts/mcb3_history_analysis/agencies-comparison/" width="100%" height="700" frameborder="0" scrolling="no" style="border:1px solid #e5e7eb;border-radius:8px;"></iframe>`;
-  document.getElementById('embedCode').value = code;
-  modal.style.display = 'flex';
-}
-function copyEmbed() { const ta = document.getElementById('embedCode'); ta.select(); document.execCommand('copy'); }
 document.getElementById('embedModal').addEventListener('click', function(e) { if (e.target === this) this.style.display = 'none'; });
+
+/* Inline onclick attributes need these on the global object. */
+window.downloadCSV       = downloadCSV;
+window.toggleSharedOnly  = toggleSharedOnly;
+window.toggleDropdown    = toggleDropdown;
+window.selectAll         = selectAll;
+window.clearAll          = clearAll;
+
+});
 </script>
 </body>
 </html>

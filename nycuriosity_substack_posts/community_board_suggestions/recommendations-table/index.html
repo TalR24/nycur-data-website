@@ -12,7 +12,8 @@
   <meta property="og:description" content="The full reform table from NYCuriosity's community boards article: 14 recommendations across members, meetings, and structure, with who acts and what each one takes.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/chart.css">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -121,26 +122,6 @@
     main { flex: 1; padding: clamp(28px, 4vw, 48px) clamp(20px, 5vw, 48px); }
     .main-inner { max-width: 960px; margin: 0 auto; }
 
-    .chart-actions { display: flex; gap: 8px; margin-bottom: 16px; }
-    .action-btn { display: inline-flex; align-items: center; gap: 6px; background: var(--surface); color: var(--text-muted); font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600; padding: 6px 14px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; transition: all 0.15s; }
-    .action-btn:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
-    .action-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-
-    .chart-box {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow-sm);
-      overflow: hidden;
-    }
-    .chart-pad { padding: clamp(20px, 4vw, 32px); }
-    .chart-title {
-      font-family: 'Roboto Mono', monospace; font-size: 1rem; font-weight: 700;
-      letter-spacing: -0.02em; margin-bottom: 4px;
-    }
-    .chart-subtitle { font-size: 0.83rem; color: var(--text-muted); margin-bottom: 18px; }
-
-    .table-wrap { width: 100%; overflow-x: auto; }
     table { border-collapse: collapse; width: 100%; min-width: 720px; }
     thead th {
       font-family: 'Roboto Mono', monospace; font-size: 0.7rem; font-weight: 700;
@@ -164,12 +145,6 @@
     .cat-members  { color: #2563eb; background: #eff6ff; border: 1px solid #bfdbfe; }
     .cat-meetings { color: #16a34a; background: #f0fdf4; border: 1px solid #bbf7d0; }
     .cat-structure{ color: #7c3aed; background: #f5f3ff; border: 1px solid #ddd6fe; }
-
-    .chart-attribution {
-      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
-      padding: 12px 16px; border-top: 1px solid var(--border); background: var(--bg);
-      font-size: 0.78rem; color: var(--text-faint); font-family: 'Roboto Mono', monospace;
-    }
 
     .footnotes {
       margin-top: 16px; padding: 14px 18px;
@@ -203,6 +178,7 @@
     .footer-support svg { flex-shrink: 0; }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
+  <script defer src="/assets/chart.js"></script>
   <script defer src="/assets/site.js"></script>
 </head>
 <body>
@@ -258,16 +234,17 @@
 <main>
   <div class="main-inner">
 
-    <div class="chart-actions">
-      <button class="action-btn" onclick="downloadBox(this, 'recBox', 'community-board-recommendations-table.png')">&#11015; Download PNG</button>
-      <button class="action-btn" onclick="showEmbed()">&#60;/&#62; Embed</button>
+    <div class="c-actions">
+      <button class="c-action-btn" onclick="downloadChart(this)">&#11015; Download PNG</button>
+      <button class="c-action-btn" onclick="showEmbed()">&#60;/&#62; Embed</button>
     </div>
 
-    <div class="chart-box" id="recBox">
-      <div class="chart-pad">
-        <div class="chart-title">Suggestions to improve NYC community boards</div>
-        <div class="chart-subtitle">Each recommendation with the actor who can deliver it and what it takes. Categories follow the article's structure.</div>
-        <div class="table-wrap">
+    <figure class="chart-card" id="chart-box" data-slug="community-board-recommendations-table">
+      <div class="c-head">
+        <h2 class="c-title">Six of the 14 recommendations change who serves on boards, four change how meetings run, and four change the structure around them</h2>
+        <p class="c-deck">Every recommendation from the article, with the actor who can deliver it and what it would take. Only the last one comes with a dollar figure attached.</p>
+      </div>
+        <div class="c-plot c-plot--scroll">
           <table>
             <thead>
               <tr>
@@ -380,11 +357,14 @@
             </tbody>
           </table>
         </div>
-      </div>
-      <div class="chart-attribution">
-        <span>Created by Tal Roded · NYCuriosity</span>
-      </div>
-    </div>
+
+      <figcaption class="c-foot">
+        <div class="c-foot-text">
+          <span>Source: NYCuriosity analysis, drawing on the <a href="https://www.nyc.gov/assets/communityboards/downloads/FINAL-Future-of-CBs-Report.pdf" target="_blank" rel="noopener">Future of Community Boards Working Group</a> report (2021) and the Comptroller's 2024 appointments audit</span>
+          <span>Note: the roughly $15M for recommendation 14 is the author's estimate, one planner line on each of the 59 boards plus a baseline increase.</span>
+        </div>
+      </figcaption>
+    </figure>
 
     <div class="footnotes">
       <p><strong>Sources informing the recommendations:</strong> <a href="https://www.nyc.gov/assets/communityboards/downloads/FINAL-Future-of-CBs-Report.pdf" target="_blank" rel="noopener">Future of Community Boards Working Group Final Report</a> (December 2021); NYC Comptroller, <a href="https://comptroller.nyc.gov/wp-content/uploads/2025/07/Borough-Presidents-Final-Audit-Report.pdf" target="_blank" rel="noopener">audit of borough president board appointments</a> (October 2024); <a href="https://intro.nyc/local-laws/2013-103" target="_blank" rel="noopener">Local Law 103 of 2013</a>; NY Public Officers Law <a href="https://www.nysenate.gov/legislation/laws/PBO/103-A" target="_blank" rel="noopener">§103-a</a>; the <a href="https://www.nyc.gov/site/civicengagement/news/nyc-launches-better-public-meetings-nyc-initiative.page" target="_blank" rel="noopener">CEC's Better Public Meetings NYC initiative</a>; and the LA <a href="https://neighborhoodempowerment.lacity.gov/about-neighborhood-councils/" target="_blank" rel="noopener">Department of Neighborhood Empowerment</a> model.</p>
@@ -420,35 +400,6 @@
     </nav>
   </div>
 </footer>
-
-<script>
-  async function downloadBox(btn, boxId, filename) {
-    const orig = btn.innerHTML;
-    btn.innerHTML = '⏳ Capturing…'; btn.disabled = true;
-    try {
-      const box = document.getElementById(boxId);
-      const dataUrl = await htmlToImage.toPng(box, { backgroundColor: '#ffffff', pixelRatio: 2 });
-      const a = document.createElement('a');
-      a.download = filename;
-      a.href = dataUrl; a.click();
-    } finally { btn.innerHTML = orig; btn.disabled = false; }
-  }
-  function showEmbed() {
-    const url = location.origin + location.pathname;
-    document.getElementById('embedCode').value =
-      `<iframe src="${url}" width="960" height="1400" frameborder="0" style="border:1px solid #e5e7eb; border-radius:8px;" loading="lazy"></iframe>`;
-    document.getElementById('embedModal').style.display = 'flex';
-  }
-  function closeEmbed() { document.getElementById('embedModal').style.display = 'none'; }
-  function copyEmbed() {
-    const ta = document.getElementById('embedCode'); ta.select();
-    navigator.clipboard.writeText(ta.value).then(() => {
-      const btn = document.querySelector('.embed-copy-btn');
-      btn.textContent = '✓ Copied!';
-      setTimeout(() => btn.textContent = 'Copy code', 2000);
-    });
-  }
-</script>
 
 </body>
 </html>

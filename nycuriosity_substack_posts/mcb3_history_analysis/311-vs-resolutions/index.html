@@ -15,8 +15,11 @@
   <meta name="twitter:image"      content="https://data.nycuriosity.com/website_logo.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/chart.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
+  <script defer src="/assets/chart.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -59,15 +62,7 @@
     .insight-pill .ip-num.green { color:var(--green); }
     .insight-pill .ip-label { font-size:0.73rem; color:var(--text-muted); line-height:1.3; }
 
-    .chart-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:28px; box-shadow:var(--shadow-sm); margin-bottom:24px; }
-    .chart-title-row { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:18px; flex-wrap:wrap; }
-    .chart-title { font-family:'Roboto Mono',monospace; font-size:0.95rem; font-weight:700; color:var(--text); }
-    .chart-subtitle { font-size:0.8rem; color:var(--text-muted); margin-top:4px; }
-    .chart-actions { display:flex; gap:8px; flex-shrink:0; }
-    .action-btn { font-family:'Roboto Mono',monospace; font-size:0.72rem; font-weight:600; padding:5px 12px; border-radius:6px; border:1px solid var(--border-mid); background:var(--bg); color:var(--text-muted); cursor:pointer; transition:all 0.15s; }
-    .action-btn:hover { border-color:var(--blue); color:var(--blue); background:var(--blue-light); }
-
-    .chart-wrap { position:relative; width:100%; height:400px; }
+    .canvas-box { position:relative; width:100%; height:400px; }
 
     .resolution-legend { margin-top:20px; display:flex; flex-direction:column; gap:10px; }
     .res-legend-label { font-family:'Roboto Mono',monospace; font-size:0.68rem; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-faint); margin-bottom:4px; }
@@ -79,8 +74,6 @@
     .res-text { font-size:0.82rem; color:var(--text-mid); line-height:1.5; }
     .res-text strong { color:var(--text); }
     .res-lag { font-family:'Roboto Mono',monospace; font-size:0.72rem; color:var(--text-faint); margin-top:3px; display:block; }
-
-    .caption { font-size:0.78rem; color:var(--text-faint); line-height:1.6; margin-top:12px; }
 
     .methodology { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:24px 28px; }
     .methodology h3 { font-family:'Roboto Mono',monospace; font-size:0.82rem; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-faint); margin-bottom:14px; }
@@ -160,19 +153,19 @@
     </div>
   </div>
 
-  <div class="chart-card">
-    <div class="chart-title-row">
-      <div>
-        <div class="chart-title">Noise – Street/Sidewalk complaints in CD3, Jan 2020 – Dec 2025</div>
-        <div class="chart-subtitle">Monthly 311 complaint counts · dashed lines mark MCB3 resolutions on the same topic</div>
-      </div>
-      <div class="chart-actions">
-        <button class="action-btn" onclick="downloadPNG()">↓ PNG</button>
-        <button class="action-btn" onclick="toggleEmbed()">Embed</button>
-      </div>
+  <div class="c-actions">
+    <button class="c-action-btn" onclick="downloadChart(this)">&#11015; Download PNG</button>
+    <button class="c-action-btn" onclick="showEmbed()">&#60;/&#62; Embed</button>
+  </div>
+
+  <figure class="chart-card" id="chart-box" data-slug="311-noise-vs-mcb3-resolutions">
+    <div class="c-head">
+      <h2 class="c-title">MCB3's first noise resolution came one month after complaints peaked at 7,314, and its broadest response took 13 months</h2>
+      <p class="c-deck">Monthly 311 "Noise &ndash; Street/Sidewalk" complaints in Manhattan Community District 3, January 2020 through December 2025. Dashed vertical lines mark the three MCB3 resolutions on the same subject.</p>
     </div>
 
-    <div class="chart-wrap">
+    <div class="c-plot">
+    <div class="canvas-box">
       <canvas id="mainChart"></canvas>
     </div>
 
@@ -200,17 +193,23 @@
         </div>
       </div>
     </div>
+    </div>
 
-    <p class="caption">Noise – Street/Sidewalk 311 complaints in Manhattan Community District 3, January 2020 – December 2025. Dashed vertical lines mark MCB3 board resolution dates on corresponding noise and open-streets issues. Source: <a href="https://data.cityofnewyork.us/Social-Services/311-Service-Requests-from-2010-to-Present/erm2-nwe9" style="color:var(--blue);text-decoration:none">NYC Open Data 311 Service Requests (erm2-nwe9)</a>; MCB3 meeting minutes via NYC.gov.</p>
-  </div>
+    <figcaption class="c-foot">
+      <div class="c-foot-text">
+        <span>Source: <a href="https://data.cityofnewyork.us/Social-Services/311-Service-Requests-from-2010-to-Present/erm2-nwe9" target="_blank" rel="noopener">NYC Open Data 311 Service Requests (erm2-nwe9)</a>; MCB3 meeting minutes via NYC.gov</span>
+        <span>Note: one complaint type only, "Noise &ndash; Street/Sidewalk". Resolutions were matched to the spike by reading their text, not by keyword.</span>
+      </div>
+    </figcaption>
+  </figure>
 
   <div id="embedModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:999;align-items:center;justify-content:center;">
     <div style="background:#fff;border-radius:10px;padding:28px;max-width:560px;width:90%;position:relative;">
       <div style="font-family:'Roboto Mono',monospace;font-size:0.82rem;font-weight:700;margin-bottom:12px;">Embed this chart</div>
       <textarea id="embedCode" readonly style="width:100%;height:90px;font-family:'Roboto Mono',monospace;font-size:0.7rem;border:1px solid #e5e7eb;border-radius:6px;padding:10px;resize:none;background:#f8faff;color:#374151;"></textarea>
       <div style="display:flex;gap:8px;margin-top:10px;">
-        <button onclick="copyEmbed()" style="font-family:'Roboto Mono',monospace;font-size:0.72rem;font-weight:600;padding:6px 14px;border-radius:6px;border:1px solid #2563eb;background:#2563eb;color:#fff;cursor:pointer;">Copy</button>
-        <button onclick="document.getElementById('embedModal').style.display='none'" style="font-family:'Roboto Mono',monospace;font-size:0.72rem;font-weight:600;padding:6px 14px;border-radius:6px;border:1px solid #d1d5db;background:#fff;color:#6b7280;cursor:pointer;">Close</button>
+        <button class="embed-copy-btn" onclick="copyEmbed()" style="font-family:'Roboto Mono',monospace;font-size:0.72rem;font-weight:600;padding:6px 14px;border-radius:6px;border:1px solid #2563eb;background:#2563eb;color:#fff;cursor:pointer;">Copy code</button>
+        <button onclick="closeEmbed()" style="font-family:'Roboto Mono',monospace;font-size:0.72rem;font-weight:600;padding:6px 14px;border-radius:6px;border:1px solid #d1d5db;background:#fff;color:#6b7280;cursor:pointer;">Close</button>
       </div>
     </div>
   </div>
@@ -237,6 +236,8 @@
 </footer>
 
 <script>
+document.addEventListener('DOMContentLoaded', function () {
+
 const MONTHS = [
   "Jan '20","Feb '20","Mar '20","Apr '20","May '20","Jun '20","Jul '20","Aug '20","Sep '20","Oct '20","Nov '20","Dec '20",
   "Jan '21","Feb '21","Mar '21","Apr '21","May '21","Jun '21","Jul '21","Aug '21","Sep '21","Oct '21","Nov '21","Dec '21",
@@ -257,9 +258,9 @@ const DATA = [
 
 // Resolution annotation events: { index (0-based), label, color, dash }
 const RESOLUTIONS = [
-  { index: 6,  label: "①", color: "#dc2626", dash: [6, 3] },  // Jul 2020
+  { index: 6,  label: "①", color: "#dc2626", dash: [4, 4] },  // Jul 2020
   { index: 7,  label: "②", color: "#d97706", dash: [4, 4] },  // Aug 2020
-  { index: 18, label: "③", color: "#4f46e5", dash: [8, 3] },  // Jul 2021
+  { index: 18, label: "③", color: "#4f46e5", dash: [4, 4] },  // Jul 2021
 ];
 
 const PEAK_INDEX = 5; // Jun 2020
@@ -366,39 +367,29 @@ const chart = new Chart(ctx, {
             };
             return notes[i] || null;
           }
-        },
-        backgroundColor: 'rgba(17,24,39,0.92)',
-        titleFont: { family: "'Roboto Mono', monospace", size: 11, weight: '700' },
-        bodyFont: { family: "'Roboto Mono', monospace", size: 11 },
-        padding: 10,
-        cornerRadius: 6,
+        }
       }
     },
     scales: {
       x: {
-        grid: { color: '#f3f4f6', drawTicks: false },
+        grid: { drawTicks: false },
         border: { display: false },
         ticks: {
-          font: { family: "'Roboto Mono', monospace", size: 10 },
-          color: '#9ca3af',
           maxRotation: 45,
           autoSkip: true,
           maxTicksLimit: 18,
         }
       },
       y: {
-        grid: { color: '#f3f4f6' },
         border: { display: false },
         ticks: {
-          font: { family: "'Roboto Mono', monospace", size: 10 },
-          color: '#9ca3af',
           callback: v => v >= 1000 ? (v/1000).toFixed(1) + 'k' : v,
         },
         title: {
           display: true,
           text: 'Monthly 311 complaints',
           font: { family: "'Roboto Mono', monospace", size: 10 },
-          color: '#9ca3af',
+          color: '#6b7280',
           padding: { bottom: 6 }
         }
       }
@@ -406,59 +397,10 @@ const chart = new Chart(ctx, {
   }
 });
 
-function downloadPNG() {
-  const srcCanvas = chart.canvas;
-  const caption = 'Noise – Street/Sidewalk complaints in Manhattan Community District 3, Jan 2020 – Dec 2025. Dashed lines mark MCB3 resolutions. Source: NYC Open Data 311 (erm2-nwe9); MCB3 meeting minutes.';
-  const scale = 2;
-  const margin = 16 * scale;
-  const capH = 40 * scale;
-  const off = document.createElement('canvas');
-  off.width  = (srcCanvas.width  + margin * 2) * scale / window.devicePixelRatio;
-  off.height = (srcCanvas.height + capH + margin * 2) * scale / window.devicePixelRatio;
-  const octx = off.getContext('2d');
-  octx.fillStyle = '#ffffff';
-  octx.fillRect(0, 0, off.width, off.height);
-  const dpr = window.devicePixelRatio || 1;
-  const dw = srcCanvas.width / dpr;
-  const dh = srcCanvas.height / dpr;
-  octx.drawImage(srcCanvas, margin / scale, margin / scale, dw, dh);
-  octx.font = `${10 * scale / dpr}px 'Roboto Mono', monospace`;
-  octx.fillStyle = '#9ca3af';
-  octx.textAlign = 'left';
-  const maxW = off.width - margin * 2 / dpr;
-  const words = caption.split(' ');
-  let line = '';
-  let y = (margin + dh + 14) / dpr * scale;
-  words.forEach(w => {
-    const test = line ? line + ' ' + w : w;
-    if (octx.measureText(test).width > maxW) {
-      octx.fillText(line, margin / dpr, y);
-      y += 14;
-      line = w;
-    } else {
-      line = test;
-    }
-  });
-  if (line) octx.fillText(line, margin / dpr, y);
-  const a = document.createElement('a');
-  a.download = '311-noise-vs-mcb3-resolutions.png';
-  a.href = off.toDataURL('image/png');
-  a.click();
-}
-
-function toggleEmbed() {
-  const modal = document.getElementById('embedModal');
-  const code = `<iframe src="https://data.nycuriosity.com/nycuriosity_substack_posts/mcb3_history_analysis/311-vs-resolutions/" width="100%" height="640" frameborder="0" scrolling="no" style="border:1px solid #e5e7eb;border-radius:8px;"></iframe>`;
-  document.getElementById('embedCode').value = code;
-  modal.style.display = 'flex';
-}
-function copyEmbed() {
-  const ta = document.getElementById('embedCode');
-  ta.select();
-  document.execCommand('copy');
-}
 document.getElementById('embedModal').addEventListener('click', function(e) {
   if (e.target === this) this.style.display = 'none';
+});
+
 });
 </script>
 </body>

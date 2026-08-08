@@ -12,7 +12,8 @@
   <meta property="og:description" content="Ninety-four years of West 4th Street–Washington Square: built in 1932 with a lower level for a line that didn't exist yet, completed in 1967, renewed in 2026.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/chart.css">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -128,29 +129,9 @@
     main { flex: 1; padding: clamp(28px, 4vw, 48px) clamp(20px, 5vw, 48px); }
     .main-inner { max-width: 900px; margin: 0 auto; }
 
-    /* ── CHART ACTIONS ───────────────────────────────────── */
-    .chart-actions { display: flex; gap: 8px; margin-bottom: 16px; }
-    .action-btn { display: inline-flex; align-items: center; gap: 6px; background: var(--surface); color: var(--text-muted); font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600; padding: 6px 14px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; transition: all 0.15s; }
-    .action-btn:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
-    .action-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-
-    /* ── CHART BOX / TIMELINE ────────────────────────────── */
-    #chart-box {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow-sm);
-      overflow: hidden;
-    }
-    .tl-wrap { padding: clamp(20px, 4vw, 36px); }
-    .tl-title {
-      font-family: 'Roboto Mono', monospace; font-size: 1rem; font-weight: 700;
-      letter-spacing: -0.02em; margin-bottom: 4px;
-    }
-    .tl-subtitle { font-size: 0.83rem; color: var(--text-muted); margin-bottom: 22px; }
-
+    /* ── TIMELINE ────────────────────────────────────────── */
     /* proportional overview strip */
-    .tl-map { margin-bottom: 30px; }
+    .tl-map { margin: 8px 0 30px; }
     .tl-map-track { position: relative; height: 14px; }
     .tl-map-base { position: absolute; left: 0; right: 0; top: 50%; height: 4px; transform: translateY(-50%); background: var(--border); border-radius: 2px; }
     .tl-map-seg { position: absolute; top: 50%; height: 10px; transform: translateY(-50%); border-radius: 5px; min-width: 6px; }
@@ -233,15 +214,6 @@
       background: var(--bg); border: 1px dashed var(--border); border-radius: 20px; padding: 4px 12px;
     }
 
-    /* ── ATTRIBUTION ─────────────────────────────────────── */
-    .chart-attribution {
-      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
-      padding: 12px 16px; border-top: 1px solid var(--border); background: var(--bg);
-      font-size: 0.78rem; color: var(--text-faint); font-family: 'Roboto Mono', monospace;
-    }
-    .chart-attribution a { color: var(--blue); text-decoration: none; }
-    .chart-attribution a:hover { text-decoration: underline; }
-
     /* ── FOOTNOTES ───────────────────────────────────────── */
     .footnotes {
       margin-top: 16px; padding: 14px 18px;
@@ -277,6 +249,7 @@
     .footer-support svg { flex-shrink: 0; }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
+  <script defer src="/assets/chart.js"></script>
   <script defer src="/assets/site.js"></script>
 </head>
 <body>
@@ -333,15 +306,17 @@
 <main>
   <div class="main-inner">
 
-    <div class="chart-actions">
-      <button class="action-btn" onclick="downloadChart(this)">&#11015; Download PNG</button>
-      <button class="action-btn" onclick="showEmbed()">&#60;/&#62; Embed</button>
+    <div class="c-actions">
+      <button class="c-action-btn" onclick="downloadChart(this)">&#11015; Download PNG</button>
+      <button class="c-action-btn" onclick="showEmbed()">&#60;/&#62; Embed</button>
     </div>
 
-    <div id="chart-box">
-      <div class="tl-wrap">
-        <div class="tl-title">West 4th Street–Washington Square, 1932–2026</div>
-        <div class="tl-subtitle">Two bursts of building, four quiet decades of wear, then a two-year renewal.</div>
+    <figure class="chart-card" id="chart-box" data-slug="west-4th-street-station-timeline">
+      <div class="c-head">
+        <h2 class="c-title">West 4th Street's eight-track design opened in 1932 and did not run as drawn until 1967</h2>
+        <p class="c-deck">Ninety-four years at W 4 St&ndash;Washington Square: two bursts of building, four quiet decades of wear, then a two-year renewal.</p>
+      </div>
+      <div class="c-plot">
 
         <div class="tl-map" aria-hidden="true">
           <div class="tl-map-track">
@@ -459,10 +434,13 @@
         </div>
       </div>
 
-      <div class="chart-attribution">
-        <span>Created by Tal Roded · NYCuriosity · Sources: NYT archives (1932–2005), MTA, National Archives</span>
-      </div>
-    </div>
+      <figcaption class="c-foot">
+        <div class="c-foot-text">
+          <span>Source: New York Times archives (1932&ndash;2008), MTA contractor announcements, <a href="https://catalog.archives.gov/id/75313901" target="_blank" rel="noopener">National Archives</a></span>
+          <span>Note: the overview strip above is drawn to scale across 1932&ndash;2026.</span>
+        </div>
+      </figcaption>
+    </figure>
 
     <div class="footnotes">
       <p><strong>Sources:</strong> Opening dates and service history from contemporaneous New York Times coverage (Sept 10, 1932; Aug 22, 1932; Dec 16, 1940; <a href="https://www.nytimes.com/1961/04/19/archives/construction-of-new-ind-tunnel-for-6th-ave-line-begins-today.html" target="_blank" rel="noopener">Apr 19, 1961</a>) as compiled in the station's <a href="https://en.wikipedia.org/wiki/West_Fourth_Street%E2%80%93Washington_Square_station" target="_blank" rel="noopener">Wikipedia article</a>. Name origin from the New York Times <a href="https://www.nytimes.com/2008/09/14/nyregion/thecity/14fyi.html" target="_blank" rel="noopener">"F.Y.I." column (Sept 14, 2008)</a>; tile-color anecdote from Arthur Warner, "The City's New Underground Province," New York Times, Nov 22, 1931. Elevator failure figures from the New York Times ("$1 Billion Later, New York's Subway Elevators Still Fail," May 19, 2008) and WNYC (Oct 28, 2005). National Register listing from the <a href="https://catalog.archives.gov/id/75313901" target="_blank" rel="noopener">National Archives</a> (registration documentation, July 2004). 2025–2026 escalator and elevator completions from MTA contractor announcements (Forte Construction, J-Track/Entuitive).</p>
@@ -498,35 +476,6 @@
     </nav>
   </div>
 </footer>
-
-<script>
-  async function downloadChart(btn) {
-    const orig = btn.innerHTML;
-    btn.innerHTML = '⏳ Capturing…'; btn.disabled = true;
-    try {
-      const el = document.getElementById('chart-box');
-      const dataUrl = await htmlToImage.toPng(el, { backgroundColor: '#ffffff', pixelRatio: 2 });
-      const a = document.createElement('a');
-      a.download = 'west-4th-street-station-timeline.png';
-      a.href = dataUrl; a.click();
-    } finally { btn.innerHTML = orig; btn.disabled = false; }
-  }
-  function showEmbed() {
-    const url = location.origin + location.pathname;
-    document.getElementById('embedCode').value =
-      `<iframe src="${url}" width="900" height="2900" frameborder="0" style="border:1px solid #e5e7eb; border-radius:8px;" loading="lazy"></iframe>`;
-    document.getElementById('embedModal').style.display = 'flex';
-  }
-  function closeEmbed() { document.getElementById('embedModal').style.display = 'none'; }
-  function copyEmbed() {
-    const ta = document.getElementById('embedCode'); ta.select();
-    navigator.clipboard.writeText(ta.value).then(() => {
-      const btn = document.querySelector('.embed-copy-btn');
-      btn.textContent = '✓ Copied!';
-      setTimeout(() => btn.textContent = 'Copy code', 2000);
-    });
-  }
-</script>
 
 </body>
 </html>

@@ -12,7 +12,8 @@
   <meta property="og:description" content="Over the decade to FY2027, the Mayor's Office budget grew 61% and the citywide budget 47%. Community board budgets grew 30%, roughly even with inflation.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/chart.css">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -50,7 +51,7 @@
       padding: 0 clamp(20px, 5vw, 48px);
     }
     .header-inner {
-      max-width: 900px; margin: 0 auto; height: 56px;
+      max-width: 1100px; margin: 0 auto; height: 56px;
       display: flex; align-items: center; gap: 16px;
     }
     .back-link {
@@ -86,7 +87,7 @@
       border-bottom: 1px solid var(--border);
       padding: clamp(32px, 5vw, 52px) clamp(20px, 5vw, 48px);
     }
-    .hero-inner { max-width: 900px; margin: 0 auto; }
+    .hero-inner { max-width: 1100px; margin: 0 auto; }
     .breadcrumb {
       font-family: 'Roboto Mono', monospace; font-size: 0.72rem;
       color: var(--text-faint); margin-bottom: 14px;
@@ -121,38 +122,13 @@
     .btn-outline:hover { color: var(--blue); border-color: var(--blue-mid); background: var(--blue-light); }
 
     main { flex: 1; padding: clamp(28px, 4vw, 48px) clamp(20px, 5vw, 48px); }
-    .main-inner { max-width: 900px; margin: 0 auto; }
-
-    .chart-actions { display: flex; gap: 8px; margin-bottom: 16px; }
-    .action-btn { display: inline-flex; align-items: center; gap: 6px; background: var(--surface); color: var(--text-muted); font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600; padding: 6px 14px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; transition: all 0.15s; }
-    .action-btn:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
-    .action-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-
-    .chart-box {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow-sm);
-      overflow: hidden;
-    }
-    .chart-pad { padding: clamp(20px, 4vw, 32px); }
-    .chart-title {
-      font-family: 'Roboto Mono', monospace; font-size: 1rem; font-weight: 700;
-      letter-spacing: -0.02em; margin-bottom: 4px;
-    }
-    .chart-subtitle { font-size: 0.83rem; color: var(--text-muted); margin-bottom: 18px; }
-
-    .legend { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 18px; align-items: center; }
-    .legend-item { display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: var(--text-mid); font-weight: 500; }
+    .main-inner { max-width: 1100px; margin: 0 auto; }
 
     .line-chart-wrap { width: 100%; overflow-x: auto; }
     .line-chart-wrap svg { width: 100%; height: auto; min-width: 640px; display: block; }
-
-    .chart-attribution {
-      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
-      padding: 12px 16px; border-top: 1px solid var(--border); background: var(--bg);
-      font-size: 0.78rem; color: var(--text-faint); font-family: 'Roboto Mono', monospace;
-    }
+    /* The plot is at most ~840px wide inside a 900px column, so a 1000-unit
+       viewBox renders at 0.84 scale. Sizes are raised to land back on the
+       11px / 12px the chart system intends. */
 
     .context-box {
       margin-top: 28px; padding: 16px 20px;
@@ -184,7 +160,7 @@
     .embed-copy-btn:hover { background: #1d4ed8; }
 
     footer { background: var(--surface); border-top: 1px solid var(--border); padding: 20px clamp(20px, 5vw, 48px); margin-top: auto; }
-    .footer-inner { max-width: 900px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+    .footer-inner { max-width: 1100px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
     .footer-copy { font-size: 0.8rem; color: var(--text-faint); }
     .footer-links { display: flex; gap: 20px; align-items: center; }
     .footer-links a { font-size: 0.8rem; color: var(--text-muted); text-decoration: none; transition: color 0.15s; }
@@ -194,6 +170,7 @@
     .footer-support svg { flex-shrink: 0; }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
+  <script defer src="/assets/chart.js"></script>
   <script defer src="/assets/site.js"></script>
 </head>
 <body>
@@ -250,28 +227,30 @@
 <main>
   <div class="main-inner">
 
-    <div class="chart-actions">
-      <button class="action-btn" onclick="downloadBox(this, 'growthBox', 'nyc-community-board-budget-growth.png')">&#11015; Download PNG</button>
-      <button class="action-btn" onclick="showEmbed()">&#60;/&#62; Embed</button>
+    <div class="c-actions">
+      <button class="c-action-btn" onclick="downloadChart(this)">&#11015; Download PNG</button>
+      <button class="c-action-btn" onclick="showEmbed()">&#60;/&#62; Embed</button>
     </div>
 
-    <div class="chart-box" id="growthBox">
-      <div class="chart-pad">
-        <div class="chart-title">Adopted budget growth, indexed to FY2017 = 100</div>
-        <div class="chart-subtitle">Community boards (all 59 combined) vs. the Mayoralty and the total citywide expense budget, FY2017–FY2027 adopted budgets.</div>
-        <div class="legend">
-          <div class="legend-item"><svg width="22" height="6"><line x1="0" y1="3" x2="22" y2="3" stroke="#2563eb" stroke-width="3"/></svg> Community boards</div>
-          <div class="legend-item"><svg width="22" height="6"><line x1="0" y1="3" x2="22" y2="3" stroke="#c2410c" stroke-width="3"/></svg> Mayor's Office</div>
-          <div class="legend-item"><svg width="22" height="6"><line x1="0" y1="3" x2="22" y2="3" stroke="#6b7280" stroke-width="2.5" stroke-dasharray="5,4"/></svg> Citywide budget</div>
-        </div>
+    <figure class="chart-card" id="chart-box" data-slug="nyc-community-board-budget-growth">
+      <div class="c-head">
+        <h2 class="c-title">Community board budgets grew 30% over the decade while the citywide budget grew 47%</h2>
+        <p class="c-deck">Adopted budgets indexed to <strong>FY2017 = 100</strong>: all 59 community boards combined, the Mayoralty, and the total city expense budget. Figures are nominal, so the boards' 30% rise is close to flat once inflation is taken out.</p>
+      </div>
+
+      <div class="c-plot">
         <div class="line-chart-wrap">
-          <svg id="growthSvg" viewBox="0 0 860 400" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Line chart of budget growth indexed to fiscal year 2017"></svg>
+          <svg id="growthSvg" viewBox="0 8 1000 386" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Line chart of budget growth indexed to fiscal year 2017: community boards end at 130, the Mayoralty at 161, and the citywide budget at 147."></svg>
         </div>
       </div>
-      <div class="chart-attribution">
-        <span>Created by Tal Roded · NYCuriosity · Source: NYC Open Data, Expense Budget (adopted, FY2017–FY2027)</span>
-      </div>
-    </div>
+
+      <figcaption class="c-foot">
+        <div class="c-foot-text">
+          <span>Source: <a href="https://data.cityofnewyork.us/City-Government/Expense-Budget/mwzb-yiwb" target="_blank" rel="noopener">NYC Open Data, Expense Budget</a> (adopted, FY2017&ndash;FY2027)</span>
+          <span>Note: boards went from $17.1M to $22.3M, the Mayoralty from $122.1M to $196.1M. The Mayoralty's FY2024 peak is that year's adopted budget, later modified downward.</span>
+        </div>
+      </figcaption>
+    </figure>
 
     <div class="context-box">
       <p><strong>A 30% nominal increase over this decade is roughly a flat budget in real terms.</strong> Consumer prices rose on the order of a third over the same period, meaning the boards' purchasing power ended the decade close to where it started while their responsibilities grew.</p>
@@ -317,7 +296,7 @@
 <script>
   const YEARS = [2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026, 2027];
   const SERIES = [
-    { key: "city",  color: "#6b7280", width: 2.5, dash: "5,4", finalLabel: "Citywide +47%",
+    { key: "city",  color: "#6b7280", width: 2.5, dash: "4 4", finalLabel: "Citywide +47%",
       vals: [100, 104.5, 108.4, 113.3, 117.8, 112.1, 125.3, 128.4, 135.9, 142.5, 146.7] },
     { key: "mayor", color: "#c2410c", width: 3, dash: null, finalLabel: "Mayor's Office +61%",
       vals: [100, 113.1, 112.3, 114.7, 137.9, 126.9, 133.2, 169.6, 149.4, 145.9, 160.6] },
@@ -326,7 +305,7 @@
   ];
 
   const SVG_NS = "http://www.w3.org/2000/svg";
-  const W = 860, H = 400, ML = 48, MR = 178, MT = 18, MB = 36;
+  const W = 1000, H = 400, ML = 56, MR = 208, MT = 18, MB = 36;
   const Y_MIN = 95, Y_MAX = 175;
 
   function xPos(i) { return ML + (i / (YEARS.length - 1)) * (W - ML - MR); }
@@ -341,56 +320,32 @@
 
   const svgRoot = document.getElementById("growthSvg");
 
-  // gridlines + y labels
+  // gridlines + y labels. FY2017 = 100 is the baseline, the rest are gridlines.
   [100, 120, 140, 160].forEach(v => {
-    svgRoot.appendChild(el("line", { x1: ML, y1: yPos(v), x2: W - MR, y2: yPos(v), stroke: "#e5e7eb", "stroke-width": 1, "stroke-dasharray": v === 100 ? "none" : "3,4" }));
-    svgRoot.appendChild(el("text", { x: ML - 8, y: yPos(v) + 4, "text-anchor": "end", "font-family": "'Roboto Mono',monospace", "font-size": 11, fill: "#9ca3af" }, String(v)));
+    svgRoot.appendChild(el("line", {
+      class: v === 100 ? "c-baseline" : "c-grid",
+      x1: ML, y1: yPos(v), x2: W - MR, y2: yPos(v)
+    }));
+    svgRoot.appendChild(el("text", { class: "c-tick", x: ML - 10, y: yPos(v) + 4, "text-anchor": "end" }, String(v)));
   });
 
   // x labels
   YEARS.forEach((yr, i) => {
     if (i % 2 === 0) {
-      svgRoot.appendChild(el("text", { x: xPos(i), y: H - 12, "text-anchor": "middle", "font-family": "'Roboto Mono',monospace", "font-size": 11, fill: "#6b7280" }, "FY" + String(yr).slice(2)));
+      svgRoot.appendChild(el("text", { class: "c-tick", x: xPos(i), y: H - 12, "text-anchor": "middle" }, "FY" + String(yr).slice(2)));
     }
   });
 
-  // series lines, end dots, end labels
+  // series lines, end dots, and direct end labels, which replace the legend
   SERIES.forEach(s => {
     const pts = s.vals.map((v, i) => xPos(i).toFixed(1) + "," + yPos(v).toFixed(1)).join(" ");
-    const attrs = { points: pts, fill: "none", stroke: s.color, "stroke-width": s.width, "stroke-linejoin": "round", "stroke-linecap": "round" };
+    const attrs = { class: "c-series", points: pts, stroke: s.color, "stroke-width": s.width };
     if (s.dash) attrs["stroke-dasharray"] = s.dash;
     svgRoot.appendChild(el("polyline", attrs));
     const lastVal = s.vals[s.vals.length - 1];
-    svgRoot.appendChild(el("circle", { cx: xPos(YEARS.length - 1), cy: yPos(lastVal), r: 4, fill: s.color }));
-    svgRoot.appendChild(el("text", { x: xPos(YEARS.length - 1) + 10, y: yPos(lastVal) + 4, "font-family": "'Roboto Mono',monospace", "font-size": 12, "font-weight": 700, fill: s.color }, s.finalLabel));
+    svgRoot.appendChild(el("circle", { cx: xPos(YEARS.length - 1), cy: yPos(lastVal), r: 4.5, fill: s.color }));
+    svgRoot.appendChild(el("text", { class: "c-val", x: xPos(YEARS.length - 1) + 12, y: yPos(lastVal) + 5, fill: s.color }, s.finalLabel));
   });
-
-  async function downloadBox(btn, boxId, filename) {
-    const orig = btn.innerHTML;
-    btn.innerHTML = '⏳ Capturing…'; btn.disabled = true;
-    try {
-      const box = document.getElementById(boxId);
-      const dataUrl = await htmlToImage.toPng(box, { backgroundColor: '#ffffff', pixelRatio: 2 });
-      const a = document.createElement('a');
-      a.download = filename;
-      a.href = dataUrl; a.click();
-    } finally { btn.innerHTML = orig; btn.disabled = false; }
-  }
-  function showEmbed() {
-    const url = location.origin + location.pathname;
-    document.getElementById('embedCode').value =
-      `<iframe src="${url}" width="900" height="820" frameborder="0" style="border:1px solid #e5e7eb; border-radius:8px;" loading="lazy"></iframe>`;
-    document.getElementById('embedModal').style.display = 'flex';
-  }
-  function closeEmbed() { document.getElementById('embedModal').style.display = 'none'; }
-  function copyEmbed() {
-    const ta = document.getElementById('embedCode'); ta.select();
-    navigator.clipboard.writeText(ta.value).then(() => {
-      const btn = document.querySelector('.embed-copy-btn');
-      btn.textContent = '✓ Copied!';
-      setTimeout(() => btn.textContent = 'Copy code', 2000);
-    });
-  }
 </script>
 
 </body>

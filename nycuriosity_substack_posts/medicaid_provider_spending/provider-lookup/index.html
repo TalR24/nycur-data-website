@@ -12,7 +12,8 @@
   <meta property="og:description" content="Search and filter 314,121 Medicaid provider-year payment records in New York, Texas, and California by procedure code, payments, volume, and year-over-year growth.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/chart.css">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -123,36 +124,6 @@
 
     main { flex: 1; padding: clamp(28px, 4vw, 48px) clamp(20px, 5vw, 48px); }
     .main-inner { max-width: 900px; margin: 0 auto; }
-
-    .chart-actions { display:flex; gap:8px; margin-bottom:16px; }
-    .action-btn { display:inline-flex; align-items:center; gap:6px; background:var(--surface); color:var(--text-muted); font-family:'Roboto Mono',monospace; font-size:0.75rem; font-weight:600; padding:6px 14px; border-radius:6px; border:1px solid var(--border); cursor:pointer; transition:all 0.15s; }
-    .action-btn:hover { border-color:var(--blue); color:var(--blue); background:var(--blue-light); }
-    .action-btn:disabled { opacity:0.6; cursor:not-allowed; }
-
-    #chart-box {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--radius); box-shadow: var(--shadow-sm);
-      padding: 20px 20px 0; overflow: hidden;
-    }
-    .chart-title {
-      font-family: 'Roboto Mono', monospace; font-size: 0.95rem; font-weight: 700;
-      color: var(--text); letter-spacing: -0.02em; margin-bottom: 6px; line-height: 1.35;
-    }
-    .chart-subtitle { font-size: 0.82rem; color: var(--text-muted); margin-bottom: 18px; line-height: 1.55; }
-    .legend { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 18px; align-items: center; }
-    .legend-item { display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: var(--text-mid); font-weight: 500; }
-    .legend-swatch { width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0; }
-
-    .chart-attribution {
-      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
-      padding: 12px 16px; border-top: 1px solid var(--border); background: var(--bg);
-      font-size: 0.78rem; color: var(--text-faint); font-family: 'Roboto Mono', monospace;
-      margin: 20px -20px 0;
-    }
-    .chart-attribution a { color: var(--blue); text-decoration: none; }
-    .chart-attribution a:hover { text-decoration: underline; }
-
-    .chart-block + .chart-block-wrap { margin-top: 28px; }
 
     .context-box {
       margin-top: 28px; padding: 16px 20px;
@@ -290,6 +261,7 @@
 
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
+  <script defer src="/assets/chart.js"></script>
   <script defer src="/assets/site.js"></script>
 </head>
 <body>
@@ -340,10 +312,18 @@
 
 <main>
   <div class="main-inner">
-    <div id="chart-box" style="padding-bottom:0;">
-      <div class="chart-title">Search and filter 314,121 provider-year payment records in New York, Texas, and California</div>
-      <div class="chart-subtitle">One row per provider per year (plus a shaded 2018 to 2024 total row per provider) for every billing organization paid at least $100,000 overall. Filter by procedure code, payments, volume, and year-over-year growth. Click a column header to sort.</div>
+    <div class="c-actions">
+      <button class="c-action-btn" onclick="downloadChart(this)">&#11015; Download PNG</button>
+      <button class="c-action-btn" onclick="showEmbed()">&#60;/&#62; Embed</button>
+    </div>
 
+    <figure class="chart-card" id="chart-box" data-slug="medicaid-provider-lookup">
+      <div class="c-head">
+        <h2 class="c-title">Medicaid paid these 55,501 organizations at least $100,000 each between 2018 and 2024</h2>
+        <p class="c-deck">One row per provider per year (plus a shaded 2018 to 2024 total row per provider) for every billing organization in New York, Texas, and California paid at least $100,000 overall, 314,121 records in all. Filter by procedure code, payments, volume, and year-over-year growth. Click a column header to sort.</p>
+      </div>
+
+      <div class="c-plot">
       <div class="search-row">
         <input type="search" id="searchBox" class="search-input" placeholder="Search provider name, NPI, city, or specialty…" disabled>
         <span class="result-count" id="resultCount">Loading data (about 16 MB)…</span>
@@ -401,10 +381,14 @@
         <span class="page-info" id="pageInfo"></span>
         <button id="nextBtn">Next →</button>
       </div>
-      <div class="chart-attribution">
-        <span>Created by Tal Roded · NYCuriosity · Source: <a href="https://opendata.hhs.gov/datasets/medicaid-provider-spending/" target="_blank" rel="noopener">HHS Open Data, Medicaid Provider Spending by HCPCS</a></span>
       </div>
-    </div>
+      <figcaption class="c-foot">
+        <div class="c-foot-text">
+          <span>Source: <a href="https://opendata.hhs.gov/datasets/medicaid-provider-spending/" target="_blank" rel="noopener">HHS Open Data, Medicaid Provider Spending by HCPCS</a></span>
+          <span>Note: cells under 12 claim lines or 12 beneficiaries are suppressed at the source, so every figure is a floor. 2024 is preliminary. High values and high growth are facts about payments, not accusations.</span>
+        </div>
+      </figcaption>
+    </figure>
 
     <div class="context-box">
       <p><strong>This is the "how much did Company X make" table, now at year level.</strong> Type a provider's name for its full payment history, or work the other way: filter to a procedure code and a growth range to see which billers of that code exploded in a given year. The screens from the <a href="../outlier-screen/">outlier page</a> are one slider setting here.</p>

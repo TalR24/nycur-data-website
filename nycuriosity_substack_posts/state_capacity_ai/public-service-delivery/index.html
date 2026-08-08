@@ -12,7 +12,8 @@
   <meta property="og:description" content="How much of each state's eligible population actually receives SNAP, from 55% to 100%, and the delivery gap AI navigators aim to close.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/chart.css">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -24,7 +25,7 @@
     }
     body { font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; display:flex; flex-direction:column; }
     header { background:#111827; border-bottom:1px solid #1f2937; padding:0 clamp(20px,5vw,48px); }
-    .header-inner { max-width:900px; margin:0 auto; height:56px; display:flex; align-items:center; gap:16px; }
+    .header-inner { max-width:1100px; margin:0 auto; height:56px; display:flex; align-items:center; gap:16px; }
     .back-link { font-family:'Roboto Mono',monospace; font-size:0.75rem; font-weight:600; color:#9ca3af; text-decoration:none; display:flex; align-items:center; gap:5px; padding:4px 8px 4px 4px; border-radius:5px; transition:color 0.15s,background 0.15s; white-space:nowrap; }
     .back-link:hover { color:#60a5fa; background:rgba(96,165,250,0.1); }
     .header-divider { width:1px; height:20px; background:#374151; flex-shrink:0; }
@@ -35,7 +36,7 @@
     .pill-nav a.active { background:var(--blue); color:#fff; border-color:var(--blue); }
     .pill-label { font-size:0.72rem; color:var(--text-faint); font-family:'Roboto Mono',monospace; white-space:nowrap; }
     .hero { background:var(--surface); border-bottom:1px solid var(--border); padding:clamp(32px,5vw,52px) clamp(20px,5vw,48px); }
-    .hero-inner { max-width:900px; margin:0 auto; }
+    .hero-inner { max-width:1100px; margin:0 auto; }
     .breadcrumb { font-family:'Roboto Mono',monospace; font-size:0.72rem; color:var(--text-faint); margin-bottom:14px; display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
     .breadcrumb a { color:var(--blue); text-decoration:none; }
     .breadcrumb a:hover { text-decoration:underline; }
@@ -53,20 +54,8 @@
     .btn-outline { background:var(--surface); color:var(--text-muted); border:1.5px solid var(--border); }
     .btn-outline:hover { color:var(--blue); border-color:var(--blue-mid); background:var(--blue-light); }
     main { flex:1; padding:clamp(28px,4vw,48px) clamp(20px,5vw,48px); }
-    .main-inner { max-width:900px; margin:0 auto; }
-    .chart-actions { display:flex; gap:8px; margin-bottom:16px; }
-    .action-btn { display:inline-flex; align-items:center; gap:6px; background:var(--surface); color:var(--text-muted); font-family:'Roboto Mono',monospace; font-size:0.75rem; font-weight:600; padding:6px 14px; border-radius:6px; border:1px solid var(--border); cursor:pointer; transition:all 0.15s; }
-    .action-btn:hover { border-color:var(--blue); color:var(--blue); background:var(--blue-light); }
-    .action-btn:disabled { opacity:0.6; cursor:not-allowed; }
-    #chart-box { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:24px clamp(16px,3vw,28px) 0; }
-    .chart-title { font-family:'Roboto Mono',monospace; font-size:0.95rem; font-weight:700; color:var(--text); margin-bottom:4px; }
-    .chart-sub { font-size:0.8rem; color:var(--text-muted); margin-bottom:14px; }
-    .legend { display:flex; flex-wrap:wrap; gap:18px; margin-bottom:8px; }
-    .legend-item { display:flex; align-items:center; gap:7px; font-size:0.78rem; color:var(--text-mid); font-weight:500; }
-    .legend-swatch { width:13px; height:13px; border-radius:3px; flex-shrink:0; }
-    .barchart { width:100%; height:auto; display:block; padding-bottom:18px; }
+    .main-inner { max-width:1100px; margin:0 auto; }
     .barchart text { font-family:'Roboto Mono',monospace; }
-    .chart-attribution { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; padding:12px 16px; border-top:1px solid var(--border); background:var(--bg); font-size:0.78rem; color:var(--text-faint); font-family:'Roboto Mono',monospace; margin:0 calc(-1 * clamp(16px,3vw,28px)); }
     .context-box { margin-top:24px; padding:16px 20px; background:var(--blue-light); border:1px solid var(--blue-mid); border-radius:var(--radius); }
     .context-box p { font-size:0.85rem; color:var(--text-mid); line-height:1.65; }
     .context-box p + p { margin-top:8px; }
@@ -86,7 +75,7 @@
     .footnotes a { color:var(--blue); text-decoration:none; border-bottom:1px solid var(--blue-mid); }
     .footnotes a:hover { border-color:var(--blue); }
     footer { background:var(--surface); border-top:1px solid var(--border); padding:20px clamp(20px,5vw,48px); margin-top:auto; }
-    .footer-inner { max-width:900px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; }
+    .footer-inner { max-width:1100px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; }
     .footer-copy { font-size:0.8rem; color:var(--text-faint); }
     .footer-links { display:flex; gap:20px; }
     .footer-links a { font-size:0.8rem; color:var(--text-muted); text-decoration:none; transition:color 0.15s; }
@@ -103,6 +92,7 @@
     .embed-copy-btn:hover { background:#1d4ed8; }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
+  <script defer src="/assets/chart.js"></script>
 <style id="support-btn-css">
 .header-actions{display:flex;align-items:center;gap:14px;}
 .header-link{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border:1px solid rgba(255,255,255,0.15);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
@@ -165,24 +155,28 @@
 <main>
   <div class="main-inner">
 
-    <div class="chart-actions">
-      <button class="action-btn" onclick="downloadChart(this)">&#11015; Download PNG</button>
-      <button class="action-btn" onclick="showEmbed()">&#60;/&#62; Embed</button>
+    <div class="c-actions">
+      <button class="c-action-btn" onclick="downloadChart(this)">&#11015; Download PNG</button>
+      <button class="c-action-btn" onclick="showEmbed()">&#60;/&#62; Embed</button>
     </div>
 
-    <div id="chart-box">
-      <div class="chart-title">SNAP take-up rate by state, FY2019</div>
-      <div class="chart-sub">Share of eligible people who received SNAP. Dashed line marks the 82% national average.</div>
-      <div class="legend">
-        <div class="legend-item"><span class="legend-swatch" style="background:#2563eb"></span>State take-up rate</div>
-        <div class="legend-item"><span class="legend-swatch" style="background:#dc2626"></span>New York</div>
+    <figure class="chart-card" id="chart-box" data-slug="snap-takeup-by-state">
+      <div class="c-head">
+        <h2 class="c-title">Under one set of federal rules, ten states reach 100% of their SNAP-eligible population and Wyoming reaches 55%</h2>
+        <p class="c-deck">Share of people eligible for SNAP who received it, FY2019, ranked from lowest take-up to highest. Darker bars mark higher take-up. <strong>New York, the outlined bar, sits at 89%</strong>, above the 82% national average marked by the dashed line.</p>
       </div>
-      <svg class="barchart" id="barchart" viewBox="0 0 720 762" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="SNAP take-up rate by state, FY2019, ranging from 55% in Wyoming to 100% in ten states; New York 89%, US average 82%"></svg>
-      <div class="chart-attribution">
-        <span>Created by Tal Roded · NYCuriosity</span>
-        <span>Source: USDA FNS, Reaching Those in Need (FY2019)</span>
+
+      <div class="c-plot">
+        <svg class="barchart" id="barchart" viewBox="0 0 1000 1026" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="SNAP take-up rate by state, FY2019, ranging from 55% in Wyoming up to 100% in ten states; New York 89%, US average 82%"></svg>
       </div>
-    </div>
+
+      <figcaption class="c-foot">
+        <div class="c-foot-text">
+          <span>Source: <a href="https://www.fns.usda.gov/snap/national-and-state-level-estimates-snap-eligibility-and-participation" target="_blank" rel="noopener">USDA Food and Nutrition Service, "Reaching Those in Need"</a> (FY2019 estimates, Mathematica 2022)</span>
+          <span>Note: rates are rounded to whole percentages as published; states with the same rate are ordered alphabetically.</span>
+        </div>
+      </figcaption>
+    </figure>
 
     <div class="context-box">
       <p><strong>Why it matters:</strong> Ten states reach <strong>100%</strong> of their eligible population; Wyoming reaches just <strong>55%</strong>. New York sits at 89%, above the 82% national average. The benefit and the rules are identical, so the gap is pure delivery capacity: outreach, application design, and how easy a state makes it to enroll and stay enrolled.</p>
@@ -235,88 +229,87 @@
 
 <script>
   const DATA = [
-    ["Delaware",100],["Illinois",100],["Massachusetts",100],["New Mexico",100],["Oregon",100],
-    ["Pennsylvania",100],["Rhode Island",100],["Vermont",100],["Washington",100],["Wisconsin",100],
-    ["District of Columbia",97],["West Virginia",96],["Connecticut",95],["Nevada",94],["Iowa",92],
-    ["Maryland",91],["Michigan",90],["Ohio",90],["Oklahoma",90],["Alaska",89],["New York",89],
-    ["Hawaii",88],["Tennessee",88],["Missouri",85],["Colorado",84],["South Dakota",84],
-    ["Montana",83],["Nebraska",83],["Idaho",82],["New Hampshire",82],["Alabama",80],
-    ["Minnesota",80],["New Jersey",80],["Utah",79],["Georgia",78],["Virginia",78],
-    ["Arizona",76],["North Carolina",76],["South Carolina",74],["Indiana",73],["Texas",73],
-    ["Kansas",71],["California",70],["North Dakota",70],["Kentucky",69],["Mississippi",65],
-    ["Arkansas",64],["Wyoming",55]
+    ["Wyoming",55],["Arkansas",64],["Mississippi",65],["Kentucky",69],["North Dakota",70],
+    ["California",70],["Kansas",71],["Texas",73],["Indiana",73],["South Carolina",74],
+    ["North Carolina",76],["Arizona",76],["Virginia",78],["Georgia",78],["Utah",79],
+    ["New Jersey",80],["Minnesota",80],["Alabama",80],["New Hampshire",82],["Idaho",82],
+    ["Nebraska",83],["Montana",83],["South Dakota",84],["Colorado",84],["Missouri",85],
+    ["Tennessee",88],["Hawaii",88],["New York",89],["Alaska",89],["Oklahoma",90],
+    ["Ohio",90],["Michigan",90],["Maryland",91],["Iowa",92],["Nevada",94],
+    ["Connecticut",95],["West Virginia",96],["District of Columbia",97],["Wisconsin",100],["Washington",100],
+    ["Vermont",100],["Rhode Island",100],["Pennsylvania",100],["Oregon",100],["New Mexico",100],
+    ["Massachusetts",100],["Illinois",100],["Delaware",100]
   ];
-  const ABBR = {"Delaware":"DE","Illinois":"IL","Massachusetts":"MA","New Mexico":"NM","Oregon":"OR","Pennsylvania":"PA","Rhode Island":"RI","Vermont":"VT","Washington":"WA","Wisconsin":"WI","District of Columbia":"DC","West Virginia":"WV","Connecticut":"CT","Nevada":"NV","Iowa":"IA","Maryland":"MD","Michigan":"MI","Ohio":"OH","Oklahoma":"OK","Alaska":"AK","New York":"NY","Hawaii":"HI","Tennessee":"TN","Missouri":"MO","Colorado":"CO","South Dakota":"SD","Montana":"MT","Nebraska":"NE","Idaho":"ID","New Hampshire":"NH","Alabama":"AL","Minnesota":"MN","New Jersey":"NJ","Utah":"UT","Georgia":"GA","Virginia":"VA","Arizona":"AZ","North Carolina":"NC","South Carolina":"SC","Indiana":"IN","Texas":"TX","Kansas":"KS","California":"CA","North Dakota":"ND","Kentucky":"KY","Mississippi":"MS","Arkansas":"AR","Wyoming":"WY"};
   const US_AVG = 82;
 
-  // Sort lowest take-up at the top, highest at the bottom.
+  // Highest take-up first, so position in the sequential ramp encodes rank:
+  // the darkest bar is the highest rate, the palest the lowest.
+  // Ascending on purpose: Tal's standing preference for SNAP take-up is worst
+  // first, because the underperformers are the story. The ramp is reversed to
+  // match, so the palest bar is still the lowest value.
   DATA.sort((a,b) => a[1] - b[1] || a[0].localeCompare(b[0]));
 
-  const SVG_NS = "http://www.w3.org/2000/svg";
-  const svg = document.getElementById('barchart');
-  // NOTE: do not name a top-level const "top" — it collides with window.top
-  // (a non-configurable global) and throws a SyntaxError that aborts the script.
-  const rowH = 13, gap = 2, topPad = 16, bottom = 26;
-  const Lx = 92, Rx = 690;                       // bar area x range (value 0..100)
-  // Height is fixed by DATA.length (48 rows); viewBox is set inline in the HTML
-  // (0 0 720 762). Keep in sync if the state list changes:
-  // H = topPad + DATA.length*(rowH+gap) + bottom.
-  const H = topPad + DATA.length*(rowH+gap) + bottom;
-  svg.setAttribute('viewBox', `0 0 720 ${H}`);
-  const xs = v => Lx + v/100*(Rx - Lx);
+  // The drawing waits for DOMContentLoaded because the ramp comes from
+  // /assets/chart.js, which is deferred and therefore not yet parsed here.
+  document.addEventListener('DOMContentLoaded', function () {
+    const SVG_NS = "http://www.w3.org/2000/svg";
+    const svg = document.getElementById('barchart');
+    // NOTE: do not name a top-level const "top" — it collides with window.top
+    // (a non-configurable global) and throws a SyntaxError that aborts the script.
+    const rowH = 17, gap = 3, topPad = 26, bottom = 40;
+    const Lx = 168, Rx = 958;                      // bar area x range (value 0..100)
+    // Height is fixed by DATA.length (48 rows); the viewBox is 1000 units wide
+    // and is re-set here so the height stays in sync if the state list changes:
+    // H = topPad + DATA.length*(rowH+gap) + bottom.
+    const plotBottom = topPad + DATA.length*(rowH+gap);
+    const H = plotBottom + bottom;
+    svg.setAttribute('viewBox', `0 0 1000 ${H}`);
+    const xs = v => Lx + v/100*(Rx - Lx);
 
-  function el(tag, attrs, text){
-    const n = document.createElementNS(SVG_NS, tag);
-    for(const k in attrs) n.setAttribute(k, attrs[k]);
-    if(text != null) n.textContent = text;
-    svg.appendChild(n); return n;
-  }
+    // DATA runs low to high, so the ramp is reversed: palest bar = lowest take-up.
+    const RAMP = window.NYCChart.seqRamp(DATA.length).slice().reverse();
+    const inkFor = (i) => window.NYCChart.seqLabelInk(DATA.length - 1 - i, DATA.length);
 
-  // gridlines at 0/25/50/75/100
-  [0,25,50,75,100].forEach(v => {
-    el('line', {x1:xs(v), y1:topPad-4, x2:xs(v), y2:topPad+DATA.length*(rowH+gap)+2, stroke:'#eef1f5', 'stroke-width':1});
-    el('text', {x:xs(v), y:topPad+DATA.length*(rowH+gap)+16, 'text-anchor':'middle', 'font-size':10, fill:'#9ca3af'}, v+'%');
-  });
+    function el(tag, attrs, text){
+      const n = document.createElementNS(SVG_NS, tag);
+      for(const k in attrs) n.setAttribute(k, attrs[k]);
+      if(text != null) n.textContent = text;
+      svg.appendChild(n); return n;
+    }
 
-  // bars (drawn at full width immediately, no animation dependency)
-  DATA.forEach((d,i) => {
-    const y = topPad + i*(rowH+gap);
-    const isNY = d[0]==="New York";
-    const color = isNY ? '#dc2626' : '#2563eb';
-    const w = Math.max(xs(d[1]) - Lx, 0);
-    el('text', {x:Lx-8, y:y+rowH-2.5, 'text-anchor':'end', 'font-size':9.5, 'font-weight':isNY?700:400, fill:isNY?'#dc2626':'#6b7280'}, ABBR[d[0]] || '');
-    el('rect', {x:Lx, y:y, width:w, height:rowH, rx:2, fill:color});
-    el('text', {x:xs(d[1])+5, y:y+rowH-2.5, 'font-size':9, 'font-weight':isNY?700:600, fill:isNY?'#dc2626':'#374151'}, d[1]+'%');
-  });
-
-  // US average reference line (drawn on top)
-  const ax = xs(US_AVG);
-  el('line', {x1:ax, y1:topPad-6, x2:ax, y2:topPad+DATA.length*(rowH+gap)+2, stroke:'#9ca3af', 'stroke-width':1.5, 'stroke-dasharray':'5,4'});
-  el('text', {x:ax, y:topPad-9, 'text-anchor':'middle', 'font-size':10, 'font-weight':700, fill:'#6b7280'}, 'US 82%');
-
-  async function downloadChart(btn) {
-    const orig = btn.innerHTML; btn.innerHTML = '⏳ Capturing…'; btn.disabled = true;
-    try {
-      const elx = document.getElementById('chart-box');
-      const dataUrl = await htmlToImage.toPng(elx, { backgroundColor: '#ffffff', pixelRatio: 2 });
-      const a = document.createElement('a'); a.download = 'snap-takeup-by-state.png';
-      a.href = dataUrl; a.click();
-    } finally { btn.innerHTML = orig; btn.disabled = false; }
-  }
-  function showEmbed() {
-    const url = location.origin + location.pathname;
-    document.getElementById('embedCode').value =
-      `<iframe src="${url}" width="900" height="980" frameborder="0" style="border:1px solid #e5e7eb; border-radius:8px;" loading="lazy"></iframe>`;
-    document.getElementById('embedModal').style.display = 'flex';
-  }
-  function closeEmbed() { document.getElementById('embedModal').style.display = 'none'; }
-  function copyEmbed() {
-    const ta = document.getElementById('embedCode'); ta.select();
-    navigator.clipboard.writeText(ta.value).then(() => {
-      const btn = document.querySelector('.embed-copy-btn');
-      btn.textContent = '✓ Copied!'; setTimeout(() => btn.textContent = 'Copy code', 2000);
+    // gridlines at 0/25/50/75/100
+    [0,25,50,75,100].forEach(v => {
+      el('line', {class: v === 0 ? 'c-baseline' : 'c-grid', x1:xs(v), y1:topPad-6, x2:xs(v), y2:plotBottom+3});
+      el('text', {class:'c-tick', x:xs(v), y:plotBottom+22, 'text-anchor':'middle'}, v+'%');
     });
-  }
+
+    // state labels + bars (drawn at full width immediately, no animation dependency)
+    DATA.forEach((d,i) => {
+      const y = topPad + i*(rowH+gap);
+      const isNY = d[0]==="New York";
+      const w = Math.max(xs(d[1]) - Lx, 0);
+      el('text', {class:'c-tick', x:Lx-12, y:y+rowH-4.5, 'text-anchor':'end',
+                  'font-weight':isNY?700:400, fill:isNY?'#111827':'#6b7280'}, d[0]);
+      const bar = {x:Lx, y:y, width:w, height:rowH, rx:2, fill:RAMP[i]};
+      if (isNY) { bar.stroke = '#111827'; bar['stroke-width'] = 1.5; }
+      el('rect', bar);
+    });
+
+    // US average benchmark, over the bars with a white channel so it reads on
+    // both the navy and the pale end of the ramp. 4 4 dash = benchmark.
+    const ax = xs(US_AVG);
+    el('line', {x1:ax, y1:topPad-8, x2:ax, y2:plotBottom+3, stroke:'#ffffff', 'stroke-width':3.5, opacity:0.95});
+    el('line', {class:'c-dash-ref', x1:ax, y1:topPad-8, x2:ax, y2:plotBottom+3, stroke:'#374151', 'stroke-width':1.5});
+    el('text', {class:'c-val', x:ax, y:topPad-14, 'text-anchor':'middle', fill:'#374151'}, 'US average, 82%');
+
+    // value labels last, so the benchmark line never cuts through a number.
+    // Each sits inside its bar, right aligned; every bar here is long enough.
+    DATA.forEach((d,i) => {
+      const y = topPad + i*(rowH+gap);
+      el('text', {class:'c-val', x:xs(d[1])-10, y:y+rowH-4.5, 'text-anchor':'end',
+                  fill:inkFor(i)}, d[1]+'%');
+    });
+  });
 </script>
 
 </body>

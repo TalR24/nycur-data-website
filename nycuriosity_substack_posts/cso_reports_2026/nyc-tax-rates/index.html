@@ -12,7 +12,8 @@
   <meta property="og:description" content="A breakdown of every major tax NYC imposes on residents and businesses — income, property, business, and more.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/chart.css">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -135,6 +136,7 @@
 
     /* ── TAX CHART ───────────────────────────────────────── */
     .chart-section { margin-bottom: 36px; }
+    .chart-section:last-child { margin-bottom: 4px; }
 
     .category-header {
       display: flex; align-items: center; gap: 10px;
@@ -219,11 +221,6 @@
       .bar-row { grid-template-columns: 1fr auto; gap: 8px; }
     }
 
-    /* ── CHART ACTIONS ─────────────────────────────────────── */
-    .chart-actions { display:flex; gap:8px; margin-bottom:20px; }
-    .action-btn { display:inline-flex; align-items:center; gap:6px; background:var(--surface); color:var(--text-muted); font-family:'Roboto Mono',monospace; font-size:0.75rem; font-weight:600; padding:6px 14px; border-radius:6px; border:1px solid var(--border); cursor:pointer; transition:all 0.15s; }
-    .action-btn:hover { border-color:var(--blue); color:var(--blue); background:var(--blue-light); }
-    .action-btn:disabled { opacity:0.6; cursor:not-allowed; }
     /* ── EMBED MODAL ───────────────────────────────────────── */
     .embed-modal { position:fixed; inset:0; background:rgba(0,0,0,0.45); display:flex; align-items:center; justify-content:center; z-index:1000; }
     .embed-modal-box { background:var(--surface); border-radius:10px; padding:24px; max-width:540px; width:90%; box-shadow:0 8px 32px rgba(0,0,0,0.18); }
@@ -237,6 +234,7 @@
     .embed-copy-btn:hover { background:#1d4ed8; }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
+  <script defer src="/assets/chart.js"></script>
 <style id="support-btn-css">
 .header-actions{display:flex;align-items:center;gap:14px;}
 .header-link{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border:1px solid rgba(255,255,255,0.15);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
@@ -306,16 +304,30 @@
 <main>
   <div class="main-inner">
 
-    <div class="chart-actions">
-      <button class="action-btn" onclick="downloadChart(this)">&#11015; Download PNG</button>
-      <button class="action-btn" onclick="showEmbed()">&#60;/&#62; Embed</button>
-    </div>
-
     <div class="callout">
       <p><strong>Property tax rates apply to assessed value, not market value.</strong> For Class 1 homes (1–3 family), the city typically sets assessed value at roughly 6% of market value, so a 20% rate on assessed value translates to an effective rate of about 1.2% on market value. Rates for all classes are set annually by the NYC Council and shown here at the FY2025 levy.</p>
     </div>
 
-    <div id="chart"></div>
+    <div class="c-actions">
+      <button class="c-action-btn" onclick="downloadChart(this)">&#11015; Download PNG</button>
+      <button class="c-action-btn" onclick="showEmbed()">&#60;/&#62; Embed</button>
+    </div>
+
+    <figure class="chart-card" id="chart-box" data-slug="nyc-tax-rates">
+      <div class="c-head">
+        <h2 class="c-title">Class 1 homes carry the city's highest tax rate at 19.843%, charged on an assessed value of roughly 6% of what the home is worth</h2>
+        <p class="c-deck">Every major tax the City of New York levies on residents and businesses, at FY2025 rates, grouped by type. New York State and federal taxes are excluded. NYC does not impose a wealth tax.</p>
+      </div>
+      <div class="c-plot">
+        <div id="chart"></div>
+      </div>
+      <figcaption class="c-foot">
+        <div class="c-foot-text">
+          <span>Source: <a href="https://www.nyc.gov/site/finance/taxes/property-tax-rates.page" target="_blank" rel="noopener">NYC Department of Finance</a> published rate schedules, FY2025</span>
+          <span>Note: personal income tax brackets are for single filers; married-filing-jointly thresholds differ.</span>
+        </div>
+      </figcaption>
+    </figure>
 
     <div class="footnotes">
       <p><strong>Personal Income Tax:</strong> NYC PIT brackets shown for single filers. Married filing jointly thresholds differ. Rates apply to NYC taxable income, which follows NYS taxable income with minor adjustments. Source: <a href="https://www.nyc.gov/site/finance/business/business-income-and-excise-taxes.page" target="_blank" rel="noopener">NYC Department of Finance</a>.</p>
@@ -480,33 +492,6 @@
   }
 
   buildChart();
-
-  async function downloadChart(btn) {
-    const orig = btn.innerHTML;
-    btn.innerHTML = '⏳ Capturing…'; btn.disabled = true;
-    try {
-      const el = document.getElementById('chart');
-      const dataUrl = await htmlToImage.toPng(el, { backgroundColor: '#ffffff', pixelRatio: 2 });
-      const a = document.createElement('a');
-      a.download = 'nyc-tax-rates.png';
-      a.href = dataUrl; a.click();
-    } finally { btn.innerHTML = orig; btn.disabled = false; }
-  }
-  function showEmbed() {
-    const url = location.origin + location.pathname;
-    document.getElementById('embedCode').value =
-      `<iframe src="${url}" width="900" height="960" frameborder="0" style="border:1px solid #e5e7eb; border-radius:8px;" loading="lazy"></iframe>`;
-    document.getElementById('embedModal').style.display = 'flex';
-  }
-  function closeEmbed() { document.getElementById('embedModal').style.display = 'none'; }
-  function copyEmbed() {
-    const ta = document.getElementById('embedCode'); ta.select();
-    navigator.clipboard.writeText(ta.value).then(() => {
-      const btn = document.querySelector('.embed-copy-btn');
-      btn.textContent = '✓ Copied!';
-      setTimeout(() => btn.textContent = 'Copy code', 2000);
-    });
-  }
 </script>
 
 </body>

@@ -12,7 +12,8 @@
   <meta property="og:description" content="Sortable table of all 16 NYC agency Chief Savings Officer plans with FY25 budget context.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/chart.css">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -166,10 +167,6 @@
     .row-count { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; color: var(--text-faint); white-space: nowrap; }
 
     /* ── TABLE ───────────────────────────────────────────── */
-    .table-wrap {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--radius); box-shadow: var(--shadow-sm); overflow-x: auto;
-    }
     table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
     thead tr { background: var(--text); }
     thead th {
@@ -223,11 +220,6 @@
       tbody td.hide-mobile { display: none; }
     }
 
-    /* ── CHART ACTIONS ─────────────────────────────────────── */
-    .chart-actions { display:flex; gap:8px; margin-bottom:16px; }
-    .action-btn { display:inline-flex; align-items:center; gap:6px; background:var(--surface); color:var(--text-muted); font-family:'Roboto Mono',monospace; font-size:0.75rem; font-weight:600; padding:6px 14px; border-radius:6px; border:1px solid var(--border); cursor:pointer; transition:all 0.15s; }
-    .action-btn:hover { border-color:var(--blue); color:var(--blue); background:var(--blue-light); }
-    .action-btn:disabled { opacity:0.6; cursor:not-allowed; }
     /* ── EMBED MODAL ───────────────────────────────────────── */
     .embed-modal { position:fixed; inset:0; background:rgba(0,0,0,0.45); display:flex; align-items:center; justify-content:center; z-index:1000; }
     .embed-modal-box { background:var(--surface); border-radius:10px; padding:24px; max-width:540px; width:90%; box-shadow:0 8px 32px rgba(0,0,0,0.18); }
@@ -241,6 +233,7 @@
     .embed-copy-btn:hover { background:#1d4ed8; }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
+  <script defer src="/assets/chart.js"></script>
 <style id="support-btn-css">
 .header-actions{display:flex;align-items:center;gap:14px;}
 .header-link{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border:1px solid rgba(255,255,255,0.15);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
@@ -310,9 +303,9 @@
 <main>
   <div class="main-inner">
 
-    <div class="chart-actions">
-      <button class="action-btn" onclick="downloadChart(this)">&#11015; Download PNG</button>
-      <button class="action-btn" onclick="showEmbed()">&#60;/&#62; Embed</button>
+    <div class="c-actions">
+      <button class="c-action-btn" onclick="downloadChart(this)">&#11015; Download PNG</button>
+      <button class="c-action-btn" onclick="showEmbed()">&#60;/&#62; Embed</button>
     </div>
 
     <div class="controls">
@@ -323,21 +316,33 @@
       <span class="row-count" id="rowCount">16 agencies</span>
     </div>
 
-    <div class="table-wrap">
-      <table id="csoTable">
-        <thead>
-          <tr>
-            <th data-col="agency">Agency <span class="sort-arrow">↕</span></th>
-            <th data-col="fy26" class="num">FY26 Savings <span class="sort-arrow">↕</span></th>
-            <th data-col="fy27" class="num">FY27 Savings <span class="sort-arrow">↕</span></th>
-            <th data-col="budget" class="num hide-mobile">FY25 Budget <span class="sort-arrow">↕</span></th>
-            <th data-col="pct" class="num">% of FY25 Budget <span class="sort-arrow">↕</span></th>
-            <th data-col="summary">Summary <span class="sort-arrow">↕</span></th>
-          </tr>
-        </thead>
-        <tbody id="tableBody"></tbody>
-      </table>
-    </div>
+    <figure class="chart-card" id="chart-box" data-slug="cso-agency-savings-breakdown">
+      <div class="c-head">
+        <h2 class="c-title">One agency's health-plan eligibility audit supplies more than half of the FY27 savings found across all 16 agencies</h2>
+        <p class="c-deck">Savings each agency identified in its Chief Savings Officer report, released March 20, 2026, with the FY25 adopted budget alongside for scale. The Office of Labor Relations' dependent-eligibility audit accounts for <strong>$100M</strong> of the <strong>$196.5M</strong> FY27 total.</p>
+      </div>
+      <div class="c-plot c-plot--scroll">
+        <table id="csoTable">
+          <thead>
+            <tr>
+              <th data-col="agency">Agency <span class="sort-arrow">↕</span></th>
+              <th data-col="fy26" class="num">FY26 Savings <span class="sort-arrow">↕</span></th>
+              <th data-col="fy27" class="num">FY27 Savings <span class="sort-arrow">↕</span></th>
+              <th data-col="budget" class="num hide-mobile">FY25 Budget <span class="sort-arrow">↕</span></th>
+              <th data-col="pct" class="num">% of FY25 Budget <span class="sort-arrow">↕</span></th>
+              <th data-col="summary">Summary <span class="sort-arrow">↕</span></th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+      <figcaption class="c-foot">
+        <div class="c-foot-text">
+          <span>Source: agency CSO reports, March 20, 2026; budgets from <a href="https://data.cityofnewyork.us/City-Government/Expense-Budget/mwzb-yiwb" target="_blank" rel="noopener">NYC OpenData Expense Budget (mwzb-yiwb)</a></span>
+          <span>Note: OLR's savings come from the citywide health benefits fund, not its own $62.6M budget, so its 159.9% share is not a benchmark.</span>
+        </div>
+      </figcaption>
+    </figure>
 
     <div class="footnotes">
       <p><strong>* OLR anomaly:</strong> The Office of Labor Relations' budget ($62.6M) reflects only its administrative operations. The $100M in FY27 savings from removing ineligible dependents comes from the citywide employee health benefits fund, which OLR administers on behalf of all city agencies, a pool vastly larger than OLR's own budget. The 159.9% figure is therefore not meaningful as a benchmark.</p>
@@ -477,33 +482,6 @@
     if (th.dataset.col === 'fy27') { th.classList.add('sorted'); const a=th.querySelector('.sort-arrow'); if(a) a.textContent='↓'; }
   });
   render();
-
-  async function downloadChart(btn) {
-    const orig = btn.innerHTML;
-    btn.innerHTML = '⏳ Capturing…'; btn.disabled = true;
-    try {
-      const el = document.querySelector('.table-wrap');
-      const dataUrl = await htmlToImage.toPng(el, { backgroundColor: '#ffffff', pixelRatio: 2 });
-      const a = document.createElement('a');
-      a.download = 'cso-agency-savings-breakdown.png';
-      a.href = dataUrl; a.click();
-    } finally { btn.innerHTML = orig; btn.disabled = false; }
-  }
-  function showEmbed() {
-    const url = location.origin + location.pathname;
-    document.getElementById('embedCode').value =
-      `<iframe src="${url}" width="900" height="800" frameborder="0" style="border:1px solid #e5e7eb; border-radius:8px;" loading="lazy"></iframe>`;
-    document.getElementById('embedModal').style.display = 'flex';
-  }
-  function closeEmbed() { document.getElementById('embedModal').style.display = 'none'; }
-  function copyEmbed() {
-    const ta = document.getElementById('embedCode'); ta.select();
-    navigator.clipboard.writeText(ta.value).then(() => {
-      const btn = document.querySelector('.embed-copy-btn');
-      btn.textContent = '✓ Copied!';
-      setTimeout(() => btn.textContent = 'Copy code', 2000);
-    });
-  }
 </script>
 
 </body>

@@ -12,7 +12,8 @@
   <meta property="og:description" content="Growth in the Code of Federal Regulations, 1950 to 2024, and where AI fits in cutting it back.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/chart.css">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -24,7 +25,7 @@
     }
     body { font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; display:flex; flex-direction:column; }
     header { background:#111827; border-bottom:1px solid #1f2937; padding:0 clamp(20px,5vw,48px); }
-    .header-inner { max-width:900px; margin:0 auto; height:56px; display:flex; align-items:center; gap:16px; }
+    .header-inner { max-width:1100px; margin:0 auto; height:56px; display:flex; align-items:center; gap:16px; }
     .back-link { font-family:'Roboto Mono',monospace; font-size:0.75rem; font-weight:600; color:#9ca3af; text-decoration:none; display:flex; align-items:center; gap:5px; padding:4px 8px 4px 4px; border-radius:5px; transition:color 0.15s,background 0.15s; white-space:nowrap; }
     .back-link:hover { color:#60a5fa; background:rgba(96,165,250,0.1); }
     .header-divider { width:1px; height:20px; background:#374151; flex-shrink:0; }
@@ -35,7 +36,7 @@
     .pill-nav a.active { background:var(--blue); color:#fff; border-color:var(--blue); }
     .pill-label { font-size:0.72rem; color:var(--text-faint); font-family:'Roboto Mono',monospace; white-space:nowrap; }
     .hero { background:var(--surface); border-bottom:1px solid var(--border); padding:clamp(32px,5vw,52px) clamp(20px,5vw,48px); }
-    .hero-inner { max-width:900px; margin:0 auto; }
+    .hero-inner { max-width:1100px; margin:0 auto; }
     .breadcrumb { font-family:'Roboto Mono',monospace; font-size:0.72rem; color:var(--text-faint); margin-bottom:14px; display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
     .breadcrumb a { color:var(--blue); text-decoration:none; }
     .breadcrumb a:hover { text-decoration:underline; }
@@ -53,17 +54,8 @@
     .btn-outline { background:var(--surface); color:var(--text-muted); border:1.5px solid var(--border); }
     .btn-outline:hover { color:var(--blue); border-color:var(--blue-mid); background:var(--blue-light); }
     main { flex:1; padding:clamp(28px,4vw,48px) clamp(20px,5vw,48px); }
-    .main-inner { max-width:900px; margin:0 auto; }
-    .chart-actions { display:flex; gap:8px; margin-bottom:16px; }
-    .action-btn { display:inline-flex; align-items:center; gap:6px; background:var(--surface); color:var(--text-muted); font-family:'Roboto Mono',monospace; font-size:0.75rem; font-weight:600; padding:6px 14px; border-radius:6px; border:1px solid var(--border); cursor:pointer; transition:all 0.15s; }
-    .action-btn:hover { border-color:var(--blue); color:var(--blue); background:var(--blue-light); }
-    .action-btn:disabled { opacity:0.6; cursor:not-allowed; }
-    #chart-box { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:24px clamp(16px,3vw,28px) 0; }
-    .chart-title { font-family:'Roboto Mono',monospace; font-size:0.95rem; font-weight:700; color:var(--text); margin-bottom:4px; }
-    .chart-sub { font-size:0.8rem; color:var(--text-muted); margin-bottom:18px; }
-    .linechart { width:100%; height:auto; display:block; padding-bottom:18px; }
+    .main-inner { max-width:1100px; margin:0 auto; }
     .linechart text { font-family:'Roboto Mono',monospace; }
-    .chart-attribution { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; padding:12px 16px; border-top:1px solid var(--border); background:var(--bg); font-size:0.78rem; color:var(--text-faint); font-family:'Roboto Mono',monospace; margin:0 calc(-1 * clamp(16px,3vw,28px)); }
     .context-box { margin-top:24px; padding:16px 20px; background:var(--blue-light); border:1px solid var(--blue-mid); border-radius:var(--radius); }
     .context-box p { font-size:0.85rem; color:var(--text-mid); line-height:1.65; }
     .context-box p + p { margin-top:8px; }
@@ -83,7 +75,7 @@
     .footnotes a { color:var(--blue); text-decoration:none; border-bottom:1px solid var(--blue-mid); }
     .footnotes a:hover { border-color:var(--blue); }
     footer { background:var(--surface); border-top:1px solid var(--border); padding:20px clamp(20px,5vw,48px); margin-top:auto; }
-    .footer-inner { max-width:900px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; }
+    .footer-inner { max-width:1100px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; }
     .footer-copy { font-size:0.8rem; color:var(--text-faint); }
     .footer-links { display:flex; gap:20px; }
     .footer-links a { font-size:0.8rem; color:var(--text-muted); text-decoration:none; transition:color 0.15s; }
@@ -100,6 +92,7 @@
     .embed-copy-btn:hover { background:#1d4ed8; }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
+  <script defer src="/assets/chart.js"></script>
 <style id="support-btn-css">
 .header-actions{display:flex;align-items:center;gap:14px;}
 .header-link{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border:1px solid rgba(255,255,255,0.15);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
@@ -162,20 +155,28 @@
 <main>
   <div class="main-inner">
 
-    <div class="chart-actions">
-      <button class="action-btn" onclick="downloadChart(this)">&#11015; Download PNG</button>
-      <button class="action-btn" onclick="showEmbed()">&#60;/&#62; Embed</button>
+    <div class="c-actions">
+      <button class="c-action-btn" onclick="downloadChart(this)">&#11015; Download PNG</button>
+      <button class="c-action-btn" onclick="showEmbed()">&#60;/&#62; Embed</button>
     </div>
 
-    <div id="chart-box">
-      <div class="chart-title">Pages in the Code of Federal Regulations, 1950–2024</div>
-      <div class="chart-sub">Total pages published, sampled every five years</div>
-      <svg class="linechart" id="linechart" viewBox="0 0 720 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Line chart of CFR pages growing from 9,745 in 1950 to 194,395 in 2024"></svg>
-      <div class="chart-attribution">
-        <span>Created by Tal Roded · NYCuriosity</span>
-        <span>Source: Federal Register Statistics / GovInfo</span>
+    <figure class="chart-card" id="chart-box" data-slug="cfr-pages-growth">
+      <div class="c-head">
+        <h2 class="c-title">The Code of Federal Regulations grew from 9,745 pages in 1950 to 194,395 in 2024</h2>
+        <p class="c-deck">Total pages published in the CFR, sampled every five years, plus 2024. Page count measures how much rule text exists, not how much burden it creates.</p>
       </div>
-    </div>
+
+      <div class="c-plot">
+        <svg class="linechart" id="linechart" viewBox="0 0 1000 356" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Line chart of CFR pages growing from 9,745 in 1950 to 194,395 in 2024"></svg>
+      </div>
+
+      <figcaption class="c-foot">
+        <div class="c-foot-text">
+          <span>Source: <a href="https://www.federalregister.gov/reader-aids/federal-register-statistics" target="_blank" rel="noopener">Federal Register Statistics</a> and GovInfo, compiled by the GW Regulatory Studies Center</span>
+          <span>Note: page counts dipped slightly between 1995 and 2000, the only decline in the series.</span>
+        </div>
+      </figcaption>
+    </figure>
 
     <div class="context-box">
       <p><strong>Why it matters:</strong> The CFR has grown roughly <strong>twentyfold since 1950</strong>, to 194,395 pages. Researchers who count binding terms like "shall" and "must" find about 1.08 million individual restrictions across some 103 million words. No human team can read, let alone reconcile, all of it.</p>
@@ -234,8 +235,8 @@
   ];
   const SVG_NS = "http://www.w3.org/2000/svg";
   const svg = document.getElementById('linechart');
-  // plot geometry
-  const L=64, R=700, T=18, B=320;            // axes box
+  // Plot geometry, in the 1000-unit-wide viewBox declared on the <svg>.
+  const L=72, R=930, T=28, B=320;            // axes box
   const X0=1950, X1=2024, Y0=0, Y1=200000;
   const xs = y => L + (y - X0)/(X1 - X0)*(R - L);
   const ys = v => B - (v - Y0)/(Y1 - Y0)*(B - T);
@@ -249,53 +250,29 @@
 
   // y gridlines + labels
   [0,50000,100000,150000,200000].forEach(v => {
-    el('line', {x1:L, y1:ys(v), x2:R, y2:ys(v), stroke:'#e5e7eb', 'stroke-width':1});
-    el('text', {x:L-10, y:ys(v)+4, 'text-anchor':'end', 'font-size':12, fill:'#9ca3af'}, (v/1000)+'k');
+    el('line', {class: v === 0 ? 'c-baseline' : 'c-grid', x1:L, y1:ys(v), x2:R, y2:ys(v)});
+    el('text', {class:'c-tick', x:L-10, y:ys(v)+4, 'text-anchor':'end'}, (v/1000)+'k');
   });
   // x labels
   [1950,1970,1990,2010,2024].forEach(y => {
-    el('text', {x:xs(y), y:B+22, 'text-anchor':'middle', 'font-size':12, fill:'#9ca3af'}, y);
+    el('text', {class:'c-tick', x:xs(y), y:B+24, 'text-anchor':'middle'}, y);
   });
 
   // area + line
   const linePts = DATA.map(d => `${xs(d[0])},${ys(d[1])}`).join(' ');
   const areaPts = `${xs(X0)},${B} ` + linePts + ` ${xs(2024)},${B}`;
   el('polygon', {points:areaPts, fill:'#2563eb', 'fill-opacity':0.08});
-  el('polyline', {points:linePts, fill:'none', stroke:'#2563eb', 'stroke-width':2.5, 'stroke-linecap':'round', 'stroke-linejoin':'round'});
+  el('polyline', {class:'c-series', points:linePts, stroke:'#2563eb'});
 
   // dots
-  DATA.forEach(d => el('circle', {cx:xs(d[0]), cy:ys(d[1]), r:3, fill:'#2563eb'}));
+  DATA.forEach(d => el('circle', {cx:xs(d[0]), cy:ys(d[1]), r:4, fill:'#2563eb'}));
 
-  // endpoint callouts
-  el('circle', {cx:xs(2024), cy:ys(194395), r:4.5, fill:'#dc2626'});
-  el('text', {x:xs(2024), y:ys(194395)-12, 'text-anchor':'end', 'font-size':13, 'font-weight':700, fill:'#dc2626'}, '194,395');
+  // endpoint callouts, labeled directly on the marks
+  el('circle', {cx:xs(2024), cy:ys(194395), r:5.5, fill:'#dc2626'});
+  el('text', {class:'c-val', x:xs(2024)-6, y:ys(194395)-14, 'text-anchor':'end', 'font-size':15, fill:'#dc2626'}, '194,395');
 
   // start-point callout, drawn last so it sits above the line and shaded area
-  el('text', {x:xs(1950)+8, y:ys(9745)-16, 'font-size':12, 'font-weight':700, fill:'#374151'}, '9,745');
-
-  async function downloadChart(btn) {
-    const orig = btn.innerHTML; btn.innerHTML = '⏳ Capturing…'; btn.disabled = true;
-    try {
-      const elx = document.getElementById('chart-box');
-      const dataUrl = await htmlToImage.toPng(elx, { backgroundColor: '#ffffff', pixelRatio: 2 });
-      const a = document.createElement('a'); a.download = 'cfr-pages-growth.png';
-      a.href = dataUrl; a.click();
-    } finally { btn.innerHTML = orig; btn.disabled = false; }
-  }
-  function showEmbed() {
-    const url = location.origin + location.pathname;
-    document.getElementById('embedCode').value =
-      `<iframe src="${url}" width="900" height="780" frameborder="0" style="border:1px solid #e5e7eb; border-radius:8px;" loading="lazy"></iframe>`;
-    document.getElementById('embedModal').style.display = 'flex';
-  }
-  function closeEmbed() { document.getElementById('embedModal').style.display = 'none'; }
-  function copyEmbed() {
-    const ta = document.getElementById('embedCode'); ta.select();
-    navigator.clipboard.writeText(ta.value).then(() => {
-      const btn = document.querySelector('.embed-copy-btn');
-      btn.textContent = '✓ Copied!'; setTimeout(() => btn.textContent = 'Copy code', 2000);
-    });
-  }
+  el('text', {class:'c-val', x:xs(1950)+10, y:ys(9745)-16, 'font-size':13, fill:'#374151'}, '9,745');
 </script>
 
 </body>

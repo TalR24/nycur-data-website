@@ -8,7 +8,8 @@
   <meta name="description" content="Side-by-side comparison of QueensLink proposal metrics vs. MTA's 2018 Rockaway Beach Branch sketch assessment. Capital cost, ridership, service design, and infrastructure.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/chart.css">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -106,12 +107,6 @@
     .table-section { flex: 1; padding: clamp(24px, 4vw, 48px) clamp(20px, 5vw, 48px); }
     .table-inner { max-width: 1200px; margin: 0 auto; }
 
-    /* CHART WRAPPER (for attribution/download targeting) */
-    .chart-box {
-      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
-      overflow: hidden; box-shadow: var(--shadow-sm);
-    }
-
     /* CATEGORY LABEL ROW */
     .cat-row {
       background: #111827; padding: 8px 16px;
@@ -193,12 +188,7 @@
       font-family: 'Roboto Mono', monospace; font-size: 0.72rem; color: var(--text-faint);
     }
 
-    /* ATTRIBUTION + DOWNLOAD */
-    .chart-attribution {
-      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
-      padding: 12px 16px; border-top: 1px solid var(--border); background: var(--bg);
-      font-size: 0.78rem; color: var(--text-faint); font-family: 'Roboto Mono', monospace;
-    }
+    /* DOWNLOAD */
     .dl-btn {
       font-family: 'Roboto Mono', monospace; font-size: 0.72rem; font-weight: 600;
       padding: 5px 12px; border-radius: 16px; background: var(--blue-light);
@@ -258,6 +248,8 @@
 .footer-support{vertical-align:middle;}
 .footer-links{align-items:center;}
 </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
+  <script defer src="/assets/chart.js"></script>
   <script defer src="/assets/site.js"></script>
 </head>
 <body>
@@ -312,7 +304,17 @@
       <button class="filter-btn" onclick="filterRows('Context', this)">Context</button>
     </div>
 
-    <div class="chart-box" id="chart-box">
+    <div class="c-actions">
+      <button class="c-action-btn" onclick="downloadChart(this)">&#11015; Download PNG</button>
+      <a class="dl-btn" href="/members/?file=nycuriosity_substack_posts/queensway_vs_queenslink/data/comparison.csv">↓ Download CSV (members)</a>
+    </div>
+
+    <figure class="chart-card" id="chart-box" data-slug="queenslink-vs-mta-2018-comparison">
+      <div class="c-head">
+        <h2 class="c-title">The MTA priced the subway option at $8.1 billion while QueensLink puts the same line at $3.4 billion to $3.6 billion</h2>
+        <p class="c-deck">Every metric where the QueensLink proposal and the MTA's 2018 Rockaway Beach Branch sketch assessment can be set side by side, including the ridership gap of <strong>47,000 against 75,000</strong> daily riders. The methodology column explains each divergence.</p>
+      </div>
+      <div class="c-plot c-plot--scroll">
       <table class="comp-table" id="comp-table">
         <thead>
           <tr>
@@ -506,12 +508,15 @@
 
         </tbody>
       </table>
-
-      <div class="chart-attribution">
-        <span>Created by Tal Roded · NYCuriosity · Sources: <a href="https://thequeenslink.org/faq/" target="_blank" rel="noopener" style="color:var(--blue);text-decoration:none">thequeenslink.org</a> &amp; <a href="https://www.mta.info/document/10941" target="_blank" rel="noopener" style="color:var(--blue);text-decoration:none">MTA Rockaway Beach Branch Sketch Assessment (2018)</a></span>
-        <a class="dl-btn" href="/members/?file=nycuriosity_substack_posts/queensway_vs_queenslink/data/comparison.csv">↓ Download CSV (members)</a>
       </div>
-    </div>
+
+      <figcaption class="c-foot">
+        <div class="c-foot-text">
+          <span>Source: <a href="https://www.mta.info/document/10941" target="_blank" rel="noopener">MTA Rockaway Beach Branch Sketch Assessment</a> (SYSTRA, September 2018) and <a href="https://thequeenslink.org/faq/" target="_blank" rel="noopener">thequeenslink.org</a></span>
+          <span>Note: MTA costs are 2016 dollars escalated to a projected 2030 construction period. QueensLink is an advocacy group and has not published its full ridership methodology.</span>
+        </div>
+      </figcaption>
+    </figure>
 
     <div class="methodology">
       <h2>Data Sources &amp; Methodology Notes</h2>

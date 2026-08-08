@@ -12,7 +12,8 @@
   <meta property="og:description" content="How NYC's Chief Savings Officer agency savings for FY26 and FY27 compare to IBO-identified budget options.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/chart.css">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -165,32 +166,6 @@
     }
     .main-inner { max-width: 900px; margin: 0 auto; }
 
-    /* ── LEGEND ──────────────────────────────────────────── */
-    .legend {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 20px;
-      margin-bottom: 28px;
-      align-items: center;
-    }
-    .legend-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 0.82rem;
-      color: var(--text-mid);
-      font-weight: 500;
-    }
-    .legend-swatch {
-      width: 14px;
-      height: 14px;
-      border-radius: 3px;
-      flex-shrink: 0;
-    }
-    .swatch-cso     { background: var(--cso-color); }
-    .swatch-cso-sub { background: var(--cso-sub); }
-    .swatch-ibo     { background: var(--ibo-color); }
-
     /* ── CHART ───────────────────────────────────────────── */
     .chart { display: flex; flex-direction: column; gap: 10px; }
 
@@ -311,11 +286,6 @@
       .brand-slash, .brand-section { display: none; }
     }
 
-    /* ── CHART ACTIONS ─────────────────────────────────────── */
-    .chart-actions { display:flex; gap:8px; margin-bottom:16px; }
-    .action-btn { display:inline-flex; align-items:center; gap:6px; background:var(--surface); color:var(--text-muted); font-family:'Roboto Mono',monospace; font-size:0.75rem; font-weight:600; padding:6px 14px; border-radius:6px; border:1px solid var(--border); cursor:pointer; transition:all 0.15s; }
-    .action-btn:hover { border-color:var(--blue); color:var(--blue); background:var(--blue-light); }
-    .action-btn:disabled { opacity:0.6; cursor:not-allowed; }
     /* ── EMBED MODAL ───────────────────────────────────────── */
     .embed-modal { position:fixed; inset:0; background:rgba(0,0,0,0.45); display:flex; align-items:center; justify-content:center; z-index:1000; }
     .embed-modal-box { background:var(--surface); border-radius:10px; padding:24px; max-width:540px; width:90%; box-shadow:0 8px 32px rgba(0,0,0,0.18); }
@@ -329,6 +299,7 @@
     .embed-copy-btn:hover { background:#1d4ed8; }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
+  <script defer src="/assets/chart.js"></script>
 <style id="support-btn-css">
 .header-actions{display:flex;align-items:center;gap:14px;}
 .header-link{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border:1px solid rgba(255,255,255,0.15);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
@@ -399,25 +370,30 @@
 <main>
   <div class="main-inner">
 
-    <div class="chart-actions">
-      <button class="action-btn" onclick="downloadChart(this)">&#11015; Download PNG</button>
-      <button class="action-btn" onclick="showEmbed()">&#60;/&#62; Embed</button>
+    <div class="c-actions">
+      <button class="c-action-btn" onclick="downloadChart(this)">&#11015; Download PNG</button>
+      <button class="c-action-btn" onclick="showEmbed()">&#60;/&#62; Embed</button>
     </div>
 
-    <div id="chart-box">
-      <div class="legend">
-        <div class="legend-item">
-          <span class="legend-swatch swatch-cso"></span>
-          Chief Savings Officer's (CSO) Reports, 2026
-        </div>
-        <div class="legend-item">
-          <span class="legend-swatch swatch-ibo"></span>
-          IBO Budget Options, 2024–2026
-        </div>
+    <figure class="chart-card" id="chart-box" data-slug="cso-vs-ibo-budget-options">
+      <div class="c-head">
+        <h2 class="c-title">Restoring the commuter tax would raise six times what the CSO reports found for FY27</h2>
+        <p class="c-deck">Estimated annual impact of each IBO budget option next to the savings the Chief Savings Officer reports identified. The <strong>$1.7B</strong> CSO figure is a multi-year total across all agencies; the FY26 and FY27 rows are single-year figures.</p>
+        <ul class="c-legend">
+          <li class="c-legend-item"><span class="sw" style="background:var(--cso-color)"></span> Chief Savings Officer's (CSO) Reports, 2026</li>
+          <li class="c-legend-item"><span class="sw" style="background:var(--ibo-color)"></span> IBO Budget Options, 2024&ndash;2026</li>
+        </ul>
       </div>
-
-      <div class="chart" id="chart"></div>
-    </div>
+      <div class="c-plot">
+        <div class="chart" id="chart"></div>
+      </div>
+      <figcaption class="c-foot">
+        <div class="c-foot-text">
+          <span>Source: Office of the Mayor CSO announcement, March 20, 2026; NYC Independent Budget Office options via <a href="https://www.nycuriosity.com/p/ibo-budget-options-for-nyc" target="_blank" rel="noopener">NYCuriosity</a></span>
+          <span>Note: four of the seven IBO options require State action before the City could collect them.</span>
+        </div>
+      </figcaption>
+    </figure>
 
     <div class="footnotes">
       <p><strong>CSO figures:</strong> All CSO savings figures ($1.7B total, $196.5M FY27 highlighted, $49.6M FY26 highlighted) are from the Office of the Mayor's announcement of the Chief Savings Officer program, March 20, 2026. Individual agency reports have not yet been released publicly.</p>
@@ -512,32 +488,6 @@
     }, 80);
   });
 
-  async function downloadChart(btn) {
-    const orig = btn.innerHTML;
-    btn.innerHTML = '⏳ Capturing…'; btn.disabled = true;
-    try {
-      const el = document.getElementById('chart-box');
-      const dataUrl = await htmlToImage.toPng(el, { backgroundColor: '#ffffff', pixelRatio: 2 });
-      const a = document.createElement('a');
-      a.download = 'cso-vs-ibo-budget-options.png';
-      a.href = dataUrl; a.click();
-    } finally { btn.innerHTML = orig; btn.disabled = false; }
-  }
-  function showEmbed() {
-    const url = location.origin + location.pathname;
-    document.getElementById('embedCode').value =
-      `<iframe src="${url}" width="900" height="640" frameborder="0" style="border:1px solid #e5e7eb; border-radius:8px;" loading="lazy"></iframe>`;
-    document.getElementById('embedModal').style.display = 'flex';
-  }
-  function closeEmbed() { document.getElementById('embedModal').style.display = 'none'; }
-  function copyEmbed() {
-    const ta = document.getElementById('embedCode'); ta.select();
-    navigator.clipboard.writeText(ta.value).then(() => {
-      const btn = document.querySelector('.embed-copy-btn');
-      btn.textContent = '✓ Copied!';
-      setTimeout(() => btn.textContent = 'Copy code', 2000);
-    });
-  }
 </script>
 
 </body>

@@ -15,8 +15,11 @@
   <meta name="twitter:image"      content="https://data.nycuriosity.com/website_logo.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/chart.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
+  <script defer src="/assets/chart.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -48,8 +51,6 @@
     .hero h2 { font-size:clamp(1.3rem,2.5vw,1.8rem); font-weight:700; letter-spacing:-0.03em; margin-bottom:8px; line-height:1.2; }
     .hero p { font-size:0.92rem; color:var(--text-muted); max-width:680px; line-height:1.65; }
 
-    .chart-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:28px; box-shadow:var(--shadow-sm); margin-bottom:24px; }
-
     .controls-row { display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin-bottom:20px; }
     .view-toggle { display:flex; gap:8px; }
     .toggle-btn { font-family:'Roboto Mono',monospace; font-size:0.75rem; font-weight:600; padding:5px 14px; border-radius:20px; border:1px solid var(--border-mid); background:var(--bg); color:var(--text-muted); cursor:pointer; transition:all 0.15s; }
@@ -72,14 +73,12 @@
     .dropdown-dot { width:10px; height:10px; border-radius:2px; flex-shrink:0; }
     .dropdown-item-label { font-size:0.81rem; color:var(--text-mid); }
 
-    .chart-wrap { position:relative; width:100%; height:460px; }
+    .canvas-box { position:relative; width:100%; height:460px; }
 
     .legend-grid { display:flex; flex-wrap:wrap; gap:10px 20px; margin-top:18px; }
     .legend-item { display:flex; align-items:center; gap:7px; font-size:0.8rem; color:var(--text-mid); cursor:pointer; user-select:none; }
     .legend-dot { width:12px; height:12px; border-radius:3px; flex-shrink:0; }
     .legend-item.dimmed { opacity:0.4; }
-
-    .caption { font-size:0.78rem; color:var(--text-faint); font-style:italic; margin-top:16px; line-height:1.5; }
 
     .meta-section { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:24px; box-shadow:var(--shadow-sm); margin-bottom:24px; }
     .meta-section h3 { font-family:'Roboto Mono',monospace; font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.1em; color:var(--text-faint); margin-bottom:14px; }
@@ -89,9 +88,6 @@
     .download-btn { display:inline-flex; align-items:center; gap:6px; background:var(--blue); color:#fff; font-size:0.82rem; font-weight:600; padding:8px 18px; border-radius:6px; text-decoration:none; transition:background 0.15s; }
     .download-btn:hover { background:#1d4ed8; }
 
-    .chart-actions { display:flex; gap:8px; margin-top:14px; }
-    .action-btn { display:inline-flex; align-items:center; gap:6px; background:var(--surface); color:var(--text-muted); font-family:'Roboto Mono',monospace; font-size:0.75rem; font-weight:600; padding:6px 14px; border-radius:6px; border:1px solid var(--border-mid); cursor:pointer; transition:all 0.15s; }
-    .action-btn:hover { border-color:var(--blue); color:var(--blue); background:var(--blue-light); }
     .embed-modal { position:fixed; inset:0; background:rgba(0,0,0,0.45); display:flex; align-items:center; justify-content:center; z-index:1000; }
     .embed-modal-box { background:var(--surface); border-radius:10px; padding:24px; max-width:540px; width:90%; box-shadow:0 8px 32px rgba(0,0,0,0.18); }
     .embed-modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
@@ -151,11 +147,18 @@
     <p>How the focus of MCB3's full board resolutions has shifted across 10 topic categories from 2004 to 2025. Toggle between raw counts and percentage view to see both volume and composition changes.</p>
   </div>
 
-  <div class="chart-actions">
-    <button class="action-btn" onclick="downloadChart()">⬇ Download PNG</button>
-    <button class="action-btn" onclick="showEmbed()">&#60;/&#62; Embed</button>
+  <div class="c-actions">
+    <button class="c-action-btn" onclick="downloadChart(this)">&#11015; Download PNG</button>
+    <button class="c-action-btn" onclick="showEmbed()">&#60;/&#62; Embed</button>
   </div>
-  <div class="chart-card">
+
+  <figure class="chart-card" id="chart-box" data-slug="mcb3-topics-over-time">
+    <div class="c-head">
+      <h2 class="c-title">Liquor licensing resolutions peaked at 254 in 2010 and have stayed under 130 a year since 2015</h2>
+      <p class="c-deck">MCB3 full-board resolutions by topic category, 2004 to 2025. A resolution matching more than one category is counted in each, so a year's stack can exceed its resolution total. Click a legend entry to drop a category.</p>
+    </div>
+
+    <div class="c-plot">
     <div class="controls-row">
       <div class="view-toggle">
         <button class="toggle-btn active" id="btnAbsolute" onclick="setView('absolute')">Absolute count</button>
@@ -178,12 +181,19 @@
         </div>
       </div>
     </div>
-    <div class="chart-wrap">
+    <div class="canvas-box">
       <canvas id="topicsChart"></canvas>
     </div>
     <div class="legend-grid" id="legend"></div>
-    <p class="caption" id="captionText">Annual resolution counts by topic category, 2004–2025. Classification is keyword-based; some resolutions match multiple categories. "Other / Unclassified" includes resolutions not matched to a named category, in earlier years this includes many individual SLA approvals recorded with generic titles ("To approve."). Source: NYC.gov MCB3 meeting minutes. Created by Tal Roded · NYCuriosity</p>
-  </div>
+    </div>
+
+    <figcaption class="c-foot">
+      <div class="c-foot-text">
+        <span>Source: <a href="https://www.nyc.gov/site/manhattancb3/index.page" target="_blank" rel="noopener">NYC.gov MCB3 meeting minutes</a>, 7,134 resolutions across 268 full-board meetings</span>
+        <span>Note: classification is keyword-based. "Other / Unclassified" is inflated before 2014 by individual SLA votes recorded as "To approve."</span>
+      </div>
+    </figcaption>
+  </figure>
 
   <div class="meta-section">
     <h3>Key Observations</h3>
@@ -224,6 +234,8 @@
 </footer>
 
 <script>
+document.addEventListener('DOMContentLoaded', function () {
+
 const YEARS = [2004,2005,2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016,2017,2018,2019,2020,2021,2022,2023,2024,2025];
 
 const TOPICS = [
@@ -367,15 +379,12 @@ function initChart() {
         x: {
           stacked: true,
           grid: { display: false },
-          ticks: { font: { family: "'Roboto Mono', monospace", size: 11 }, color: '#6b7280', maxRotation: 45 },
+          ticks: { maxRotation: 45 },
           border: { display: false }
         },
         y: {
           stacked: true,
-          grid: { color: '#e5e7eb' },
           ticks: {
-            font: { family: "'Roboto Mono', monospace", size: 11 },
-            color: '#6b7280',
             callback: v => currentView === 'percent' ? v + '%' : v.toLocaleString()
           },
           border: { display: false },
@@ -428,111 +437,13 @@ buildDropdown();
 initChart();
 buildLegend();
 
-function downloadChart() {
-  const src = chart.canvas;
-  const captionText = document.querySelector('.caption').textContent.trim();
-  const scale = window.devicePixelRatio || 1;
-  const pad = Math.round(16 * scale);
-  const capFontSize = Math.round(11 * scale);
-  const capLineH = Math.round(17 * scale);
-  const legFontSize = Math.round(12 * scale);
-  const dotSize = Math.round(10 * scale);
-  const dotGap = Math.round(6 * scale);
-  const itemGapX = Math.round(20 * scale);
-  const itemGapY = Math.round(10 * scale);
-  const itemRowH = Math.round(16 * scale);
-  const maxW = src.width - pad * 2;
+/* Inline onclick attributes need these on the global object. */
+window.setView               = setView;
+window.toggleDropdown        = toggleDropdown;
+window.selectAllCategories   = selectAllCategories;
+window.clearAllCategories    = clearAllCategories;
 
-  const tmp = document.createElement('canvas');
-  const tmpCtx = tmp.getContext('2d');
-
-  // ── Caption word-wrap ──────────────────────────────────────
-  const capFont = `italic ${capFontSize}px Inter, -apple-system, sans-serif`;
-  tmpCtx.font = capFont;
-  const capLines = [];
-  let line = '';
-  for (const word of captionText.split(' ')) {
-    const test = line ? line + ' ' + word : word;
-    if (line && tmpCtx.measureText(test).width > maxW) { capLines.push(line); line = word; }
-    else line = test;
-  }
-  if (line) capLines.push(line);
-
-  // ── Legend layout ──────────────────────────────────────────
-  const legFont = `${legFontSize}px Inter, -apple-system, sans-serif`;
-  tmpCtx.font = legFont;
-  const activeTopics = TOPICS.filter((_, i) => selected[i]);
-  const itemMetas = activeTopics.map(t => ({
-    t,
-    w: dotSize + dotGap + tmpCtx.measureText(t.label).width
-  }));
-  const legRows = [];
-  let curRow = [], curRowW = 0;
-  for (const meta of itemMetas) {
-    const needed = curRow.length ? curRowW + itemGapX + meta.w : meta.w;
-    if (curRow.length && needed > maxW) { legRows.push(curRow); curRow = [meta]; curRowW = meta.w; }
-    else { curRow.push(meta); curRowW = needed; }
-  }
-  if (curRow.length) legRows.push(curRow);
-
-  const legBlockH = legRows.length
-    ? pad + legRows.length * itemRowH + (legRows.length - 1) * itemGapY
-    : 0;
-  const capBlockH = capLines.length * capLineH + pad * 2;
-
-  // ── Build output canvas ────────────────────────────────────
-  const out = document.createElement('canvas');
-  out.width = src.width;
-  out.height = src.height + legBlockH + capBlockH;
-  const ctx = out.getContext('2d');
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(0, 0, out.width, out.height);
-  ctx.drawImage(src, 0, 0);
-
-  // Draw legend
-  ctx.font = legFont;
-  ctx.textBaseline = 'middle';
-  let legY = src.height + pad;
-  for (const row of legRows) {
-    let x = pad;
-    for (const { t, w } of row) {
-      ctx.fillStyle = t.color;
-      ctx.fillRect(x, legY + (itemRowH - dotSize) / 2, dotSize, dotSize);
-      ctx.fillStyle = '#374151';
-      ctx.fillText(t.label, x + dotSize + dotGap, legY + itemRowH / 2);
-      x += w + itemGapX;
-    }
-    legY += itemRowH + itemGapY;
-  }
-
-  // Draw caption
-  ctx.font = capFont;
-  ctx.fillStyle = '#9ca3af';
-  ctx.textBaseline = 'top';
-  const capY = src.height + legBlockH + pad;
-  capLines.forEach((l, i) => ctx.fillText(l, pad, capY + i * capLineH));
-
-  const a = document.createElement('a');
-  a.download = 'mcb3-topics-over-time.png';
-  a.href = out.toDataURL('image/png');
-  a.click();
-}
-function showEmbed() {
-  const url = location.origin + location.pathname;
-  document.getElementById('embedCode').value =
-    `<iframe src="${url}" width="800" height="620" frameborder="0" style="border:1px solid #e5e7eb; border-radius:8px;" loading="lazy"></iframe>`;
-  document.getElementById('embedModal').style.display = 'flex';
-}
-function closeEmbed() { document.getElementById('embedModal').style.display = 'none'; }
-function copyEmbed() {
-  const ta = document.getElementById('embedCode');
-  ta.select();
-  navigator.clipboard.writeText(ta.value).then(() => {
-    const btn = document.querySelector('.embed-copy-btn');
-    btn.textContent = '✓ Copied!';
-    setTimeout(() => btn.textContent = 'Copy code', 2000);
-  });
-}
+});
 </script>
 </body>
 </html>

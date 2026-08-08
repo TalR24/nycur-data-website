@@ -12,7 +12,8 @@
   <meta property="og:description" content="Operating revenue mix — fares vs. government subsidy vs. other income — for the MTA, Transport for London, and Hong Kong's MTR.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/chart.css">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -141,56 +142,6 @@
     }
     .main-inner { max-width: 900px; margin: 0 auto; }
 
-    /* ── CHART ACTIONS ─────────────────────────────────────── */
-    .chart-actions { display:flex; gap:8px; margin-bottom:16px; }
-    .action-btn { display:inline-flex; align-items:center; gap:6px; background:var(--surface); color:var(--text-muted); font-family:'Roboto Mono',monospace; font-size:0.75rem; font-weight:600; padding:6px 14px; border-radius:6px; border:1px solid var(--border); cursor:pointer; transition:all 0.15s; }
-    .action-btn:hover { border-color:var(--blue); color:var(--blue); background:var(--blue-light); }
-    .action-btn:disabled { opacity:0.6; cursor:not-allowed; }
-
-    /* ── CHART BOX ───────────────────────────────────────── */
-    #chart-box {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow-sm);
-      overflow: hidden;
-    }
-    .chart-box-inner { padding: clamp(18px, 3vw, 28px); }
-    .chart-title {
-      font-family: 'Roboto Mono', monospace;
-      font-size: 0.95rem; font-weight: 700; color: var(--text);
-      letter-spacing: -0.02em; margin-bottom: 4px;
-    }
-    .chart-subtitle {
-      font-size: 0.8rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 18px;
-    }
-
-    /* ── LEGEND ──────────────────────────────────────────── */
-    .legend {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 16px 20px;
-      margin-bottom: 26px;
-      align-items: center;
-    }
-    .legend-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 0.8rem;
-      color: var(--text-mid);
-      font-weight: 500;
-    }
-    .legend-swatch {
-      width: 14px;
-      height: 14px;
-      border-radius: 3px;
-      flex-shrink: 0;
-    }
-    .swatch-fares { background: var(--fares-color); }
-    .swatch-gov   { background: var(--gov-color); }
-    .swatch-other { background: var(--other-color); }
-
     /* ── STACKED BARS ────────────────────────────────────── */
     .chart { display: flex; flex-direction: column; gap: 26px; }
 
@@ -255,14 +206,7 @@
       .seg-pct { font-size: 0.6rem; }
     }
 
-    /* ── ATTRIBUTION ─────────────────────────────────────── */
-    .chart-attribution {
-      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
-      padding: 12px 16px; border-top: 1px solid var(--border); background: var(--bg);
-      font-size: 0.78rem; color: var(--text-faint); font-family: 'Roboto Mono', monospace;
-    }
-    .chart-attribution a { color: var(--blue); text-decoration: none; }
-    .chart-attribution a:hover { text-decoration: underline; }
+    /* ── CSV DOWNLOAD BUTTON ─────────────────────────────── */
     .dl-btn {
       font-family: 'Roboto Mono', monospace; font-size: 0.72rem; font-weight: 600;
       padding: 5px 12px; border-radius: 16px; background: var(--blue-light);
@@ -272,7 +216,6 @@
     .dl-btn:hover { background: var(--blue); color: #fff; border-color: var(--blue); }
 
     /* ── SECONDARY CHART (donuts + recovery strip) ───────── */
-    #chart-box-2 { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); overflow: hidden; margin-top: 20px; }
     .donut-row { display: flex; gap: 12px; justify-content: space-around; flex-wrap: wrap; margin-bottom: 8px; }
     .donut-block { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1 1 150px; max-width: 220px; }
     .donut { width: 150px; height: 150px; }
@@ -284,9 +227,9 @@
     .strip-title { font-family: 'Roboto Mono', monospace; font-size: 0.82rem; font-weight: 700; color: var(--text); margin: 20px 0 2px; }
     .strip-sub { font-size: 0.76rem; color: var(--text-muted); margin-bottom: 6px; line-height: 1.5; }
     #recovery-strip svg { width: 100%; height: auto; display: block; }
-    .dp-axis { font-family: 'Roboto Mono', monospace; font-size: 10px; fill: var(--text-muted); letter-spacing: 0.02em; }
-    .dp-axis-note { font-family: 'Roboto Mono', monospace; font-size: 8.5px; fill: var(--text-faint); }
-    .dp-name { font-family: 'Roboto Mono', monospace; font-size: 10px; font-weight: 700; letter-spacing: 0.01em; }
+    .dp-axis { font-family: 'Roboto Mono', monospace; font-size: 13px; fill: var(--text-muted); letter-spacing: 0.02em; }
+    .dp-axis-note { font-family: 'Roboto Mono', monospace; font-size: 11px; fill: var(--text-faint); }
+    .dp-name { font-family: 'Roboto Mono', monospace; font-size: 14px; font-weight: 700; letter-spacing: 0.01em; }
     /* PNG text breathing room (commas/parentheses) */
     .seg-pct, .seg-pct-outside, .agency-meta { letter-spacing: 0.012em; }
 
@@ -354,6 +297,7 @@
     .embed-copy-btn:hover { background:#1d4ed8; }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
+  <script defer src="/assets/chart.js"></script>
 <style id="support-btn-css">
 .header-actions{display:flex;align-items:center;gap:14px;}
 .header-link{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border:1px solid rgba(255,255,255,0.15);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
@@ -422,62 +366,60 @@
 <main>
   <div class="main-inner">
 
-    <div class="chart-actions">
-      <button class="action-btn" onclick="downloadChart(this, 'chart-box', 'transit-agency-funding-mix.png')">&#11015; Download PNG</button>
-      <button class="action-btn" onclick="showEmbed()">&#60;/&#62; Embed</button>
+    <div class="c-actions">
+      <button class="c-action-btn" onclick="downloadChart(this)">&#11015; Download PNG</button>
+      <button class="c-action-btn" onclick="showEmbed()">&#60;/&#62; Embed</button>
+      <a class="dl-btn" href="/members/?file=nycuriosity_substack_posts/nyc_building_strategies/data/funding_mix.csv">↓ Download CSV (members)</a>
     </div>
 
-    <div id="chart-box">
-      <div class="chart-box-inner">
-        <div class="chart-title">Operating revenue mix: MTA vs. TfL vs. MTR</div>
-        <div class="chart-subtitle">Share of each agency's operating revenue, by source. Author's classification of each agency's own reported figures.</div>
-
-        <div class="legend">
-          <div class="legend-item">
-            <span class="legend-swatch swatch-fares"></span>
-            Fares
-          </div>
-          <div class="legend-item">
-            <span class="legend-swatch swatch-gov"></span>
-            Government subsidies &amp; dedicated taxes
-          </div>
-          <div class="legend-item">
-            <span class="legend-swatch swatch-other"></span>
-            Other, tolls, road charges, commercial
-          </div>
-        </div>
-
+    <figure class="chart-card" id="chart-box" data-slug="transit-agency-funding-mix">
+      <div class="c-head">
+        <h2 class="c-title">Fares cover 26.2% of the MTA's operating revenue, less than half the share riders carry at Transport for London</h2>
+        <p class="c-deck">Share of each agency's operating revenue by source: the MTA's 2025 adopted budget, TfL's 2024/25 actuals, and MTR's 2024 Hong Kong operations. Categories are the author's mapping of each agency's own reporting, so the shares are comparable only approximately.</p>
+        <ul class="c-legend">
+          <li class="c-legend-item"><span class="sw" style="background:var(--fares-color)"></span> Fares</li>
+          <li class="c-legend-item"><span class="sw" style="background:var(--gov-color)"></span> Government subsidies and dedicated taxes</li>
+          <li class="c-legend-item"><span class="sw" style="background:var(--other-color)"></span> Other: tolls, road charges, commercial</li>
+        </ul>
+      </div>
+      <div class="c-plot">
         <div class="chart" id="chart"></div>
       </div>
-
-      <div class="chart-attribution">
-        <span>Created by Tal Roded · NYCuriosity · Sources: <a href="https://council.nyc.gov/budget/wp-content/uploads/sites/54/2025/03/Metropolitan-Transportation-Authority.pdf" target="_blank" rel="noopener">NYC Council Finance Division (MTA 2025 budget)</a>, <a href="https://content.tfl.gov.uk/tfl-annual-report-and-statement-of-accounts-2024-25.pdf" target="_blank" rel="noopener">TfL Annual Report 2024/25</a>, <a href="https://www.mtr.com.hk/archive/corporate/en/investor/sehk/e_Annual_Results_2024.pdf" target="_blank" rel="noopener">MTR Annual Results 2024</a></span>
-        <a class="dl-btn" href="/members/?file=nycuriosity_substack_posts/nyc_building_strategies/data/funding_mix.csv">↓ Download CSV (members)</a>
-      </div>
-    </div>
-
-    <div class="chart-actions" style="margin-top:20px;">
-      <button class="action-btn" onclick="downloadChart(this, 'chart-box-2', 'transit-funding-donuts.png')">&#11015; Download PNG</button>
-    </div>
-
-    <div id="chart-box-2">
-      <div class="chart-box-inner">
-        <div class="chart-title">Each agency's revenue mix, and how much fares cover</div>
-        <div class="chart-subtitle">The same shares drawn as donuts (left to right: MTA, TfL, MTR), plus farebox recovery, the share of operating cost that passenger fares pay for.</div>
-        <div class="legend">
-          <div class="legend-item"><span class="legend-swatch swatch-fares"></span>Fares</div>
-          <div class="legend-item"><span class="legend-swatch swatch-gov"></span>Government subsidies &amp; dedicated taxes</div>
-          <div class="legend-item"><span class="legend-swatch swatch-other"></span>Other, tolls, road charges, commercial</div>
+      <figcaption class="c-foot">
+        <div class="c-foot-text">
+          <span>Source: <a href="https://council.nyc.gov/budget/wp-content/uploads/sites/54/2025/03/Metropolitan-Transportation-Authority.pdf" target="_blank" rel="noopener">NYC Council Finance Division (MTA 2025 budget)</a>, <a href="https://content.tfl.gov.uk/tfl-annual-report-and-statement-of-accounts-2024-25.pdf" target="_blank" rel="noopener">TfL Annual Report 2024/25</a>, <a href="https://www.mtr.com.hk/archive/corporate/en/investor/sehk/e_Annual_Results_2024.pdf" target="_blank" rel="noopener">MTR Annual Results 2024</a></span>
+          <span>Note: MTA bridge and tunnel tolls sit in Other. MTR's 0% government share excludes the station development rights the Hong Kong government grants it.</span>
         </div>
+      </figcaption>
+    </figure>
+
+    <div class="c-actions" style="margin-top:20px;">
+      <button class="c-action-btn" onclick="downloadChart(this)">&#11015; Download PNG</button>
+    </div>
+
+    <figure class="chart-card" data-slug="transit-funding-donuts">
+      <div class="c-head">
+        <h2 class="c-title">MTR takes in about 150% of its Hong Kong running costs at the farebox; the MTA takes in 26%</h2>
+        <p class="c-deck">The same revenue shares drawn as donuts, left to right MTA, TfL, MTR, with each agency's farebox recovery, the share of operating cost that passenger fares pay for.</p>
+        <ul class="c-legend">
+          <li class="c-legend-item"><span class="sw" style="background:var(--fares-color)"></span> Fares</li>
+          <li class="c-legend-item"><span class="sw" style="background:var(--gov-color)"></span> Government subsidies and dedicated taxes</li>
+          <li class="c-legend-item"><span class="sw" style="background:var(--other-color)"></span> Other: tolls, road charges, commercial</li>
+        </ul>
+      </div>
+      <div class="c-plot">
         <div class="donut-row" id="donuts"></div>
         <div class="strip-title">Farebox recovery ratio</div>
         <div class="strip-sub">Fares as a share of operating cost. Past the dashed 100% line, fares more than cover the cost of running the system.</div>
         <div id="recovery-strip"></div>
       </div>
-      <div class="chart-attribution">
-        <span>Created by Tal Roded · NYCuriosity · Sources: <a href="https://council.nyc.gov/budget/wp-content/uploads/sites/54/2025/03/Metropolitan-Transportation-Authority.pdf" target="_blank" rel="noopener">NYC Council Finance Division (MTA 2025)</a>, <a href="https://content.tfl.gov.uk/tfl-annual-report-and-statement-of-accounts-2024-25.pdf" target="_blank" rel="noopener">TfL 2024/25</a>, <a href="https://www.mtr.com.hk/archive/corporate/en/investor/sehk/e_Annual_Results_2024.pdf" target="_blank" rel="noopener">MTR 2024</a></span>
-      </div>
-    </div>
+      <figcaption class="c-foot">
+        <div class="c-foot-text">
+          <span>Source: <a href="https://council.nyc.gov/budget/wp-content/uploads/sites/54/2025/03/Metropolitan-Transportation-Authority.pdf" target="_blank" rel="noopener">NYC Council Finance Division (MTA 2025)</a>, <a href="https://content.tfl.gov.uk/tfl-annual-report-and-statement-of-accounts-2024-25.pdf" target="_blank" rel="noopener">TfL 2024/25</a>, <a href="https://www.mtr.com.hk/archive/corporate/en/investor/sehk/e_Annual_Results_2024.pdf" target="_blank" rel="noopener">MTR 2024</a></span>
+          <span>Note: the three recovery ratios are author-computed and use non-identical denominators, so they are indicative rather than official.</span>
+        </div>
+      </figcaption>
+    </figure>
 
     <div class="data-section">
       <div class="data-section-head">
@@ -638,15 +580,15 @@
     }
     const strip = document.getElementById('recovery-strip');
     if (strip) {
-      const W = 620, H = 92, x0 = 36, x1 = W - 70, y = 50, max = 160;
+      const W = 1000, H = 118, x0 = 58, x1 = W - 110, y = 66, max = 160;
       const xOf = v => x0 + v / max * (x1 - x0);
       let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Farebox recovery ratio: MTA 26%, TfL 63%, MTR about 150%">`;
       s += `<line x1="${x0}" y1="${y}" x2="${x1}" y2="${y}" stroke="#d1d5db" stroke-width="1.5"/>`;
-      [0, 50, 100, 150].forEach(t => { const tx = xOf(t).toFixed(1); s += `<line x1="${tx}" y1="${y - 4}" x2="${tx}" y2="${y + 4}" stroke="#d1d5db" stroke-width="1"/>`; s += `<text x="${tx}" y="${y + 18}" text-anchor="middle" class="dp-axis">${t}%</text>`; });
+      [0, 50, 100, 150].forEach(t => { const tx = xOf(t).toFixed(1); s += `<line x1="${tx}" y1="${y - 5}" x2="${tx}" y2="${y + 5}" stroke="#d1d5db" stroke-width="1"/>`; s += `<text x="${tx}" y="${y + 24}" text-anchor="middle" class="dp-axis">${t}%</text>`; });
       const be = xOf(100).toFixed(1);
-      s += `<line x1="${be}" y1="22" x2="${be}" y2="${y}" stroke="#9ca3af" stroke-width="1" stroke-dasharray="4,3"/>`;
-      s += `<text x="${be}" y="16" text-anchor="middle" class="dp-axis-note">covers 100% of running cost</text>`;
-      [['MTA', 26, '26'], ['TfL', 63, '63'], ['MTR', 150, '~150']].forEach(([n, v, lab]) => { const tx = xOf(v).toFixed(1); s += `<circle cx="${tx}" cy="${y}" r="6" fill="#2563eb" stroke="#fff" stroke-width="1.5"/>`; s += `<text x="${tx}" y="${y - 12}" text-anchor="middle" class="dp-name" fill="#1e3a8a">${n} ${lab}%</text>`; });
+      s += `<line x1="${be}" y1="28" x2="${be}" y2="${y}" class="c-refline c-dash-ref"/>`;
+      s += `<text x="${be}" y="20" text-anchor="middle" class="dp-axis-note">covers 100% of running cost</text>`;
+      [['MTA', 26, '26'], ['TfL', 63, '63'], ['MTR', 150, '~150']].forEach(([n, v, lab]) => { const tx = xOf(v).toFixed(1); s += `<circle cx="${tx}" cy="${y}" r="7" fill="#2563eb" stroke="#fff" stroke-width="1.5"/>`; s += `<text x="${tx}" y="${y - 16}" text-anchor="middle" class="dp-name" fill="#1e3a8a">${n} ${lab}%</text>`; });
       s += `</svg>`;
       strip.innerHTML = s;
     }
@@ -669,34 +611,6 @@
       tbody.appendChild(tr);
     });
   })();
-
-  async function downloadChart(btn, boxId, filename) {
-    const orig = btn.innerHTML;
-    btn.innerHTML = '⏳ Capturing…'; btn.disabled = true;
-    try {
-      if (document.fonts && document.fonts.ready) { try { await document.fonts.ready; } catch (e) {} }
-      const el = document.getElementById(boxId || 'chart-box');
-      const dataUrl = await htmlToImage.toPng(el, { backgroundColor: '#ffffff', pixelRatio: 2 });
-      const a = document.createElement('a');
-      a.download = filename || 'chart.png';
-      a.href = dataUrl; a.click();
-    } finally { btn.innerHTML = orig; btn.disabled = false; }
-  }
-  function showEmbed() {
-    const url = location.origin + location.pathname;
-    document.getElementById('embedCode').value =
-      `<iframe src="${url}" width="900" height="1500" frameborder="0" style="border:1px solid #e5e7eb; border-radius:8px;" loading="lazy"></iframe>`;
-    document.getElementById('embedModal').style.display = 'flex';
-  }
-  function closeEmbed() { document.getElementById('embedModal').style.display = 'none'; }
-  function copyEmbed() {
-    const ta = document.getElementById('embedCode'); ta.select();
-    navigator.clipboard.writeText(ta.value).then(() => {
-      const btn = document.querySelector('.embed-copy-btn');
-      btn.textContent = '✓ Copied!';
-      setTimeout(() => btn.textContent = 'Copy code', 2000);
-    });
-  }
 </script>
 
 </body>

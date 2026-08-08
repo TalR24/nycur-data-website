@@ -8,7 +8,8 @@
   <meta name="description" content="About 62% of NYC's 12,000 linear curb miles are dedicated to car storage. Only 5% supports protected bike or bus lanes.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/chart.css">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -75,31 +76,8 @@
     .callout-pill.blue .cp-num { color: var(--blue); }
     .callout-pill .cp-label { font-size: 0.78rem; color: var(--text-muted); margin-top: 4px; line-height: 1.4; }
 
-    /* ── CHART WRAP ──────────────────────────────────────── */
-    .chart-wrap {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 28px 28px 0;
-      overflow: hidden;
-    }
-    .chart-wrap-title {
-      font-family: 'Roboto Mono', monospace;
-      font-size: 1.05rem;
-      font-weight: 700;
-      color: var(--text);
-      letter-spacing: -0.02em;
-      margin-bottom: 6px;
-    }
-    .chart-wrap-sub {
-      font-size: 0.82rem;
-      color: var(--text-muted);
-      margin-bottom: 24px;
-      line-height: 1.5;
-    }
-
     /* ── CURB STRIP ──────────────────────────────────────── */
-    .curb-strip-wrap { margin-bottom: 6px; }
+    .curb-strip-wrap { margin-bottom: 20px; }
     .curb-strip {
       display: flex;
       height: 52px;
@@ -194,13 +172,6 @@
       .cat-miles { display: none; }
     }
 
-    .chart-attribution { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; color: var(--text-faint); text-align: right; padding: 14px 0 0; border-top: 1px solid var(--border); margin-top: 16px; }
-
-    .chart-actions { display: flex; gap: 8px; margin-bottom: 16px; }
-    .action-btn { display: inline-flex; align-items: center; gap: 6px; background: var(--surface); color: var(--text-muted); font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600; padding: 6px 14px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; transition: all 0.15s; }
-    .action-btn:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
-    .action-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-
     .embed-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; z-index: 1000; }
     .embed-modal-box { background: var(--surface); border-radius: 10px; padding: 24px; max-width: 540px; width: 90%; box-shadow: 0 8px 32px rgba(0,0,0,0.18); }
     .embed-modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
@@ -227,6 +198,7 @@
     .footer-links a:hover { color: var(--blue); }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
+  <script defer src="/assets/chart.js"></script>
 <style id="support-btn-css">
 .header-actions{display:flex;align-items:center;gap:14px;}
 .header-link{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border:1px solid rgba(255,255,255,0.15);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
@@ -305,25 +277,34 @@
       </div>
     </div>
 
-    <div class="chart-actions">
-      <button class="action-btn" onclick="downloadChart(this)">&#11015; Download PNG</button>
-      <button class="action-btn" onclick="showEmbed()">&#60;/&#62; Embed</button>
+    <div class="c-actions">
+      <button class="c-action-btn" onclick="downloadChart(this)">&#11015; Download PNG</button>
+      <button class="c-action-btn" onclick="showEmbed()">&#60;/&#62; Embed</button>
     </div>
 
-    <div class="chart-wrap" id="chartWrap">
-      <div class="chart-wrap-title">NYC Curb Space Allocation</div>
-      <div class="chart-wrap-sub">Approximate breakdown of ~12,000 linear curb miles (both sides of all streets). Source: NYC DOT Curb Management Strategy, 2021.</div>
-
-      <!-- Segmented curb strip -->
-      <div class="curb-strip-wrap">
-        <div class="curb-strip" id="curbStrip"></div>
+    <figure class="chart-card" id="chart-box" data-slug="nyc-curb-space-allocation">
+      <div class="c-head">
+        <h2 class="c-title">Car storage takes 62% of New York's curb space, and bike and bus lanes take 5%</h2>
+        <p class="c-deck">Share of roughly <strong>12,000 linear curb miles</strong>, both sides of every street, by use. Percentages are citywide averages and shift by time of day, since commercial loading zones become parking overnight.</p>
       </div>
 
-      <!-- Category rows by group -->
-      <div class="category-grid" id="categoryGrid"></div>
+      <div class="c-plot">
+        <!-- Segmented curb strip -->
+        <div class="curb-strip-wrap">
+          <div class="curb-strip" id="curbStrip"></div>
+        </div>
 
-      <div class="chart-attribution">Created by Tal Roded · NYCuriosity</div>
-    </div>
+        <!-- Category rows by group -->
+        <div class="category-grid" id="categoryGrid"></div>
+      </div>
+
+      <figcaption class="c-foot">
+        <div class="c-foot-text">
+          <span>Source: <a href="https://www.nyc.gov/html/dot/html/pedestrians/curbmanagement.shtml" target="_blank" rel="noopener">NYC DOT Curb Management Strategy</a> (2021) and related DOT data</span>
+          <span>Note: 12,000 miles is a round-number baseline for the roughly 6,300 centerline miles of city street. Category shares are estimates.</span>
+        </div>
+      </figcaption>
+    </figure>
 
     <div class="footnotes">
       <p><strong>Total curb mileage:</strong> NYC has approximately 6,300 centerline miles of streets (NYC DOT). On both sides, this yields roughly 12,000–12,600 linear curb miles. This visualization uses 12,000 miles as a round-number baseline.</p>
@@ -447,34 +428,6 @@
       });
     }, 100);
   });
-
-  // ── DOWNLOAD / EMBED ─────────────────────────────────────────
-  async function downloadChart(btn) {
-    const orig = btn.innerHTML;
-    btn.innerHTML = '⏳ Capturing…'; btn.disabled = true;
-    try {
-      const el = document.querySelector('.chart-wrap');
-      const dataUrl = await htmlToImage.toPng(el, { backgroundColor: '#f8faff', pixelRatio: 2 });
-      const a = document.createElement('a');
-      a.download = 'nyc-curb-space-allocation.png';
-      a.href = dataUrl; a.click();
-    } finally { btn.innerHTML = orig; btn.disabled = false; }
-  }
-  function showEmbed() {
-    const url = location.origin + location.pathname;
-    document.getElementById('embedCode').value =
-      `<iframe src="${url}" width="900" height="720" frameborder="0" style="border:1px solid #e5e7eb; border-radius:8px;" loading="lazy"></iframe>`;
-    document.getElementById('embedModal').style.display = 'flex';
-  }
-  function closeEmbed() { document.getElementById('embedModal').style.display = 'none'; }
-  function copyEmbed() {
-    const ta = document.getElementById('embedCode'); ta.select();
-    navigator.clipboard.writeText(ta.value).then(() => {
-      const btn = document.querySelector('.embed-copy-btn');
-      btn.textContent = '✓ Copied!';
-      setTimeout(() => btn.textContent = 'Copy code', 2000);
-    });
-  }
 </script>
 
 </body>

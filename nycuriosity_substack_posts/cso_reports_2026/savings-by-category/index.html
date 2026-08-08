@@ -12,7 +12,8 @@
   <meta property="og:description" content="How NYC's $246M in CSO savings break down by type: eligibility audits, contract termination, renegotiation, revenue, and in-housing.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/chart.css">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -220,17 +221,6 @@
     .legend-item.active .legend-agencies { display: block; }
 
     /* ── FY BREAKDOWN TABLE ───────────────────────────────── */
-    .fy-table-wrap {
-      margin-top: 36px;
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--radius); overflow: hidden;
-    }
-    .fy-table-header {
-      background: var(--text);
-      padding: 10px 20px;
-      font-family: 'Roboto Mono', monospace; font-size: 0.68rem; font-weight: 600;
-      text-transform: uppercase; letter-spacing: 0.07em; color: rgba(255,255,255,0.6);
-    }
     .fy-table {
       width: 100%; border-collapse: collapse;
     }
@@ -288,11 +278,6 @@
       .fy-table th.hide-sm, .fy-table td.hide-sm { display: none; }
     }
 
-    /* ── CHART ACTIONS ─────────────────────────────────────── */
-    .chart-actions { display:flex; gap:8px; margin-bottom:20px; }
-    .action-btn { display:inline-flex; align-items:center; gap:6px; background:var(--surface); color:var(--text-muted); font-family:'Roboto Mono',monospace; font-size:0.75rem; font-weight:600; padding:6px 14px; border-radius:6px; border:1px solid var(--border); cursor:pointer; transition:all 0.15s; }
-    .action-btn:hover { border-color:var(--blue); color:var(--blue); background:var(--blue-light); }
-    .action-btn:disabled { opacity:0.6; cursor:not-allowed; }
     /* ── EMBED MODAL ───────────────────────────────────────── */
     .embed-modal { position:fixed; inset:0; background:rgba(0,0,0,0.45); display:flex; align-items:center; justify-content:center; z-index:1000; }
     .embed-modal-box { background:var(--surface); border-radius:10px; padding:24px; max-width:540px; width:90%; box-shadow:0 8px 32px rgba(0,0,0,0.18); }
@@ -306,6 +291,7 @@
     .embed-copy-btn:hover { background:#1d4ed8; }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
+  <script defer src="/assets/chart.js"></script>
 <style id="support-btn-css">
 .header-actions{display:flex;align-items:center;gap:14px;}
 .header-link{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border:1px solid rgba(255,255,255,0.15);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
@@ -374,11 +360,17 @@
 <main>
   <div class="main-inner">
 
-    <div class="chart-actions">
-      <button class="action-btn" onclick="downloadChart(this)">&#11015; Download PNG</button>
-      <button class="action-btn" onclick="showEmbed()">&#60;/&#62; Embed</button>
+    <div class="c-actions">
+      <button class="c-action-btn" onclick="downloadChart(this)">&#11015; Download PNG</button>
+      <button class="c-action-btn" onclick="showEmbed()">&#60;/&#62; Embed</button>
     </div>
 
+    <figure class="chart-card" id="chart-box" data-slug="cso-savings-by-category">
+      <div class="c-head">
+        <h2 class="c-title">Eligibility audits at two agencies account for $113M of the $246M in savings, the largest of the five categories</h2>
+        <p class="c-deck">The savings identified across all 16 agency Chief Savings Officer reports, FY26 and FY27 combined, grouped by the primary lever each agency used. Hover a slice to isolate its agencies.</p>
+      </div>
+      <div class="c-plot">
     <div class="chart-layout">
 
       <!-- DONUT -->
@@ -399,22 +391,45 @@
       <div class="legend" id="legend"></div>
 
     </div>
+      </div>
+      <figcaption class="c-foot">
+        <div class="c-foot-text">
+          <span>Source: agency CSO reports released March 20, 2026</span>
+          <span>Note: each agency is assigned to one primary category, so an agency with several levers appears only under its largest.</span>
+        </div>
+      </figcaption>
+    </figure>
 
     <!-- FY BREAKDOWN TABLE -->
-    <div class="fy-table-wrap">
-      <table class="fy-table">
-        <thead>
-          <tr>
-            <th>Category</th>
-            <th class="num">FY26 Savings</th>
-            <th class="num">FY27 Savings</th>
-            <th class="num">Combined</th>
-            <th class="num hide-sm">Share</th>
-          </tr>
-        </thead>
-        <tbody id="fy-tbody"></tbody>
-      </table>
+    <div class="c-actions" style="margin-top:28px">
+      <button class="c-action-btn" onclick="downloadChart(this)">&#11015; Download PNG</button>
     </div>
+
+    <figure class="chart-card" data-slug="cso-savings-by-category-fiscal-year">
+      <div class="c-head">
+        <h2 class="c-title">FY27 carries $196.5M of the $246M in savings, and FY26 accounts for the other $49.6M</h2>
+        <p class="c-deck">The same five categories split by fiscal year. Eligibility audits land entirely in FY27, because both the health-plan and co-op abatement reviews start that year.</p>
+      </div>
+      <div class="c-plot c-plot--scroll">
+        <table class="fy-table">
+          <thead>
+            <tr>
+              <th>Category</th>
+              <th class="num">FY26 Savings</th>
+              <th class="num">FY27 Savings</th>
+              <th class="num">Combined</th>
+              <th class="num hide-sm">Share</th>
+            </tr>
+          </thead>
+          <tbody id="fy-tbody"></tbody>
+        </table>
+      </div>
+      <figcaption class="c-foot">
+        <div class="c-foot-text">
+          <span>Source: agency CSO reports released March 20, 2026</span>
+        </div>
+      </figcaption>
+    </figure>
 
     <div class="footnotes">
       <p><strong>Categorization methodology:</strong> Each agency is assigned to its primary savings lever. DSS ($12.7M) is categorized under contract termination due to the McKinsey contract cancellation, though its plan also includes IT in-sourcing and WiFi revenue. H+H ($39.8M) is categorized under contract renegotiation (the dominant mechanism); its plan also includes staffing and revenue improvements. FDNY ($13M) is categorized under revenue &amp; billing as Medicaid billing is the largest FY27 driver.</p>
@@ -666,34 +681,6 @@
     showDefault();
     paths.forEach(p => p.el.classList.remove('dimmed'));
     legendItems.forEach(item => { item.classList.remove('active'); item.classList.remove('dimmed'); });
-  }
-
-  /* ── export / embed ──────────────────────────────────── */
-  async function downloadChart(btn) {
-    const orig = btn.innerHTML;
-    btn.innerHTML = '⏳ Capturing…'; btn.disabled = true;
-    try {
-      const el = document.querySelector('.chart-layout');
-      const dataUrl = await htmlToImage.toPng(el, { backgroundColor: '#ffffff', pixelRatio: 2 });
-      const a = document.createElement('a');
-      a.download = 'cso-savings-by-category.png';
-      a.href = dataUrl; a.click();
-    } finally { btn.innerHTML = orig; btn.disabled = false; }
-  }
-  function showEmbed() {
-    const url = location.origin + location.pathname;
-    document.getElementById('embedCode').value =
-      `<iframe src="${url}" width="900" height="720" frameborder="0" style="border:1px solid #e5e7eb; border-radius:8px;" loading="lazy"></iframe>`;
-    document.getElementById('embedModal').style.display = 'flex';
-  }
-  function closeEmbed() { document.getElementById('embedModal').style.display = 'none'; }
-  function copyEmbed() {
-    const ta = document.getElementById('embedCode'); ta.select();
-    navigator.clipboard.writeText(ta.value).then(() => {
-      const btn = document.querySelector('.embed-copy-btn');
-      btn.textContent = '✓ Copied!';
-      setTimeout(() => btn.textContent = 'Copy code', 2000);
-    });
   }
 
   /* ── FY breakdown table ──────────────────────────────── */

@@ -12,7 +12,8 @@
   <meta property="og:description" content="The six eye-care companies in New York's $9 million Medicaid fraud indictment collected $34.1 million from Medicaid since 2018, and the pattern was visible in public claims data for years.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/chart.css">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -124,36 +125,6 @@
     main { flex: 1; padding: clamp(28px, 4vw, 48px) clamp(20px, 5vw, 48px); }
     .main-inner { max-width: 900px; margin: 0 auto; }
 
-    .chart-actions { display:flex; gap:8px; margin-bottom:16px; }
-    .action-btn { display:inline-flex; align-items:center; gap:6px; background:var(--surface); color:var(--text-muted); font-family:'Roboto Mono',monospace; font-size:0.75rem; font-weight:600; padding:6px 14px; border-radius:6px; border:1px solid var(--border); cursor:pointer; transition:all 0.15s; }
-    .action-btn:hover { border-color:var(--blue); color:var(--blue); background:var(--blue-light); }
-    .action-btn:disabled { opacity:0.6; cursor:not-allowed; }
-
-    #chart-box {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--radius); box-shadow: var(--shadow-sm);
-      padding: 20px 20px 0; overflow: hidden;
-    }
-    .chart-title {
-      font-family: 'Roboto Mono', monospace; font-size: 0.95rem; font-weight: 700;
-      color: var(--text); letter-spacing: -0.02em; margin-bottom: 6px; line-height: 1.35;
-    }
-    .chart-subtitle { font-size: 0.82rem; color: var(--text-muted); margin-bottom: 18px; line-height: 1.55; }
-    .legend { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 18px; align-items: center; }
-    .legend-item { display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: var(--text-mid); font-weight: 500; }
-    .legend-swatch { width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0; }
-
-    .chart-attribution {
-      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
-      padding: 12px 16px; border-top: 1px solid var(--border); background: var(--bg);
-      font-size: 0.78rem; color: var(--text-faint); font-family: 'Roboto Mono', monospace;
-      margin: 20px -20px 0;
-    }
-    .chart-attribution a { color: var(--blue); text-decoration: none; }
-    .chart-attribution a:hover { text-decoration: underline; }
-
-    .chart-block + .chart-block-wrap { margin-top: 28px; }
-
     .context-box {
       margin-top: 28px; padding: 16px 20px;
       background: var(--blue-light); border: 1px solid var(--blue-mid); border-radius: var(--radius);
@@ -200,6 +171,7 @@
 
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
+  <script defer src="/assets/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
   <script defer src="/assets/site.js"></script>
 </head>
@@ -251,26 +223,46 @@
 
 <main>
   <div class="main-inner">
-    <div class="chart-actions">
-      <button class="action-btn" onclick="downloadChart(this)">&#11015; Download PNG</button>
-      <button class="action-btn" onclick="showEmbed()">&#60;/&#62; Embed</button>
+    <div class="c-actions">
+      <button class="c-action-btn" onclick="downloadChart(this)">&#11015; Download PNG</button>
+      <button class="c-action-btn" onclick="showEmbed()">&#60;/&#62; Embed</button>
     </div>
 
-    <div id="chart-box">
-      <div class="chart-block">
-        <div class="chart-title">Medicaid payments to the six indicted eye-care companies climbed for years before the charged period</div>
-        <div class="chart-subtitle">Total Medicaid paid amounts by calendar year, 2018 to 2024. The indictment covers January 2024 through July 2025; this dataset ends in December 2024.</div>
+    <figure class="chart-card" id="chart-box" data-slug="eyepic-medicaid-payments">
+      <div class="c-head">
+        <h2 class="c-title">Medicaid payments to the six indicted eye-care companies rose from $2.2 million in 2018 to $8 million in 2023, before any charges were filed</h2>
+        <p class="c-deck">Total Medicaid paid amounts by calendar year, 2018 to 2024, stacked by company. The indictment covers January 2024 through July 2025; this dataset ends in December 2024.</p>
+      </div>
+      <div class="c-plot">
         <div style="position:relative; height:340px;"><canvas id="annualChart"></canvas></div>
       </div>
-      <div class="chart-block-wrap chart-block" style="margin-top:34px;">
-        <div class="chart-title">By 2024, the six companies were 97% of New York's reported Medicaid billing for one eyelid procedure code</div>
-        <div class="chart-subtitle">Statewide Medicaid paid amounts for HCPCS 68040 (expression of conjunctival follicles), split between the indicted companies and every other New York provider appearing in the public file.</div>
+      <figcaption class="c-foot">
+        <div class="c-foot-text">
+          <span>Sources: <a href="https://opendata.hhs.gov/datasets/medicaid-provider-spending/" target="_blank" rel="noopener">HHS Open Data</a>, <a href="https://ag.ny.gov/press-release/2026/attorney-general-james-and-comptroller-dinapoli-announce-takedown-9-million" target="_blank" rel="noopener">NY Attorney General (2026)</a></span>
+          <span>Note: these are payments Medicaid made, not a measure of how much of the billing was fraudulent. The charges are allegations. 2024 figures are preliminary.</span>
+        </div>
+      </figcaption>
+    </figure>
+
+    <div class="c-actions" style="margin-top:28px;">
+      <button class="c-action-btn" onclick="downloadChart(this)">&#11015; Download PNG</button>
+    </div>
+
+    <figure class="chart-card" data-slug="eyepic-code-68040-share">
+      <div class="c-head">
+        <h2 class="c-title">By 2024 the six companies held 97% of New York's reported Medicaid billing for one eyelid procedure code</h2>
+        <p class="c-deck">Statewide Medicaid paid amounts for HCPCS 68040 (expression of conjunctival follicles), split between the indicted companies and every other New York provider appearing in the public file.</p>
+      </div>
+      <div class="c-plot">
         <div style="position:relative; height:300px;"><canvas id="shareChart"></canvas></div>
       </div>
-      <div class="chart-attribution">
-        <span>Created by Tal Roded · NYCuriosity · Sources: <a href="https://opendata.hhs.gov/datasets/medicaid-provider-spending/" target="_blank" rel="noopener">HHS Open Data</a>, <a href="https://ag.ny.gov/press-release/2026/attorney-general-james-and-comptroller-dinapoli-announce-takedown-9-million" target="_blank" rel="noopener">NY Attorney General (2026)</a></span>
-      </div>
-    </div>
+      <figcaption class="c-foot">
+        <div class="c-foot-text">
+          <span>Sources: <a href="https://opendata.hhs.gov/datasets/medicaid-provider-spending/" target="_blank" rel="noopener">HHS Open Data</a>, <a href="https://ag.ny.gov/press-release/2026/attorney-general-james-and-comptroller-dinapoli-announce-takedown-9-million" target="_blank" rel="noopener">NY Attorney General (2026)</a></span>
+          <span>Note: the public file suppresses any provider-procedure-month cell with fewer than 12 claim lines or beneficiaries, so 97% is a share of reported billing.</span>
+        </div>
+      </figcaption>
+    </figure>
 
     <div class="context-box">
       <p><strong>The pattern was public long before the indictment.</strong> Prosecutors charged billing from January 2024 onward, but these companies' Medicaid payments grew from $2.2 million in 2018 to $8 million in 2023. Harlem Eye Care grew 60-fold over that stretch. All of it sat in a public federal dataset.</p>
@@ -388,55 +380,7 @@
     }
   });
 
-  async function downloadChart(btn) {
-    const orig = btn.innerHTML;
-    btn.innerHTML = '⏳ Capturing…'; btn.disabled = true;
-    try {
-      const el = document.getElementById('chart-box');
-      const dataUrl = await captureBoxPng(el, '#ffffff');
-      const a = document.createElement('a');
-      a.download = 'eyepic-medicaid-payments.png';
-      a.href = dataUrl; a.click();
-    } finally { btn.innerHTML = orig; btn.disabled = false; }
-  }
-  function showEmbed() {
-    const url = location.origin + location.pathname;
-    document.getElementById('embedCode').value =
-      `<iframe src="${url}" width="900" height="980" frameborder="0" style="border:1px solid #e5e7eb; border-radius:8px;" loading="lazy"></iframe>`;
-    document.getElementById('embedModal').style.display = 'flex';
-  }
-  function closeEmbed() { document.getElementById('embedModal').style.display = 'none'; }
-  function copyEmbed() {
-    const ta = document.getElementById('embedCode'); ta.select();
-    navigator.clipboard.writeText(ta.value).then(() => {
-      const btn = document.querySelector('.embed-copy-btn');
-      btn.textContent = '✓ Copied!';
-      setTimeout(() => btn.textContent = 'Copy code', 2000);
-    });
-  }
 </script>
 
-<script>
-// Capture helper: html-to-image clones the DOM, and cloned <canvas> elements
-// (Chart.js) come out blank — swap each canvas for a snapshot <img> during
-// capture, then restore.
-async function captureBoxPng(box, bg) {
-  const swaps = [];
-  box.querySelectorAll('canvas').forEach(c => {
-    const img = document.createElement('img');
-    img.src = c.toDataURL('image/png');
-    img.style.width = c.style.width || (c.clientWidth + 'px');
-    img.style.height = c.style.height || (c.clientHeight + 'px');
-    c.parentNode.insertBefore(img, c);
-    c.style.display = 'none';
-    swaps.push([c, img]);
-  });
-  try {
-    return await htmlToImage.toPng(box, { backgroundColor: bg, pixelRatio: 2 });
-  } finally {
-    swaps.forEach(([c, img]) => { img.remove(); c.style.display = ''; });
-  }
-}
-</script>
 </body>
 </html>

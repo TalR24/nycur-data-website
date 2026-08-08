@@ -8,7 +8,8 @@
   <meta name="description" content="All 12 subway expansion projects in the NYU Marron Institute's A Better Billion plan: 41 new miles, 64 new stations, 167,064 housing units over 40 years.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/chart.css">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -76,13 +77,6 @@
     .total-pill .tp-label { font-size: 0.75rem; color: var(--text-muted); margin-top: 3px; line-height: 1.3; }
 
     /* ── TABLE ────────────────────────────────────────────── */
-    .table-wrap {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      overflow: hidden;
-      overflow-x: auto;
-    }
     .data-table { width: 100%; border-collapse: collapse; min-width: 600px; }
     .data-table thead th {
       background: #111827; color: rgba(255,255,255,0.65);
@@ -134,13 +128,6 @@
     .pct-affordable { font-family: 'Roboto Mono', monospace; font-size: 0.8rem; }
     .pct-high { color: #16a34a; }
 
-    .chart-attribution { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; color: var(--text-faint); text-align: right; padding: 10px 16px; border-top: 1px solid var(--border); }
-
-    .chart-actions { display: flex; gap: 8px; margin-bottom: 16px; }
-    .action-btn { display: inline-flex; align-items: center; gap: 6px; background: var(--surface); color: var(--text-muted); font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600; padding: 6px 14px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; transition: all 0.15s; }
-    .action-btn:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
-    .action-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-
     .embed-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; z-index: 1000; }
     .embed-modal-box { background: var(--surface); border-radius: 10px; padding: 24px; max-width: 540px; width: 90%; box-shadow: 0 8px 32px rgba(0,0,0,0.18); }
     .embed-modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
@@ -167,6 +154,7 @@
     .footer-links a:hover { color: var(--blue); }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
+  <script defer src="/assets/chart.js"></script>
 <style id="support-btn-css">
 .header-actions{display:flex;align-items:center;gap:14px;}
 .header-link{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border:1px solid rgba(255,255,255,0.15);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
@@ -249,27 +237,40 @@
       </div>
     </div>
 
-    <div class="chart-actions">
-      <button class="action-btn" onclick="downloadChart(this)">&#11015; Download PNG</button>
-      <button class="action-btn" onclick="showEmbed()">&#60;/&#62; Embed</button>
+    <div class="c-actions">
+      <button class="c-action-btn" onclick="downloadChart(this)">&#11015; Download PNG</button>
+      <button class="c-action-btn" onclick="showEmbed()">&#60;/&#62; Embed</button>
     </div>
 
-    <div class="table-wrap">
-      <table class="data-table" id="projectTable">
-        <thead>
-          <tr>
-            <th onclick="sortTable(0)" data-col="0">Project <span class="sort-arrow">↕</span></th>
-            <th onclick="sortTable(1)" data-col="1" class="num">Decade <span class="sort-arrow">↓</span></th>
-            <th onclick="sortTable(2)" data-col="2" class="num">Est. Housing Units <span class="sort-arrow">↕</span></th>
-            <th onclick="sortTable(3)" data-col="3" class="num">% Affordable <span class="sort-arrow">↕</span></th>
-            <th onclick="sortTable(4)" data-col="4" class="num">Cost ($B) <span class="sort-arrow">↕</span></th>
-            <th onclick="sortTable(5)" data-col="5" class="num">Bus Ridership/day <span class="sort-arrow">↕</span></th>
-          </tr>
-        </thead>
-        <tbody id="tableBody"></tbody>
-      </table>
-      <div class="chart-attribution">Created by Tal Roded · NYCuriosity</div>
-    </div>
+    <figure class="chart-card" id="chart-box" data-slug="better-billion-all-projects">
+      <div class="c-head">
+        <h2 class="c-title">The Cross-Bronx Express Line alone accounts for 35,903 of the plan's 167,064 new homes</h2>
+        <p class="c-deck">All 12 subway projects in the NYU Marron Institute's <strong>A Better Billion</strong> plan, with the housing each would unlock, the share that would be income-restricted, its capital cost, and current bus ridership in the corridor. Click any column header to sort.</p>
+      </div>
+
+      <div class="c-plot c-plot--scroll">
+        <table class="data-table" id="projectTable">
+          <thead>
+            <tr>
+              <th onclick="sortTable(0)" data-col="0">Project <span class="sort-arrow">↕</span></th>
+              <th onclick="sortTable(1)" data-col="1" class="num">Decade <span class="sort-arrow">↓</span></th>
+              <th onclick="sortTable(2)" data-col="2" class="num">Est. Housing Units <span class="sort-arrow">↕</span></th>
+              <th onclick="sortTable(3)" data-col="3" class="num">% Affordable <span class="sort-arrow">↕</span></th>
+              <th onclick="sortTable(4)" data-col="4" class="num">Cost ($B) <span class="sort-arrow">↕</span></th>
+              <th onclick="sortTable(5)" data-col="5" class="num">Bus Ridership/day <span class="sort-arrow">↕</span></th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+
+      <figcaption class="c-foot">
+        <div class="c-foot-text">
+          <span>Source: NYU Marron Institute of Urban Management, <a href="https://transitcosts.com/a-better-billion.html" target="_blank" rel="noopener">A Better Billion</a> (January 2026)</span>
+          <span>Note: costs are in 2025 dollars. Housing estimates assume no upzoning beyond City of Yes for Housing Opportunity. Bus ridership is 2019 weekday boardings.</span>
+        </div>
+      </figcaption>
+    </figure>
 
     <div class="footnotes">
       <p><strong>Source:</strong> NYU Marron Institute of Urban Management, <a href="https://transitcosts.com/a-better-billion.html" target="_blank" rel="noopener">A Better Billion</a>, January 2026. All figures in 2025 dollars. Housing estimates assume no additional upzoning beyond City of Yes for Housing Opportunity amendments.</p>
@@ -392,33 +393,6 @@
   document.querySelector('[data-col="2"] .sort-arrow').textContent = '↓';
   document.querySelector('[data-col="2"]').classList.add('sorted');
   renderTable(PROJECTS);
-
-  async function downloadChart(btn) {
-    const orig = btn.innerHTML;
-    btn.innerHTML = '⏳ Capturing…'; btn.disabled = true;
-    try {
-      const el = document.querySelector('.table-wrap');
-      const dataUrl = await htmlToImage.toPng(el, { backgroundColor: '#f8faff', pixelRatio: 2 });
-      const a = document.createElement('a');
-      a.download = 'better-billion-all-projects.png';
-      a.href = dataUrl; a.click();
-    } finally { btn.innerHTML = orig; btn.disabled = false; }
-  }
-  function showEmbed() {
-    const url = location.origin + location.pathname;
-    document.getElementById('embedCode').value =
-      `<iframe src="${url}" width="1100" height="800" frameborder="0" style="border:1px solid #e5e7eb; border-radius:8px;" loading="lazy"></iframe>`;
-    document.getElementById('embedModal').style.display = 'flex';
-  }
-  function closeEmbed() { document.getElementById('embedModal').style.display = 'none'; }
-  function copyEmbed() {
-    const ta = document.getElementById('embedCode'); ta.select();
-    navigator.clipboard.writeText(ta.value).then(() => {
-      const btn = document.querySelector('.embed-copy-btn');
-      btn.textContent = '✓ Copied!';
-      setTimeout(() => btn.textContent = 'Copy code', 2000);
-    });
-  }
 </script>
 
 </body>

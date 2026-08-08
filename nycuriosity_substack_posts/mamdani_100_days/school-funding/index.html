@@ -8,7 +8,8 @@
   <meta name="description" content="How NYC's $38B DOE operating budget splits between city, state, and federal dollars — and which schools are most exposed to federal cuts.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/chart.css">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -64,19 +65,8 @@
     .main-inner { max-width: 900px; margin: 0 auto; }
 
     /* ── STACKED BAR ──────────────────────────────────────── */
-    .chart-section-label {
-      font-family: 'Roboto Mono', monospace; font-size: 0.7rem; font-weight: 600; text-transform: uppercase;
-      letter-spacing: 0.1em; color: var(--text-faint); margin-bottom: 16px;
-    }
-    .stacked-bar-wrap {
-      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px 28px 24px;
-      margin-bottom: 24px;
-    }
-    .stacked-bar-title {
-      font-family: 'Roboto Mono', monospace; font-size: 0.9rem; font-weight: 700; color: var(--text); margin-bottom: 18px;
-    }
     .stacked-bar {
-      display: flex; height: 48px; border-radius: 6px; overflow: hidden; margin-bottom: 14px;
+      display: flex; height: 48px; border-radius: 6px; overflow: hidden; margin-bottom: 20px;
     }
     .stacked-seg {
       display: flex; align-items: center; justify-content: center;
@@ -119,24 +109,12 @@
     .fed   .brow-bar-fill { background: #dc2626; }
     .other .brow-bar-fill { background: #d1d5db; }
 
-    .chart-attribution {
-      font-family: 'Roboto Mono', monospace; font-size: 0.72rem; color: var(--text-faint);
-      text-align: right; padding: 12px 18px; background: var(--surface);
-      border: 1px solid var(--border); border-top: none;
-      border-radius: 0 0 var(--radius) var(--radius); margin-top: -1px;
-    }
     /* Alert badge */
     .alert-badge {
       display: inline-block; font-family: 'Roboto Mono', monospace; font-size: 0.65rem; font-weight: 700;
       text-transform: uppercase; letter-spacing: 0.06em; padding: 2px 7px; border-radius: 3px;
       background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; margin-left: 8px; vertical-align: middle;
     }
-
-    /* Chart actions */
-    .chart-actions { display: flex; gap: 8px; margin-bottom: 16px; }
-    .action-btn { display: inline-flex; align-items: center; gap: 6px; background: var(--surface); color: var(--text-muted); font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600; padding: 6px 14px; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; transition: all 0.15s; }
-    .action-btn:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
-    .action-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
     .embed-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; z-index: 1000; }
     .embed-modal-box { background: var(--surface); border-radius: 10px; padding: 24px; max-width: 540px; width: 90%; box-shadow: 0 8px 32px rgba(0,0,0,0.18); }
@@ -164,6 +142,7 @@
     .footer-links a:hover { color: var(--blue); }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
+  <script defer src="/assets/chart.js"></script>
 <style id="support-btn-css">
 .header-actions{display:flex;align-items:center;gap:14px;}
 .header-link{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border:1px solid rgba(255,255,255,0.15);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
@@ -231,27 +210,37 @@
 <main>
   <div class="main-inner" id="chart-container">
 
-    <div class="chart-actions">
-      <button class="action-btn" onclick="downloadChart(this)">&#11015; Download PNG</button>
-      <button class="action-btn" onclick="showEmbed()">&#60;/&#62; Embed</button>
+    <div class="c-actions">
+      <button class="c-action-btn" onclick="downloadChart(this)">&#11015; Download PNG</button>
+      <button class="c-action-btn" onclick="showEmbed()">&#60;/&#62; Embed</button>
     </div>
 
-    <div id="chart-box" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:24px;">
-      <div class="stacked-bar-wrap">
-        <div class="stacked-bar-title">NYC DOE Operating Budget by Funding Source, FY2023 (~$38B total)</div>
+    <figure class="chart-card" id="chart-box" data-slug="nyc-school-funding-by-source">
+      <div class="c-head">
+        <h2 class="c-title">City and state dollars cover 88% of the DOE's $38 billion budget, and the federal 11% is the piece most exposed to cuts</h2>
+        <p class="c-deck">New York City Department of Education operating budget by funding source, FY2023. The federal share is concentrated in <strong>Title I and IDEA</strong>, which flow to the schools serving the highest-need students.</p>
+      </div>
+
+      <div class="c-plot">
         <div class="stacked-bar" aria-label="Stacked bar chart: City 55%, State 33%, Federal 11%, Other 2%">
           <div class="stacked-seg city"   style="width:55%">City 55%</div>
           <div class="stacked-seg state"  style="width:33%">State 33%</div>
           <div class="stacked-seg fed"    style="width:11%">Fed 11%</div>
           <div class="stacked-seg other"  style="width:2%" title="Other/Misc 2%"></div>
         </div>
+
+        <div class="breakdown-rows" id="breakdownRows">
+          <!-- Injected by JS -->
+        </div>
       </div>
 
-      <div class="breakdown-rows" id="breakdownRows">
-        <!-- Injected by JS -->
-      </div>
-      <div class="chart-attribution">Created by Tal Roded · NYCuriosity</div>
-    </div>
+      <figcaption class="c-foot">
+        <div class="c-foot-text">
+          <span>Source: NYC Comptroller <a href="https://comptroller.nyc.gov/reports/spotlight-school-budget-update/" target="_blank" rel="noopener">school budget spotlight</a>, NYC DOE budget documents</span>
+          <span>Note: FY2023 shares are approximate and shift year to year. Totals do not sum to $38B exactly because of rounding.</span>
+        </div>
+      </figcaption>
+    </figure>
 
     <div class="footnotes" style="margin-top:24px;">
       <p><strong>Data source and approximate nature:</strong> Funding composition figures are approximate estimates for FY2023, derived from NYC Comptroller <a href="https://comptroller.nyc.gov/reports/spotlight-school-budget-update/" target="_blank" rel="noopener">school budget spotlight reports</a> and NYC DOE public budget documentation. The exact breakdown varies year to year. Current data available at <a href="https://infohub.nyced.org/reports/financial/financial-data-and-reports" target="_blank" rel="noopener">DOE InfoHub</a>.</p>
@@ -348,33 +337,6 @@
       });
     }, 100);
   });
-
-  async function downloadChart(btn) {
-    const orig = btn.innerHTML;
-    btn.innerHTML = '⏳ Capturing…'; btn.disabled = true;
-    try {
-      const el = document.getElementById('chart-box');
-      const dataUrl = await htmlToImage.toPng(el, { backgroundColor: '#f8faff', pixelRatio: 2 });
-      const a = document.createElement('a');
-      a.download = 'nyc-school-funding-by-source.png';
-      a.href = dataUrl; a.click();
-    } finally { btn.innerHTML = orig; btn.disabled = false; }
-  }
-  function showEmbed() {
-    const url = location.origin + location.pathname;
-    document.getElementById('embedCode').value =
-      `<iframe src="${url}" width="900" height="780" frameborder="0" style="border:1px solid #e5e7eb; border-radius:8px;" loading="lazy"></iframe>`;
-    document.getElementById('embedModal').style.display = 'flex';
-  }
-  function closeEmbed() { document.getElementById('embedModal').style.display = 'none'; }
-  function copyEmbed() {
-    const ta = document.getElementById('embedCode'); ta.select();
-    navigator.clipboard.writeText(ta.value).then(() => {
-      const btn = document.querySelector('.embed-copy-btn');
-      btn.textContent = '✓ Copied!';
-      setTimeout(() => btn.textContent = 'Copy code', 2000);
-    });
-  }
 </script>
 
 </body>

@@ -12,7 +12,8 @@
   <meta property="og:description" content="Projected housing units from City of Yes compared with each major NYC neighborhood rezoning since 2004.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/chart.css">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -140,41 +141,6 @@
     }
     .main-inner { max-width: 900px; margin: 0 auto; }
 
-    /* ── CHART BOX ───────────────────────────────────────── */
-    #chart-box {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow-sm);
-      overflow: hidden;
-    }
-    .chart-box-inner { padding: clamp(16px, 3vw, 28px); }
-
-    /* ── LEGEND ──────────────────────────────────────────── */
-    .legend {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 20px;
-      margin-bottom: 28px;
-      align-items: center;
-    }
-    .legend-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 0.82rem;
-      color: var(--text-mid);
-      font-weight: 500;
-    }
-    .legend-swatch {
-      width: 14px;
-      height: 14px;
-      border-radius: 3px;
-      flex-shrink: 0;
-    }
-    .swatch-coy   { background: var(--coy-color); }
-    .swatch-prior { background: var(--prior-color); }
-
     /* ── CHART ───────────────────────────────────────────── */
     .chart { display: flex; flex-direction: column; gap: 10px; }
 
@@ -243,15 +209,6 @@
       margin: 6px 0;
     }
 
-    /* ── ATTRIBUTION ─────────────────────────────────────── */
-    .chart-attribution {
-      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
-      padding: 12px 16px; border-top: 1px solid var(--border); background: var(--bg);
-      font-size: 0.78rem; color: var(--text-faint); font-family: 'Roboto Mono', monospace;
-    }
-    .chart-attribution a { color: var(--blue); text-decoration: none; }
-    .chart-attribution a:hover { text-decoration: underline; }
-
     /* ── CONTEXT BOX ─────────────────────────────────────── */
     .context-box {
       margin-top: 28px;
@@ -270,9 +227,6 @@
     .context-box .ctx-num { font-family: 'Roboto Mono', monospace; font-weight: 700; color: var(--blue); }
 
     /* ── SECONDARY CHART (waffle) ────────────────────────── */
-    #chart-box-2 { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); overflow: hidden; margin-top: 20px; }
-    .chart-title { font-family: 'Roboto Mono', monospace; font-size: 0.95rem; font-weight: 700; color: var(--text); letter-spacing: -0.02em; margin-bottom: 4px; }
-    .chart-subtitle { font-size: 0.8rem; color: var(--text-muted); line-height: 1.55; margin-bottom: 18px; }
     .waffle-row { display: flex; gap: 28px; flex-wrap: wrap; justify-content: center; align-items: flex-start; }
     .waffle-block { display: flex; flex-direction: column; align-items: center; gap: 8px; flex: 1 1 200px; max-width: 300px; }
     .waffle-block svg { width: 100%; max-width: 220px; height: auto; display: block; }
@@ -335,11 +289,6 @@
     .footer-links a { font-size: 0.8rem; color: var(--text-muted); text-decoration: none; transition: color 0.15s; }
     .footer-links a:hover { color: var(--blue); }
 
-    /* ── CHART ACTIONS ─────────────────────────────────────── */
-    .chart-actions { display:flex; gap:8px; margin-bottom:16px; }
-    .action-btn { display:inline-flex; align-items:center; gap:6px; background:var(--surface); color:var(--text-muted); font-family:'Roboto Mono',monospace; font-size:0.75rem; font-weight:600; padding:6px 14px; border-radius:6px; border:1px solid var(--border); cursor:pointer; transition:all 0.15s; }
-    .action-btn:hover { border-color:var(--blue); color:var(--blue); background:var(--blue-light); }
-    .action-btn:disabled { opacity:0.6; cursor:not-allowed; }
     /* ── EMBED MODAL ───────────────────────────────────────── */
     .embed-modal { position:fixed; inset:0; background:rgba(0,0,0,0.45); display:flex; align-items:center; justify-content:center; z-index:1000; }
     .embed-modal-box { background:var(--surface); border-radius:10px; padding:24px; max-width:540px; width:90%; box-shadow:0 8px 32px rgba(0,0,0,0.18); }
@@ -353,6 +302,7 @@
     .embed-copy-btn:hover { background:#1d4ed8; }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
+  <script defer src="/assets/chart.js"></script>
 <style id="support-btn-css">
 .header-actions{display:flex;align-items:center;gap:14px;}
 .header-link{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border:1px solid rgba(255,255,255,0.15);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
@@ -420,47 +370,51 @@
 <main>
   <div class="main-inner">
 
-    <div class="chart-actions">
-      <button class="action-btn" onclick="downloadChart(this, 'chart-box', 'city-of-yes-vs-rezonings.png')">&#11015; Download PNG</button>
-      <button class="action-btn" onclick="showEmbed()">&#60;/&#62; Embed</button>
+    <div class="c-actions">
+      <button class="c-action-btn" onclick="downloadChart(this)">&#11015; Download PNG</button>
+      <button class="c-action-btn" onclick="showEmbed()">&#60;/&#62; Embed</button>
     </div>
 
-    <div id="chart-box">
-      <div class="chart-box-inner">
-        <div class="legend">
-          <div class="legend-item">
-            <span class="legend-swatch swatch-coy"></span>
-            City of Yes for Housing Opportunity (2024)
-          </div>
-          <div class="legend-item">
-            <span class="legend-swatch swatch-prior"></span>
-            Prior neighborhood rezonings, 2004&ndash;2024
-          </div>
-        </div>
-
+    <figure class="chart-card" id="chart-box" data-slug="city-of-yes-vs-rezonings">
+      <div class="c-head">
+        <h2 class="c-title">City of Yes projects more than six times the homes of the largest neighborhood rezoning since 2004</h2>
+        <p class="c-deck">Projected new homes at adoption for the City of Yes for Housing Opportunity text amendment and for each major neighborhood rezoning from 2004 to 2024. Every figure is what the city expected at the time of the vote, <strong>not what was built</strong>.</p>
+        <ul class="c-legend">
+          <li class="c-legend-item"><span class="sw" style="background:var(--coy-color)"></span> City of Yes for Housing Opportunity (2024)</li>
+          <li class="c-legend-item"><span class="sw" style="background:var(--prior-color)"></span> Prior neighborhood rezonings, 2004&ndash;2024</li>
+        </ul>
+      </div>
+      <div class="c-plot">
         <div class="chart" id="chart"></div>
       </div>
+      <figcaption class="c-foot">
+        <div class="c-foot-text">
+          <span>Source: <a href="https://www.nyc.gov/site/planning/index.page" target="_blank" rel="noopener">NYC Dept. of City Planning</a> and <a href="https://citylimits.org/six-down-one-to-go-where-de-blasios-rezonings-stand/" target="_blank" rel="noopener">City Limits</a></span>
+          <span>Note: Hudson Yards, the largest prior rezoning, was projected at 12,600 homes against the 82,000 projected for City of Yes.</span>
+        </div>
+      </figcaption>
+    </figure>
 
-      <div class="chart-attribution">
-        <span>Created by Tal Roded · NYCuriosity · Sources: <a href="https://www.nyc.gov/site/planning/index.page" target="_blank" rel="noopener">NYC Dept. of City Planning</a> &amp; <a href="https://citylimits.org/six-down-one-to-go-where-de-blasios-rezonings-stand/" target="_blank" rel="noopener">City Limits</a></span>
+    <div class="c-actions" style="margin-top:20px;">
+      <button class="c-action-btn" onclick="downloadChart(this)">&#11015; Download PNG</button>
+    </div>
+
+    <figure class="chart-card" data-slug="city-of-yes-waffle">
+      <div class="c-head">
+        <h2 class="c-title">City of Yes alone projects more homes than all 13 prior neighborhood rezonings combined</h2>
+        <p class="c-deck">Each square is 1,000 projected homes. The 13 major neighborhood rezonings adopted between 2004 and 2024 projected <strong>70,848</strong> homes together; the 2024 City of Yes text amendment projects <strong>82,000</strong> over 15 years.</p>
       </div>
-    </div>
-
-    <div class="chart-actions" style="margin-top:20px;">
-      <button class="action-btn" onclick="downloadChart(this, 'chart-box-2', 'city-of-yes-waffle.png')">&#11015; Download PNG</button>
-    </div>
-
-    <div id="chart-box-2">
-      <div class="chart-box-inner">
-        <div class="chart-title">City of Yes vs. every prior rezoning, at a glance</div>
-        <div class="chart-subtitle">Each square is 1,000 projected homes. City of Yes alone (blue) is projected to add more housing than all 13 major neighborhood rezonings of 2004&ndash;2024 put together (gray).</div>
+      <div class="c-plot">
         <div class="waffle-row" id="waffle"></div>
         <div class="waffle-key">1 square = 1,000 projected homes</div>
       </div>
-      <div class="chart-attribution">
-        <span>Created by Tal Roded · NYCuriosity · Sources: <a href="https://www.nyc.gov/site/planning/index.page" target="_blank" rel="noopener">NYC Dept. of City Planning</a> &amp; <a href="https://citylimits.org/six-down-one-to-go-where-de-blasios-rezonings-stand/" target="_blank" rel="noopener">City Limits</a></span>
-      </div>
-    </div>
+      <figcaption class="c-foot">
+        <div class="c-foot-text">
+          <span>Source: <a href="https://www.nyc.gov/site/planning/index.page" target="_blank" rel="noopener">NYC Dept. of City Planning</a> and <a href="https://citylimits.org/six-down-one-to-go-where-de-blasios-rezonings-stand/" target="_blank" rel="noopener">City Limits</a></span>
+          <span>Note: projections at adoption, not units built. City of Yes is a 15-year modeling estimate.</span>
+        </div>
+      </figcaption>
+    </figure>
 
     <div class="context-box">
       <p>
@@ -633,34 +587,6 @@
       tbody.appendChild(tr);
     });
   })();
-
-  async function downloadChart(btn, boxId, filename) {
-    const orig = btn.innerHTML;
-    btn.innerHTML = '⏳ Capturing…'; btn.disabled = true;
-    try {
-      if (document.fonts && document.fonts.ready) { try { await document.fonts.ready; } catch (e) {} }
-      const el = document.getElementById(boxId || 'chart-box');
-      const dataUrl = await htmlToImage.toPng(el, { backgroundColor: '#ffffff', pixelRatio: 2 });
-      const a = document.createElement('a');
-      a.download = filename || 'chart.png';
-      a.href = dataUrl; a.click();
-    } finally { btn.innerHTML = orig; btn.disabled = false; }
-  }
-  function showEmbed() {
-    const url = location.origin + location.pathname;
-    document.getElementById('embedCode').value =
-      `<iframe src="${url}" width="900" height="1320" frameborder="0" style="border:1px solid #e5e7eb; border-radius:8px;" loading="lazy"></iframe>`;
-    document.getElementById('embedModal').style.display = 'flex';
-  }
-  function closeEmbed() { document.getElementById('embedModal').style.display = 'none'; }
-  function copyEmbed() {
-    const ta = document.getElementById('embedCode'); ta.select();
-    navigator.clipboard.writeText(ta.value).then(() => {
-      const btn = document.querySelector('.embed-copy-btn');
-      btn.textContent = '✓ Copied!';
-      setTimeout(() => btn.textContent = 'Copy code', 2000);
-    });
-  }
 </script>
 
 </body>

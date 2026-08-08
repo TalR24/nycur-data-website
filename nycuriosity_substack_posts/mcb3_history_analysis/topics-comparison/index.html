@@ -15,7 +15,10 @@
   <meta name="twitter:image"      content="https://data.nycuriosity.com/website_logo.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/chart.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
+  <script defer src="/assets/chart.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -48,11 +51,6 @@
     .pill-nav a.active { background:var(--blue); color:#fff; border-color:var(--blue); }
     .pill-label { font-size:0.72rem; color:var(--text-faint); font-family:'Roboto Mono',monospace; white-space:nowrap; }
 
-    .chart-actions { display:flex; gap:8px; margin-bottom:14px; }
-    .action-btn { display:inline-flex; align-items:center; gap:6px; background:var(--surface); color:var(--text-muted); font-family:'Roboto Mono',monospace; font-size:0.75rem; font-weight:600; padding:6px 14px; border-radius:6px; border:1px solid var(--border-mid); cursor:pointer; transition:all 0.15s; }
-    .action-btn:hover { border-color:var(--blue); color:var(--blue); background:var(--blue-light); }
-
-    .chart-card { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:24px; box-shadow:var(--shadow-sm); margin-bottom:24px; }
     .controls-row { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:16px; flex-wrap:wrap; }
     .toggle-btn { font-family:'Roboto Mono',monospace; font-size:0.75rem; font-weight:600; padding:5px 14px; border-radius:20px; border:1px solid var(--border-mid); background:var(--bg); color:var(--text-muted); cursor:pointer; transition:all 0.15s; white-space:nowrap; }
     .toggle-btn:hover { border-color:var(--blue); color:var(--blue); background:var(--blue-light); }
@@ -72,8 +70,7 @@
     .dropdown-item:hover { background:var(--bg); }
     .dropdown-item input[type=checkbox] { width:13px; height:13px; accent-color:var(--blue); cursor:pointer; flex-shrink:0; margin:0; }
     .dropdown-item-label { font-size:0.81rem; color:var(--text-mid); }
-    .chart-wrap { position:relative; width:100%; }
-    .caption { font-size:0.78rem; color:var(--text-faint); line-height:1.6; margin-top:16px; font-style:italic; }
+    .canvas-box { position:relative; width:100%; }
 
     .methodology { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:24px; margin-bottom:24px; }
     .methodology h3 { font-family:'Roboto Mono',monospace; font-size:0.8rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-faint); margin-bottom:16px; }
@@ -143,12 +140,18 @@
     <p>Side-by-side percentage comparison of MCB3 resolution topics and CB3 311 complaint categories, revealing where board attention aligns with, and diverges from, what residents actually report. Nearly half of MCB3 resolutions involve liquor licensing, a category that generates zero 311 calls. Public safety drives 45% of resident complaints but only 4% of board resolutions.</p>
   </div>
 
-  <div class="chart-actions">
-    <button class="action-btn" onclick="downloadChart()">⬇ Download PNG</button>
-    <button class="action-btn" onclick="showEmbed()">&#60;/&#62; Embed</button>
+  <div class="c-actions">
+    <button class="c-action-btn" onclick="downloadChart(this)">&#11015; Download PNG</button>
+    <button class="c-action-btn" onclick="showEmbed()">&#60;/&#62; Embed</button>
   </div>
 
-  <div class="chart-card">
+  <figure class="chart-card" id="chart-box" data-slug="mcb3-vs-311-topics">
+    <div class="c-head">
+      <h2 class="c-title">Liquor licensing is the largest single share of MCB3's resolutions and generates no 311 complaints at all</h2>
+      <p class="c-deck">Each topic's share within its own dataset: 7,134 MCB3 resolutions from 2004 to 2025, and 377,536 311 service requests from Manhattan Community District 3 from 2020 to 2026. Shares recompute over whichever categories are selected, and four categories have no 311 equivalent.</p>
+    </div>
+
+    <div class="c-plot">
     <div class="controls-row">
       <button class="toggle-btn" id="sharedToggle" onclick="toggleSharedOnly()">Both datasets only</button>
       <div class="category-filter">
@@ -168,11 +171,18 @@
         </div>
       </div>
     </div>
-    <div class="chart-wrap">
+    <div class="canvas-box">
       <canvas id="myChart"></canvas>
     </div>
-    <p class="caption">MCB3 resolution topics vs. CB3 311 complaint categories, as a percentage of each dataset's total. MCB3: 7,134 resolutions, 2004–2025. 311: 377,536 service requests from Manhattan Community District 3, 2020–2026. Categories with no 311 equivalent (City Planning, Budget &amp; Funding, Landmarks, Education) show 0% for 311. Source: NYC.gov MCB3 meeting minutes; NYC Open Data 311 Service Requests (dataset erm2-nwe9). Created by Tal Roded · NYCuriosity</p>
-  </div>
+    </div>
+
+    <figcaption class="c-foot">
+      <div class="c-foot-text">
+        <span>Source: NYC.gov MCB3 meeting minutes; <a href="https://data.cityofnewyork.us/Social-Services/311-Service-Requests-from-2010-to-Present/erm2-nwe9" target="_blank" rel="noopener">NYC Open Data 311 Service Requests (erm2-nwe9)</a></span>
+        <span>Note: the two datasets cover different periods and measure different things, formal board action against resident-initiated service requests.</span>
+      </div>
+    </figcaption>
+  </figure>
 
   <div class="methodology">
     <h3>Methodology &amp; Data Sources</h3>
@@ -203,6 +213,8 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 <script>
+document.addEventListener('DOMContentLoaded', function () {
+
   // Data sorted by MCB3 % descending
   const TOPICS = [
     { label: 'Liquor License / SLA',             mcb3Pct: 48.3, pct311:  0.0, mcb3Abs: 3449,   abs311:      0 },
@@ -352,14 +364,12 @@
           data: initData.mcb3Data,
           backgroundColor: '#2563eb',
           borderWidth: 0,
-          borderRadius: 3,
         },
         {
           label: '311 Complaints',
           data: initData.data311,
           backgroundColor: '#f59e0b',
           borderWidth: 0,
-          borderRadius: 3,
         },
       ],
     },
@@ -371,34 +381,19 @@
       scales: {
         x: {
           max: calcXMax(initData.mcb3Data, initData.data311),
-          ticks: {
-            font: { family: "'Roboto Mono', monospace", size: 11 },
-            color: '#6b7280',
-            callback: v => v + '%',
-          },
-          grid: { color: '#e5e7eb' },
-          border: { dash: [3, 3] },
+          ticks: { callback: v => v + '%' },
         },
         y: {
-          ticks: {
-            font: { family: 'Inter, sans-serif', size: 12 },
-            color: '#374151',
-          },
+          ticks: { font: { family: "'Inter', sans-serif", size: 11 } },
           grid: { display: false },
+          /* Reserve the label column outright. Chart.js measures it before the
+             webfont lands, which clips the longest category name. */
+          afterFit(scale) {
+            scale.width = Math.max(scale.width, Math.min(215, scale.chart.width * 0.32));
+          },
         },
       },
       plugins: {
-        legend: {
-          position: 'top',
-          align: 'start',
-          labels: {
-            font: { family: 'Inter, sans-serif', size: 12 },
-            color: '#374151',
-            boxWidth: 14,
-            boxHeight: 14,
-            padding: 16,
-          },
-        },
         tooltip: {
           callbacks: {
             label: item => {
@@ -427,59 +422,13 @@
 
   buildDropdown();
 
-  // ── Download / Embed ──────────────────────────────────────────
-  function downloadChart() {
-    const src = chart.canvas;
-    const captionText = document.querySelector('.caption').textContent.trim();
-    const scale = window.devicePixelRatio || 1;
-    const padH = Math.round(16 * scale);
-    const fontSize = Math.round(11 * scale);
-    const lineH = Math.round(17 * scale);
-    const tmp = document.createElement('canvas');
-    const tmpCtx = tmp.getContext('2d');
-    tmpCtx.font = `italic ${fontSize}px Inter, -apple-system, sans-serif`;
-    const maxW = src.width - padH * 2;
-    const lines = [];
-    let line = '';
-    for (const word of captionText.split(' ')) {
-      const test = line ? line + ' ' + word : word;
-      if (line && tmpCtx.measureText(test).width > maxW) { lines.push(line); line = word; }
-      else line = test;
-    }
-    if (line) lines.push(line);
-    const out = document.createElement('canvas');
-    out.width = src.width;
-    out.height = src.height + lines.length * lineH + padH * 2;
-    const outCtx = out.getContext('2d');
-    outCtx.fillStyle = '#ffffff';
-    outCtx.fillRect(0, 0, out.width, out.height);
-    outCtx.drawImage(src, 0, 0);
-    outCtx.font = `italic ${fontSize}px Inter, -apple-system, sans-serif`;
-    outCtx.fillStyle = '#9ca3af';
-    outCtx.textBaseline = 'top';
-    lines.forEach((l, i) => outCtx.fillText(l, padH, src.height + padH + i * lineH));
-    const a = document.createElement('a');
-    a.download = 'mcb3-vs-311-topics.png';
-    a.href = out.toDataURL('image/png');
-    a.click();
-  }
+  /* Inline onclick attributes need these on the global object. */
+  window.toggleSharedOnly      = toggleSharedOnly;
+  window.toggleDropdown        = toggleDropdown;
+  window.selectAllCategories   = selectAllCategories;
+  window.clearAllCategories    = clearAllCategories;
 
-  function showEmbed() {
-    const url = location.origin + location.pathname;
-    document.getElementById('embedCode').value =
-      `<iframe src="${url}" width="800" height="620" frameborder="0" style="border:1px solid #e5e7eb; border-radius:8px;" loading="lazy"></iframe>`;
-    document.getElementById('embedModal').style.display = 'flex';
-  }
-  function closeEmbed() { document.getElementById('embedModal').style.display = 'none'; }
-  function copyEmbed() {
-    const ta = document.getElementById('embedCode');
-    ta.select();
-    navigator.clipboard.writeText(ta.value).then(() => {
-      const btn = document.querySelector('.embed-copy-btn');
-      btn.textContent = '✓ Copied!';
-      setTimeout(() => btn.textContent = 'Copy code', 2000);
-    });
-  }
+});
 </script>
 
 </body>
