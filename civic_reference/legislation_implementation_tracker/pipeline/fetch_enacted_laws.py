@@ -196,10 +196,61 @@ def _span(html: str, label_id: str) -> str:
     return htmllib.unescape(re.sub(r"<[^>]+>", "", m.group(1))).strip()
 
 
+# Legistar renders an amended section in full, marking NEW matter with an
+# underline and DELETED matter with square brackets. Stripping tags threw the
+# underline away, so a reprinted pre-existing duty looked identical to a newly
+# enacted one — the single largest defect class in the Aug 2026 audits. Keep
+# the distinction as inline markers the extraction prompt can act on.
+_TAG = re.compile(r"<(/?)([a-zA-Z][\w:-]*)([^>]*)>")
+_UNDERLINE_STYLE = re.compile(r"text-decoration\s*:\s*underline", re.I)
+_VOID_TAGS = {"br", "img", "hr", "input", "meta", "link"}
+
+
+def _mark_new_matter(fragment: str) -> str:
+    """Wrap Legistar's underlined runs in {{...}} so new matter survives tag
+    stripping.
+
+    Tracks underline state with a tag stack: an element counts as underlined if
+    it is <u> or carries text-decoration: underline, and the state persists
+    through nested elements until that element closes.
+    """
+    out, pos, stack, depth = [], 0, [], 0
+    for m in _TAG.finditer(fragment):
+        text = fragment[pos:m.start()]
+        if text:
+            out.append("{{" + text + "}}" if depth else text)
+        pos = m.end()
+        closing, name, attrs = m.group(1), m.group(2).lower(), m.group(3)
+        if closing:
+            for i in range(len(stack) - 1, -1, -1):
+                if stack[i][0] == name:
+                    if stack[i][1]:
+                        depth -= 1
+                    del stack[i:]
+                    break
+        elif name not in _VOID_TAGS and not attrs.rstrip().endswith("/"):
+            underlined = name == "u" or bool(_UNDERLINE_STYLE.search(attrs))
+            stack.append((name, underlined))
+            if underlined:
+                depth += 1
+        out.append(m.group(0))
+    tail = fragment[pos:]
+    if tail:
+        out.append("{{" + tail + "}}" if depth else tail)
+    return "".join(out)
+
+
 def _strip_text_html(fragment: str) -> str:
-    """Convert the divText HTML fragment to readable plain text."""
-    t = re.sub(r"<(p|div|br|tr|li|h\d)[^>]*>", "\n", fragment, flags=re.I)
+    """Convert the divText HTML fragment to readable plain text.
+
+    New matter (underlined in Legistar) is preserved as {{...}}; deleted
+    matter keeps the source's own [square brackets].
+    """
+    t = _mark_new_matter(fragment)
+    t = re.sub(r"<(p|div|br|tr|li|h\d)[^>]*>", "\n", t, flags=re.I)
     t = re.sub(r"<[^>]+>", "", t)
+    t = re.sub(r"\}\}(\s*)\{\{", r"\1", t)      # merge runs split by markup
+    t = re.sub(r"\{\{(\s*)\}\}", r"\1", t)      # drop empty markers
     t = htmllib.unescape(t)
     t = t.replace("\xa0", " ")
     t = re.sub(r"[ \t]+", " ", t)

@@ -101,6 +101,7 @@ RULES:
 - The quote must be copied character-for-character from the law text — it will be mechanically checked, and paraphrased quotes are rejected.
 - deliverable_type: rulemaking = promulgating rules; report = periodic/one-time reporting to mayor/council/public; "database or data publication" includes websites, dashboards, posting datasets; "notice or posting" = required notices, translations, distributions of information; "monitoring or testing" = required sampling, testing, or ongoing measurement.
 - Street co-naming laws: designating a thoroughfare name implies the department of transportation must fabricate and install the street name signs. Record ONE obligation for the department of transportation with deliverable_type "signage or installation" covering all designations in the law. This DOT inference applies ONLY to streets and thoroughfares: a park or playground renaming implies the department of parks and recreation (not DOT), and other facility renamings imply the agency that operates the facility.
+- {{Double braces}} mark NEW matter: text this law actually adds to the code, taken from Legistar's underline styling. When a section is introduced by "is amended to read as follows", everything OUTSIDE the braces is pre-existing law being reprinted, and you must NOT extract an obligation from it, however clearly it states a duty. Extract only duties whose operative language sits inside braces. If a law's text carries no braces at all, fall back to the amendment rule below.
 - Square brackets mark DELETED matter. In NYC Council drafting, text enclosed in [brackets] is being struck from the code by this law. NEVER extract an obligation from text inside brackets: that duty is being repealed, not created. A bracketed span can run for several sentences, so check whether an unclosed "[" precedes the passage you are quoting. If the law strikes a duty and re-enacts it elsewhere in the same law, quote the re-enacted (unbracketed) copy.
 - Deadlines anchored to a recurring or per-case event (each application received, each hearing held, each review completed, the occurrence of a vacancy) are NOT effective-date deadlines. Use kind=days_after_other with no offset, even when the clause says "within 60 days". Only a clock the law expressly ties to enactment or the effective date gets days_after_enactment or days_after_effective.
 - Amendment texts ("is amended to read as follows"): the restated body of the amended section is PRE-EXISTING law. Only newly added matter (in Legistar's published text, the underlined portions) can create obligations for this law. Never extract a duty whose operative language exists unchanged in the prior law.
@@ -130,7 +131,13 @@ def norm_lookup_key(s: str) -> str:
 
 
 def normalize_quote(s: str) -> str:
-    """Loosen whitespace/typography differences for quote verification."""
+    """Loosen whitespace/typography differences for quote verification.
+
+    Also drops the {{...}} new-matter markers the fetcher preserves from
+    Legistar's underline styling, so a quote verifies whether or not it spans
+    a marker boundary.
+    """
+    s = s.replace("{{", "").replace("}}", "")
     s = s.lower()
     s = s.replace("“", '"').replace("”", '"')
     s = s.replace("‘", "'").replace("’", "'")
@@ -224,6 +231,19 @@ def is_vague_actor(s: str) -> bool:
 # {matter_id: {actor_phrase: "resolved name" | "resolved | parent: X" | null}}
 # Built from a context pass that read each law's definitions. null means the
 # law genuinely leaves the actor undetermined -> tag Unspecified.
+# Obligations whose verbatim quote sits in text a law only reprints (see
+# pipeline/sweep_restated_duties.py). Flagged rather than deleted: a spot check
+# put the sweep at ~86% precision, and the misses are laws that did touch the
+# provision (renumbering it, or amending the same duty), so deleting on the
+# signal alone would drop real duties.
+_RESTATED_PATH = HERE / "restated_candidates.json"
+RESTATED_IDS: set = set()
+if _RESTATED_PATH.exists():
+    RESTATED_IDS = {
+        c["obligation_id"]
+        for c in json.loads(_RESTATED_PATH.read_text()).get("candidates", [])
+    }
+
 _OVERRIDES_PATH = HERE / "actor_overrides.json"
 ACTOR_OVERRIDES: dict = (json.loads(_OVERRIDES_PATH.read_text())
                          if _OVERRIDES_PATH.exists() else {})
@@ -565,7 +585,8 @@ def main() -> None:
         obs_by_matter: dict[str, list] = {}
         joined_keys = {"file_number", "law_number_display", "law_title",
                        "committee", "prime_sponsor", "enactment_date",
-                       "effective_date", "legistar_url", "law_sunset_date"}
+                       "effective_date", "legistar_url", "law_sunset_date",
+                       "quotes_restated_text"}
         for o in prev.get("obligations", []):
             obs_by_matter.setdefault(o["matter_id"], []).append(
                 {k: v for k, v in o.items() if k not in joined_keys})
@@ -644,6 +665,7 @@ def main() -> None:
                 "effective_date": res["effective_date"],
                 "legistar_url": law["legistar_url"],
                 "law_sunset_date": law.get("sunset_date"),
+                "quotes_restated_text": o["obligation_id"] in RESTATED_IDS,
             })
 
     out = {
