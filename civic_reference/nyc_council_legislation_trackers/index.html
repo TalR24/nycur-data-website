@@ -12,7 +12,8 @@
   <meta property="og:description" content="What every NYC Council bill costs, and what every enacted law requires city agencies to do.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/chart.css">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -65,9 +66,9 @@
     .section-label { font-family: 'Roboto Mono', monospace; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-faint); margin-bottom: 20px; }
     .charts-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
 
-    .chart-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); text-decoration: none; color: inherit; display: flex; flex-direction: column; overflow: hidden; transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s; }
-    .chart-card:hover { border-color: var(--blue); box-shadow: var(--shadow-md); transform: translateY(-3px); }
-    .chart-card-icon { height: 100px; background: var(--text); display: flex; align-items: center; justify-content: center; gap: 10px; padding: 0 24px; flex-shrink: 0; }
+    .hub-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); text-decoration: none; color: inherit; display: flex; flex-direction: column; overflow: hidden; transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s; }
+    .hub-card:hover { border-color: var(--blue); box-shadow: var(--shadow-md); transform: translateY(-3px); }
+    .hub-card-icon { height: 100px; background: var(--text); display: flex; align-items: center; justify-content: center; gap: 10px; padding: 0 24px; flex-shrink: 0; }
     .icon-money { display: flex; align-items: flex-end; gap: 5px; height: 52px; }
     .icon-money .bar { width: 13px; border-radius: 3px 3px 0 0; background: #2563eb; }
     .icon-money .bar.neg { background: #dc2626; }
@@ -83,14 +84,14 @@
     .icon-person.hl .head { background: #2563eb; }
     .icon-person.dim .head { background: rgba(255,255,255,0.35); }
 
-    .chart-card-body { padding: 20px 24px 24px; flex: 1; display: flex; flex-direction: column; }
-    .chart-card-label { font-family: 'Roboto Mono', monospace; font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--blue); margin-bottom: 8px; }
-    .chart-card-title { font-family: 'Roboto Mono', monospace; font-size: 1.05rem; font-weight: 700; color: var(--text); letter-spacing: -0.02em; line-height: 1.25; margin-bottom: 10px; }
-    .chart-card-desc { font-size: 0.875rem; color: var(--text-muted); line-height: 1.6; flex: 1; margin-bottom: 20px; }
-    .chart-card-meta { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-    .chart-card-stat { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; color: var(--text-faint); }
-    .chart-card-cta { font-family: 'Roboto Mono', monospace; font-size: 0.78rem; font-weight: 700; color: var(--blue); display: flex; align-items: center; gap: 5px; transition: gap 0.15s; }
-    .chart-card:hover .chart-card-cta { gap: 9px; }
+    .hub-card-body { padding: 20px 24px 24px; flex: 1; display: flex; flex-direction: column; }
+    .hub-card-label { font-family: 'Roboto Mono', monospace; font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--blue); margin-bottom: 8px; }
+    .hub-card-title { font-family: 'Roboto Mono', monospace; font-size: 1.05rem; font-weight: 700; color: var(--text); letter-spacing: -0.02em; line-height: 1.25; margin-bottom: 10px; }
+    .hub-card-desc { font-size: 0.875rem; color: var(--text-muted); line-height: 1.6; flex: 1; margin-bottom: 20px; }
+    .hub-card-meta { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .hub-card-stat { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; color: var(--text-faint); }
+    .hub-card-cta { font-family: 'Roboto Mono', monospace; font-size: 0.78rem; font-weight: 700; color: var(--blue); display: flex; align-items: center; gap: 5px; transition: gap 0.15s; }
+    .hub-card:hover .hub-card-cta { gap: 9px; }
 
     footer { background: var(--surface); border-top: 1px solid var(--border); padding: 20px clamp(20px, 5vw, 48px); }
     .footer-inner { max-width: 1100px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
@@ -103,6 +104,7 @@
 
     @media (max-width: 640px) { .header-actions { display: none; } }
   </style>
+  <script defer src="/assets/chart.js"></script>
   <script defer src="/assets/site.js"></script>
 </head>
 <body>
@@ -160,8 +162,8 @@
     <p class="section-label">Trackers in this collection</p>
     <div class="charts-grid">
 
-      <a class="chart-card" href="../nyc_council_fiscal_impacts_tracker/">
-        <div class="chart-card-icon">
+      <a class="hub-card" href="../nyc_council_fiscal_impacts_tracker/">
+        <div class="hub-card-icon">
           <div class="icon-money">
             <div class="bar" style="height:100%"></div>
             <div class="bar" style="height:70%"></div>
@@ -171,51 +173,51 @@
             <div class="bar" style="height:18%"></div>
           </div>
         </div>
-        <div class="chart-card-body">
-          <div class="chart-card-label">Fiscal Impacts Tracker</div>
-          <div class="chart-card-title">What Council legislation costs</div>
-          <div class="chart-card-desc">Every bill with a Finance Division fiscal impact statement since 2014: operational costs, capital costs, revenues, and net fiscal impact, filterable by agency, committee, and sponsor, with year-by-year breakdowns per bill.</div>
-          <div class="chart-card-meta">
-            <span class="chart-card-stat">244 bills · 6 views</span>
-            <span class="chart-card-cta">Explore →</span>
+        <div class="hub-card-body">
+          <div class="hub-card-label">Fiscal Impacts Tracker</div>
+          <div class="hub-card-title">What Council legislation costs</div>
+          <div class="hub-card-desc">Every bill with a Finance Division fiscal impact statement since 2014: operational costs, capital costs, revenues, and net fiscal impact, filterable by agency, committee, and sponsor, with year-by-year breakdowns per bill.</div>
+          <div class="hub-card-meta">
+            <span class="hub-card-stat">244 bills · 6 views</span>
+            <span class="hub-card-cta">Explore →</span>
           </div>
         </div>
       </a>
 
-      <a class="chart-card" href="../legislation_implementation_tracker/">
-        <div class="chart-card-icon">
+      <a class="hub-card" href="../legislation_implementation_tracker/">
+        <div class="hub-card-icon">
           <div class="icon-checklist">
             <div class="row"><div class="box done"></div><div class="line" style="width:80%"></div></div>
             <div class="row"><div class="box done"></div><div class="line" style="width:60%"></div></div>
             <div class="row"><div class="box"></div><div class="line" style="width:70%"></div></div>
           </div>
         </div>
-        <div class="chart-card-body">
-          <div class="chart-card-label">Implementation Tracker</div>
-          <div class="chart-card-title">What enacted laws require agencies to do</div>
-          <div class="chart-card-desc">Every local law enacted since 2014, parsed into the concrete actions it demands of city agencies: the rules, reports, programs, and deadlines, each backed by the exact statutory language.</div>
-          <div class="chart-card-meta">
-            <span class="chart-card-stat" id="cardStatImpl">4 views</span>
-            <span class="chart-card-cta">Explore →</span>
+        <div class="hub-card-body">
+          <div class="hub-card-label">Implementation Tracker</div>
+          <div class="hub-card-title">What enacted laws require agencies to do</div>
+          <div class="hub-card-desc">Every local law enacted since 2014, parsed into the concrete actions it demands of city agencies: the rules, reports, programs, and deadlines, each backed by the exact statutory language.</div>
+          <div class="hub-card-meta">
+            <span class="hub-card-stat" id="cardStatImpl">4 views</span>
+            <span class="hub-card-cta">Explore →</span>
           </div>
         </div>
       </a>
 
-      <a class="chart-card" href="council-members/">
-        <div class="chart-card-icon">
+      <a class="hub-card" href="council-members/">
+        <div class="hub-card-icon">
           <div class="icon-people">
             <div class="icon-person dim"><div class="head"></div><div class="body"></div></div>
             <div class="icon-person hl"><div class="head"></div><div class="body"></div></div>
             <div class="icon-person dim"><div class="head"></div><div class="body"></div></div>
           </div>
         </div>
-        <div class="chart-card-body">
-          <div class="chart-card-label">Council Members</div>
-          <div class="chart-card-title">Who writes the bills, and what they add up to</div>
-          <div class="chart-card-desc">A profile for every council member appearing in either tracker: all their sponsored legislation, total fiscal impact, obligations created, and sponsorship patterns. Browse as cards or on a district map of the city.</div>
-          <div class="chart-card-meta">
-            <span class="chart-card-stat" id="cardStatMembers">cards · district map</span>
-            <span class="chart-card-cta">Explore →</span>
+        <div class="hub-card-body">
+          <div class="hub-card-label">Council Members</div>
+          <div class="hub-card-title">Who writes the bills, and what they add up to</div>
+          <div class="hub-card-desc">A profile for every council member appearing in either tracker: all their sponsored legislation, total fiscal impact, obligations created, and sponsorship patterns. Browse as cards or on a district map of the city.</div>
+          <div class="hub-card-meta">
+            <span class="hub-card-stat" id="cardStatMembers">cards · district map</span>
+            <span class="hub-card-cta">Explore →</span>
           </div>
         </div>
       </a>

@@ -12,7 +12,9 @@
   <meta property="og:description" content="Every agency action required by NYC local laws enacted since 2014, in one filterable table.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/chart.css">
+  <script defer src="/assets/chart.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -78,8 +80,6 @@
     .qs .n.red { color: var(--red); }
     .qs .l { font-size: 0.64rem; color: var(--text-muted); }
 
-    #chart-box { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); overflow: hidden; }
-    .table-scroll { overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; min-width: 1220px; }
     .meta-cell { font-size: 0.76rem; color: var(--text-muted); white-space: nowrap; max-width: 150px; overflow: hidden; text-overflow: ellipsis; }
     thead th { font-family: 'Roboto Mono', monospace; font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); text-align: left; padding: 12px 14px; border-bottom: 2px solid var(--border); background: var(--bg); white-space: nowrap; cursor: pointer; user-select: none; }
@@ -114,9 +114,6 @@
     .detail-links { grid-column: 1 / -1; display: flex; gap: 14px; flex-wrap: wrap; }
     .detail-links a { font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600; color: var(--blue); text-decoration: none; }
     .detail-links a:hover { text-decoration: underline; }
-
-    .chart-attribution { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 12px 16px; border-top: 1px solid var(--border); background: var(--bg); font-size: 0.78rem; color: var(--text-faint); font-family: 'Roboto Mono', monospace; }
-    .chart-attribution a { color: var(--blue); text-decoration: none; }
 
     .footnotes { margin-top: 20px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; }
     .footnotes p { font-size: 0.8rem; color: var(--text-muted); line-height: 1.65; margin-bottom: 10px; }
@@ -222,8 +219,8 @@
 
     <p class="restated-summary" id="restatedSummary"></p>
 
-    <div id="chart-box">
-      <div class="table-scroll">
+    <figure class="chart-card" id="chart-box" data-slug="nyc-obligations-table">
+      <div class="c-plot c-plot--scroll">
         <table id="obTable">
           <thead>
             <tr>
@@ -243,10 +240,12 @@
           </tbody>
         </table>
       </div>
-      <div class="chart-attribution">
-        <span>Created by Tal Roded · NYCuriosity · Source: Author's analysis of enacted local law text from <a href="https://legistar.council.nyc.gov" target="_blank" rel="noopener">NYC Legistar</a></span>
-      </div>
-    </div>
+      <figcaption class="c-foot">
+        <div class="c-foot-text">
+          <span>Created by Tal Roded · NYCuriosity · Source: Author's analysis of enacted local law text from <a href="https://legistar.council.nyc.gov" target="_blank" rel="noopener">NYC Legistar</a></span>
+        </div>
+      </figcaption>
+    </figure>
 
     <div class="footnotes">
       <p><strong>What counts as an obligation:</strong> a mandatory duty ("shall", "must") the enacted law places on a NYC government agency, office, or officer. Duties the law places on private parties appear only through the agency work they create, such as enforcement or rulemaking.</p>

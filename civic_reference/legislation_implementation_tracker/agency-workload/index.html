@@ -12,8 +12,10 @@
   <meta property="og:description" content="Which NYC agencies carry the most obligations from local laws enacted since 2014, ranked and broken down by deliverable type.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/chart.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
+  <script defer src="/assets/chart.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -72,23 +74,14 @@
     .stat-pill .sp-num { font-family: 'Roboto Mono', monospace; font-size: 1.2rem; font-weight: 700; color: var(--blue); letter-spacing: -0.03em; line-height: 1; }
     .stat-pill .sp-label { font-size: 0.72rem; color: var(--text-muted); line-height: 1.3; }
 
-    .chart-actions { display: flex; justify-content: flex-end; gap: 8px; margin-bottom: 10px; }
-    .action-btn { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; font-weight: 600; color: var(--text-muted); background: var(--surface); border: 1px solid var(--border); border-radius: 7px; padding: 7px 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: all 0.15s; }
-    .action-btn:hover { color: var(--blue); border-color: var(--blue); }
-
-    #chart-box { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); overflow: hidden; }
-    .chart-pad { padding: 22px 24px 10px; }
-    .chart-title-inbox { font-family: 'Roboto Mono', monospace; font-size: 1rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 4px; }
-    .chart-sub-inbox { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 16px; }
-    .legend { display: flex; flex-wrap: wrap; gap: 14px; margin-bottom: 18px; }
-    .legend-item { display: flex; align-items: center; gap: 6px; font-family: 'Roboto Mono', monospace; font-size: 0.7rem; color: var(--text-mid); }
-    .legend-swatch { width: 12px; height: 12px; border-radius: 3px; }
-
-    .bar-row { display: grid; grid-template-columns: 170px 1fr 48px; gap: 10px; align-items: center; margin-bottom: 9px; }
-    .bar-label { font-family: 'Roboto Mono', monospace; font-size: 0.73rem; color: var(--text-mid); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right; cursor: default; }
-    .bar-track { background: var(--blue-light); border-radius: 4px; height: 18px; overflow: hidden; display: flex; }
+    /* stacked bar rows on the shared .c-bars system: the track holds one
+       coloured .bar-seg per deliverable bucket instead of a single fill. */
+    #chartArea { --c-bar-label-w: 170px; --c-bar-h: 18px; }
+    #chartArea .c-bar-row { cursor: pointer; }
+    #chartArea .c-bar-label { font-family: 'Roboto Mono', monospace; font-size: 0.73rem; color: var(--text-mid); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #chartArea .c-bar-track { background: var(--blue-light); border-radius: 4px; overflow: hidden; display: flex; }
+    #chartArea .c-bar-value { font-family: 'Roboto Mono', monospace; font-size: 0.73rem; font-weight: 600; color: var(--text); }
     .bar-seg { height: 100%; transition: width 0.6s ease; }
-    .bar-val { font-family: 'Roboto Mono', monospace; font-size: 0.73rem; font-weight: 600; color: var(--text); }
     .loading-note { font-family: 'Roboto Mono', monospace; font-size: 0.85rem; color: var(--text-faint); padding: 40px; text-align: center; }
 
     .chart-tooltip {
@@ -102,7 +95,6 @@
     .chart-tooltip .tt-seg { color: #d1d5db; }
     .chart-tooltip .tt-hint { color: #9ca3af; font-size: 0.66rem; }
 
-    .bar-row { cursor: pointer; }
     .obl-section { margin-top: 20px; }
     .obl-hint { font-family: 'Roboto Mono', monospace; font-size: 0.78rem; color: var(--text-faint); background: var(--surface); border: 1.5px dashed var(--border); border-radius: var(--radius); padding: 14px 18px; }
     .obl-search { display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 10px 14px; margin-bottom: 14px; }
@@ -125,9 +117,6 @@
     .obl-chips { display: flex; flex-wrap: wrap; gap: 6px; }
     .obl-chip { font-family: 'Roboto Mono', monospace; font-size: 0.64rem; padding: 2px 8px; border-radius: 10px; background: var(--blue-light); border: 1px solid var(--blue-mid); color: var(--text-mid); }
     .obl-chip.due { background: #fff4ed; border-color: #ffd0b3; }
-
-    .chart-attribution { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 12px 16px; border-top: 1px solid var(--border); background: var(--bg); font-size: 0.78rem; color: var(--text-faint); font-family: 'Roboto Mono', monospace; }
-    .chart-attribution a { color: var(--blue); text-decoration: none; }
 
     .footnotes { margin-top: 20px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; }
     .footnotes p { font-size: 0.8rem; color: var(--text-muted); line-height: 1.65; margin-bottom: 10px; }
@@ -152,10 +141,6 @@
     .footer-links a:hover { color: var(--blue); }
     .footer-support { display: inline-flex; align-items: center; gap: 5px; font-size: 0.8rem; font-weight: 500; color: #2563eb; text-decoration: none; padding: 5px 11px; border: 1px solid rgba(37,99,235,0.45); border-radius: 6px; transition: color .15s, border-color .15s, background .15s; vertical-align: middle; }
     .footer-support:hover { color: #fff; background: #2563eb; border-color: #2563eb; }
-
-    @media (max-width: 640px) {
-      .bar-row { grid-template-columns: 108px 1fr 42px; }
-    }
   </style>
   <script defer src="/assets/site.js"></script>
 </head>
@@ -226,28 +211,32 @@
       <div class="stat-pill"><span class="sp-num" id="stRecurring">–</span><span class="sp-label">Recurring duties</span></div>
     </div>
 
-    <div class="chart-actions">
-      <button class="action-btn" onclick="downloadChart(this)">
+    <div class="c-actions">
+      <button class="c-action-btn" onclick="downloadChart(this)">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         Download PNG
       </button>
-      <button class="action-btn" onclick="showEmbed()">
+      <button class="c-action-btn" onclick="showEmbed()">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
         Embed
       </button>
     </div>
 
-    <div id="chart-box">
-      <div class="chart-pad">
-        <div class="chart-title-inbox">Obligations by responsible agency</div>
-        <div class="chart-sub-inbox" id="chartSub">Local laws enacted 2014 to present, top 20 agencies.</div>
-        <div class="legend" id="legend"></div>
-        <div id="chartArea"><p class="loading-note">Loading…</p></div>
+    <figure class="chart-card" id="chart-box" data-slug="nyc-agency-workload">
+      <div class="c-head">
+        <h2 class="c-title">Obligations by responsible agency</h2>
+        <p class="c-deck" id="chartSub">Local laws enacted 2014 to present, top 20 agencies.</p>
+        <ul class="c-legend" id="legend"></ul>
       </div>
-      <div class="chart-attribution">
-        <span>Created by Tal Roded · NYCuriosity · Source: Author's analysis of enacted local law text from <a href="https://legistar.council.nyc.gov" target="_blank" rel="noopener">NYC Legistar</a></span>
+      <div class="c-plot">
+        <div class="c-bars" id="chartArea"><p class="loading-note">Loading…</p></div>
       </div>
-    </div>
+      <figcaption class="c-foot">
+        <div class="c-foot-text">
+          <span>Created by Tal Roded · NYCuriosity · Source: Author's analysis of enacted local law text from <a href="https://legistar.council.nyc.gov" target="_blank" rel="noopener">NYC Legistar</a></span>
+        </div>
+      </figcaption>
+    </figure>
 
     <div class="obl-section" id="oblSection">
       <p class="obl-hint">Filter to one or more agencies above, or click a bar, and every matching obligation is listed here.</p>
@@ -360,7 +349,7 @@ function buildFilters() {
 function buildLegend() {
   var html = '';
   BUCKETS.forEach(function (b) {
-    html += '<span class="legend-item"><span class="legend-swatch" style="background:' + b.color + '"></span>' + b.label + '</span>';
+    html += '<li class="c-legend-item"><span class="sw" style="background:' + b.color + '"></span>' + b.label + '</li>';
   });
   document.getElementById('legend').innerHTML = html;
 }
@@ -419,10 +408,10 @@ function render() {
       if (!n) return;
       segsHtml += '<div class="bar-seg" data-seg="' + esc(b.label) + ': ' + n + '" style="background:' + b.color + ';width:' + (n / max * 100) + '%"></div>';
     });
-    html += '<div class="bar-row" data-full="' + esc(r.full || r.agency) + '" data-total="' + r.total + '">'
-      + '<span class="bar-label">' + esc(r.agency) + '</span>'
-      + '<div class="bar-track">' + segsHtml + '</div>'
-      + '<span class="bar-val">' + r.total.toLocaleString() + '</span>'
+    html += '<div class="c-bar-row" data-full="' + esc(r.full || r.agency) + '" data-total="' + r.total + '">'
+      + '<span class="c-bar-label">' + esc(r.agency) + '</span>'
+      + '<div class="c-bar-track">' + segsHtml + '</div>'
+      + '<span class="c-bar-value">' + r.total.toLocaleString() + '</span>'
       + '</div>';
   });
   area.innerHTML = html;
@@ -441,35 +430,6 @@ function render() {
   document.getElementById('chartSub').textContent = filterBits.length
     ? 'Filtered to ' + filterBits.join(' · ') + '. Top 20 agencies.'
     : 'Local laws enacted 2014 to present, top 20 agencies.';
-}
-
-async function downloadChart(btn) {
-  var orig = btn.innerHTML;
-  btn.innerHTML = '⏳ Capturing…'; btn.disabled = true;
-  try {
-    var el = document.getElementById('chart-box');
-    var dataUrl = await htmlToImage.toPng(el, { backgroundColor: '#ffffff', pixelRatio: 2 });
-    var a = document.createElement('a');
-    a.download = 'nyc-agency-workload.png';
-    a.href = dataUrl; a.click();
-  } finally { btn.innerHTML = orig; btn.disabled = false; }
-}
-
-function showEmbed() {
-  var url = location.origin + location.pathname;
-  document.getElementById('embedCode').value =
-    '<iframe src="' + url + '" width="900" height="920" frameborder="0" style="border:1px solid #e5e7eb; border-radius:8px;" loading="lazy"></iframe>';
-  document.getElementById('embedModal').style.display = 'flex';
-}
-
-function copyEmbed() {
-  var ta = document.getElementById('embedCode');
-  ta.select();
-  navigator.clipboard.writeText(ta.value).then(function () {
-    var b = document.getElementById('copyBtn');
-    b.textContent = '✓ Copied!';
-    setTimeout(function () { b.textContent = 'Copy'; }, 2000);
-  });
 }
 
 function esc(s) {
@@ -569,9 +529,9 @@ function setAgencySelection(only) {
   render();
 }
 document.getElementById('chartArea').addEventListener('click', function (e) {
-  var row = e.target.closest ? e.target.closest('.bar-row') : null;
+  var row = e.target.closest ? e.target.closest('.c-bar-row') : null;
   if (!row) return;
-  var label = row.querySelector('.bar-label');
+  var label = row.querySelector('.c-bar-label');
   if (label) setAgencySelection(label.textContent);
 });
 
@@ -584,7 +544,7 @@ document.getElementById('chartArea').addEventListener('click', function (e) {
   var chartArea = document.getElementById('chartArea');
 
   chartArea.addEventListener('mousemove', function (e) {
-    var row = e.target.closest ? e.target.closest('.bar-row') : null;
+    var row = e.target.closest ? e.target.closest('.c-bar-row') : null;
     if (!row) { tip.style.display = 'none'; return; }
     var html = '<span class="tt-name">' + esc(row.getAttribute('data-full')) + '</span><br>'
       + '<span class="tt-count">' + Number(row.getAttribute('data-total')).toLocaleString() + ' obligations</span>';

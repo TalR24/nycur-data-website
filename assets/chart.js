@@ -193,15 +193,21 @@
     var box = document.getElementById('embedModal');
     if (box) box.style.display = 'none';
   }
-  function copyEmbed() {
+  /* Pages label this button differently ("Copy code", "Copy"), so restore
+     whatever the button actually said rather than assuming. Accepts the
+     clicked element so a page with its own button class still gets the
+     confirmation state. */
+  function copyEmbed(btn) {
     var field = document.getElementById('embedCode');
     if (!field) return;
     field.select();
+    var target = (btn && btn.tagName === 'BUTTON') ? btn
+      : document.querySelector('.embed-copy-btn') || document.getElementById('copyBtn');
+    var label = target ? target.textContent : null;
     navigator.clipboard.writeText(field.value).then(function () {
-      var btn = document.querySelector('.embed-copy-btn');
-      if (!btn) return;
-      btn.textContent = '✓ Copied!';
-      setTimeout(function () { btn.textContent = 'Copy code'; }, 2000);
+      if (!target) return;
+      target.textContent = '✓ Copied!';
+      setTimeout(function () { target.textContent = label; }, 2000);
     });
   }
 

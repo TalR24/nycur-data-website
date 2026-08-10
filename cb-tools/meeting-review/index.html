@@ -12,7 +12,8 @@
   <meta property="og:description" content="A working demo of AI meeting review: Claude analyzes the transcript of Manhattan CB3's June 2026 full board meeting against the City's parliamentary procedure guide, with coaching notes.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/chart.css">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -66,13 +67,6 @@
     .finding h3 { font-size: 0.95rem; font-weight: 600; margin-bottom: 4px; color: var(--text); }
     .finding p { font-size: 0.87rem; color: var(--text-mid); line-height: 1.65; }
     .finding .rule { display: block; margin-top: 6px; font-size: 0.76rem; font-family: 'Roboto Mono', monospace; color: var(--text-faint); }
-    .tl { display: flex; flex-direction: column; gap: 8px; }
-    .tl-row { display: grid; grid-template-columns: 190px 1fr 74px; align-items: center; gap: 10px; }
-    .tl-label { font-size: 0.8rem; color: var(--text-mid); text-align: right; }
-    .tl-track { height: 16px; background: var(--border); border-radius: 3px; overflow: hidden; }
-    .tl-fill { height: 100%; border-radius: 3px; background: var(--blue); }
-    .tl-min { font-family: 'Roboto Mono', monospace; font-size: 0.74rem; color: var(--text-muted); }
-    @media (max-width: 560px) { .tl-row { grid-template-columns: 120px 1fr 60px; } .tl-label { font-size: 0.7rem; } }
     .method-box { margin-top: 30px; padding: 16px 20px; background: var(--blue-light); border: 1px solid var(--blue-mid); border-radius: var(--radius); }
     .method-box p { font-size: 0.85rem; color: var(--text-mid); line-height: 1.65; }
     .method-box p + p { margin-top: 8px; }
@@ -93,6 +87,7 @@
     .footer-support:hover { color: #fff; background: #2563eb; border-color: #2563eb; }
     .footer-support svg { flex-shrink: 0; }
   </style>
+  <script defer src="/assets/chart.js"></script>
   <script defer src="/assets/site.js"></script>
 </head>
 <body>
@@ -154,16 +149,21 @@
 
     <div class="section-heading">Where the meeting's 87 minutes went</div>
     <p class="section-sub">Segment lengths estimated from position in the transcript. This was a brisk meeting by CB3 standards; it fell on primary election day and the chair said at the top the goal was to end on time. The board did.</p>
-    <div class="box">
-      <div class="tl">
-        <div class="tl-row"><span class="tl-label">Public session</span><div class="tl-track"><div class="tl-fill" style="width:76%"></div></div><span class="tl-min">~20 min</span></div>
-        <div class="tl-row"><span class="tl-label">Elected officials' reports</span><div class="tl-track"><div class="tl-fill" style="width:61%"></div></div><span class="tl-min">~16 min</span></div>
-        <div class="tl-row"><span class="tl-label">Roll call + minutes</span><div class="tl-track"><div class="tl-fill" style="width:15%"></div></div><span class="tl-min">~4 min</span></div>
-        <div class="tl-row"><span class="tl-label">Chair + district manager reports</span><div class="tl-track"><div class="tl-fill" style="width:50%"></div></div><span class="tl-min">~13 min</span></div>
-        <div class="tl-row"><span class="tl-label">Committee reports + Q&amp;A</span><div class="tl-track"><div class="tl-fill" style="width:100%"></div></div><span class="tl-min">~26 min</span></div>
-        <div class="tl-row"><span class="tl-label">Final roll call vote</span><div class="tl-track"><div class="tl-fill" style="width:30%"></div></div><span class="tl-min">~8 min</span></div>
+    <figure class="chart-card" id="chart-box" data-slug="mcb3-june-2026-meeting-segments">
+      <div class="c-plot">
+        <div class="c-bars" style="--c-bar-label-w: 190px">
+          <div class="c-bar-row"><span class="c-bar-label">Public session</span><div class="c-bar-track"><div class="c-bar-fill" style="width:76%"></div></div><span class="c-bar-value">~20 min</span></div>
+          <div class="c-bar-row"><span class="c-bar-label">Elected officials' reports</span><div class="c-bar-track"><div class="c-bar-fill" style="width:61%"></div></div><span class="c-bar-value">~16 min</span></div>
+          <div class="c-bar-row"><span class="c-bar-label">Roll call + minutes</span><div class="c-bar-track"><div class="c-bar-fill" style="width:15%"></div></div><span class="c-bar-value">~4 min</span></div>
+          <div class="c-bar-row"><span class="c-bar-label">Chair + district manager reports</span><div class="c-bar-track"><div class="c-bar-fill" style="width:50%"></div></div><span class="c-bar-value">~13 min</span></div>
+          <div class="c-bar-row"><span class="c-bar-label">Committee reports + Q&amp;A</span><div class="c-bar-track"><div class="c-bar-fill" style="width:100%"></div></div><span class="c-bar-value">~26 min</span></div>
+          <div class="c-bar-row"><span class="c-bar-label">Final roll call vote</span><div class="c-bar-track"><div class="c-bar-fill" style="width:30%"></div></div><span class="c-bar-value">~8 min</span></div>
+        </div>
       </div>
-    </div>
+      <figcaption class="c-foot">
+        <div class="c-foot-text"></div>
+      </figcaption>
+    </figure>
 
     <div class="section-heading">What this meeting did well</div>
     <div class="box">

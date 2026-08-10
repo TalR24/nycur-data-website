@@ -8,9 +8,11 @@
   <meta name="description" content="Total fiscal impact of NYC Council legislation grouped by city agency, filterable by committee, sponsor, year, and expense type.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/chart.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
+  <script defer src="/assets/chart.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -155,53 +157,8 @@
     .stat-pill .sp-num.green { color: var(--green); }
     .stat-pill .sp-label { font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; }
 
-    /* ── CHART WRAP ── */
-    .chart-wrap {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 28px 28px 0;
-      overflow: hidden;
-    }
-    .chart-wrap-title {
-      font-family: 'Roboto Mono', monospace;
-      font-size: 1.05rem;
-      font-weight: 700;
-      color: var(--text);
-      letter-spacing: -0.02em;
-      margin-bottom: 6px;
-    }
-    .chart-wrap-sub {
-      font-size: 0.82rem;
-      color: var(--text-muted);
-      margin-bottom: 24px;
-      line-height: 1.5;
-      max-width: 700px;
-    }
+    /* ── CHART AREA ── */
     .chart-area { position: relative; height: 420px; margin-bottom: 0; }
-    .chart-caption {
-      font-size: 0.78rem;
-      color: var(--text-muted);
-      line-height: 1.55;
-      padding: 14px 0;
-      border-top: 1px solid var(--border);
-      margin-top: 20px;
-    }
-    .chart-attribution {
-      font-family: 'Roboto Mono', monospace;
-      font-size: 0.68rem;
-      color: var(--text-faint);
-      padding: 10px 0;
-      border-top: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-
-    /* ── ACTIONS ── */
-    .action-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
 
     /* ── EMPTY STATE ── */
     .empty-state {
@@ -363,37 +320,41 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:18px
     </div>
 
     <!-- ACTIONS -->
-    <div class="action-row">
-      <button class="btn btn-outline" id="dl-btn">
+    <div class="c-actions">
+      <button class="c-action-btn" onclick="downloadChart(this)">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         Download PNG
       </button>
-      <button class="btn btn-outline" id="embed-btn">
+      <button class="c-action-btn" onclick="showEmbed()">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
         Embed
       </button>
     </div>
 
     <!-- CHART -->
-    <div class="chart-wrap" id="chart-box">
-      <div class="chart-wrap-title" id="chart-title">Net Fiscal Impact by Agency</div>
-      <div class="chart-wrap-sub" id="chart-sub">Total net fiscal impact across all filtered legislation, attributed to each implementing agency. A bill affecting multiple agencies is counted in full for each.</div>
-      <div class="chart-area">
-        <canvas id="myChart"></canvas>
-        <div class="empty-state" id="empty-state" style="display:none;">
-          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h.01M15 9h.01M9 15h.01M15 15h.01"/></svg>
-          No bills match the selected filters.
+    <figure class="chart-card" id="chart-box" data-slug="fiscal-impact-by-agency">
+      <div class="c-head">
+        <h2 class="c-title" id="chart-title">Net Fiscal Impact by Agency</h2>
+        <p class="c-deck" id="chart-sub">Total net fiscal impact across all filtered legislation, attributed to each implementing agency. A bill affecting multiple agencies is counted in full for each.</p>
+      </div>
+      <div class="c-plot">
+        <div class="chart-area">
+          <canvas id="myChart"></canvas>
+          <div class="empty-state" id="empty-state" style="display:none;">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h.01M15 9h.01M9 15h.01M15 15h.01"/></svg>
+            No bills match the selected filters.
+          </div>
         </div>
       </div>
-      <div class="chart-caption">
-        Net fiscal impact of NYC Council legislation (2014–2026) grouped by implementing agency. Negative values indicate net costs to the city; positive values indicate net revenue gains.
-        Source: NYC Council Legistar fiscal impact statements, processed by NYCuriosity.
-      </div>
-      <div class="chart-attribution">
-        <span>Created by Tal Roded · NYCuriosity</span>
-        <span id="record-count-note" style="font-family:'Roboto Mono',monospace;font-size:0.65rem;color:var(--text-faint);">308 total records · 2014–2026</span>
-      </div>
-    </div>
+      <figcaption class="c-foot">
+        <div class="c-foot-text">
+          <span>Net fiscal impact of NYC Council legislation (2014–2026) grouped by implementing agency. Negative values indicate net costs to the city; positive values indicate net revenue gains.
+        Source: NYC Council Legistar fiscal impact statements, processed by NYCuriosity.</span>
+          <span>Created by Tal Roded · NYCuriosity</span>
+          <span id="record-count-note" style="font-family:'Roboto Mono',monospace;font-size:0.65rem;color:var(--text-faint);">308 total records · 2014–2026</span>
+        </div>
+      </figcaption>
+    </figure>
 
     <!-- FOOTNOTES -->
     <div class="footnotes">
@@ -422,13 +383,13 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:18px
 </footer>
 
 <!-- EMBED MODAL -->
-<div class="modal-overlay" id="embed-modal">
+<div class="modal-overlay" id="embedModal" style="display:none">
   <div class="modal">
     <h3>Embed this chart</h3>
-    <textarea id="embed-code" readonly></textarea>
+    <textarea id="embedCode" readonly></textarea>
     <div class="modal-actions">
-      <button class="btn btn-outline" id="copy-embed">Copy code</button>
-      <button class="btn btn-outline" id="close-modal">Close</button>
+      <button class="btn btn-outline embed-copy-btn" onclick="copyEmbed()">Copy code</button>
+      <button class="btn btn-outline" onclick="closeEmbed()">Close</button>
     </div>
   </div>
 </div>
@@ -448,14 +409,18 @@ const METRIC_CONFIG = {
   revenue:     { key: 'total_revenue',      label: 'Revenue Generated',   sub: 'Total revenue generated by filtered legislation, by implementing agency.' },
 };
 
-fetch('data.json')
-  .then(r => r.json())
-  .then(data => {
-    ALL_RECORDS = data.records;
-    FILTER_OPTIONS = data.filter_options;
-    populateFilters();
-    render();
-  });
+// /assets/chart.js is deferred and sets Chart.defaults on DOMContentLoaded, so the
+// fetch is kicked off from the same event: its callback can only run afterwards.
+document.addEventListener('DOMContentLoaded', () => {
+  fetch('data.json')
+    .then(r => r.json())
+    .then(data => {
+      ALL_RECORDS = data.records;
+      FILTER_OPTIONS = data.filter_options;
+      populateFilters();
+      render();
+    });
+});
 
 // ── MULTI-SELECT FILTERS (shared MSFilter widget) ─────────────────────────────
 const MS = {};
@@ -629,11 +594,6 @@ function render() {
       plugins: {
         legend: { display: false },
         tooltip: {
-          backgroundColor: '#111827',
-          titleFont: { family: "'Roboto Mono', monospace", size: 12, weight: '700' },
-          bodyFont:  { family: "'Roboto Mono', monospace", size: 11 },
-          padding: 12,
-          cornerRadius: 8,
           callbacks: {
             title: ctx => ctx[0].label,
             label: ctx => {
@@ -655,19 +615,14 @@ function render() {
         x: {
           grid: { display: false },
           ticks: {
-            font: { family: "'Roboto Mono', monospace", size: 11 },
             color: '#374151',
             maxRotation: 45,
             minRotation: 30,
           },
-          border: { color: '#e5e7eb' },
         },
         y: {
-          grid: { color: '#e5e7eb', lineWidth: 1 },
           border: { dash: [3, 3], color: 'transparent' },
           ticks: {
-            font: { family: "'Roboto Mono', monospace", size: 11 },
-            color: '#6b7280',
             callback: v => fmt(v),
           },
         }
@@ -691,56 +646,11 @@ document.getElementById('reset-btn').addEventListener('click', () => {
   render();
 });
 
-// ── DOWNLOAD PNG ──────────────────────────────────────────────────────────────
-document.getElementById('dl-btn').addEventListener('click', () => {
-  captureBoxPng(document.getElementById('chart-box'), '#ffffff')
-      .then(dataUrl => {
-        const a = document.createElement('a');
-        a.href = dataUrl;
-      a.download = 'fiscal-impact-by-agency.png';
-      a.click();
-    });
-});
-
 // ── EMBED MODAL ───────────────────────────────────────────────────────────────
-document.getElementById('embed-btn').addEventListener('click', () => {
-  document.getElementById('embed-code').value =
-    `<iframe src="https://data.nycuriosity.com/nyc_council_fiscal_impacts_tracker/agency-fiscal-impact/" width="100%" height="700" frameborder="0" style="border-radius:10px;"></iframe>`;
-  document.getElementById('embed-modal').classList.add('open');
+// downloadChart / showEmbed / closeEmbed / copyEmbed live in /assets/chart.js.
+document.getElementById('embedModal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) closeEmbed();
 });
-document.getElementById('close-modal').addEventListener('click', () => {
-  document.getElementById('embed-modal').classList.remove('open');
-});
-document.getElementById('copy-embed').addEventListener('click', () => {
-  navigator.clipboard.writeText(document.getElementById('embed-code').value);
-  document.getElementById('copy-embed').textContent = 'Copied!';
-  setTimeout(() => document.getElementById('copy-embed').textContent = 'Copy code', 2000);
-});
-document.getElementById('embed-modal').addEventListener('click', e => {
-  if (e.target === e.currentTarget) e.currentTarget.classList.remove('open');
-});
-</script>
-<script>
-// Capture helper: html-to-image clones the DOM, and cloned <canvas> elements
-// (Chart.js) come out blank — swap each canvas for a snapshot <img> during
-// capture, then restore.
-async function captureBoxPng(box, bg) {
-  const swaps = [];
-  box.querySelectorAll('canvas').forEach(c => {
-    const img = document.createElement('img');
-    img.src = c.toDataURL('image/png');
-    img.style.width = c.style.width || (c.clientWidth + 'px');
-    img.style.height = c.style.height || (c.clientHeight + 'px');
-    c.parentNode.insertBefore(img, c);
-    c.style.display = 'none';
-    swaps.push([c, img]);
-  });
-  try {
-    return await htmlToImage.toPng(box, { backgroundColor: bg, pixelRatio: 2 });
-  } finally {
-    swaps.forEach(([c, img]) => { img.remove(); c.style.display = ''; });
-  }
-}
 </script>
 </body>
 </html>

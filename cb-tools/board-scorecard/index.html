@@ -12,7 +12,8 @@
   <meta property="og:description" content="A prototype public dashboard for community board accountability across all 59 NYC boards: meeting lengths from 2,409 YouTube recordings, records coverage, and the 14 boards with no recordings at all.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/chart.css">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -76,13 +77,6 @@
     .legend { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 18px; align-items: center; }
     .legend-item { display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: var(--text-mid); font-weight: 500; }
     .legend-swatch { width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0; }
-    .chart { display: flex; flex-direction: column; gap: 6px; }
-    .bar-row { display: grid; grid-template-columns: 130px 1fr 64px; align-items: center; gap: 10px; }
-    .bar-label { font-size: 0.78rem; color: var(--text-mid); font-weight: 500; text-align: right; font-family: 'Roboto Mono', monospace; white-space: nowrap; }
-    .bar-track { height: 15px; background: var(--border); border-radius: 3px; overflow: hidden; }
-    .bar-fill { height: 100%; border-radius: 3px; }
-    .bar-value { font-family: 'Roboto Mono', monospace; font-size: 0.73rem; font-weight: 600; color: var(--text-muted); }
-    @media (max-width: 560px) { .bar-row { grid-template-columns: 92px 1fr 56px; } .bar-label { font-size: 0.66rem; } }
     .chart-empty { font-size: 0.86rem; color: var(--text-faint); padding: 18px 0; text-align: center; }
 
     .table-wrap { width: 100%; overflow-x: auto; }
@@ -96,7 +90,6 @@
     tbody a:hover { border-color: var(--blue); }
     .row-dot { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 8px; vertical-align: baseline; }
     .no-channel { color: var(--text-faint); font-style: italic; font-size: 0.8rem; }
-    .chart-attribution { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 12px 16px 0; margin-top: 14px; border-top: 1px solid var(--border); font-size: 0.78rem; color: var(--text-faint); font-family: 'Roboto Mono', monospace; }
     .context-box { margin-top: 28px; padding: 16px 20px; background: var(--blue-light); border: 1px solid var(--blue-mid); border-radius: var(--radius); }
     .context-box p { font-size: 0.85rem; color: var(--text-mid); line-height: 1.65; }
     .context-box p + p { margin-top: 8px; }
@@ -116,6 +109,7 @@
     .footer-support:hover { color: #fff; background: #2563eb; border-color: #2563eb; }
     .footer-support svg { flex-shrink: 0; }
   </style>
+  <script defer src="/assets/chart.js"></script>
   <script defer src="/assets/site.js"></script>
 </head>
 <body>
@@ -188,24 +182,33 @@
 
     <div class="section-heading">Average meeting length by board</div>
     <p class="section-sub">Meeting-titled videos of 20 minutes or longer, up to roughly the 70 to 80 most recent per board channel. Weeknight meetings typically start at 6:00 or 6:30 PM. Boards with no channel are listed in the table below but cannot appear here.</p>
-    <div class="box">
-      <div class="legend" id="chartLegend"></div>
-      <div class="chart" id="lenChart"></div>
-      <div class="chart-attribution"><span>Created by Tal Roded &middot; NYCuriosity &middot; Source: boards' public YouTube channels, collected July 2026</span></div>
-    </div>
+    <figure class="chart-card" id="chart-box" data-slug="cb-average-meeting-length-by-board">
+      <div class="c-plot">
+        <div class="legend" id="chartLegend"></div>
+        <div class="c-bars c-bars--compact" id="lenChart"></div>
+      </div>
+      <figcaption class="c-foot">
+        <div class="c-foot-text"><span>Created by Tal Roded &middot; NYCuriosity &middot; Source: boards' public YouTube channels, collected July 2026</span></div>
+      </figcaption>
+    </figure>
 
     <div class="section-heading">The scorecard</div>
     <p class="section-sub">Click a longest meeting to watch it. Sample sizes vary: some channels restrict video metadata, and a few boards' channels hold only a handful of recordings.</p>
-    <div class="box">
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr><th>Board</th><th class="num">Sampled</th><th class="num">Avg</th><th class="num">Median</th><th class="num">Longest</th><th>Longest meeting</th><th class="num">Block Party transcripts</th></tr>
-          </thead>
-          <tbody id="scoreRows"></tbody>
-        </table>
+    <figure class="chart-card" data-slug="cb-scorecard-table">
+      <div class="c-plot">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Board</th><th class="num">Sampled</th><th class="num">Avg</th><th class="num">Median</th><th class="num">Longest</th><th>Longest meeting</th><th class="num">Block Party transcripts</th></tr>
+            </thead>
+            <tbody id="scoreRows"></tbody>
+          </table>
+        </div>
       </div>
-    </div>
+      <figcaption class="c-foot">
+        <div class="c-foot-text"></div>
+      </figcaption>
+    </figure>
 
     <div class="context-box">
       <p><strong>14 boards have no meeting recordings anywhere, and six more went dark.</strong> Every Manhattan board runs an active YouTube channel. Four Bronx, three Brooklyn, five Queens, and two Staten Island boards have none at all. Six others (Brooklyn CB1 and CB6, Bronx CB3 and CB6, Queens CB4 and CB13) ran channels during the remote-meeting era and stopped posting between 2020 and 2024; their archives were located through <a href="https://blockparty.studio/Archive" target="_blank" rel="noopener">Block Party's records</a> and are included here with a dormancy note. For the 14, there is no systematic way to watch your board work.</p>
@@ -444,11 +447,11 @@ const BOARDS = [
     const maxAvg = Math.max(...sel.map(b => b.avg));
     sel.forEach(b => {
       const row = document.createElement("div");
-      row.className = "bar-row";
+      row.className = "c-bar-row";
       row.innerHTML =
-        '<div class="bar-label">' + BORO[b.boro].label.replace("Staten Island", "S.I.") + " CB " + b.num + '</div>' +
-        '<div class="bar-track"><div class="bar-fill" style="width:' + (b.avg / maxAvg * 100).toFixed(1) + '%; background:' + BORO[b.boro].color + '"></div></div>' +
-        '<div class="bar-value">' + b.avg + ' min</div>';
+        '<div class="c-bar-label">' + BORO[b.boro].label.replace("Staten Island", "S.I.") + " CB " + b.num + '</div>' +
+        '<div class="c-bar-track"><div class="c-bar-fill" style="width:' + (b.avg / maxAvg * 100).toFixed(1) + '%; background:' + BORO[b.boro].color + '"></div></div>' +
+        '<div class="c-bar-value">' + b.avg + ' min</div>';
       el.appendChild(row);
     });
   }

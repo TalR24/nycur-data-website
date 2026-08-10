@@ -12,7 +12,8 @@
   <meta property="og:description" content="A legislation profile for every NYC Council member since 2014: sponsored bills, fiscal impacts, and agency obligations created.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/chart.css">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -95,8 +96,6 @@
     /* Map view */
     .map-wrap { display: none; grid-template-columns: minmax(0, 1.4fr) minmax(260px, 1fr); gap: 18px; align-items: start; }
     .map-wrap.active { display: grid; }
-    .map-box { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 14px; }
-    .map-box svg { width: 100%; height: auto; display: block; }
     .district-shape { fill: var(--blue-light); stroke: var(--blue); stroke-width: 0.7; cursor: pointer; transition: fill 0.12s; }
     .district-shape:hover { fill: var(--blue-mid); }
     .district-shape.selected { fill: var(--blue); }
@@ -160,6 +159,7 @@
       .view-toggle { margin-left: 0; }
     }
   </style>
+  <script defer src="/assets/chart.js"></script>
   <script defer src="/assets/site.js"></script>
 </head>
 <body>
@@ -307,7 +307,10 @@
       + '<p class="result-count" id="resultCount"></p>'
       + '<div class="member-grid" id="memberGrid"></div>'
       + '<div class="map-wrap" id="mapWrap">'
-      + '<div class="map-box" id="mapBox"></div>'
+      + '<figure class="chart-card" id="chart-box" data-slug="nyc-council-district-map">'
+      + '<div class="c-plot" id="mapBox"></div>'
+      + '<figcaption class="c-foot"><div class="c-foot-text"></div></figcaption>'
+      + '</figure>'
       + '<div class="map-panel" id="mapPanel"><p class="map-hint">Click a district on the map to see its current and past council members.</p></div>'
       + '</div>'
       + footnotesHtml();
@@ -340,6 +343,7 @@
 
     buildMap();
     drawCards();
+    if (window.NYCChart) window.NYCChart.injectMarks(el);
   }
 
   function fill(id, values, labelFn) {

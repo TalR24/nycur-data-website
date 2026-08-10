@@ -12,7 +12,9 @@
   <meta property="og:description" content="Every enacted NYC local law tells city agencies to do something. This tracker extracts each required action from the legislation text: the agency, the deliverable, and the deadline.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/chart.css">
+  <script defer src="/assets/chart.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -147,7 +149,7 @@
     }
 
     /* ── VIEW CARD ───────────────────────────────────────── */
-    .chart-card {
+    .view-card {
       background: var(--surface);
       border: 1.5px solid var(--border);
       border-radius: var(--radius);
@@ -159,12 +161,12 @@
       overflow: hidden;
       transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
     }
-    .chart-card:hover {
+    .view-card:hover {
       border-color: var(--blue);
       box-shadow: var(--shadow-md);
       transform: translateY(-3px);
     }
-    .chart-card-icon {
+    .view-card-icon {
       height: 100px;
       background: var(--text);
       display: flex;
@@ -192,25 +194,25 @@
     .icon-doc-line { height: 6px; border-radius: 2px; background: rgba(255,255,255,0.2); }
     .icon-doc-line.blue { background: #2563eb; }
 
-    .chart-card-body { padding: 20px 24px 24px; flex: 1; display: flex; flex-direction: column; }
-    .chart-card-label {
+    .view-card-body { padding: 20px 24px 24px; flex: 1; display: flex; flex-direction: column; }
+    .view-card-label {
       font-family: 'Roboto Mono', monospace; font-size: 0.68rem; font-weight: 600;
       text-transform: uppercase; letter-spacing: 0.08em; color: var(--blue); margin-bottom: 8px;
     }
-    .chart-card-title {
+    .view-card-title {
       font-family: 'Roboto Mono', monospace; font-size: 1.05rem; font-weight: 700;
       color: var(--text); letter-spacing: -0.02em; line-height: 1.25; margin-bottom: 10px;
     }
-    .chart-card-desc {
+    .view-card-desc {
       font-size: 0.875rem; color: var(--text-muted); line-height: 1.6; flex: 1; margin-bottom: 20px;
     }
-    .chart-card-meta { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-    .chart-card-stat { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; color: var(--text-faint); }
-    .chart-card-cta {
+    .view-card-meta { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .view-card-stat { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; color: var(--text-faint); }
+    .view-card-cta {
       font-family: 'Roboto Mono', monospace; font-size: 0.78rem; font-weight: 700;
       color: var(--blue); display: flex; align-items: center; gap: 5px; transition: gap 0.15s;
     }
-    .chart-card:hover .chart-card-cta { gap: 9px; }
+    .view-card:hover .view-card-cta { gap: 9px; }
 
     /* ── HUB SUMMARY CHARTS ──────────────────────────────── */
     .summary-grid {
@@ -218,31 +220,16 @@
       grid-template-columns: repeat(auto-fit, minmax(min(440px, 100%), 1fr));
       gap: 20px;
     }
-    .summary-box {
-      background: var(--surface);
-      border: 1.5px solid var(--border);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow-sm);
-      padding: 20px 22px 18px;
-    }
-    .summary-box h3 {
-      font-family: 'Roboto Mono', monospace; font-size: 0.92rem; font-weight: 700;
-      letter-spacing: -0.02em; color: var(--text); margin-bottom: 4px;
-    }
-    .summary-box .sub {
-      font-size: 0.78rem; color: var(--text-muted); margin-bottom: 16px; line-height: 1.5;
-    }
-    .bar-row {
-      display: grid; grid-template-columns: 150px 1fr 44px; gap: 10px;
-      align-items: center; margin-bottom: 8px;
-    }
-    .bar-label {
+    /* hub bar rows ride the shared .c-bars system; these rules only restore
+       the hub's own track colour, label type and row density. */
+    .summary-bars { --c-bar-label-w: 150px; --c-bar-h: 16px; }
+    .summary-bars .c-bar-label {
       font-family: 'Roboto Mono', monospace; font-size: 0.72rem; color: var(--text-mid);
-      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
     }
-    .bar-track { background: var(--blue-light); border-radius: 4px; height: 16px; overflow: hidden; }
-    .bar-fill { background: var(--blue); height: 100%; border-radius: 4px; width: 0; transition: width 0.7s ease; }
-    .bar-val { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; font-weight: 600; color: var(--text); }
+    .summary-bars .c-bar-track { background: var(--blue-light); border-radius: 4px; overflow: hidden; }
+    .summary-bars .c-bar-fill { background: var(--blue); border-radius: 4px; transition: width 0.7s ease; }
+    .summary-bars .c-bar-value { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; font-weight: 600; color: var(--text); }
     .col-chart { display: flex; align-items: flex-end; gap: 6px; height: 150px; margin-top: 8px; }
     .col-item { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; justify-content: flex-end; }
     .col-bar { width: 100%; max-width: 46px; background: var(--blue); border-radius: 3px 3px 0 0; transition: height 0.7s ease; }
@@ -253,7 +240,7 @@
 
     @media (max-width: 640px) {
       .col-num { display: none; }
-      .bar-row { grid-template-columns: 104px 1fr 40px; }
+      .summary-bars { --c-bar-label-w: 104px; }
       .header-actions { display: none; }
     }
 
@@ -336,8 +323,8 @@
     <p class="section-label">Views in this tool</p>
     <div class="charts-grid">
 
-      <a class="chart-card" href="obligations-table/">
-        <div class="chart-card-icon">
+      <a class="view-card" href="obligations-table/">
+        <div class="view-card-icon">
           <div class="icon-table">
             <div class="icon-table-row"><div class="icon-table-cell header w1"></div><div class="icon-table-cell header w2"></div><div class="icon-table-cell header w2"></div><div class="icon-table-cell header w3"></div></div>
             <div class="icon-table-row"><div class="icon-table-cell w1"></div><div class="icon-table-cell w2"></div><div class="icon-table-cell w2"></div><div class="icon-table-cell w3"></div></div>
@@ -345,19 +332,19 @@
             <div class="icon-table-row"><div class="icon-table-cell w4"></div><div class="icon-table-cell w2"></div><div class="icon-table-cell w2"></div><div class="icon-table-cell w3"></div></div>
           </div>
         </div>
-        <div class="chart-card-body">
-          <div class="chart-card-label">Table</div>
-          <div class="chart-card-title">Every Obligation, One Table</div>
-          <div class="chart-card-desc">The master list: every extracted agency action with its law, deliverable type, deadline, and recurrence. Filter by agency, type, deadline year, or search the text. Click a row for the statutory language.</div>
-          <div class="chart-card-meta">
-            <span class="chart-card-stat" id="cardStatTable">filterable · sortable</span>
-            <span class="chart-card-cta">Explore →</span>
+        <div class="view-card-body">
+          <div class="view-card-label">Table</div>
+          <div class="view-card-title">Every Obligation, One Table</div>
+          <div class="view-card-desc">The master list: every extracted agency action with its law, deliverable type, deadline, and recurrence. Filter by agency, type, deadline year, or search the text. Click a row for the statutory language.</div>
+          <div class="view-card-meta">
+            <span class="view-card-stat" id="cardStatTable">filterable · sortable</span>
+            <span class="view-card-cta">Explore →</span>
           </div>
         </div>
       </a>
 
-      <a class="chart-card" href="agency-workload/">
-        <div class="chart-card-icon">
+      <a class="view-card" href="agency-workload/">
+        <div class="view-card-icon">
           <div class="icon-hbars">
             <div class="icon-hbar" style="width:100%"></div>
             <div class="icon-hbar" style="width:72%"></div>
@@ -366,19 +353,19 @@
             <div class="icon-hbar" style="width:22%; background:rgba(255,255,255,0.25)"></div>
           </div>
         </div>
-        <div class="chart-card-body">
-          <div class="chart-card-label">Bar Chart</div>
-          <div class="chart-card-title">Which Agencies Carry the Load</div>
-          <div class="chart-card-desc">Obligations ranked by responsible agency, broken down by deliverable type: rules, reports, programs, outreach. Filter by committee, sponsor, or enactment year to see who assigns work to whom.</div>
-          <div class="chart-card-meta">
-            <span class="chart-card-stat" id="cardStatAgency">ranked · filterable</span>
-            <span class="chart-card-cta">Explore →</span>
+        <div class="view-card-body">
+          <div class="view-card-label">Bar Chart</div>
+          <div class="view-card-title">Which Agencies Carry the Load</div>
+          <div class="view-card-desc">Obligations ranked by responsible agency, broken down by deliverable type: rules, reports, programs, outreach. Filter by committee, sponsor, or enactment year to see who assigns work to whom.</div>
+          <div class="view-card-meta">
+            <span class="view-card-stat" id="cardStatAgency">ranked · filterable</span>
+            <span class="view-card-cta">Explore →</span>
           </div>
         </div>
       </a>
 
-      <a class="chart-card" href="deadline-timeline/">
-        <div class="chart-card-icon">
+      <a class="view-card" href="deadline-timeline/">
+        <div class="view-card-icon">
           <div class="icon-timeline">
             <div class="icon-tl-dot faint"></div><div class="icon-tl-line"></div>
             <div class="icon-tl-dot faint"></div><div class="icon-tl-line"></div>
@@ -386,19 +373,19 @@
             <div class="icon-tl-dot faint"></div>
           </div>
         </div>
-        <div class="chart-card-body">
-          <div class="chart-card-label">Timeline</div>
-          <div class="chart-card-title">What Is Due, and When</div>
-          <div class="chart-card-desc">The oversight view: statutory deadlines in chronological order, past due and upcoming, plus the recurring duties that never expire. The starting point for asking an agency where its report is.</div>
-          <div class="chart-card-meta">
-            <span class="chart-card-stat" id="cardStatTimeline">chronological</span>
-            <span class="chart-card-cta">Explore →</span>
+        <div class="view-card-body">
+          <div class="view-card-label">Timeline</div>
+          <div class="view-card-title">What Is Due, and When</div>
+          <div class="view-card-desc">The oversight view: statutory deadlines in chronological order, past due and upcoming, plus the recurring duties that never expire. The starting point for asking an agency where its report is.</div>
+          <div class="view-card-meta">
+            <span class="view-card-stat" id="cardStatTimeline">chronological</span>
+            <span class="view-card-cta">Explore →</span>
           </div>
         </div>
       </a>
 
-      <a class="chart-card" href="law/">
-        <div class="chart-card-icon">
+      <a class="view-card" href="law/">
+        <div class="view-card-icon">
           <div class="icon-doc">
             <div class="icon-doc-line blue" style="width:70%"></div>
             <div class="icon-doc-line" style="width:100%"></div>
@@ -406,19 +393,19 @@
             <div class="icon-doc-line" style="width:55%"></div>
           </div>
         </div>
-        <div class="chart-card-body">
-          <div class="chart-card-label">Law Explorer</div>
-          <div class="chart-card-title">One Law, Its Full Checklist</div>
-          <div class="chart-card-desc">Pick any local law and see its implementation checklist: every agency action it requires, in one place, with effective dates and Legistar links. The dashboard the law itself never came with.</div>
-          <div class="chart-card-meta">
-            <span class="chart-card-stat" id="cardStatLaw">per-law view</span>
-            <span class="chart-card-cta">Explore →</span>
+        <div class="view-card-body">
+          <div class="view-card-label">Law Explorer</div>
+          <div class="view-card-title">One Law, Its Full Checklist</div>
+          <div class="view-card-desc">Pick any local law and see its implementation checklist: every agency action it requires, in one place, with effective dates and Legistar links. The dashboard the law itself never came with.</div>
+          <div class="view-card-meta">
+            <span class="view-card-stat" id="cardStatLaw">per-law view</span>
+            <span class="view-card-cta">Explore →</span>
           </div>
         </div>
       </a>
 
-      <a class="chart-card" href="methodology/">
-        <div class="chart-card-icon">
+      <a class="view-card" href="methodology/">
+        <div class="view-card-icon">
           <div class="icon-doc">
             <div class="icon-doc-line blue" style="width:45%"></div>
             <div class="icon-doc-line" style="width:95%"></div>
@@ -427,13 +414,13 @@
             <div class="icon-doc-line" style="width:80%"></div>
           </div>
         </div>
-        <div class="chart-card-body">
-          <div class="chart-card-label">Methodology</div>
-          <div class="chart-card-title">How the Tracker Reads the Law</div>
-          <div class="chart-card-desc">Where the text comes from, what counts as an obligation, how every quote is mechanically verified, how deadlines are computed, and how agency names are normalized and resolved.</div>
-          <div class="chart-card-meta">
-            <span class="chart-card-stat">sources · rules · limitations</span>
-            <span class="chart-card-cta">Read →</span>
+        <div class="view-card-body">
+          <div class="view-card-label">Methodology</div>
+          <div class="view-card-title">How the Tracker Reads the Law</div>
+          <div class="view-card-desc">Where the text comes from, what counts as an obligation, how every quote is mechanically verified, how deadlines are computed, and how agency names are normalized and resolved.</div>
+          <div class="view-card-meta">
+            <span class="view-card-stat">sources · rules · limitations</span>
+            <span class="view-card-cta">Read →</span>
           </div>
         </div>
       </a>
@@ -448,30 +435,53 @@
     <p class="section-label">The tracker at a glance</p>
     <div class="summary-grid" id="summaryGrid">
 
-      <div class="summary-box">
-        <h3>Ten agencies carry six in ten of the Council's mandates</h3>
-        <p class="sub">Obligations by responsible agency, top 12.</p>
-        <div id="chartAgency"><p class="loading-note">Loading…</p></div>
-      </div>
+      <figure class="chart-card" id="chart-box" data-slug="nyc-obligations-by-agency">
+        <div class="c-head">
+          <h2 class="c-title">Ten agencies carry six in ten of the Council's mandates</h2>
+          <p class="c-deck">Obligations by responsible agency, top 12.</p>
+        </div>
+        <div class="c-plot">
+          <div class="c-bars c-bars--compact summary-bars" id="chartAgency"><p class="loading-note">Loading…</p></div>
+        </div>
+        <figcaption class="c-foot"><div class="c-foot-text"></div></figcaption>
+      </figure>
 
-      <div class="summary-box">
-        <h3>Reports are the Council's most common demand</h3>
-        <p class="sub">Obligations by deliverable type.</p>
-        <div id="chartType"><p class="loading-note">Loading…</p></div>
-      </div>
+      <figure class="chart-card" data-slug="nyc-obligations-by-deliverable-type">
+        <div class="c-head">
+          <h2 class="c-title">Reports are the Council's most common demand</h2>
+          <p class="c-deck">Obligations by deliverable type.</p>
+        </div>
+        <div class="c-plot">
+          <div class="c-bars c-bars--compact summary-bars" id="chartType"><p class="loading-note">Loading…</p></div>
+        </div>
+        <figcaption class="c-foot"><div class="c-foot-text"></div></figcaption>
+      </figure>
 
-      <div class="summary-box">
-        <h3>The Council asks far more of agencies than it did in 2014</h3>
-        <p class="sub">Obligations created per year, by law enactment date.</p>
-        <div id="chartTime"><p class="loading-note">Loading…</p></div>
-        <p class="chart-note">Grouped by the year in which each law was enacted. 2026 is still filling in.</p>
-      </div>
+      <figure class="chart-card" data-slug="nyc-obligations-per-year">
+        <div class="c-head">
+          <h2 class="c-title">The Council asks far more of agencies than it did in 2014</h2>
+          <p class="c-deck">Obligations created per year, by law enactment date.</p>
+        </div>
+        <div class="c-plot">
+          <div id="chartTime"><p class="loading-note">Loading…</p></div>
+        </div>
+        <figcaption class="c-foot">
+          <div class="c-foot-text">
+            <span>Grouped by the year in which each law was enacted. 2026 is still filling in.</span>
+          </div>
+        </figcaption>
+      </figure>
 
-      <div class="summary-box">
-        <h3>Who writes the to-do lists</h3>
-        <p class="sub">Obligations by the prime sponsor of the underlying law, top 10.</p>
-        <div id="chartSponsor"><p class="loading-note">Loading…</p></div>
-      </div>
+      <figure class="chart-card" data-slug="nyc-obligations-by-prime-sponsor">
+        <div class="c-head">
+          <h2 class="c-title">Who writes the to-do lists</h2>
+          <p class="c-deck">Obligations by the prime sponsor of the underlying law, top 10.</p>
+        </div>
+        <div class="c-plot">
+          <div class="c-bars c-bars--compact summary-bars" id="chartSponsor"><p class="loading-note">Loading…</p></div>
+        </div>
+        <figcaption class="c-foot"><div class="c-foot-text"></div></figcaption>
+      </figure>
 
     </div>
     <p class="chart-note" style="margin-top:18px">
@@ -587,10 +597,10 @@
     pairs.forEach(function (p) { if (p[1] > max) max = p[1]; });
     var html = '';
     pairs.forEach(function (p) {
-      html += '<div class="bar-row">'
-        + '<span class="bar-label" title="' + esc(p[0]) + '">' + esc(p[0]) + '</span>'
-        + '<div class="bar-track"><div class="bar-fill" data-w="' + (p[1] / max * 100) + '"></div></div>'
-        + '<span class="bar-val">' + p[1].toLocaleString() + '</span>'
+      html += '<div class="c-bar-row">'
+        + '<span class="c-bar-label" title="' + esc(p[0]) + '">' + esc(p[0]) + '</span>'
+        + '<div class="c-bar-track"><div class="c-bar-fill" data-w="' + (p[1] / max * 100) + '"></div></div>'
+        + '<span class="c-bar-value">' + p[1].toLocaleString() + '</span>'
         + '</div>';
     });
     el.innerHTML = html;
@@ -621,7 +631,7 @@
 
   function animateBars(el) {
     requestAnimationFrame(function () {
-      el.querySelectorAll('.bar-fill').forEach(function (b) {
+      el.querySelectorAll('.c-bar-fill').forEach(function (b) {
         b.style.width = parseFloat(b.getAttribute('data-w')) + '%';
       });
     });

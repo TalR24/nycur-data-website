@@ -12,7 +12,8 @@
   <meta property="og:description" content="Leadership, committees, published roster, term clock, and recent decisions for an NYC community board.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/chart.css">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -84,7 +85,7 @@
     td { padding: 8px 10px; border-bottom: 1px solid var(--border); color: var(--text-mid); }
     td.nm { font-family: 'Roboto Mono', monospace; font-weight: 600; color: var(--text); }
     td.num { font-family: 'Roboto Mono', monospace; white-space: nowrap; }
-    .roster-filter { width: 100%; max-width: 380px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 7px; font-family: 'Inter', sans-serif; font-size: 0.85rem; background: var(--bg); margin-bottom: 10px; }
+    .roster-filter { width: 100%; max-width: 380px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 7px; font-family: 'Inter', sans-serif; font-size: 0.85rem; background: var(--bg); margin: 26px 0 10px; }
     .table-scroll { overflow-x: auto; }
 
     .context-box { background: var(--blue-light); border: 1px solid var(--blue-mid); border-radius: var(--radius); padding: 14px 18px; font-size: 0.85rem; color: var(--text-mid); line-height: 1.65; margin: 14px 0; }
@@ -109,6 +110,7 @@
     .footer-links a:hover { color: var(--blue); }
     .footer-support { font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600; color: var(--blue); border: 1px solid var(--blue-mid); border-radius: 16px; padding: 4px 12px; background: var(--blue-light); }
   </style>
+  <script defer src="/assets/chart.js"></script>
   <script defer src="/assets/site.js"></script>
 </head>
 <body>
@@ -279,10 +281,12 @@
     }
 
     /* Roster */
-    html += '<div class="section-head">Published roster</div>';
     if (realMembers.length) {
       var showTerms = realMembers.some(function (m) { return m.term_expires; });
       html += '<input type="search" class="roster-filter" id="rosterFilter" placeholder="Filter roster…">';
+      html += '<figure class="chart-card" id="chart-box" data-slug="cb-published-roster">'
+        + '<div class="c-head"><h2 class="c-title">Published roster</h2></div>'
+        + '<div class="c-plot">';
       html += '<div class="table-scroll"><table id="rosterTable"><thead><tr><th>Name</th><th>Roles</th>'
         + (showTerms ? '<th>Term expires</th><th>Recommended by</th>' : '')
         + '</tr></thead><tbody>';
@@ -295,8 +299,12 @@
             : '')
           + '</tr>';
       });
-      html += '</tbody></table></div>';
+      html += '</tbody></table></div>'
+        + '</div>'
+        + '<figcaption class="c-foot"><div class="c-foot-text"></div></figcaption>'
+        + '</figure>';
     } else {
+      html += '<div class="section-head">Published roster</div>';
       html += '<p class="loading-note">No machine-readable roster on this board’s website. The chair above comes from the citywide CAU dataset; coverage details are on the <a href="../methodology/">methodology page</a>.</p>';
     }
 
@@ -335,6 +343,7 @@
       + '</div>';
 
     document.getElementById('mainContent').innerHTML = html;
+    if (window.NYCChart) window.NYCChart.injectMarks(document);
 
     var rf = document.getElementById('rosterFilter');
     if (rf) {
