@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>A New York City RFP Takes a Median of 387 Days &mdash; NYCuriosity</title>
+  <meta name="description" content="The median competitive sealed proposal in New York City took 387 days end to end in FY2025. Evaluation and post-award review account for 234 of those days.">
+  <meta property="og:type"        content="website">
+  <meta property="og:url"         content="https://data.nycuriosity.com/nycuriosity_substack_posts/coge_report/rfp-cycle-time/">
+  <meta property="og:title"       content="A New York City RFP Takes a Median of 387 Days &mdash; NYCuriosity">
+  <meta property="og:description" content="The median competitive sealed proposal in New York City took 387 days end to end in FY2025. Evaluation and post-award review account for 234 of those days.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/chart.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue:       #2563eb;
+      --blue-hover: #1d4ed8;
+      --blue-light: #eff6ff;
+      --blue-mid:   #bfdbfe;
+      --text:       #111827;
+      --text-mid:   #374151;
+      --text-muted: #6b7280;
+      --text-faint: #9ca3af;
+      --bg:         #f8faff;
+      --surface:    #ffffff;
+      --border:     #e5e7eb;
+      --shadow-sm:  0 1px 3px rgba(17,24,39,0.08);
+      --shadow-md:  0 4px 16px rgba(37,99,235,0.10);
+      --radius:     10px;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg); color: var(--text);
+      min-height: 100vh; display: flex; flex-direction: column;
+    }
+
+    header { background: #111827; border-bottom: 1px solid #1f2937; padding: 0 clamp(20px, 5vw, 48px); }
+    .header-inner { max-width: 1100px; margin: 0 auto; height: 56px; display: flex; align-items: center; gap: 16px; }
+    .back-link {
+      font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600;
+      color: #9ca3af; text-decoration: none; display: flex; align-items: center; gap: 5px;
+      padding: 4px 8px 4px 4px; border-radius: 5px; transition: color 0.15s, background 0.15s; white-space: nowrap;
+    }
+    .back-link:hover { color: #60a5fa; background: rgba(96,165,250,0.1); }
+    .header-divider { width: 1px; height: 20px; background: #374151; flex-shrink: 0; }
+    header h1 { font-family: 'Roboto Mono', monospace; font-size: 0.95rem; font-weight: 700; color: #e5e7eb; letter-spacing: -0.02em; }
+
+    .hero { background: var(--surface); border-bottom: 1px solid var(--border); padding: clamp(32px, 5vw, 52px) clamp(20px, 5vw, 48px); }
+    .hero-inner { max-width: 1100px; margin: 0 auto; }
+    .breadcrumb {
+      font-family: 'Roboto Mono', monospace; font-size: 0.72rem; color: var(--text-faint);
+      margin-bottom: 14px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+    }
+    .breadcrumb a { color: var(--blue); text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+    .breadcrumb span:last-child { color: #FF6319; }
+    .hero-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .hero-tag {
+      font-family: 'Roboto Mono', monospace; font-size: 0.68rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.08em; color: #FF6319;
+      background: #fff4ed; border: 1px solid #ffd0b3; border-radius: 4px; padding: 3px 8px;
+    }
+    .hero-updated { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; color: var(--text-faint); }
+    .hero h1 { font-family: 'Roboto Mono', monospace; font-weight: 700; color: var(--text); letter-spacing: -0.03em; line-height: 1.2; margin-bottom: 10px; }
+    .hero h1 span { color: var(--blue); }
+    .hero p { font-size: 0.975rem; color: var(--text-muted); max-width: 680px; line-height: 1.7; }
+    .hero p a { color: var(--blue); text-decoration: none; border-bottom: 1px solid var(--blue-mid); }
+    .hero p a:hover { border-color: var(--blue); }
+
+    footer { background: var(--surface); border-top: 1px solid var(--border); padding: 20px clamp(20px, 5vw, 48px); margin-top: auto; }
+    .footer-inner { max-width: 1100px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+    .footer-copy { font-size: 0.8rem; color: var(--text-faint); }
+    .footer-links { display: flex; gap: 20px; align-items: center; }
+    .footer-links a { font-size: 0.8rem; color: var(--text-muted); text-decoration: none; transition: color 0.15s; }
+    .footer-links a:hover { color: var(--blue); }
+    .footer-support { display: inline-flex; align-items: center; gap: 5px; font-size: 0.8rem; font-weight: 500; color: #2563eb; text-decoration: none; padding: 5px 11px; border: 1px solid rgba(37,99,235,0.45); border-radius: 6px; transition: color .15s, border-color .15s, background .15s; vertical-align: middle; }
+    .footer-support:hover { color: #fff; background: #2563eb; border-color: #2563eb; }
+    .footer-support svg { flex-shrink: 0; }
+
+    .pill-nav {
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      padding: 10px clamp(20px, 5vw, 48px);
+      display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+    }
+    .pill-nav a {
+      font-size: 0.78rem; font-family: 'Roboto Mono', monospace; font-weight: 600;
+      padding: 4px 12px; border-radius: 20px; text-decoration: none;
+      border: 1px solid var(--border); color: var(--text-muted); background: var(--bg);
+      transition: all 0.15s; white-space: nowrap;
+    }
+    .pill-nav a:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
+    .pill-nav a.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+    .pill-label { font-size: 0.72rem; color: var(--text-faint); font-family: 'Roboto Mono', monospace; white-space: nowrap; }
+
+    .hero h1 { font-size: clamp(1.4rem, 3vw, 1.85rem); }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600;
+      text-decoration: none; border-radius: 7px; padding: 8px 14px;
+      transition: background 0.15s, border-color 0.15s; cursor: pointer; border: none;
+    }
+    .btn-outline { background: var(--surface); color: var(--text-muted); border: 1.5px solid var(--border); }
+    .btn-outline:hover { color: var(--blue); border-color: var(--blue-mid); background: var(--blue-light); }
+
+    main { flex: 1; padding: clamp(28px, 4vw, 48px) clamp(20px, 5vw, 48px); }
+    .main-inner { max-width: 1100px; margin: 0 auto; }
+    .c-plot--scroll > svg { min-width: 560px; }
+
+    .context-box {
+      margin-top: 28px; padding: 16px 20px;
+      background: var(--blue-light); border: 1px solid var(--blue-mid); border-radius: var(--radius);
+    }
+    .context-box p { font-size: 0.85rem; color: var(--text-mid); line-height: 1.65; }
+    .context-box p + p { margin-top: 8px; }
+    .context-box strong { color: var(--text); }
+
+    .footnotes {
+      margin-top: 16px; padding: 14px 18px;
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    }
+    .footnotes p { font-size: 0.78rem; color: var(--text-muted); line-height: 1.6; }
+    .footnotes p + p { margin-top: 6px; }
+    .footnotes strong { color: var(--text-mid); }
+    .footnotes a { color: var(--blue); text-decoration: none; border-bottom: 1px solid var(--blue-mid); }
+    .footnotes a:hover { border-color: var(--blue); }
+
+    .embed-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+    .embed-modal-box { background: var(--surface); border-radius: 10px; padding: 24px; max-width: 540px; width: 90%; box-shadow: 0 8px 32px rgba(0,0,0,0.18); }
+    .embed-modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+    .embed-modal-title { font-family: 'Roboto Mono', monospace; font-weight: 700; font-size: 0.9rem; color: var(--text); }
+    .embed-close { background: none; border: none; font-size: 1.1rem; color: var(--text-muted); cursor: pointer; padding: 2px 6px; border-radius: 4px; }
+    .embed-close:hover { color: var(--text); background: var(--bg); }
+    .embed-modal-box > p { font-size: 0.83rem; color: var(--text-muted); margin-bottom: 10px; }
+    .embed-textarea { width: 100%; height: 80px; font-family: 'Roboto Mono', monospace; font-size: 0.72rem; border: 1px solid var(--border); border-radius: 6px; padding: 10px; resize: none; color: var(--text-mid); background: var(--bg); margin-bottom: 12px; }
+    .embed-copy-btn { background: var(--blue); color: #fff; font-family: 'Roboto Mono', monospace; font-size: 0.8rem; font-weight: 600; padding: 7px 18px; border: none; border-radius: 6px; cursor: pointer; transition: background 0.15s; }
+    .embed-copy-btn:hover { background: #1d4ed8; }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
+  <script defer src="/assets/chart.js"></script>
+  <script defer src="/assets/site.js"></script>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <a href="/nycuriosity_substack_posts/coge_report/" class="back-link">&larr; coge-report</a>
+    <div class="header-divider"></div>
+    <h1>Where the 387 Days Go</h1>
+  </div>
+</header>
+
+<div class="pill-nav">
+  <span class="pill-label">Visuals in this post:</span>
+  <a href="../contract-timeliness/">Contract Timeliness</a>
+  <a href="./" class="active">Where the 387 Days Go</a>
+  <a href="../cycle-time-by-agency/">Cycle Time by Agency</a>
+  <a href="../nonprofit-payment/">Nonprofit Payment</a>
+  <a href="../bridge-loans/">Bridge Loans</a>
+  <a href="../ballot-disposition/">From Study to Ballot</a>
+</div>
+
+<div class="hero">
+  <div class="hero-inner">
+    <div class="breadcrumb">
+      <a href="/">data.nycuriosity.com</a>
+      <span>&rsaquo;</span>
+      <a href="/nycuriosity_substack_posts/coge_report/">COGE Report</a>
+      <span>&rsaquo;</span>
+      <span>Where the 387 Days Go</span>
+    </div>
+    <div class="hero-meta">
+      <span class="hero-tag">Government Efficiency</span>
+      <span class="hero-updated">August 2026</span>
+    </div>
+    <h1>A City RFP Takes a Median of <span>387 Days</span></h1>
+    <p>The competitive sealed proposal, better known as the RFP, is how New York City buys human services, professional services, and design work. In FY2025 the median RFP took 387 days from the first draft to registration, longer than it took in FY2022. Evaluation and post-award review together account for 234 of those days.</p>
+    <div class="hero-actions">
+      <a href="/members/?file=nycuriosity_substack_posts%2Fcoge_report%2Fdata%2Frfp_cycle_time_by_phase.csv" class="btn btn-outline">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download CSV (members)
+      </a>
+    </div>
+  </div>
+</div>
+
+<main>
+  <div class="main-inner">
+
+    <div class="c-actions">
+      <button class="c-action-btn" onclick="downloadChart(this)">&#11015; Download PNG</button>
+      <button class="c-action-btn" onclick="showEmbed()">&#60;/&#62; Embed</button>
+    </div>
+
+    <figure class="chart-card" id="chart-box" data-slug="coge-rfp-cycle-time">
+      <div class="c-head">
+        <h2 class="c-title">Evaluation and post-award review consume 234 of the 387 days a City RFP takes</h2>
+        <p class="c-deck">Median days per phase for competitive sealed proposals, fiscal years 2022&ndash;2025. The end-to-end figure is the median of complete procurements, so phases do not sum exactly to it.</p>
+        <ul class="c-legend">
+          <li><span class="sw" style="background:#1e3a8a"></span>Pre-solicitation</li>
+          <li><span class="sw" style="background:#1d4ed8"></span>Solicitation</li>
+          <li><span class="sw" style="background:#3b82f6"></span>Evaluation</li>
+          <li><span class="sw" style="background:#7db3fb"></span>Award</li>
+          <li><span class="sw" style="background:#bfdbfe"></span>Registration</li>
+        </ul>
+      </div>
+      <div class="c-plot c-plot--scroll">
+        <svg id="cycleChart" viewBox="0 0 1000 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Stacked horizontal bar chart of median days per phase for New York City competitive sealed proposals, fiscal years 2022 to 2025. End-to-end medians are 358, 584, 376 and 387 days."></svg>
+      </div>
+      <figcaption class="c-foot">
+        <div class="c-foot-text">
+          <span>Source: <a href="https://www.nyc.gov/site/mocs/resources/citywide-indicator-reports.page" target="_blank" rel="noopener">Mayor&rsquo;s Office of Contract Services, 2025 Citywide Indicators Report</a>, Competitive Sealed Proposal Cycle Time by Phase</span>
+          <span>Note: Medians, not averages, and each phase median is computed independently, so the five phases do not add up to the published end-to-end median.</span>
+        </div>
+      </figcaption>
+    </figure>
+
+    <div class="context-box">
+      <p><strong>The Charter reaches the short bars.</strong> Ballot Question 2 lets the Procurement Policy Board simplify
+      the contractor questionnaire, makes the online notice-and-comment period permanent in place of a public hearing,
+      and lets the Mayor delegate certain contract approvals to agencies. The Mayor's Office of Contract Services
+      estimates the notice-and-comment change alone saves an average of 20 days. Those savings land in solicitation and
+      award, which are not where most of the year goes.</p>
+      <p><strong>The long bars are capacity.</strong> Evaluation is agency staff reading proposals. Award is the
+      back-and-forth with the Office of Management and Budget, the Law Department, and the Mayor's Office of Contract
+      Services. Both are questions of how many people the City employs and how fast its reviewers move, which is why
+      COGE routed hiring and review-time commitments into administrative reform rather than a ballot question.</p>
+    </div>
+
+    <div class="footnotes">
+      <p><strong>What is counted:</strong> 222 competitive sealed proposals registered in FY2025 across Mayoral agencies
+      (213 in FY22, 362 in FY23, 206 in FY24). Phase boundaries are defined in PASSPort: pre-solicitation runs from draft
+      creation to publication, solicitation to the final proposal due date, evaluation to the award selection date, award
+      to submission for registration, and registration to the date the contract is recorded in the Financial Management
+      System.</p>
+      <p><strong>Competitive sealed bids are faster.</strong> The lowest-price bid method ran a 312-day median in FY2025,
+      down from 357 in FY23 but up from 285 in FY22.</p>
+      <p><strong>Sources:</strong> <a href="https://www.nyc.gov/site/mocs/resources/citywide-indicator-reports.page" target="_blank" rel="noopener">Mayor&rsquo;s Office of Contract Services, 2025 Citywide Indicators Report</a>.</p>
+    </div>
+
+  </div>
+</main>
+
+<div id="embedModal" class="embed-modal" style="display:none">
+  <div class="embed-modal-box">
+    <div class="embed-modal-header">
+      <span class="embed-modal-title">Embed this chart</span>
+      <button class="embed-close" onclick="closeEmbed()">&#10005;</button>
+    </div>
+    <p>Copy and paste into your webpage:</p>
+    <textarea id="embedCode" class="embed-textarea" readonly></textarea>
+    <button class="embed-copy-btn" onclick="copyEmbed()">Copy code</button>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-inner">
+    <span class="footer-copy">&copy; NYCuriosity &middot; Tal Roded</span>
+    <nav class="footer-links">
+      <a href="https://buymeacoffee.com/nycuriosity" class="footer-support" target="_blank" rel="noopener" aria-label="Support my work on Buy Me a Coffee"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>Support my work</a>
+      <a href="https://talroded.nycuriosity.com" target="_blank" rel="noopener">About</a>
+      <a href="https://www.nycuriosity.com" target="_blank" rel="noopener">Substack</a>
+      <a href="https://github.com/TalR24/nycur-data-website" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://www.youtube.com/@nycuriosity-yt" target="_blank" rel="noopener">YouTube</a>
+    </nav>
+  </div>
+</footer>
+
+<script>
+
+  // Median days per phase for competitive sealed proposals (RFPs), FY22-FY25.
+  var PHASES = ['Pre-solicitation', 'Solicitation', 'Evaluation', 'Award', 'Registration'];
+  var PCOLORS = ['#1e3a8a', '#1d4ed8', '#3b82f6', '#7db3fb', '#bfdbfe'];
+  var CYCLE = [
+    { fy: 'FY22', v: [97, 42, 104, 94, 16], e2e: 358 },
+    { fy: 'FY23', v: [135, 28, 139, 110, 19], e2e: 584 },
+    { fy: 'FY24', v: [76, 38, 125, 124, 20], e2e: 376 },
+    { fy: 'FY25', v: [71, 50, 130, 104, 21], e2e: 387 }
+  ];
+
+  var svgEl = document.getElementById('cycleChart');
+  var NS = 'http://www.w3.org/2000/svg';
+  function mk(tag, attrs, txt) {
+    var node = document.createElementNS(NS, tag);
+    for (var k in attrs) node.setAttribute(k, attrs[k]);
+    if (txt !== undefined) node.textContent = txt;
+    svgEl.appendChild(node);
+    return node;
+  }
+
+  var PADL = 66, PADR = 118, PADT = 34, PADB = 40, VW = 1000, VH = 320;
+  var plotW = VW - PADL - PADR;
+  var rowH = (VH - PADT - PADB) / CYCLE.length;
+  var barH = 40;
+  var XMAX = 620;
+  var xFor = function (d) { return PADL + d / XMAX * plotW; };
+
+  [0, 100, 200, 300, 400, 500, 600].forEach(function (g) {
+    mk('line', { x1: xFor(g), y1: PADT - 8, x2: xFor(g), y2: PADT + rowH * CYCLE.length - 6,
+                 class: g === 0 ? 'c-baseline' : 'c-grid' });
+    mk('text', { x: xFor(g), y: VH - PADB + 20, 'text-anchor': 'middle', class: 'c-tick' }, String(g));
+  });
+  mk('text', { x: PADL + plotW / 2, y: VH - PADB + 38, 'text-anchor': 'middle', class: 'c-tick',
+               style: 'font-size:11px' }, 'median calendar days');
+
+  CYCLE.forEach(function (row, i) {
+    var yTop = PADT + rowH * i;
+    var acc = 0;
+    mk('text', { x: PADL - 12, y: yTop + barH / 2 + 5, 'text-anchor': 'end', class: 'c-tick',
+                 style: 'font-size:13px' }, row.fy);
+    row.v.forEach(function (d, j) {
+      var x0 = xFor(acc), wPx = xFor(acc + d) - x0;
+      mk('rect', { x: x0, y: yTop, width: wPx, height: barH, fill: PCOLORS[j], rx: j === 4 ? 2 : 0 });
+      if (wPx > 30) {
+        mk('text', { x: x0 + wPx / 2, y: yTop + barH / 2 + 5, 'text-anchor': 'middle', class: 'c-val',
+                     fill: j <= 1 ? '#ffffff' : '#1e3a8a' }, String(d));
+      }
+      acc += d;
+    });
+    mk('text', { x: xFor(acc) + 12, y: yTop + barH / 2 + 6, 'text-anchor': 'start', class: 'c-val',
+                 fill: '#1e3a8a', style: 'font-size:16px' }, row.e2e + ' days');
+  });
+
+</script>
+
+</body>
+</html>

@@ -49,6 +49,7 @@
       { label: 'Medicaid’s Check Register Is Public', href: '/nycuriosity_substack_posts/medicaid_provider_spending/' }
     ]},
     { cat: 'Government & Technology', topic: 'govtech', items: [
+      { label: 'What Mamdani’s Efficiency Commission Put on the Ballot', href: '/nycuriosity_substack_posts/coge_report/' },
       { label: 'State Capacity Has a New Toolkit', href: '/nycuriosity_substack_posts/state_capacity_ai/' }
     ]}
   ];
