@@ -97,6 +97,14 @@
     .quote-toggle { font-family: 'Roboto Mono', monospace; font-size: 0.7rem; font-weight: 600; color: var(--blue); background: none; border: none; cursor: pointer; padding: 0; }
     .quote-toggle:hover { text-decoration: underline; }
     .unverified-note { font-size: 0.7rem; color: var(--text-muted); font-style: italic; margin-top: 4px; }
+    .ob-filing { margin-top: 8px; font-size: 0.78rem; color: var(--text-mid); }
+    .ob-filing a { color: var(--blue); }
+    .filing-pill { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.68rem; font-weight: 700; font-family: 'Roboto Mono', monospace; }
+    .filing-never-filed { background: #fee2e2; color: #991b1b; }
+    .filing-overdue { background: #ffedd5; color: #9a3412; }
+    .filing-current { background: #dcfce7; color: #166534; }
+    .filing-completed, .filing-waived, .filing-unscheduled, .filing-superseded { background: #e5e7eb; color: #374151; }
+    .filing-notice { color: #9a3412; font-weight: 600; }
     .restated-note { font-size: 0.7rem; color: var(--text-muted); font-style: italic; margin-top: 4px; }
 
     .section-head { font-family: 'Roboto Mono', monospace; font-size: 0.78rem; font-weight: 700; color: var(--text); margin: 24px 0 12px; }
@@ -329,6 +337,7 @@
             + (o.quote_verified ? '' : '<div class="unverified-note">This quote could not be verified verbatim against the law text and may be paraphrased.</div>')
             + (o.quotes_restated_text ? '<div class="restated-note">This wording predates the law shown. The law reprints the code section it amends, and this text sits outside the part it changed, so the duty is real but an earlier law probably created it.</div>' : '')
             + '</div>' : '')
+        + filingLine(o)
         + '<div class="ob-meta">'
         + (o.citation ? '<span>' + esc(o.citation) + '</span>' : '')
         + (o.deadline_text ? '<span>' + esc(o.deadline_text) + '</span>' : '')
@@ -340,6 +349,9 @@
     html += '<div class="footnotes">'
       + '<p><strong>Method:</strong> this checklist is extracted from the enacted text of ' + esc(law.law_number_display || law.file_number)
       + ' on <a href="' + esc(law.legistar_url) + '" target="_blank" rel="noopener">NYC Legistar</a> using Claude. Every quoted passage is mechanically checked against the law text; deadlines are computed from the enactment date and the deadline clauses in the text. Interpretation of statutory language ultimately requires human review.</p>'
+      + (obs.some(function (o) { return o.filing; })
+          ? '<p><strong>Filing status</strong> comes from the Department of Records and Information Services, which lists the reports agencies owe and when each was last filed, and posts a late notice when one is overdue. The status vocabulary and the rules behind it are Josh Greenman\'s, from the <a href="https://joshgreenman1973.github.io/nyc-overdue-reports/" target="_blank" rel="noopener">NYC Overdue Reports tracker</a> (<a href="https://github.com/joshgreenman1973/nyc-overdue-reports" target="_blank" rel="noopener">code and methodology</a>); his dashboard covers every DORIS mandate, including those created before 2014, and is the better tool for compliance questions. A report shown here is matched to a DORIS mandate by law and title, so check the linked filings before relying on a single status.</p>'
+          : '')
       + '</div>';
 
     document.getElementById('mainContent').innerHTML = html;
@@ -350,6 +362,32 @@
         b.textContent = card.classList.contains('open') ? 'Hide statutory language' : 'Show statutory language';
       });
     });
+  }
+
+
+  var FILING_LABEL = {
+    'never filed': 'Never filed', 'overdue': 'Overdue', 'current': 'Up to date',
+    'completed': 'Completed', 'waived': 'Waived', 'unscheduled': 'No schedule',
+    'superseded': 'Superseded'
+  };
+
+  function lateText(days) {
+    if (days == null) return '';
+    if (days < 60) return days + ' days late';
+    if (days < 730) return Math.round(days / 30.44) + ' months late';
+    return (days / 365.25).toFixed(1) + ' years late';
+  }
+
+  function filingLine(o) {
+    if (!o.filing) return '';
+    var f = o.filing;
+    var txt = '<span class="filing-pill filing-' + f.status.replace(/ /g, '-') + '">'
+      + esc(FILING_LABEL[f.status] || f.status) + '</span>';
+    if (f.status === 'overdue' && f.days_late != null) txt += ' <strong>' + lateText(f.days_late) + '</strong>';
+    if (f.last_filed) txt += ' · last filed ' + fmtDate(f.last_filed);
+    if (f.late_notice) txt += ' · <span class="filing-notice">city late notice ' + fmtDate(f.late_notice) + '</span>';
+    if (f.doris_url) txt += ' · <a href="' + esc(f.doris_url) + '" target="_blank" rel="noopener">filings ↗</a>';
+    return '<div class="ob-filing">' + txt + '</div>';
   }
 
   function fmtDate(iso) {

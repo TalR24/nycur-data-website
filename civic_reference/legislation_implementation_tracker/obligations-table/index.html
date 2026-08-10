@@ -108,6 +108,14 @@
     .detail-quote p { font-style: italic; font-size: 0.85rem; color: var(--text-mid); }
     .detail-quote .cite { font-family: 'Roboto Mono', monospace; font-style: normal; font-size: 0.7rem; color: var(--text-muted); margin-top: 8px; }
     .unverified-note { font-size: 0.72rem; color: var(--text-muted); font-style: italic; margin-top: 6px; }
+    .filing-pill { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.7rem; font-weight: 700; font-family: 'Roboto Mono', monospace; }
+    .filing-never-filed { background: #fee2e2; color: #991b1b; }
+    .filing-overdue { background: #ffedd5; color: #9a3412; }
+    .filing-current { background: #dcfce7; color: #166534; }
+    .filing-completed, .filing-waived, .filing-unscheduled, .filing-superseded { background: #e5e7eb; color: #374151; }
+    .filing-notice { color: #9a3412; font-weight: 600; }
+    .filing-src { font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; }
+    .filing-src a { color: var(--blue); }
     .restated-note { font-size: 0.72rem; color: var(--text-muted); font-style: italic; margin-top: 6px; }
     .restated-summary { font-size: 0.78rem; color: var(--text-muted); margin: 0 0 10px; }
     .restated-summary a { color: var(--blue); }
@@ -204,6 +212,7 @@
       <div id="msYear"></div>
       <div id="msRecur"></div>
       <div id="msDeadline"></div>
+      <div id="msFiling"></div>
       <button class="reset-btn" id="fReset">Reset all</button>
     </div>
 
@@ -353,6 +362,18 @@
         { v: 'none', l: 'No dated deadline' }
       ] });
 
+    MS.filing = new MSFilter('msFiling', { label: 'Report filing', allLabel: 'Any filing status',
+      sort: 'none', onChange: applyFilters, options: [
+        { v: 'missing', l: 'Missing or overdue' },
+        { v: 'never filed', l: 'Never filed' },
+        { v: 'overdue', l: 'Overdue' },
+        { v: 'late notice', l: 'Has a city late notice' },
+        { v: 'current', l: 'Up to date' },
+        { v: 'closed', l: 'Completed, waived or unscheduled' },
+        { v: 'superseded', l: 'Superseded' },
+        { v: 'untracked', l: 'Not tracked by DORIS' }
+      ] });
+
     document.getElementById('fSearch').addEventListener('input', applyFilters);
     document.getElementById('fReset').addEventListener('click', function () {
       document.getElementById('fSearch').value = '';
@@ -391,6 +412,19 @@
         if (dlSel.has('next12') && d && d >= today && d <= yearOut) ok = true;
         if (!ok) return false;
       }
+      var fSel = MS.filing.selected();
+      if (fSel !== null) {
+        var st = o.filing ? o.filing.status : null;
+        var fok = false;
+        if (fSel.has('untracked') && !st) fok = true;
+        if (st) {
+          if (fSel.has(st)) fok = true;
+          if (fSel.has('missing') && (st === 'never filed' || st === 'overdue')) fok = true;
+          if (fSel.has('closed') && (st === 'completed' || st === 'waived' || st === 'unscheduled')) fok = true;
+          if (fSel.has('late notice') && o.filing.late_notice) fok = true;
+        }
+        if (!fok) return false;
+      }
       if (q) {
         var hay = (o.action_summary + ' ' + o.agency + ' ' + o.agency_full + ' ' +
                    o.law_number_display + ' ' + o.file_number + ' ' + o.law_title + ' ' +
@@ -406,11 +440,23 @@
       'Showing <strong>' + rows.length.toLocaleString() + '</strong> of ' +
       ALL.length.toLocaleString() + ' obligations';
     var restated = rows.filter(function (o) { return o.quotes_restated_text; }).length;
-    document.getElementById('restatedSummary').innerHTML = restated
-      ? restated.toLocaleString() + ' of these quote wording that predates the law shown, because '
-        + 'a law reprints the whole code section it amends. They are counted here and marked in the '
-        + 'row detail. <a href="../methodology/">How this is measured</a>'
-      : '';
+    var notes = [];
+    if (restated) {
+      notes.push(restated.toLocaleString() + ' of these quote wording that predates the law shown, because '
+        + 'a law reprints the whole code section it amends. They are counted here and marked in the row detail.');
+    }
+    var tracked = rows.filter(function (o) { return o.filing; });
+    if (tracked.length) {
+      var miss = tracked.filter(function (o) {
+        return o.filing.status === 'never filed' || o.filing.status === 'overdue';
+      }).length;
+      notes.push(tracked.length.toLocaleString() + ' are reports DORIS tracks by filing date, and '
+        + '<strong>' + miss.toLocaleString() + '</strong> of those are overdue or have never been filed. '
+        + 'Filing status follows <a href="https://joshgreenman1973.github.io/nyc-overdue-reports/" target="_blank" rel="noopener">Josh Greenman\'s NYC Overdue Reports</a> '
+        + '(<a href="https://github.com/joshgreenman1973/nyc-overdue-reports" target="_blank" rel="noopener">method</a>).');
+    }
+    document.getElementById('restatedSummary').innerHTML = notes.length
+      ? notes.join(' ') + ' <a href="../methodology/">How this is measured</a>' : '';
     var agSet = {}, lawSet = {}, dated = 0, recurring = 0;
     rows.forEach(function (o) {
       if (o.agency_matched) agSet[o.agency] = 1;
@@ -500,12 +546,44 @@
       + '<div class="detail-block"><h4>Key dates</h4><p>Enacted ' + fmtDate(o.enactment_date)
       + (o.effective_date ? ' · Effective ' + fmtDate(o.effective_date) : '')
       + (o.deadline_date ? ' · Due ' + fmtDate(o.deadline_date) : '') + '</p></div>'
+      + filingBlock(o)
       + groups
       + '<div class="detail-links">'
       + '<a href="../law/?law=' + encodeURIComponent(o.matter_id) + '">Full law checklist →</a>'
       + '<a href="' + esc(o.legistar_url) + '" target="_blank" rel="noopener">View on Legistar ↗</a>'
       + '</div>'
       + '</div></td></tr>';
+  }
+
+
+  var FILING_LABEL = {
+    'never filed': 'Never filed', 'overdue': 'Overdue', 'current': 'Up to date',
+    'completed': 'Completed', 'waived': 'Waived', 'unscheduled': 'No schedule',
+    'superseded': 'Superseded'
+  };
+
+  function lateText(days) {
+    if (days == null) return '';
+    if (days < 60) return days + ' days late';
+    if (days < 730) return Math.round(days / 30.44) + ' months late';
+    return (days / 365.25).toFixed(1) + ' years late';
+  }
+
+  function filingBlock(o) {
+    if (!o.filing) return '';
+    var f = o.filing;
+    var bits = '<span class="filing-pill filing-' + f.status.replace(/ /g, '-') + '">'
+      + esc(FILING_LABEL[f.status] || f.status) + '</span>';
+    if (f.status === 'overdue' && f.days_late != null) bits += ' <strong>' + lateText(f.days_late) + '</strong>';
+    if (f.last_filed) bits += ' · last filed ' + fmtDate(f.last_filed);
+    if (f.frequency) bits += ' · due ' + esc(f.frequency.toLowerCase());
+    if (f.late_notice) bits += ' · <span class="filing-notice">city late notice ' + fmtDate(f.late_notice) + '</span>';
+    var link = f.doris_url
+      ? '<a href="' + esc(f.doris_url) + '" target="_blank" rel="noopener">See filings on the DORIS portal ↗</a>' : '';
+    return '<div class="detail-block"><h4>Filing status, per DORIS</h4><p>' + bits + '</p>'
+      + '<p class="filing-src">Matched to the DORIS mandate “' + esc(f.doris_name || '') + '”. '
+      + 'Status method from <a href="https://joshgreenman1973.github.io/nyc-overdue-reports/" target="_blank" rel="noopener">Josh Greenman</a>. '
+      + link + '</p></div>';
   }
 
   function fmtDate(iso) {

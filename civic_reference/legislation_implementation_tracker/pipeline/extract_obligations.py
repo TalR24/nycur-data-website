@@ -236,6 +236,14 @@ def is_vague_actor(s: str) -> bool:
 # put the sweep at ~86% precision, and the misses are laws that did touch the
 # provision (renumbering it, or amending the same duty), so deleting on the
 # signal alone would drop real duties.
+# DORIS filing status per report obligation, built by build_report_filings.py.
+# Joined here so every view gets it without a second fetch. Method and status
+# vocabulary follow Josh Greenman's NYC Overdue Reports tracker.
+_FILINGS_PATH = HERE.parent / "data" / "report_filings.json"
+REPORT_FILINGS: dict = {}
+if _FILINGS_PATH.exists():
+    REPORT_FILINGS = json.loads(_FILINGS_PATH.read_text()).get("filings", {})
+
 _RESTATED_PATH = HERE / "restated_candidates.json"
 RESTATED_IDS: set = set()
 if _RESTATED_PATH.exists():
@@ -586,7 +594,7 @@ def main() -> None:
         joined_keys = {"file_number", "law_number_display", "law_title",
                        "committee", "prime_sponsor", "enactment_date",
                        "effective_date", "legistar_url", "law_sunset_date",
-                       "quotes_restated_text"}
+                       "quotes_restated_text", "filing"}
         for o in prev.get("obligations", []):
             obs_by_matter.setdefault(o["matter_id"], []).append(
                 {k: v for k, v in o.items() if k not in joined_keys})
@@ -666,6 +674,8 @@ def main() -> None:
                 "legistar_url": law["legistar_url"],
                 "law_sunset_date": law.get("sunset_date"),
                 "quotes_restated_text": o["obligation_id"] in RESTATED_IDS,
+                **({"filing": REPORT_FILINGS[o["obligation_id"]]}
+                   if o["obligation_id"] in REPORT_FILINGS else {}),
             })
 
     # obligation_id must be unique: hand edits and cache syncs have twice
@@ -698,7 +708,13 @@ def main() -> None:
                 "action_summary", "deliverable_type", "deadline_date",
                 "deadline_text", "recurrence", "citation", "committee",
                 "prime_sponsor", "enactment_date", "effective_date",
-                "quote", "legistar_url"]
+                "quote", "legistar_url",
+                "filing_status", "filing_last_filed", "filing_days_late"]
+    for row in flat:
+        fil = row.get("filing") or {}
+        row["filing_status"] = fil.get("status", "")
+        row["filing_last_filed"] = fil.get("last_filed") or ""
+        row["filing_days_late"] = fil.get("days_late") if fil.get("days_late") is not None else ""
     with open(csv_path, "w", newline="", encoding="utf-8") as f:
         w = csvmod.DictWriter(f, fieldnames=csv_cols, extrasaction="ignore")
         w.writeheader()
