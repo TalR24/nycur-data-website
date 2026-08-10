@@ -108,6 +108,14 @@
     .detail-quote p { font-style: italic; font-size: 0.85rem; color: var(--text-mid); }
     .detail-quote .cite { font-family: 'Roboto Mono', monospace; font-style: normal; font-size: 0.7rem; color: var(--text-muted); margin-top: 8px; }
     .unverified-note { font-size: 0.72rem; color: var(--text-muted); font-style: italic; margin-top: 6px; }
+    .pager { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 14px; }
+    .pg-btn { font-family: 'Roboto Mono', monospace; font-size: 0.78rem; font-weight: 600; color: var(--text-mid); background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 7px 11px; cursor: pointer; transition: background 0.12s, border-color 0.12s; }
+    .pg-btn:hover:not(:disabled) { background: var(--blue-light); border-color: var(--blue); color: var(--blue); }
+    .pg-btn:disabled { opacity: 0.4; cursor: default; }
+    .pg-btn.is-current { background: var(--blue); border-color: var(--blue); color: #fff; }
+    .pg-gap { color: var(--text-faint); padding: 0 2px; }
+    .pg-count { margin-left: auto; font-size: 0.75rem; color: var(--text-muted); font-family: 'Roboto Mono', monospace; }
+    @media (max-width: 560px) { .pg-count { width: 100%; margin-left: 0; padding-top: 6px; } }
     .filing-pill { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.7rem; font-weight: 700; font-family: 'Roboto Mono', monospace; }
     .filing-never-filed { background: #fee2e2; color: #991b1b; }
     .filing-overdue { background: #ffedd5; color: #9a3412; }
@@ -256,6 +264,8 @@
       </figcaption>
     </figure>
 
+    <nav id="pager" class="pager" aria-label="Table pages"></nav>
+
     <div class="footnotes">
       <p><strong>What counts as an obligation:</strong> a mandatory duty ("shall", "must") the enacted law places on a NYC government agency, office, or officer. Duties the law places on private parties appear only through the agency work they create, such as enforcement or rulemaking.</p>
       <p><strong>Extraction and verification:</strong> obligations are extracted from the enacted legislation text on <a href="https://legistar.council.nyc.gov" target="_blank" rel="noopener">NYC Legistar</a> using Claude, and every quoted passage is mechanically checked against the law text. Rows whose quote could not be verified verbatim are marked in the row detail. Interpretation of statutory language ultimately requires human review; treat this as a research aid, not legal advice.</p>
@@ -287,6 +297,9 @@
   var sortKey = 'deadline';
   var sortDir = 1;
   var openId = null;
+  var PAGE_SIZE = 25;
+  var page = 1;
+  var ROWS = [];
 
   fetch('../data/obligations.json')
     .then(function (r) { return r.json(); })
@@ -435,10 +448,9 @@
     });
 
     rows.sort(cmp);
-    renderRows(rows);
-    document.getElementById('resultCount').innerHTML =
-      'Showing <strong>' + rows.length.toLocaleString() + '</strong> of ' +
-      ALL.length.toLocaleString() + ' obligations';
+    ROWS = rows;
+    page = 1;
+    paint();
     var restated = rows.filter(function (o) { return o.quotes_restated_text; }).length;
     var notes = [];
     if (restated) {
@@ -492,6 +504,59 @@
     }
   }
 
+  function paint() {
+    var total = ROWS.length;
+    var pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+    if (page > pages) page = pages;
+    var start = (page - 1) * PAGE_SIZE;
+    var slice = ROWS.slice(start, start + PAGE_SIZE);
+
+    document.getElementById('resultCount').innerHTML = total
+      ? 'Showing <strong>' + (start + 1).toLocaleString() + '\u2013'
+        + Math.min(start + PAGE_SIZE, total).toLocaleString() + '</strong> of '
+        + total.toLocaleString() + ' matching obligations'
+        + (total < ALL.length ? ' (filtered from ' + ALL.length.toLocaleString() + ')' : '')
+      : 'No obligations match these filters';
+
+    renderRows(slice);
+    renderPager(pages, total);
+  }
+
+  function renderPager(pages, total) {
+    var el = document.getElementById('pager');
+    if (pages < 2) { el.innerHTML = ''; return; }
+    // windowed page numbers: always show first and last, plus two either side
+    var want = {1: 1};
+    want[pages] = 1;
+    for (var i = page - 2; i <= page + 2; i++) if (i >= 1 && i <= pages) want[i] = 1;
+    var nums = Object.keys(want).map(Number).sort(function (a, b) { return a - b; });
+
+    var html = '<button class="pg-btn" data-page="' + (page - 1) + '"'
+      + (page === 1 ? ' disabled' : '') + ' aria-label="Previous page">\u2190 Prev</button>';
+    var prev = 0;
+    nums.forEach(function (n) {
+      if (prev && n > prev + 1) html += '<span class="pg-gap">\u2026</span>';
+      html += '<button class="pg-btn pg-num' + (n === page ? ' is-current' : '') + '" data-page="' + n + '"'
+        + (n === page ? ' aria-current="page"' : '') + '>' + n + '</button>';
+      prev = n;
+    });
+    html += '<button class="pg-btn" data-page="' + (page + 1) + '"'
+      + (page === pages ? ' disabled' : '') + ' aria-label="Next page">Next \u2192</button>';
+    html += '<span class="pg-count">' + total.toLocaleString() + ' rows \u00b7 25 per page</span>';
+    el.innerHTML = html;
+
+    el.querySelectorAll('.pg-btn').forEach(function (b) {
+      if (b.disabled) return;
+      b.addEventListener('click', function () {
+        page = parseInt(b.getAttribute('data-page'), 10);
+        openId = null;
+        paint();
+        var box = document.getElementById('chart-box');
+        if (box) window.scrollTo({ top: box.offsetTop - 80, behavior: 'smooth' });
+      });
+    });
+  }
+
   function renderRows(rows) {
     var today = new Date(); today.setHours(0, 0, 0, 0);
     var html = '';
@@ -522,7 +587,7 @@
     document.querySelectorAll('tr.data-row').forEach(function (tr) {
       tr.addEventListener('click', function () {
         openId = openId === tr.getAttribute('data-id') ? null : tr.getAttribute('data-id');
-        applyFilters();
+        paint();
       });
     });
   }
