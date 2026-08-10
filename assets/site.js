@@ -77,7 +77,11 @@
     '.sub-toggle{flex-shrink:0;background:none;border:none;color:#9ca3af;font-size:0.7rem;padding:6px 8px;cursor:pointer;border-radius:6px;}' +
     '.sub-toggle:hover{background:#eff6ff;color:#2563eb;}' +
     '.sitenav-sub{display:none;position:absolute;left:100%;top:-10px;margin-left:8px;z-index:210;background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;box-shadow:0 10px 28px rgba(17,24,39,0.18);padding:8px;min-width:240px;}' +
-    '@media (hover:hover){.menu-group:hover > .sitenav-sub{display:block;}}' +
+    /* Invisible bridge over the 8px gap (and a little above/below) so the
+       pointer can cross from the menu row into the flyout without the group
+       losing hover. Works with the JS grace timers below. */
+    '.sitenav-sub::before{content:\'\';position:absolute;top:-10px;bottom:-10px;left:-18px;width:18px;}' +
+    '.menu-group.sub-hover > .sitenav-sub{display:block;}' +
     '.menu-group.sub-open > .sitenav-sub{display:block;position:static;margin:2px 0 6px 14px;border:none;box-shadow:none;border-left:2px solid #e5e7eb;border-radius:0;padding:0 0 0 8px;min-width:0;}' +
     '.sitenav-spacer{flex:1;}' +
     '.relwork{padding:8px clamp(20px,5vw,48px) 44px;}' +
@@ -145,11 +149,17 @@
     header.insertAdjacentElement('afterend', bar);
 
     var items = bar.querySelectorAll('.sitenav-item');
+    var groups = bar.querySelectorAll('.menu-group');
     function closeAll() {
       items.forEach(function (item) {
         item.classList.remove('open');
         item.querySelector('.sitenav-btn').setAttribute('aria-expanded', 'false');
         item.querySelectorAll('.menu-group.sub-open').forEach(function (g) { g.classList.remove('sub-open'); });
+      });
+      groups.forEach(function (g) {
+        g.classList.remove('sub-hover');
+        clearTimeout(g._openT);
+        clearTimeout(g._closeT);
       });
     }
     items.forEach(function (item) {
@@ -178,6 +188,29 @@
             item.classList.remove('open');
             item.querySelector('.sitenav-btn').setAttribute('aria-expanded', 'false');
           }, 180);
+        });
+      });
+      /* Submenu flyouts: intent timers instead of raw :hover. A short open
+         delay keeps a diagonal pass over a neighboring row from stealing the
+         flyout; a longer close delay (plus the ::before bridge) gives the
+         pointer time to travel from the row into the flyout. The flyout is a
+         DOM child of its .menu-group, so re-entering it cancels the close. */
+      groups.forEach(function (g) {
+        g.addEventListener('mouseenter', function () {
+          clearTimeout(g._closeT);
+          clearTimeout(g._openT);
+          g._openT = setTimeout(function () {
+            groups.forEach(function (o) {
+              if (o !== g) { o.classList.remove('sub-hover'); clearTimeout(o._openT); }
+            });
+            g.classList.add('sub-hover');
+          }, 100);
+        });
+        g.addEventListener('mouseleave', function () {
+          clearTimeout(g._openT);
+          g._closeT = setTimeout(function () {
+            g.classList.remove('sub-hover');
+          }, 300);
         });
       });
     }
