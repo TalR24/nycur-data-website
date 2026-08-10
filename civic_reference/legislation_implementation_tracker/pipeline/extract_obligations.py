@@ -103,7 +103,7 @@ RULES:
 - Street co-naming laws: designating a thoroughfare name implies the department of transportation must fabricate and install the street name signs. Record ONE obligation for the department of transportation with deliverable_type "signage or installation" covering all designations in the law. This DOT inference applies ONLY to streets and thoroughfares: a park or playground renaming implies the department of parks and recreation (not DOT), and other facility renamings imply the agency that operates the facility.
 - {{Double braces}} mark NEW matter: text this law actually adds to the code, taken from Legistar's underline styling. When a section is introduced by "is amended to read as follows", everything OUTSIDE the braces is pre-existing law being reprinted, and you must NOT extract an obligation from it, however clearly it states a duty. Extract only duties whose operative language sits inside braces. If a law's text carries no braces at all, fall back to the amendment rule below.
 - Square brackets mark DELETED matter. In NYC Council drafting, text enclosed in [brackets] is being struck from the code by this law. NEVER extract an obligation from text inside brackets: that duty is being repealed, not created. A bracketed span can run for several sentences, so check whether an unclosed "[" precedes the passage you are quoting. If the law strikes a duty and re-enacts it elsewhere in the same law, quote the re-enacted (unbracketed) copy.
-- Deadlines anchored to a recurring or per-case event (each application received, each hearing held, each review completed, the occurrence of a vacancy) are NOT effective-date deadlines. Use kind=days_after_other with no offset, even when the clause says "within 60 days". Only a clock the law expressly ties to enactment or the effective date gets days_after_enactment or days_after_effective.
+- Deadlines anchored to an event the law does not date are NOT effective-date deadlines. This covers recurring or per-case events (each application received, each hearing held, each review completed, the occurrence of a vacancy) AND one-time future events (the conclusion of a pilot, the commencement of a program, the completion of a study, the formation of a body, the filing of construction documents). Use kind=days_after_other with no offset, even when the clause says "within 60 days". Only a clock the law expressly ties to enactment or the effective date gets days_after_enactment or days_after_effective.
 - Amendment texts ("is amended to read as follows"): the restated body of the amended section is PRE-EXISTING law. Only newly added matter (in Legistar's published text, the underlined portions) can create obligations for this law. Never extract a duty whose operative language exists unchanged in the prior law.
 - "In consultation with X" or "in coordination with X" does not make X a duty-holder. Record the obligation only for the lead agency; list consulted agencies nowhere.
 - Permissive rulemaking ("the commissioner may promulgate rules") becomes an obligation ONLY when other provisions clearly presume the rules will exist (e.g. employers must follow "rules of the department"). Otherwise skip it.
@@ -667,6 +667,15 @@ def main() -> None:
                 "law_sunset_date": law.get("sunset_date"),
                 "quotes_restated_text": o["obligation_id"] in RESTATED_IDS,
             })
+
+    # obligation_id must be unique: hand edits and cache syncs have twice
+    # produced a matter with the same id on two records, which silently breaks
+    # any join keyed on it (the restated-text flag, per-record links).
+    from collections import Counter as _Counter
+    _dupes = [i for i, c in _Counter(o["obligation_id"] for o in flat).items() if c > 1]
+    if _dupes:
+        log.error("duplicate obligation_ids (fix the cache file, then rebuild): %s",
+                  ", ".join(sorted(_dupes)))
 
     out = {
         "generated_at": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
