@@ -29,7 +29,7 @@ def sub(text, pattern, replacement, label, flags=re.DOTALL):
 
 
 # ── 1. data_website/index.html (homepage card-stat) ──
-p = Path("../../index.html")
+p = Path("../index.html")
 html = p.read_text()
 html = sub(
     html,
@@ -40,7 +40,7 @@ html = sub(
 p.write_text(html)
 
 # ── 2. data_website/README.md (file-tree row count) ──
-p = Path("../../README.md")
+p = Path("../README.md")
 md = p.read_text()
 md = sub(
     md,
