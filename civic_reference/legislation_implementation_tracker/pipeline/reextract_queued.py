@@ -40,7 +40,7 @@ import extract_obligations as eo  # noqa: E402
 QUEUE = HERE / "reextract_queue.json"
 TEXT_CACHE = HERE / "cache" / "text"
 EXTRACT_CACHE = HERE / "cache" / "extracted"
-MAX_CHARS = 300_000  # head+tail cap for attachment-scale laws (LL47 precedent)
+MAX_CHARS = 300_000  # only a sanity ceiling now; extract_law windows long laws
 
 
 def sanitize(text: str) -> str:
@@ -175,8 +175,12 @@ def main() -> None:
                 failed[mid] = reason + " [no usable text found]"
                 continue
             text = sanitize(text)
-            if len(text) > MAX_CHARS:
-                text = text[:MAX_CHARS - 30_000] + "\n[...]\n" + text[-30_000:]
+            # No head+tail truncation any more: extract_law splits a long law at
+            # its own section boundaries and extracts each window, so the middle
+            # is no longer dropped. Left as a guard only for texts so large that
+            # windowing them would be pathological.
+            if len(text) > MAX_CHARS * 40:
+                text = text[:MAX_CHARS * 40]
                 truncated = True
             (TEXT_CACHE / f"{mid}.txt").write_text(text)
             print(f"{mid}: extracting ({len(text)} chars"

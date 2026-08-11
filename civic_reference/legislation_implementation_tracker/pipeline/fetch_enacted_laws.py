@@ -408,6 +408,7 @@ def parse_detail_page(html: str, matter_id: str, guid: str) -> dict:
         "text_chars": len(text),
         "text_sha1": hashlib.sha1(text.encode()).hexdigest() if text else "",
         "_text": text,  # stripped before writing laws.json
+        "_html": html,  # ditto; needed only for the attachment fallback
     }
 
 
@@ -473,12 +474,31 @@ def main() -> None:
             log.info(f"  [{i}] skip {rec['file_number']}: "
                      f"{rec['matter_type']}/{rec['status']}")
             continue
+        # Some laws publish only a pointer ("A COPY OF INT. NO. ... CAN BE FOUND
+        # UNDER ATTACHMENTS") and keep the enacted text in an attachment. The
+        # re-extraction path already knew how to read those; the primary path
+        # did not, so such a law cached an 86-character stub and every duty in
+        # it was invisible. Fall back to the attachment here, at the point the
+        # text is first cached, so no later stage has to compensate.
         if not rec["_text"] or "Be it enacted" not in rec["_text"]:
-            log.warning(f"  [{i}] {rec['file_number']}: no enacted text found "
-                        f"({rec['text_chars']} chars)")
+            recovered = None
+            try:
+                from reextract_queued import attachment_text
+                recovered = attachment_text(rec.get("_html") or "")
+            except Exception as e:                      # noqa: BLE001
+                log.warning(f"  [{i}] attachment fallback failed: {e}")
+            if recovered and len(recovered) > len(rec["_text"] or ""):
+                log.info(f"  [{i}] {rec['file_number']}: recovered "
+                         f"{len(recovered)} chars from an attachment")
+                rec["_text"] = recovered
+                rec["text_chars"] = len(recovered)
+                rec["text_sha1"] = hashlib.sha1(recovered.encode()).hexdigest()
+            else:
+                log.warning(f"  [{i}] {rec['file_number']}: no enacted text found "
+                            f"({rec['text_chars']} chars)")
 
         (TEXT_CACHE / f"{mid}.txt").write_text(rec["_text"])
-        meta = {k: v for k, v in rec.items() if k != "_text"}
+        meta = {k: v for k, v in rec.items() if not k.startswith("_")}
         cache_file.write_text(json.dumps(meta, indent=1))
         records.append(meta)
         log.info(f"  [{i}/{len(matters)}] {rec['file_number']} "

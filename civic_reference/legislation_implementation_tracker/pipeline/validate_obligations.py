@@ -1,0 +1,262 @@
+#!/usr/bin/env python3
+"""Regression suite for every defect class the audits have found.
+
+Eleven rounds of multi-agent auditing found eleven distinct defect classes.
+Sampling found them; sampling cannot prove they are gone. This runs every
+mechanically checkable class over all records at once, so a clean run is
+evidence about the whole corpus rather than about thirty laws.
+
+Each check returns a list of offending obligation ids with a one-line reason.
+Checks are deliberately conservative: a check that fires on correct records
+trains everyone to ignore it. Where a class cannot be decided mechanically
+(is this duty real? is this the right agency?) the check reports a count for
+tracking and does not fail the run.
+
+    python3 pipeline/validate_obligations.py             # human-readable
+    python3 pipeline/validate_obligations.py --json out.json
+    python3 pipeline/validate_obligations.py --strict    # exit 1 on any hard failure
+
+Hard failures are structural problems with an objectively right answer:
+duplicate ids, quotes absent from the law, deadlines that precede enactment,
+stub law text, cross-law contamination. Everything else is a soft count.
+
+No Anthropic API calls. Runs offline against the committed data and text cache.
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import re
+import sys
+from collections import Counter, defaultdict
+from datetime import date
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+DATA = HERE.parent / "data"
+TEXT = HERE / "cache" / "text"
+
+# Deadline clauses anchored to something other than enactment or the effective
+# date. Kept broad on purpose: the point is to catch a stamped calendar date
+# that the law never supports, and a false positive here costs only a review.
+# An anchor is only an "event" anchor if it points at something other than
+# enactment or the effective date. The first draft of this check fired on
+# "prior to such date", which is the standard implementation clause and means
+# the effective date, so it flagged 100+ correct records. Excluding the
+# date-referring phrases first is what makes the check trustworthy.
+_ANCHOR_IS_A_DATE = re.compile(
+    r"such dates?\b|the effective date|its effective date|such effective date"
+    r"|it becomes (a )?law|such local law becomes|enactment", re.I)
+EVENT_ANCHOR = re.compile(
+    r"conclusion of|commencement of|completion of|after the pilot|termination of"
+    r"|receipt of|following any change|formation of"
+    r"|upon (the )?(submission|approval|determination|issuance)"
+    r"|after (such|each|any) (summary|hearing|approval|determination|request|application|review)"
+    r"|(prior to|before) (any|each|such) (hearing|meeting|removal|modification|sale|execution"
+    r"|implementation|application|request|submission|expiration)"
+    r"|from the date of (the|each|such|any) (application|request|receipt|notice)", re.I)
+
+
+def event_anchored(text: str | None) -> bool:
+    t = text or ""
+    return bool(EVENT_ANCHOR.search(t)) and not _ANCHOR_IS_A_DATE.search(t)
+SIX_MONTHLY = re.compile(
+    r"every ?(6|six) months|semiannual|semi-annual|twice a year|twice each year", re.I)
+# An agency tag should be an institution, not a sentence.
+LONG_TAG_WORDS = 8
+
+
+def norm(s: str | None) -> str:
+    s = (s or "").replace("{{", "").replace("}}", "")
+    for a, b in (("“", '"'), ("”", '"'), ("‘", "'"),
+                 ("’", "'"), ("–", "-"), ("—", "-")):
+        s = s.replace(a, b)
+    return re.sub(r"\s+", " ", s.lower()).strip()
+
+
+def squash(s: str | None) -> str:
+    return re.sub(r"[^a-z0-9]", "", norm(s))
+
+
+def load_texts(matter_ids) -> dict[str, str]:
+    out = {}
+    for mid in matter_ids:
+        p = TEXT / f"{mid}.txt"
+        if p.exists():
+            out[mid] = squash(p.read_text(errors="ignore"))
+    return out
+
+
+def main() -> None:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--json")
+    ap.add_argument("--strict", action="store_true")
+    ap.add_argument("--today", default=date.today().isoformat())
+    ap.add_argument("--reverify", action="store_true",
+                    help="update quote_verified in the extraction caches to match "
+                         "the current cached law text, then exit")
+    args = ap.parse_args()
+    today = date.fromisoformat(args.today)
+
+    data = json.loads((DATA / "obligations.json").read_text())
+    obs = data["obligations"]
+    laws = {l["matter_id"]: l for l in data["laws"]}
+    by_matter = defaultdict(list)
+    for o in obs:
+        by_matter[o["matter_id"]].append(o)
+    texts = load_texts(by_matter)
+
+    if args.reverify:
+        # Recovering a law's real text (from an attachment, say) can turn a
+        # quote that looked fabricated into one that verifies. Re-check the
+        # stored flag against the text we now hold, in both directions.
+        flips = 0
+        for mid, group in by_matter.items():
+            t = texts.get(mid)
+            if not t or len(t) < 400:
+                continue
+            path = HERE / "cache" / "extracted" / f"{mid}.json"
+            if not path.exists():
+                continue
+            rec = json.loads(path.read_text())
+            changed = False
+            for o in rec.get("obligations", []):
+                q = squash(o.get("quote"))
+                present = bool(q) and q in t
+                if present != bool(o.get("quote_verified")):
+                    o["quote_verified"] = present
+                    changed = True
+                    flips += 1
+            if changed:
+                path.write_text(json.dumps(rec, indent=1, ensure_ascii=False))
+        print(f"reverified against current cached text: {flips} flags corrected")
+        print("now rebuild: ANTHROPIC_API_KEY=dummy-no-api-calls "
+              "python3 pipeline/extract_obligations.py --incremental")
+        return
+
+    hard: dict[str, list] = defaultdict(list)
+    soft: dict[str, list] = defaultdict(list)
+
+    # --- HARD: identifiers must be unique -----------------------------------
+    for oid, n in Counter(o["obligation_id"] for o in obs).items():
+        if n > 1:
+            hard["duplicate_obligation_id"].append(f"{oid} appears {n} times")
+
+    # --- HARD: law text must actually be present ----------------------------
+    for mid, group in by_matter.items():
+        t = texts.get(mid)
+        if t is None:
+            hard["law_text_missing"].append(
+                f"{laws[mid]['law_number_display']}: {len(group)} obligations, no cached text")
+        elif len(t) < 400:
+            hard["law_text_is_a_stub"].append(
+                f"{laws[mid]['law_number_display']}: {len(t)} chars, {len(group)} obligations")
+
+    # --- HARD: a quote must appear in its own law ---------------------------
+    # Only for laws whose text we actually hold in full, so a stub or a
+    # truncated giant does not masquerade as fabrication.
+    for o in obs:
+        t = texts.get(o["matter_id"])
+        if not t or len(t) < 400:
+            continue
+        q = squash(o.get("quote"))
+        if not q:
+            hard["quote_empty"].append(o["obligation_id"])
+        elif q not in t:
+            (hard if o.get("quote_verified") else soft)["quote_not_in_law_text"].append(
+                f"{o['obligation_id']} ({'flagged verified' if o.get('quote_verified') else 'already unverified'})")
+
+    # --- SOFT: quote absent here, present elsewhere -------------------------
+    # A hint about misfiling, not proof of it. Two laws amending the same code
+    # chapter legitimately restate the same sentences, and the giant
+    # construction-code laws match almost anything, so this needs a human or an
+    # agent to adjudicate rather than failing the build.
+    suspects = [o for o in obs
+                if texts.get(o["matter_id"]) and len(texts[o["matter_id"]]) >= 400
+                and squash(o.get("quote")) and squash(o["quote"]) not in texts[o["matter_id"]]]
+    for o in suspects:
+        q = squash(o["quote"])
+        if len(q) < 60:
+            continue                      # too short to be distinctive
+        for mid2, t2 in texts.items():
+            if mid2 != o["matter_id"] and q in t2:
+                soft["quote_absent_here_but_present_in_another_law"].append(
+                    f"{o['obligation_id']} quote found in {laws[mid2]['law_number_display']}")
+                break
+
+    # --- HARD: deadlines that cannot be right -------------------------------
+    for o in obs:
+        dd, ed = o.get("deadline_date"), o.get("enactment_date")
+        if dd and ed and dd < ed:
+            hard["deadline_precedes_enactment"].append(f"{o['obligation_id']} {dd} < {ed}")
+        if dd and ed and int(dd[:4]) - int(ed[:4]) > 40:
+            hard["deadline_absurdly_distant"].append(f"{o['obligation_id']} {dd}")
+
+    # --- SOFT: event-anchored deadline stamped with a calendar date ---------
+    for o in obs:
+        if o.get("deadline_kind") in ("days_after_effective", "days_after_enactment") \
+                and o.get("deadline_date") and event_anchored(o.get("deadline_text")):
+            soft["event_anchored_deadline_dated"].append(
+                f"{o['obligation_id']}: {(o.get('deadline_text') or '')[:80]}")
+
+    # --- SOFT: recurrence contradicted by the record's own text -------------
+    for o in obs:
+        blob = " ".join(filter(None, [o.get("deadline_text"), o.get("quote"),
+                                      o.get("action_summary")]))
+        if o.get("recurrence") == "biennial" and SIX_MONTHLY.search(blob) \
+                and not re.search(r"every ?(2|two) years|biennial", blob, re.I):
+            soft["biennial_contradicted_by_text"].append(o["obligation_id"])
+
+    # --- SOFT: an agency tag that is not an institution ---------------------
+    for o in obs:
+        ag = o.get("agency") or ""
+        if len(ag.split()) > LONG_TAG_WORDS:
+            soft["agency_tag_is_a_phrase"].append(f"{o['obligation_id']}: {ag[:70]}")
+
+    # --- SOFT: quotes drawn from deleted or reprinted text ------------------
+    for o in obs:
+        if o.get("quotes_restated_text"):
+            soft["quotes_reprinted_text"].append(o["obligation_id"])
+
+    # --- SOFT: laws whose text was truncated before extraction --------------
+    CAP = 300_000
+    for mid, group in by_matter.items():
+        p = TEXT / f"{mid}.txt"
+        if p.exists() and p.stat().st_size >= CAP:
+            soft["law_text_at_or_over_cap"].append(
+                f"{laws[mid]['law_number_display']}: {p.stat().st_size:,} chars, "
+                f"{len(group)} obligations extracted")
+
+    # --- report -------------------------------------------------------------
+    result = {
+        "generated": today.isoformat(),
+        "obligations": len(obs),
+        "laws": len(laws),
+        "hard_failures": {k: v for k, v in sorted(hard.items())},
+        "soft_counts": {k: len(v) for k, v in sorted(soft.items())},
+        "soft_detail": {k: v[:50] for k, v in sorted(soft.items())},
+    }
+    n_hard = sum(len(v) for v in hard.values())
+
+    print(f"validating {len(obs):,} obligations across {len(laws):,} laws\n")
+    print(f"HARD FAILURES: {n_hard}")
+    for k, v in sorted(hard.items()):
+        print(f"  {len(v):5d}  {k}")
+        for line in v[:6]:
+            print(f"           {line}")
+        if len(v) > 6:
+            print(f"           ... and {len(v) - 6} more")
+    print(f"\nSOFT COUNTS (tracked, not failures):")
+    for k, v in sorted(soft.items()):
+        print(f"  {len(v):5d}  {k}")
+
+    if args.json:
+        Path(args.json).write_text(json.dumps(result, indent=1, ensure_ascii=False))
+        print(f"\nwrote {args.json}")
+    if args.strict and n_hard:
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()

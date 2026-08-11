@@ -474,6 +474,43 @@ def call_claude(client, model: str, prompt: str, retry_note: str | None = None):
     return json.loads(raw)
 
 
+# A law longer than the model can read in one pass used to be handled by
+# keeping the head and the tail and dropping the middle, which silently lost
+# every duty written in between. Splitting on the law's own section boundaries
+# and extracting each window preserves them. The threshold is generous: only a
+# dozen laws in the corpus are anywhere near it, so ordinary laws still make
+# exactly one call and behave as before.
+CHUNK_THRESHOLD = 150_000
+CHUNK_TARGET = 120_000
+_BILL_SECTION = re.compile(r"(?m)^\s*(?:§+\s*\d+|Section\s+\d+)\b")
+
+
+def split_for_extraction(text: str, target: int = CHUNK_TARGET) -> list[str]:
+    """Split a long law at its own section boundaries into <=target windows.
+
+    Falls back to a hard split only if a single section exceeds the target,
+    which happens with appended code recodifications.
+    """
+    if len(text) <= CHUNK_THRESHOLD:
+        return [text]
+    bounds = [m.start() for m in _BILL_SECTION.finditer(text)] or [0]
+    if bounds[0] != 0:
+        bounds.insert(0, 0)
+    bounds.append(len(text))
+    chunks, start = [], bounds[0]
+    for i in range(1, len(bounds)):
+        if bounds[i] - start >= target:
+            piece = text[start:bounds[i]]
+            while len(piece) > target * 1.5:      # one giant section
+                chunks.append(piece[:target])
+                piece = piece[target:]
+            chunks.append(piece)
+            start = bounds[i]
+    if start < len(text):
+        chunks.append(text[start:])
+    return [c for c in chunks if c.strip()]
+
+
 def extract_law(client, model: str, law: dict, text: str,
                 lookup: dict, agencies_by_canon: dict) -> dict:
     metadata = json.dumps({
@@ -488,6 +525,31 @@ def extract_law(client, model: str, law: dict, text: str,
               .replace("{deliverable_types}", json.dumps(DELIVERABLE_TYPES))
               .replace("{metadata}", metadata)
               .replace("{law_text}", text))
+
+    # Long law: extract each section window, then merge. Every other law takes
+    # the single-pass path below unchanged.
+    windows = split_for_extraction(text)
+    if len(windows) > 1:
+        log.info(f"  long law ({len(text):,} chars): extracting in "
+                 f"{len(windows)} section windows")
+        merged, seen = [], set()
+        for wi, window in enumerate(windows, 1):
+            sub = extract_law(client, model, law, window, lookup, agencies_by_canon)
+            for o in sub.get("obligations", []):
+                key = (normalize_quote(o.get("quote", ""))[:160], o.get("citation", ""))
+                if key in seen:
+                    continue
+                seen.add(key)
+                merged.append(o)
+        for i, o in enumerate(merged, 1):
+            o["obligation_id"] = f"{law['matter_id']}-{i:02d}"
+        return {"matter_id": law["matter_id"],
+                "model": model,
+                "extracted_at": datetime.now().isoformat(timespec="seconds"),
+                "effective_clause": {"text": None},
+                "effective_date": law.get("effective_date"),
+                "windows": len(windows),
+                "obligations": merged}
 
     norm_text = normalize_quote(text)
     result = None
