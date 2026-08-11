@@ -128,6 +128,23 @@ def attachment_text(html: str) -> str | None:
     return None
 
 
+EXCLUSIONS_PATH = HERE / "reextract_exclusions.json"
+
+
+def load_exclusions() -> dict:
+    """Matters whose extraction was corrected by hand and must not be redone.
+
+    This file existed from the start but only build_full_reextract_queue.py
+    ever read it, so anything added to the queue afterwards bypassed the
+    protection entirely. An adversarial review caught it in Aug 2026 with 16
+    hand-audited laws sitting in the queue, one monthly run away from being
+    overwritten. The consumer, not just the producer, has to enforce it.
+    """
+    if not EXCLUSIONS_PATH.exists():
+        return {}
+    return json.loads(EXCLUSIONS_PATH.read_text()).get("matters", {})
+
+
 def main() -> None:
     if not QUEUE.exists():
         print("no queue file; nothing to do")
@@ -155,8 +172,14 @@ def main() -> None:
     deferred = {m: r for m, r in matters.items() if m not in todo}
     if deferred:
         print(f"processing {len(todo)} of {len(matters)} queued (REEXTRACT_LIMIT={limit})")
+    exclusions = load_exclusions()
     failed: dict[str, str] = {}
+    skipped: dict[str, str] = {}
     for mid, reason in todo.items():
+        if mid in exclusions:
+            skipped[mid] = f"{reason} [protected: {exclusions[mid]}]"
+            print(f"{mid}: SKIPPED, hand-corrected ({exclusions[mid]})")
+            continue
         law = laws.get(mid)
         if not law:
             failed[mid] = reason + " [matter not in laws.json]"
@@ -196,10 +219,13 @@ def main() -> None:
             failed[mid] = reason + f" [failed: {e}]"
             print(f"{mid}: FAILED {e}")
 
+    # Protected matters are dropped rather than retried: they will be skipped
+    # every run, and leaving them in makes the queue look like unfinished work.
     queue["matters"] = {**failed, **deferred}
     QUEUE.write_text(json.dumps(queue, indent=2) + "\n")
     print(f"done: {len(todo) - len(failed)} re-extracted, {len(failed)} failed, "
-          f"{len(deferred)} deferred to next run")
+          f"{len(deferred)} deferred to next run, "
+          f"{len(skipped)} skipped as hand-corrected")
 
 
 if __name__ == "__main__":
