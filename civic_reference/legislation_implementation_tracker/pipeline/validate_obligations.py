@@ -240,15 +240,30 @@ def main() -> None:
             q = norm(o.get("quote"))
             if not q or len(q) < 40:
                 continue
+            # Check EVERY occurrence. Laws repeat boilerplate, and the first hit
+            # is often the struck copy while the provision the record actually
+            # cites is live somewhere later. Judging only the first occurrence
+            # produced eight false accusations in Aug 2026, all overturned on
+            # review. Clean if the quote sits outside brackets anywhere.
             at = flat.find(q)
             if at < 0:
-                continue
-            before = flat[:at]
-            if before.rfind("[") > before.rfind("]"):
-                close = flat.find("]", at)
-                if close == -1 or close >= at + len(q):
-                    hard["quote_inside_deleted_text"].append(
-                        f"{o['obligation_id']} ({laws[mid]['law_number_display']})")
+                continue          # not present at all: that is a different check
+            clean = False
+            while at >= 0:
+                before = flat[:at]
+                open_bracket = before.rfind("[") > before.rfind("]")
+                if open_bracket:
+                    close = flat.find("]", at)
+                    struck = close == -1 or close >= at + len(q)
+                else:
+                    struck = False
+                if not struck:
+                    clean = True
+                    break
+                at = flat.find(q, at + 1)
+            if not clean:
+                hard["quote_inside_deleted_text"].append(
+                    f"{o['obligation_id']} ({laws[mid]['law_number_display']})")
 
     # --- HARD: schema placeholder left unsubstituted ------------------------
     # "every N years" is the template wording in the extraction schema. If it
@@ -271,6 +286,31 @@ def main() -> None:
             soft["law_text_at_or_over_cap"].append(
                 f"{laws[mid]['law_number_display']}: {p.stat().st_size:,} chars, "
                 f"{len(group)} obligations extracted")
+
+    # --- SOFT: fewer reports than the city's own register lists -------------
+    # DORIS independently records the reports each law requires. Where it lists
+    # materially more than we extracted, the extractor may have collapsed or
+    # missed duties. Not a failure: DORIS sometimes splits one duty into several
+    # register entries, and we classify some of them as data publications.
+    # Offline; skipped when the cached DORIS pull is absent.
+    doris_path = HERE / "doris_mandates.json"
+    if doris_path.exists():
+        LLPAT = re.compile(r"LL\s*(\d+)\s*/\s*(\d{4})", re.I)
+        by_law_doris: dict[str, set] = defaultdict(set)
+        for r in json.loads(doris_path.read_text()):
+            m = LLPAT.match((r.get("local_law") or "").strip())
+            if not m:
+                continue
+            key = f"Local Law {int(m.group(1))} of {int(m.group(2))}"
+            if 2014 <= int(m.group(2)) <= today.year:
+                by_law_doris[key].add((r.get("name") or "").strip().lower())
+        ours_reports: dict[str, int] = Counter(
+            o["law_number_display"] for o in obs if o.get("deliverable_type") == "report")
+        known = {l["law_number_display"] for l in data["laws"]}
+        for key, names in by_law_doris.items():
+            if key in known and len(names) - ours_reports.get(key, 0) >= 2:
+                soft["fewer_reports_than_doris_lists"].append(
+                    f"{key}: DORIS {len(names)}, ours {ours_reports.get(key, 0)}")
 
     # --- report -------------------------------------------------------------
     result = {
