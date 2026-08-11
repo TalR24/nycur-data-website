@@ -247,6 +247,11 @@ def _strip_text_html(fragment: str) -> str:
     matter keeps the source's own [square brackets].
     """
     t = _mark_new_matter(fragment)
+    # Street-naming and schedule laws put their substance in an HTML table.
+    # Flattening cells into a run-on token stream made the model re-sentence
+    # them, which reads as invention even though the content is right. Keep the
+    # cell boundaries so a row survives as a readable line.
+    t = re.sub(r"</t[dh]>\s*<t[dh][^>]*>", " | ", t, flags=re.I)
     t = re.sub(r"<(p|div|br|tr|li|h\d)[^>]*>", "\n", t, flags=re.I)
     t = re.sub(r"<[^>]+>", "", t)
     t = re.sub(r"\}\}(\s*)\{\{", r"\1", t)      # merge runs split by markup

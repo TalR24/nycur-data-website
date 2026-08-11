@@ -130,6 +130,45 @@ def norm_lookup_key(s: str) -> str:
     return s
 
 
+# Legistar publishes an amended section with the deleted matter still visible in
+# [square brackets]. A model quoting the operative post-amendment sentence
+# correctly skips that struck text, which made the verifier call the quote
+# unverified: an August 2026 diagnosis found 267 records failing this way, plus
+# 40 differing only in punctuation and 25 carrying pypdf's spurious intra-word
+# spaces ("the d epartment"). Verifying against a bracket-free copy of the law,
+# on alphanumeric characters only, accepts all three and still REJECTS a quote
+# drawn from deleted text, which is what we want it to catch.
+_BRACKET_SPAN = re.compile(r"\[[^\[\]]{0,4000}?\]", re.S)
+
+
+def operative_text(s: str) -> str:
+    """The law with struck matter removed, i.e. what it says after amendment."""
+    prev = None
+    out = s or ""
+    while out != prev:                       # nested brackets do occur
+        prev = out
+        out = _BRACKET_SPAN.sub(" ", out)
+    return out
+
+
+def alnum(s: str) -> str:
+    return re.sub(r"[^a-z0-9]", "", normalize_quote(s))
+
+
+def quote_present(quote: str, law_text: str, operative: str | None = None) -> bool:
+    """Is this quote in the law, allowing for markup, punctuation and PDF spacing?"""
+    q = normalize_quote(quote or "")
+    if not q:
+        return False
+    if q in normalize_quote(law_text):
+        return True
+    qa = alnum(quote)
+    if not qa:
+        return False
+    op = operative if operative is not None else operative_text(law_text)
+    return qa in alnum(op)
+
+
 def normalize_quote(s: str) -> str:
     """Loosen whitespace/typography differences for quote verification.
 
@@ -574,12 +613,13 @@ def extract_law(client, model: str, law: dict, text: str,
                 "obligations": merged}
 
     norm_text = normalize_quote(text)
+    op_text = operative_text(text)
     result = None
     for attempt in range(2):
         retry_note = None
         if attempt == 1 and result is not None:
             bad = [o["quote"] for o in result.get("obligations", [])
-                   if normalize_quote(o.get("quote", "")) not in norm_text]
+                   if not quote_present(o.get("quote", ""), text, op_text)]
             retry_note = (
                 "IMPORTANT: On a previous attempt, these quotes were NOT found "
                 "verbatim in the law text. Re-extract, copying each quote "
@@ -592,7 +632,7 @@ def extract_law(client, model: str, law: dict, text: str,
             result = {"obligations": [], "extraction_error": str(e)}
             continue
         unverified = [o for o in result.get("obligations", [])
-                      if normalize_quote(o.get("quote", "")) not in norm_text]
+                      if not quote_present(o.get("quote", ""), text, op_text)]
         if not unverified:
             break
         log.warning(f"  {len(unverified)} unverified quotes (attempt {attempt+1})")
@@ -602,7 +642,7 @@ def extract_law(client, model: str, law: dict, text: str,
     effective = resolve_effective_date(result.get("effective_clause", {}), enactment)
     obligations = []
     for i, o in enumerate(result.get("obligations", []), 1):
-        quote_ok = normalize_quote(o.get("quote", "")) in norm_text
+        quote_ok = quote_present(o.get("quote", ""), text, op_text)
         canon, full, actor = resolve_actor(
             law["matter_id"],
             [o.get("actor_raw") or "", o.get("actor_resolved") or ""],

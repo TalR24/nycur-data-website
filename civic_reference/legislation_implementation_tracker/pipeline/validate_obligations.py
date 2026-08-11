@@ -70,10 +70,16 @@ SIX_MONTHLY = re.compile(
 # names like "the office of child care and early childhood education".
 sys.path.insert(0, str(HERE))
 try:
-    from extract_obligations import is_vague_actor       # noqa: E402
+    from extract_obligations import is_vague_actor, quote_present, operative_text  # noqa: E402
 except Exception:                                        # noqa: BLE001
     def is_vague_actor(_s):                              # type: ignore
         return False
+
+    def quote_present(q, t, op=None):                    # type: ignore
+        return squash(q) in squash(t)
+
+    def operative_text(t):                               # type: ignore
+        return t
 
 
 def norm(s: str | None) -> str:
@@ -89,11 +95,12 @@ def squash(s: str | None) -> str:
 
 
 def load_texts(matter_ids) -> dict[str, str]:
+    """Raw cached text per matter; callers squash or strip markup as needed."""
     out = {}
     for mid in matter_ids:
         p = TEXT / f"{mid}.txt"
         if p.exists():
-            out[mid] = squash(p.read_text(errors="ignore"))
+            out[mid] = p.read_text(errors="ignore")
     return out
 
 
@@ -123,7 +130,7 @@ def main() -> None:
         flips = 0
         for mid, group in by_matter.items():
             t = texts.get(mid)
-            if not t or len(t) < 400:
+            if not t or len(squash(t)) < 400:
                 continue
             path = HERE / "cache" / "extracted" / f"{mid}.json"
             if not path.exists():
@@ -131,8 +138,7 @@ def main() -> None:
             rec = json.loads(path.read_text())
             changed = False
             for o in rec.get("obligations", []):
-                q = squash(o.get("quote"))
-                present = bool(q) and q in t
+                present = quote_present(o.get("quote"), t)
                 if present != bool(o.get("quote_verified")):
                     o["quote_verified"] = present
                     changed = True
@@ -158,7 +164,7 @@ def main() -> None:
         if t is None:
             hard["law_text_missing"].append(
                 f"{laws[mid]['law_number_display']}: {len(group)} obligations, no cached text")
-        elif len(t) < 400:
+        elif len(squash(t)) < 400:
             hard["law_text_is_a_stub"].append(
                 f"{laws[mid]['law_number_display']}: {len(t)} chars, {len(group)} obligations")
 
@@ -169,10 +175,9 @@ def main() -> None:
         t = texts.get(o["matter_id"])
         if not t or len(t) < 400:
             continue
-        q = squash(o.get("quote"))
-        if not q:
+        if not (o.get("quote") or "").strip():
             hard["quote_empty"].append(o["obligation_id"])
-        elif q not in t:
+        elif not quote_present(o.get("quote"), t):
             (hard if o.get("quote_verified") else soft)["quote_not_in_law_text"].append(
                 f"{o['obligation_id']} ({'flagged verified' if o.get('quote_verified') else 'already unverified'})")
 
@@ -183,7 +188,8 @@ def main() -> None:
     # agent to adjudicate rather than failing the build.
     suspects = [o for o in obs
                 if texts.get(o["matter_id"]) and len(texts[o["matter_id"]]) >= 400
-                and squash(o.get("quote")) and squash(o["quote"]) not in texts[o["matter_id"]]]
+                and (o.get("quote") or "").strip()
+                and not quote_present(o["quote"], texts[o["matter_id"]])]
     for o in suspects:
         q = squash(o["quote"])
         if len(q) < 60:
