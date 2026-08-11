@@ -181,8 +181,12 @@ UNDETERMINED_PHRASES = re.compile(
 # that provides the survey form"), and sentence fragments the extractor
 # occasionally lifts in place of an actor ("all solicitations for contracts...").
 OPEN_ENDED_ACTOR = re.compile(
-    r"(designated\s+by\s+the\s+mayor|as\s+the\s+mayor\s+(shall|may)\s+designate|"
-    r"as\s+may\s+be\s+designated|mayor\s+shall\s+designate|"
+    # "designated by X" leaves the actor to be named later, whoever X is. The
+    # first version of this only matched "designated by the mayor", so
+    # "any other department designated by the department of sanitation"
+    # survived as an agency tag.
+    r"(designated\s+by\s+(the|such|a|an)\b|as\s+(the\s+\w+(\s+\w+)?\s+)?(shall|may)\s+designate|"
+    r"as\s+may\s+be\s+designated|"
     r"or\s+(another|other|such\s+other)\s+(agency|office|department|entity))", re.I)
 
 CLASS_ACTOR = re.compile(
@@ -215,6 +219,17 @@ ALL_AGENCIES = re.compile(
 
 def is_all_agencies(s: str) -> bool:
     return bool(ALL_AGENCIES.match(re.sub(r"\s*\([^)]*\)", "", (s or "")).strip()))
+
+
+# "X, in consultation with Y" names one duty-holder, X. The prompt already says
+# to record only the lead agency; this makes the resolver agree when the model
+# hands back the whole phrase.
+CO_ACTOR = re.compile(r",?\s+(in\s+(consultation|coordination|conjunction|partnership)\s+with|"
+                      r"together\s+with|jointly\s+with)\b.*$", re.I)
+
+
+def lead_actor(s: str) -> str:
+    return CO_ACTOR.sub("", (s or "")).strip().rstrip(",")
 
 
 def is_vague_actor(s: str) -> bool:
@@ -267,7 +282,14 @@ def resolve_actor(matter_id: str, actors: list[str], lookup: dict,
     display_actor is what the agency tag falls back to ("Unspecified" for
     vague or override-null actors, a created body's proper name otherwise)."""
     ov = ACTOR_OVERRIDES.get(str(matter_id), {})
-    candidates = [a for a in actors if a]
+    candidates = []
+    for a in actors:
+        if not a:
+            continue
+        candidates.append(a)
+        trimmed = lead_actor(a)
+        if trimmed and trimmed != a:
+            candidates.append(trimmed)
     for a in candidates:
         if a in ov:
             resolved = ov[a]

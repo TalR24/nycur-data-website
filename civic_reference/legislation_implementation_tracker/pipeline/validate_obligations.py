@@ -63,8 +63,17 @@ def event_anchored(text: str | None) -> bool:
     return bool(EVENT_ANCHOR.search(t)) and not _ANCHOR_IS_A_DATE.search(t)
 SIX_MONTHLY = re.compile(
     r"every ?(6|six) months|semiannual|semi-annual|twice a year|twice each year", re.I)
-# An agency tag should be an institution, not a sentence.
-LONG_TAG_WORDS = 8
+# Whether an actor phrase is too vague to publish as an agency is decided by
+# the extractor's own guard. The validator imports it rather than keeping a
+# parallel heuristic, so the two cannot drift apart: an earlier version used a
+# word-count threshold and spent most of its output on legitimate long body
+# names like "the office of child care and early childhood education".
+sys.path.insert(0, str(HERE))
+try:
+    from extract_obligations import is_vague_actor       # noqa: E402
+except Exception:                                        # noqa: BLE001
+    def is_vague_actor(_s):                              # type: ignore
+        return False
 
 
 def norm(s: str | None) -> str:
@@ -208,11 +217,46 @@ def main() -> None:
                 and not re.search(r"every ?(2|two) years|biennial", blob, re.I):
             soft["biennial_contradicted_by_text"].append(o["obligation_id"])
 
-    # --- SOFT: an agency tag that is not an institution ---------------------
+    # --- SOFT: a published agency tag the guard would now reject ------------
+    # These are records whose stored tag predates a tightening of the guard.
+    # Running renormalize_agencies.py clears them.
     for o in obs:
         ag = o.get("agency") or ""
-        if len(ag.split()) > LONG_TAG_WORDS:
-            soft["agency_tag_is_a_phrase"].append(f"{o['obligation_id']}: {ag[:70]}")
+        if ag and ag not in ("Unspecified", "All agencies") and is_vague_actor(ag):
+            soft["agency_tag_guard_would_reject"].append(f"{o['obligation_id']}: {ag[:70]}")
+
+    # --- HARD: quote drawn from text the law DELETES ------------------------
+    # Square brackets mark struck matter. The one-off bracket sweep in Aug 2026
+    # judged only quotes it could locate cheaply and missed at least one; as a
+    # standing check it costs nothing and covers the class.
+    for mid, group in by_matter.items():
+        raw = (TEXT / f"{mid}.txt")
+        if not raw.exists():
+            continue
+        flat = norm(raw.read_text(errors="ignore"))
+        if "[" not in flat:
+            continue
+        for o in group:
+            q = norm(o.get("quote"))
+            if not q or len(q) < 40:
+                continue
+            at = flat.find(q)
+            if at < 0:
+                continue
+            before = flat[:at]
+            if before.rfind("[") > before.rfind("]"):
+                close = flat.find("]", at)
+                if close == -1 or close >= at + len(q):
+                    hard["quote_inside_deleted_text"].append(
+                        f"{o['obligation_id']} ({laws[mid]['law_number_display']})")
+
+    # --- HARD: schema placeholder left unsubstituted ------------------------
+    # "every N years" is the template wording in the extraction schema. If it
+    # reaches a record, the model copied the placeholder instead of the cadence.
+    for o in obs:
+        if re.fullmatch(r"every n (year|month|day)s?", (o.get("recurrence") or ""), re.I):
+            hard["recurrence_is_a_template_placeholder"].append(
+                f"{o['obligation_id']}: {o.get('recurrence')}")
 
     # --- SOFT: quotes drawn from deleted or reprinted text ------------------
     for o in obs:
