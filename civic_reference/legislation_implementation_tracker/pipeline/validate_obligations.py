@@ -158,6 +158,17 @@ def main() -> None:
         if n > 1:
             hard["duplicate_obligation_id"].append(f"{oid} appears {n} times")
 
+    # --- HARD: the same duty recorded twice under one law -------------------
+    # Distinct ids, identical content. Inflates every count that sums records.
+    dup_groups: dict[tuple, list] = defaultdict(list)
+    for o in obs:
+        n = lambda s: re.sub(r"\s+", " ", (s or "").strip().lower())   # noqa: E731
+        dup_groups[(o["matter_id"], n(o.get("quote")), n(o.get("citation")),
+                    n(o.get("action_summary")), o.get("agency"))].append(o["obligation_id"])
+    for ids in dup_groups.values():
+        if len(ids) > 1:
+            hard["identical_duplicate_obligations"].append(", ".join(ids))
+
     # --- HARD: law text must actually be present ----------------------------
     for mid, group in by_matter.items():
         t = texts.get(mid)

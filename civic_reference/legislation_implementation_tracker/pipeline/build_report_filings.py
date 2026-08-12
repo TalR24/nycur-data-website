@@ -173,8 +173,17 @@ def main() -> None:
                 score = len(mt & ours_tok) / len(mt)
                 if score > best_score:
                     best, best_score = i, score
-            # a single mandate under a single-report law needs no name evidence
-            if best is None or (best_score < 0.34 and not (len(cands) == 1 and len(obs) == 1)):
+            # A single mandate under a single-report law needs no name evidence.
+            # Everywhere else demand real overlap: an audit found a record paired
+            # with a same-law mandate it did not match, which published a filing
+            # status for the wrong duty. A missing status is honest; a wrong one
+            # is not.
+            solo = len(cands) == 1 and len(obs) == 1
+            if best is None or (not solo and best_score < 0.34):
+                continue
+            # Never reuse a mandate for a second obligation when the law has
+            # several: that is how one duty's filing date lands on another's.
+            if best in used and len(cands) > 1:
                 continue
             used.add(best)
             m = cands[best]
