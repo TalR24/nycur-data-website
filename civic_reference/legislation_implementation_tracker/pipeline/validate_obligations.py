@@ -329,6 +329,23 @@ def main() -> None:
                 soft["fewer_reports_than_doris_lists"].append(
                     f"{key}: DORIS {len(names)}, ours {ours_reports.get(key, 0)}")
 
+    # --- SOFT: one law, one bare generic actor, several agencies ------------
+    # "The commissioner" in a Title 17 section is DOHMH and in a Title 20
+    # section is DCWP. When a single law resolves the same bare phrase to more
+    # than one agency, at least one is usually wrong (or all deserve a look):
+    # an omnibus vendor law had five such records. Bare phrases only; a named
+    # actor legitimately varies.
+    generic = {"the commissioner", "the department", "the director", "the office"}
+    per_law: dict[tuple, set] = defaultdict(set)
+    for o in obs:
+        raw = (o.get("actor_raw") or "").strip().lower()
+        if raw in generic and o.get("agency_matched"):
+            per_law[(o["matter_id"], raw)].add(o["agency"])
+    for (mid, raw), agencies in per_law.items():
+        if len(agencies) > 1:
+            soft["same_generic_actor_multiple_agencies"].append(
+                f"{laws[mid]['law_number_display']}: '{raw}' -> {sorted(agencies)}")
+
     # --- SOFT: Legistar says the law sunsets and we found no clause ---------
     # Legistar's index tags are unreliable as a count (Maximum New York makes
     # that case well), but as a cross-check they are free: a law tagged
