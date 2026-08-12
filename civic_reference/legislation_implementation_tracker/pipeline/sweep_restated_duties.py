@@ -86,7 +86,14 @@ def split_markers(marked: str) -> tuple[str, list[bool]]:
 # next bill section. Only inside such a block does the absence of a marker mean
 # "pre-existing law": the law's own freestanding sections (effective-date and
 # implementation clauses) are new law that Legistar never underlines.
-SECTION_START = re.compile(r"(?:^|\n)\s*(?:§+\s*\d+|Section\s+\d+)\b", re.I)
+# A BILL section ("§ 3." or "Section 3.") ends a restated block. A CODE section
+# heading ("§ 21-1002.2", "§ 28-315.3.1") does not: it is the thing being
+# reprinted. The first version of this matched both, so a restated block that
+# opened with its own code heading collapsed to a single character and the
+# sweep silently skipped it. A third of all restated blocks were invisible that
+# way. Bill sections are plain small integers followed by a period.
+SECTION_START = re.compile(
+    r"(?:^|\n)\s*(?:§+\s*(\d{1,3})\.(?![\d-])|Section\s+(\d{1,3})\.(?![\d-]))", re.I)
 
 
 def restated_spans(plain: str) -> list[tuple[int, int]]:
@@ -105,17 +112,38 @@ def _squash(s: str) -> str:
 
 
 def condense(plain: str) -> tuple[str, list[int]]:
-    """Whitespace-free copy of the text plus a map back to original offsets.
+    """Whitespace-free copy of the OPERATIVE text plus a map to original offsets.
 
-    Built once per law: rebuilding it per obligation made the sweep quadratic
-    in law length and took over an hour on the corpus.
+    Characters inside [struck] spans are skipped, exactly as whitespace is, so a
+    quote of the post-amendment sentence can still be located. Without this the
+    sweep could not find any quote that correctly omitted deleted matter, which
+    is most of them. Built once per law: rebuilding it per obligation made the
+    sweep quadratic in law length and took over an hour on the corpus.
     """
-    cond, idx = [], []
-    for i, ch in enumerate(_squash(plain)):
-        if not ch.isspace():
-            cond.append(ch)
-            idx.append(i)
+    cond, idx, depth = [], [], 0
+    squashed = _squash(plain)
+    for i, ch in enumerate(squashed):
+        if ch == "[":
+            depth += 1
+            continue
+        if ch == "]":
+            depth = max(0, depth - 1)
+            continue
+        if depth or ch.isspace():
+            continue
+        cond.append(ch)
+        idx.append(i)
     return "".join(cond), idx
+
+
+def operative_only(s: str) -> str:
+    """Drop [struck] spans so a post-amendment quote can be located."""
+    prev = None
+    out = s
+    while out != prev:
+        prev = out
+        out = re.sub(r"\[[^\[\]]{0,4000}?\]", " ", out, flags=re.S)
+    return out
 
 
 def locate(hay: str, idx: list[int], flags: list[bool], quote: str,
