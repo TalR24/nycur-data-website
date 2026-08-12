@@ -304,9 +304,16 @@ def _normalize_record(rec: dict) -> dict:
 # A law that repeals itself on a date ("expires and is deemed repealed on
 # December 31, 2024") stops imposing its duties then. Without this, a sunset
 # law's recurring obligations read as permanent standing duties forever.
+# Legistar tags a "Sunset Date Applies" index on 114 laws while the first
+# version of this pattern found only 81, so the drafting is more varied than
+# the pattern assumed. Broadened to the forms actually used, which are the
+# generic ways a law says it ends rather than any law's particular wording.
 SUNSET_CLAUSE = re.compile(
-    r"(shall expire and (?:be|is) deemed repealed|expires? and is deemed repealed|"
-    r"shall be deemed repealed on|this local law expires)[^.]{0,220}", re.I)
+    r"((?:shall\s+)?(?:expires?|expire)\s+and\s+(?:be|is)\s+deemed\s+repealed"
+    r"|(?:is|are|shall\s+be)\s+deemed\s+repealed"
+    r"|shall\s+remain\s+in\s+effect\s+until"
+    r"|shall\s+be\s+of\s+no\s+further\s+force\s+(?:and|or)\s+effect"
+    r"|this\s+local\s+law\s+expires)[^.]{0,240}", re.I)
 _SUNSET_DATE = re.compile(
     r"\b(January|February|March|April|May|June|July|August|September|October|"
     r"November|December)\s+(\d{1,2}),\s*(\d{4})")

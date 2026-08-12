@@ -318,6 +318,32 @@ def main() -> None:
                 soft["fewer_reports_than_doris_lists"].append(
                     f"{key}: DORIS {len(names)}, ours {ours_reports.get(key, 0)}")
 
+    # --- SOFT: Legistar says the law sunsets and we found no clause ---------
+    # Legistar's index tags are unreliable as a count (Maximum New York makes
+    # that case well), but as a cross-check they are free: a law tagged
+    # "Sunset Date Applies" where the parser found nothing is worth a look.
+    for l in data["laws"]:
+        tagged = any("sunset" in ix.lower() for ix in (l.get("legistar_indexes") or []))
+        if tagged and not l.get("sunset_clause"):
+            soft["legistar_says_sunset_but_none_parsed"].append(l["law_number_display"])
+
+    # --- HARD: a window boundary must never split new-matter markup ---------
+    # The chunker moves cuts off marker pairs; this proves it did, for the laws
+    # that are actually long enough to be windowed.
+    try:
+        from extract_obligations import split_for_extraction, CHUNK_THRESHOLD
+        for mid in by_matter:
+            p = TEXT / f"{mid}.txt"
+            if not p.exists() or p.stat().st_size <= CHUNK_THRESHOLD:
+                continue
+            body = p.read_text(errors="ignore")
+            for i, w in enumerate(split_for_extraction(body)):
+                if w.count("{{") != w.count("}}"):
+                    hard["window_splits_new_matter_marker"].append(
+                        f"{laws[mid]['law_number_display']} window {i + 1}")
+    except Exception:                                    # noqa: BLE001
+        pass
+
     # --- report -------------------------------------------------------------
     result = {
         "generated": today.isoformat(),

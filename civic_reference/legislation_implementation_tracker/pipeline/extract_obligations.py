@@ -541,16 +541,43 @@ def call_claude(client, model: str, prompt: str, retry_note: str | None = None):
 # and extracting each window preserves them. The threshold is generous: only a
 # dozen laws in the corpus are anywhere near it, so ordinary laws still make
 # exactly one call and behave as before.
-CHUNK_THRESHOLD = 150_000
-CHUNK_TARGET = 120_000
+CHUNK_THRESHOLD = 400_000
+CHUNK_TARGET = 350_000
+CHUNK_OVERLAP = 5_000      # a duty straddling a cut must appear whole in one window
+MAX_WINDOWS = 24           # beyond this, stop and shout rather than spend
 _BILL_SECTION = re.compile(r"(?m)^\s*(?:§+\s*\d+|Section\s+\d+)\b")
 
 
-def split_for_extraction(text: str, target: int = CHUNK_TARGET) -> list[str]:
-    """Split a long law at its own section boundaries into <=target windows.
+def _safe_cut(text: str, pos: int) -> int:
+    """Move a cut forward off any position that would split a {{...}} marker."""
+    opened = text.rfind("{{", 0, pos)
+    if opened != -1 and text.find("}}", opened) >= pos:
+        closed = text.find("}}", opened)
+        return closed + 2 if closed != -1 else pos
+    return pos
 
-    Falls back to a hard split only if a single section exceeds the target,
-    which happens with appended code recodifications.
+
+def _safe_start(text: str, pos: int) -> int:
+    """Move a window start back so it cannot begin inside a {{...}} marker.
+
+    The overlap moves each start earlier, which can land it between "{{" and
+    "}}" even when the cut itself was safe. That leaves a window holding a
+    closing marker with no opening one, and the extractor then reads marked
+    new matter as ordinary text.
+    """
+    if pos <= 0:
+        return 0
+    opened = text.rfind("{{", 0, pos)
+    closed = text.rfind("}}", 0, pos)
+    return opened if opened > closed else pos
+
+
+def split_for_extraction(text: str, target: int = CHUNK_TARGET) -> list[str]:
+    """Split a long law at its own section boundaries into overlapping windows.
+
+    Windows overlap so a duty written across a cut still appears whole in one
+    of them, and no cut is allowed to land inside a new-matter marker pair,
+    which would strip the very signal the prompt relies on.
     """
     if len(text) <= CHUNK_THRESHOLD:
         return [text]
@@ -558,18 +585,25 @@ def split_for_extraction(text: str, target: int = CHUNK_TARGET) -> list[str]:
     if bounds[0] != 0:
         bounds.insert(0, 0)
     bounds.append(len(text))
-    chunks, start = [], bounds[0]
+    cuts, start = [], bounds[0]
     for i in range(1, len(bounds)):
         if bounds[i] - start >= target:
-            piece = text[start:bounds[i]]
-            while len(piece) > target * 1.5:      # one giant section
-                chunks.append(piece[:target])
-                piece = piece[target:]
-            chunks.append(piece)
+            cuts.append(_safe_cut(text, bounds[i]))
             start = bounds[i]
-    if start < len(text):
-        chunks.append(text[start:])
-    return [c for c in chunks if c.strip()]
+    chunks, prev = [], 0
+    for c in cuts:
+        chunks.append(text[_safe_start(text, max(0, prev - CHUNK_OVERLAP)):c])
+        prev = c
+    chunks.append(text[_safe_start(text, max(0, prev - CHUNK_OVERLAP)):])
+    # a single section larger than the target still has to be broken up
+    out = []
+    for c in chunks:
+        while len(c) > target * 1.6:
+            cut = _safe_cut(c, target)
+            out.append(c[:cut])
+            c = c[_safe_start(c, max(0, cut - CHUNK_OVERLAP)):]
+        out.append(c)
+    return [c for c in out if c.strip()]
 
 
 def extract_law(client, model: str, law: dict, text: str,
@@ -593,9 +627,24 @@ def extract_law(client, model: str, law: dict, text: str,
     if len(windows) > 1:
         log.info(f"  long law ({len(text):,} chars): extracting in "
                  f"{len(windows)} section windows")
+        if len(windows) > MAX_WINDOWS:
+            log.error("%s needs %d windows, above MAX_WINDOWS=%d: refusing to "
+                      "extract rather than spend unbounded tokens. Split the law "
+                      "or raise the cap deliberately.",
+                      law["matter_id"], len(windows), MAX_WINDOWS)
+            return {"matter_id": law["matter_id"], "model": model,
+                    "extracted_at": datetime.now().isoformat(timespec="seconds"),
+                    "effective_clause": {"text": None},
+                    "effective_date": law.get("effective_date"),
+                    "windows_refused": len(windows), "obligations": []}
         merged, seen = [], set()
+        eff_clause, eff_date = None, None
         for wi, window in enumerate(windows, 1):
             sub = extract_law(client, model, law, window, lookup, agencies_by_canon)
+            if eff_clause is None:
+                eff_clause = (sub.get("effective_clause") or {}).get("text")
+            if eff_date is None:
+                eff_date = sub.get("effective_date")
             for o in sub.get("obligations", []):
                 key = (normalize_quote(o.get("quote", ""))[:160], o.get("citation", ""))
                 if key in seen:
@@ -607,8 +656,8 @@ def extract_law(client, model: str, law: dict, text: str,
         return {"matter_id": law["matter_id"],
                 "model": model,
                 "extracted_at": datetime.now().isoformat(timespec="seconds"),
-                "effective_clause": {"text": None},
-                "effective_date": law.get("effective_date"),
+                "effective_clause": {"text": eff_clause},
+                "effective_date": eff_date or law.get("effective_date"),
                 "windows": len(windows),
                 "obligations": merged}
 
