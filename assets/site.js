@@ -231,20 +231,12 @@
     var memLink = document.createElement('a');
     memLink.href = '/members/';
     memLink.textContent = 'Memberships';
-    var xLink = document.createElement('a');
-    xLink.href = 'https://x.com/TalR24';
-    xLink.target = '_blank';
-    xLink.rel = 'noopener';
-    xLink.textContent = 'X';
-    var plainLinks = footerNav.querySelectorAll('a:not(.footer-support)');
-    var lastPlain = plainLinks.length ? plainLinks[plainLinks.length - 1] : null;
-    if (lastPlain) {
-      var anchor = lastPlain.nextSibling;
-      footerNav.insertBefore(memLink, anchor);
-      footerNav.insertBefore(xLink, anchor);
+    // X lives in the static social icon row (Aug 2026); do not inject it here.
+    var firstIcon = footerNav.querySelector('a[title]');
+    if (firstIcon) {
+      footerNav.insertBefore(memLink, firstIcon);
     } else {
       footerNav.appendChild(memLink);
-      footerNav.appendChild(xLink);
     }
   }
 
