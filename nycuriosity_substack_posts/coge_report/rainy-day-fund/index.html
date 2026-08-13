@@ -210,7 +210,7 @@
         </ul>
       </div>
       <div class="c-plot c-plot--scroll">
-        <svg id="taxChart" viewBox="0 0 1000 430" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Column chart of New York City tax revenue by fiscal year from 2017 to 2026, rising from $54.6 billion to $81.3 billion with a drop to $58.6 billion in fiscal 2021, and the 12 percent reserves target shown as a dark segment at the base of each column."></svg>
+        <svg id="taxChart" viewBox="0 0 1000 480" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Column chart of New York City tax revenue by fiscal year from 2017 to 2026, rising from $54.6 billion to $81.3 billion with a drop to $58.6 billion in fiscal 2021, and the 12 percent reserves target shown as a dark segment at the base of each column."></svg>
       </div>
       <figcaption class="c-foot">
         <div class="c-foot-text">
@@ -291,7 +291,9 @@
     { fy: 2025, v: 77.0 }, { fy: 2026, v: 81.3 }
   ];
   var mk = maker('taxChart');
-  var PADL = 62, PADR = 34, PADT = 46, PADB = 46, VW = 1000, VH = 430;
+  /* PADT reserves a band above the plot for the reading-note callout, so the
+     box can never overlap a gridline, a column or the FY21 annotation. */
+  var PADL = 62, PADR = 34, PADT = 96, PADB = 46, VW = 1000, VH = 480;
   var plotW = VW - PADL - PADR, plotH = VH - PADT - PADB, YMAX = 90;
   var colW = plotW / TAX.length, barW = Math.min(64, colW * 0.62);
   var yFor = function (v) { return PADT + plotH - (v / YMAX) * plotH; };
@@ -311,9 +313,16 @@
   /* the FY21 shock, drawn against the target it would have to cover */
   var x20 = PADL + colW * 3 + colW / 2, x21 = PADL + colW * 4 + colW / 2;
   mk('line', { x1: x20, y1: yFor(63.4), x2: x21, y2: yFor(63.4), class: 'c-dash-ref', style: 'stroke:#c2410c;stroke-width:1.5' });
-  mk('text', { x: (x20 + x21) / 2, y: yFor(63.4) - 26, 'text-anchor': 'middle', class: 'c-annot', style: 'fill:#c2410c' }, 'FY21 revenue fell');
-  mk('text', { x: (x20 + x21) / 2, y: yFor(63.4) - 13, 'text-anchor': 'middle', class: 'c-annot', style: 'fill:#c2410c' }, '$4.8B');
-  mk('text', { x: PADL, y: PADT - 22, 'text-anchor': 'start', class: 'c-annot', style: 'fill:#1e3a8a;font-size:11px' }, 'dark segment = the 12% reserves target Question 5 would set');
+  /* one line, lifted clear of the 63.4 and 58.6 value labels below it */
+  mk('text', { x: (x20 + x21) / 2, y: yFor(63.4) - 24, 'text-anchor': 'middle', class: 'c-annot',
+               style: 'fill:#c2410c' }, 'FY21 revenue fell $4.8B');
+  /* reading note, boxed so it reads as chart furniture rather than stray text */
+  mk('rect', { x: PADL, y: 18, width: 542, height: 46, rx: 8,
+               fill: '#eff6ff', stroke: '#bfdbfe', 'stroke-width': 1 });
+  mk('rect', { x: PADL + 16, y: 33, width: 15, height: 15, rx: 3, fill: '#1e3a8a' });
+  mk('text', { x: PADL + 42, y: 46, 'text-anchor': 'start', class: 'c-val',
+               style: 'fill:#1e3a8a;font-size:12.5px' },
+     "Each column's dark base is that year's 12% target, drawn to scale");
 
 </script>
 
