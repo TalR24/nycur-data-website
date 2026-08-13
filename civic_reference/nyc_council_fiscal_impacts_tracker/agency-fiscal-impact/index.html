@@ -402,6 +402,13 @@ let FILTER_OPTIONS = {};
 let activeMetric = 'net';
 let chart = null;
 
+// Axis labels use the dataset's abbreviations; these override entries whose
+// "abbreviation" in the data is a spelled-out name too long for the axis.
+const SHORT_LABEL = {
+  'NYC Office of Management and Budget / Pension Contributions': 'OMB / Pensions',
+};
+let FULL_NAME = {};
+
 const METRIC_CONFIG = {
   net:         { key: 'net_fiscal_impact',  label: 'Net Fiscal Impact',   sub: 'Net fiscal impact (revenue − operational − capital). Negative = net cost to the city.' },
   expenditure: { key: 'total_expenditure',  label: 'Operational Expense', sub: 'Total operational expenditure mandated by filtered legislation, by implementing agency.' },
@@ -417,6 +424,12 @@ document.addEventListener('DOMContentLoaded', () => {
     .then(data => {
       ALL_RECORDS = data.records;
       FILTER_OPTIONS = data.filter_options;
+      ALL_RECORDS.forEach(r => {
+        (r.agencies_abbrev || []).forEach((a, i) => {
+          const f = (r.agencies_full || [])[i];
+          if (a && f && !FULL_NAME[a]) FULL_NAME[a] = f;
+        });
+      });
       populateFilters();
       render();
     });
@@ -432,7 +445,7 @@ function populateFilters() {
 
   MS.agency = new MSFilter('ms-agency', {
     label: 'Agency', allLabel: 'All agencies', sort: 'alpha', onChange: render,
-    options: opts(agencies)
+    options: agencies.map(v => ({v: v, l: SHORT_LABEL[v] || v}))
   });
   MS.committee = new MSFilter('ms-committee', {
     label: 'Committee', allLabel: 'All committees', sort: 'alpha', onChange: render,
@@ -563,7 +576,8 @@ function render() {
   canvas.style.display = 'block';
   empty.style.display = 'none';
 
-  const labels = pairs.map(([ag]) => ag);
+  const keys   = pairs.map(([ag]) => ag);
+  const labels = keys.map(ag => SHORT_LABEL[ag] || ag);
   const values = pairs.map(([, d]) => d.total);
   const agData  = Object.fromEntries(pairs);
 
@@ -595,9 +609,15 @@ function render() {
         legend: { display: false },
         tooltip: {
           callbacks: {
-            title: ctx => ctx[0].label,
+            title: ctx => {
+              const ag   = keys[ctx[0].dataIndex];
+              const full = FULL_NAME[ag] || ag;
+              const disp = SHORT_LABEL[ag] || ag;
+              if (full === disp) return full;
+              return (full.length + disp.length > 40) ? [full, `(${disp})`] : `${full} (${disp})`;
+            },
             label: ctx => {
-              const ag = ctx.label;
+              const ag = keys[ctx.dataIndex];
               const d  = agData[ag];
               return [
                 `${cfg.label}: ${fmtFull(d.total)}`,
@@ -639,6 +659,33 @@ document.querySelectorAll('.metric-btn').forEach(btn => {
     activeMetric = btn.dataset.metric;
     render();
   });
+});
+
+// Show the tooltip when hovering the x-axis labels too — Chart.js only fires
+// its own hover inside the plot area, and the axis strip sits below it.
+const chartCanvas = document.getElementById('myChart');
+let axisHoverIdx = null;
+chartCanvas.addEventListener('mousemove', evt => {
+  if (!chart) return;
+  const rect = chartCanvas.getBoundingClientRect();
+  const x = evt.clientX - rect.left, y = evt.clientY - rect.top;
+  const area = chart.chartArea;
+  if (!(y > area.bottom && x >= area.left && x <= area.right)) { axisHoverIdx = null; return; }
+  const idx = Math.round(chart.scales.x.getValueForPixel(x));
+  if (idx < 0 || idx >= chart.data.labels.length || idx === axisHoverIdx) return;
+  axisHoverIdx = idx;
+  const el = chart.getDatasetMeta(0).data[idx];
+  if (!el) return;
+  chart.setActiveElements([{datasetIndex: 0, index: idx}]);
+  chart.tooltip.setActiveElements([{datasetIndex: 0, index: idx}], {x: el.x, y: area.bottom});
+  chart.update();
+});
+chartCanvas.addEventListener('mouseleave', () => {
+  if (!chart) return;
+  axisHoverIdx = null;
+  chart.setActiveElements([]);
+  chart.tooltip.setActiveElements([], {x: 0, y: 0});
+  chart.update();
 });
 
 document.getElementById('reset-btn').addEventListener('click', () => {
