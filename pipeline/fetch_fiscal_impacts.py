@@ -154,7 +154,9 @@ def create_session() -> requests.Session:
     return s
 
 
-def search_legistar_all(session: requests.Session) -> list[tuple[str, str]]:
+def search_legistar_all(
+    session: requests.Session, max_retries: int = 3
+) -> list[tuple[str, str]]:
     """
     Search Legistar for ALL matters with 'Fiscal Impact Statement' in attachments,
     across all years, handling pagination.
@@ -164,98 +166,118 @@ def search_legistar_all(session: requests.Session) -> list[tuple[str, str]]:
     We therefore search with 'All Years' and paginate through all result pages.
     Pagination uses ASP.NET __doPostBack with the RadGrid pager event targets.
 
+    Legistar goes unresponsive for stretches (every scheduled CI run May–Aug 2026
+    died on one timeout here), so the whole search retries with long waits; after
+    the last attempt the Timeout propagates so the Action fails loudly rather
+    than committing an empty result.
+
     Returns list of (matter_id, guid) tuples, deduplicated.
     """
     log.info("Searching Legistar for all fiscal impact statement attachments ...")
 
-    r = session.get(f"{BASE_URL}/Legislation.aspx", timeout=20)
-    r.raise_for_status()
+    for attempt in range(max_retries + 1):
+        try:
+            r = session.get(f"{BASE_URL}/Legislation.aspx", timeout=60)
+            r.raise_for_status()
 
-    vs_match  = re.search(r'id="__VIEWSTATE"\s+value="([^"]+)"', r.text)
-    vsg_match = re.search(r'id="__VIEWSTATEGENERATOR"\s+value="([^"]+)"', r.text)
-    if not vs_match:
-        log.error("Could not find __VIEWSTATE on Legistar search page")
-        return []
+            vs_match  = re.search(r'id="__VIEWSTATE"\s+value="([^"]+)"', r.text)
+            vsg_match = re.search(r'id="__VIEWSTATEGENERATOR"\s+value="([^"]+)"', r.text)
+            if not vs_match:
+                log.error("Could not find __VIEWSTATE on Legistar search page")
+                return []
 
-    # Initial search POST — "All Years" returns all available bills
-    post_data = {
-        "__VIEWSTATE":          vs_match.group(1),
-        "__VIEWSTATEGENERATOR": vsg_match.group(1) if vsg_match else "",
-        "ctl00$ContentPlaceHolder1$txtSearch":    "Fiscal Impact Statement",
-        "ctl00$ContentPlaceHolder1$lstYears":     "All Years",
-        "ctl00$ContentPlaceHolder1$lstTypeBasic": "All Types",
-        "ctl00$ContentPlaceHolder1$chkAttachments": "on",
-        "ctl00$ContentPlaceHolder1$btnSearch":    "Search Legislation",
-    }
+            # Initial search POST — "All Years" returns all available bills
+            post_data = {
+                "__VIEWSTATE":          vs_match.group(1),
+                "__VIEWSTATEGENERATOR": vsg_match.group(1) if vsg_match else "",
+                "ctl00$ContentPlaceHolder1$txtSearch":    "Fiscal Impact Statement",
+                "ctl00$ContentPlaceHolder1$lstYears":     "All Years",
+                "ctl00$ContentPlaceHolder1$lstTypeBasic": "All Types",
+                "ctl00$ContentPlaceHolder1$chkAttachments": "on",
+                "ctl00$ContentPlaceHolder1$btnSearch":    "Search Legislation",
+            }
 
-    r2 = session.post(f"{BASE_URL}/Legislation.aspx", data=post_data, timeout=120)
-    r2.raise_for_status()
+            r2 = session.post(f"{BASE_URL}/Legislation.aspx", data=post_data, timeout=120)
+            r2.raise_for_status()
 
-    seen:   set[str]           = set()
-    unique: list[tuple[str, str]] = []
+            seen:   set[str]           = set()
+            unique: list[tuple[str, str]] = []
 
-    def _extract_matters(html: str) -> None:
-        for mid, guid in re.findall(
-            r"LegislationDetail\.aspx\?ID=(\d+)&(?:amp;)?GUID=([A-F0-9\-]+)", html
-        ):
-            if mid not in seen:
-                seen.add(mid)
-                unique.append((mid, guid))
+            def _extract_matters(html: str) -> None:
+                for mid, guid in re.findall(
+                    r"LegislationDetail\.aspx\?ID=(\d+)&(?:amp;)?GUID=([A-F0-9\-]+)", html
+                ):
+                    if mid not in seen:
+                        seen.add(mid)
+                        unique.append((mid, guid))
 
-    _extract_matters(r2.text)
-    log.info(f"  Page 1: {len(unique)} matters")
+            _extract_matters(r2.text)
+            log.info(f"  Page 1: {len(unique)} matters")
 
-    # Paginate: find all numeric page links beyond page 1 in the pager.
-    # The RadGrid pager renders links as:
-    #   __doPostBack('ctl00$...$ctl04','')  → page 2
-    #   __doPostBack('ctl00$...$ctl06','')  → page 3  etc.
-    # We detect them by finding the pager HTML and extracting event targets
-    # for pages 2, 3, … until no new pages are found.
-    current_html = r2.text
-    page_num = 1
+            # Paginate: find all numeric page links beyond page 1 in the pager.
+            # The RadGrid pager renders links as:
+            #   __doPostBack('ctl00$...$ctl04','')  → page 2
+            #   __doPostBack('ctl00$...$ctl06','')  → page 3  etc.
+            # We detect them by finding the pager HTML and extracting event targets
+            # for pages 2, 3, … until no new pages are found.
+            current_html = r2.text
+            page_num = 1
 
-    while True:
-        # Find pager link for the next page (page_num + 1).
-        # Pager links are <a href="javascript:__doPostBack(...)"><span>N</span></a>
-        # The current page has class="rgCurrentPage" with no href navigation.
-        next_page = page_num + 1
-        # Match: href with doPostBack target followed by <span>{next_page}</span>
-        pattern = (
-            r"doPostBack\(&#39;([^&]+)&#39;,&#39;&#39;\)"
-            r"[^<]*<span>" + str(next_page) + r"</span>"
-        )
-        m = re.search(pattern, current_html)
-        if not m:
-            break  # no more pages
+            while True:
+                # Find pager link for the next page (page_num + 1).
+                # Pager links are <a href="javascript:__doPostBack(...)"><span>N</span></a>
+                # The current page has class="rgCurrentPage" with no href navigation.
+                next_page = page_num + 1
+                # Match: href with doPostBack target followed by <span>{next_page}</span>
+                pattern = (
+                    r"doPostBack\(&#39;([^&]+)&#39;,&#39;&#39;\)"
+                    r"[^<]*<span>" + str(next_page) + r"</span>"
+                )
+                m = re.search(pattern, current_html)
+                if not m:
+                    break  # no more pages
 
-        event_target = m.group(1)
-        vs2  = re.search(r'id="__VIEWSTATE"\s+value="([^"]+)"', current_html)
-        vsg2 = re.search(r'id="__VIEWSTATEGENERATOR"\s+value="([^"]+)"', current_html)
+                event_target = m.group(1)
+                vs2  = re.search(r'id="__VIEWSTATE"\s+value="([^"]+)"', current_html)
+                vsg2 = re.search(r'id="__VIEWSTATEGENERATOR"\s+value="([^"]+)"', current_html)
 
-        page_data = {
-            "__VIEWSTATE":          vs2.group(1) if vs2 else "",
-            "__VIEWSTATEGENERATOR": vsg2.group(1) if vsg2 else "",
-            "__EVENTTARGET":        event_target,
-            "__EVENTARGUMENT":      "",
-            "ctl00$ContentPlaceHolder1$txtSearch":    "Fiscal Impact Statement",
-            "ctl00$ContentPlaceHolder1$lstYears":     "All Years",
-            "ctl00$ContentPlaceHolder1$lstTypeBasic": "All Types",
-            "ctl00$ContentPlaceHolder1$chkAttachments": "on",
-        }
-        rn = session.post(f"{BASE_URL}/Legislation.aspx", data=page_data, timeout=120)
-        rn.raise_for_status()
+                page_data = {
+                    "__VIEWSTATE":          vs2.group(1) if vs2 else "",
+                    "__VIEWSTATEGENERATOR": vsg2.group(1) if vsg2 else "",
+                    "__EVENTTARGET":        event_target,
+                    "__EVENTARGUMENT":      "",
+                    "ctl00$ContentPlaceHolder1$txtSearch":    "Fiscal Impact Statement",
+                    "ctl00$ContentPlaceHolder1$lstYears":     "All Years",
+                    "ctl00$ContentPlaceHolder1$lstTypeBasic": "All Types",
+                    "ctl00$ContentPlaceHolder1$chkAttachments": "on",
+                }
+                rn = session.post(f"{BASE_URL}/Legislation.aspx", data=page_data, timeout=120)
+                rn.raise_for_status()
 
-        before = len(unique)
-        _extract_matters(rn.text)
-        added = len(unique) - before
-        log.info(f"  Page {next_page}: {added} new matters (running total: {len(unique)})")
+                before = len(unique)
+                _extract_matters(rn.text)
+                added = len(unique) - before
+                log.info(f"  Page {next_page}: {added} new matters (running total: {len(unique)})")
 
-        current_html = rn.text
-        page_num = next_page
-        time.sleep(1)
+                current_html = rn.text
+                page_num = next_page
+                time.sleep(1)
 
-    log.info(f"  -> {len(unique)} total matters found across all pages")
-    return unique
+            log.info(f"  -> {len(unique)} total matters found across all pages")
+            return unique
+
+        except requests.exceptions.Timeout:
+            if attempt < max_retries:
+                wait = 120 * (attempt + 1)
+                log.warning(
+                    f"  Legistar timed out (attempt {attempt+1}/{max_retries+1}) — retrying in {wait}s"
+                )
+                time.sleep(wait)
+            else:
+                log.error(f"  Legistar timed out on all {max_retries+1} attempts — failing run")
+                raise
+
+    return []
 
 
 def search_legistar_advanced_year(
