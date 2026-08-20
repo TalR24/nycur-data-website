@@ -1,0 +1,63 @@
+# Monthly data-quality report for the legislation trackers — the
+# standing decay detector. Runs the existing regression suite
+# (validate_obligations.py) + the DORIS external check, commits a dated
+# report with a month-over-month diff to
+# civic_reference/legislation_implementation_tracker/quality_reports/,
+# and emails Tal the headline + delta. No API keys needed; DORIS check
+# hits NYC Open Data anonymously.
+#
+# Scheduled the 3rd at 14:00 UTC: AFTER the 1st-of-month implementation
+# refresh (14:40) and fiscal refresh (15:23), so it measures the fresh
+# data. A hard failure or rising soft count = run a quality loop
+# (database-expansion-playbook skill).
+
+name: monthly-quality-report
+
+on:
+  schedule:
+    - cron: "0 14 3 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  quality-report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install requirements
+        run: pip install requests
+
+      - name: Run quality report
+        working-directory: civic_reference/legislation_implementation_tracker
+        run: python3 pipeline/monthly_quality_report.py
+
+      - name: Commit report
+        run: |
+          git config user.name "quality-report-bot"
+          git config user.email "actions@github.com"
+          git add civic_reference/legislation_implementation_tracker/quality_reports/
+          if git diff --cached --quiet; then
+            echo "No report changes."
+          else
+            git commit -m "[bot] Monthly trackers quality report $(date -u +%Y-%m-%d)"
+            git pull --rebase origin main
+            git push origin main
+          fi
+
+      - name: Email summary to Tal
+        continue-on-error: true
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+        run: python3 civic_reference/legislation_implementation_tracker/pipeline/email_quality_summary.py
