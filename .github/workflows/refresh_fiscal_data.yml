@@ -61,5 +61,9 @@ jobs:
           else
             COUNT=$(python3 -c "import json; d=json.load(open('civic_reference/nyc_council_fiscal_impacts_tracker/data/fiscal_impacts.json')); print(d['metadata']['total_records'])")
             git commit -m "data: refresh fiscal impacts — $COUNT records [$(date -u '+%Y-%m-%d')]"
+            # The pipeline runs 30-40 min; other pushes can land on main in that
+            # window and reject a plain push (happened Aug 20 2026). Rebase our
+            # single data commit on top of whatever arrived, then push.
+            git pull --rebase origin main
             git push
           fi
