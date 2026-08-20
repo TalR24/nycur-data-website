@@ -6,17 +6,23 @@ Hard failures: **0** (clean)
 ```
 validating 8,185 obligations across 2,138 laws
 
-HARD FAILURES: 0
+HARD FAILURES: 1933
+   1933  law_text_missing
+           Local Law 126 of 2026: 11 obligations, no cached text
+           Local Law 125 of 2026: 1 obligations, no cached text
+           Local Law 124 of 2026: 3 obligations, no cached text
+           Local Law 122 of 2026: 4 obligations, no cached text
+           Local Law 121 of 2026: 17 obligations, no cached text
+           Local Law 120 of 2026: 3 obligations, no cached text
+           ... and 1927 more
 
 SOFT COUNTS (tracked, not failures):
      24  fewer_reports_than_doris_lists
-      8  law_text_at_or_over_cap
      24  legistar_says_sunset_but_none_parsed
-    100  quote_not_in_law_text
     663  quotes_reprinted_text
      40  same_generic_actor_multiple_agencies
 
-wrote /Users/troded/nycur/data_website/civic_reference/legislation_implementation_tracker/quality_reports/quality_report_2026-08-20.validator.json
+wrote /home/runner/work/nycur-data-website/nycur-data-website/civic_reference/legislation_implementation_tracker/quality_reports/quality_report_2026-08-20.validator.json
 ```
 
 ## validate_against_doris.py
@@ -35,6 +41,4 @@ COMPLIANCE, per DORIS, for reports created by in-scope laws:
   current                      375
   overdue                      337
   no schedule in DORIS         239
-/Users/troded/Library/Python/3.9/lib/python/site-packages/urllib3/__init__.py:35: NotOpenSSLWarning: urllib3 v2 only supports OpenSSL 1.1.1+, currently the 'ssl' module is compiled with 'LibreSSL 2.8.3'. See: https://github.com/urllib3/urllib3/issues/3020
-  warnings.warn(
 ```
