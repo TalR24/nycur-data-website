@@ -24,12 +24,12 @@ The public pages:
 | **Platform** | `…/platform/` | Pillar landing: playbooks (Sponsor Checklist live, Event Playbook pending card) + prototypes & tools cards (grocery siting, summons navigator, housing approvals navigator, TIDELINE with builder credit) |
 | **Policy & Programs** | `…/policy-programs/` | Pillar landing: Substack + Events explore bubbles (moved from the old hub) + subscribe panel |
 | **About Us** | `…/about/` | Team page: SCE Substack row + the four team members (Henry Grunzweig, Tal Roded, Jeremie Ponak, Sourabh Chakraborty) with Substack/LinkedIn buttons, and a Get in Touch mailto panel (statecapacityecosystem@gmail.com) |
-| **Directory** | `…/ecosystem/directory/` | (see below) |
-| **Affinity Network** | `…/ecosystem/network/` | (see below) |
-| **Connect** | `…/ecosystem/connect/` | (see below) |
-| **Methodology** | `…/ecosystem/methodology/` | (see below) |
-| **Events** | `…/policy-programs/events/` | (see below; incl. `civic-tech-build-night/`, its `tideline/`, and `sponsor-checklist/`) |
-| **Substack** | `…/policy-programs/substack/` | (see below; incl. `mamdani-ai-priorities/` + nested prototypes and `nyc-grocery-access-site-prototype/`) |
+| **Directory** | `…/databases/organization-directory/` | (see below) |
+| **Affinity Network** | `…/databases/affinity-map/` | (see below) |
+| **Connect** | `…/databases/opportunities-connections/` | (see below) |
+| **Methodology** | `…/databases/methodology/` | (see below) |
+| **Events** | `…/events/` | (see below; incl. `civic-tech-build-night/`, its `tideline/`, and `sponsor-checklist/`) |
+| **Substack** | `…/community/substack/` | (see below; incl. `mamdani-ai-priorities/` + nested prototypes and `nyc-grocery-access-site-prototype/`) |
 | **Directory** | `…/directory/` | Filterable, searchable table of every org. Semantic search via TF-IDF |
 | **Connect** | `…/connect/` | Directory of people and orgs indexed by problem, role, and help-type. 13-field self-submission form modal (mailto + clipboard). Intro request modal for facilitated contacts. Separate dataset from the org pages. |
 | **Affinity Network** | `…/network/` | D3 force-directed graph + natural-language semantic search with geographic boosting |
@@ -56,19 +56,28 @@ The public pages:
 ```
 data_website/state_capacity_ecosystem/
 ├── README.md                        ← THIS FILE
-├── index.html                       ← Home: hero (mission/vision) + 4 pillar strips + ribbon nav. No JS.
-├── ecosystem/
-│   └── index.html                   ← Ecosystem Hub pillar landing (old hub content: Mad Libs
+├── index.html                       ← Home: hero (mission/vision) + 3 section strips + ribbon nav. No JS.
+├── databases/
+│   └── index.html                   ← Ecosystem Databases landing (old hub content: Mad Libs
 │                                      search modal with ?search=1 auto-open, CTAs, 3 explore
 │                                      bubbles, methodology + feedback panels)
+├── events/
+│   └── index.html                   ← Events landing (Hackathons + Sponsors Checklist cards,
+│                                      kinds-of-events, host/sponsor panel)
+├── events/hackathons/
+│   └── index.html                   ← Hackathons hub: one card per hackathon
 ├── community/
-│   └── index.html                   ← Community pillar landing (action cards, Slack interest
-│                                      panel, organizers, feedback)
-├── platform/
-│   └── index.html                   ← Platform pillar landing (playbooks + prototypes cards)
-├── policy-programs/
-│   └── index.html                   ← Policy & Programs pillar landing (Substack + Events
-│                                      bubbles, subscribe panel)
+│   └── index.html                   ← Community & Platform landing (Slack/Substack/Playbooks/
+│                                      Proof Points cards + get-involved row + feedback)
+├── community/slack/
+│   └── index.html                   ← Slack page: live join CTA (invite link) + plug-in cards
+├── community/playbooks/
+│   └── index.html                   ← Playbooks hub (Sponsors Checklist card + pending Event Playbook)
+├── community/proof-points/
+│   └── index.html                   ← Proof Points hub: cards linking the 4 prototypes at their
+│                                      canonical URLs (grocery, summons, housing, TIDELINE)
+├── ecosystem/ platform/ policy-programs/
+│                                    ← redirect stubs at the Aug-3-pillar-era URLs (whole trees)
 ├── data/
 │   ├── directory.csv                ← Canonical org source (replace to refresh)
 │   ├── build_affinity.py            ← CSV → affinity.json + directory.json + affinity_search.json
@@ -82,25 +91,25 @@ data_website/state_capacity_ecosystem/
 │   └── connect.json                 ← Flat people bundle for the /connect/ page
 ├── about/
 │   └── index.html                   ← About Us: team rows + Get in Touch mailto panel
-├── ecosystem/directory/
+├── databases/organization-directory/
 │   └── index.html                   ← Filterable table. Reads /state_capacity_ecosystem/data/ JSON
-├── ecosystem/network/
+├── databases/affinity-map/
 │   └── index.html                   ← D3 force-directed graph + NL search bar.
 │                                     Reads /state_capacity_ecosystem/data/ JSON.
 │                                     Supports ?id=N deep-link from directory.
-├── ecosystem/connect/
+├── databases/opportunities-connections/
 │   └── index.html                   ← Connect directory + 9-column table + 12-field self-submission
 │                                     form modal + intro request modal. Reads connect.json.
 │                                     Submissions post to Airtable via REST API.
-├── ecosystem/methodology/
+├── databases/methodology/
 │   └── index.html                   ← Long-form scoring + taxonomy write-up
-├── directory/ connect/ network/ methodology/ events/ substack/
-│                                    ← 13 meta-refresh redirect stubs at the pre-Aug-2026 URLs
+├── directory/ connect/ network/ methodology/ substack/ …
+│                                    ← meta-refresh redirect stubs at all pre-restructure URLs
 │                                      (also nested: events/civic-tech-build-night{,/tideline},
 │                                      events/sponsor-checklist, substack/mamdani-ai-priorities
 │                                      {,/summons-navigator,/housing-approval-pathway},
 │                                      substack/nyc-grocery-access-site-prototype)
-└── policy-programs/events/
+└── events/
     ├── index.html                   ← Events hub: one card per event
     ├── sponsor-checklist/
     │   └── index.html               ← Hackathon sponsor responsibility checklist
@@ -387,6 +396,7 @@ These were arrived at via user feedback over multiple sessions. Don't reintroduc
 24. **The database is attributed to "the SCE team", never to Henry Grunzweig personally** (Tal, Aug 2026). Public copy must not say "Henry Grunzweig's database"; the methodology credits line reads "built and curated by the State Capacity Ecosystem (SCE) team" (Tal keeps the visualization-layer credit). Henry's name still appears as a team member on About Us and in event judge/partner contexts.
 25. **SCE brand palette + logo (Aug 2026, from the team's decks).** Chrome pages use the deck palette (cream `#F4EFE4` / charcoal `#1A1918` / gold `#D4A853` / bronze `#8A5F1E` / warm grays), the `assets/sce_logo.png` network glyph as favicon + ribbon + hero logo, and warm-toned strip/bubble SVGs. The decks' body font is Calibri (an Office default), so the site keeps Inter/Roboto Mono. SCE pages deliberately deviate from the NYCuriosity site-wide `#FF6319` breadcrumb/accent convention. Do not retheme data-encoding colors (see the token section).
 26. **No "Buy Me a Coffee" / Support button in the HEADER of the subpages.** Removed July 2026 at user request from the header (`.header-actions`) of every subpage: directory, connect, events, methodology, network. Do NOT re-add it to these subpage headers — even though the shared site-chrome convention (and the `reference_website_chrome.md` memory) puts a Support button in the header elsewhere, this tool's subpages are a deliberate exception. The **footer** support link (`.footer-support`) stays. The hub `index.html` was left untouched.
+27. **Section architecture (Aug 19 2026, supersedes #23's pillar layout and the path references in #19/#22).** The site's four sections are **Events** (`events/`: `hackathons/` hub with `civic-tech-build-night/` nested, `sponsors-checklist/`), **Ecosystem Databases** (`databases/`: `organization-directory/`, `opportunities-connections/`, `affinity-map/`, `methodology/`; the landing keeps the Mad Libs search modal + `?search=1`), **Community & Platform** (`community/`: `slack/` (live invite link), `substack/` (hub + post pages + as-is prototypes), `playbooks/`, `proof-points/` card hub), and **About Us** (`about/`). Display names match URLs and are used identically in nav, breadcrumbs, cards, and heroes: "Organization Directory", "Opportunities & Connections" (the form/feature keeps the proper noun "Connect": "Add Yourself to Connect"), "Affinity Map", "Sponsors Checklist", "Proof Points". Demo Nights and Salons/Meet-ups are deliberately absent from nav until one is actually scheduled (Tal, Aug 19 2026). Prototypes stay at their canonical URLs under their post/event pages; Proof Points links to them, never copies. Redirect stubs cover every vacated URL (pillar-era `ecosystem/`, `platform/`, `policy-programs/` trees) and all older stubs were retargeted so nothing chains. The ribbon dropdowns list exactly the sub-items above; add new pages to the ribbon block on every chrome page (copy-paste identical, root-absolute).
 
 ---
 
@@ -558,6 +568,7 @@ These are concrete, half-done tasks, not parking-lot ideas. Pick them up when th
 
 | Date | Commit | Summary |
 |---|---|---|
+| 2026-08-19 | — | **Site restructure into Events / Ecosystem Databases / Community & Platform / About Us** (decision #27): trees moved with `git mv`, new landings + Hackathons hub + Slack (live invite wired) + Playbooks + Proof Points pages, names aligned with URLs everywhere (Organization Directory, Opportunities & Connections, Affinity Map, Sponsors Checklist), new ribbon on all chrome pages, homepage strips rebuilt, 24 new redirect stubs + 13 legacy stubs retargeted, `update_stats.py`/workflow/sitemap/data-site chrome updated. "Join our Slack" added to every cross-promo strip and the Connect success nudge (closes decision #21's no-Community-link caveat). |
 | 2026-08-11 | — | **Fixed `update_stats.py` paths** broken by the Jul 29 move to top level: it runs with `working-directory: state_capacity_ecosystem`, so `data_website/index.html` and its README are ONE level up (`../`), not two. Latent bug — the step only runs when `directory.csv` changes, so the next org refresh would have crashed before the commit step. Also retargeted the methodology path to `ecosystem/methodology/index.html` after the pillar move (see the Aug 3 rows). |
 | 2026-08-11 | — | Brand retheme follow-through: homepage strip previews, SCE-team attribution, Policy & Programs above Platform, About Us pillar page. See decisions #23-#25. |
 | 2026-08-04 | — | **SCE brand retheme.** All 15 chrome pages aligned to the brand in the team's pitch deck + one-pagers (`Platform/` in the work repo): cream/charcoal/gold/bronze token values, `#1A1918` header + dark SVG panels, gold SVG labels/CTA bars, logo extracted from the deck to `assets/sce_logo.png` (favicon on all chrome pages, ribbon Home item, homepage hero). Blue/violet/green/amber pillar accents unified to bronze. Data-view pages (directory/connect/network) kept the blue interactive/data family; SEGMENT_COLORS, topic chips, and SVG legend nodes untouched everywhere. Decision #25. |
