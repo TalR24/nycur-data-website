@@ -51,7 +51,7 @@ md = sub(
 p.write_text(md)
 
 # ── 3. methodology/index.html ──
-p = Path("ecosystem/methodology/index.html")
+p = Path("databases/methodology/index.html")
 html = p.read_text()
 html = sub(
     html,

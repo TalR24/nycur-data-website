@@ -1,0 +1,394 @@
+<title>NYC Summons Navigator</title>
+<style>
+  :root {
+    --paper: #FAFAF8;
+    --card: #FFFFFF;
+    --ink: #1C2833;
+    --muted: #5C6B7A;
+    --line: #DDE3E8;
+    --accent: #2456A6;
+    --accent-ink: #FFFFFF;
+    --ok: #1E7A44;
+    --ok-bg: #E8F4EC;
+    --warn: #A66A14;
+    --warn-bg: #FBF2E2;
+    --req: #B23A2E;
+    --req-bg: #FAEAE7;
+    --chip-bg: #EEF2F6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #141A21; --card: #1C242E; --ink: #E8ECF0; --muted: #97A5B3;
+      --line: #313D4A; --accent: #6D9BE0; --accent-ink: #10161D;
+      --ok: #5FBF85; --ok-bg: #1A2F23; --warn: #D9A25A; --warn-bg: #33270F;
+      --req: #E07A6E; --req-bg: #38201C; --chip-bg: #232E3A;
+    }
+  }
+  :root[data-theme="light"] {
+    --paper: #FAFAF8; --card: #FFFFFF; --ink: #1C2833; --muted: #5C6B7A;
+    --line: #DDE3E8; --accent: #2456A6; --accent-ink: #FFFFFF;
+    --ok: #1E7A44; --ok-bg: #E8F4EC; --warn: #A66A14; --warn-bg: #FBF2E2;
+    --req: #B23A2E; --req-bg: #FAEAE7; --chip-bg: #EEF2F6;
+  }
+  :root[data-theme="dark"] {
+    --paper: #141A21; --card: #1C242E; --ink: #E8ECF0; --muted: #97A5B3;
+    --line: #313D4A; --accent: #6D9BE0; --accent-ink: #10161D;
+    --ok: #5FBF85; --ok-bg: #1A2F23; --warn: #D9A25A; --warn-bg: #33270F;
+    --req: #E07A6E; --req-bg: #38201C; --chip-bg: #232E3A;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font-family: "Avenir Next", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    line-height: 1.55; -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 2.5rem 1.25rem 4rem; }
+
+  .eyebrow {
+    font-size: 0.72rem; letter-spacing: 0.09em; text-transform: uppercase;
+    color: var(--muted); font-weight: 600; margin: 0 0 0.5rem;
+  }
+  h1 {
+    font-size: clamp(1.6rem, 4vw, 2.1rem); line-height: 1.15; margin: 0 0 0.6rem;
+    font-weight: 700; letter-spacing: -0.01em; text-wrap: balance;
+  }
+  .lede { color: var(--muted); margin: 0 0 1rem; max-width: 58ch; }
+  .notice {
+    border: 1px solid var(--line); border-left: 3px solid var(--warn);
+    background: var(--card); border-radius: 6px;
+    padding: 0.6rem 0.9rem; font-size: 0.82rem; color: var(--muted); margin: 0 0 2.25rem;
+  }
+
+  h2 { font-size: 1.05rem; margin: 0 0 0.25rem; font-weight: 700; }
+  .section-sub { font-size: 0.85rem; color: var(--muted); margin: 0 0 1rem; max-width: 60ch; }
+  section { margin-bottom: 2.75rem; }
+
+  .card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 8px;
+    padding: 1.1rem 1.2rem;
+  }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 0.45rem; }
+  .chip {
+    font: inherit; font-size: 0.82rem; font-weight: 600; cursor: pointer;
+    padding: 0.35rem 0.85rem; border-radius: 999px;
+    background: var(--chip-bg); color: var(--ink); border: 1px solid transparent;
+  }
+  .chip:hover { border-color: var(--accent); }
+  .chip[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+  .chip:focus-visible, input:focus-visible, .opt-head:focus-visible {
+    outline: 2px solid var(--accent); outline-offset: 2px;
+  }
+  .agency-note {
+    display: none; margin-top: 1rem; padding: 0.75rem 0.95rem; border-radius: 6px;
+    background: var(--chip-bg); font-size: 0.86rem;
+  }
+  .agency-note.show { display: block; }
+
+  .dates { display: flex; gap: 1rem; flex-wrap: wrap; }
+  .dates label { font-size: 0.8rem; font-weight: 600; display: block; margin-bottom: 0.3rem; }
+  .dates .hint { font-weight: 400; color: var(--muted); }
+  .dates input {
+    font: inherit; font-size: 0.95rem; padding: 0.5rem 0.7rem; border-radius: 6px;
+    border: 1.5px solid var(--line); background: var(--card); color: var(--ink);
+  }
+  .timeline { margin-top: 1.25rem; display: none; }
+  .timeline.show { display: block; }
+  .t-row { display: flex; gap: 0.9rem; padding: 0.55rem 0; align-items: baseline; }
+  .t-row + .t-row { border-top: 1px solid var(--line); }
+  .t-date {
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.8rem; white-space: nowrap; min-width: 7.5rem;
+    font-variant-numeric: tabular-nums;
+  }
+  .t-what { font-size: 0.88rem; }
+  .t-what .sub { color: var(--muted); font-size: 0.8rem; }
+  .t-past { color: var(--req); font-weight: 700; }
+  .t-urgent { color: var(--warn); font-weight: 700; }
+
+  .options { display: flex; flex-direction: column; gap: 0.7rem; }
+  .opt {
+    background: var(--card); border: 1px solid var(--line); border-radius: 8px;
+  }
+  .opt-head {
+    display: flex; align-items: center; justify-content: space-between; gap: 0.75rem;
+    width: 100%; padding: 0.9rem 1.1rem; cursor: pointer; background: none; border: none;
+    font: inherit; color: inherit; text-align: left; border-radius: 8px;
+  }
+  .opt-title { font-weight: 700; font-size: 0.98rem; }
+  .opt-tag {
+    font-size: 0.68rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase;
+    padding: 0.22rem 0.6rem; border-radius: 4px; white-space: nowrap;
+  }
+  .opt-tag.good { background: var(--ok-bg); color: var(--ok); }
+  .opt-tag.neutral { background: var(--chip-bg); color: var(--muted); }
+  .opt-tag.bad { background: var(--req-bg); color: var(--req); }
+  .opt-body { display: none; padding: 0 1.1rem 1rem; }
+  .opt.open .opt-body { display: block; }
+  .opt-body p, .opt-body ul { font-size: 0.88rem; margin: 0 0 0.6rem; max-width: 62ch; }
+  .opt-body ul { padding-left: 1.2rem; }
+  .opt-body li { margin-bottom: 0.3rem; }
+  .opt-body .fine-print { font-size: 0.78rem; color: var(--muted); }
+  .caret { color: var(--muted); font-size: 0.8rem; transition: transform 0.15s; flex-shrink: 0; }
+  .opt.open .caret { transform: rotate(90deg); }
+  @media (prefers-reduced-motion: reduce) { .caret { transition: none; } }
+
+  .help-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.7rem; }
+  .help-card { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 0.9rem 1rem; }
+  .help-card h3 { font-size: 0.88rem; margin: 0 0 0.3rem; }
+  .help-card p { font-size: 0.8rem; color: var(--muted); margin: 0; }
+
+  footer { border-top: 1px solid var(--line); padding-top: 1.25rem; font-size: 0.8rem; color: var(--muted); }
+  footer p { margin: 0 0 0.5rem; max-width: 65ch; }
+  a { color: var(--accent); }
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow">Civic prototype &middot; NYC business summons help</p>
+    <h1>I got a summons. Now what?</h1>
+    <p class="lede">
+      A City inspector left you a summons and you have to respond &mdash; but the ticket doesn't
+      explain your choices in plain language. You have four options, and one of them
+      (doing nothing) is by far the most expensive. This guide walks through what each
+      option means and the deadlines that come with it.
+    </p>
+    <p class="notice">
+      <strong>Prototype &mdash; not legal advice.</strong> Built by Sourabh Chakraborty from
+      published OATH and DCWP guidance. Deadlines and options vary by agency and charge &mdash;
+      the summons itself and <a href="https://www.nyc.gov/site/oath/index.page" rel="noopener">OATH</a>
+      are the authority. Free help: call 311 or ask for an SBS compliance advisor.
+    </p>
+  </header>
+
+  <section aria-labelledby="agency-h">
+    <h2 id="agency-h">Step 1 &middot; Who issued it?</h2>
+    <p class="section-sub">The issuing agency is printed at the top of the summons. Most business summonses are heard at OATH, the City's independent hearings office &mdash; not at the agency that ticketed you.</p>
+    <div class="card">
+      <div class="chips" id="agencies" role="group" aria-label="Issuing agency">
+        <button class="chip" data-a="dcwp" aria-pressed="false">DCWP (Consumer &amp; Worker Protection)</button>
+        <button class="chip" data-a="dohmh" aria-pressed="false">Health Dept (DOHMH)</button>
+        <button class="chip" data-a="dsny" aria-pressed="false">Sanitation (DSNY)</button>
+        <button class="chip" data-a="fdny" aria-pressed="false">Fire Dept (FDNY)</button>
+        <button class="chip" data-a="dob" aria-pressed="false">Buildings (DOB)</button>
+        <button class="chip" data-a="dep" aria-pressed="false">Environmental Protection (DEP)</button>
+        <button class="chip" data-a="other" aria-pressed="false">Other / not sure</button>
+      </div>
+      <div class="agency-note" id="agency-note" role="status"></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="dates-h">
+    <h2 id="dates-h">Step 2 &middot; Your deadlines</h2>
+    <p class="section-sub">Enter the two dates printed on the front of the summons and we'll lay out your timeline.</p>
+    <div class="card">
+      <div class="dates">
+        <div>
+          <label for="d-summons">Summons date <span class="hint">(when it was written)</span></label>
+          <input type="date" id="d-summons" />
+        </div>
+        <div>
+          <label for="d-hearing">Hearing date <span class="hint">(printed on the summons)</span></label>
+          <input type="date" id="d-hearing" />
+        </div>
+      </div>
+      <div class="timeline" id="timeline" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="opts-h">
+    <h2 id="opts-h">Step 3 &middot; Your four options</h2>
+    <p class="section-sub">You must do one of the first three <strong>on or before the hearing date</strong>. Tap each to expand.</p>
+    <div class="options" id="options">
+
+      <div class="opt" data-opt="cure">
+        <button class="opt-head" aria-expanded="false">
+          <span class="opt-title">Fix it &mdash; cure the violation</span>
+          <span style="display:flex; align-items:center; gap:0.6rem;">
+            <span class="opt-tag good">Often $0</span><span class="caret">&#9654;</span>
+          </span>
+        </button>
+        <div class="opt-body">
+          <p>For some first-time violations, you can avoid the fine entirely by fixing the problem and proving it &mdash; this is called <strong>curing</strong>.</p>
+          <ul>
+            <li><strong>DCWP:</strong> if your charge is curable, you'll get an <em>Offer of Settlement</em> by mail, email, or text. Submit the signed Cure Certification (photos of the fix help) <strong>within 30 days of the summons date and before your hearing</strong>.</li>
+            <li>Didn't get an offer? A cure may still be available &mdash; email <strong>LegalSettlements@dcwp.nyc.gov</strong> with your summons number and ask.</li>
+            <li>Other agencies offer cures or settlements for some charges &mdash; check the summons or ask OATH before your hearing date.</li>
+          </ul>
+          <p class="fine-print">The City's OPEN plan (July 2026) proposes adding cure periods to more violations, including missing deli price displays, no customer scale, and missing bulk-commodity signs.</p>
+        </div>
+      </div>
+
+      <div class="opt" data-opt="fight">
+        <button class="opt-head" aria-expanded="false">
+          <span class="opt-title">Fight it &mdash; have your hearing</span>
+          <span style="display:flex; align-items:center; gap:0.6rem;">
+            <span class="opt-tag good">Free, no lawyer needed</span><span class="caret">&#9654;</span>
+          </span>
+        </button>
+        <div class="opt-body">
+          <p>Hearings are free, you don't need a lawyer, and a hearing officer who doesn't work for the ticketing agency decides. The agency has to prove the charge &mdash; you can win.</p>
+          <ul>
+            <li><strong>Formats:</strong> by phone, online, in person at a borough OATH office, or in writing (send your defense by mail or online before the hearing date).</li>
+            <li><strong>Bring evidence:</strong> photos, receipts, contracts, corrected conditions &mdash; anything showing the charge is wrong or was fixed.</li>
+            <li><strong>Can't make the date?</strong> You can reschedule once, before the hearing date, without giving a reason.</li>
+            <li>Even if found in violation, showing you fixed the problem can matter for the penalty.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="opt" data-opt="pay">
+        <button class="opt-head" aria-expanded="false">
+          <span class="opt-title">Pay it &mdash; admit the violation</span>
+          <span style="display:flex; align-items:center; gap:0.6rem;">
+            <span class="opt-tag neutral">Fastest, but on your record</span><span class="caret">&#9654;</span>
+          </span>
+        </button>
+        <div class="opt-body">
+          <p>Paying the amount on the summons before the hearing date closes the case. But know what you're agreeing to:</p>
+          <ul>
+            <li>Paying is an <strong>admission</strong> &mdash; the violation goes on your record.</li>
+            <li>Many laws charge <strong>higher penalties for repeat violations</strong>, so an admission now can raise the price of the next summons.</li>
+            <li>If a cure is available (see &ldquo;Fix it&rdquo;), curing is usually cheaper than paying.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="opt" data-opt="nothing">
+        <button class="opt-head" aria-expanded="false">
+          <span class="opt-title">Do nothing</span>
+          <span style="display:flex; align-items:center; gap:0.6rem;">
+            <span class="opt-tag bad">Most expensive</span><span class="caret">&#9654;</span>
+          </span>
+        </button>
+        <div class="opt-body">
+          <p>If you don't respond by the hearing date, you're found in violation <strong>by default</strong> and a higher penalty can be imposed. Unpaid defaults can go to collections and block City licenses and permits.</p>
+          <p>Already missed it? It's fixable &mdash; act fast:</p>
+          <ul>
+            <li><strong>Within 75 days</strong> of the default decision: your first request for a new hearing is granted <strong>automatically</strong> &mdash; file OATH's request form, no excuse needed.</li>
+            <li><strong>75 days to 1 year:</strong> you must explain in writing why you missed it, with documents; a hearing officer decides.</li>
+            <li><strong>After 1 year:</strong> reopened only in exceptional circumstances.</li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section aria-labelledby="help-h">
+    <h2 id="help-h">Free help &amp; your rights</h2>
+    <div class="help-grid">
+      <div class="help-card">
+        <h3>SBS compliance advisors</h3>
+        <p>The City's Small Business Services offers free, confidential help understanding violations and inspections &mdash; including after a summons is issued. Call 311 and ask for SBS business services.</p>
+      </div>
+      <div class="help-card">
+        <h3>OATH Help Center</h3>
+        <p>OATH's Help Center explains procedures and can't give legal advice, but can walk you through forms, rescheduling, and hearing formats.</p>
+      </div>
+      <div class="help-card">
+        <h3>Business Owner Bill of Rights</h3>
+        <p>You're entitled to courteous inspectors who identify themselves, explain what they're checking, and tell you how to contest. In a 2025 SBS survey, only 9% of owners had ever received this document &mdash; but the rights apply either way.</p>
+      </div>
+      <div class="help-card">
+        <h3>Language access</h3>
+        <p>Free interpreters are available at OATH hearings &mdash; ask when you respond, or note it when rescheduling.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <p><strong>Sources:</strong> OATH, &ldquo;You Received a Summons &mdash; Now What?&rdquo; and missed-hearing/default FAQs (nyc.gov/oath); DCWP curable-violations FAQ and settlement guidance (nyc.gov/dcwp); NYC <em>OPEN for Small Business</em> report, July 2026, sections 1.1&ndash;1.2 and 2.13&ndash;2.14.</p>
+    <p>Prototype for the OPEN for Small Business problem: owners &ldquo;didn't understand why they had failed their inspection&rdquo; and had no clear guide to their recourse.</p>
+  </footer>
+</div>
+
+<script>
+  var AGENCY_NOTES = {
+    dcwp: "<strong>DCWP summonses</strong> are the most likely to be curable for a first offense — check the “Fix it” option below first. DCWP also offers settlements on many charges even when a cure isn’t available.",
+    dohmh: "<strong>Health Department (restaurant) summonses</strong> also affect your letter grade: inspection points determine the grade, and contesting at OATH can change the points. If you post “Grade Pending” while contesting, know the City has pledged (OPEN 2.3) to speed up re-inspections for B/C grades.",
+    dsny: "<strong>Sanitation summonses</strong> are commonly issued to storefronts for sidewalk and setout conditions. Photos with timestamps are strong evidence at a hearing — many owners win by showing the condition wasn’t theirs or was promptly fixed.",
+    fdny: "<strong>FDNY summonses</strong> often require a Certificate of Correction showing the condition was fixed, in addition to the OATH hearing. Fixing the condition quickly matters both for safety and for your case.",
+    dob: "<strong>Buildings summonses</strong> usually require you to correct the condition and file a Certificate of Correction with DOB even if you pay or lose the hearing — the fine doesn’t close out the violation by itself.",
+    dep: "<strong>DEP summonses</strong> (noise, air, water) are heard at OATH like the rest. Some noise-code charges offer a cure or stipulation for first offenses — check your summons.",
+    other: "Look at the top of the summons for the agency name, and check whether it says <strong>OATH Hearings Division</strong> — if so, everything below applies. If it’s a State or federal notice, different rules apply."
+  };
+
+  var agenciesEl = document.getElementById("agencies");
+  var noteEl = document.getElementById("agency-note");
+  var selectedAgency = null;
+
+  agenciesEl.addEventListener("click", function (e) {
+    var b = e.target.closest(".chip");
+    if (!b) return;
+    selectedAgency = b.getAttribute("data-a");
+    Array.prototype.forEach.call(agenciesEl.children, function (c) {
+      c.setAttribute("aria-pressed", c === b ? "true" : "false");
+    });
+    noteEl.className = "agency-note show";
+    noteEl.innerHTML = AGENCY_NOTES[selectedAgency];
+    renderTimeline();
+  });
+
+  var dSummons = document.getElementById("d-summons");
+  var dHearing = document.getElementById("d-hearing");
+  var timelineEl = document.getElementById("timeline");
+  dSummons.addEventListener("input", renderTimeline);
+  dHearing.addEventListener("input", renderTimeline);
+
+  function fmt(d) {
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  }
+  function addDays(d, n) { var x = new Date(d); x.setDate(x.getDate() + n); return x; }
+  function row(dateStr, what, sub, cls) {
+    return '<div class="t-row"><span class="t-date ' + (cls || "") + '">' + dateStr + "</span>" +
+      '<span class="t-what">' + what + (sub ? '<div class="sub">' + sub + "</div>" : "") + "</span></div>";
+  }
+
+  function renderTimeline() {
+    var hv = dHearing.value, sv = dSummons.value;
+    if (!hv && !sv) { timelineEl.className = "timeline"; return; }
+    var today = new Date(); today.setHours(0, 0, 0, 0);
+    var html = "";
+
+    if (sv) {
+      var s = new Date(sv + "T00:00:00");
+      html += row(fmt(s), "Summons issued", null);
+      if (selectedAgency === "dcwp" || selectedAgency === null) {
+        var cureBy = addDays(s, 30);
+        var cureCls = cureBy < today ? "t-past" : (addDays(today, 7) > cureBy ? "t-urgent" : "");
+        html += row(fmt(cureBy),
+          "Last day to submit a DCWP cure" + (selectedAgency ? "" : " (if DCWP &amp; curable)"),
+          "30 days from the summons date, and it must be before your hearing.", cureCls);
+      }
+    }
+
+    if (hv) {
+      var h = new Date(hv + "T00:00:00");
+      var days = Math.round((h - today) / 86400000);
+      if (days < 0) {
+        html += row(fmt(h), '<span class="t-past">Hearing date — passed ' + (-days) + " day" + (days === -1 ? "" : "s") + " ago</span>",
+          "If you didn’t respond, you may be in default. See “Do nothing” below — a first reopening request within 75 days is granted automatically.", "t-past");
+        html += row(fmt(addDays(h, 75)), "Approximate end of the automatic-reopen window",
+          "The real 75-day clock runs from the default decision’s mailing date, which is after the hearing date — check the decision you received.", "t-urgent");
+      } else {
+        var cls = days <= 7 ? "t-urgent" : "";
+        html += row(fmt(h),
+          "Hearing date — respond by this day" + (days === 0 ? " (today!)" : " (" + days + " day" + (days === 1 ? "" : "s") + " away)"),
+          "Cure, pay, fight, or reschedule on or before this date to avoid a default.", cls);
+      }
+    }
+
+    timelineEl.className = "timeline show";
+    timelineEl.innerHTML = html;
+  }
+
+  document.getElementById("options").addEventListener("click", function (e) {
+    var head = e.target.closest(".opt-head");
+    if (!head) return;
+    var opt = head.parentElement;
+    var isOpen = opt.classList.toggle("open");
+    head.setAttribute("aria-expanded", isOpen ? "true" : "false");
+  });
+</script>
