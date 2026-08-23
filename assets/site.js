@@ -39,10 +39,10 @@
      listing its five pillar pages. SCE pages themselves keep their own
      pillar-ribbon chrome and never load site.js. */
   var SCE_MENU = [
-    { label: 'Events', href: '/state_capacity_ecosystem/events/' },
-    { label: 'Ecosystem Databases', href: '/state_capacity_ecosystem/databases/' },
-    { label: 'Community & Platform', href: '/state_capacity_ecosystem/community/' },
-    { label: 'About Us', href: '/state_capacity_ecosystem/about/' }
+    { label: 'Events', href: 'https://statecapacityecosystem.com/events/' },
+    { label: 'Ecosystem Databases', href: 'https://statecapacityecosystem.com/databases/' },
+    { label: 'Community & Platform', href: 'https://statecapacityecosystem.com/community/' },
+    { label: 'About Us', href: 'https://statecapacityecosystem.com/about/' }
   ];
 
   var POSTS_MENU = [
@@ -130,7 +130,7 @@
   function sceHtml() {
     return SCE_MENU.map(function (s) {
       return '<a href="' + s.href + '">' + s.label + '</a>';
-    }).join('') + '<a class="menu-all" href="/state_capacity_ecosystem/">State Capacity Ecosystem home →</a>';
+    }).join('') + '<a class="menu-all" href="https://statecapacityecosystem.com/">statecapacityecosystem.com →</a>';
   }
 
   function postsHtml() {

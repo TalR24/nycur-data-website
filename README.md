@@ -24,15 +24,15 @@ Full architecture, deploy steps, and the approved Buy Me a Coffee copy are in th
 
 Standalone reference tools, listed in homepage order. New tools live under `/civic_reference/`; the CB Resolutions Dashboard predates that convention and is served from `/cb-resolutions/`.
 
-### [State Capacity Ecosystem](https://data.nycuriosity.com/state_capacity_ecosystem/)
+### [State Capacity Ecosystem](https://statecapacityecosystem.com/)
 Directory, segment view, affinity network, and matchmaking for 300+ organizations working on state capacity — research, advocacy, GovTech, philanthropy, fellowships, digital services, investors, and ecosystem-builders. Underlying database curated by Henry Grunzweig. Affinity score combines description TF-IDF, shared problem statements, named funders, and segment overlap, with semantic search powered by a precomputed TF-IDF index.
 
-- [`/state_capacity_ecosystem/`](https://data.nycuriosity.com/state_capacity_ecosystem/) — hub
-- [`/state_capacity_ecosystem/ecosystem/directory/`](https://data.nycuriosity.com/state_capacity_ecosystem/ecosystem/directory/) — searchable, filterable org table
-- [`/state_capacity_ecosystem/ecosystem/network/`](https://data.nycuriosity.com/state_capacity_ecosystem/ecosystem/network/) — D3 force-directed affinity graph + semantic search with geographic boosting
-- [`/state_capacity_ecosystem/ecosystem/connect/`](https://data.nycuriosity.com/state_capacity_ecosystem/ecosystem/connect/) — directory of people and orgs working on specific problems, with self-submission form and intro request flow
-- [`/state_capacity_ecosystem/ecosystem/methodology/`](https://data.nycuriosity.com/state_capacity_ecosystem/ecosystem/methodology/) — scoring formula, taxonomy, inclusion criteria
-- [`/state_capacity_ecosystem/policy-programs/events/`](https://data.nycuriosity.com/state_capacity_ecosystem/policy-programs/events/) — state capacity hackathons, with per-event pages covering overview, tracks, judges, and the projects produced (e.g. `events/civic-tech-build-night/`)
+- [`/state_capacity_ecosystem/`](https://statecapacityecosystem.com/) — hub
+- [`/state_capacity_ecosystem/ecosystem/directory/`](https://statecapacityecosystem.com/databases/organization-directory/) — searchable, filterable org table
+- [`/state_capacity_ecosystem/ecosystem/network/`](https://statecapacityecosystem.com/databases/affinity-map/) — D3 force-directed affinity graph + semantic search with geographic boosting
+- [`/state_capacity_ecosystem/ecosystem/connect/`](https://statecapacityecosystem.com/databases/opportunities-connections/) — directory of people and orgs working on specific problems, with self-submission form and intro request flow
+- [`/state_capacity_ecosystem/ecosystem/methodology/`](https://statecapacityecosystem.com/databases/methodology/) — scoring formula, taxonomy, inclusion criteria
+- [`/state_capacity_ecosystem/policy-programs/events/`](https://statecapacityecosystem.com/events/) — state capacity hackathons, with per-event pages covering overview, tracks, judges, and the projects produced (e.g. `events/civic-tech-build-night/`)
 
 ### [NYC Council Fiscal Impacts Tracker](https://data.nycuriosity.com/civic_reference/nyc_council_fiscal_impacts_tracker/)
 Estimated fiscal impact of every NYC Council bill with a Finance Division impact statement. Filterable by agency, committee, sponsor, and fiscal year, with cost/revenue/capital breakdowns and per-bill detail panels.
@@ -142,7 +142,7 @@ Page types and how the button attaches:
 │   ├── index.html                                 → Hub (explainer, stat pills, view cards)
 │   ├── README.md                                  → Full project reference doc
 │   ├── data/
-│   │   ├── directory.csv                          → Canonical org source (329 rows)
+│   │   ├── directory.csv                          → moved to TalR24/statecapacityecosystem
 │   │   ├── connect_submissions.csv                → Connect directory seed data
 │   │   ├── build_affinity.py                      → directory.csv → affinity/directory/search JSON
 │   │   ├── build_people.py                        → connect_submissions.csv → connect.json
