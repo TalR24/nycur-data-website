@@ -1,6 +1,5 @@
 /* Site-wide chrome: pill-style nav bar with two-level Tools / category-grouped
-   Posts / State Capacity Ecosystem pillar dropdowns under the header
-   + "More from NYCuriosity Data" related-work
+   Posts dropdowns under the header + "More from NYCuriosity Data" related-work
    block above the footer. Included on every live page (incl. the homepage)
    except the State Capacity Ecosystem section, /members/, and redirect stubs.
    Related work is curated in /assets/related_work.json (path-prefix keys).
@@ -35,15 +34,6 @@
     ]}
   ];
 
-  /* SCE is its own section, not a tool: it gets a third top-level dropdown
-     listing its five pillar pages. SCE pages themselves keep their own
-     pillar-ribbon chrome and never load site.js. */
-  var SCE_MENU = [
-    { label: 'Events', href: 'https://statecapacityecosystem.com/events/' },
-    { label: 'Ecosystem Databases', href: 'https://statecapacityecosystem.com/databases/' },
-    { label: 'Community & Platform', href: 'https://statecapacityecosystem.com/community/' },
-    { label: 'About Us', href: 'https://statecapacityecosystem.com/about/' }
-  ];
 
   var POSTS_MENU = [
     { cat: 'Transit & Streets', topic: 'transit', items: [
@@ -127,11 +117,6 @@
     }).join('') + '<a class="menu-all" href="/#tools">All tools →</a>';
   }
 
-  function sceHtml() {
-    return SCE_MENU.map(function (s) {
-      return '<a href="' + s.href + '">' + s.label + '</a>';
-    }).join('') + '<a class="menu-all" href="https://statecapacityecosystem.com/">statecapacityecosystem.com →</a>';
-  }
 
   function postsHtml() {
     return POSTS_MENU.map(function (g) {
@@ -158,10 +143,6 @@
       '<div class="sitenav-item">' +
       '<button type="button" class="sitenav-btn" aria-expanded="false" aria-haspopup="true">Posts<span class="sitenav-caret">▾</span></button>' +
       '<div class="sitenav-menu">' + postsHtml() + '</div>' +
-      '</div>' +
-      '<div class="sitenav-item">' +
-      '<button type="button" class="sitenav-btn" aria-expanded="false" aria-haspopup="true">State Capacity Ecosystem<span class="sitenav-caret">▾</span></button>' +
-      '<div class="sitenav-menu">' + sceHtml() + '</div>' +
       '</div>' +
       '<span class="sitenav-spacer"></span>' +
       '<a class="nav-pill" href="/members/">Memberships</a>' +
