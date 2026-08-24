@@ -34,3 +34,15 @@ jobs:
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
         run: |
           python3 site_health/check_site.py ${{ inputs.dry_run && '--dry-run' || '' }}
+
+      # Post-deploy SEO verification of what production actually serves
+      # (robots, sitemap, every sitemap URL's title/description/canonical) on
+      # all three public sites. Emails only on ERROR-level findings.
+      - name: SEO production check
+        if: always()
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+        run: |
+          pip install requests
+          python3 seo/seo_check.py --all --live ${{ inputs.dry_run && '' || '--email' }}

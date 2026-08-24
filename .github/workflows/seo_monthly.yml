@@ -1,0 +1,64 @@
+name: Monthly SEO report
+
+# Pulls the last 28 days from Google Search Console for nycuriosity.com (a
+# domain property: covers the Substack site, data.nycuriosity.com and
+# talroded.nycuriosity.com) and statecapacityecosystem.com, emails the report
+# to Tal, and files the Markdown + JSON snapshot in the PRIVATE premium repo
+# (seo_reports/) so in-session reviews have history. Traffic numbers never
+# land in this public repo. The cloud routine "Monthly SEO review memo" reads
+# the emailed report on the 3rd and proposes title/description rewrites.
+#
+# Secrets: GSC_SERVICE_ACCOUNT_JSON (service account key added as a user on
+# both Search Console properties), GMAIL_USER, GMAIL_APP_PASSWORD,
+# PREMIUM_PUSH_TOKEN (all but the first already exist for other workflows).
+
+on:
+  schedule:
+    - cron: "0 12 2 * *"   # 2nd of each month, 12:00 UTC (8am ET)
+  workflow_dispatch:
+    inputs:
+      days:
+        description: "Days to report on"
+        default: "28"
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install google-auth requests
+
+      - name: Pull Search Console data and email the report
+        env:
+          GSC_SERVICE_ACCOUNT_JSON: ${{ secrets.GSC_SERVICE_ACCOUNT_JSON }}
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+        run: |
+          python3 seo/gsc_pull.py --days "${{ inputs.days || '28' }}" --out /tmp/seo_reports --email
+
+      - name: File the snapshot in the premium repo
+        env:
+          PREMIUM_PUSH_TOKEN: ${{ secrets.PREMIUM_PUSH_TOKEN }}
+        run: |
+          git clone --depth 1 "https://TalR24:${PREMIUM_PUSH_TOKEN}@github.com/TalR24/nycur-data-premium.git" /tmp/premium
+          mkdir -p /tmp/premium/seo_reports
+          cp /tmp/seo_reports/*.md /tmp/seo_reports/*.json /tmp/premium/seo_reports/
+          cd /tmp/premium
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add seo_reports
+          if git diff --cached --quiet; then
+            echo "Report unchanged."
+          else
+            git commit -m "Monthly SEO report snapshot"
+            git push
+          fi
