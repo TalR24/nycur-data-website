@@ -37,6 +37,7 @@
 
   var POSTS_MENU = [
     { cat: 'Transit & Streets', topic: 'transit', items: [
+      { label: 'Two Years of G Train Weekend Shutdowns', href: '/nycuriosity_substack_posts/g_train_weekend_shutdowns/' },
       { label: 'West 4th St Station Deep Dive', href: '/nycuriosity_substack_posts/west_4th_st_station/' },
       { label: 'New York Needs to Grow', href: '/nycuriosity_substack_posts/nyc_building_strategies/' }
     ]},

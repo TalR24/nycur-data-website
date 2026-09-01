@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NYC Subway CBTC Signal Project Timelines, 2003–2029 — NYCuriosity</title>
+  <meta name="description" content="Contract award, promised completion and delivered or projected date for seven NYC subway CBTC signal projects, Canarsie to Crosstown: every one late.">
+  <link rel="canonical" href="https://data.nycuriosity.com/nycuriosity_substack_posts/g_train_weekend_shutdowns/cbtc-timelines/">
+  <meta property="og:image" content="https://data.nycuriosity.com/website_logo.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta property="og:type"        content="website">
+  <meta property="og:url"         content="https://data.nycuriosity.com/nycuriosity_substack_posts/g_train_weekend_shutdowns/cbtc-timelines/">
+  <meta property="og:title"       content="NYC Subway CBTC Signal Project Timelines, 2003–2029 — NYCuriosity">
+  <meta property="og:description" content="Contract award, promised completion and delivered or projected date for seven NYC subway CBTC signal projects, Canarsie to Crosstown: every one late.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/chart.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue:       #2563eb;
+      --blue-hover: #1d4ed8;
+      --blue-light: #eff6ff;
+      --blue-mid:   #bfdbfe;
+      --text:       #111827;
+      --text-mid:   #374151;
+      --text-muted: #6b7280;
+      --text-faint: #9ca3af;
+      --bg:         #f8faff;
+      --surface:    #ffffff;
+      --border:     #e5e7eb;
+      --shadow-sm:  0 1px 3px rgba(17,24,39,0.08);
+      --shadow-md:  0 4px 16px rgba(37,99,235,0.10);
+      --radius:     10px;
+      --entries-color:  #2563eb;
+      --arrivals-color: #c2410c;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: #111827;
+      border-bottom: 1px solid #1f2937;
+      padding: 0 clamp(20px, 5vw, 48px);
+    }
+    .header-inner {
+      max-width: 1100px; margin: 0 auto; height: 56px;
+      display: flex; align-items: center; gap: 16px;
+    }
+    .back-link {
+      font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600;
+      color: #9ca3af; text-decoration: none; display: flex; align-items: center; gap: 5px;
+      padding: 4px 8px 4px 4px; border-radius: 5px; transition: color 0.15s, background 0.15s; white-space: nowrap;
+    }
+    .back-link:hover { color: #60a5fa; background: rgba(96,165,250,0.1); }
+    .header-divider { width: 1px; height: 20px; background: #374151; flex-shrink: 0; }
+    header h1 {
+      font-family: 'Roboto Mono', monospace; font-size: 0.95rem; font-weight: 700;
+      color: #e5e7eb; letter-spacing: -0.02em;
+    }
+
+    .pill-nav {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 10px clamp(20px, 5vw, 48px);
+      display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+    }
+    .pill-nav a {
+      font-size: 0.78rem; font-family: 'Roboto Mono', monospace; font-weight: 600;
+      padding: 4px 12px; border-radius: 20px; text-decoration: none;
+      border: 1px solid var(--border); color: var(--text-muted); background: var(--bg);
+      transition: all 0.15s; white-space: nowrap;
+    }
+    .pill-nav a:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
+    .pill-nav a.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+    .pill-label { font-size: 0.72rem; color: var(--text-faint); font-family: 'Roboto Mono', monospace; white-space: nowrap; }
+
+    .hero {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: clamp(32px, 5vw, 52px) clamp(20px, 5vw, 48px);
+    }
+    .hero-inner { max-width: 1100px; margin: 0 auto; }
+    .breadcrumb {
+      font-family: 'Roboto Mono', monospace; font-size: 0.72rem;
+      color: var(--text-faint); margin-bottom: 14px;
+      display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+    }
+    .breadcrumb a { color: var(--blue); text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+    .breadcrumb span:last-child { color: #FF6319; }
+    .hero-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .hero-tag {
+      font-family: 'Roboto Mono', monospace; font-size: 0.68rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.08em; color: #FF6319;
+      background: #fff4ed; border: 1px solid #ffd0b3; border-radius: 4px; padding: 3px 8px;
+    }
+    .hero-updated { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; color: var(--text-faint); }
+    .hero h1 {
+      font-family: 'Roboto Mono', monospace; font-size: clamp(1.4rem, 3vw, 1.85rem);
+      font-weight: 700; color: var(--text); letter-spacing: -0.03em; line-height: 1.2; margin-bottom: 10px;
+    }
+    .hero h1 span { color: var(--blue); }
+    .hero p { font-size: 0.975rem; color: var(--text-muted); max-width: 680px; line-height: 1.7; }
+    .hero p a { color: var(--blue); text-decoration: none; border-bottom: 1px solid var(--blue-mid); }
+    .hero p a:hover { border-color: var(--blue); }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600;
+      text-decoration: none; border-radius: 7px; padding: 8px 14px;
+      transition: background 0.15s, border-color 0.15s; cursor: pointer; border: none;
+    }
+    .btn-outline { background: var(--surface); color: var(--text-muted); border: 1.5px solid var(--border); }
+    .btn-outline:hover { color: var(--blue); border-color: var(--blue-mid); background: var(--blue-light); }
+
+    main { flex: 1; padding: clamp(28px, 4vw, 48px) clamp(20px, 5vw, 48px); }
+    .main-inner { max-width: 1100px; margin: 0 auto; }
+
+    .c-plot--scroll > svg { min-width: 560px; }
+
+    .context-box {
+      margin-top: 28px; padding: 16px 20px;
+      background: var(--blue-light); border: 1px solid var(--blue-mid); border-radius: var(--radius);
+    }
+    .context-box p { font-size: 0.85rem; color: var(--text-mid); line-height: 1.65; }
+    .context-box p + p { margin-top: 8px; }
+    .context-box strong { color: var(--text); }
+
+    .footnotes {
+      margin-top: 16px; padding: 14px 18px;
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    }
+    .footnotes p { font-size: 0.78rem; color: var(--text-muted); line-height: 1.6; }
+    .footnotes p + p { margin-top: 6px; }
+    .footnotes strong { color: var(--text-mid); }
+    .footnotes a { color: var(--blue); text-decoration: none; border-bottom: 1px solid var(--blue-mid); }
+    .footnotes a:hover { border-color: var(--blue); }
+
+    .embed-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+    .embed-modal-box { background: var(--surface); border-radius: 10px; padding: 24px; max-width: 540px; width: 90%; box-shadow: 0 8px 32px rgba(0,0,0,0.18); }
+    .embed-modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+    .embed-modal-title { font-family: 'Roboto Mono', monospace; font-weight: 700; font-size: 0.9rem; color: var(--text); }
+    .embed-close { background: none; border: none; font-size: 1.1rem; color: var(--text-muted); cursor: pointer; padding: 2px 6px; border-radius: 4px; }
+    .embed-close:hover { color: var(--text); background: var(--bg); }
+    .embed-modal-box > p { font-size: 0.83rem; color: var(--text-muted); margin-bottom: 10px; }
+    .embed-textarea { width: 100%; height: 80px; font-family: 'Roboto Mono', monospace; font-size: 0.72rem; border: 1px solid var(--border); border-radius: 6px; padding: 10px; resize: none; color: var(--text-mid); background: var(--bg); margin-bottom: 12px; }
+    .embed-copy-btn { background: var(--blue); color: #fff; font-family: 'Roboto Mono', monospace; font-size: 0.8rem; font-weight: 600; padding: 7px 18px; border: none; border-radius: 6px; cursor: pointer; transition: background 0.15s; }
+    .embed-copy-btn:hover { background: #1d4ed8; }
+
+    footer { background: var(--surface); border-top: 1px solid var(--border); padding: 20px clamp(20px, 5vw, 48px); margin-top: auto; }
+    .footer-inner { max-width: 1100px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+    .footer-copy { font-size: 0.8rem; color: var(--text-faint); }
+    .footer-links { display: flex; gap: 20px; align-items: center; }
+    .footer-links a { font-size: 0.8rem; color: var(--text-muted); text-decoration: none; transition: color 0.15s; }
+    .footer-links a:hover { color: var(--blue); }
+    .footer-support { display: inline-flex; align-items: center; gap: 5px; font-size: 0.8rem; font-weight: 500; color: #2563eb; text-decoration: none; padding: 5px 11px; border: 1px solid rgba(37,99,235,0.45); border-radius: 6px; transition: color .15s, border-color .15s, background .15s; vertical-align: middle; }
+    .footer-support:hover { color: #fff; background: #2563eb; border-color: #2563eb; }
+    .footer-support svg { flex-shrink: 0; }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
+  <script defer src="/assets/chart.js"></script>
+  <script defer src="/assets/site.js?v=20260804"></script>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="header-inner">
+    <a href="/nycuriosity_substack_posts/g_train_weekend_shutdowns/" class="back-link">← g-train-weekend-shutdowns</a>
+    <div class="header-divider"></div>
+    <h1>CBTC Timelines</h1>
+  </div>
+</header>
+
+<!-- VISUALS NAV -->
+<div class="pill-nav">
+  <span class="pill-label">Visuals in this post:</span>
+  <a href="../weekend-closures/">Weekend Closures</a>
+  <a href="../weekend-ridership/">Weekend Riders</a>
+  <a href="./" class="active">CBTC Timelines</a>
+  <a href="../bus-speeds/">Bus Speeds</a>
+  <a href="../minutes-by-mode/">Minutes by Mode</a>
+</div>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-inner">
+    <div class="breadcrumb">
+      <a href="/">data.nycuriosity.com</a>
+      <span>›</span>
+      <a href="/nycuriosity_substack_posts/g_train_weekend_shutdowns/">G Train Weekend Shutdowns</a>
+      <span>›</span>
+      <span>CBTC Timelines</span>
+    </div>
+    <div class="hero-meta">
+      <span class="hero-tag">Transit</span>
+      <span class="hero-updated">August 2026</span>
+    </div>
+    <h1>Every Subway Signal Upgrade Has Finished Late. <span>The G's Is 22 Months Behind and Counting</span></h1>
+    <p>
+      Seven communications-based train control (CBTC) projects since the Canarsie line, from contract award to the date the MTA promised and the date it delivered or now projects. Four are finished, 11 to 27 months late. Three are running, 21 to 33 months late by the MTA's own consultant. The Crosstown contract was signed in March 2023 as a "just under five years" job; activation is now put at 2029.
+    </p>
+    <div class="hero-actions">
+      <a href="/members/?file=nycuriosity_substack_posts/g_train_weekend_shutdowns/data/cbtc_timelines.csv" class="btn btn-outline">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download CSV (members)
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- CHART -->
+<main>
+  <div class="main-inner">
+
+    <div class="c-actions">
+      <button class="c-action-btn" onclick="downloadChart(this)">&#11015; Download PNG</button>
+      <button class="c-action-btn" onclick="showEmbed()">&#60;/&#62; Embed</button>
+    </div>
+
+    <figure class="chart-card" id="chart-box" data-slug="g-train-cbtc-timelines">
+      <div class="c-head">
+        <h2 class="c-title">All seven subway signal modernizations since 2003 finished late or are running late, by 11 to 33 months. The G's is 22 months behind and rising.</h2>
+        <p class="c-deck">Each bar runs from contract award (or installation start) to the completion the MTA promised at award, then to the date the line actually ran under CBTC or the date the MTA's independent engineering consultant now projects. Months late are measured against the promised date.</p>
+        <ul class="c-legend">
+          <li><span class="sw" style="background:#2563eb"></span>Contract award to promised completion</li>
+          <li><span class="sw" style="background:#111827;width:3px;height:16px;border-radius:1px"></span>Promised completion</li>
+          <li><span class="sw" style="background:#c2410c"></span>Months late, delivered</li>
+          <li><svg class="sw" viewBox="0 0 22 14"><rect x="1" y="1" width="20" height="12" rx="2" fill="#fde8dc" stroke="#c2410c" stroke-width="1.5" stroke-dasharray="6 4"/></svg>Months late, current projection</li>
+        </ul>
+      </div>
+
+      <div class="c-plot c-plot--scroll">
+        <svg id="tlChart" viewBox="0 0 1000 356" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Timeline of seven NYC subway CBTC projects from award to promised to delivered date, showing each finished or projected 11 to 33 months late, with the Crosstown G project 22 months behind."></svg>
+      </div>
+
+      <figcaption class="c-foot">
+        <div class="c-foot-text">
+          <span>Source: MTA capital program materials as reported by <a href="https://gothamist.com/news/every-nyc-subway-signal-upgrade-is-far-behind-schedule-mta-consultant-says" target="_blank" rel="noopener">Gothamist (Jul 28, 2025)</a>, <a href="https://www.metro-magazine.com/10005468/n-y-mta-approves-206m-signaling-contract-for-queens-blvd-line" target="_blank" rel="noopener">Metro Magazine (2015)</a>, <a href="https://www.thecity.nyc/2022/12/02/mta-subway-signal-work-take-longer/" target="_blank" rel="noopener">THE CITY (Dec 2022)</a>, <a href="https://www.amny.com/nyc-transit/mta-contract-modernize-g-line-signals/" target="_blank" rel="noopener">amNY (Dec 2022)</a>, <a href="https://www.6sqft.com/g-train-signal-upgrades-delayed-until-2029/" target="_blank" rel="noopener">6sqft (Jul 2025)</a></span>
+          <span>Note: Canarsie dates are the MTA's published history as compiled on Wikipedia; no award date was published. Queens Blvd West is dated to the final section entering CBTC service (Feb 2022); the consultant dates project close-out to Mar 2025.</span>
+        </div>
+      </figcaption>
+    </figure>
+
+    <div class="context-box">
+      <p><strong>Late is the norm, and the G is on the same curve.</strong> The Flushing line's signals were promised for 2016 and switched on in November 2018. Culver South was promised for June 2023 and delivered in September 2025. The Crosstown contract was signed in March 2023 as a job of "just under five years"; the MTA said "through Q3 2027" in June 2025 and a month later put activation in 2029, because the R211 cars the line will use need new radios first. That is 22 months against the promise, before the Newtown Creek tunnel leak repairs that added closures in 2026.</p>
+      <p><strong>What the G gets when it is done</strong> is what the L and the 7 already have: trains that know exactly where the train ahead is, so they can run closer together and recover faster from delays. The MTA has not published a headway or trains-per-hour target for the modernized G.</p>
+    </div>
+
+    <div class="footnotes">
+      <p><strong>Dates.</strong> Canarsie: installation began 2003, promised 2006, operational under CBTC February 2009 (<a href="https://en.wikipedia.org/wiki/Signaling_of_the_New_York_City_Subway" target="_blank" rel="noopener">MTA history via Wikipedia</a>). Flushing: Thales award June 2010, promised 2016 in the 2010–2014 capital plan and 2017 by 2015 (<a href="https://www.metro-magazine.com/10005468/n-y-mta-approves-206m-signaling-contract-for-queens-blvd-line" target="_blank" rel="noopener">Metro Magazine</a>), full line in CBTC November 26, 2018 (<a href="https://gothamist.com/2018/11/27/7_line_signal_changes_delays.php" target="_blank" rel="noopener">Gothamist</a>). Queens Blvd West: Siemens and Thales awards August 2015, promised March 2021, final section cut over February 2022, close-out March 2025 (<a href="https://gothamist.com/news/every-nyc-subway-signal-upgrade-is-far-behind-schedule-mta-consultant-says" target="_blank" rel="noopener">Gothamist</a>). Culver South: Tutor Perini award February 2019, substantial completion promised June 2023 (<a href="https://www.thecity.nyc/2022/12/02/mta-subway-signal-work-take-longer/" target="_blank" rel="noopener">THE CITY</a>), delivered September 2025. 8th Avenue: L.K. Comstock award January 2020, promised January 2025, consultant projects October 2027. Queens Blvd East: board approval December 2021, promised Q2 2026, consultant projects March 2028. Crosstown: award March 2023 (<a href="https://www.amny.com/nyc-transit/mta-contract-modernize-g-line-signals/" target="_blank" rel="noopener">amNY</a>), MTA said "through Q3 2027" in June 2025 (<a href="https://infraus.org/mta-announces-additional-g-line-signal-modernization-work/" target="_blank" rel="noopener">InfraUS</a>), consultant projects July 2029 (<a href="https://gothamist.com/news/hell-no-g-train-riders-to-suffer-more-shutdowns-as-mta-struggles-with-upgrades-to-line" target="_blank" rel="noopener">Gothamist, Apr 2026</a>).</p>
+      <p><strong>Not shown.</strong> The Culver express test track (2015) and the Fulton and Liberty lines (awarded December 2025, $1.3 billion, no completion date published) are omitted.</p>
+      <p><strong>Sources:</strong> Author's compilation from MTA capital program materials and the press reports linked above.</p>
+    </div>
+
+  </div>
+</main>
+
+<!-- EMBED MODAL -->
+<div id="embedModal" class="embed-modal" style="display:none">
+  <div class="embed-modal-box">
+    <div class="embed-modal-header">
+      <span class="embed-modal-title">Embed this chart</span>
+      <button class="embed-close" onclick="closeEmbed()">✕</button>
+    </div>
+    <p>Copy and paste into your webpage:</p>
+    <textarea id="embedCode" class="embed-textarea" readonly></textarea>
+    <button class="embed-copy-btn" onclick="copyEmbed()">Copy code</button>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <span class="footer-copy">© NYCuriosity · Tal Roded</span>
+    <nav class="footer-links" style="flex-wrap:wrap">
+      <a href="https://buymeacoffee.com/nycuriosity" class="footer-support" target="_blank" rel="noopener" aria-label="Support my work on Buy Me a Coffee"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>Support my work</a>
+      <a href="https://talroded.nycuriosity.com" target="_blank" rel="noopener">About</a>
+      <a href="https://www.nycuriosity.com" target="_blank" rel="noopener" aria-label="NYCuriosity on Substack" title="Substack" style="display:inline-flex;align-items:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M22.539 8.242H1.46V5.406h21.08v2.836zM1.46 10.812V24L12 18.11 22.54 24V10.812H1.46zM22.54 0H1.46v2.836h21.08V0z"/></svg></a>
+      <a href="https://www.linkedin.com/in/tal-roded" target="_blank" rel="noopener" aria-label="Tal Roded on LinkedIn" title="LinkedIn" style="display:inline-flex;align-items:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.225 0z"/></svg></a>
+      <a href="https://x.com/TalR24" target="_blank" rel="noopener" aria-label="NYCuriosity on X" title="X" style="display:inline-flex;align-items:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z"/></svg></a>
+      <a href="https://www.instagram.com/talroded" target="_blank" rel="noopener" aria-label="Tal Roded on Instagram" title="Instagram" style="display:inline-flex;align-items:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg></a>
+      <a href="https://www.tiktok.com/@tal_nycuriosity" target="_blank" rel="noopener" aria-label="NYCuriosity on TikTok" title="TikTok" style="display:inline-flex;align-items:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/></svg></a>
+      <a href="https://www.youtube.com/@nycuriosity-yt" target="_blank" rel="noopener" aria-label="NYCuriosity on YouTube" title="YouTube" style="display:inline-flex;align-items:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814z M9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg></a>
+      <a href="https://github.com/TalR24/nycur-data-website" target="_blank" rel="noopener" aria-label="TalR24 on GitHub" title="GitHub" style="display:inline-flex;align-items:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg></a>
+    </nav>
+  </div>
+</footer>
+
+<script>
+  const TL = [{"line":"Canarsie (L)","a":"2003-01","p":"2006-12","d":"2009-02","k":"actual","late":26},{"line":"Flushing (7)","a":"2010-06","p":"2016-12","d":"2018-11","k":"actual","late":23},{"line":"Queens Blvd West (E/F/M/R)","a":"2015-08","p":"2021-03","d":"2022-02","k":"actual","late":11},{"line":"Culver South (F)","a":"2019-02","p":"2023-06","d":"2025-09","k":"actual","late":27},{"line":"8th Avenue (A/C/E)","a":"2020-01","p":"2025-01","d":"2027-10","k":"projected","late":33},{"line":"Queens Blvd East (E/F)","a":"2021-12","p":"2026-06","d":"2028-03","k":"projected","late":21},{"line":"Crosstown (G)","a":"2023-03","p":"2027-09","d":"2029-07","k":"projected","late":22}];
+  const W = 1000, PADL = 232, PADR = 118, PADT = 30, ROW = 44, BAR = 18;
+  const H = PADT + ROW * TL.length + 18;
+  const plotW = W - PADL - PADR;
+  const Y0 = 2002, Y1 = 2030;
+  const mo = s => { const [y, m] = s.split('-').map(Number); return y + (m - 1) / 12; };
+  const xFor = s => PADL + (mo(s) - Y0) / (Y1 - Y0) * plotW;
+  const xYear = y => PADL + (y - Y0) / (Y1 - Y0) * plotW;
+  const svg = document.getElementById('tlChart');
+  const NS = 'http://www.w3.org/2000/svg';
+  function el(tag, attrs, txt) { const n = document.createElementNS(NS, tag); for (const k in attrs) n.setAttribute(k, attrs[k]); if (txt !== undefined) n.textContent = txt; svg.appendChild(n); return n; }
+  // year gridlines
+  for (let y = 2005; y <= 2030; y += 5) {
+    el('line', { x1: xYear(y), y1: PADT - 6, x2: xYear(y), y2: PADT + ROW * TL.length - 8, class: 'c-grid' });
+    el('text', { x: xYear(y), y: PADT - 12, 'text-anchor': 'middle', class: 'c-tick' }, String(y));
+  }
+  // today marker (Aug 2026)
+  const tx = xFor('2026-08');
+  el('line', { x1: tx, y1: PADT - 6, x2: tx, y2: PADT + ROW * TL.length - 8, stroke: '#6b7280', 'stroke-width': 1, class: 'c-dash-ref' });
+  el('text', { x: tx + 4, y: PADT + ROW * TL.length + 6, class: 'c-annot' }, 'Aug 2026');
+  TL.forEach((r, i) => {
+    const y = PADT + i * ROW;
+    el('text', { x: PADL - 12, y: y + BAR / 2 + 4, 'text-anchor': 'end', class: 'c-tick', style: 'font-weight:600;fill:#111827' }, r.line);
+    // award -> promised (blue)
+    el('rect', { x: xFor(r.a), y: y, width: xFor(r.p) - xFor(r.a), height: BAR, rx: 2, fill: '#2563eb' });
+    // promised -> delivered/projected (orange; dashed outline when projected)
+    const w2 = xFor(r.d) - xFor(r.p);
+    if (r.k === 'actual') el('rect', { x: xFor(r.p), y: y, width: w2, height: BAR, rx: 2, fill: '#c2410c' });
+    else el('rect', { x: xFor(r.p), y: y, width: w2, height: BAR, rx: 2, fill: '#fde8dc', stroke: '#c2410c', 'stroke-width': 1.5, class: 'c-dash-est' });
+    // promised tick
+    el('line', { x1: xFor(r.p), y1: y - 3, x2: xFor(r.p), y2: y + BAR + 3, stroke: '#111827', 'stroke-width': 2 });
+    // labels
+    el('text', { x: xFor(r.a) + 6, y: y + BAR / 2 + 4, class: 'c-val', fill: '#fff' }, r.a.slice(0, 4));
+    el('text', { x: xFor(r.d) + 8, y: y + BAR / 2 + 4, class: 'c-val', fill: r.k === 'actual' ? '#c2410c' : '#9a3412', style: 'font-weight:700' }, (r.k === 'actual' ? '' : 'est. ') + '+' + r.late + ' mo');
+  });
+</script>
+</body>
+</html>

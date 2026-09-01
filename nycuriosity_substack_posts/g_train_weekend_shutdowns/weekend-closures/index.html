@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>G Train Weekend Closures, 2023–2026 — NYCuriosity</title>
+  <meta name="description" content="Every weekend the G train was shut on part of the Crosstown line since 2023, detected from station-level ridership: 14 of the first 33 weekends of 2026.">
+  <link rel="canonical" href="https://data.nycuriosity.com/nycuriosity_substack_posts/g_train_weekend_shutdowns/weekend-closures/">
+  <meta property="og:image" content="https://data.nycuriosity.com/website_logo.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta property="og:type"        content="website">
+  <meta property="og:url"         content="https://data.nycuriosity.com/nycuriosity_substack_posts/g_train_weekend_shutdowns/weekend-closures/">
+  <meta property="og:title"       content="G Train Weekend Closures, 2023–2026 — NYCuriosity">
+  <meta property="og:description" content="Every weekend the G train was shut on part of the Crosstown line since 2023, detected from station-level ridership: 14 of the first 33 weekends of 2026.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/chart.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue:       #2563eb;
+      --blue-hover: #1d4ed8;
+      --blue-light: #eff6ff;
+      --blue-mid:   #bfdbfe;
+      --text:       #111827;
+      --text-mid:   #374151;
+      --text-muted: #6b7280;
+      --text-faint: #9ca3af;
+      --bg:         #f8faff;
+      --surface:    #ffffff;
+      --border:     #e5e7eb;
+      --shadow-sm:  0 1px 3px rgba(17,24,39,0.08);
+      --shadow-md:  0 4px 16px rgba(37,99,235,0.10);
+      --radius:     10px;
+      --entries-color:  #2563eb;
+      --arrivals-color: #c2410c;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    header {
+      background: #111827;
+      border-bottom: 1px solid #1f2937;
+      padding: 0 clamp(20px, 5vw, 48px);
+    }
+    .header-inner {
+      max-width: 1100px; margin: 0 auto; height: 56px;
+      display: flex; align-items: center; gap: 16px;
+    }
+    .back-link {
+      font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600;
+      color: #9ca3af; text-decoration: none; display: flex; align-items: center; gap: 5px;
+      padding: 4px 8px 4px 4px; border-radius: 5px; transition: color 0.15s, background 0.15s; white-space: nowrap;
+    }
+    .back-link:hover { color: #60a5fa; background: rgba(96,165,250,0.1); }
+    .header-divider { width: 1px; height: 20px; background: #374151; flex-shrink: 0; }
+    header h1 {
+      font-family: 'Roboto Mono', monospace; font-size: 0.95rem; font-weight: 700;
+      color: #e5e7eb; letter-spacing: -0.02em;
+    }
+
+    .pill-nav {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 10px clamp(20px, 5vw, 48px);
+      display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+    }
+    .pill-nav a {
+      font-size: 0.78rem; font-family: 'Roboto Mono', monospace; font-weight: 600;
+      padding: 4px 12px; border-radius: 20px; text-decoration: none;
+      border: 1px solid var(--border); color: var(--text-muted); background: var(--bg);
+      transition: all 0.15s; white-space: nowrap;
+    }
+    .pill-nav a:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
+    .pill-nav a.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+    .pill-label { font-size: 0.72rem; color: var(--text-faint); font-family: 'Roboto Mono', monospace; white-space: nowrap; }
+
+    .hero {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: clamp(32px, 5vw, 52px) clamp(20px, 5vw, 48px);
+    }
+    .hero-inner { max-width: 1100px; margin: 0 auto; }
+    .breadcrumb {
+      font-family: 'Roboto Mono', monospace; font-size: 0.72rem;
+      color: var(--text-faint); margin-bottom: 14px;
+      display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+    }
+    .breadcrumb a { color: var(--blue); text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+    .breadcrumb span:last-child { color: #FF6319; }
+    .hero-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .hero-tag {
+      font-family: 'Roboto Mono', monospace; font-size: 0.68rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.08em; color: #FF6319;
+      background: #fff4ed; border: 1px solid #ffd0b3; border-radius: 4px; padding: 3px 8px;
+    }
+    .hero-updated { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; color: var(--text-faint); }
+    .hero h1 {
+      font-family: 'Roboto Mono', monospace; font-size: clamp(1.4rem, 3vw, 1.85rem);
+      font-weight: 700; color: var(--text); letter-spacing: -0.03em; line-height: 1.2; margin-bottom: 10px;
+    }
+    .hero h1 span { color: var(--blue); }
+    .hero p { font-size: 0.975rem; color: var(--text-muted); max-width: 680px; line-height: 1.7; }
+    .hero p a { color: var(--blue); text-decoration: none; border-bottom: 1px solid var(--blue-mid); }
+    .hero p a:hover { border-color: var(--blue); }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600;
+      text-decoration: none; border-radius: 7px; padding: 8px 14px;
+      transition: background 0.15s, border-color 0.15s; cursor: pointer; border: none;
+    }
+    .btn-outline { background: var(--surface); color: var(--text-muted); border: 1.5px solid var(--border); }
+    .btn-outline:hover { color: var(--blue); border-color: var(--blue-mid); background: var(--blue-light); }
+
+    main { flex: 1; padding: clamp(28px, 4vw, 48px) clamp(20px, 5vw, 48px); }
+    .main-inner { max-width: 1100px; margin: 0 auto; }
+
+    .c-plot--scroll > svg { min-width: 560px; }
+
+    .context-box {
+      margin-top: 28px; padding: 16px 20px;
+      background: var(--blue-light); border: 1px solid var(--blue-mid); border-radius: var(--radius);
+    }
+    .context-box p { font-size: 0.85rem; color: var(--text-mid); line-height: 1.65; }
+    .context-box p + p { margin-top: 8px; }
+    .context-box strong { color: var(--text); }
+
+    .footnotes {
+      margin-top: 16px; padding: 14px 18px;
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    }
+    .footnotes p { font-size: 0.78rem; color: var(--text-muted); line-height: 1.6; }
+    .footnotes p + p { margin-top: 6px; }
+    .footnotes strong { color: var(--text-mid); }
+    .footnotes a { color: var(--blue); text-decoration: none; border-bottom: 1px solid var(--blue-mid); }
+    .footnotes a:hover { border-color: var(--blue); }
+
+    .embed-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+    .embed-modal-box { background: var(--surface); border-radius: 10px; padding: 24px; max-width: 540px; width: 90%; box-shadow: 0 8px 32px rgba(0,0,0,0.18); }
+    .embed-modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+    .embed-modal-title { font-family: 'Roboto Mono', monospace; font-weight: 700; font-size: 0.9rem; color: var(--text); }
+    .embed-close { background: none; border: none; font-size: 1.1rem; color: var(--text-muted); cursor: pointer; padding: 2px 6px; border-radius: 4px; }
+    .embed-close:hover { color: var(--text); background: var(--bg); }
+    .embed-modal-box > p { font-size: 0.83rem; color: var(--text-muted); margin-bottom: 10px; }
+    .embed-textarea { width: 100%; height: 80px; font-family: 'Roboto Mono', monospace; font-size: 0.72rem; border: 1px solid var(--border); border-radius: 6px; padding: 10px; resize: none; color: var(--text-mid); background: var(--bg); margin-bottom: 12px; }
+    .embed-copy-btn { background: var(--blue); color: #fff; font-family: 'Roboto Mono', monospace; font-size: 0.8rem; font-weight: 600; padding: 7px 18px; border: none; border-radius: 6px; cursor: pointer; transition: background 0.15s; }
+    .embed-copy-btn:hover { background: #1d4ed8; }
+
+    footer { background: var(--surface); border-top: 1px solid var(--border); padding: 20px clamp(20px, 5vw, 48px); margin-top: auto; }
+    .footer-inner { max-width: 1100px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+    .footer-copy { font-size: 0.8rem; color: var(--text-faint); }
+    .footer-links { display: flex; gap: 20px; align-items: center; }
+    .footer-links a { font-size: 0.8rem; color: var(--text-muted); text-decoration: none; transition: color 0.15s; }
+    .footer-links a:hover { color: var(--blue); }
+    .footer-support { display: inline-flex; align-items: center; gap: 5px; font-size: 0.8rem; font-weight: 500; color: #2563eb; text-decoration: none; padding: 5px 11px; border: 1px solid rgba(37,99,235,0.45); border-radius: 6px; transition: color .15s, border-color .15s, background .15s; vertical-align: middle; }
+    .footer-support:hover { color: #fff; background: #2563eb; border-color: #2563eb; }
+    .footer-support svg { flex-shrink: 0; }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
+  <script defer src="/assets/chart.js"></script>
+  <script defer src="/assets/site.js?v=20260804"></script>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="header-inner">
+    <a href="/nycuriosity_substack_posts/g_train_weekend_shutdowns/" class="back-link">← g-train-weekend-shutdowns</a>
+    <div class="header-divider"></div>
+    <h1>Weekend Closures</h1>
+  </div>
+</header>
+
+<!-- VISUALS NAV -->
+<div class="pill-nav">
+  <span class="pill-label">Visuals in this post:</span>
+  <a href="./" class="active">Weekend Closures</a>
+  <a href="../weekend-ridership/">Weekend Riders</a>
+  <a href="../cbtc-timelines/">CBTC Timelines</a>
+  <a href="../bus-speeds/">Bus Speeds</a>
+  <a href="../minutes-by-mode/">Minutes by Mode</a>
+</div>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-inner">
+    <div class="breadcrumb">
+      <a href="/">data.nycuriosity.com</a>
+      <span>›</span>
+      <a href="/nycuriosity_substack_posts/g_train_weekend_shutdowns/">G Train Weekend Shutdowns</a>
+      <span>›</span>
+      <span>Weekend Closures</span>
+    </div>
+    <div class="hero-meta">
+      <span class="hero-tag">Transit</span>
+      <span class="hero-updated">August 2026</span>
+    </div>
+    <h1>The G Has Been Shut on 14 of the First <span>33 Weekends of 2026</span></h1>
+    <p>
+      Every weekend since January 2023 at the ten stations only the G serves, read from the MTA's hourly turnstile data. A station whose Saturday entries fall from 7,000 to 25 was closed, and that pattern repeated on 5 weekends in 2023, 12 in 2024, 10 in 2025, and 14 of the first 33 weekends of 2026, with five more announced through December. Since the summer 2024 shutdown began, riders have lost 34 of 112 weekends on at least one segment.
+    </p>
+    <div class="hero-actions">
+      <a href="/members/?file=nycuriosity_substack_posts/g_train_weekend_shutdowns/data/g_weekend_closures.csv" class="btn btn-outline">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download CSV (members)
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- CHART -->
+<main>
+  <div class="main-inner">
+
+    <div class="c-actions">
+      <button class="c-action-btn" onclick="downloadChart(this)">&#11015; Download PNG</button>
+      <button class="c-action-btn" onclick="showEmbed()">&#60;/&#62; Embed</button>
+    </div>
+
+    <figure class="chart-card" id="chart-box" data-slug="g-train-weekend-closures">
+      <div class="c-head">
+        <h2 class="c-title">The G was closed on 14 of the first 33 weekends of 2026, up from 5 weekends in all of 2023</h2>
+        <p class="c-deck">Weekends on which at least one Crosstown segment was shut, January 2023 to August 2026, detected from entries at the ten stations only the G serves. A station counts as closed when its entries fall below 15% of its median for that day of the week. Dashed cells are closures the MTA has announced for the rest of 2026.</p>
+        <ul class="c-legend">
+          <li><span class="sw" style="background:#2563eb"></span>Court Sq to Bedford-Nostrand closed</li>
+          <li><span class="sw" style="background:#93c5fd"></span>Court Sq to Nassau Av closed</li>
+          <li><span class="sw" style="background:#c2410c"></span>Bedford-Nostrand to Hoyt-Schermerhorn closed</li>
+          <li><svg class="sw" viewBox="0 0 22 14"><rect x="1" y="1" width="20" height="12" rx="2" fill="#fff" stroke="#2563eb" stroke-width="1.5" stroke-dasharray="4 4"/></svg>Announced for the rest of 2026</li>
+          <li><span class="sw" style="background:#e5e7eb"></span>Full G service</li>
+        </ul>
+      </div>
+
+      <div class="c-plot c-plot--scroll">
+        <svg id="calChart" viewBox="0 0 1000 220" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Calendar of weekends from 2023 through 2026 showing which weekends the G train was closed on the north or south segment of the Crosstown line. Closures rise from 5 weekends in 2023 to 14 of the first 33 weekends of 2026."></svg>
+      </div>
+
+      <figcaption class="c-foot">
+        <div class="c-foot-text">
+          <span>Source: <a href="https://data.ny.gov/d/5wq4-mkjj" target="_blank" rel="noopener">MTA Subway Hourly Ridership: 2025–2026</a> and <a href="https://data.ny.gov/d/wujg-7c2s" target="_blank" rel="noopener">2020–2024</a>, via data.ny.gov</span>
+          <span>Note: Closures on the F-shared stretch south of Hoyt-Schermerhorn are not visible in this data because no G-only station sits there. Reroutes that keep stations open are also not counted.</span>
+        </div>
+      </figcaption>
+    </figure>
+
+    <div class="context-box">
+      <p><strong>2026 is the worst year yet, and the announced schedule makes it worse.</strong> Fourteen of the first 33 weekends had a segment shut (42%), against 10 weekends in all of 2025 and 5 in 2023, before the signal project began. Add the five closures the MTA has announced for Aug 22, Sep 12, and the first three weekends of December and 2026 ends with 19 of 52 weekends lost, 37% of the year.</p>
+      <p><strong>The north end takes most of it.</strong> Of the 34 closure weekends since the summer 2024 shutdown began, 25 shut some or all of the Court Sq to Bedford-Nostrand segment, which cuts Greenpoint and Williamsburg off from the rest of the line. March 2026 alone had five consecutive north-segment weekends.</p>
+    </div>
+
+    <div class="footnotes">
+      <p><strong>Method.</strong> The MTA publishes hourly entries for every station complex. For each of the ten stations served only by the G (21 St, Greenpoint Av, Nassau Av, Broadway, Flushing Av, Myrtle-Willoughby Avs, Bedford-Nostrand Avs, Classon Av, Clinton-Washington Avs, Fulton St), daily entries were compared with that station's median for the same day of the week in the same year. A station is counted as closed on a day when its entries fall below 15% of that median; on closure days the count is typically 1 to 40 entries against a median in the thousands. A weekend is counted as a closure when at least two stations were closed on Saturday or Sunday. Holiday weekends dip to 50–65% of median and are not counted.</p>
+      <p><strong>Segments.</strong> "Court Sq to Bedford-Nostrand" means all six north-end stations were dark; "Court Sq to Nassau Av" means only 21 St and Greenpoint Av were, with Nassau Av as the temporary terminal; "Bedford-Nostrand to Hoyt-Schermerhorn" means Classon Av, Clinton-Washington Avs and Fulton St were dark while Bedford-Nostrand served as the terminal. Work between Bergen St and Church Av, where the G shares track and stations with the F, cannot be detected this way, so the count is a floor.</p>
+      <p><strong>Announced closures</strong> are from the MTA's 2026 service-change notices as reported by <a href="https://nyc.streetsblog.org/2026/08/21/another-g-train-shutdown-means-greenpoint-needs-better-bus-priority" target="_blank" rel="noopener">Streetsblog (Aug 21, 2026)</a>: Aug 21–24, Sep 11–14, and the first three weekends of December, all north of Bedford-Nostrand.</p>
+      <p><strong>Sources:</strong> Author's analysis of MTA data via data.ny.gov.</p>
+    </div>
+
+  </div>
+</main>
+
+<!-- EMBED MODAL -->
+<div id="embedModal" class="embed-modal" style="display:none">
+  <div class="embed-modal-box">
+    <div class="embed-modal-header">
+      <span class="embed-modal-title">Embed this chart</span>
+      <button class="embed-close" onclick="closeEmbed()">✕</button>
+    </div>
+    <p>Copy and paste into your webpage:</p>
+    <textarea id="embedCode" class="embed-textarea" readonly></textarea>
+    <button class="embed-copy-btn" onclick="copyEmbed()">Copy code</button>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <span class="footer-copy">© NYCuriosity · Tal Roded</span>
+    <nav class="footer-links" style="flex-wrap:wrap">
+      <a href="https://buymeacoffee.com/nycuriosity" class="footer-support" target="_blank" rel="noopener" aria-label="Support my work on Buy Me a Coffee"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>Support my work</a>
+      <a href="https://talroded.nycuriosity.com" target="_blank" rel="noopener">About</a>
+      <a href="https://www.nycuriosity.com" target="_blank" rel="noopener" aria-label="NYCuriosity on Substack" title="Substack" style="display:inline-flex;align-items:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M22.539 8.242H1.46V5.406h21.08v2.836zM1.46 10.812V24L12 18.11 22.54 24V10.812H1.46zM22.54 0H1.46v2.836h21.08V0z"/></svg></a>
+      <a href="https://www.linkedin.com/in/tal-roded" target="_blank" rel="noopener" aria-label="Tal Roded on LinkedIn" title="LinkedIn" style="display:inline-flex;align-items:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.225 0z"/></svg></a>
+      <a href="https://x.com/TalR24" target="_blank" rel="noopener" aria-label="NYCuriosity on X" title="X" style="display:inline-flex;align-items:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z"/></svg></a>
+      <a href="https://www.instagram.com/talroded" target="_blank" rel="noopener" aria-label="Tal Roded on Instagram" title="Instagram" style="display:inline-flex;align-items:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg></a>
+      <a href="https://www.tiktok.com/@tal_nycuriosity" target="_blank" rel="noopener" aria-label="NYCuriosity on TikTok" title="TikTok" style="display:inline-flex;align-items:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/></svg></a>
+      <a href="https://www.youtube.com/@nycuriosity-yt" target="_blank" rel="noopener" aria-label="NYCuriosity on YouTube" title="YouTube" style="display:inline-flex;align-items:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814z M9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg></a>
+      <a href="https://github.com/TalR24/nycur-data-website" target="_blank" rel="noopener" aria-label="TalR24 on GitHub" title="GitHub" style="display:inline-flex;align-items:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg></a>
+    </nav>
+  </div>
+</footer>
+
+<script>
+  const CAL = [{"d":"2023-01-07","s":"p"},{"d":"2023-01-14","s":"o"},{"d":"2023-01-21","s":"o"},{"d":"2023-01-28","s":"p"},{"d":"2023-02-04","s":"o"},{"d":"2023-02-11","s":"o"},{"d":"2023-02-18","s":"o"},{"d":"2023-02-25","s":"o"},{"d":"2023-03-04","s":"o"},{"d":"2023-03-11","s":"o"},{"d":"2023-03-18","s":"o"},{"d":"2023-03-25","s":"o"},{"d":"2023-04-01","s":"o"},{"d":"2023-04-08","s":"n"},{"d":"2023-04-15","s":"o"},{"d":"2023-04-22","s":"o"},{"d":"2023-04-29","s":"n"},{"d":"2023-05-06","s":"o"},{"d":"2023-05-13","s":"o"},{"d":"2023-05-20","s":"n"},{"d":"2023-05-27","s":"o"},{"d":"2023-06-03","s":"o"},{"d":"2023-06-10","s":"o"},{"d":"2023-06-17","s":"o"},{"d":"2023-06-24","s":"o"},{"d":"2023-07-01","s":"o"},{"d":"2023-07-08","s":"o"},{"d":"2023-07-15","s":"o"},{"d":"2023-07-22","s":"o"},{"d":"2023-07-29","s":"o"},{"d":"2023-08-05","s":"o"},{"d":"2023-08-12","s":"o"},{"d":"2023-08-19","s":"o"},{"d":"2023-08-26","s":"o"},{"d":"2023-09-02","s":"o"},{"d":"2023-09-09","s":"o"},{"d":"2023-09-16","s":"o"},{"d":"2023-09-23","s":"o"},{"d":"2023-09-30","s":"o"},{"d":"2023-10-07","s":"o"},{"d":"2023-10-14","s":"o"},{"d":"2023-10-21","s":"o"},{"d":"2023-10-28","s":"o"},{"d":"2023-11-04","s":"o"},{"d":"2023-11-11","s":"o"},{"d":"2023-11-18","s":"o"},{"d":"2023-11-25","s":"o"},{"d":"2023-12-02","s":"o"},{"d":"2023-12-09","s":"o"},{"d":"2023-12-16","s":"o"},{"d":"2023-12-23","s":"o"},{"d":"2023-12-30","s":"o"},{"d":"2024-01-06","s":"o"},{"d":"2024-01-13","s":"o"},{"d":"2024-01-20","s":"o"},{"d":"2024-01-27","s":"o"},{"d":"2024-02-03","s":"o"},{"d":"2024-02-10","s":"o"},{"d":"2024-02-17","s":"o"},{"d":"2024-02-24","s":"o"},{"d":"2024-03-02","s":"o"},{"d":"2024-03-09","s":"o"},{"d":"2024-03-16","s":"o"},{"d":"2024-03-23","s":"o"},{"d":"2024-03-30","s":"o"},{"d":"2024-04-06","s":"o"},{"d":"2024-04-13","s":"o"},{"d":"2024-04-20","s":"o"},{"d":"2024-04-27","s":"o"},{"d":"2024-05-04","s":"n"},{"d":"2024-05-11","s":"o"},{"d":"2024-05-18","s":"o"},{"d":"2024-05-25","s":"o"},{"d":"2024-06-01","s":"o"},{"d":"2024-06-08","s":"n"},{"d":"2024-06-15","s":"o"},{"d":"2024-06-22","s":"o"},{"d":"2024-06-29","s":"p"},{"d":"2024-07-06","s":"n"},{"d":"2024-07-13","s":"n"},{"d":"2024-07-20","s":"n"},{"d":"2024-07-27","s":"n"},{"d":"2024-08-03","s":"n"},{"d":"2024-08-10","s":"n"},{"d":"2024-08-17","s":"s"},{"d":"2024-08-24","s":"s"},{"d":"2024-08-31","s":"s"},{"d":"2024-09-07","s":"o"},{"d":"2024-09-14","s":"o"},{"d":"2024-09-21","s":"o"},{"d":"2024-09-28","s":"o"},{"d":"2024-10-05","s":"o"},{"d":"2024-10-12","s":"o"},{"d":"2024-10-19","s":"o"},{"d":"2024-10-26","s":"o"},{"d":"2024-11-02","s":"o"},{"d":"2024-11-09","s":"o"},{"d":"2024-11-16","s":"o"},{"d":"2024-11-23","s":"o"},{"d":"2024-11-30","s":"o"},{"d":"2024-12-07","s":"o"},{"d":"2024-12-14","s":"o"},{"d":"2024-12-21","s":"o"},{"d":"2024-12-28","s":"o"},{"d":"2025-01-04","s":"o"},{"d":"2025-01-11","s":"o"},{"d":"2025-01-18","s":"o"},{"d":"2025-01-25","s":"o"},{"d":"2025-02-01","s":"o"},{"d":"2025-02-08","s":"o"},{"d":"2025-02-15","s":"s"},{"d":"2025-02-22","s":"o"},{"d":"2025-03-01","s":"o"},{"d":"2025-03-08","s":"o"},{"d":"2025-03-15","s":"o"},{"d":"2025-03-22","s":"o"},{"d":"2025-03-29","s":"s"},{"d":"2025-04-05","s":"o"},{"d":"2025-04-12","s":"o"},{"d":"2025-04-19","s":"o"},{"d":"2025-04-26","s":"o"},{"d":"2025-05-03","s":"o"},{"d":"2025-05-10","s":"o"},{"d":"2025-05-17","s":"o"},{"d":"2025-05-24","s":"o"},{"d":"2025-05-31","s":"o"},{"d":"2025-06-07","s":"o"},{"d":"2025-06-14","s":"p"},{"d":"2025-06-21","s":"o"},{"d":"2025-06-28","s":"o"},{"d":"2025-07-05","s":"o"},{"d":"2025-07-12","s":"o"},{"d":"2025-07-19","s":"o"},{"d":"2025-07-26","s":"n"},{"d":"2025-08-02","s":"n"},{"d":"2025-08-09","s":"n"},{"d":"2025-08-16","s":"n"},{"d":"2025-08-23","s":"o"},{"d":"2025-08-30","s":"o"},{"d":"2025-09-06","s":"o"},{"d":"2025-09-13","s":"o"},{"d":"2025-09-20","s":"o"},{"d":"2025-09-27","s":"o"},{"d":"2025-10-04","s":"o"},{"d":"2025-10-11","s":"n"},{"d":"2025-10-18","s":"o"},{"d":"2025-10-25","s":"o"},{"d":"2025-11-01","s":"o"},{"d":"2025-11-08","s":"o"},{"d":"2025-11-15","s":"o"},{"d":"2025-11-22","s":"o"},{"d":"2025-11-29","s":"o"},{"d":"2025-12-06","s":"o"},{"d":"2025-12-13","s":"n"},{"d":"2025-12-20","s":"n"},{"d":"2025-12-27","s":"o"},{"d":"2026-01-03","s":"s"},{"d":"2026-01-10","s":"s"},{"d":"2026-01-17","s":"s"},{"d":"2026-01-24","s":"o"},{"d":"2026-01-31","s":"o"},{"d":"2026-02-07","s":"o"},{"d":"2026-02-14","s":"o"},{"d":"2026-02-21","s":"o"},{"d":"2026-02-28","s":"n"},{"d":"2026-03-07","s":"n"},{"d":"2026-03-14","s":"n"},{"d":"2026-03-21","s":"n"},{"d":"2026-03-28","s":"n"},{"d":"2026-04-04","s":"o"},{"d":"2026-04-11","s":"o"},{"d":"2026-04-18","s":"n"},{"d":"2026-04-25","s":"o"},{"d":"2026-05-02","s":"o"},{"d":"2026-05-09","s":"o"},{"d":"2026-05-16","s":"o"},{"d":"2026-05-23","s":"o"},{"d":"2026-05-30","s":"s"},{"d":"2026-06-06","s":"n"},{"d":"2026-06-13","s":"o"},{"d":"2026-06-20","s":"n"},{"d":"2026-06-27","s":"o"},{"d":"2026-07-04","s":"o"},{"d":"2026-07-11","s":"n"},{"d":"2026-07-18","s":"o"},{"d":"2026-07-25","s":"o"},{"d":"2026-08-01","s":"o"},{"d":"2026-08-08","s":"n"},{"d":"2026-08-15","s":"o"}];
+  const SCHED = ['2026-08-22','2026-09-12','2026-12-05','2026-12-12','2026-12-19'];
+  const YEARS = [2023, 2024, 2025, 2026];
+  const COUNTS = { 2023: '5 of 52', 2024: '12 of 52', 2025: '10 of 52', 2026: '14 of 33' };
+  const FILL = { o: '#e5e7eb', n: '#2563eb', p: '#93c5fd', s: '#c2410c' };
+  const W = 1000, PADL = 64, PADR = 92, PADT = 34, ROW = 40, CELL_H = 22, H = PADT + ROW * YEARS.length + 26;
+  const plotW = W - PADL - PADR;
+  const doy = iso => { const d = new Date(iso + 'T00:00:00'); const s = new Date(d.getFullYear(), 0, 1); return Math.round((d - s) / 86400000) + 1; };
+  const xFor = iso => PADL + (doy(iso) - 1) / 366 * plotW;
+  const cellW = plotW / 366 * 7 - 2.5;
+  const rowY = y => PADT + YEARS.indexOf(y) * ROW;
+  const svg = document.getElementById('calChart');
+  const NS = 'http://www.w3.org/2000/svg';
+  function el(tag, attrs, txt) { const n = document.createElementNS(NS, tag); for (const k in attrs) n.setAttribute(k, attrs[k]); if (txt !== undefined) n.textContent = txt; svg.appendChild(n); return n; }
+
+  // month labels along the top
+  ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].forEach((m, i) => {
+    el('text', { x: xFor('2025-' + String(i + 1).padStart(2, '0') + '-01'), y: PADT - 12, class: 'c-tick' }, m);
+  });
+
+  // one cell per weekend
+  CAL.forEach(c => {
+    const y = +c.d.slice(0, 4);
+    el('rect', { x: xFor(c.d), y: rowY(y), width: cellW, height: CELL_H, rx: 2, fill: FILL[c.s] });
+  });
+  // announced closures for the rest of 2026: dashed outline
+  SCHED.forEach(d => el('rect', { x: xFor(d), y: rowY(2026), width: cellW, height: CELL_H, rx: 2, fill: '#ffffff', stroke: '#2563eb', 'stroke-width': 1.5, class: 'c-dash-ref' }));
+
+  // year labels and counts
+  YEARS.forEach(y => {
+    el('text', { x: PADL - 12, y: rowY(y) + CELL_H / 2 + 4, 'text-anchor': 'end', class: 'c-tick', style: 'font-weight:600' }, String(y));
+    el('text', { x: W - PADR + 12, y: rowY(y) + CELL_H / 2 + 4, class: 'c-val', fill: y === 2026 ? '#2563eb' : '#111827', style: 'font-weight:700' }, COUNTS[y]);
+  });
+
+  // summer 2024 full shutdown bracket
+  const bx1 = xFor('2024-06-29'), bx2 = xFor('2024-08-31') + cellW, by = rowY(2024) - 5;
+  el('path', { d: `M${bx1},${by + 3} V${by} H${bx2} V${by + 3}`, fill: 'none', stroke: '#6b7280', 'stroke-width': 1 });
+  el('text', { x: bx1, y: by - 5, class: 'c-annot' }, 'Summer 2024 full shutdown, Jun 28 to Sep 3');
+
+  // end of observed data
+  const ex = xFor('2026-08-15') + cellW + 2;
+  el('line', { x1: ex, y1: rowY(2026) - 3, x2: ex, y2: rowY(2026) + CELL_H + 3, stroke: '#6b7280', 'stroke-width': 1 });
+  el('text', { x: ex - 2, y: rowY(2026) + CELL_H + 18, 'text-anchor': 'end', class: 'c-annot' }, 'observed through Aug 16');
+  el('text', { x: ex + 6, y: rowY(2026) + CELL_H + 18, class: 'c-annot' }, 'announced');
+</script>
+</body>
+</html>
