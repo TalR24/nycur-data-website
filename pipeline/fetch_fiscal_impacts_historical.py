@@ -420,6 +420,16 @@ def merge_into_main(records: list[dict]) -> int:
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 
+def _token_from_file() -> str | None:
+    """Local fallback: ~/.config/nycur/legistar_token (chmod 600), one line.
+    Keeps the token out of the repo, the shell history and chat transcripts."""
+    p = Path.home() / ".config" / "nycur" / "legistar_token"
+    try:
+        return p.read_text().strip() or None
+    except OSError:
+        return None
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="NYC Council Historical Fiscal Impacts Scraper")
     parser.add_argument("--years",       default="2014-2023", metavar="START-END",
@@ -432,7 +442,7 @@ def main() -> int:
                         help="Enumerate + check for attachments, but skip downloads and Claude")
     parser.add_argument("--reset",       action="store_true",
                         help="Delete checkpoint and start from scratch")
-    parser.add_argument("--token",       default=os.environ.get("LEGISTAR_TOKEN"),
+    parser.add_argument("--token",       default=os.environ.get("LEGISTAR_TOKEN") or _token_from_file(),
                         help="Legistar REST API token for Phase 1 enumeration "
                              "(or set LEGISTAR_TOKEN env var). Without this, falls back "
                              "to web-scraping, which is capped at ~164 recent bills.")
