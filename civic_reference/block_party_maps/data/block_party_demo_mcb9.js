@@ -1,0 +1,1 @@
+window.DB={"places": [], "stats": {"places": 0, "resolutions": 0, "date_min": null, "date_max": null, "by_geocoder": {}}, "decisions": [], "decision_emoji": {}, "decision_color": {}, "committees": [], "committee_emoji": {}, "decision_of": {}, "topics": [], "topic_emoji": {}, "districts": [], "agencies": []};
