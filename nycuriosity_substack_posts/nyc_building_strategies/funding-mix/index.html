@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>How Transit Agencies Pay the Bills — NYCuriosity</title>
   <meta name="description" content="Operating revenue mix — fares vs. government subsidy vs. other income — for the MTA, Transport for London, and Hong Kong's MTR.">
@@ -15,33 +16,34 @@
   <meta property="og:description" content="Operating revenue mix — fares vs. government subsidy vs. other income — for the MTA, Transport for London, and Hong Kong's MTR.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/brand.css">
   <link rel="stylesheet" href="/assets/chart.css">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --blue:       #2563eb;
-      --blue-hover: #1d4ed8;
-      --blue-light: #eff6ff;
-      --blue-mid:   #bfdbfe;
-      --text:       #111827;
-      --text-mid:   #374151;
-      --text-muted: #6b7280;
-      --text-faint: #9ca3af;
-      --bg:         #f8faff;
+      --blue:       #CF4B0C;
+      --blue-hover: #A44D00;
+      --blue-light: #FAF6F1;
+      --blue-mid:   #EDC3A5;
+      --text:       #1A1208;
+      --text-mid:   #4A3B2C;
+      --text-muted: #6B5B4A;
+      --text-faint: #9A8B7A;
+      --bg:         #FAF6F1;
       --surface:    #ffffff;
-      --border:     #e5e7eb;
-      --shadow-sm:  0 1px 3px rgba(17,24,39,0.08);
-      --shadow-md:  0 4px 16px rgba(37,99,235,0.10);
+      --border:     #E7DDCE;
+      --shadow-sm:  0 1px 3px rgba(26,18,8,0.08);
+      --shadow-md:  0 4px 16px rgba(207,75,12,0.10);
       --radius:     10px;
-      --fares-color: #2563eb;
-      --gov-color:   #6b7280;
-      --other-color: #93c5fd;
+      --fares-color: #CF4B0C;
+      --gov-color:   #6B5B4A;
+      --other-color: #FFD23F;
     }
 
     body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-family: 'Helvetica Neue', Helvetica, Arial, 'Inter', system-ui, sans-serif;
       background: var(--bg);
       color: var(--text);
       min-height: 100vh;
@@ -51,8 +53,8 @@
 
     /* ── HEADER ──────────────────────────────────────────── */
     header {
-      background: #111827;
-      border-bottom: 1px solid #1f2937;
+      background: #170C03;
+      border-bottom: 1px solid #2E1C0C;
       padding: 0 clamp(20px, 5vw, 48px);
     }
     .header-inner {
@@ -60,15 +62,15 @@
       display: flex; align-items: center; gap: 16px;
     }
     .back-link {
-      font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600;
-      color: #9ca3af; text-decoration: none; display: flex; align-items: center; gap: 5px;
+      font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.75rem; font-weight: 600;
+      color: #9A8B7A; text-decoration: none; display: flex; align-items: center; gap: 5px;
       padding: 4px 8px 4px 4px; border-radius: 5px; transition: color 0.15s, background 0.15s; white-space: nowrap;
     }
-    .back-link:hover { color: #60a5fa; background: rgba(96,165,250,0.1); }
-    .header-divider { width: 1px; height: 20px; background: #374151; flex-shrink: 0; }
+    .back-link:hover { color: #FFD23F; background: rgba(255,210,63,0.1); }
+    .header-divider { width: 1px; height: 20px; background: #4A3B2C; flex-shrink: 0; }
     header h1 {
-      font-family: 'Roboto Mono', monospace; font-size: 0.95rem; font-weight: 700;
-      color: #e5e7eb; letter-spacing: -0.02em;
+      font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.95rem; font-weight: 700;
+      color: #E7DDCE; letter-spacing: -0.02em;
     }
 
     /* ── PILL NAV ─────────────────────────────────────────── */
@@ -79,14 +81,14 @@
       display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
     }
     .pill-nav a {
-      font-size: 0.78rem; font-family: 'Roboto Mono', monospace; font-weight: 600;
+      font-size: 0.78rem; font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight: 600;
       padding: 4px 12px; border-radius: 20px; text-decoration: none;
       border: 1px solid var(--border); color: var(--text-muted); background: var(--bg);
       transition: all 0.15s; white-space: nowrap;
     }
     .pill-nav a:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
     .pill-nav a.active { background: var(--blue); color: #fff; border-color: var(--blue); }
-    .pill-label { font-size: 0.72rem; color: var(--text-faint); font-family: 'Roboto Mono', monospace; white-space: nowrap; }
+    .pill-label { font-size: 0.72rem; color: var(--text-faint); font-family: 'JetBrains Mono', ui-monospace, monospace; white-space: nowrap; }
 
     /* ── HERO ────────────────────────────────────────────── */
     .hero {
@@ -96,7 +98,7 @@
     }
     .hero-inner { max-width: 900px; margin: 0 auto; }
     .breadcrumb {
-      font-family: 'Roboto Mono', monospace;
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
       font-size: 0.72rem;
       color: var(--text-faint);
       margin-bottom: 14px;
@@ -107,20 +109,20 @@
     }
     .breadcrumb a { color: var(--blue); text-decoration: none; }
     .breadcrumb a:hover { text-decoration: underline; }
-    .breadcrumb span:last-child { color: #FF6319; }
+    .breadcrumb span:last-child { color: #A44D00; }
     .hero-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 14px; }
     .hero-tag {
-      font-family: 'Roboto Mono', monospace;
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
       font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em;
-      color: #FF6319; background: #fff4ed; border: 1px solid #ffd0b3;
+      color: #A44D00; background: #FAF6F1; border: 1px solid #E7DDCE;
       border-radius: 4px; padding: 3px 8px;
     }
-    .hero-updated { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; color: var(--text-faint); }
+    .hero-updated { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.72rem; color: var(--text-faint); }
     .hero h1 {
-      font-family: 'Roboto Mono', monospace;
+      font-family: 'Playfair Display', Georgia, serif;
       font-size: clamp(1.4rem, 3vw, 1.85rem);
       font-weight: 700; color: var(--text);
-      letter-spacing: -0.03em; line-height: 1.2; margin-bottom: 10px;
+      letter-spacing: -0.012em; line-height: 1.2; margin-bottom: 10px;
     }
     .hero h1 span { color: var(--blue); }
     .hero p {
@@ -131,7 +133,7 @@
     .hero-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
     .btn {
       display: inline-flex; align-items: center; gap: 6px;
-      font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600;
+      font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.75rem; font-weight: 600;
       text-decoration: none; border-radius: 7px; padding: 8px 14px;
       transition: background 0.15s, border-color 0.15s; cursor: pointer; border: none;
     }
@@ -153,11 +155,11 @@
       display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;
     }
     .agency-name {
-      font-family: 'Roboto Mono', monospace;
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
       font-size: 0.88rem; font-weight: 700; color: var(--text);
     }
     .agency-meta {
-      font-family: 'Roboto Mono', monospace;
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
       font-size: 0.72rem; color: var(--text-faint);
     }
     .stack-track {
@@ -181,21 +183,21 @@
     .stack-seg.gov   { background: var(--gov-color); }
     .stack-seg.other { background: var(--other-color); }
     .seg-pct {
-      font-family: 'Roboto Mono', monospace;
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
       font-size: 0.74rem; font-weight: 600;
       white-space: nowrap;
       opacity: 0;
       transition: opacity 0.4s ease 0.55s;
     }
     .stack-seg.fares .seg-pct, .stack-seg.gov .seg-pct { color: #ffffff; }
-    .stack-seg.other .seg-pct { color: #1e3a8a; }
+    .stack-seg.other .seg-pct { color: #692807; }
     .seg-pct-outside {
-      font-family: 'Roboto Mono', monospace;
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
       font-size: 0.7rem; font-weight: 600; color: var(--text-muted);
       white-space: nowrap; margin-left: 6px; align-self: center;
     }
     .recovery-line {
-      font-family: 'Roboto Mono', monospace;
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
       font-size: 0.72rem; color: var(--text-muted);
       line-height: 1.5;
     }
@@ -211,7 +213,7 @@
 
     /* ── CSV DOWNLOAD BUTTON ─────────────────────────────── */
     .dl-btn {
-      font-family: 'Roboto Mono', monospace; font-size: 0.72rem; font-weight: 600;
+      font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.72rem; font-weight: 600;
       padding: 5px 12px; border-radius: 16px; background: var(--blue-light);
       color: var(--blue); border: 1px solid var(--blue-mid); cursor: pointer;
       text-decoration: none; transition: all 0.15s; white-space: nowrap;
@@ -222,38 +224,38 @@
     .donut-row { display: flex; gap: 12px; justify-content: space-around; flex-wrap: wrap; margin-bottom: 8px; }
     .donut-block { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1 1 150px; max-width: 220px; }
     .donut { width: 150px; height: 150px; }
-    .donut-pct { font-family: 'Roboto Mono', monospace; font-size: 22px; font-weight: 700; fill: var(--text); letter-spacing: -0.02em; }
-    .donut-sub { font-family: 'Roboto Mono', monospace; font-size: 9px; fill: var(--text-muted); letter-spacing: 0.06em; }
-    .donut-name { font-family: 'Roboto Mono', monospace; font-size: 0.9rem; font-weight: 700; color: var(--text); }
-    .donut-rec { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; color: var(--text-muted); text-align: center; line-height: 1.45; }
+    .donut-pct { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 22px; font-weight: 700; fill: var(--text); letter-spacing: -0.02em; }
+    .donut-sub { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 9px; fill: var(--text-muted); letter-spacing: 0.06em; }
+    .donut-name { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.9rem; font-weight: 700; color: var(--text); }
+    .donut-rec { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.72rem; color: var(--text-muted); text-align: center; line-height: 1.45; }
     .donut-rec strong { color: var(--blue); }
-    .strip-title { font-family: 'Roboto Mono', monospace; font-size: 0.82rem; font-weight: 700; color: var(--text); margin: 20px 0 2px; }
+    .strip-title { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.82rem; font-weight: 700; color: var(--text); margin: 20px 0 2px; }
     .strip-sub { font-size: 0.76rem; color: var(--text-muted); margin-bottom: 6px; line-height: 1.5; }
     #recovery-strip svg { width: 100%; height: auto; display: block; }
-    .dp-axis { font-family: 'Roboto Mono', monospace; font-size: 13px; fill: var(--text-muted); letter-spacing: 0.02em; }
-    .dp-axis-note { font-family: 'Roboto Mono', monospace; font-size: 11px; fill: var(--text-faint); }
-    .dp-name { font-family: 'Roboto Mono', monospace; font-size: 14px; font-weight: 700; letter-spacing: 0.01em; }
+    .dp-axis { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 13px; fill: var(--text-muted); letter-spacing: 0.02em; }
+    .dp-axis-note { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 11px; fill: var(--text-faint); }
+    .dp-name { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 14px; font-weight: 700; letter-spacing: 0.01em; }
     /* PNG text breathing room (commas/parentheses) */
     .seg-pct, .seg-pct-outside, .agency-meta { letter-spacing: 0.012em; }
 
     /* ── DATA TABLE ──────────────────────────────────────── */
     .data-section { margin-top: 28px; }
     .data-section-head { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
-    .data-section-title { font-family: 'Roboto Mono', monospace; font-size: 0.95rem; font-weight: 700; color: var(--text); letter-spacing: -0.02em; }
+    .data-section-title { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.95rem; font-weight: 700; color: var(--text); letter-spacing: -0.02em; }
     .data-section-note { font-size: 0.78rem; color: var(--text-faint); }
     .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); overflow-x: auto; }
     table.data-table { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
-    table.data-table thead th { font-family: 'Roboto Mono', monospace; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); text-align: left; padding: 11px 14px; border-bottom: 2px solid var(--border); background: var(--bg); white-space: nowrap; }
+    table.data-table thead th { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); text-align: left; padding: 11px 14px; border-bottom: 2px solid var(--border); background: var(--bg); white-space: nowrap; }
     table.data-table tbody td { padding: 10px 14px; border-bottom: 1px solid var(--border); color: var(--text-mid); line-height: 1.4; vertical-align: top; }
     table.data-table tbody tr:last-child td { border-bottom: none; }
     table.data-table tbody tr:hover { background: var(--blue-light); }
-    table.data-table .num { font-family: 'Roboto Mono', monospace; text-align: right; white-space: nowrap; color: var(--text); font-weight: 600; }
+    table.data-table .num { font-family: 'JetBrains Mono', ui-monospace, monospace; text-align: right; white-space: nowrap; color: var(--text); font-weight: 600; }
     table.data-table th.num { text-align: right; }
     table.data-table .name-cell { font-weight: 600; color: var(--text); }
     table.data-table .sub { display: block; font-size: 0.72rem; color: var(--text-faint); font-weight: 400; margin-top: 2px; }
-    .tbl-tag { display: inline-block; font-family: 'Roboto Mono', monospace; font-size: 0.66rem; font-weight: 600; padding: 2px 7px; border-radius: 4px; background: var(--blue-light); color: var(--blue); border: 1px solid var(--blue-mid); white-space: nowrap; }
-    .tbl-tag.done { background: #dcfce7; color: #15803d; border-color: #bbf7d0; }
-    .tbl-tag.plan { background: #fef3c7; color: #b45309; border-color: #fde68a; }
+    .tbl-tag { display: inline-block; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.66rem; font-weight: 600; padding: 2px 7px; border-radius: 4px; background: var(--blue-light); color: var(--blue); border: 1px solid var(--blue-mid); white-space: nowrap; }
+    .tbl-tag.done { background: #DCEDF4; color: #226287; border-color: #C6E4EF; }
+    .tbl-tag.plan { background: #FDF3D8; color: #A44D00; border-color: #FFE59A; }
     @media (max-width: 560px) { table.data-table { font-size: 0.78rem; } table.data-table thead th, table.data-table tbody td { padding: 8px 10px; } }
 
     /* ── FOOTNOTES ───────────────────────────────────────── */
@@ -291,13 +293,13 @@
     .embed-modal { position:fixed; inset:0; background:rgba(0,0,0,0.45); display:flex; align-items:center; justify-content:center; z-index:1000; }
     .embed-modal-box { background:var(--surface); border-radius:10px; padding:24px; max-width:540px; width:90%; box-shadow:0 8px 32px rgba(0,0,0,0.18); }
     .embed-modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
-    .embed-modal-title { font-family:'Roboto Mono',monospace; font-weight:700; font-size:0.9rem; color:var(--text); }
+    .embed-modal-title { font-family:'JetBrains Mono', ui-monospace, monospace; font-weight:700; font-size:0.9rem; color:var(--text); }
     .embed-close { background:none; border:none; font-size:1.1rem; color:var(--text-muted); cursor:pointer; padding:2px 6px; border-radius:4px; }
     .embed-close:hover { color:var(--text); background:var(--bg); }
     .embed-modal-box > p { font-size:0.83rem; color:var(--text-muted); margin-bottom:10px; }
-    .embed-textarea { width:100%; height:80px; font-family:'Roboto Mono',monospace; font-size:0.72rem; border:1px solid var(--border); border-radius:6px; padding:10px; resize:none; color:var(--text-mid); background:var(--bg); margin-bottom:12px; }
-    .embed-copy-btn { background:var(--blue); color:#fff; font-family:'Roboto Mono',monospace; font-size:0.8rem; font-weight:600; padding:7px 18px; border:none; border-radius:6px; cursor:pointer; transition:background 0.15s; }
-    .embed-copy-btn:hover { background:#1d4ed8; }
+    .embed-textarea { width:100%; height:80px; font-family:'JetBrains Mono', ui-monospace, monospace; font-size:0.72rem; border:1px solid var(--border); border-radius:6px; padding:10px; resize:none; color:var(--text-mid); background:var(--bg); margin-bottom:12px; }
+    .embed-copy-btn { background:var(--blue); color:#fff; font-family:'JetBrains Mono', ui-monospace, monospace; font-size:0.8rem; font-weight:600; padding:7px 18px; border:none; border-radius:6px; cursor:pointer; transition:background 0.15s; }
+    .embed-copy-btn:hover { background:#A44D00; }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
   <script defer src="/assets/chart.js"></script>
@@ -306,11 +308,11 @@
 .header-link{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border:1px solid rgba(255,255,255,0.15);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
 .header-link:hover{color:#fff;border-color:rgba(255,255,255,0.35);background:rgba(255,255,255,0.08);}
 .header-link svg{flex-shrink:0;}
-.support-link{display:inline-flex;align-items:center;gap:5px;font-size:0.8rem;font-weight:500;color:#93c5fd;text-decoration:none;padding:5px 11px;border:1px solid rgba(37,99,235,0.45);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
-.support-link:hover{color:#fff;background:#2563eb;border-color:#2563eb;}
+.support-link{display:inline-flex;align-items:center;gap:5px;font-size:0.8rem;font-weight:500;color:#FFD23F;text-decoration:none;padding:5px 11px;border:1px solid rgba(207,75,12,0.45);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
+.support-link:hover{color:#fff;background:#CF4B0C;border-color:#CF4B0C;}
 .support-link svg{flex-shrink:0;}
-.footer-support{display:inline-flex;align-items:center;gap:5px;font-size:0.8rem;font-weight:500;color:#2563eb;text-decoration:none;padding:5px 11px;border:1px solid rgba(37,99,235,0.45);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
-.footer-support:hover{color:#fff;background:#2563eb;border-color:#2563eb;}
+.footer-support{display:inline-flex;align-items:center;gap:5px;font-size:0.8rem;font-weight:500;color:#CF4B0C;text-decoration:none;padding:5px 11px;border:1px solid rgba(207,75,12,0.45);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
+.footer-support:hover{color:#fff;background:#CF4B0C;border-color:#CF4B0C;}
 .footer-support svg{flex-shrink:0;}
 .footer-support{vertical-align:middle;}
 .footer-links{align-items:center;}
@@ -322,6 +324,7 @@
 <!-- HEADER -->
 <header>
   <div class="header-inner">
+    <a href="/" class="header-mark" aria-label="NYCuriosity Data home"><img src="/assets/brand/Logomark_C.svg" alt="" style="height:21px;width:21px;display:block"></a>
     <a href="/nycuriosity_substack_posts/nyc_building_strategies/" class="back-link">← new-york-needs-to-grow</a>
     <div class="header-divider"></div>
     <h1>Funding Mix</h1>
@@ -565,7 +568,7 @@
     if (row) {
       const C = 2 * Math.PI * 54;
       row.innerHTML = AGENCIES.map(a => {
-        const segs = [[a.fares, '#2563eb'], [a.gov, '#6b7280'], [a.other, '#93c5fd']];
+        const segs = [[a.fares, '#CF4B0C'], [a.gov, '#6B5B4A'], [a.other, '#FFD23F']];
         let off = 0, arcs = '';
         segs.forEach(([pct, col]) => {
           if (pct <= 0) return;
@@ -590,12 +593,12 @@
       const W = 1000, H = 118, x0 = 58, x1 = W - 110, y = 66, max = 160;
       const xOf = v => x0 + v / max * (x1 - x0);
       let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Farebox recovery ratio: MTA 26%, TfL 63%, MTR about 150%">`;
-      s += `<line x1="${x0}" y1="${y}" x2="${x1}" y2="${y}" stroke="#d1d5db" stroke-width="1.5"/>`;
-      [0, 50, 100, 150].forEach(t => { const tx = xOf(t).toFixed(1); s += `<line x1="${tx}" y1="${y - 5}" x2="${tx}" y2="${y + 5}" stroke="#d1d5db" stroke-width="1"/>`; s += `<text x="${tx}" y="${y + 24}" text-anchor="middle" class="dp-axis">${t}%</text>`; });
+      s += `<line x1="${x0}" y1="${y}" x2="${x1}" y2="${y}" stroke="#D3C4AF" stroke-width="1.5"/>`;
+      [0, 50, 100, 150].forEach(t => { const tx = xOf(t).toFixed(1); s += `<line x1="${tx}" y1="${y - 5}" x2="${tx}" y2="${y + 5}" stroke="#D3C4AF" stroke-width="1"/>`; s += `<text x="${tx}" y="${y + 24}" text-anchor="middle" class="dp-axis">${t}%</text>`; });
       const be = xOf(100).toFixed(1);
       s += `<line x1="${be}" y1="28" x2="${be}" y2="${y}" class="c-refline c-dash-ref"/>`;
       s += `<text x="${be}" y="20" text-anchor="middle" class="dp-axis-note">covers 100% of running cost</text>`;
-      [['MTA', 26, '26'], ['TfL', 63, '63'], ['MTR', 150, '~150']].forEach(([n, v, lab]) => { const tx = xOf(v).toFixed(1); s += `<circle cx="${tx}" cy="${y}" r="7" fill="#2563eb" stroke="#fff" stroke-width="1.5"/>`; s += `<text x="${tx}" y="${y - 16}" text-anchor="middle" class="dp-name" fill="#1e3a8a">${n} ${lab}%</text>`; });
+      [['MTA', 26, '26'], ['TfL', 63, '63'], ['MTR', 150, '~150']].forEach(([n, v, lab]) => { const tx = xOf(v).toFixed(1); s += `<circle cx="${tx}" cy="${y}" r="7" fill="#CF4B0C" stroke="#fff" stroke-width="1.5"/>`; s += `<text x="${tx}" y="${y - 16}" text-anchor="middle" class="dp-name" fill="#692807">${n} ${lab}%</text>`; });
       s += `</svg>`;
       strip.innerHTML = s;
     }

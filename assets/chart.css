@@ -7,66 +7,98 @@
    rebrand should be a change to the :root block below and nothing else, so
    never hardcode a chart colour or size in page HTML.
 
-   Load with:  <link rel="stylesheet" href="/assets/chart.css">
+   Load with:  <link rel="stylesheet" href="/assets/brand.css">
+               <link rel="stylesheet" href="/assets/chart.css">
    Pair with:  <script defer src="/assets/chart.js"></script>
 
-   Fonts required on the page (Inter 700 is new — older pages loaded only 600):
-   Roboto+Mono:wght@400;500;600;700 and Inter:wght@400;500;600;700
+   Fonts required on the page:
+   Playfair+Display:wght@400;500;600;700, JetBrains+Mono:wght@400;500;600;700
+   and Inter:wght@400;500;600;700 (the Helvetica fallback).
+
+   Since the 2026 rebrand every value below resolves to a token in brand.css.
+   Change a brand colour there, not here; change a CHART RULE here. The token
+   names are unchanged from the pre-rebrand system on purpose, so all ~70
+   live chart pages inherit the new brand without being touched.
    ========================================================================== */
 
 :root {
   /* ---- type ------------------------------------------------------------ */
-  --c-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif;
-  --c-mono: 'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --c-sans: var(--b-sans);
+  --c-mono: var(--b-mono);
+  --c-display: var(--b-display);
 
   /* ---- ink ------------------------------------------------------------- */
-  --c-ink:          #111827;  /* titles, emphasis */
-  --c-ink-2:        #374151;  /* deck, body */
-  --c-ink-3:        #6b7280;  /* axis ticks, source line. AA at 11px on white */
-  --c-ink-4:        #9ca3af;  /* decorative only. Never body text on white. */
-  --c-surface:      #ffffff;
-  --c-surface-2:    #fbfcfe;  /* chart footer ground */
-  --c-line:         #e5e7eb;  /* gridlines, borders */
-  --c-line-strong:  #cfd8e8;  /* zero baseline, one step darker than a gridline */
-  --c-radius:       10px;
-  --c-shadow:       0 1px 3px rgba(17,24,39,0.08);
+  --c-ink:          var(--b-ink);    /* titles, emphasis */
+  --c-ink-2:        var(--b-ink-2);  /* deck, body */
+  --c-ink-3:        var(--b-ink-3);  /* axis ticks, source line. AA at 11px */
+  --c-ink-4:        var(--b-ink-4);  /* decorative only. Never body text. */
+  --c-surface:      var(--b-surface);
+  --c-surface-2:    var(--b-surface-2);  /* chart footer ground = Canvas Cream */
+  --c-line:         var(--b-line);       /* gridlines, borders */
+  --c-line-strong:  var(--b-line-strong);/* zero baseline, a step darker */
+  --c-radius:       var(--b-radius);
+  --c-shadow:       var(--b-shadow);
 
-  /* ---- categorical: series different in kind. Max four, in this order. -- */
-  --c-cat-1: #2563eb;
-  --c-cat-2: #c2410c;
-  --c-cat-3: #6b7280;
-  --c-cat-4: #16a34a;
-  --c-alert: #dc2626;   /* outliers, negatives, urgent callouts */
-  --c-good:  #16a34a;
+  /* ---- categorical: series different in kind. Max four, in this order. --
+     The guide caps a chart at 3-4 categorical colours. Chartreuse is NOT in
+     this list: it is reserved for alerts and anomalies. brand_spec.md §5.1 */
+  --c-cat-1: var(--b-tangerine);
+  --c-cat-2: var(--b-lightblue);
+  --c-cat-3: var(--b-brown);
+  --c-cat-4: var(--b-fuchsia);
+  --c-alert: var(--b-chartreuse);  /* outliers, anomalies, critical thresholds */
 
-  /* ---- sequential: ranked bars of 6+, choropleths. Rank encodes value. -- */
-  --c-seq-1:  #1e3a8a;
-  --c-seq-2:  #1e40af;
-  --c-seq-3:  #1d4ed8;
-  --c-seq-4:  #2563eb;
-  --c-seq-5:  #3b82f6;
-  --c-seq-6:  #519bf8;
-  --c-seq-7:  #60a5fa;
-  --c-seq-8:  #7db3fb;
-  --c-seq-9:  #93c5fd;
-  --c-seq-10: #aed4fe;
-  --c-seq-11: #bfdbfe;
-  /* Value labels sit white on steps 1-5 and navy on 6-11, where white text
-     drops below 3:1. chart.js seqLabelInk() applies this. */
-  --c-seq-ink-dark: #1e3a8a;
-  --c-residual:     #6b7280;  /* Unspecified / Other / Don't know. Always last. */
+  /* The guide supplies no positive/negative pair. Warm/cool opposition, both
+     AA as text, standing in for the retired red/green. brand_spec.md §2.6 */
+  --c-bad:  var(--b-brown);
+  --c-good: #226287;
 
-  /* ---- diverging: data straddling a meaningful zero -------------------- */
-  --c-div-neg-3: #b91c1c;
-  --c-div-neg-2: #dc2626;
-  --c-div-neg-1: #fca5a5;
-  --c-div-zero:  #f3f4f6;
-  --c-div-pos-1: #93c5fd;
-  --c-div-pos-2: #3b82f6;
-  --c-div-pos-3: #1d4ed8;
+  /* ---- sequential: ranked bars of 6+, choropleths. Rank encodes value. --
+     Tangerine ramp, monotonic luminance 0.045 -> 0.854. brand_spec.md §5.2 */
+  --c-seq-1:  #692807;
+  --c-seq-2:  #8A360B;
+  --c-seq-3:  #A94610;
+  --c-seq-4:  #C75616;
+  --c-seq-5:  #E3681E;
+  --c-seq-6:  #E48041;
+  --c-seq-7:  #E69763;
+  --c-seq-8:  #E9AD84;
+  --c-seq-9:  #EDC3A5;
+  --c-seq-10: #F2D7C4;
+  --c-seq-11: #F8ECE2;
+  /* Value labels sit white on steps 1-3 and ink from step 5 on, where white
+     drops below 3:1. Step 4 carries either. chart.js seqLabelInk() applies. */
+  --c-seq-ink-dark: var(--b-ink);
+  --c-residual:     var(--b-ink-4);  /* Unspecified / Other. Always last. */
 
-  /* ---- structural: never a data series --------------------------------- */
-  --c-signal: #FF6319;
+  /* Cool alternate ramp, for a second continuous scale on the same page. */
+  --c-seqb-1:  #133F53;
+  --c-seqb-2:  #1B5670;
+  --c-seqb-3:  #236D8E;
+  --c-seqb-4:  #2B85AB;
+  --c-seqb-5:  #339DC8;
+  --c-seqb-6:  #4FACD1;
+  --c-seqb-7:  #6DBBD8;
+  --c-seqb-8:  #8BC9DF;
+  --c-seqb-9:  #A9D7E7;
+  --c-seqb-10: #C6E4EF;
+  --c-seqb-11: #E3F2F7;
+
+  /* ---- diverging: data straddling a meaningful zero --------------------
+     Warm to cool through a Canvas Cream zero. brand_spec.md §5.3 */
+  --c-div-neg-3: #773903;
+  --c-div-neg-2: #A54D12;
+  --c-div-neg-1: #E48B58;
+  --c-div-zero:  var(--b-cream);
+  --c-div-pos-1: #90BFD5;
+  --c-div-pos-2: #459CC4;
+  --c-div-pos-3: #226287;
+
+  /* ---- structural: never a data series ---------------------------------
+     The guide makes the axis line itself the structural signature:
+     "Axes are technical borders: Tangerine (#F26522) with 1px weight." */
+  --c-signal: var(--b-tangerine);
+  --c-axis:   var(--b-tangerine);
 }
 
 /* ==========================================================================
@@ -243,8 +275,13 @@
    Applied as classes on SVG elements so pages stop inlining these values.
    ========================================================================== */
 
+/* The guide makes the axis a brand signature: "Axes are technical borders:
+   Tangerine (#F26522) with 1px weight. Gridlines are subtle." Its stated
+   gridline colour (#FAF6F1) is invisible on a white card at 1.08:1, so
+   gridlines use the warm border token instead. brand_spec.md §5.4 */
 .c-grid      { stroke: var(--c-line); stroke-width: 1; }
-.c-baseline  { stroke: var(--c-line-strong); stroke-width: 1; }
+.c-baseline,
+.c-axis      { stroke: var(--c-axis); stroke-width: 1; }
 .c-tick {
   font-family: var(--c-mono); font-size: 11px; fill: var(--c-ink-3);
 }
@@ -282,7 +319,7 @@
   padding: 6px 14px; border-radius: 6px; border: 1px solid var(--c-line);
   cursor: pointer; transition: color .15s, border-color .15s, background .15s;
 }
-.c-action-btn:hover { border-color: var(--c-cat-1); color: var(--c-cat-1); background: #eff6ff; }
+.c-action-btn:hover { border-color: var(--c-cat-1); color: var(--b-tangerine-deep); background: var(--b-cream); }
 .c-action-btn:focus-visible { outline: 2px solid var(--c-cat-1); outline-offset: 2px; }
 .c-action-btn:disabled { opacity: .6; cursor: not-allowed; }
 

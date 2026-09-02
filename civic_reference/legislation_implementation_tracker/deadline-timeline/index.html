@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Deadline Timeline — NYC Legislation Implementation Tracker — NYCuriosity</title>
   <meta name="description" content="Statutory deadlines from NYC local laws in chronological order: what city agencies owe, when it is due, what is past due, and the recurring duties that never expire.">
@@ -15,47 +16,48 @@
   <meta property="og:description" content="Statutory deadlines from NYC local laws in chronological order: what city agencies owe, when it is due, and what is past due.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/brand.css">
   <link rel="stylesheet" href="/assets/chart.css">
   <script defer src="/assets/chart.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --blue: #2563eb; --blue-hover: #1d4ed8; --blue-light: #eff6ff; --blue-mid: #bfdbfe;
-      --text: #111827; --text-mid: #374151; --text-muted: #6b7280; --text-faint: #9ca3af;
-      --bg: #f8faff; --surface: #ffffff; --border: #e5e7eb;
-      --shadow-sm: 0 1px 3px rgba(17,24,39,0.08); --radius: 10px;
-      --red: #dc2626; --red-light: #fef2f2; --green: #16a34a;
+      --blue: #CF4B0C; --blue-hover: #A44D00; --blue-light: #FAF6F1; --blue-mid: #EDC3A5;
+      --text: #1A1208; --text-mid: #4A3B2C; --text-muted: #6B5B4A; --text-faint: #9A8B7A;
+      --bg: #FAF6F1; --surface: #ffffff; --border: #E7DDCE;
+      --shadow-sm: 0 1px 3px rgba(26,18,8,0.08); --radius: 10px;
+      --red: #A44D00; --red-light: #FAF6F1; --green: #226287;
     }
-    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
+    body { font-family: 'Helvetica Neue', Helvetica, Arial, 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
 
-    header { background: #111827; border-bottom: 1px solid #1f2937; padding: 0 clamp(20px, 5vw, 48px); }
+    header { background: #170C03; border-bottom: 1px solid #2E1C0C; padding: 0 clamp(20px, 5vw, 48px); }
     .header-inner { max-width: 1100px; margin: 0 auto; height: 56px; display: flex; align-items: center; gap: 16px; }
-    .back-link { font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600; color: #9ca3af; text-decoration: none; display: flex; align-items: center; gap: 5px; padding: 4px 8px 4px 4px; border-radius: 5px; transition: color 0.15s, background 0.15s; white-space: nowrap; }
-    .back-link:hover { color: #60a5fa; background: rgba(96,165,250,0.1); }
-    .header-divider { width: 1px; height: 20px; background: #374151; flex-shrink: 0; }
-    header h1 { font-family: 'Roboto Mono', monospace; font-size: 0.95rem; font-weight: 700; color: #e5e7eb; letter-spacing: -0.02em; }
+    .back-link { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.75rem; font-weight: 600; color: #9A8B7A; text-decoration: none; display: flex; align-items: center; gap: 5px; padding: 4px 8px 4px 4px; border-radius: 5px; transition: color 0.15s, background 0.15s; white-space: nowrap; }
+    .back-link:hover { color: #FFD23F; background: rgba(255,210,63,0.1); }
+    .header-divider { width: 1px; height: 20px; background: #4A3B2C; flex-shrink: 0; }
+    header h1 { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.95rem; font-weight: 700; color: #E7DDCE; letter-spacing: -0.02em; }
 
     .pill-nav { background: var(--surface); border-bottom: 1px solid var(--border); padding: 10px clamp(20px, 5vw, 48px); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-    .pill-nav a { font-size: 0.78rem; font-family: 'Roboto Mono', monospace; font-weight: 600; padding: 4px 12px; border-radius: 20px; text-decoration: none; border: 1px solid var(--border); color: var(--text-muted); background: var(--bg); transition: all 0.15s; white-space: nowrap; }
+    .pill-nav a { font-size: 0.78rem; font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight: 600; padding: 4px 12px; border-radius: 20px; text-decoration: none; border: 1px solid var(--border); color: var(--text-muted); background: var(--bg); transition: all 0.15s; white-space: nowrap; }
     .pill-nav a:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
     .pill-nav a.active { background: var(--blue); color: #fff; border-color: var(--blue); }
-    .pill-label { font-size: 0.72rem; color: var(--text-faint); font-family: 'Roboto Mono', monospace; white-space: nowrap; }
+    .pill-label { font-size: 0.72rem; color: var(--text-faint); font-family: 'JetBrains Mono', ui-monospace, monospace; white-space: nowrap; }
 
     .hero { background: var(--surface); border-bottom: 1px solid var(--border); padding: clamp(28px, 4vw, 44px) clamp(20px, 5vw, 48px); }
     .hero-inner { max-width: 1100px; margin: 0 auto; }
-    .breadcrumb { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; color: var(--text-faint); margin-bottom: 14px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .breadcrumb { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.72rem; color: var(--text-faint); margin-bottom: 14px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
     .breadcrumb a { color: var(--blue); text-decoration: none; }
     .breadcrumb a:hover { text-decoration: underline; }
-    .breadcrumb span:last-child { color: #FF6319; }
+    .breadcrumb span:last-child { color: #A44D00; }
     .hero-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 14px; }
-    .hero-tag { font-family: 'Roboto Mono', monospace; font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #FF6319; background: #fff4ed; border: 1px solid #ffd0b3; border-radius: 4px; padding: 3px 8px; }
-    .hero-updated { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; color: var(--text-faint); }
-    .hero h1 { font-family: 'Roboto Mono', monospace; font-size: clamp(1.4rem, 3vw, 1.8rem); font-weight: 700; letter-spacing: -0.03em; line-height: 1.2; margin-bottom: 10px; }
+    .hero-tag { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #A44D00; background: #FAF6F1; border: 1px solid #E7DDCE; border-radius: 4px; padding: 3px 8px; }
+    .hero-updated { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.72rem; color: var(--text-faint); }
+    .hero h1 { font-family: 'Playfair Display', Georgia, serif; font-size: clamp(1.4rem, 3vw, 1.8rem); font-weight: 700; letter-spacing: -0.012em; line-height: 1.2; margin-bottom: 10px; }
     .hero h1 span { color: var(--blue); }
     .hero p { font-size: 0.95rem; color: var(--text-muted); max-width: 680px; line-height: 1.7; }
     .hero-actions { margin-top: 18px; display: flex; gap: 10px; flex-wrap: wrap; }
-    .btn { font-family: 'Roboto Mono', monospace; font-size: 0.78rem; font-weight: 600; padding: 8px 14px; border-radius: 7px; text-decoration: none; display: inline-flex; align-items: center; gap: 7px; cursor: pointer; border: 1.5px solid var(--blue); transition: all 0.15s; }
+    .btn { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.78rem; font-weight: 600; padding: 8px 14px; border-radius: 7px; text-decoration: none; display: inline-flex; align-items: center; gap: 7px; cursor: pointer; border: 1.5px solid var(--blue); transition: all 0.15s; }
     .btn-outline { color: var(--blue); background: var(--surface); }
     .btn-outline:hover { background: var(--blue-light); }
 
@@ -64,13 +66,13 @@
 
     .filters { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 16px 18px; margin-bottom: 16px; display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
     .filters .msf { flex: 1 1 190px; min-width: 165px; }
-    .filters select { flex: 1 1 170px; min-width: 150px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 7px; font-family: 'Roboto Mono', monospace; font-size: 0.75rem; background: var(--bg); color: var(--text-mid); cursor: pointer; }
+    .filters select { flex: 1 1 170px; min-width: 150px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 7px; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.75rem; background: var(--bg); color: var(--text-mid); cursor: pointer; }
     .filters select:focus { outline: 2px solid var(--blue-mid); border-color: var(--blue); }
-    .reset-btn { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; font-weight: 600; color: var(--text-muted); background: none; border: 1px solid var(--border); border-radius: 7px; padding: 8px 12px; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+    .reset-btn { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.72rem; font-weight: 600; color: var(--text-muted); background: none; border: 1px solid var(--border); border-radius: 7px; padding: 8px 12px; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
     .reset-btn:hover { color: var(--red); border-color: var(--red); }
 
     .tab-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
-    .tab-btn { font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600; padding: 7px 14px; border-radius: 20px; border: 1px solid var(--border); background: var(--surface); color: var(--text-muted); cursor: pointer; transition: all 0.15s; }
+    .tab-btn { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.75rem; font-weight: 600; padding: 7px 14px; border-radius: 20px; border: 1px solid var(--border); background: var(--surface); color: var(--text-muted); cursor: pointer; transition: all 0.15s; }
     .tab-btn:hover { border-color: var(--blue); color: var(--blue); }
     .tab-btn.active { background: var(--blue); color: #fff; border-color: var(--blue); }
     .tab-btn .count { opacity: 0.75; margin-left: 4px; }
@@ -78,7 +80,7 @@
     .timeline { position: relative; padding-left: 26px; }
     .timeline::before { content: ''; position: absolute; left: 7px; top: 6px; bottom: 6px; width: 2px; background: var(--border); }
     .month-group { margin-bottom: 26px; }
-    .month-label { font-family: 'Roboto Mono', monospace; font-size: 0.78rem; font-weight: 700; color: var(--text); margin-bottom: 12px; position: relative; }
+    .month-label { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.78rem; font-weight: 700; color: var(--text); margin-bottom: 12px; position: relative; }
     .month-label::before { content: ''; position: absolute; left: -25px; top: 3px; width: 12px; height: 12px; border-radius: 50%; background: var(--blue); border: 2px solid var(--surface); box-shadow: 0 0 0 2px var(--blue-mid); }
     .month-group.overdue .month-label { color: var(--red); }
     .month-group.overdue .month-label::before { background: var(--red); box-shadow: 0 0 0 2px #fecaca; }
@@ -86,24 +88,24 @@
     .tl-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 14px 16px; margin-bottom: 10px; cursor: pointer; transition: border-color 0.15s; }
     .tl-card:hover { border-color: var(--blue); }
     .tl-top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; }
-    .tl-date { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; font-weight: 700; color: var(--text); white-space: nowrap; }
+    .tl-date { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.72rem; font-weight: 700; color: var(--text); white-space: nowrap; }
     .tl-date.overdue { color: var(--red); }
     .agency-badge.unspec { background: var(--bg); color: var(--text-faint); border-color: var(--border); font-style: italic; }
-    .agency-badge { font-family: 'Roboto Mono', monospace; font-size: 0.68rem; font-weight: 600; padding: 2px 8px; border-radius: 10px; background: var(--blue-light); color: var(--blue); border: 1px solid var(--blue-mid); white-space: nowrap; }
-    .tl-law { font-family: 'Roboto Mono', monospace; font-size: 0.68rem; color: var(--text-faint); }
+    .agency-badge { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.68rem; font-weight: 600; padding: 2px 8px; border-radius: 10px; background: var(--blue-light); color: var(--blue); border: 1px solid var(--blue-mid); white-space: nowrap; }
+    .tl-law { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.68rem; color: var(--text-faint); }
     .tl-action { font-size: 0.86rem; color: var(--text-mid); line-height: 1.55; }
     .tl-detail { display: none; margin-top: 10px; border-top: 1px solid var(--border); padding-top: 10px; }
     .tl-card.open .tl-detail { display: block; }
     .tl-quote { border-left: 3px solid var(--blue); background: var(--blue-light); padding: 10px 14px; border-radius: 0 7px 7px 0; font-style: italic; font-size: 0.82rem; color: var(--text-mid); line-height: 1.6; margin-bottom: 8px; }
-    .tl-meta { font-family: 'Roboto Mono', monospace; font-size: 0.7rem; color: var(--text-muted); line-height: 1.8; }
+    .tl-meta { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.7rem; color: var(--text-muted); line-height: 1.8; }
     .tl-links { margin-top: 6px; display: flex; gap: 14px; flex-wrap: wrap; }
-    .tl-links a { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; font-weight: 600; color: var(--blue); text-decoration: none; }
+    .tl-links a { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.72rem; font-weight: 600; color: var(--blue); text-decoration: none; }
     .tl-links a:hover { text-decoration: underline; }
 
     .recur-section { margin-top: 8px; }
-    .recur-head { font-family: 'Roboto Mono', monospace; font-size: 0.78rem; font-weight: 700; color: var(--text); margin: 22px 0 12px; }
-    .loading-note { font-family: 'Roboto Mono', monospace; font-size: 0.85rem; color: var(--text-faint); padding: 40px; text-align: center; }
-    .empty-note { font-family: 'Roboto Mono', monospace; font-size: 0.8rem; color: var(--text-faint); padding: 20px 0; }
+    .recur-head { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.78rem; font-weight: 700; color: var(--text); margin: 22px 0 12px; }
+    .loading-note { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.85rem; color: var(--text-faint); padding: 40px; text-align: center; }
+    .empty-note { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.8rem; color: var(--text-faint); padding: 20px 0; }
 
     .footnotes { margin-top: 24px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; }
     .footnotes p { font-size: 0.8rem; color: var(--text-muted); line-height: 1.65; margin-bottom: 10px; }
@@ -117,8 +119,8 @@
     .footer-links { display: flex; gap: 20px; align-items: center; }
     .footer-links a { font-size: 0.8rem; color: var(--text-muted); text-decoration: none; transition: color 0.15s; }
     .footer-links a:hover { color: var(--blue); }
-    .footer-support { display: inline-flex; align-items: center; gap: 5px; font-size: 0.8rem; font-weight: 500; color: #2563eb; text-decoration: none; padding: 5px 11px; border: 1px solid rgba(37,99,235,0.45); border-radius: 6px; transition: color .15s, border-color .15s, background .15s; vertical-align: middle; }
-    .footer-support:hover { color: #fff; background: #2563eb; border-color: #2563eb; }
+    .footer-support { display: inline-flex; align-items: center; gap: 5px; font-size: 0.8rem; font-weight: 500; color: #CF4B0C; text-decoration: none; padding: 5px 11px; border: 1px solid rgba(207,75,12,0.45); border-radius: 6px; transition: color .15s, border-color .15s, background .15s; vertical-align: middle; }
+    .footer-support:hover { color: #fff; background: #CF4B0C; border-color: #CF4B0C; }
   </style>
   <script defer src="/assets/site.js?v=20260804"></script>
 </head>
@@ -126,6 +128,7 @@
 
 <header>
   <div class="header-inner">
+    <a href="/" class="header-mark" aria-label="NYCuriosity Data home"><img src="/assets/brand/Logomark_C.svg" alt="" style="height:21px;width:21px;display:block"></a>
     <a href="../" class="back-link">← legislation_implementation_tracker</a>
     <div class="header-divider"></div>
     <h1>Deadline Timeline</h1>
