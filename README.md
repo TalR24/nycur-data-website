@@ -1,5 +1,7 @@
 # NYCuriosity Data
 
+> **Brand values (palette, fonts, logos) are defined in the `nycuriosity-brand` skill and `data_website/assets/brand.css`, not here.** This README describes structure and workflow.
+
 **[data.nycuriosity.com](https://data.nycuriosity.com)**
 
 A companion site to [NYCuriosity](https://www.nycuriosity.com), a Substack publication covering NYC urban policy, transit, infrastructure, and street design. The site hosts two types of content: **civic reference tools** (standalone interactive explorers) and **post data pages** (charts and tables tied to specific Substack articles).
@@ -105,7 +107,7 @@ Static site hosted on GitHub Pages at a custom domain (`data.nycuriosity.com`). 
 - [Chart.js](https://www.chartjs.org/) — bar and line charts (post data pages)
 - [PapaParse](https://www.papaparse.com/) — client-side CSV parsing
 - [html2canvas](https://html2canvas.hertzen.com/) — Download PNG buttons on chart pages
-- [Google Fonts](https://fonts.google.com/) — Roboto Mono, Inter
+- [Google Fonts](https://fonts.google.com/) — Playfair Display, JetBrains Mono, Inter (Helvetica fallback)
 
 **Legacy redirects:** the Fiscal Impacts Tracker and Gov Bodies Explorer originally lived at top-level paths, and the State Capacity Ecosystem originally lived under `/civic_reference/`. The old folders (`/nyc_council_fiscal_impacts_tracker/`, `/nyc-gov-bodies-explorer/`, `/civic_reference/state_capacity_ecosystem/` and its subpages) now contain only meta-refresh redirect stubs that preserve query strings and hashes — keep them so old links keep working.
 
@@ -113,10 +115,10 @@ Static site hosted on GitHub Pages at a custom domain (`data.nycuriosity.com`). 
 
 CSS is **inline per-page** (no shared stylesheet), so shared components are duplicated into each page. When adding a new page or tool, replicate the header and footer below.
 
-- **Header** — dark (`#111827`). Brand (`nycuriosity / data`) on the left; a `.header-actions` flex row on the right holds outlined `.header-link` pills (**About** → `https://talroded.nycuriosity.com`, **Substack**) and the `.support-link` pill.
+- **Header** — dark (`--b-surface-dark` (#170C03)). Brand (`nycuriosity / data`) on the left; a `.header-actions` flex row on the right holds outlined `.header-link` pills (**About** → `https://talroded.nycuriosity.com`, **Substack**) and the `.support-link` pill.
 - **Footer** — white (`var(--surface)`, `#ffffff`). A `.footer-links` row of text links with a `.footer-support` pill.
 - **Buy Me a Coffee** — every page links to `https://buymeacoffee.com/nycuriosity`, label **"Support my work"**, coffee-cup icon, `target="_blank"`. Present in both header and footer.
-- **Palette per surface** — the pill color depends on its background: on the dark header use `.support-link` (light-blue text `#93c5fd`); on the white footer use `.footer-support` (blue text `#2563eb`). Both fill solid blue (`#2563eb`) with white text on hover. Do not put the light-blue `.support-link` on a white surface — it fails contrast.
+- **Palette per surface** — the pill color depends on its background: on the dark header use `.support-link` (light-blue text ``--b-on-dark` (Marigold)`); on the white footer use `.footer-support` (blue text ``--b-tangerine-deep` (#C84609)`). Both fill solid blue (``--b-tangerine-deep` (#C84609)`) with white text on hover. Do not put the light-blue `.support-link` on a white surface — it fails contrast.
 - **Footer alignment** — `.footer-links` must include `align-items: center`, otherwise the padded pill sits misaligned with the plain text links.
 - **Reusable button CSS** on subpages is injected in a single `<style id="support-btn-css">` block before `</head>`.
 
