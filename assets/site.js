@@ -57,43 +57,43 @@
 
   var styleEl = document.createElement('style');
   styleEl.textContent =
-    '.sitenav{background:#111827;border-top:1px solid #1f2937;border-bottom:1px solid #1f2937;padding:0 clamp(20px,5vw,48px);}' +
+    '.sitenav{background:#170C03;border-top:1px solid #2E1C0C;border-bottom:1px solid #2E1C0C;padding:0 clamp(20px,5vw,48px);}' +
     '.sitenav-inner{max-width:1100px;margin:0 auto;display:flex;align-items:center;gap:10px;min-height:52px;flex-wrap:wrap;padding:8px 0;}' +
-    '.sitenav .nav-pill,.sitenav-btn{font-family:\'Roboto Mono\',monospace;font-size:0.8rem;font-weight:600;color:#e5e7eb;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.22);border-radius:20px;padding:7px 16px;text-decoration:none;white-space:nowrap;cursor:pointer;transition:all 0.15s;display:inline-flex;align-items:center;gap:6px;}' +
-    '.sitenav .nav-pill:hover,.sitenav-btn:hover,.sitenav-item.open .sitenav-btn{background:#2563eb;border-color:#2563eb;color:#fff;}' +
+    '.sitenav .nav-pill,.sitenav-btn{font-family:\'JetBrains Mono\',ui-monospace,monospace;font-size:0.8rem;font-weight:600;color:#E7DDCE;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.22);border-radius:20px;padding:7px 16px;text-decoration:none;white-space:nowrap;cursor:pointer;transition:all 0.15s;display:inline-flex;align-items:center;gap:6px;}' +
+    '.sitenav .nav-pill:hover,.sitenav-btn:hover,.sitenav-item.open .sitenav-btn{background:#C84609;border-color:#C84609;color:#fff;}' +
     '.sitenav-item{position:relative;}' +
     '.sitenav-caret{font-size:0.6rem;}' +
-    '.sitenav-menu{display:none;position:absolute;top:calc(100% + 6px);left:0;z-index:200;background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;box-shadow:0 10px 28px rgba(17,24,39,0.18);padding:10px;min-width:310px;max-height:72vh;overflow-y:auto;}' +
+    '.sitenav-menu{display:none;position:absolute;top:calc(100% + 6px);left:0;z-index:200;background:#ffffff;border:1px solid #E7DDCE;border-radius:12px;box-shadow:0 10px 28px rgba(26,18,8,0.18);padding:10px;min-width:310px;max-height:72vh;overflow-y:auto;}' +
     '.sitenav-menu--tools{max-height:none;overflow:visible;}' +
     '.sitenav-item.open .sitenav-menu{display:block;}' +
-    '.sitenav-menu a{display:block;padding:7px 10px;border-radius:6px;color:#374151;font-family:\'Roboto Mono\',monospace;font-size:0.74rem;font-weight:600;text-decoration:none;white-space:normal;line-height:1.4;}' +
-    '.sitenav-menu a:hover{background:#eff6ff;color:#2563eb;}' +
-    '.menu-cat{font-family:\'Roboto Mono\',monospace;font-size:0.62rem;font-weight:600;text-transform:uppercase;letter-spacing:0.09em;color:#FF6319;padding:10px 10px 4px;}' +
+    '.sitenav-menu a{display:block;padding:7px 10px;border-radius:6px;color:#4A3B2C;font-family:\'JetBrains Mono\',ui-monospace,monospace;font-size:0.74rem;font-weight:600;text-decoration:none;white-space:normal;line-height:1.4;}' +
+    '.sitenav-menu a:hover{background:#FAF6F1;color:#C84609;}' +
+    '.menu-cat{font-family:\'JetBrains Mono\',ui-monospace,monospace;font-size:0.62rem;font-weight:600;text-transform:uppercase;letter-spacing:0.09em;color:#A44D00;padding:10px 10px 4px;}' +
     '.menu-cat:first-child{padding-top:4px;}' +
-    '.sitenav-menu .menu-seeall{color:#2563eb;font-size:0.7rem;padding-top:3px;padding-bottom:9px;border-bottom:1px solid #f3f4f6;border-radius:0;margin-bottom:2px;}' +
-    '.sitenav-menu .menu-all{color:#2563eb;border-top:1px solid #e5e7eb;border-radius:0 0 8px 8px;margin-top:6px;padding-top:10px;}' +
+    '.sitenav-menu .menu-seeall{color:#C84609;font-size:0.7rem;padding-top:3px;padding-bottom:9px;border-bottom:1px solid #F2EBE1;border-radius:0;margin-bottom:2px;}' +
+    '.sitenav-menu .menu-all{color:#C84609;border-top:1px solid #E7DDCE;border-radius:0 0 8px 8px;margin-top:6px;padding-top:10px;}' +
     '.menu-group{position:relative;}' +
     '.menu-row{display:flex;align-items:center;gap:2px;}' +
     '.menu-row .menu-link{flex:1;}' +
-    '.sub-toggle{flex-shrink:0;background:none;border:none;color:#9ca3af;font-size:0.7rem;padding:6px 8px;cursor:pointer;border-radius:6px;}' +
-    '.sub-toggle:hover{background:#eff6ff;color:#2563eb;}' +
-    '.sitenav-sub{display:none;position:absolute;left:100%;top:-10px;margin-left:8px;z-index:210;background:#ffffff;border:1px solid #e5e7eb;border-radius:12px;box-shadow:0 10px 28px rgba(17,24,39,0.18);padding:8px;min-width:240px;}' +
+    '.sub-toggle{flex-shrink:0;background:none;border:none;color:#9A8B7A;font-size:0.7rem;padding:6px 8px;cursor:pointer;border-radius:6px;}' +
+    '.sub-toggle:hover{background:#FAF6F1;color:#C84609;}' +
+    '.sitenav-sub{display:none;position:absolute;left:100%;top:-10px;margin-left:8px;z-index:210;background:#ffffff;border:1px solid #E7DDCE;border-radius:12px;box-shadow:0 10px 28px rgba(26,18,8,0.18);padding:8px;min-width:240px;}' +
     /* Invisible bridge over the 8px gap (and a little above/below) so the
        pointer can cross from the menu row into the flyout without the group
        losing hover. Works with the JS grace timers below. */
     '.sitenav-sub::before{content:\'\';position:absolute;top:-10px;bottom:-10px;left:-18px;width:18px;}' +
     '.menu-group.sub-hover > .sitenav-sub{display:block;}' +
-    '.menu-group.sub-open > .sitenav-sub{display:block;position:static;margin:2px 0 6px 14px;border:none;box-shadow:none;border-left:2px solid #e5e7eb;border-radius:0;padding:0 0 0 8px;min-width:0;}' +
+    '.menu-group.sub-open > .sitenav-sub{display:block;position:static;margin:2px 0 6px 14px;border:none;box-shadow:none;border-left:2px solid #E7DDCE;border-radius:0;padding:0 0 0 8px;min-width:0;}' +
     '.sitenav-spacer{flex:1;}' +
     '.relwork{padding:8px clamp(20px,5vw,48px) 44px;}' +
     '.relwork-inner{max-width:900px;margin:0 auto;}' +
-    '.relwork-label{font-family:\'Roboto Mono\',monospace;font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;color:#FF6319;margin-bottom:14px;}' +
+    '.relwork-label{font-family:\'JetBrains Mono\',ui-monospace,monospace;font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;color:#A44D00;margin-bottom:14px;}' +
     '.relwork-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;}' +
-    '.relwork-card{background:#fff;border:1px solid #e5e7eb;border-radius:10px;padding:16px 18px;display:flex;flex-direction:column;gap:6px;text-decoration:none;box-shadow:0 1px 3px rgba(17,24,39,0.08);transition:border-color 0.2s,box-shadow 0.2s,transform 0.15s;}' +
-    '.relwork-card:hover{border-color:#2563eb;transform:translateY(-2px);box-shadow:0 4px 16px rgba(37,99,235,0.10);}' +
-    '.relwork-tag{font-family:\'Roboto Mono\',monospace;font-size:0.62rem;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:#FF6319;}' +
-    '.relwork-title{font-family:\'Roboto Mono\',monospace;font-size:0.85rem;font-weight:700;color:#111827;line-height:1.35;}' +
-    '.relwork-cta{font-family:\'Roboto Mono\',monospace;font-size:0.72rem;font-weight:600;color:#2563eb;margin-top:auto;padding-top:4px;}' +
+    '.relwork-card{background:#fff;border:1px solid #E7DDCE;border-radius:10px;padding:16px 18px;display:flex;flex-direction:column;gap:6px;text-decoration:none;box-shadow:0 1px 3px rgba(26,18,8,0.08);transition:border-color 0.2s,box-shadow 0.2s,transform 0.15s;}' +
+    '.relwork-card:hover{border-color:#C84609;transform:translateY(-2px);box-shadow:0 4px 16px rgba(207,75,12,0.10);}' +
+    '.relwork-tag{font-family:\'JetBrains Mono\',ui-monospace,monospace;font-size:0.62rem;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:#A44D00;}' +
+    '.relwork-title{font-family:\'JetBrains Mono\',ui-monospace,monospace;font-size:0.85rem;font-weight:700;color:#1A1208;line-height:1.35;}' +
+    '.relwork-cta{font-family:\'JetBrains Mono\',ui-monospace,monospace;font-size:0.72rem;font-weight:600;color:#C84609;margin-top:auto;padding-top:4px;}' +
     /* The footer nav is a flex row with no wrap in every page's local CSS, so
        on a 360px screen it measures 490px and pushes the whole page into
        horizontal scroll. Patched here because site.js is the one stylesheet

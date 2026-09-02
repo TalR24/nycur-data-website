@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Program Cost Breakdown — Streets Plan 2026 — NYCuriosity</title>
   <meta name="description" content="Program-by-program 10-year cost breakdown for Local Law 195, showing the additional cost above DOT's existing baseline for each mandate." />
@@ -15,97 +16,123 @@
   <meta property="og:url" content="https://data.nycuriosity.com/nycuriosity_substack_posts/streets_plan_2026/program-breakdown/" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/assets/brand.css">
   <link rel="stylesheet" href="/assets/chart.css">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --blue:#2563eb; --blue-hover:#1d4ed8; --blue-light:#eff6ff; --blue-mid:#bfdbfe;
-      --text:#111827; --text-mid:#374151; --text-muted:#6b7280; --text-faint:#9ca3af;
-      --bg:#f8faff; --surface:#ffffff; --border:#e5e7eb; --border-mid:#d1d5db;
-      --shadow-sm:0 1px 3px rgba(17,24,39,0.08);
-      --green:#16a34a; --green-light:#dcfce7; --red:#dc2626; --red-light:#fee2e2;
-      --amber:#d97706; --amber-light:#fef3c7; --radius:10px;
+      --blue:#C84609; --blue-hover:#A44D00; --blue-light:#FAF6F1; --blue-mid:#EDC3A5;
+      --text:#1A1208; --text-mid:#4A3B2C; --text-muted:#6B5B4A; --text-faint:#9A8B7A;
+      --bg:#FAF6F1; --surface:#ffffff; --border:#E7DDCE; --border-mid:#D3C4AF;
+      --shadow-sm:0 1px 3px rgba(26,18,8,0.08);
+      --green:#226287; --green-light:#DCEDF4; --red:#A44D00; --red-light:#F6E7DA;
+      --amber:#A44D00; --amber-light:#FDF3D8; --radius:10px;
     }
-    body { font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; display:flex; flex-direction:column; }
-    header { background:#111827; border-bottom:1px solid #1f2937; padding:0 clamp(20px,5vw,48px); }
+    body { font-family:'Helvetica Neue', Helvetica, Arial, 'Inter', system-ui, sans-serif; background:var(--bg); color:var(--text); min-height:100vh; display:flex; flex-direction:column; }
+    header { background:#170C03; border-bottom:1px solid #2E1C0C; padding:0 clamp(20px,5vw,48px); }
     .header-inner { max-width:1100px; margin:0 auto; height:56px; display:flex; align-items:center; gap:16px; }
-    .back-link { font-family:'Roboto Mono',monospace; font-size:0.75rem; font-weight:600; color:#9ca3af; text-decoration:none; display:flex; align-items:center; gap:5px; padding:4px 8px 4px 4px; border-radius:5px; transition:color 0.15s,background 0.15s; white-space:nowrap; }
-    .back-link:hover { color:#60a5fa; background:rgba(96,165,250,0.1); }
-    .header-divider { width:1px; height:20px; background:#374151; flex-shrink:0; }
-    header h1 { font-family:'Roboto Mono',monospace; font-size:0.95rem; font-weight:700; color:#e5e7eb; letter-spacing:-0.02em; }
+    .back-link { font-family:'JetBrains Mono', ui-monospace, monospace; font-size:0.75rem; font-weight:600; color:#9A8B7A; text-decoration:none; display:flex; align-items:center; gap:5px; padding:4px 8px 4px 4px; border-radius:5px; transition:color 0.15s,background 0.15s; white-space:nowrap; }
+    .back-link:hover { color:#FFD23F; background:rgba(255,210,63,0.1); }
+    .header-divider { width:1px; height:20px; background:#4A3B2C; flex-shrink:0; }
+    header h1 { font-family:'JetBrains Mono', ui-monospace, monospace; font-size:0.95rem; font-weight:700; color:#E7DDCE; letter-spacing:-0.02em; }
     .pill-nav { background:var(--surface); border-bottom:1px solid var(--border); padding:10px clamp(20px,5vw,48px); display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
-    .pill-nav a { font-size:0.78rem; font-family:'Roboto Mono',monospace; font-weight:600; padding:4px 12px; border-radius:20px; text-decoration:none; border:1px solid var(--border-mid); color:var(--text-muted); background:var(--bg); transition:all 0.15s; white-space:nowrap; }
+    .pill-nav a { font-size:0.78rem; font-family:'JetBrains Mono', ui-monospace, monospace; font-weight:600; padding:4px 12px; border-radius:20px; text-decoration:none; border:1px solid var(--border-mid); color:var(--text-muted); background:var(--bg); transition:all 0.15s; white-space:nowrap; }
     .pill-nav a:hover { border-color:var(--blue); color:var(--blue); background:var(--blue-light); }
     .pill-nav a.active { background:var(--blue); color:#fff; border-color:var(--blue); }
-    .pill-label { font-size:0.72rem; color:var(--text-faint); font-family:'Roboto Mono',monospace; white-space:nowrap; }
+    .pill-label { font-size:0.72rem; color:var(--text-faint); font-family:'JetBrains Mono', ui-monospace, monospace; white-space:nowrap; }
     main { flex:1; padding:clamp(28px,4vw,48px) clamp(20px,5vw,48px); }
     .main-inner { max-width:1100px; margin:0 auto; }
-    .breadcrumb { font-family:'Roboto Mono',monospace; font-size:0.72rem; color:var(--text-faint); margin-bottom:14px; display:flex; align-items:center; gap:6px; }
+    .breadcrumb { font-family:'JetBrains Mono', ui-monospace, monospace; font-size:0.72rem; color:var(--text-faint); margin-bottom:14px; display:flex; align-items:center; gap:6px; }
     .breadcrumb a { color:var(--blue); text-decoration:none; }
     .breadcrumb a:hover { text-decoration:underline; }
-    .breadcrumb span:last-child { color: #FF6319; }
+    .breadcrumb span:last-child { color: #A44D00; }
     .hero { margin-bottom:28px; }
     .hero h2 { font-size:clamp(1.3rem,2.6vw,1.9rem); font-weight:700; letter-spacing:-0.03em; margin-bottom:10px; line-height:1.2; }
     .hero p { font-size:0.92rem; color:var(--text-muted); max-width:720px; line-height:1.7; }
-    .section-label-row { font-family:'Roboto Mono',monospace; font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:0.12em; color:var(--text-faint); margin-bottom:12px; display:flex; align-items:center; gap:8px; }
+    .section-label-row { font-family:'JetBrains Mono', ui-monospace, monospace; font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:0.12em; color:var(--text-faint); margin-bottom:12px; display:flex; align-items:center; gap:8px; }
     .section-label-row::after { content:''; flex:1; height:1px; background:var(--border); }
     .table-wrap { overflow-x:auto; }
     table { width:100%; border-collapse:collapse; font-size:0.875rem; }
     thead tr { background:var(--text); }
-    thead th { font-family:'Roboto Mono',monospace; font-size:0.68rem; font-weight:600; text-transform:uppercase; letter-spacing:0.07em; color:rgba(255,255,255,0.65); padding:12px 16px; text-align:left; white-space:nowrap; }
+    thead th { font-family:'JetBrains Mono', ui-monospace, monospace; font-size:0.68rem; font-weight:600; text-transform:uppercase; letter-spacing:0.07em; color:rgba(255,255,255,0.65); padding:12px 16px; text-align:left; white-space:nowrap; }
     thead th.num { text-align:right; }
     tbody tr { border-bottom:1px solid var(--border); transition:background 0.1s; }
     tbody tr:last-child { border-bottom:none; }
     tbody tr:hover { background:var(--bg); }
     tbody td { padding:11px 16px; color:var(--text-mid); line-height:1.45; vertical-align:middle; }
-    tbody td.num { font-family:'Roboto Mono',monospace; font-size:0.82rem; text-align:right; color:var(--text); }
+    tbody td.num { font-family:'JetBrains Mono', ui-monospace, monospace; font-size:0.82rem; text-align:right; color:var(--text); }
     tbody td.label { font-weight:600; color:var(--text); }
     tbody td.muted { color:var(--text-muted); font-size:0.82rem; }
     tbody tr.total-row { background:var(--blue-light); }
     tbody tr.total-row td { font-weight:600; color:var(--text); }
     tbody tr.total-row td.num { color:var(--blue); }
-    tbody tr.subhead td { background:var(--bg); font-family:'Roboto Mono',monospace; font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-faint); padding:8px 16px; }
-    .badge { display:inline-flex; align-items:center; gap:4px; font-family:'Roboto Mono',monospace; font-size:0.72rem; font-weight:700; border-radius:5px; padding:3px 8px; white-space:nowrap; }
+    tbody tr.subhead td { background:var(--bg); font-family:'JetBrains Mono', ui-monospace, monospace; font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-faint); padding:8px 16px; }
+    .badge { display:inline-flex; align-items:center; gap:4px; font-family:'JetBrains Mono', ui-monospace, monospace; font-size:0.72rem; font-weight:700; border-radius:5px; padding:3px 8px; white-space:nowrap; }
     .badge-amber { background:var(--amber-light); color:var(--amber); }
     .caption { font-size:0.78rem; color:var(--text-faint); font-style:italic; margin-top:8px; margin-bottom:28px; line-height:1.5; }
     .method-box { background:var(--surface); border:1px solid var(--border); border-left:4px solid var(--blue-mid); border-radius:0 var(--radius) var(--radius) 0; padding:20px 24px; box-shadow:var(--shadow-sm); margin-bottom:24px; }
-    .method-box h3 { font-family:'Roboto Mono',monospace; font-size:0.82rem; font-weight:700; color:var(--text); margin-bottom:10px; letter-spacing:-0.01em; }
+    .method-box h3 { font-family:'JetBrains Mono', ui-monospace, monospace; font-size:0.82rem; font-weight:700; color:var(--text); margin-bottom:10px; letter-spacing:-0.01em; }
     .method-box ul { list-style:none; display:flex; flex-direction:column; gap:8px; }
     .method-box li { font-size:0.875rem; color:var(--text-muted); line-height:1.6; padding-left:16px; position:relative; }
     .method-box li::before { content:'—'; position:absolute; left:0; color:var(--blue-mid); font-weight:700; }
     .method-box li strong { color:var(--text); font-weight:600; }
     .method-box li a { color:var(--blue); text-decoration:none; border-bottom:1px solid var(--blue-mid); }
-    .btn { display:inline-flex; align-items:center; gap:6px; font-family:'Roboto Mono',monospace; font-size:0.75rem; font-weight:600; text-decoration:none; border-radius:7px; padding:8px 14px; transition:background 0.15s,border-color 0.15s; cursor:pointer; border:none; }
+    .btn { display:inline-flex; align-items:center; gap:6px; font-family:'JetBrains Mono', ui-monospace, monospace; font-size:0.75rem; font-weight:600; text-decoration:none; border-radius:7px; padding:8px 14px; transition:background 0.15s,border-color 0.15s; cursor:pointer; border:none; }
     .btn-outline { background:var(--surface); color:var(--text-muted); border:1.5px solid var(--border); }
     .btn-outline:hover { color:var(--blue); border-color:var(--blue-mid); background:var(--blue-light); }
     .embed-modal { position:fixed; inset:0; background:rgba(0,0,0,0.45); display:flex; align-items:center; justify-content:center; z-index:1000; }
     .embed-modal-box { background:var(--surface); border-radius:10px; padding:24px; max-width:540px; width:90%; box-shadow:0 8px 32px rgba(0,0,0,0.18); }
     .embed-modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
-    .embed-modal-title { font-family:'Roboto Mono',monospace; font-weight:700; font-size:0.9rem; color:var(--text); }
+    .embed-modal-title { font-family:'JetBrains Mono', ui-monospace, monospace; font-weight:700; font-size:0.9rem; color:var(--text); }
     .embed-close { background:none; border:none; font-size:1.1rem; color:var(--text-muted); cursor:pointer; padding:2px 6px; border-radius:4px; }
     .embed-close:hover { color:var(--text); background:var(--bg); }
     .embed-modal-box > p { font-size:0.83rem; color:var(--text-muted); margin-bottom:10px; }
-    .embed-textarea { width:100%; height:80px; font-family:'Roboto Mono',monospace; font-size:0.72rem; border:1px solid var(--border); border-radius:6px; padding:10px; resize:none; color:var(--text-mid); background:var(--bg); margin-bottom:12px; }
-    .embed-copy-btn { background:var(--blue); color:#fff; font-family:'Roboto Mono',monospace; font-size:0.8rem; font-weight:600; padding:7px 18px; border:none; border-radius:6px; cursor:pointer; transition:background 0.15s; }
-    .embed-copy-btn:hover { background:#1d4ed8; }
+    .embed-textarea { width:100%; height:80px; font-family:'JetBrains Mono', ui-monospace, monospace; font-size:0.72rem; border:1px solid var(--border); border-radius:6px; padding:10px; resize:none; color:var(--text-mid); background:var(--bg); margin-bottom:12px; }
+    .embed-copy-btn { background:var(--blue); color:#fff; font-family:'JetBrains Mono', ui-monospace, monospace; font-size:0.8rem; font-weight:600; padding:7px 18px; border:none; border-radius:6px; cursor:pointer; transition:background 0.15s; }
+    .embed-copy-btn:hover { background:#A44D00; }
     footer { background:var(--surface); border-top:1px solid var(--border); padding:20px clamp(20px,5vw,48px); }
     .footer-inner { max-width:1100px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; }
-    .footer-copy { font-size:0.78rem; color:var(--text-faint); font-family:'Roboto Mono',monospace; }
+    .footer-copy { font-size:0.78rem; color:var(--text-faint); font-family:'JetBrains Mono', ui-monospace, monospace; }
     .footer-links { display:flex; gap:20px; }
     .footer-links a { font-size:0.78rem; color:var(--text-muted); text-decoration:none; transition:color 0.15s; }
     .footer-links a:hover { color:var(--blue); }
+  
+    /* ── TOPIC COLOUR (2026 rebrand) ──────────────────────
+       Colour encodes what KIND of thing something is. The bright fills are
+       decorative only; the -ink twins are the only variants safe for text
+       (each is tuned to 4.5:1 on Canvas Cream). Tokens: assets/brand.css */
+    .card[data-topics~="transit"] .card-category { color: var(--b-topic-transit-ink); }
+    .card[data-topics~="cb"]      .card-category { color: var(--b-topic-cb-ink); }
+    .card[data-topics~="budget"]  .card-category { color: var(--b-topic-budget-ink); }
+    .card[data-topics~="govtech"] .card-category { color: var(--b-topic-govtech-ink); }
+    .tf-pill[data-topic="transit"]:hover  { border-color: var(--b-topic-transit-ink); color: var(--b-topic-transit-ink); }
+    .tf-pill[data-topic="cb"]:hover       { border-color: var(--b-topic-cb-ink); color: var(--b-topic-cb-ink); }
+    .tf-pill[data-topic="budget"]:hover   { border-color: var(--b-topic-budget-ink); color: var(--b-topic-budget-ink); }
+    .tf-pill[data-topic="govtech"]:hover  { border-color: var(--b-topic-govtech-ink); color: var(--b-topic-govtech-ink); }
+    .tf-pill[data-topic="transit"].active { background: var(--b-topic-transit-ink); border-color: var(--b-topic-transit-ink); color: #fff; }
+    .tf-pill[data-topic="cb"].active      { background: var(--b-topic-cb-ink); border-color: var(--b-topic-cb-ink); color: #fff; }
+    .tf-pill[data-topic="budget"].active  { background: var(--b-topic-budget-ink); border-color: var(--b-topic-budget-ink); color: #fff; }
+    .tf-pill[data-topic="govtech"].active { background: var(--b-topic-govtech-ink); border-color: var(--b-topic-govtech-ink); color: #fff; }
+    /* A row of figures should not read as one colour. */
+    .stat-pill:nth-child(4n+1) .sp-num { color: var(--b-topic-budget-ink); }
+    .stat-pill:nth-child(4n+2) .sp-num { color: var(--b-topic-transit-ink); }
+    .stat-pill:nth-child(4n+3) .sp-num { color: var(--b-topic-cb-ink); }
+    .stat-pill:nth-child(4n+4) .sp-num { color: var(--b-brown); }
+  
+    @media (max-width: 900px) { .header-actions .header-link { display:none; } }
+    @media (max-width: 560px) { .header-actions { display:none; } }
   </style>
 <style id="support-btn-css">
-.header-actions{display:flex;align-items:center;gap:14px;}
-.header-link{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border:1px solid rgba(255,255,255,0.15);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
+.header-actions{display:flex;align-items:center;gap:12px;margin-left:auto;flex-shrink:0;}
+.header-link{font-size:0.8rem;font-weight:500;color:#9A8B7A;text-decoration:none;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border:1px solid rgba(255,255,255,0.15);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
 .header-link:hover{color:#fff;border-color:rgba(255,255,255,0.35);background:rgba(255,255,255,0.08);}
 .header-link svg{flex-shrink:0;}
-.support-link{display:inline-flex;align-items:center;gap:5px;font-size:0.8rem;font-weight:500;color:#93c5fd;text-decoration:none;padding:5px 11px;border:1px solid rgba(37,99,235,0.45);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
-.support-link:hover{color:#fff;background:#2563eb;border-color:#2563eb;}
+.support-link{display:inline-flex;align-items:center;gap:5px;font-size:0.8rem;font-weight:500;color:#FFD23F;text-decoration:none;padding:5px 11px;border:1px solid rgba(207,75,12,0.45);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
+.support-link:hover{color:#fff;background:#C84609;border-color:#C84609;}
 .support-link svg{flex-shrink:0;}
-.footer-support{display:inline-flex;align-items:center;gap:5px;font-size:0.8rem;font-weight:500;color:#2563eb;text-decoration:none;padding:5px 11px;border:1px solid rgba(37,99,235,0.45);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
-.footer-support:hover{color:#fff;background:#2563eb;border-color:#2563eb;}
+.footer-support{display:inline-flex;align-items:center;gap:5px;font-size:0.8rem;font-weight:500;color:#C84609;text-decoration:none;padding:5px 11px;border:1px solid rgba(207,75,12,0.45);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
+.footer-support:hover{color:#fff;background:#C84609;border-color:#C84609;}
 .footer-support svg{flex-shrink:0;}
 .footer-support{vertical-align:middle;}
 .footer-links{align-items:center;}
@@ -118,9 +145,15 @@
 
   <header>
     <div class="header-inner">
-      <a href="../" class="back-link">← Streets Plan 2026</a>
+      <a href="/" class="header-mark" aria-label="NYCuriosity Data home"><img src="/assets/brand/Talbot.svg" alt="" style="height:32px;width:auto;display:block"></a>
+    <a href="../" class="back-link">← Streets Plan 2026</a>
       <div class="header-divider"></div>
       <h1>Program Breakdown</h1>
+    <div class="header-actions">
+      <a href="https://talroded.nycuriosity.com" class="header-link" target="_blank" rel="noopener"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>About</a>
+      <a href="https://www.nycuriosity.com" class="header-link" target="_blank" rel="noopener"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v4H4z"/><path d="M4 10h16v10l-8-4-8 4z"/></svg>Substack</a>
+      <a href="https://buymeacoffee.com/nycuriosity" class="support-link" target="_blank" rel="noopener" aria-label="Support my work on Buy Me a Coffee"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>Support my work</a>
+    </div>
     </div>
   </header>
 
@@ -199,56 +232,56 @@
             <tr class="subhead"><td colspan="5">Expense programs</td></tr>
             <tr>
               <td class="label">Protected bus lanes</td>
-              <td><span class="badge" style="background:#dbeafe;color:#1d4ed8">Expense</span></td>
+              <td><span class="badge" style="background:#F2D7C4;color:#A44D00">Expense</span></td>
               <td class="num">$245,600,000</td>
               <td class="muted">~300 miles total (FY22–31)</td>
               <td class="muted">$122.8M each plan; 30 mi/yr</td>
             </tr>
             <tr>
               <td class="label">Accessible pedestrian signals (APS)</td>
-              <td><span class="badge" style="background:#dbeafe;color:#1d4ed8">Expense</span></td>
+              <td><span class="badge" style="background:#F2D7C4;color:#A44D00">Expense</span></td>
               <td class="num">$224,000,000</td>
               <td class="muted">5,000 signals (FY22–31)</td>
               <td class="muted">Net of 1,450-unit existing DOT commitment</td>
             </tr>
             <tr>
               <td class="label">Transit signal priority (TSP)</td>
-              <td><span class="badge" style="background:#dbeafe;color:#1d4ed8">Expense</span></td>
+              <td><span class="badge" style="background:#F2D7C4;color:#A44D00">Expense</span></td>
               <td class="num">$55,100,000</td>
               <td class="muted">750 (yr 1); 1,000/yr thereafter</td>
               <td class="muted">Net of $26.6M existing offset; plan 1 only</td>
             </tr>
             <tr>
               <td class="label">DOT support staff</td>
-              <td><span class="badge" style="background:#dbeafe;color:#1d4ed8">Expense</span></td>
+              <td><span class="badge" style="background:#F2D7C4;color:#A44D00">Expense</span></td>
               <td class="num">$54,900,000</td>
               <td class="muted">40 new positions</td>
               <td class="muted">$5.5M/yr (PS + OTPS)</td>
             </tr>
             <tr>
               <td class="label">Master plan unit</td>
-              <td><span class="badge" style="background:#dbeafe;color:#1d4ed8">Expense</span></td>
+              <td><span class="badge" style="background:#F2D7C4;color:#A44D00">Expense</span></td>
               <td class="num">$50,000,000</td>
               <td class="muted">2 new headcount positions</td>
               <td class="muted">$5M/yr (PS + OTPS)</td>
             </tr>
             <tr>
               <td class="label">Commercial loading &amp; truck routes</td>
-              <td><span class="badge" style="background:#dbeafe;color:#1d4ed8">Expense</span></td>
+              <td><span class="badge" style="background:#F2D7C4;color:#A44D00">Expense</span></td>
               <td class="num">$19,600,000</td>
               <td class="muted">Citywide assessment &amp; amendments</td>
               <td class="muted">$10.5M plan 1; $9.1M plan 2</td>
             </tr>
             <tr>
               <td class="label">Protected bike lanes</td>
-              <td><span class="badge" style="background:#dbeafe;color:#1d4ed8">Expense</span></td>
+              <td><span class="badge" style="background:#F2D7C4;color:#A44D00">Expense</span></td>
               <td class="num">$11,800,000</td>
               <td class="muted">250 mi plan 1; connected network plan 2</td>
               <td class="muted">Net of existing DOT commitment ($59.2M/yr baseline)</td>
             </tr>
             <tr>
               <td class="label">Parking policies</td>
-              <td><span class="badge" style="background:#dbeafe;color:#1d4ed8">Expense</span></td>
+              <td><span class="badge" style="background:#F2D7C4;color:#A44D00">Expense</span></td>
               <td class="num">$8,900,000</td>
               <td class="muted">Policy development &amp; implementation</td>
               <td class="muted"></td>

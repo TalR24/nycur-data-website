@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>NYC Government Bodies Explorer — NYCuriosity Data</title>
   <meta name="description" content="Explore 61 NYC government bodies by budget and headcount. Interactive treemap and searchable card grid — FY2027 data.">
@@ -15,35 +16,36 @@
   <meta name="twitter:card" content="summary_large_image">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/brand.css">
   <link rel="stylesheet" href="/assets/chart.css">
   <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --blue:         #2563eb;
-      --blue-hover:   #1d4ed8;
-      --blue-light:   #eff6ff;
-      --blue-mid:     #bfdbfe;
-      --orange:       #FF6319;
+      --blue:         #C84609;
+      --blue-hover:   #A44D00;
+      --blue-light:   #FAF6F1;
+      --blue-mid:     #EDC3A5;
+      --orange:       #A44D00;
       --orange-hover: #ea580c;
-      --orange-light: #fff4ed;
-      --text:       #111827;
-      --text-mid:   #374151;
-      --text-muted: #6b7280;
-      --text-faint: #9ca3af;
-      --bg:         #f8faff;
+      --orange-light: #FAF6F1;
+      --text:       #1A1208;
+      --text-mid:   #4A3B2C;
+      --text-muted: #6B5B4A;
+      --text-faint: #9A8B7A;
+      --bg:         #FAF6F1;
       --surface:    #ffffff;
-      --border:     #e5e7eb;
-      --border-mid: #d1d5db;
-      --shadow-sm:  0 1px 3px rgba(17,24,39,0.08);
-      --shadow-md:  0 4px 16px rgba(37,99,235,0.12);
+      --border:     #E7DDCE;
+      --border-mid: #D3C4AF;
+      --shadow-sm:  0 1px 3px rgba(26,18,8,0.08);
+      --shadow-md:  0 4px 16px rgba(207,75,12,0.12);
       --radius:     10px;
     }
 
     body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-family: 'Helvetica Neue', Helvetica, Arial, 'Inter', system-ui, sans-serif;
       background: var(--bg);
       color: var(--text);
       min-height: 100vh;
@@ -53,8 +55,8 @@
 
     /* ── HEADER ─────────────────────────────────────────── */
     header {
-      background: #111827;
-      border-bottom: 1px solid #1f2937;
+      background: #170C03;
+      border-bottom: 1px solid #2E1C0C;
       padding: 0 clamp(20px, 5vw, 48px);
     }
     .header-inner {
@@ -73,25 +75,25 @@
       text-decoration: none;
     }
     .brand-name {
-      font-family: 'Roboto Mono', monospace;
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
       font-size: 1rem;
       font-weight: 700;
-      color: #60a5fa;
+      color: #FFD23F;
       letter-spacing: -0.02em;
     }
-    .brand-slash { font-family: 'Roboto Mono', monospace; font-size: 1rem; font-weight: 400; color: #4b5563; }
-    .brand-section { font-family: 'Roboto Mono', monospace; font-size: 1rem; font-weight: 600; color: #e5e7eb; }
+    .brand-slash { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 1rem; font-weight: 400; color: #4b5563; }
+    .brand-section { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 1rem; font-weight: 600; color: #E7DDCE; }
     .header-link {
       font-size: 0.8rem;
       font-weight: 500;
-      color: #9ca3af;
+      color: #9A8B7A;
       text-decoration: none;
       display: flex;
       align-items: center;
       gap: 5px;
       transition: color 0.15s;
     }
-    .header-link:hover { color: #60a5fa; }
+    .header-link:hover { color: #FFD23F; }
 
     /* ── BREADCRUMB ─────────────────────────────────────── */
     .breadcrumb {
@@ -105,14 +107,14 @@
       display: flex;
       align-items: center;
       gap: 6px;
-      font-family: 'Roboto Mono', monospace;
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
       font-size: 0.72rem;
       color: var(--text-faint);
     }
     .breadcrumb a { color: var(--blue); text-decoration: none; }
     .breadcrumb a:hover { text-decoration: underline; }
     .breadcrumb span { color: var(--text-faint); }
-    .breadcrumb span:last-child { color: #FF6319; }
+    .breadcrumb span:last-child { color: #A44D00; }
 
     /* ── HERO ────────────────────────────────────────────── */
     .hero {
@@ -125,7 +127,7 @@
       border-bottom: 1px solid var(--border);
     }
     .hero-label {
-      font-family: 'Roboto Mono', monospace;
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
       font-size: 0.68rem;
       font-weight: 600;
       text-transform: uppercase;
@@ -134,11 +136,11 @@
       margin-bottom: 10px;
     }
     .hero h1 {
-      font-family: 'Roboto Mono', monospace;
+      font-family: 'Playfair Display', Georgia, serif;
       font-size: clamp(1.6rem, 4vw, 2.2rem);
       font-weight: 700;
       color: var(--text);
-      letter-spacing: -0.03em;
+      letter-spacing: -0.012em;
       line-height: 1.2;
       margin-bottom: 10px;
     }
@@ -161,7 +163,7 @@
       gap: 2px;
     }
     .hero-stat-num {
-      font-family: 'Roboto Mono', monospace;
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
       font-size: 1.25rem;
       font-weight: 700;
       color: var(--text);
@@ -204,7 +206,7 @@
       gap: 2px;
     }
     .pill-btn {
-      font-family: 'Roboto Mono', monospace;
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
       font-size: 0.75rem;
       font-weight: 600;
       padding: 6px 16px;
@@ -260,7 +262,7 @@
     }
     .search-input:focus {
       border-color: var(--blue);
-      box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+      box-shadow: 0 0 0 3px rgba(207,75,12,0.1);
     }
     .sector-filter {
       padding: 8px 12px;
@@ -275,7 +277,7 @@
     }
     .sector-filter:focus { border-color: var(--blue); }
     .results-count {
-      font-family: 'Roboto Mono', monospace;
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
       font-size: 0.72rem;
       color: var(--text-muted);
       white-space: nowrap;
@@ -306,7 +308,7 @@
     }
     .agency-card.expanded {
       border-color: var(--blue);
-      box-shadow: 0 0 0 3px rgba(37,99,235,0.12), var(--shadow-md);
+      box-shadow: 0 0 0 3px rgba(207,75,12,0.12), var(--shadow-md);
     }
     .agency-card-header {
       padding: 16px 18px 14px;
@@ -315,7 +317,7 @@
       gap: 12px;
     }
     .agency-acronym {
-      font-family: 'Roboto Mono', monospace;
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
       font-size: 0.72rem;
       font-weight: 700;
       background: var(--blue-light);
@@ -329,7 +331,7 @@
     }
     .agency-name-block { flex: 1; min-width: 0; }
     .agency-name {
-      font-family: 'Roboto Mono', monospace;
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
       font-size: 0.88rem;
       font-weight: 700;
       color: var(--text);
@@ -357,7 +359,7 @@
       flex-wrap: wrap;
     }
     .sector-badge {
-      font-family: 'Roboto Mono', monospace;
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
       font-size: 0.62rem;
       font-weight: 600;
       text-transform: uppercase;
@@ -379,7 +381,7 @@
       gap: 1px;
     }
     .agency-num-val {
-      font-family: 'Roboto Mono', monospace;
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
       font-size: 0.78rem;
       font-weight: 700;
       color: var(--text);
@@ -409,7 +411,7 @@
       margin-bottom: 12px;
     }
     .agency-expand-programs-label {
-      font-family: 'Roboto Mono', monospace;
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
       font-size: 0.65rem;
       font-weight: 600;
       text-transform: uppercase;
@@ -426,12 +428,12 @@
     .agency-expand-programs li {
       font-size: 0.75rem;
       color: var(--text-mid);
-      background: rgba(37,99,235,0.08);
+      background: rgba(207,75,12,0.08);
       border-radius: 4px;
       padding: 3px 8px;
     }
     .agency-expand-link {
-      font-family: 'Roboto Mono', monospace;
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
       font-size: 0.72rem;
       font-weight: 600;
       color: var(--blue);
@@ -448,11 +450,11 @@
       gap: 8px;
       margin-bottom: 12px;
       padding-bottom: 11px;
-      border-bottom: 1px solid rgba(37,99,235,0.12);
+      border-bottom: 1px solid rgba(207,75,12,0.12);
       flex-wrap: wrap;
     }
     .agency-expand-head-label {
-      font-family: 'Roboto Mono', monospace;
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
       font-size: 0.63rem;
       font-weight: 600;
       text-transform: uppercase;
@@ -486,7 +488,7 @@
     }
     .no-results strong {
       display: block;
-      font-family: 'Roboto Mono', monospace;
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
       font-size: 1rem;
       color: var(--text-muted);
       margin-bottom: 6px;
@@ -510,7 +512,7 @@
       gap: 2px;
     }
     .metric-btn {
-      font-family: 'Roboto Mono', monospace;
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
       font-size: 0.72rem;
       font-weight: 600;
       padding: 5px 14px;
@@ -565,8 +567,8 @@
     /* ── TREEMAP TOOLTIP ────────────────────────────────── */
     .treemap-tooltip {
       position: fixed;
-      background: #111827;
-      color: #f9fafb;
+      background: #170C03;
+      color: #FAF6F1;
       padding: 10px 14px;
       border-radius: 8px;
       font-size: 0.8rem;
@@ -579,13 +581,13 @@
     }
     .treemap-tooltip.visible { opacity: 1; }
     .tt-name {
-      font-family: 'Roboto Mono', monospace;
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
       font-size: 0.78rem;
       font-weight: 700;
       margin-bottom: 4px;
       line-height: 1.3;
     }
-    .tt-sector { font-size: 0.7rem; color: #9ca3af; margin-bottom: 6px; }
+    .tt-sector { font-size: 0.7rem; color: #9A8B7A; margin-bottom: 6px; }
     .tt-stats { display: flex; flex-direction: column; gap: 2px; }
     .tt-stat {
       display: flex;
@@ -593,9 +595,9 @@
       gap: 12px;
       font-size: 0.73rem;
     }
-    .tt-stat-label { color: #9ca3af; }
-    .tt-stat-val { font-family: 'Roboto Mono', monospace; font-weight: 600; color: #f9fafb; }
-    .tt-stat-pct { font-family: 'Roboto Mono', monospace; font-size: 0.68rem; color: #6b7280; margin-left: 4px; }
+    .tt-stat-label { color: #9A8B7A; }
+    .tt-stat-val { font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight: 600; color: #FAF6F1; }
+    .tt-stat-pct { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.68rem; color: #6B5B4A; margin-left: 4px; }
 
     /* ── TREEMAP FILTER PANEL ──────────────────────────────── */
     .filter-toggle-btn {
@@ -606,7 +608,7 @@
       border: 1px solid var(--border-mid);
       border-radius: 8px;
       background: var(--surface);
-      font-family: 'Roboto Mono', monospace;
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
       font-size: 0.72rem;
       font-weight: 600;
       color: var(--text-muted);
@@ -639,7 +641,7 @@
       flex-wrap: wrap;
     }
     .filter-global-btn {
-      font-family: 'Roboto Mono', monospace;
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
       font-size: 0.68rem;
       font-weight: 600;
       padding: 4px 10px;
@@ -652,7 +654,7 @@
     }
     .filter-global-btn:hover { border-color: var(--blue); color: var(--blue); }
     .filter-panel-count {
-      font-family: 'Roboto Mono', monospace;
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
       font-size: 0.68rem;
       color: var(--text-faint);
       margin-left: auto;
@@ -678,8 +680,8 @@
     }
     .filter-sector-header input[type="checkbox"] { cursor: pointer; accent-color: var(--blue); }
     .filter-sector-dot { width: 8px; height: 8px; border-radius: 2px; flex-shrink: 0; }
-    .filter-sector-name { font-family: 'Roboto Mono', monospace; font-size: 0.68rem; font-weight: 700; color: var(--text); flex: 1; }
-    .filter-sector-count { font-family: 'Roboto Mono', monospace; font-size: 0.63rem; color: var(--text-faint); }
+    .filter-sector-name { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.68rem; font-weight: 700; color: var(--text); flex: 1; }
+    .filter-sector-count { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.63rem; color: var(--text-faint); }
     .filter-agencies-list { padding: 6px 0; }
     .filter-agency-row {
       display: flex;
@@ -692,7 +694,7 @@
     .filter-agency-row:hover { background: var(--blue-light); }
     .filter-agency-row input[type="checkbox"] { cursor: pointer; accent-color: var(--blue); flex-shrink: 0; }
     .filter-agency-abbr {
-      font-family: 'Roboto Mono', monospace;
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
       font-size: 0.62rem;
       font-weight: 700;
       color: var(--blue);
@@ -712,7 +714,7 @@
       color: var(--text-faint);
       font-size: 0.9rem;
     }
-    .treemap-empty strong { font-family: 'Roboto Mono', monospace; font-size: 1rem; color: var(--text-muted); }
+    .treemap-empty strong { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 1rem; color: var(--text-muted); }
 
     /* ── METHODOLOGY LINK ───────────────────────────────── */
     .methodology-link-row {
@@ -767,17 +769,42 @@
       .view-controls { flex-direction: column; align-items: flex-start; }
       #treemap-container { height: 420px; }
     }
+  
+    /* ── TOPIC COLOUR (2026 rebrand) ──────────────────────
+       Colour encodes what KIND of thing something is. The bright fills are
+       decorative only; the -ink twins are the only variants safe for text
+       (each is tuned to 4.5:1 on Canvas Cream). Tokens: assets/brand.css */
+    .card[data-topics~="transit"] .card-category { color: var(--b-topic-transit-ink); }
+    .card[data-topics~="cb"]      .card-category { color: var(--b-topic-cb-ink); }
+    .card[data-topics~="budget"]  .card-category { color: var(--b-topic-budget-ink); }
+    .card[data-topics~="govtech"] .card-category { color: var(--b-topic-govtech-ink); }
+    .tf-pill[data-topic="transit"]:hover  { border-color: var(--b-topic-transit-ink); color: var(--b-topic-transit-ink); }
+    .tf-pill[data-topic="cb"]:hover       { border-color: var(--b-topic-cb-ink); color: var(--b-topic-cb-ink); }
+    .tf-pill[data-topic="budget"]:hover   { border-color: var(--b-topic-budget-ink); color: var(--b-topic-budget-ink); }
+    .tf-pill[data-topic="govtech"]:hover  { border-color: var(--b-topic-govtech-ink); color: var(--b-topic-govtech-ink); }
+    .tf-pill[data-topic="transit"].active { background: var(--b-topic-transit-ink); border-color: var(--b-topic-transit-ink); color: #fff; }
+    .tf-pill[data-topic="cb"].active      { background: var(--b-topic-cb-ink); border-color: var(--b-topic-cb-ink); color: #fff; }
+    .tf-pill[data-topic="budget"].active  { background: var(--b-topic-budget-ink); border-color: var(--b-topic-budget-ink); color: #fff; }
+    .tf-pill[data-topic="govtech"].active { background: var(--b-topic-govtech-ink); border-color: var(--b-topic-govtech-ink); color: #fff; }
+    /* A row of figures should not read as one colour. */
+    .stat-pill:nth-child(4n+1) .sp-num { color: var(--b-topic-budget-ink); }
+    .stat-pill:nth-child(4n+2) .sp-num { color: var(--b-topic-transit-ink); }
+    .stat-pill:nth-child(4n+3) .sp-num { color: var(--b-topic-cb-ink); }
+    .stat-pill:nth-child(4n+4) .sp-num { color: var(--b-brown); }
+  
+    @media (max-width: 900px) { .header-actions .header-link { display:none; } }
+    @media (max-width: 560px) { .header-actions { display:none; } }
   </style>
 <style id="support-btn-css">
-.header-actions{display:flex;align-items:center;gap:14px;}
-.header-link{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border:1px solid rgba(255,255,255,0.15);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
+.header-actions{display:flex;align-items:center;gap:12px;margin-left:auto;flex-shrink:0;}
+.header-link{font-size:0.8rem;font-weight:500;color:#9A8B7A;text-decoration:none;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border:1px solid rgba(255,255,255,0.15);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
 .header-link:hover{color:#fff;border-color:rgba(255,255,255,0.35);background:rgba(255,255,255,0.08);}
 .header-link svg{flex-shrink:0;}
-.support-link{display:inline-flex;align-items:center;gap:5px;font-size:0.8rem;font-weight:500;color:#93c5fd;text-decoration:none;padding:5px 11px;border:1px solid rgba(37,99,235,0.45);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
-.support-link:hover{color:#fff;background:#2563eb;border-color:#2563eb;}
+.support-link{display:inline-flex;align-items:center;gap:5px;font-size:0.8rem;font-weight:500;color:#FFD23F;text-decoration:none;padding:5px 11px;border:1px solid rgba(207,75,12,0.45);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
+.support-link:hover{color:#fff;background:#C84609;border-color:#C84609;}
 .support-link svg{flex-shrink:0;}
-.footer-support{display:inline-flex;align-items:center;gap:5px;font-size:0.8rem;font-weight:500;color:#2563eb;text-decoration:none;padding:5px 11px;border:1px solid rgba(37,99,235,0.45);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
-.footer-support:hover{color:#fff;background:#2563eb;border-color:#2563eb;}
+.footer-support{display:inline-flex;align-items:center;gap:5px;font-size:0.8rem;font-weight:500;color:#C84609;text-decoration:none;padding:5px 11px;border:1px solid rgba(207,75,12,0.45);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
+.footer-support:hover{color:#fff;background:#C84609;border-color:#C84609;}
 .footer-support svg{flex-shrink:0;}
 .footer-support{vertical-align:middle;}
 .footer-links{align-items:center;}
@@ -790,6 +817,7 @@
 <!-- HEADER -->
 <header>
   <div class="header-inner">
+    <a href="/" class="header-mark" aria-label="NYCuriosity Data home"><img src="/assets/brand/Talbot.svg" alt="" style="height:32px;width:auto;display:block"></a>
     <a href="/" class="brand" aria-label="NYCuriosity Data home">
       <span class="brand-name">nycuriosity</span>
       <span class="brand-slash">/</span>
@@ -844,7 +872,7 @@
         <span class="hero-stat-label">sectors</span>
       </div>
     </div>
-    <p style="margin-top:14px;font-size:0.75rem;color:var(--text);"><span style="font-family:'Roboto Mono',monospace;font-weight:600;">Last updated:</span> Jul 11, 2026 &nbsp;·&nbsp; City budgets and positions from the NYC FY2027 Adopted Budget (Jun 2026); H+H, NYCHA, EDC, SCA, and CUNY from their own published budgets</p>
+    <p style="margin-top:14px;font-size:0.75rem;color:var(--text);"><span style="font-family:'JetBrains Mono', ui-monospace, monospace;font-weight:600;">Last updated:</span> Jul 11, 2026 &nbsp;·&nbsp; City budgets and positions from the NYC FY2027 Adopted Budget (Jun 2026); H+H, NYCHA, EDC, SCA, and CUNY from their own published budgets</p>
   </div>
 </div>
 
@@ -1131,37 +1159,37 @@ const AGENCY_HEADS = {
 
 // ── SECTOR COLORS ─────────────────────────────────────────────────────────────
 const SECTOR_COLORS = {
-  "Public Safety":                  "#1e40af",
-  "Education":                      "#0891b2",
-  "Health & Human Services":        "#16a34a",
-  "Housing & Development":          "#d97706",
-  "Transportation & Infrastructure":"#7c3aed",
-  "Finance & Administration":       "#64748b",
-  "Parks & Culture":                "#15803d",
-  "Economic Development":           "#b45309",
-  "Elected & Legal":                "#dc2626",
+  "Public Safety":                  "#8A360B",
+  "Education":                      "#226287",
+  "Health & Human Services":        "#226287",
+  "Housing & Development":          "#A44D00",
+  "Transportation & Infrastructure":"#E84C8A",
+  "Finance & Administration":       "#6B5B4A",
+  "Parks & Culture":                "#226287",
+  "Economic Development":           "#A44D00",
+  "Elected & Legal":                "#A44D00",
 };
 
 const SECTOR_COLORS_LIGHT = {
-  "Public Safety":                  "#dbeafe",
-  "Education":                      "#e0f2fe",
-  "Health & Human Services":        "#dcfce7",
-  "Housing & Development":          "#fef3c7",
+  "Public Safety":                  "#F2D7C4",
+  "Education":                      "#EFF7FA",
+  "Health & Human Services":        "#DCEDF4",
+  "Housing & Development":          "#FDF3D8",
   "Transportation & Infrastructure":"#ede9fe",
   "Finance & Administration":       "#f1f5f9",
-  "Parks & Culture":                "#d1fae5",
+  "Parks & Culture":                "#DCEDF4",
   "Economic Development":           "#fef9c3",
-  "Elected & Legal":                "#fee2e2",
+  "Elected & Legal":                "#F6E7DA",
 };
 
 const SECTOR_TEXT = {
-  "Public Safety":                  "#1e3a8a",
-  "Education":                      "#075985",
-  "Health & Human Services":        "#14532d",
-  "Housing & Development":          "#92400e",
-  "Transportation & Infrastructure":"#4c1d95",
-  "Finance & Administration":       "#334155",
-  "Parks & Culture":                "#052e16",
+  "Public Safety":                  "#692807",
+  "Education":                      "#1B5670",
+  "Health & Human Services":        "#133F53",
+  "Housing & Development":          "#773903",
+  "Transportation & Infrastructure":"#8A360B",
+  "Finance & Administration":       "#4A3B2C",
+  "Parks & Culture":                "#133F53",
   "Economic Development":           "#78350f",
   "Elected & Legal":                "#7f1d1d",
 };
@@ -1193,9 +1221,9 @@ function renderCards(filtered) {
   const sorted = [...filtered].sort((a, b) => b.budget_m - a.budget_m);
 
   sorted.forEach(agency => {
-    const color   = SECTOR_COLORS[agency.sector] || '#374151';
-    const bgColor = SECTOR_COLORS_LIGHT[agency.sector] || '#f3f4f6';
-    const txtColor= SECTOR_TEXT[agency.sector] || '#111827';
+    const color   = SECTOR_COLORS[agency.sector] || '#4A3B2C';
+    const bgColor = SECTOR_COLORS_LIGHT[agency.sector] || '#F2EBE1';
+    const txtColor= SECTOR_TEXT[agency.sector] || '#1A1208';
 
     const card = document.createElement('div');
     card.className = 'agency-card';
@@ -1349,7 +1377,7 @@ function initFilterPanel() {
 
   sectors.forEach(sector => {
     const agenciesInSector = AGENCIES.filter(a => a.sector === sector);
-    const color = SECTOR_COLORS[sector] || '#374151';
+    const color = SECTOR_COLORS[sector] || '#4A3B2C';
 
     const group = document.createElement('div');
     group.className = 'filter-sector-group';
@@ -1510,7 +1538,7 @@ function renderTreemap(metric) {
 
   // Draw sector group headers
   root.children.forEach(sNode => {
-    const color = SECTOR_COLORS[sNode.data.name] || '#374151';
+    const color = SECTOR_COLORS[sNode.data.name] || '#4A3B2C';
     svg.append('rect')
       .attr('x', sNode.x0).attr('y', sNode.y0)
       .attr('width', sNode.x1 - sNode.x0).attr('height', 20)
@@ -1520,7 +1548,7 @@ function renderTreemap(metric) {
       svg.append('text')
         .attr('x', sNode.x0 + 5).attr('y', sNode.y0 + 14)
         .attr('fill', '#fff')
-        .attr('font-family', "'Roboto Mono', monospace")
+        .attr('font-family', "'JetBrains Mono', ui-monospace, monospace")
         .attr('font-size', '9px').attr('font-weight', '700').attr('letter-spacing', '0.04em')
         .text(sNode.data.name.length > labelW / 7
           ? sNode.data.name.substring(0, Math.floor(labelW / 7) - 1) + '…'
@@ -1538,7 +1566,7 @@ function renderTreemap(metric) {
   cell.append('rect')
     .attr('width',  d => Math.max(0, d.x1 - d.x0))
     .attr('height', d => Math.max(0, d.y1 - d.y0))
-    .attr('fill', d => (SECTOR_COLORS[d.data.sector] || '#374151') + 'cc')
+    .attr('fill', d => (SECTOR_COLORS[d.data.sector] || '#4A3B2C') + 'cc')
     .attr('stroke', '#fff').attr('stroke-width', 1).attr('rx', 2)
     .style('cursor', 'pointer')
     .on('mousemove', function(event, d) {
@@ -1557,7 +1585,7 @@ function renderTreemap(metric) {
   cell.append('text')
     .attr('x', 5).attr('y', 13)
     .attr('fill', '#fff')
-    .attr('font-family', "'Roboto Mono', monospace")
+    .attr('font-family', "'JetBrains Mono', ui-monospace, monospace")
     .attr('font-size', '9px').attr('font-weight', '700')
     .attr('pointer-events', 'none')
     .text(d => (d.x1-d.x0 < 36 || d.y1-d.y0 < 20) ? '' : d.data.abbr);

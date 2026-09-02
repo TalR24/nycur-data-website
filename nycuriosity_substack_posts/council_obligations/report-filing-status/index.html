@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Report Filing Status by Agency — NYCuriosity</title>
   <meta name="description" content="Of the 728 reports required by NYC local laws since 2014 that can be checked against the DORIS register, 214 have never been filed and 143 more are overdue.">
@@ -15,30 +16,31 @@
   <meta property="og:description" content="Of the 728 reports required by NYC local laws since 2014 that can be checked against the DORIS register, 214 have never been filed and 143 more are overdue.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/brand.css">
   <link rel="stylesheet" href="/assets/chart.css">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --blue:       #2563eb;
-      --blue-hover: #1d4ed8;
-      --blue-light: #eff6ff;
-      --blue-mid:   #bfdbfe;
-      --text:       #111827;
-      --text-mid:   #374151;
-      --text-muted: #6b7280;
-      --text-faint: #9ca3af;
-      --bg:         #f8faff;
+      --blue:       #C84609;
+      --blue-hover: #A44D00;
+      --blue-light: #FAF6F1;
+      --blue-mid:   #EDC3A5;
+      --text:       #1A1208;
+      --text-mid:   #4A3B2C;
+      --text-muted: #6B5B4A;
+      --text-faint: #9A8B7A;
+      --bg:         #FAF6F1;
       --surface:    #ffffff;
-      --border:     #e5e7eb;
-      --shadow-sm:  0 1px 3px rgba(17,24,39,0.08);
-      --shadow-md:  0 4px 16px rgba(37,99,235,0.10);
+      --border:     #E7DDCE;
+      --shadow-sm:  0 1px 3px rgba(26,18,8,0.08);
+      --shadow-md:  0 4px 16px rgba(207,75,12,0.10);
       --radius:     10px;
     }
 
     body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-family: 'Helvetica Neue', Helvetica, Arial, 'Inter', system-ui, sans-serif;
       background: var(--bg);
       color: var(--text);
       min-height: 100vh;
@@ -47,8 +49,8 @@
     }
 
     header {
-      background: #111827;
-      border-bottom: 1px solid #1f2937;
+      background: #170C03;
+      border-bottom: 1px solid #2E1C0C;
       padding: 0 clamp(20px, 5vw, 48px);
     }
     .header-inner {
@@ -56,15 +58,15 @@
       display: flex; align-items: center; gap: 16px;
     }
     .back-link {
-      font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600;
-      color: #9ca3af; text-decoration: none; display: flex; align-items: center; gap: 5px;
+      font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.75rem; font-weight: 600;
+      color: #9A8B7A; text-decoration: none; display: flex; align-items: center; gap: 5px;
       padding: 4px 8px 4px 4px; border-radius: 5px; transition: color 0.15s, background 0.15s; white-space: nowrap;
     }
-    .back-link:hover { color: #60a5fa; background: rgba(96,165,250,0.1); }
-    .header-divider { width: 1px; height: 20px; background: #374151; flex-shrink: 0; }
+    .back-link:hover { color: #FFD23F; background: rgba(255,210,63,0.1); }
+    .header-divider { width: 1px; height: 20px; background: #4A3B2C; flex-shrink: 0; }
     header h1 {
-      font-family: 'Roboto Mono', monospace; font-size: 0.95rem; font-weight: 700;
-      color: #e5e7eb; letter-spacing: -0.02em;
+      font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.95rem; font-weight: 700;
+      color: #E7DDCE; letter-spacing: -0.02em;
     }
 
     .pill-nav {
@@ -74,14 +76,14 @@
       display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
     }
     .pill-nav a {
-      font-size: 0.78rem; font-family: 'Roboto Mono', monospace; font-weight: 600;
+      font-size: 0.78rem; font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight: 600;
       padding: 4px 12px; border-radius: 20px; text-decoration: none;
       border: 1px solid var(--border); color: var(--text-muted); background: var(--bg);
       transition: all 0.15s; white-space: nowrap;
     }
     .pill-nav a:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
     .pill-nav a.active { background: var(--blue); color: #fff; border-color: var(--blue); }
-    .pill-label { font-size: 0.72rem; color: var(--text-faint); font-family: 'Roboto Mono', monospace; white-space: nowrap; }
+    .pill-label { font-size: 0.72rem; color: var(--text-faint); font-family: 'JetBrains Mono', ui-monospace, monospace; white-space: nowrap; }
 
     .hero {
       background: var(--surface);
@@ -90,23 +92,23 @@
     }
     .hero-inner { max-width: 1100px; margin: 0 auto; }
     .breadcrumb {
-      font-family: 'Roboto Mono', monospace; font-size: 0.72rem;
+      font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.72rem;
       color: var(--text-faint); margin-bottom: 14px;
       display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
     }
     .breadcrumb a { color: var(--blue); text-decoration: none; }
     .breadcrumb a:hover { text-decoration: underline; }
-    .breadcrumb span:last-child { color: #FF6319; }
+    .breadcrumb span:last-child { color: #A44D00; }
     .hero-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 14px; }
     .hero-tag {
-      font-family: 'Roboto Mono', monospace; font-size: 0.68rem; font-weight: 600;
-      text-transform: uppercase; letter-spacing: 0.08em; color: #FF6319;
-      background: #fff4ed; border: 1px solid #ffd0b3; border-radius: 4px; padding: 3px 8px;
+      font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.68rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.08em; color: var(--b-topic-budget-ink);
+      background: #FAF6F1; border: 1px solid #E7DDCE; border-radius: 4px; padding: 3px 8px;
     }
-    .hero-updated { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; color: var(--text-faint); }
+    .hero-updated { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.72rem; color: var(--text-faint); }
     .hero h1 {
-      font-family: 'Roboto Mono', monospace; font-size: clamp(1.4rem, 3vw, 1.85rem);
-      font-weight: 700; color: var(--text); letter-spacing: -0.03em; line-height: 1.2; margin-bottom: 10px;
+      font-family: 'Playfair Display', Georgia, serif; font-size: clamp(1.4rem, 3vw, 1.85rem);
+      font-weight: 700; color: var(--text); letter-spacing: -0.012em; line-height: 1.2; margin-bottom: 10px;
     }
     .hero h1 span { color: var(--blue); }
     .hero p { font-size: 0.975rem; color: var(--text-muted); max-width: 680px; line-height: 1.7; }
@@ -115,7 +117,7 @@
     .hero-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
     .btn {
       display: inline-flex; align-items: center; gap: 6px;
-      font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600;
+      font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.75rem; font-weight: 600;
       text-decoration: none; border-radius: 7px; padding: 8px 14px;
       transition: background 0.15s, border-color 0.15s; cursor: pointer; border: none;
     }
@@ -148,13 +150,13 @@
     .embed-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; z-index: 1000; }
     .embed-modal-box { background: var(--surface); border-radius: 10px; padding: 24px; max-width: 540px; width: 90%; box-shadow: 0 8px 32px rgba(0,0,0,0.18); }
     .embed-modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
-    .embed-modal-title { font-family: 'Roboto Mono', monospace; font-weight: 700; font-size: 0.9rem; color: var(--text); }
+    .embed-modal-title { font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight: 700; font-size: 0.9rem; color: var(--text); }
     .embed-close { background: none; border: none; font-size: 1.1rem; color: var(--text-muted); cursor: pointer; padding: 2px 6px; border-radius: 4px; }
     .embed-close:hover { color: var(--text); background: var(--bg); }
     .embed-modal-box > p { font-size: 0.83rem; color: var(--text-muted); margin-bottom: 10px; }
-    .embed-textarea { width: 100%; height: 80px; font-family: 'Roboto Mono', monospace; font-size: 0.72rem; border: 1px solid var(--border); border-radius: 6px; padding: 10px; resize: none; color: var(--text-mid); background: var(--bg); margin-bottom: 12px; }
-    .embed-copy-btn { background: var(--blue); color: #fff; font-family: 'Roboto Mono', monospace; font-size: 0.8rem; font-weight: 600; padding: 7px 18px; border: none; border-radius: 6px; cursor: pointer; transition: background 0.15s; }
-    .embed-copy-btn:hover { background: #1d4ed8; }
+    .embed-textarea { width: 100%; height: 80px; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.72rem; border: 1px solid var(--border); border-radius: 6px; padding: 10px; resize: none; color: var(--text-mid); background: var(--bg); margin-bottom: 12px; }
+    .embed-copy-btn { background: var(--blue); color: #fff; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.8rem; font-weight: 600; padding: 7px 18px; border: none; border-radius: 6px; cursor: pointer; transition: background 0.15s; }
+    .embed-copy-btn:hover { background: #A44D00; }
 
     footer { background: var(--surface); border-top: 1px solid var(--border); padding: 20px clamp(20px, 5vw, 48px); margin-top: auto; }
     .footer-inner { max-width: 1100px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
@@ -162,12 +164,46 @@
     .footer-links { display: flex; gap: 20px; align-items: center; }
     .footer-links a { font-size: 0.8rem; color: var(--text-muted); text-decoration: none; transition: color 0.15s; }
     .footer-links a:hover { color: var(--blue); }
-    .footer-support { display: inline-flex; align-items: center; gap: 5px; font-size: 0.8rem; font-weight: 500; color: #2563eb; text-decoration: none; padding: 5px 11px; border: 1px solid rgba(37,99,235,0.45); border-radius: 6px; transition: color .15s, border-color .15s, background .15s; vertical-align: middle; }
-    .footer-support:hover { color: #fff; background: #2563eb; border-color: #2563eb; }
+    .footer-support { display: inline-flex; align-items: center; gap: 5px; font-size: 0.8rem; font-weight: 500; color: #C84609; text-decoration: none; padding: 5px 11px; border: 1px solid rgba(207,75,12,0.45); border-radius: 6px; transition: color .15s, border-color .15s, background .15s; vertical-align: middle; }
+    .footer-support:hover { color: #fff; background: #C84609; border-color: #C84609; }
     .footer-support svg { flex-shrink: 0; }
     .fs-bars { --c-bar-h: 22px; --c-bar-label-w: 190px; }
     .fs-track { display: flex; overflow: hidden; }
-    .fs-seg { height: 100%; display: flex; align-items: center; justify-content: center; font-family: 'Roboto Mono', monospace; font-size: 0.68rem; font-weight: 600; color: #fff; }
+    .fs-seg { height: 100%; display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.68rem; font-weight: 600; color: #fff; }
+  
+    /* ── TOPIC COLOUR (2026 rebrand) ──────────────────────
+       Colour encodes what KIND of thing something is. The bright fills are
+       decorative only; the -ink twins are the only variants safe for text
+       (each is tuned to 4.5:1 on Canvas Cream). Tokens: assets/brand.css */
+    .card[data-topics~="transit"] .card-category { color: var(--b-topic-transit-ink); }
+    .card[data-topics~="cb"]      .card-category { color: var(--b-topic-cb-ink); }
+    .card[data-topics~="budget"]  .card-category { color: var(--b-topic-budget-ink); }
+    .card[data-topics~="govtech"] .card-category { color: var(--b-topic-govtech-ink); }
+    .tf-pill[data-topic="transit"]:hover  { border-color: var(--b-topic-transit-ink); color: var(--b-topic-transit-ink); }
+    .tf-pill[data-topic="cb"]:hover       { border-color: var(--b-topic-cb-ink); color: var(--b-topic-cb-ink); }
+    .tf-pill[data-topic="budget"]:hover   { border-color: var(--b-topic-budget-ink); color: var(--b-topic-budget-ink); }
+    .tf-pill[data-topic="govtech"]:hover  { border-color: var(--b-topic-govtech-ink); color: var(--b-topic-govtech-ink); }
+    .tf-pill[data-topic="transit"].active { background: var(--b-topic-transit-ink); border-color: var(--b-topic-transit-ink); color: #fff; }
+    .tf-pill[data-topic="cb"].active      { background: var(--b-topic-cb-ink); border-color: var(--b-topic-cb-ink); color: #fff; }
+    .tf-pill[data-topic="budget"].active  { background: var(--b-topic-budget-ink); border-color: var(--b-topic-budget-ink); color: #fff; }
+    .tf-pill[data-topic="govtech"].active { background: var(--b-topic-govtech-ink); border-color: var(--b-topic-govtech-ink); color: #fff; }
+    /* A row of figures should not read as one colour. */
+    .stat-pill:nth-child(4n+1) .sp-num { color: var(--b-topic-budget-ink); }
+    .stat-pill:nth-child(4n+2) .sp-num { color: var(--b-topic-transit-ink); }
+    .stat-pill:nth-child(4n+3) .sp-num { color: var(--b-topic-cb-ink); }
+    .stat-pill:nth-child(4n+4) .sp-num { color: var(--b-brown); }
+  
+    /* Header action buttons on subpages (Tal, Sep 2026 — previously hub-only). */
+    .header-actions { display:flex; align-items:center; gap:12px; margin-left:auto; flex-shrink:0; }
+    .header-link { font-size:0.8rem; font-weight:500; color:#9A8B7A; text-decoration:none; display:inline-flex; align-items:center; gap:5px; padding:5px 11px; border:1px solid rgba(255,255,255,0.15); border-radius:6px; transition:color .15s,border-color .15s,background .15s; white-space:nowrap; }
+    .header-link:hover { color:#fff; border-color:rgba(255,255,255,0.35); background:rgba(255,255,255,0.08); }
+    .header-link svg, .support-link svg { flex-shrink:0; }
+    .support-link { font-size:0.8rem; font-weight:500; color:#FFD23F; text-decoration:none; display:inline-flex; align-items:center; gap:5px; padding:5px 11px; border:1px solid rgba(200,70,9,0.45); border-radius:6px; transition:color .15s,border-color .15s,background .15s; white-space:nowrap; }
+    .support-link:hover { color:#fff; background:#C84609; border-color:#C84609; }
+    /* The subpage header also carries a back-link and a page title, so shed the
+       optional buttons before the row can overflow. The footer keeps all three. */
+    @media (max-width: 900px) { .header-actions .header-link { display:none; } }
+    @media (max-width: 560px) { .header-actions { display:none; } }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
   <script defer src="/assets/chart.js"></script>
@@ -178,9 +214,15 @@
 <!-- HEADER -->
 <header>
   <div class="header-inner">
+    <a href="/" class="header-mark" aria-label="NYCuriosity Data home"><img src="/assets/brand/Talbot.svg" alt="" style="height:32px;width:auto;display:block"></a>
     <a href="/nycuriosity_substack_posts/council_obligations/" class="back-link">← council-obligations</a>
     <div class="header-divider"></div>
     <h1>Report Filing Status</h1>
+    <div class="header-actions">
+      <a href="https://talroded.nycuriosity.com" class="header-link" target="_blank" rel="noopener"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>About</a>
+      <a href="https://www.nycuriosity.com" class="header-link" target="_blank" rel="noopener"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v4H4z"/><path d="M4 10h16v10l-8-4-8 4z"/></svg>Substack</a>
+      <a href="https://buymeacoffee.com/nycuriosity" class="support-link" target="_blank" rel="noopener" aria-label="Support my work on Buy Me a Coffee"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>Support my work</a>
+    </div>
   </div>
 </header>
 
@@ -235,30 +277,30 @@
         <h2 class="c-title">357 of the 728 reports that can be checked are missing or overdue</h2>
         <p class="c-deck">Filing status of required reports from local laws enacted 2014&ndash;2026, matched to the DORIS register of required reports. Each bar shows the composition of one agency&rsquo;s checkable reports; the value column counts missing + overdue out of that agency&rsquo;s total.</p>
         <ul class="c-legend">
-          <li><span class="sw" style="background:#dc2626"></span>Never filed (214)</li>
-          <li><span class="sw" style="background:#c2410c"></span>Overdue (143)</li>
-          <li><span class="sw" style="background:#16a34a"></span>On track (349)</li>
-          <li><span class="sw" style="background:#6b7280"></span>Waived, superseded, or unscheduled (22)</li>
+          <li><span class="sw" style="background:#A44D00"></span>Never filed (214)</li>
+          <li><span class="sw" style="background:#89C4E1"></span>Overdue (143)</li>
+          <li><span class="sw" style="background:#226287"></span>On track (349)</li>
+          <li><span class="sw" style="background:#6B5B4A"></span>Waived, superseded, or unscheduled (22)</li>
         </ul>
       </div>
       <div class="c-plot">
         <div class="c-bars fs-bars">
-      <div class="c-bar-row"><span class="c-bar-label" title="All checkable reports"><strong>All checkable reports</strong></span><div class="c-bar-track fs-track"><div class="fs-seg" style="width:29.40%;background:#dc2626" title="214">214</div><div class="fs-seg" style="width:19.64%;background:#c2410c" title="143">143</div><div class="fs-seg" style="width:47.94%;background:#16a34a" title="349">349</div><div class="fs-seg" style="width:3.02%;background:#6b7280" title="22"></div></div><span class="c-bar-value">357/728</span></div>
+      <div class="c-bar-row"><span class="c-bar-label" title="All checkable reports"><strong>All checkable reports</strong></span><div class="c-bar-track fs-track"><div class="fs-seg" style="width:29.40%;background:#A44D00" title="214">214</div><div class="fs-seg" style="width:19.64%;background:#89C4E1" title="143">143</div><div class="fs-seg" style="width:47.94%;background:#226287" title="349">349</div><div class="fs-seg" style="width:3.02%;background:#6B5B4A" title="22"></div></div><span class="c-bar-value">357/728</span></div>
       <div class="c-bar-divider">BY AGENCY, MOST MISSING OR OVERDUE FIRST</div>
-      <div class="c-bar-row"><span class="c-bar-label" title="NYCPS">NYCPS</span><div class="c-bar-track fs-track"><div class="fs-seg" style="width:50.75%;background:#dc2626" title="34">34</div><div class="fs-seg" style="width:41.79%;background:#c2410c" title="28">28</div><div class="fs-seg" style="width:5.97%;background:#16a34a" title="4"></div><div class="fs-seg" style="width:1.49%;background:#6b7280" title="1"></div></div><span class="c-bar-value">62/67</span></div>
-      <div class="c-bar-row"><span class="c-bar-label" title="DOHMH">DOHMH</span><div class="c-bar-track fs-track"><div class="fs-seg" style="width:26.42%;background:#dc2626" title="14">14</div><div class="fs-seg" style="width:24.53%;background:#c2410c" title="13">13</div><div class="fs-seg" style="width:49.06%;background:#16a34a" title="26">26</div></div><span class="c-bar-value">27/53</span></div>
-      <div class="c-bar-row"><span class="c-bar-label" title="DOT">DOT</span><div class="c-bar-track fs-track"><div class="fs-seg" style="width:48.15%;background:#dc2626" title="13">13</div><div class="fs-seg" style="width:11.11%;background:#c2410c" title="3">3</div><div class="fs-seg" style="width:40.74%;background:#16a34a" title="11">11</div></div><span class="c-bar-value">16/27</span></div>
-      <div class="c-bar-row"><span class="c-bar-label" title="DCAS">DCAS</span><div class="c-bar-track fs-track"><div class="fs-seg" style="width:21.74%;background:#dc2626" title="5">5</div><div class="fs-seg" style="width:30.43%;background:#c2410c" title="7">7</div><div class="fs-seg" style="width:47.83%;background:#16a34a" title="11">11</div></div><span class="c-bar-value">12/23</span></div>
-      <div class="c-bar-row"><span class="c-bar-label" title="HPD">HPD</span><div class="c-bar-track fs-track"><div class="fs-seg" style="width:36.00%;background:#dc2626" title="9">9</div><div class="fs-seg" style="width:8.00%;background:#c2410c" title="2">2</div><div class="fs-seg" style="width:52.00%;background:#16a34a" title="13">13</div><div class="fs-seg" style="width:4.00%;background:#6b7280" title="1"></div></div><span class="c-bar-value">11/25</span></div>
-      <div class="c-bar-row"><span class="c-bar-label" title="DOB">DOB</span><div class="c-bar-track fs-track"><div class="fs-seg" style="width:40.00%;background:#dc2626" title="6">6</div><div class="fs-seg" style="width:33.33%;background:#c2410c" title="5">5</div><div class="fs-seg" style="width:26.67%;background:#16a34a" title="4">4</div></div><span class="c-bar-value">11/15</span></div>
-      <div class="c-bar-row"><span class="c-bar-label" title="DSS">DSS</span><div class="c-bar-track fs-track"><div class="fs-seg" style="width:16.67%;background:#dc2626" title="3">3</div><div class="fs-seg" style="width:33.33%;background:#c2410c" title="6">6</div><div class="fs-seg" style="width:50.00%;background:#16a34a" title="9">9</div></div><span class="c-bar-value">9/18</span></div>
-      <div class="c-bar-row"><span class="c-bar-label" title="DOC">DOC</span><div class="c-bar-track fs-track"><div class="fs-seg" style="width:19.35%;background:#dc2626" title="6">6</div><div class="fs-seg" style="width:9.68%;background:#c2410c" title="3">3</div><div class="fs-seg" style="width:70.97%;background:#16a34a" title="22">22</div></div><span class="c-bar-value">9/31</span></div>
-      <div class="c-bar-row"><span class="c-bar-label" title="NYPD">NYPD</span><div class="c-bar-track fs-track"><div class="fs-seg" style="width:11.11%;background:#dc2626" title="4">4</div><div class="fs-seg" style="width:13.89%;background:#c2410c" title="5">5</div><div class="fs-seg" style="width:75.00%;background:#16a34a" title="27">27</div></div><span class="c-bar-value">9/36</span></div>
-      <div class="c-bar-row"><span class="c-bar-label" title="DHS">DHS</span><div class="c-bar-track fs-track"><div class="fs-seg" style="width:33.33%;background:#dc2626" title="4">4</div><div class="fs-seg" style="width:33.33%;background:#c2410c" title="4">4</div><div class="fs-seg" style="width:33.33%;background:#16a34a" title="4">4</div></div><span class="c-bar-value">8/12</span></div>
-      <div class="c-bar-row"><span class="c-bar-label" title="DOF">DOF</span><div class="c-bar-track fs-track"><div class="fs-seg" style="width:25.00%;background:#dc2626" title="5">5</div><div class="fs-seg" style="width:10.00%;background:#c2410c" title="2">2</div><div class="fs-seg" style="width:50.00%;background:#16a34a" title="10">10</div><div class="fs-seg" style="width:15.00%;background:#6b7280" title="3">3</div></div><span class="c-bar-value">7/20</span></div>
-      <div class="c-bar-row"><span class="c-bar-label" title="DEP">DEP</span><div class="c-bar-track fs-track"><div class="fs-seg" style="width:36.36%;background:#dc2626" title="4">4</div><div class="fs-seg" style="width:27.27%;background:#c2410c" title="3">3</div><div class="fs-seg" style="width:9.09%;background:#16a34a" title="1">1</div><div class="fs-seg" style="width:27.27%;background:#6b7280" title="3">3</div></div><span class="c-bar-value">7/11</span></div>
-      <div class="c-bar-row"><span class="c-bar-label" title="All other named agencies">All other named agencies</span><div class="c-bar-track fs-track"><div class="fs-seg" style="width:25.58%;background:#dc2626" title="88">88</div><div class="fs-seg" style="width:16.57%;background:#c2410c" title="57">57</div><div class="fs-seg" style="width:54.36%;background:#16a34a" title="187">187</div><div class="fs-seg" style="width:3.49%;background:#6b7280" title="12"></div></div><span class="c-bar-value">145/344</span></div>
-      <div class="c-bar-row"><span class="c-bar-label" title="No matched agency">No matched agency</span><div class="c-bar-track fs-track"><div class="fs-seg" style="width:41.30%;background:#dc2626" title="19">19</div><div class="fs-seg" style="width:10.87%;background:#c2410c" title="5">5</div><div class="fs-seg" style="width:43.48%;background:#16a34a" title="20">20</div><div class="fs-seg" style="width:4.35%;background:#6b7280" title="2"></div></div><span class="c-bar-value">24/46</span></div>
+      <div class="c-bar-row"><span class="c-bar-label" title="NYCPS">NYCPS</span><div class="c-bar-track fs-track"><div class="fs-seg" style="width:50.75%;background:#A44D00" title="34">34</div><div class="fs-seg" style="width:41.79%;background:#89C4E1" title="28">28</div><div class="fs-seg" style="width:5.97%;background:#226287" title="4"></div><div class="fs-seg" style="width:1.49%;background:#6B5B4A" title="1"></div></div><span class="c-bar-value">62/67</span></div>
+      <div class="c-bar-row"><span class="c-bar-label" title="DOHMH">DOHMH</span><div class="c-bar-track fs-track"><div class="fs-seg" style="width:26.42%;background:#A44D00" title="14">14</div><div class="fs-seg" style="width:24.53%;background:#89C4E1" title="13">13</div><div class="fs-seg" style="width:49.06%;background:#226287" title="26">26</div></div><span class="c-bar-value">27/53</span></div>
+      <div class="c-bar-row"><span class="c-bar-label" title="DOT">DOT</span><div class="c-bar-track fs-track"><div class="fs-seg" style="width:48.15%;background:#A44D00" title="13">13</div><div class="fs-seg" style="width:11.11%;background:#89C4E1" title="3">3</div><div class="fs-seg" style="width:40.74%;background:#226287" title="11">11</div></div><span class="c-bar-value">16/27</span></div>
+      <div class="c-bar-row"><span class="c-bar-label" title="DCAS">DCAS</span><div class="c-bar-track fs-track"><div class="fs-seg" style="width:21.74%;background:#A44D00" title="5">5</div><div class="fs-seg" style="width:30.43%;background:#89C4E1" title="7">7</div><div class="fs-seg" style="width:47.83%;background:#226287" title="11">11</div></div><span class="c-bar-value">12/23</span></div>
+      <div class="c-bar-row"><span class="c-bar-label" title="HPD">HPD</span><div class="c-bar-track fs-track"><div class="fs-seg" style="width:36.00%;background:#A44D00" title="9">9</div><div class="fs-seg" style="width:8.00%;background:#89C4E1" title="2">2</div><div class="fs-seg" style="width:52.00%;background:#226287" title="13">13</div><div class="fs-seg" style="width:4.00%;background:#6B5B4A" title="1"></div></div><span class="c-bar-value">11/25</span></div>
+      <div class="c-bar-row"><span class="c-bar-label" title="DOB">DOB</span><div class="c-bar-track fs-track"><div class="fs-seg" style="width:40.00%;background:#A44D00" title="6">6</div><div class="fs-seg" style="width:33.33%;background:#89C4E1" title="5">5</div><div class="fs-seg" style="width:26.67%;background:#226287" title="4">4</div></div><span class="c-bar-value">11/15</span></div>
+      <div class="c-bar-row"><span class="c-bar-label" title="DSS">DSS</span><div class="c-bar-track fs-track"><div class="fs-seg" style="width:16.67%;background:#A44D00" title="3">3</div><div class="fs-seg" style="width:33.33%;background:#89C4E1" title="6">6</div><div class="fs-seg" style="width:50.00%;background:#226287" title="9">9</div></div><span class="c-bar-value">9/18</span></div>
+      <div class="c-bar-row"><span class="c-bar-label" title="DOC">DOC</span><div class="c-bar-track fs-track"><div class="fs-seg" style="width:19.35%;background:#A44D00" title="6">6</div><div class="fs-seg" style="width:9.68%;background:#89C4E1" title="3">3</div><div class="fs-seg" style="width:70.97%;background:#226287" title="22">22</div></div><span class="c-bar-value">9/31</span></div>
+      <div class="c-bar-row"><span class="c-bar-label" title="NYPD">NYPD</span><div class="c-bar-track fs-track"><div class="fs-seg" style="width:11.11%;background:#A44D00" title="4">4</div><div class="fs-seg" style="width:13.89%;background:#89C4E1" title="5">5</div><div class="fs-seg" style="width:75.00%;background:#226287" title="27">27</div></div><span class="c-bar-value">9/36</span></div>
+      <div class="c-bar-row"><span class="c-bar-label" title="DHS">DHS</span><div class="c-bar-track fs-track"><div class="fs-seg" style="width:33.33%;background:#A44D00" title="4">4</div><div class="fs-seg" style="width:33.33%;background:#89C4E1" title="4">4</div><div class="fs-seg" style="width:33.33%;background:#226287" title="4">4</div></div><span class="c-bar-value">8/12</span></div>
+      <div class="c-bar-row"><span class="c-bar-label" title="DOF">DOF</span><div class="c-bar-track fs-track"><div class="fs-seg" style="width:25.00%;background:#A44D00" title="5">5</div><div class="fs-seg" style="width:10.00%;background:#89C4E1" title="2">2</div><div class="fs-seg" style="width:50.00%;background:#226287" title="10">10</div><div class="fs-seg" style="width:15.00%;background:#6B5B4A" title="3">3</div></div><span class="c-bar-value">7/20</span></div>
+      <div class="c-bar-row"><span class="c-bar-label" title="DEP">DEP</span><div class="c-bar-track fs-track"><div class="fs-seg" style="width:36.36%;background:#A44D00" title="4">4</div><div class="fs-seg" style="width:27.27%;background:#89C4E1" title="3">3</div><div class="fs-seg" style="width:9.09%;background:#226287" title="1">1</div><div class="fs-seg" style="width:27.27%;background:#6B5B4A" title="3">3</div></div><span class="c-bar-value">7/11</span></div>
+      <div class="c-bar-row"><span class="c-bar-label" title="All other named agencies">All other named agencies</span><div class="c-bar-track fs-track"><div class="fs-seg" style="width:25.58%;background:#A44D00" title="88">88</div><div class="fs-seg" style="width:16.57%;background:#89C4E1" title="57">57</div><div class="fs-seg" style="width:54.36%;background:#226287" title="187">187</div><div class="fs-seg" style="width:3.49%;background:#6B5B4A" title="12"></div></div><span class="c-bar-value">145/344</span></div>
+      <div class="c-bar-row"><span class="c-bar-label" title="No matched agency">No matched agency</span><div class="c-bar-track fs-track"><div class="fs-seg" style="width:41.30%;background:#A44D00" title="19">19</div><div class="fs-seg" style="width:10.87%;background:#89C4E1" title="5">5</div><div class="fs-seg" style="width:43.48%;background:#226287" title="20">20</div><div class="fs-seg" style="width:4.35%;background:#6B5B4A" title="2"></div></div><span class="c-bar-value">24/46</span></div>
         </div>
       </div>
       <figcaption class="c-foot">

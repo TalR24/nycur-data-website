@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Block Party: NYC Community Board Resolutions Dashboard — NYCuriosity Data</title>
   <meta name="description" content="Searchable, visualized, and downloadable resolutions from eleven of Manhattan's Community Boards, now hosted on Block Party — plus the talks on how the archive was built.">
@@ -16,31 +17,32 @@
   <meta name="twitter:image"      content="https://data.nycuriosity.com/website_logo.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/brand.css">
   <link rel="stylesheet" href="/assets/chart.css">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --blue:       #2563eb;
-      --blue-hover: #1d4ed8;
-      --blue-light: #eff6ff;
-      --blue-mid:   #bfdbfe;
-      --text:       #111827;
-      --text-mid:   #374151;
-      --text-muted: #6b7280;
-      --text-faint: #9ca3af;
-      --bg:         #f8faff;
+      --blue:       #C84609;
+      --blue-hover: #A44D00;
+      --blue-light: #FAF6F1;
+      --blue-mid:   #EDC3A5;
+      --text:       #1A1208;
+      --text-mid:   #4A3B2C;
+      --text-muted: #6B5B4A;
+      --text-faint: #9A8B7A;
+      --bg:         #FAF6F1;
       --surface:    #ffffff;
-      --border:     #e5e7eb;
-      --border-mid: #d1d5db;
-      --shadow-sm:  0 1px 3px rgba(17,24,39,0.08);
-      --shadow-md:  0 4px 16px rgba(37,99,235,0.10);
+      --border:     #E7DDCE;
+      --border-mid: #D3C4AF;
+      --shadow-sm:  0 1px 3px rgba(26,18,8,0.08);
+      --shadow-md:  0 4px 16px rgba(207,75,12,0.10);
       --radius:     10px;
     }
 
     body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-family: 'Helvetica Neue', Helvetica, Arial, 'Inter', system-ui, sans-serif;
       background: var(--bg);
       color: var(--text);
       min-height: 100vh;
@@ -49,8 +51,8 @@
     }
 
     header {
-      background: #111827;
-      border-bottom: 1px solid #1f2937;
+      background: #170C03;
+      border-bottom: 1px solid #2E1C0C;
       padding: 0 clamp(20px, 5vw, 48px);
     }
     .header-inner {
@@ -62,10 +64,10 @@
       gap: 16px;
     }
     .back-link {
-      font-family: 'Roboto Mono', monospace;
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
       font-size: 0.75rem;
       font-weight: 600;
-      color: #9ca3af;
+      color: #9A8B7A;
       text-decoration: none;
       display: flex;
       align-items: center;
@@ -74,13 +76,13 @@
       border-radius: 5px;
       transition: color 0.15s, background 0.15s;
     }
-    .back-link:hover { color: #60a5fa; background: rgba(96,165,250,0.1); }
-    .header-divider { width: 1px; height: 20px; background: #374151; flex-shrink: 0; }
+    .back-link:hover { color: #FFD23F; background: rgba(255,210,63,0.1); }
+    .header-divider { width: 1px; height: 20px; background: #4A3B2C; flex-shrink: 0; }
     header h1 {
-      font-family: 'Roboto Mono', monospace;
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
       font-size: 0.95rem;
       font-weight: 700;
-      color: #e5e7eb;
+      color: #E7DDCE;
       letter-spacing: -0.02em;
     }
 
@@ -94,7 +96,7 @@
 
     .hero { margin-bottom: 24px; }
     .breadcrumb {
-      font-family: 'Roboto Mono', monospace;
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
       font-size: 0.72rem;
       color: var(--text-faint);
       margin-bottom: 12px;
@@ -134,7 +136,7 @@
       box-shadow: var(--shadow-sm);
     }
     .stat-num {
-      font-family: 'Roboto Mono', monospace;
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
       font-size: 1.25rem;
       font-weight: 700;
       color: var(--blue);
@@ -143,31 +145,31 @@
     .stat-label { font-size: 0.8rem; color: var(--text-muted); }
 
     .section-heading {
-      font-family: 'Roboto Mono', monospace;
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
       font-size: 0.72rem;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.1em;
-      color: #FF6319;
+      color: #A44D00;
       margin-bottom: 18px;
     }
 
     .proto-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; margin: 14px 0 8px; max-width: 1010px; }
-    .proto-card { background: #fff; border: 1.5px solid #e5e7eb; border-radius: 12px; box-shadow: 0 1px 3px rgba(17,24,39,0.08); text-decoration: none; color: inherit; display: flex; flex-direction: column; overflow: hidden; transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s; }
-    .proto-card:hover { border-color: #2563eb; box-shadow: 0 4px 20px rgba(37,99,235,0.13); transform: translateY(-3px); }
-    .proto-icon { height: 100px; background: #111827; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .proto-card { background: #fff; border: 1.5px solid #E7DDCE; border-radius: 12px; box-shadow: 0 1px 3px rgba(26,18,8,0.08); text-decoration: none; color: inherit; display: flex; flex-direction: column; overflow: hidden; transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s; }
+    .proto-card:hover { border-color: #C84609; box-shadow: 0 4px 20px rgba(207,75,12,0.13); transform: translateY(-3px); }
+    .proto-icon { height: 100px; background: #170C03; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
     .proto-body { padding: 20px 24px 24px; flex: 1; display: flex; flex-direction: column; }
-    .proto-label { font-family: 'Roboto Mono', monospace; font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #2563eb; margin-bottom: 8px; }
-    .proto-title { font-family: 'Roboto Mono', monospace; font-size: 1.05rem; font-weight: 700; color: #111827; letter-spacing: -0.02em; line-height: 1.25; margin-bottom: 10px; }
-    .proto-desc { font-size: 0.875rem; color: #6b7280; line-height: 1.6; flex: 1; margin-bottom: 20px; }
+    .proto-label { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #C84609; margin-bottom: 8px; }
+    .proto-title { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 1.05rem; font-weight: 700; color: #1A1208; letter-spacing: -0.02em; line-height: 1.25; margin-bottom: 10px; }
+    .proto-desc { font-size: 0.875rem; color: #6B5B4A; line-height: 1.6; flex: 1; margin-bottom: 20px; }
     .proto-meta { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-    .proto-stat { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; color: #9ca3af; }
-    .proto-cta { font-family: 'Roboto Mono', monospace; font-size: 0.78rem; font-weight: 700; color: #2563eb; display: flex; align-items: center; gap: 5px; transition: gap 0.15s; }
+    .proto-stat { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.72rem; color: #9A8B7A; }
+    .proto-cta { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.78rem; font-weight: 700; color: #C84609; display: flex; align-items: center; gap: 5px; transition: gap 0.15s; }
     .proto-card:hover .proto-cta { gap: 9px; }
     .proto-sub-links { display: flex; flex-direction: column; gap: 7px; margin: 0 0 18px; }
-    .proto-sub-links a { font-family: 'Roboto Mono', monospace; font-size: 0.76rem; font-weight: 600; color: #2563eb; text-decoration: none; }
+    .proto-sub-links a { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.76rem; font-weight: 600; color: #C84609; text-decoration: none; }
     .proto-sub-links a:hover { text-decoration: underline; }
-    .proto-section-label { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: #9ca3af; margin: 30px 0 0; }
+    .proto-section-label { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: #9A8B7A; margin: 30px 0 0; }
     .card-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
@@ -192,7 +194,7 @@
       transform: translateY(-2px);
     }
     .card-preview {
-      background: #1e293b;
+      background: #2E1C0C;
       height: 100px;
       display: flex;
       align-items: center;
@@ -203,7 +205,7 @@
     .card-preview svg { opacity: 0.65; }
     .card-body { padding: 16px; flex: 1; display: flex; flex-direction: column; }
     .card-type {
-      font-family: 'Roboto Mono', monospace;
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
       font-size: 0.68rem;
       font-weight: 600;
       text-transform: uppercase;
@@ -226,7 +228,7 @@
       margin-bottom: 12px;
     }
     .card-stat {
-      font-family: 'Roboto Mono', monospace;
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
       font-size: 0.72rem;
       color: var(--text-faint);
       margin-bottom: 12px;
@@ -255,7 +257,7 @@
       box-shadow: var(--shadow-sm);
     }
     .insight-num {
-      font-family: 'Roboto Mono', monospace;
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
       font-size: 2rem;
       font-weight: 700;
       color: var(--blue);
@@ -284,17 +286,42 @@
     }
     footer a { color: var(--text-muted); text-decoration: none; }
     footer a:hover { color: var(--blue); }
+  
+    /* ── TOPIC COLOUR (2026 rebrand) ──────────────────────
+       Colour encodes what KIND of thing something is. The bright fills are
+       decorative only; the -ink twins are the only variants safe for text
+       (each is tuned to 4.5:1 on Canvas Cream). Tokens: assets/brand.css */
+    .card[data-topics~="transit"] .card-category { color: var(--b-topic-transit-ink); }
+    .card[data-topics~="cb"]      .card-category { color: var(--b-topic-cb-ink); }
+    .card[data-topics~="budget"]  .card-category { color: var(--b-topic-budget-ink); }
+    .card[data-topics~="govtech"] .card-category { color: var(--b-topic-govtech-ink); }
+    .tf-pill[data-topic="transit"]:hover  { border-color: var(--b-topic-transit-ink); color: var(--b-topic-transit-ink); }
+    .tf-pill[data-topic="cb"]:hover       { border-color: var(--b-topic-cb-ink); color: var(--b-topic-cb-ink); }
+    .tf-pill[data-topic="budget"]:hover   { border-color: var(--b-topic-budget-ink); color: var(--b-topic-budget-ink); }
+    .tf-pill[data-topic="govtech"]:hover  { border-color: var(--b-topic-govtech-ink); color: var(--b-topic-govtech-ink); }
+    .tf-pill[data-topic="transit"].active { background: var(--b-topic-transit-ink); border-color: var(--b-topic-transit-ink); color: #fff; }
+    .tf-pill[data-topic="cb"].active      { background: var(--b-topic-cb-ink); border-color: var(--b-topic-cb-ink); color: #fff; }
+    .tf-pill[data-topic="budget"].active  { background: var(--b-topic-budget-ink); border-color: var(--b-topic-budget-ink); color: #fff; }
+    .tf-pill[data-topic="govtech"].active { background: var(--b-topic-govtech-ink); border-color: var(--b-topic-govtech-ink); color: #fff; }
+    /* A row of figures should not read as one colour. */
+    .stat-pill:nth-child(4n+1) .sp-num { color: var(--b-topic-budget-ink); }
+    .stat-pill:nth-child(4n+2) .sp-num { color: var(--b-topic-transit-ink); }
+    .stat-pill:nth-child(4n+3) .sp-num { color: var(--b-topic-cb-ink); }
+    .stat-pill:nth-child(4n+4) .sp-num { color: var(--b-brown); }
+  
+    @media (max-width: 900px) { .header-actions .header-link { display:none; } }
+    @media (max-width: 560px) { .header-actions { display:none; } }
   </style>
 <style id="support-btn-css">
-.header-actions{display:flex;align-items:center;gap:14px;}
-.header-link{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border:1px solid rgba(255,255,255,0.15);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
+.header-actions{display:flex;align-items:center;gap:12px;margin-left:auto;flex-shrink:0;}
+.header-link{font-size:0.8rem;font-weight:500;color:#9A8B7A;text-decoration:none;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border:1px solid rgba(255,255,255,0.15);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
 .header-link:hover{color:#fff;border-color:rgba(255,255,255,0.35);background:rgba(255,255,255,0.08);}
 .header-link svg{flex-shrink:0;}
-.support-link{display:inline-flex;align-items:center;gap:5px;font-size:0.8rem;font-weight:500;color:#93c5fd;text-decoration:none;padding:5px 11px;border:1px solid rgba(37,99,235,0.45);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
-.support-link:hover{color:#fff;background:#2563eb;border-color:#2563eb;}
+.support-link{display:inline-flex;align-items:center;gap:5px;font-size:0.8rem;font-weight:500;color:#FFD23F;text-decoration:none;padding:5px 11px;border:1px solid rgba(207,75,12,0.45);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
+.support-link:hover{color:#fff;background:#C84609;border-color:#C84609;}
 .support-link svg{flex-shrink:0;}
-.footer-support{display:inline-flex;align-items:center;gap:5px;font-size:0.8rem;font-weight:500;color:#2563eb;text-decoration:none;padding:5px 11px;border:1px solid rgba(37,99,235,0.45);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
-.footer-support:hover{color:#fff;background:#2563eb;border-color:#2563eb;}
+.footer-support{display:inline-flex;align-items:center;gap:5px;font-size:0.8rem;font-weight:500;color:#C84609;text-decoration:none;padding:5px 11px;border:1px solid rgba(207,75,12,0.45);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
+.footer-support:hover{color:#fff;background:#C84609;border-color:#C84609;}
 .footer-support svg{flex-shrink:0;}
 .footer-support{vertical-align:middle;}
 .footer-links{align-items:center;}
@@ -305,9 +332,15 @@
 
 <header>
   <div class="header-inner">
+    <a href="/" class="header-mark" aria-label="NYCuriosity Data home"><img src="/assets/brand/Talbot.svg" alt="" style="height:32px;width:auto;display:block"></a>
     <a href="/cb-tools/" class="back-link">&larr; cb-tools</a>
     <div class="header-divider"></div>
     <h1>Block Party</h1>
+    <div class="header-actions">
+      <a href="https://talroded.nycuriosity.com" class="header-link" target="_blank" rel="noopener"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>About</a>
+      <a href="https://www.nycuriosity.com" class="header-link" target="_blank" rel="noopener"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v4H4z"/><path d="M4 10h16v10l-8-4-8 4z"/></svg>Substack</a>
+      <a href="https://buymeacoffee.com/nycuriosity" class="support-link" target="_blank" rel="noopener" aria-label="Support my work on Buy Me a Coffee"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>Support my work</a>
+    </div>
   </div>
 </header>
 
@@ -315,7 +348,7 @@
 
   <div class="hero">
     <div class="breadcrumb">
-      <a href="/">nycuriosity/data</a> / <a href="/cb-tools/">cb-tools</a> / <span style="color:#FF6319">block-party</span>
+      <a href="/">nycuriosity/data</a> / <a href="/cb-tools/">cb-tools</a> / <span style="color:#A44D00">block-party</span>
     </div>
     <h2>NYC Community Board Resolutions Dashboard</h2>
     <p>Searchable, visualized, and downloadable resolutions from eleven of Manhattan&rsquo;s twelve Community Boards. This dashboard now lives on <a href="https://blockparty.studio/" style="color:var(--blue)">Block Party</a>. Sources: <a href="https://www.nyc.gov/site/manhattancb3/index.page" style="color:var(--blue)">NYC.gov MCB3 minutes</a>, <a href="https://cbmanhattan.cityofnewyork.us/" style="color:var(--blue)">cbmanhattan.cityofnewyork.us</a> (MCB2/4/10), <a href="https://cb7m.com/about-mcb7/" style="color:var(--blue)">cb7m.com Google Drive</a> (MCB7), Airtable shared views (MCB1/5/6/11/12), Internet Archive CDX (MCB8).</p>
@@ -328,32 +361,32 @@
     <div class="stat-pill"><span class="stat-num">Full text</span><span class="stat-label">searchable</span></div>
   </div>
 
-  <div class="premium-gate" style="max-width:760px;margin:8px 0 0;background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:40px 32px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,0.04);">
-    <div style="display:inline-flex;align-items:center;gap:8px;background:#eff6ff;color:#2563eb;font-family:'Roboto Mono',monospace;font-size:0.72rem;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;padding:6px 12px;border-radius:999px;margin-bottom:20px;">
+  <div class="premium-gate" style="max-width:760px;margin:8px 0 0;background:#fff;border:1px solid #E7DDCE;border-radius:16px;padding:40px 32px;text-align:center;box-shadow:0 1px 3px rgba(0,0,0,0.04);">
+    <div style="display:inline-flex;align-items:center;gap:8px;background:#FAF6F1;color:#C84609;font-family:'JetBrains Mono', ui-monospace, monospace;font-size:0.72rem;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;padding:6px 12px;border-radius:999px;margin-bottom:20px;">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
       Now on Block Party
     </div>
-    <h2 style="font-family:'DM Serif Display',serif;font-size:1.9rem;line-height:1.15;margin:0 0 12px;color:#111827;">This dashboard has moved to Block Party</h2>
-    <p style="font-size:1.02rem;line-height:1.6;color:#374151;margin:0 auto 8px;max-width:560px;">
-      <a href="https://blockparty.studio/" style="color:#2563eb;">Block Party</a> hosts every board, meeting, and resolution from this dashboard, with the data better cleaned and organized. It adds AI summarization and advanced search, so you can find what a board said about any topic across four decades of meetings.
+    <h2 style="font-family:'DM Serif Display',serif;font-size:1.9rem;line-height:1.15;margin:0 0 12px;color:#1A1208;">This dashboard has moved to Block Party</h2>
+    <p style="font-size:1.02rem;line-height:1.6;color:#4A3B2C;margin:0 auto 8px;max-width:560px;">
+      <a href="https://blockparty.studio/" style="color:#C84609;">Block Party</a> hosts every board, meeting, and resolution from this dashboard, with the data better cleaned and organized. It adds AI summarization and advanced search, so you can find what a board said about any topic across four decades of meetings.
     </p>
     <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:24px;">
-      <a href="https://blockparty.studio/" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:8px;background:#2563eb;color:#fff;font-family:'Roboto Mono',monospace;font-size:0.82rem;font-weight:600;padding:12px 22px;border-radius:10px;text-decoration:none;">Open Block Party &rarr;</a>
+      <a href="https://blockparty.studio/" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:8px;background:#C84609;color:#fff;font-family:'JetBrains Mono', ui-monospace, monospace;font-size:0.82rem;font-weight:600;padding:12px 22px;border-radius:10px;text-decoration:none;">Open Block Party &rarr;</a>
     </div>
   </div>
 
-  <div style="max-width:760px;margin:20px 0 0;background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:28px 32px;box-shadow:0 1px 3px rgba(0,0,0,0.04);">
-    <div style="font-family:'Roboto Mono',monospace;font-size:0.72rem;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:#FF6319;margin-bottom:10px;">NYC School of Data 2026 &middot; March 2026</div>
-    <h3 style="font-size:1.15rem;margin:0 0 8px;color:#111827;">Building an AI-Powered Knowledge Base for NYC Community Boards</h3>
-    <p style="font-size:0.92rem;line-height:1.6;color:#374151;margin:0 0 16px;">The School of Data 2026 presentation on how this database came to be: what community boards are, why their resolutions matter, and how Block Party built a searchable archive of them.</p>
-    <a href="/cb-tools/school-of-data-2026/" style="display:inline-flex;align-items:center;gap:8px;background:#fff;color:#2563eb;border:1px solid #bfdbfe;font-family:'Roboto Mono',monospace;font-size:0.82rem;font-weight:600;padding:10px 18px;border-radius:10px;text-decoration:none;">View the deck (44 slides) &rarr;</a>
+  <div style="max-width:760px;margin:20px 0 0;background:#fff;border:1px solid #E7DDCE;border-radius:16px;padding:28px 32px;box-shadow:0 1px 3px rgba(0,0,0,0.04);">
+    <div style="font-family:'JetBrains Mono', ui-monospace, monospace;font-size:0.72rem;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:#A44D00;margin-bottom:10px;">NYC School of Data 2026 &middot; March 2026</div>
+    <h3 style="font-size:1.15rem;margin:0 0 8px;color:#1A1208;">Building an AI-Powered Knowledge Base for NYC Community Boards</h3>
+    <p style="font-size:0.92rem;line-height:1.6;color:#4A3B2C;margin:0 0 16px;">The School of Data 2026 presentation on how this database came to be: what community boards are, why their resolutions matter, and how Block Party built a searchable archive of them.</p>
+    <a href="/cb-tools/school-of-data-2026/" style="display:inline-flex;align-items:center;gap:8px;background:#fff;color:#C84609;border:1px solid #EDC3A5;font-family:'JetBrains Mono', ui-monospace, monospace;font-size:0.82rem;font-weight:600;padding:10px 18px;border-radius:10px;text-decoration:none;">View the deck (44 slides) &rarr;</a>
   </div>
 
-  <div style="max-width:760px;margin:20px 0 0;background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:28px 32px;box-shadow:0 1px 3px rgba(0,0,0,0.04);">
-    <div style="font-family:'Roboto Mono',monospace;font-size:0.72rem;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:#FF6319;margin-bottom:10px;">NYC OMB Institute Talk &middot; July 2026</div>
-    <h3 style="font-size:1.15rem;margin:0 0 8px;color:#111827;">From Public Records to Public Knowledge: Improving Access to Community Board Information</h3>
-    <p style="font-size:0.92rem;line-height:1.6;color:#374151;margin:0 0 16px;">The talk as presented to the NYC OMB Institute in July 2026: the full walkthrough plus the story of scaling the resolution engine from one community board to eleven, with source adapters, parser iterations, and the corpus today.</p>
-    <a href="/cb-tools/block_party_july2026/" style="display:inline-flex;align-items:center;gap:8px;background:#fff;color:#2563eb;border:1px solid #bfdbfe;font-family:'Roboto Mono',monospace;font-size:0.82rem;font-weight:600;padding:10px 18px;border-radius:10px;text-decoration:none;">View the deck (47 slides) &rarr;</a>
+  <div style="max-width:760px;margin:20px 0 0;background:#fff;border:1px solid #E7DDCE;border-radius:16px;padding:28px 32px;box-shadow:0 1px 3px rgba(0,0,0,0.04);">
+    <div style="font-family:'JetBrains Mono', ui-monospace, monospace;font-size:0.72rem;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:#A44D00;margin-bottom:10px;">NYC OMB Institute Talk &middot; July 2026</div>
+    <h3 style="font-size:1.15rem;margin:0 0 8px;color:#1A1208;">From Public Records to Public Knowledge: Improving Access to Community Board Information</h3>
+    <p style="font-size:0.92rem;line-height:1.6;color:#4A3B2C;margin:0 0 16px;">The talk as presented to the NYC OMB Institute in July 2026: the full walkthrough plus the story of scaling the resolution engine from one community board to eleven, with source adapters, parser iterations, and the corpus today.</p>
+    <a href="/cb-tools/block_party_july2026/" style="display:inline-flex;align-items:center;gap:8px;background:#fff;color:#C84609;border:1px solid #EDC3A5;font-family:'JetBrains Mono', ui-monospace, monospace;font-size:0.82rem;font-weight:600;padding:10px 18px;border-radius:10px;text-decoration:none;">View the deck (47 slides) &rarr;</a>
   </div>
 
 </main>

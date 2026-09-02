@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Weekend Bus Speeds on the G Corridor, 2023–2026 — NYCuriosity</title>
   <meta name="description" content="Monthly weekend average speeds for the B62, B43, B48 and B32, the bus routes that parallel the G train, January 2023 to June 2026: 7 to 8 mph, unchanged.">
@@ -15,32 +16,33 @@
   <meta property="og:description" content="Monthly weekend average speeds for the B62, B43, B48 and B32, the bus routes that parallel the G train, January 2023 to June 2026: 7 to 8 mph, unchanged.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/brand.css">
   <link rel="stylesheet" href="/assets/chart.css">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --blue:       #2563eb;
-      --blue-hover: #1d4ed8;
-      --blue-light: #eff6ff;
-      --blue-mid:   #bfdbfe;
-      --text:       #111827;
-      --text-mid:   #374151;
-      --text-muted: #6b7280;
-      --text-faint: #9ca3af;
-      --bg:         #f8faff;
+      --blue:       #C84609;
+      --blue-hover: #A44D00;
+      --blue-light: #FAF6F1;
+      --blue-mid:   #EDC3A5;
+      --text:       #1A1208;
+      --text-mid:   #4A3B2C;
+      --text-muted: #6B5B4A;
+      --text-faint: #9A8B7A;
+      --bg:         #FAF6F1;
       --surface:    #ffffff;
-      --border:     #e5e7eb;
-      --shadow-sm:  0 1px 3px rgba(17,24,39,0.08);
-      --shadow-md:  0 4px 16px rgba(37,99,235,0.10);
+      --border:     #E7DDCE;
+      --shadow-sm:  0 1px 3px rgba(26,18,8,0.08);
+      --shadow-md:  0 4px 16px rgba(207,75,12,0.10);
       --radius:     10px;
-      --entries-color:  #2563eb;
-      --arrivals-color: #c2410c;
+      --entries-color:  #C84609;
+      --arrivals-color: #89C4E1;
     }
 
     body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-family: 'Helvetica Neue', Helvetica, Arial, 'Inter', system-ui, sans-serif;
       background: var(--bg);
       color: var(--text);
       min-height: 100vh;
@@ -49,8 +51,8 @@
     }
 
     header {
-      background: #111827;
-      border-bottom: 1px solid #1f2937;
+      background: #170C03;
+      border-bottom: 1px solid #2E1C0C;
       padding: 0 clamp(20px, 5vw, 48px);
     }
     .header-inner {
@@ -58,15 +60,15 @@
       display: flex; align-items: center; gap: 16px;
     }
     .back-link {
-      font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600;
-      color: #9ca3af; text-decoration: none; display: flex; align-items: center; gap: 5px;
+      font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.75rem; font-weight: 600;
+      color: #9A8B7A; text-decoration: none; display: flex; align-items: center; gap: 5px;
       padding: 4px 8px 4px 4px; border-radius: 5px; transition: color 0.15s, background 0.15s; white-space: nowrap;
     }
-    .back-link:hover { color: #60a5fa; background: rgba(96,165,250,0.1); }
-    .header-divider { width: 1px; height: 20px; background: #374151; flex-shrink: 0; }
+    .back-link:hover { color: #FFD23F; background: rgba(255,210,63,0.1); }
+    .header-divider { width: 1px; height: 20px; background: #4A3B2C; flex-shrink: 0; }
     header h1 {
-      font-family: 'Roboto Mono', monospace; font-size: 0.95rem; font-weight: 700;
-      color: #e5e7eb; letter-spacing: -0.02em;
+      font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.95rem; font-weight: 700;
+      color: #E7DDCE; letter-spacing: -0.02em;
     }
 
     .pill-nav {
@@ -76,14 +78,14 @@
       display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
     }
     .pill-nav a {
-      font-size: 0.78rem; font-family: 'Roboto Mono', monospace; font-weight: 600;
+      font-size: 0.78rem; font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight: 600;
       padding: 4px 12px; border-radius: 20px; text-decoration: none;
       border: 1px solid var(--border); color: var(--text-muted); background: var(--bg);
       transition: all 0.15s; white-space: nowrap;
     }
     .pill-nav a:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
     .pill-nav a.active { background: var(--blue); color: #fff; border-color: var(--blue); }
-    .pill-label { font-size: 0.72rem; color: var(--text-faint); font-family: 'Roboto Mono', monospace; white-space: nowrap; }
+    .pill-label { font-size: 0.72rem; color: var(--text-faint); font-family: 'JetBrains Mono', ui-monospace, monospace; white-space: nowrap; }
 
     .hero {
       background: var(--surface);
@@ -92,23 +94,23 @@
     }
     .hero-inner { max-width: 1100px; margin: 0 auto; }
     .breadcrumb {
-      font-family: 'Roboto Mono', monospace; font-size: 0.72rem;
+      font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.72rem;
       color: var(--text-faint); margin-bottom: 14px;
       display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
     }
     .breadcrumb a { color: var(--blue); text-decoration: none; }
     .breadcrumb a:hover { text-decoration: underline; }
-    .breadcrumb span:last-child { color: #FF6319; }
+    .breadcrumb span:last-child { color: #A44D00; }
     .hero-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 14px; }
     .hero-tag {
-      font-family: 'Roboto Mono', monospace; font-size: 0.68rem; font-weight: 600;
-      text-transform: uppercase; letter-spacing: 0.08em; color: #FF6319;
-      background: #fff4ed; border: 1px solid #ffd0b3; border-radius: 4px; padding: 3px 8px;
+      font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.68rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.08em; color: var(--b-topic-transit-ink);
+      background: #FAF6F1; border: 1px solid #E7DDCE; border-radius: 4px; padding: 3px 8px;
     }
-    .hero-updated { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; color: var(--text-faint); }
+    .hero-updated { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.72rem; color: var(--text-faint); }
     .hero h1 {
-      font-family: 'Roboto Mono', monospace; font-size: clamp(1.4rem, 3vw, 1.85rem);
-      font-weight: 700; color: var(--text); letter-spacing: -0.03em; line-height: 1.2; margin-bottom: 10px;
+      font-family: 'Playfair Display', Georgia, serif; font-size: clamp(1.4rem, 3vw, 1.85rem);
+      font-weight: 700; color: var(--text); letter-spacing: -0.012em; line-height: 1.2; margin-bottom: 10px;
     }
     .hero h1 span { color: var(--blue); }
     .hero p { font-size: 0.975rem; color: var(--text-muted); max-width: 680px; line-height: 1.7; }
@@ -117,7 +119,7 @@
     .hero-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
     .btn {
       display: inline-flex; align-items: center; gap: 6px;
-      font-family: 'Roboto Mono', monospace; font-size: 0.75rem; font-weight: 600;
+      font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.75rem; font-weight: 600;
       text-decoration: none; border-radius: 7px; padding: 8px 14px;
       transition: background 0.15s, border-color 0.15s; cursor: pointer; border: none;
     }
@@ -150,13 +152,13 @@
     .embed-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; z-index: 1000; }
     .embed-modal-box { background: var(--surface); border-radius: 10px; padding: 24px; max-width: 540px; width: 90%; box-shadow: 0 8px 32px rgba(0,0,0,0.18); }
     .embed-modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
-    .embed-modal-title { font-family: 'Roboto Mono', monospace; font-weight: 700; font-size: 0.9rem; color: var(--text); }
+    .embed-modal-title { font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight: 700; font-size: 0.9rem; color: var(--text); }
     .embed-close { background: none; border: none; font-size: 1.1rem; color: var(--text-muted); cursor: pointer; padding: 2px 6px; border-radius: 4px; }
     .embed-close:hover { color: var(--text); background: var(--bg); }
     .embed-modal-box > p { font-size: 0.83rem; color: var(--text-muted); margin-bottom: 10px; }
-    .embed-textarea { width: 100%; height: 80px; font-family: 'Roboto Mono', monospace; font-size: 0.72rem; border: 1px solid var(--border); border-radius: 6px; padding: 10px; resize: none; color: var(--text-mid); background: var(--bg); margin-bottom: 12px; }
-    .embed-copy-btn { background: var(--blue); color: #fff; font-family: 'Roboto Mono', monospace; font-size: 0.8rem; font-weight: 600; padding: 7px 18px; border: none; border-radius: 6px; cursor: pointer; transition: background 0.15s; }
-    .embed-copy-btn:hover { background: #1d4ed8; }
+    .embed-textarea { width: 100%; height: 80px; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.72rem; border: 1px solid var(--border); border-radius: 6px; padding: 10px; resize: none; color: var(--text-mid); background: var(--bg); margin-bottom: 12px; }
+    .embed-copy-btn { background: var(--blue); color: #fff; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.8rem; font-weight: 600; padding: 7px 18px; border: none; border-radius: 6px; cursor: pointer; transition: background 0.15s; }
+    .embed-copy-btn:hover { background: #A44D00; }
 
     footer { background: var(--surface); border-top: 1px solid var(--border); padding: 20px clamp(20px, 5vw, 48px); margin-top: auto; }
     .footer-inner { max-width: 1100px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
@@ -164,9 +166,43 @@
     .footer-links { display: flex; gap: 20px; align-items: center; }
     .footer-links a { font-size: 0.8rem; color: var(--text-muted); text-decoration: none; transition: color 0.15s; }
     .footer-links a:hover { color: var(--blue); }
-    .footer-support { display: inline-flex; align-items: center; gap: 5px; font-size: 0.8rem; font-weight: 500; color: #2563eb; text-decoration: none; padding: 5px 11px; border: 1px solid rgba(37,99,235,0.45); border-radius: 6px; transition: color .15s, border-color .15s, background .15s; vertical-align: middle; }
-    .footer-support:hover { color: #fff; background: #2563eb; border-color: #2563eb; }
+    .footer-support { display: inline-flex; align-items: center; gap: 5px; font-size: 0.8rem; font-weight: 500; color: #C84609; text-decoration: none; padding: 5px 11px; border: 1px solid rgba(207,75,12,0.45); border-radius: 6px; transition: color .15s, border-color .15s, background .15s; vertical-align: middle; }
+    .footer-support:hover { color: #fff; background: #C84609; border-color: #C84609; }
     .footer-support svg { flex-shrink: 0; }
+  
+    /* ── TOPIC COLOUR (2026 rebrand) ──────────────────────
+       Colour encodes what KIND of thing something is. The bright fills are
+       decorative only; the -ink twins are the only variants safe for text
+       (each is tuned to 4.5:1 on Canvas Cream). Tokens: assets/brand.css */
+    .card[data-topics~="transit"] .card-category { color: var(--b-topic-transit-ink); }
+    .card[data-topics~="cb"]      .card-category { color: var(--b-topic-cb-ink); }
+    .card[data-topics~="budget"]  .card-category { color: var(--b-topic-budget-ink); }
+    .card[data-topics~="govtech"] .card-category { color: var(--b-topic-govtech-ink); }
+    .tf-pill[data-topic="transit"]:hover  { border-color: var(--b-topic-transit-ink); color: var(--b-topic-transit-ink); }
+    .tf-pill[data-topic="cb"]:hover       { border-color: var(--b-topic-cb-ink); color: var(--b-topic-cb-ink); }
+    .tf-pill[data-topic="budget"]:hover   { border-color: var(--b-topic-budget-ink); color: var(--b-topic-budget-ink); }
+    .tf-pill[data-topic="govtech"]:hover  { border-color: var(--b-topic-govtech-ink); color: var(--b-topic-govtech-ink); }
+    .tf-pill[data-topic="transit"].active { background: var(--b-topic-transit-ink); border-color: var(--b-topic-transit-ink); color: #fff; }
+    .tf-pill[data-topic="cb"].active      { background: var(--b-topic-cb-ink); border-color: var(--b-topic-cb-ink); color: #fff; }
+    .tf-pill[data-topic="budget"].active  { background: var(--b-topic-budget-ink); border-color: var(--b-topic-budget-ink); color: #fff; }
+    .tf-pill[data-topic="govtech"].active { background: var(--b-topic-govtech-ink); border-color: var(--b-topic-govtech-ink); color: #fff; }
+    /* A row of figures should not read as one colour. */
+    .stat-pill:nth-child(4n+1) .sp-num { color: var(--b-topic-budget-ink); }
+    .stat-pill:nth-child(4n+2) .sp-num { color: var(--b-topic-transit-ink); }
+    .stat-pill:nth-child(4n+3) .sp-num { color: var(--b-topic-cb-ink); }
+    .stat-pill:nth-child(4n+4) .sp-num { color: var(--b-brown); }
+  
+    /* Header action buttons on subpages (Tal, Sep 2026 — previously hub-only). */
+    .header-actions { display:flex; align-items:center; gap:12px; margin-left:auto; flex-shrink:0; }
+    .header-link { font-size:0.8rem; font-weight:500; color:#9A8B7A; text-decoration:none; display:inline-flex; align-items:center; gap:5px; padding:5px 11px; border:1px solid rgba(255,255,255,0.15); border-radius:6px; transition:color .15s,border-color .15s,background .15s; white-space:nowrap; }
+    .header-link:hover { color:#fff; border-color:rgba(255,255,255,0.35); background:rgba(255,255,255,0.08); }
+    .header-link svg, .support-link svg { flex-shrink:0; }
+    .support-link { font-size:0.8rem; font-weight:500; color:#FFD23F; text-decoration:none; display:inline-flex; align-items:center; gap:5px; padding:5px 11px; border:1px solid rgba(200,70,9,0.45); border-radius:6px; transition:color .15s,border-color .15s,background .15s; white-space:nowrap; }
+    .support-link:hover { color:#fff; background:#C84609; border-color:#C84609; }
+    /* The subpage header also carries a back-link and a page title, so shed the
+       optional buttons before the row can overflow. The footer keeps all three. */
+    @media (max-width: 900px) { .header-actions .header-link { display:none; } }
+    @media (max-width: 560px) { .header-actions { display:none; } }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
   <script defer src="/assets/chart.js"></script>
@@ -177,9 +213,15 @@
 <!-- HEADER -->
 <header>
   <div class="header-inner">
+    <a href="/" class="header-mark" aria-label="NYCuriosity Data home"><img src="/assets/brand/Talbot.svg" alt="" style="height:32px;width:auto;display:block"></a>
     <a href="/nycuriosity_substack_posts/g_train_weekend_shutdowns/" class="back-link">← g-train-weekend-shutdowns</a>
     <div class="header-divider"></div>
     <h1>Bus Speeds</h1>
+    <div class="header-actions">
+      <a href="https://talroded.nycuriosity.com" class="header-link" target="_blank" rel="noopener"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>About</a>
+      <a href="https://www.nycuriosity.com" class="header-link" target="_blank" rel="noopener"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v4H4z"/><path d="M4 10h16v10l-8-4-8 4z"/></svg>Substack</a>
+      <a href="https://buymeacoffee.com/nycuriosity" class="support-link" target="_blank" rel="noopener" aria-label="Support my work on Buy Me a Coffee"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>Support my work</a>
+    </div>
   </div>
 </header>
 
@@ -234,10 +276,10 @@
         <h2 class="c-title">The B62, the G shuttle's route, has not averaged 8 mph on a weekend in any month since 2023</h2>
         <p class="c-deck">Mileage-weighted average weekend speed by month for the four bus routes that run parallel to the G, peak and off-peak periods combined, January 2023 to June 2026.</p>
         <ul class="c-legend">
-          <li><span class="sw" style="background:#2563eb"></span>B62 (Manhattan Av, the shuttle route)</li>
-          <li><span class="sw" style="background:#c2410c"></span>B43 (Graham Av)</li>
-          <li><span class="sw" style="background:#6b7280"></span>B48 (Lorimer St / Franklin Av)</li>
-          <li><span class="sw" style="background:#16a34a"></span>B32 (Kent Av waterfront)</li>
+          <li><span class="sw" style="background:#C84609"></span>B62 (Manhattan Av, the shuttle route)</li>
+          <li><span class="sw" style="background:#89C4E1"></span>B43 (Graham Av)</li>
+          <li><span class="sw" style="background:#6B5B4A"></span>B48 (Lorimer St / Franklin Av)</li>
+          <li><span class="sw" style="background:#226287"></span>B32 (Kent Av waterfront)</li>
         </ul>
       </div>
 
@@ -300,7 +342,7 @@
 
 <script>
   const SERIES = {"B62":[["2023-01",7.7],["2023-02",7.72],["2023-03",7.53],["2023-04",7.38],["2023-05",7.4],["2023-06",7.45],["2023-07",7.49],["2023-08",7.55],["2023-09",7.54],["2023-10",7.45],["2023-11",7.63],["2023-12",7.71],["2024-01",7.59],["2024-02",7.4],["2024-03",7.23],["2024-04",7.17],["2024-05",7.3],["2024-06",7.0],["2024-07",7.31],["2024-08",7.48],["2024-09",7.23],["2024-10",7.25],["2024-11",7.43],["2024-12",7.62],["2025-01",7.64],["2025-02",7.51],["2025-03",7.46],["2025-04",7.5],["2025-05",7.42],["2025-06",7.43],["2025-07",7.48],["2025-08",7.39],["2025-09",7.73],["2025-10",7.62],["2025-11",8.0],["2025-12",7.83],["2026-01",7.98],["2026-02",7.49],["2026-03",7.47],["2026-04",7.56],["2026-05",7.75],["2026-06",7.41]],"B43":[["2023-01",7.13],["2023-02",7.26],["2023-03",7.18],["2023-04",6.94],["2023-05",6.93],["2023-06",6.69],["2023-07",7.0],["2023-08",6.78],["2023-09",6.8],["2023-10",6.92],["2023-11",7.23],["2023-12",7.21],["2024-01",7.25],["2024-02",7.19],["2024-03",7.08],["2024-04",7.04],["2024-05",7.03],["2024-06",6.63],["2024-07",6.8],["2024-08",6.68],["2024-09",6.91],["2024-10",6.72],["2024-11",7.09],["2024-12",7.33],["2025-01",7.23],["2025-02",7.07],["2025-03",7.0],["2025-04",7.08],["2025-05",6.85],["2025-06",6.84],["2025-07",6.91],["2025-08",6.62],["2025-09",6.85],["2025-10",6.84],["2025-11",7.29],["2025-12",7.27],["2026-01",7.14],["2026-02",6.65],["2026-03",6.79],["2026-04",6.97],["2026-05",6.94],["2026-06",6.59]],"B48":[["2023-01",7.56],["2023-02",7.59],["2023-03",7.42],["2023-04",7.25],["2023-05",7.28],["2023-06",7.41],["2023-07",7.52],["2023-08",7.56],["2023-09",7.27],["2023-10",7.15],["2023-11",7.39],["2023-12",7.7],["2024-01",7.41],["2024-02",7.29],["2024-03",7.23],["2024-04",7.56],["2024-05",7.62],["2024-06",7.48],["2024-07",7.28],["2024-08",7.14],["2024-09",7.05],["2024-10",6.93],["2024-11",7.23],["2024-12",7.5],["2025-01",7.37],["2025-02",7.17],["2025-03",7.06],["2025-04",7.25],["2025-05",6.99],["2025-06",7.18],["2025-07",7.76],["2025-08",7.58],["2025-09",6.91],["2025-10",6.98],["2025-11",7.37],["2025-12",7.3],["2026-01",7.35],["2026-02",7.04],["2026-03",6.92],["2026-04",7.07],["2026-05",7.07],["2026-06",6.83]],"B32":[["2023-01",8.89],["2023-02",9.09],["2023-03",8.81],["2023-04",8.28],["2023-05",8.31],["2023-06",8.48],["2023-07",8.61],["2023-08",8.69],["2023-09",8.72],["2023-10",8.87],["2023-11",9.08],["2023-12",9.32],["2024-01",9.01],["2024-02",8.62],["2024-03",8.44],["2024-04",8.08],["2024-05",8.22],["2024-06",7.93],["2024-07",8.29],["2024-08",8.27],["2024-09",8.26],["2024-10",8.05],["2024-11",8.66],["2024-12",9.2],["2025-01",8.87],["2025-02",8.41],["2025-03",8.24],["2025-04",8.15],["2025-05",7.87],["2025-06",7.99],["2025-07",8.54],["2025-08",8.28],["2025-09",8.07],["2025-10",8.1],["2025-11",8.55],["2025-12",8.26],["2026-01",8.54],["2026-02",8.02],["2026-03",8.1],["2026-04",7.6],["2026-05",7.85],["2026-06",7.73]]};
-  const ROUTES = [['B62','#2563eb'],['B43','#c2410c'],['B48','#6b7280'],['B32','#16a34a']];
+  const ROUTES = [['B62','#C84609'],['B43','#89C4E1'],['B48','#6B5B4A'],['B32','#226287']];
   const W = 1000, PADL = 56, PADR = 150, PADT = 22, PADB = 34, H = 380;
   const plotW = W - PADL - PADR, plotH = H - PADT - PADB;
   const YMIN = 5, YMAX = 10;
@@ -317,7 +359,7 @@
   });
   ['2023-01', '2024-01', '2025-01', '2026-01'].forEach(m => el('text', { x: xFor(m), y: H - PADB + 20, 'text-anchor': 'start', class: 'c-tick' }, m.slice(0, 4)));
   // summer 2024 full shutdown band
-  el('rect', { x: xFor('2024-07'), y: PADT, width: xFor('2024-09') - xFor('2024-07'), height: plotH, fill: '#f3f4f6' });
+  el('rect', { x: xFor('2024-07'), y: PADT, width: xFor('2024-09') - xFor('2024-07'), height: plotH, fill: '#F2EBE1' });
   el('text', { x: xFor('2024-07') + 4, y: PADT + 12, class: 'c-annot' }, 'G full shutdown');
   const ends = [];
   ROUTES.forEach(([r, c]) => {

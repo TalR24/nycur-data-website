@@ -22,12 +22,14 @@
 
   /* ---- palettes -------------------------------------------------------- */
 
-  var SEQ = ['#1e3a8a', '#1e40af', '#1d4ed8', '#2563eb', '#3b82f6', '#519bf8',
-             '#60a5fa', '#7db3fb', '#93c5fd', '#aed4fe', '#bfdbfe'];
-  var DIVERGING = ['#b91c1c', '#dc2626', '#fca5a5', '#f3f4f6', '#93c5fd', '#3b82f6', '#1d4ed8'];
-  var CATEGORICAL = ['#2563eb', '#c2410c', '#6b7280', '#16a34a'];
-  var RESIDUAL = '#6b7280';
-  var SEQ_INK_DARK = '#1e3a8a';
+  /* Must stay identical to the --c-seq-* / --c-div-* / --c-cat-* tokens in
+     chart.css. These are the same scales, in the one place JS needs them. */
+  var SEQ = ['#652606', '#7A3009', '#953C0D', '#B24B12', '#D05B18', '#E3702A',
+             '#E58950', '#E7A275', '#ECBB9A', '#F1D4BE', '#F8ECE2'];
+  var DIVERGING = ['#773903', '#A54D12', '#E48B58', '#FAF6F1', '#90BFD5', '#459CC4', '#226287'];
+  var CATEGORICAL = ['#F26522', '#89C4E1', '#A44D00', '#E84C8A'];
+  var RESIDUAL = '#9A8B7A';
+  var SEQ_INK_DARK = '#1A1208';
 
   /* Sample n evenly spaced colours from the sequential ramp, darkest first. */
   function seqRamp(n) {
@@ -43,7 +45,9 @@
      contrast drops below 3:1, so the label flips to navy. */
   function seqLabelInk(index, n) {
     var pos = n <= 1 ? 0 : index / (n - 1);
-    return pos <= 0.42 ? '#ffffff' : SEQ_INK_DARK;
+    /* White holds 4.5:1 through step 4 of the tangerine ramp; ink takes over
+       at step 5. The old 0.42 cutoff let white run one step too far. */
+    return pos <= 0.32 ? '#ffffff' : SEQ_INK_DARK;
   }
 
   /* ---- number formatting ----------------------------------------------- */
@@ -186,7 +190,7 @@
     if (!box || !field) return;
     var url = window.location.origin + window.location.pathname;
     field.value = '<iframe src="' + url + '" width="900" height="' + embedHeight() +
-      '" frameborder="0" style="border:1px solid #e5e7eb; border-radius:8px;" loading="lazy"></iframe>';
+      '" frameborder="0" style="border:1px solid #E7DDCE; border-radius:8px;" loading="lazy"></iframe>';
     box.style.display = 'flex';
   }
   function closeEmbed() {
@@ -218,14 +222,14 @@
     var d = window.Chart.defaults;
     d.font.family = "'Inter', system-ui, sans-serif";
     d.font.size = 12;
-    d.color = '#374151';
-    d.borderColor = '#e5e7eb';
+    d.color = '#4A3B2C';
+    d.borderColor = '#E7DDCE';
     d.plugins.legend.position = 'bottom';
     d.plugins.legend.labels.boxWidth = 12;
     d.plugins.legend.labels.font = { family: "'Inter', system-ui, sans-serif", size: 12 };
-    d.plugins.tooltip.backgroundColor = '#111827';
-    d.plugins.tooltip.titleFont = { family: "'Roboto Mono', monospace", size: 12, weight: '700' };
-    d.plugins.tooltip.bodyFont = { family: "'Roboto Mono', monospace", size: 11 };
+    d.plugins.tooltip.backgroundColor = '#1A1208';
+    d.plugins.tooltip.titleFont = { family: "'JetBrains Mono', ui-monospace, monospace", size: 12, weight: '700' };
+    d.plugins.tooltip.bodyFont = { family: "'JetBrains Mono', ui-monospace, monospace", size: 11 };
     d.plugins.tooltip.padding = 12;
     d.plugins.tooltip.cornerRadius = 8;
     d.datasets.bar.borderRadius = 2;
@@ -233,9 +237,9 @@
     d.elements.line.tension = 0;
     d.elements.line.borderWidth = 2.5;
     d.elements.point.radius = 3.5;
-    d.scale.grid.color = '#e5e7eb';
-    d.scale.ticks.font = { family: "'Roboto Mono', monospace", size: 11 };
-    d.scale.ticks.color = '#6b7280';
+    d.scale.grid.color = '#E7DDCE';
+    d.scale.ticks.font = { family: "'JetBrains Mono', ui-monospace, monospace", size: 11 };
+    d.scale.ticks.color = '#6B5B4A';
   }
 
   /* ---- boot ------------------------------------------------------------ */

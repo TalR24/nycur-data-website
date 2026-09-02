@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>311 Noise Spikes vs. MCB3 Resolutions — NYCuriosity Data</title>
   <meta name="description" content="Did MCB3 resolutions lead or lag the 311 noise complaint explosion of 2020? A month-by-month look at the pandemic noise surge and the board's formal response.">
@@ -16,7 +17,8 @@
   <meta name="twitter:image"      content="https://data.nycuriosity.com/website_logo.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/brand.css">
   <link rel="stylesheet" href="/assets/chart.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
@@ -24,31 +26,31 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --blue:#2563eb; --blue-light:#eff6ff; --blue-mid:#bfdbfe;
-      --red:#dc2626; --red-light:#fef2f2;
-      --amber:#f59e0b; --amber-light:#fffbeb;
-      --green:#16a34a;
-      --text:#111827; --text-mid:#374151; --text-muted:#6b7280; --text-faint:#9ca3af;
-      --bg:#f8faff; --surface:#ffffff; --border:#e5e7eb; --border-mid:#d1d5db;
-      --shadow-sm:0 1px 3px rgba(17,24,39,0.08);
+      --blue:#C84609; --blue-light:#FAF6F1; --blue-mid:#EDC3A5;
+      --red:#A44D00; --red-light:#FAF6F1;
+      --amber:#FFD23F; --amber-light:#fffbeb;
+      --green:#226287;
+      --text:#1A1208; --text-mid:#4A3B2C; --text-muted:#6B5B4A; --text-faint:#9A8B7A;
+      --bg:#FAF6F1; --surface:#ffffff; --border:#E7DDCE; --border-mid:#D3C4AF;
+      --shadow-sm:0 1px 3px rgba(26,18,8,0.08);
     }
-    body { font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; display:flex; flex-direction:column; }
+    body { font-family:'Helvetica Neue', Helvetica, Arial, 'Inter', system-ui, sans-serif; background:var(--bg); color:var(--text); min-height:100vh; display:flex; flex-direction:column; }
 
-    header { background:#111827; border-bottom:1px solid #1f2937; padding:0 clamp(20px,5vw,48px); }
+    header { background:#170C03; border-bottom:1px solid #2E1C0C; padding:0 clamp(20px,5vw,48px); }
     .header-inner { max-width:1100px; margin:0 auto; height:56px; display:flex; align-items:center; gap:16px; }
-    .back-link { font-family:'Roboto Mono',monospace; font-size:0.75rem; font-weight:600; color:#9ca3af; text-decoration:none; display:flex; align-items:center; gap:5px; padding:4px 8px 4px 4px; border-radius:5px; transition:color 0.15s,background 0.15s; white-space:nowrap; }
-    .back-link:hover { color:#60a5fa; background:rgba(96,165,250,0.1); }
-    .header-divider { width:1px; height:20px; background:#374151; flex-shrink:0; }
-    header h1 { font-family:'Roboto Mono',monospace; font-size:0.95rem; font-weight:700; color:#e5e7eb; letter-spacing:-0.02em; }
+    .back-link { font-family:'JetBrains Mono', ui-monospace, monospace; font-size:0.75rem; font-weight:600; color:#9A8B7A; text-decoration:none; display:flex; align-items:center; gap:5px; padding:4px 8px 4px 4px; border-radius:5px; transition:color 0.15s,background 0.15s; white-space:nowrap; }
+    .back-link:hover { color:#FFD23F; background:rgba(255,210,63,0.1); }
+    .header-divider { width:1px; height:20px; background:#4A3B2C; flex-shrink:0; }
+    header h1 { font-family:'JetBrains Mono', ui-monospace, monospace; font-size:0.95rem; font-weight:700; color:#E7DDCE; letter-spacing:-0.02em; }
 
     .pill-nav { background:var(--surface); border-bottom:1px solid var(--border); padding:10px clamp(20px,5vw,48px); display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
-    .pill-nav a { font-size:0.78rem; font-family:'Roboto Mono',monospace; font-weight:600; padding:4px 12px; border-radius:20px; text-decoration:none; border:1px solid var(--border-mid); color:var(--text-muted); background:var(--bg); transition:all 0.15s; white-space:nowrap; }
+    .pill-nav a { font-size:0.78rem; font-family:'JetBrains Mono', ui-monospace, monospace; font-weight:600; padding:4px 12px; border-radius:20px; text-decoration:none; border:1px solid var(--border-mid); color:var(--text-muted); background:var(--bg); transition:all 0.15s; white-space:nowrap; }
     .pill-nav a:hover { border-color:var(--blue); color:var(--blue); background:var(--blue-light); }
     .pill-nav a.active { background:var(--blue); color:#fff; border-color:var(--blue); }
-    .pill-label { font-size:0.72rem; color:var(--text-faint); font-family:'Roboto Mono',monospace; white-space:nowrap; }
+    .pill-label { font-size:0.72rem; color:var(--text-faint); font-family:'JetBrains Mono', ui-monospace, monospace; white-space:nowrap; }
 
     main { flex:1; max-width:1100px; margin:0 auto; padding:clamp(28px,5vw,48px) clamp(20px,5vw,48px); width:100%; }
-    .breadcrumb { font-family:'Roboto Mono',monospace; font-size:0.72rem; color:var(--text-faint); margin-bottom:12px; letter-spacing:0.04em; }
+    .breadcrumb { font-family:'JetBrains Mono', ui-monospace, monospace; font-size:0.72rem; color:var(--text-faint); margin-bottom:12px; letter-spacing:0.04em; }
     .breadcrumb a { color:var(--text-muted); text-decoration:none; }
     .breadcrumb a:hover { color:var(--blue); }
     .hero { margin-bottom:32px; }
@@ -57,7 +59,7 @@
 
     .insight-strip { display:flex; flex-wrap:wrap; gap:10px; margin-bottom:28px; }
     .insight-pill { display:flex; flex-direction:column; gap:2px; padding:10px 16px; background:var(--surface); border:1px solid var(--border); border-radius:8px; flex:1; min-width:140px; }
-    .insight-pill .ip-num { font-family:'Roboto Mono',monospace; font-size:1.15rem; font-weight:700; letter-spacing:-0.02em; line-height:1; }
+    .insight-pill .ip-num { font-family:'JetBrains Mono', ui-monospace, monospace; font-size:1.15rem; font-weight:700; letter-spacing:-0.02em; line-height:1; }
     .insight-pill .ip-num.red { color:var(--red); }
     .insight-pill .ip-num.blue { color:var(--blue); }
     .insight-pill .ip-num.green { color:var(--green); }
@@ -66,18 +68,18 @@
     .canvas-box { position:relative; width:100%; height:400px; }
 
     .resolution-legend { margin-top:20px; display:flex; flex-direction:column; gap:10px; }
-    .res-legend-label { font-family:'Roboto Mono',monospace; font-size:0.68rem; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-faint); margin-bottom:4px; }
+    .res-legend-label { font-family:'JetBrains Mono', ui-monospace, monospace; font-size:0.68rem; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-faint); margin-bottom:4px; }
     .res-entry { display:flex; align-items:flex-start; gap:10px; padding:10px 14px; border:1px solid var(--border); border-radius:8px; background:var(--bg); }
-    .res-badge { font-family:'Roboto Mono',monospace; font-size:0.68rem; font-weight:700; padding:2px 8px; border-radius:4px; white-space:nowrap; flex-shrink:0; margin-top:1px; }
-    .res-badge.r1 { background:#fee2e2; color:#991b1b; }
-    .res-badge.r2 { background:#fef3c7; color:#92400e; }
-    .res-badge.r3 { background:#e0e7ff; color:#3730a3; }
+    .res-badge { font-family:'JetBrains Mono', ui-monospace, monospace; font-size:0.68rem; font-weight:700; padding:2px 8px; border-radius:4px; white-space:nowrap; flex-shrink:0; margin-top:1px; }
+    .res-badge.r1 { background:#F6E7DA; color:#692807; }
+    .res-badge.r2 { background:#FDF3D8; color:#773903; }
+    .res-badge.r3 { background:#F6E7DA; color:#8A360B; }
     .res-text { font-size:0.82rem; color:var(--text-mid); line-height:1.5; }
     .res-text strong { color:var(--text); }
-    .res-lag { font-family:'Roboto Mono',monospace; font-size:0.72rem; color:var(--text-faint); margin-top:3px; display:block; }
+    .res-lag { font-family:'JetBrains Mono', ui-monospace, monospace; font-size:0.72rem; color:var(--text-faint); margin-top:3px; display:block; }
 
     .methodology { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:24px 28px; }
-    .methodology h3 { font-family:'Roboto Mono',monospace; font-size:0.82rem; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-faint); margin-bottom:14px; }
+    .methodology h3 { font-family:'JetBrains Mono', ui-monospace, monospace; font-size:0.82rem; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-faint); margin-bottom:14px; }
     .methodology p { font-size:0.84rem; color:var(--text-muted); line-height:1.7; margin-bottom:10px; }
     .methodology p:last-child { margin-bottom:0; }
     .methodology a { color:var(--blue); text-decoration:none; }
@@ -89,17 +91,42 @@
     .footer-links { display:flex; gap:20px; }
     .footer-links a { font-size:0.8rem; color:var(--text-muted); text-decoration:none; }
     .footer-links a:hover { color:var(--blue); }
+  
+    /* ── TOPIC COLOUR (2026 rebrand) ──────────────────────
+       Colour encodes what KIND of thing something is. The bright fills are
+       decorative only; the -ink twins are the only variants safe for text
+       (each is tuned to 4.5:1 on Canvas Cream). Tokens: assets/brand.css */
+    .card[data-topics~="transit"] .card-category { color: var(--b-topic-transit-ink); }
+    .card[data-topics~="cb"]      .card-category { color: var(--b-topic-cb-ink); }
+    .card[data-topics~="budget"]  .card-category { color: var(--b-topic-budget-ink); }
+    .card[data-topics~="govtech"] .card-category { color: var(--b-topic-govtech-ink); }
+    .tf-pill[data-topic="transit"]:hover  { border-color: var(--b-topic-transit-ink); color: var(--b-topic-transit-ink); }
+    .tf-pill[data-topic="cb"]:hover       { border-color: var(--b-topic-cb-ink); color: var(--b-topic-cb-ink); }
+    .tf-pill[data-topic="budget"]:hover   { border-color: var(--b-topic-budget-ink); color: var(--b-topic-budget-ink); }
+    .tf-pill[data-topic="govtech"]:hover  { border-color: var(--b-topic-govtech-ink); color: var(--b-topic-govtech-ink); }
+    .tf-pill[data-topic="transit"].active { background: var(--b-topic-transit-ink); border-color: var(--b-topic-transit-ink); color: #fff; }
+    .tf-pill[data-topic="cb"].active      { background: var(--b-topic-cb-ink); border-color: var(--b-topic-cb-ink); color: #fff; }
+    .tf-pill[data-topic="budget"].active  { background: var(--b-topic-budget-ink); border-color: var(--b-topic-budget-ink); color: #fff; }
+    .tf-pill[data-topic="govtech"].active { background: var(--b-topic-govtech-ink); border-color: var(--b-topic-govtech-ink); color: #fff; }
+    /* A row of figures should not read as one colour. */
+    .stat-pill:nth-child(4n+1) .sp-num { color: var(--b-topic-budget-ink); }
+    .stat-pill:nth-child(4n+2) .sp-num { color: var(--b-topic-transit-ink); }
+    .stat-pill:nth-child(4n+3) .sp-num { color: var(--b-topic-cb-ink); }
+    .stat-pill:nth-child(4n+4) .sp-num { color: var(--b-brown); }
+  
+    @media (max-width: 900px) { .header-actions .header-link { display:none; } }
+    @media (max-width: 560px) { .header-actions { display:none; } }
   </style>
 <style id="support-btn-css">
-.header-actions{display:flex;align-items:center;gap:14px;}
-.header-link{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border:1px solid rgba(255,255,255,0.15);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
+.header-actions{display:flex;align-items:center;gap:12px;margin-left:auto;flex-shrink:0;}
+.header-link{font-size:0.8rem;font-weight:500;color:#9A8B7A;text-decoration:none;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border:1px solid rgba(255,255,255,0.15);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
 .header-link:hover{color:#fff;border-color:rgba(255,255,255,0.35);background:rgba(255,255,255,0.08);}
 .header-link svg{flex-shrink:0;}
-.support-link{display:inline-flex;align-items:center;gap:5px;font-size:0.8rem;font-weight:500;color:#93c5fd;text-decoration:none;padding:5px 11px;border:1px solid rgba(37,99,235,0.45);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
-.support-link:hover{color:#fff;background:#2563eb;border-color:#2563eb;}
+.support-link{display:inline-flex;align-items:center;gap:5px;font-size:0.8rem;font-weight:500;color:#FFD23F;text-decoration:none;padding:5px 11px;border:1px solid rgba(207,75,12,0.45);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
+.support-link:hover{color:#fff;background:#C84609;border-color:#C84609;}
 .support-link svg{flex-shrink:0;}
-.footer-support{display:inline-flex;align-items:center;gap:5px;font-size:0.8rem;font-weight:500;color:#2563eb;text-decoration:none;padding:5px 11px;border:1px solid rgba(37,99,235,0.45);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
-.footer-support:hover{color:#fff;background:#2563eb;border-color:#2563eb;}
+.footer-support{display:inline-flex;align-items:center;gap:5px;font-size:0.8rem;font-weight:500;color:#C84609;text-decoration:none;padding:5px 11px;border:1px solid rgba(207,75,12,0.45);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
+.footer-support:hover{color:#fff;background:#C84609;border-color:#C84609;}
 .footer-support svg{flex-shrink:0;}
 .footer-support{vertical-align:middle;}
 .footer-links{align-items:center;}
@@ -110,9 +137,15 @@
 
 <header>
   <div class="header-inner">
+    <a href="/" class="header-mark" aria-label="NYCuriosity Data home"><img src="/assets/brand/Talbot.svg" alt="" style="height:32px;width:auto;display:block"></a>
     <a href="../" class="back-link">← MCB3 History Analysis</a>
     <div class="header-divider"></div>
     <h1>311 Spikes vs. Resolutions</h1>
+    <div class="header-actions">
+      <a href="https://talroded.nycuriosity.com" class="header-link" target="_blank" rel="noopener"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>About</a>
+      <a href="https://www.nycuriosity.com" class="header-link" target="_blank" rel="noopener"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v4H4z"/><path d="M4 10h16v10l-8-4-8 4z"/></svg>Substack</a>
+      <a href="https://buymeacoffee.com/nycuriosity" class="support-link" target="_blank" rel="noopener" aria-label="Support my work on Buy Me a Coffee"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>Support my work</a>
+    </div>
   </div>
 </header>
 
@@ -127,7 +160,7 @@
 
 <main>
   <div class="breadcrumb">
-    <a href="/">nycuriosity/data</a> / <a href="../">mcb3-history-analysis</a> / <span style="color:#FF6319">311-vs-resolutions</span>
+    <a href="/">nycuriosity/data</a> / <a href="../">mcb3-history-analysis</a> / <span style="color:#A44D00">311-vs-resolutions</span>
   </div>
 
   <div class="hero">
@@ -206,11 +239,11 @@
 
   <div id="embedModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:999;align-items:center;justify-content:center;">
     <div style="background:#fff;border-radius:10px;padding:28px;max-width:560px;width:90%;position:relative;">
-      <div style="font-family:'Roboto Mono',monospace;font-size:0.82rem;font-weight:700;margin-bottom:12px;">Embed this chart</div>
-      <textarea id="embedCode" readonly style="width:100%;height:90px;font-family:'Roboto Mono',monospace;font-size:0.7rem;border:1px solid #e5e7eb;border-radius:6px;padding:10px;resize:none;background:#f8faff;color:#374151;"></textarea>
+      <div style="font-family:'JetBrains Mono', ui-monospace, monospace;font-size:0.82rem;font-weight:700;margin-bottom:12px;">Embed this chart</div>
+      <textarea id="embedCode" readonly style="width:100%;height:90px;font-family:'JetBrains Mono', ui-monospace, monospace;font-size:0.7rem;border:1px solid #E7DDCE;border-radius:6px;padding:10px;resize:none;background:#FAF6F1;color:#4A3B2C;"></textarea>
       <div style="display:flex;gap:8px;margin-top:10px;">
-        <button class="embed-copy-btn" onclick="copyEmbed()" style="font-family:'Roboto Mono',monospace;font-size:0.72rem;font-weight:600;padding:6px 14px;border-radius:6px;border:1px solid #2563eb;background:#2563eb;color:#fff;cursor:pointer;">Copy code</button>
-        <button onclick="closeEmbed()" style="font-family:'Roboto Mono',monospace;font-size:0.72rem;font-weight:600;padding:6px 14px;border-radius:6px;border:1px solid #d1d5db;background:#fff;color:#6b7280;cursor:pointer;">Close</button>
+        <button class="embed-copy-btn" onclick="copyEmbed()" style="font-family:'JetBrains Mono', ui-monospace, monospace;font-size:0.72rem;font-weight:600;padding:6px 14px;border-radius:6px;border:1px solid #C84609;background:#C84609;color:#fff;cursor:pointer;">Copy code</button>
+        <button onclick="closeEmbed()" style="font-family:'JetBrains Mono', ui-monospace, monospace;font-size:0.72rem;font-weight:600;padding:6px 14px;border-radius:6px;border:1px solid #D3C4AF;background:#fff;color:#6B5B4A;cursor:pointer;">Close</button>
       </div>
     </div>
   </div>
@@ -259,9 +292,9 @@ const DATA = [
 
 // Resolution annotation events: { index (0-based), label, color, dash }
 const RESOLUTIONS = [
-  { index: 6,  label: "①", color: "#dc2626", dash: [4, 4] },  // Jul 2020
-  { index: 7,  label: "②", color: "#d97706", dash: [4, 4] },  // Aug 2020
-  { index: 18, label: "③", color: "#4f46e5", dash: [4, 4] },  // Jul 2021
+  { index: 6,  label: "①", color: "#A44D00", dash: [4, 4] },  // Jul 2020
+  { index: 7,  label: "②", color: "#A44D00", dash: [4, 4] },  // Aug 2020
+  { index: 18, label: "③", color: "#E84C8A", dash: [4, 4] },  // Jul 2021
 ];
 
 const PEAK_INDEX = 5; // Jun 2020
@@ -278,7 +311,7 @@ const annotationPlugin = {
     const peakX = xAxis.getPixelForValue(PEAK_INDEX);
     const peakBand = xAxis.width / MONTHS.length;
     ctx.save();
-    ctx.fillStyle = 'rgba(37,99,235,0.06)';
+    ctx.fillStyle = 'rgba(207,75,12,0.06)';
     ctx.fillRect(peakX - peakBand / 2, yAxis.top, peakBand, yAxis.bottom - yAxis.top);
     ctx.restore();
 
@@ -297,7 +330,7 @@ const annotationPlugin = {
       // Label at top
       ctx.setLineDash([]);
       ctx.fillStyle = res.color;
-      ctx.font = "bold 11px 'Roboto Mono', monospace";
+      ctx.font = "bold 11px 'JetBrains Mono', ui-monospace, monospace";
       ctx.textAlign = 'center';
       ctx.fillText(res.label, xPos, yAxis.top + 14);
       ctx.restore();
@@ -305,8 +338,8 @@ const annotationPlugin = {
 
     // Peak label
     ctx.save();
-    ctx.fillStyle = '#2563eb';
-    ctx.font = "bold 10px 'Roboto Mono', monospace";
+    ctx.fillStyle = '#C84609';
+    ctx.font = "bold 10px 'JetBrains Mono', ui-monospace, monospace";
     ctx.textAlign = 'center';
     ctx.fillText("PEAK", peakX, yAxis.top + 26);
     ctx.restore();
@@ -318,8 +351,8 @@ Chart.register(annotationPlugin);
 const ctx = document.getElementById('mainChart').getContext('2d');
 
 // Build point colors: blue at peak, transparent elsewhere
-const pointBg = DATA.map((_, i) => i === PEAK_INDEX ? '#2563eb' : 'rgba(0,0,0,0)');
-const pointBorder = DATA.map((_, i) => i === PEAK_INDEX ? '#2563eb' : 'rgba(0,0,0,0)');
+const pointBg = DATA.map((_, i) => i === PEAK_INDEX ? '#C84609' : 'rgba(0,0,0,0)');
+const pointBorder = DATA.map((_, i) => i === PEAK_INDEX ? '#C84609' : 'rgba(0,0,0,0)');
 const pointRadius = DATA.map((_, i) => i === PEAK_INDEX ? 5 : 0);
 const pointHover = DATA.map(() => 5);
 
@@ -330,8 +363,8 @@ const chart = new Chart(ctx, {
     datasets: [{
       label: 'Noise – Street/Sidewalk (monthly 311 complaints)',
       data: DATA,
-      borderColor: '#2563eb',
-      backgroundColor: 'rgba(37,99,235,0.07)',
+      borderColor: '#C84609',
+      backgroundColor: 'rgba(207,75,12,0.07)',
       fill: true,
       tension: 0.35,
       borderWidth: 2,
@@ -339,7 +372,7 @@ const chart = new Chart(ctx, {
       pointBorderColor: pointBorder,
       pointRadius: pointRadius,
       pointHoverRadius: pointHover,
-      pointHoverBackgroundColor: '#2563eb',
+      pointHoverBackgroundColor: '#C84609',
     }]
   },
   options: {
@@ -389,8 +422,8 @@ const chart = new Chart(ctx, {
         title: {
           display: true,
           text: 'Monthly 311 complaints',
-          font: { family: "'Roboto Mono', monospace", size: 10 },
-          color: '#6b7280',
+          font: { family: "'JetBrains Mono', ui-monospace, monospace", size: 10 },
+          color: '#6B5B4A',
           padding: { bottom: 6 }
         }
       }

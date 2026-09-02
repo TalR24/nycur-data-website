@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MCB3 Resolutions vs. 311 Complaints by Agency — NYCuriosity Data</title>
   <meta name="description" content="Which city agencies does MCB3 formally address vs. which agencies residents actually complain to? A side-by-side percentage comparison revealing where board attention and resident grievances diverge.">
@@ -16,7 +17,8 @@
   <meta name="twitter:image"      content="https://data.nycuriosity.com/website_logo.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/brand.css">
   <link rel="stylesheet" href="/assets/chart.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
@@ -24,29 +26,29 @@
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
-      --blue:#2563eb; --blue-light:#eff6ff; --blue-mid:#bfdbfe;
-      --amber:#f59e0b; --amber-light:#fffbeb;
-      --text:#111827; --text-mid:#374151; --text-muted:#6b7280; --text-faint:#9ca3af;
-      --bg:#f8faff; --surface:#ffffff; --border:#e5e7eb; --border-mid:#d1d5db;
-      --shadow-sm:0 1px 3px rgba(17,24,39,0.08);
+      --blue:#C84609; --blue-light:#FAF6F1; --blue-mid:#EDC3A5;
+      --amber:#FFD23F; --amber-light:#fffbeb;
+      --text:#1A1208; --text-mid:#4A3B2C; --text-muted:#6B5B4A; --text-faint:#9A8B7A;
+      --bg:#FAF6F1; --surface:#ffffff; --border:#E7DDCE; --border-mid:#D3C4AF;
+      --shadow-sm:0 1px 3px rgba(26,18,8,0.08);
     }
-    body { font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; display:flex; flex-direction:column; }
+    body { font-family:'Helvetica Neue', Helvetica, Arial, 'Inter', system-ui, sans-serif; background:var(--bg); color:var(--text); min-height:100vh; display:flex; flex-direction:column; }
 
-    header { background:#111827; border-bottom:1px solid #1f2937; padding:0 clamp(20px,5vw,48px); }
+    header { background:#170C03; border-bottom:1px solid #2E1C0C; padding:0 clamp(20px,5vw,48px); }
     .header-inner { max-width:1100px; margin:0 auto; height:56px; display:flex; align-items:center; gap:16px; }
-    .back-link { font-family:'Roboto Mono',monospace; font-size:0.75rem; font-weight:600; color:#9ca3af; text-decoration:none; display:flex; align-items:center; gap:5px; padding:4px 8px 4px 4px; border-radius:5px; transition:color 0.15s,background 0.15s; white-space:nowrap; }
-    .back-link:hover { color:#60a5fa; background:rgba(96,165,250,0.1); }
-    .header-divider { width:1px; height:20px; background:#374151; flex-shrink:0; }
-    header h1 { font-family:'Roboto Mono',monospace; font-size:0.95rem; font-weight:700; color:#e5e7eb; letter-spacing:-0.02em; }
+    .back-link { font-family:'JetBrains Mono', ui-monospace, monospace; font-size:0.75rem; font-weight:600; color:#9A8B7A; text-decoration:none; display:flex; align-items:center; gap:5px; padding:4px 8px 4px 4px; border-radius:5px; transition:color 0.15s,background 0.15s; white-space:nowrap; }
+    .back-link:hover { color:#FFD23F; background:rgba(255,210,63,0.1); }
+    .header-divider { width:1px; height:20px; background:#4A3B2C; flex-shrink:0; }
+    header h1 { font-family:'JetBrains Mono', ui-monospace, monospace; font-size:0.95rem; font-weight:700; color:#E7DDCE; letter-spacing:-0.02em; }
 
     .pill-nav { background:var(--surface); border-bottom:1px solid var(--border); padding:10px clamp(20px,5vw,48px); display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
-    .pill-nav a { font-size:0.78rem; font-family:'Roboto Mono',monospace; font-weight:600; padding:4px 12px; border-radius:20px; text-decoration:none; border:1px solid var(--border-mid); color:var(--text-muted); background:var(--bg); transition:all 0.15s; white-space:nowrap; }
+    .pill-nav a { font-size:0.78rem; font-family:'JetBrains Mono', ui-monospace, monospace; font-weight:600; padding:4px 12px; border-radius:20px; text-decoration:none; border:1px solid var(--border-mid); color:var(--text-muted); background:var(--bg); transition:all 0.15s; white-space:nowrap; }
     .pill-nav a:hover { border-color:var(--blue); color:var(--blue); background:var(--blue-light); }
     .pill-nav a.active { background:var(--blue); color:#fff; border-color:var(--blue); }
-    .pill-label { font-size:0.72rem; color:var(--text-faint); font-family:'Roboto Mono',monospace; white-space:nowrap; }
+    .pill-label { font-size:0.72rem; color:var(--text-faint); font-family:'JetBrains Mono', ui-monospace, monospace; white-space:nowrap; }
 
     main { flex:1; max-width:1100px; margin:0 auto; padding:clamp(28px,5vw,48px) clamp(20px,5vw,48px); width:100%; }
-    .breadcrumb { font-family:'Roboto Mono',monospace; font-size:0.72rem; color:var(--text-faint); margin-bottom:12px; letter-spacing:0.04em; }
+    .breadcrumb { font-family:'JetBrains Mono', ui-monospace, monospace; font-size:0.72rem; color:var(--text-faint); margin-bottom:12px; letter-spacing:0.04em; }
     .breadcrumb a { color:var(--text-muted); text-decoration:none; }
     .breadcrumb a:hover { color:var(--blue); }
     .hero { margin-bottom:32px; }
@@ -55,20 +57,20 @@
 
     .controls-row { display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin-bottom:20px; justify-content:space-between; }
     .controls-left { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
-    .toggle-btn { font-family:'Roboto Mono',monospace; font-size:0.75rem; font-weight:600; padding:5px 14px; border-radius:20px; border:1px solid var(--border-mid); background:var(--bg); color:var(--text-muted); cursor:pointer; transition:all 0.15s; }
+    .toggle-btn { font-family:'JetBrains Mono', ui-monospace, monospace; font-size:0.75rem; font-weight:600; padding:5px 14px; border-radius:20px; border:1px solid var(--border-mid); background:var(--bg); color:var(--text-muted); cursor:pointer; transition:all 0.15s; }
     .toggle-btn:hover { border-color:var(--blue); color:var(--blue); background:var(--blue-light); }
     .toggle-btn.active { background:var(--blue); color:#fff; border-color:var(--blue); }
 
     .category-filter { position:relative; }
-    .category-trigger { font-family:'Roboto Mono',monospace; font-size:0.75rem; font-weight:600; padding:5px 14px; border-radius:20px; border:1px solid var(--border-mid); background:var(--bg); color:var(--text-muted); cursor:pointer; transition:all 0.15s; display:flex; align-items:center; gap:8px; white-space:nowrap; }
+    .category-trigger { font-family:'JetBrains Mono', ui-monospace, monospace; font-size:0.75rem; font-weight:600; padding:5px 14px; border-radius:20px; border:1px solid var(--border-mid); background:var(--bg); color:var(--text-muted); cursor:pointer; transition:all 0.15s; display:flex; align-items:center; gap:8px; white-space:nowrap; }
     .category-trigger:hover, .category-trigger.open { border-color:var(--blue); color:var(--blue); background:var(--blue-light); }
     .trigger-arrow { font-size:0.6rem; transition:transform 0.15s; display:inline-block; }
     .category-trigger.open .trigger-arrow { transform:rotate(180deg); }
     .category-dropdown { position:absolute; top:calc(100% + 6px); right:0; background:var(--surface); border:1px solid var(--border-mid); border-radius:8px; box-shadow:0 4px 20px rgba(0,0,0,0.12); z-index:200; min-width:270px; padding:6px 0 8px; }
     .dropdown-header { display:flex; justify-content:space-between; align-items:center; padding:4px 14px 8px; border-bottom:1px solid var(--border); margin-bottom:4px; }
-    .dropdown-header-label { font-family:'Roboto Mono',monospace; font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-faint); }
+    .dropdown-header-label { font-family:'JetBrains Mono', ui-monospace, monospace; font-size:0.68rem; font-weight:700; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-faint); }
     .dropdown-actions-row { display:flex; gap:10px; }
-    .dropdown-action-btn { font-family:'Roboto Mono',monospace; font-size:0.7rem; font-weight:600; color:var(--blue); background:none; border:none; cursor:pointer; padding:0; }
+    .dropdown-action-btn { font-family:'JetBrains Mono', ui-monospace, monospace; font-size:0.7rem; font-weight:600; color:var(--blue); background:none; border:none; cursor:pointer; padding:0; }
     .dropdown-action-btn:hover { text-decoration:underline; }
     .dropdown-item { display:flex; align-items:center; gap:9px; padding:5px 14px; cursor:pointer; transition:background 0.1s; }
     .dropdown-item:hover { background:var(--bg); }
@@ -79,7 +81,7 @@
     .canvas-box { position:relative; width:100%; }
 
     .methodology { background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:24px 28px; }
-    .methodology h3 { font-family:'Roboto Mono',monospace; font-size:0.82rem; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-faint); margin-bottom:14px; }
+    .methodology h3 { font-family:'JetBrains Mono', ui-monospace, monospace; font-size:0.82rem; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:var(--text-faint); margin-bottom:14px; }
     .methodology p { font-size:0.84rem; color:var(--text-muted); line-height:1.7; margin-bottom:10px; }
     .methodology p:last-child { margin-bottom:0; }
     .methodology a { color:var(--blue); text-decoration:none; }
@@ -91,17 +93,42 @@
     .footer-links { display:flex; gap:20px; }
     .footer-links a { font-size:0.8rem; color:var(--text-muted); text-decoration:none; }
     .footer-links a:hover { color:var(--blue); }
+  
+    /* ── TOPIC COLOUR (2026 rebrand) ──────────────────────
+       Colour encodes what KIND of thing something is. The bright fills are
+       decorative only; the -ink twins are the only variants safe for text
+       (each is tuned to 4.5:1 on Canvas Cream). Tokens: assets/brand.css */
+    .card[data-topics~="transit"] .card-category { color: var(--b-topic-transit-ink); }
+    .card[data-topics~="cb"]      .card-category { color: var(--b-topic-cb-ink); }
+    .card[data-topics~="budget"]  .card-category { color: var(--b-topic-budget-ink); }
+    .card[data-topics~="govtech"] .card-category { color: var(--b-topic-govtech-ink); }
+    .tf-pill[data-topic="transit"]:hover  { border-color: var(--b-topic-transit-ink); color: var(--b-topic-transit-ink); }
+    .tf-pill[data-topic="cb"]:hover       { border-color: var(--b-topic-cb-ink); color: var(--b-topic-cb-ink); }
+    .tf-pill[data-topic="budget"]:hover   { border-color: var(--b-topic-budget-ink); color: var(--b-topic-budget-ink); }
+    .tf-pill[data-topic="govtech"]:hover  { border-color: var(--b-topic-govtech-ink); color: var(--b-topic-govtech-ink); }
+    .tf-pill[data-topic="transit"].active { background: var(--b-topic-transit-ink); border-color: var(--b-topic-transit-ink); color: #fff; }
+    .tf-pill[data-topic="cb"].active      { background: var(--b-topic-cb-ink); border-color: var(--b-topic-cb-ink); color: #fff; }
+    .tf-pill[data-topic="budget"].active  { background: var(--b-topic-budget-ink); border-color: var(--b-topic-budget-ink); color: #fff; }
+    .tf-pill[data-topic="govtech"].active { background: var(--b-topic-govtech-ink); border-color: var(--b-topic-govtech-ink); color: #fff; }
+    /* A row of figures should not read as one colour. */
+    .stat-pill:nth-child(4n+1) .sp-num { color: var(--b-topic-budget-ink); }
+    .stat-pill:nth-child(4n+2) .sp-num { color: var(--b-topic-transit-ink); }
+    .stat-pill:nth-child(4n+3) .sp-num { color: var(--b-topic-cb-ink); }
+    .stat-pill:nth-child(4n+4) .sp-num { color: var(--b-brown); }
+  
+    @media (max-width: 900px) { .header-actions .header-link { display:none; } }
+    @media (max-width: 560px) { .header-actions { display:none; } }
   </style>
 <style id="support-btn-css">
-.header-actions{display:flex;align-items:center;gap:14px;}
-.header-link{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border:1px solid rgba(255,255,255,0.15);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
+.header-actions{display:flex;align-items:center;gap:12px;margin-left:auto;flex-shrink:0;}
+.header-link{font-size:0.8rem;font-weight:500;color:#9A8B7A;text-decoration:none;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border:1px solid rgba(255,255,255,0.15);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
 .header-link:hover{color:#fff;border-color:rgba(255,255,255,0.35);background:rgba(255,255,255,0.08);}
 .header-link svg{flex-shrink:0;}
-.support-link{display:inline-flex;align-items:center;gap:5px;font-size:0.8rem;font-weight:500;color:#93c5fd;text-decoration:none;padding:5px 11px;border:1px solid rgba(37,99,235,0.45);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
-.support-link:hover{color:#fff;background:#2563eb;border-color:#2563eb;}
+.support-link{display:inline-flex;align-items:center;gap:5px;font-size:0.8rem;font-weight:500;color:#FFD23F;text-decoration:none;padding:5px 11px;border:1px solid rgba(207,75,12,0.45);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
+.support-link:hover{color:#fff;background:#C84609;border-color:#C84609;}
 .support-link svg{flex-shrink:0;}
-.footer-support{display:inline-flex;align-items:center;gap:5px;font-size:0.8rem;font-weight:500;color:#2563eb;text-decoration:none;padding:5px 11px;border:1px solid rgba(37,99,235,0.45);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
-.footer-support:hover{color:#fff;background:#2563eb;border-color:#2563eb;}
+.footer-support{display:inline-flex;align-items:center;gap:5px;font-size:0.8rem;font-weight:500;color:#C84609;text-decoration:none;padding:5px 11px;border:1px solid rgba(207,75,12,0.45);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
+.footer-support:hover{color:#fff;background:#C84609;border-color:#C84609;}
 .footer-support svg{flex-shrink:0;}
 .footer-support{vertical-align:middle;}
 .footer-links{align-items:center;}
@@ -112,9 +139,15 @@
 
 <header>
   <div class="header-inner">
+    <a href="/" class="header-mark" aria-label="NYCuriosity Data home"><img src="/assets/brand/Talbot.svg" alt="" style="height:32px;width:auto;display:block"></a>
     <a href="../" class="back-link">← MCB3 History Analysis</a>
     <div class="header-divider"></div>
     <h1>Agencies: MCB3 vs. 311</h1>
+    <div class="header-actions">
+      <a href="https://talroded.nycuriosity.com" class="header-link" target="_blank" rel="noopener"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>About</a>
+      <a href="https://www.nycuriosity.com" class="header-link" target="_blank" rel="noopener"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v4H4z"/><path d="M4 10h16v10l-8-4-8 4z"/></svg>Substack</a>
+      <a href="https://buymeacoffee.com/nycuriosity" class="support-link" target="_blank" rel="noopener" aria-label="Support my work on Buy Me a Coffee"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>Support my work</a>
+    </div>
   </div>
 </header>
 
@@ -129,7 +162,7 @@
 
 <main>
   <div class="breadcrumb">
-    <a href="/">nycuriosity/data</a> / <a href="../">mcb3-history-analysis</a> / <span style="color:#FF6319">agencies-comparison</span>
+    <a href="/">nycuriosity/data</a> / <a href="../">mcb3-history-analysis</a> / <span style="color:#A44D00">agencies-comparison</span>
   </div>
 
   <div class="hero">
@@ -148,8 +181,8 @@
       <h2 class="c-title">The State Liquor Authority draws 60% of MCB3's agency mentions and none of the district's 311 complaints</h2>
       <p class="c-deck">Each agency's share of the 3,828 agency mentions in MCB3 resolutions, 2002&ndash;2025, against its share of the 652,684 311 service requests filed in Manhattan Community District 3. Percentages recompute over whichever agencies are selected.</p>
       <ul class="c-legend">
-        <li class="c-legend-item"><span class="sw" style="background:#2563eb"></span> MCB3 resolutions (% of agency mentions)</li>
-        <li class="c-legend-item"><span class="sw" style="background:#f59e0b"></span> 311 complaints (% of CD3 complaints)</li>
+        <li class="c-legend-item"><span class="sw" style="background:#C84609"></span> MCB3 resolutions (% of agency mentions)</li>
+        <li class="c-legend-item"><span class="sw" style="background:#FFD23F"></span> 311 complaints (% of CD3 complaints)</li>
       </ul>
     </div>
 
@@ -191,11 +224,11 @@
 
   <div id="embedModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:999;align-items:center;justify-content:center;">
     <div style="background:#fff;border-radius:10px;padding:28px;max-width:560px;width:90%;position:relative;">
-      <div style="font-family:'Roboto Mono',monospace;font-size:0.82rem;font-weight:700;margin-bottom:12px;">Embed this chart</div>
-      <textarea id="embedCode" readonly style="width:100%;height:90px;font-family:'Roboto Mono',monospace;font-size:0.7rem;border:1px solid #e5e7eb;border-radius:6px;padding:10px;resize:none;background:#f8faff;color:#374151;"></textarea>
+      <div style="font-family:'JetBrains Mono', ui-monospace, monospace;font-size:0.82rem;font-weight:700;margin-bottom:12px;">Embed this chart</div>
+      <textarea id="embedCode" readonly style="width:100%;height:90px;font-family:'JetBrains Mono', ui-monospace, monospace;font-size:0.7rem;border:1px solid #E7DDCE;border-radius:6px;padding:10px;resize:none;background:#FAF6F1;color:#4A3B2C;"></textarea>
       <div style="display:flex;gap:8px;margin-top:10px;">
-        <button class="embed-copy-btn" onclick="copyEmbed()" style="font-family:'Roboto Mono',monospace;font-size:0.72rem;font-weight:600;padding:6px 14px;border-radius:6px;border:1px solid #2563eb;background:#2563eb;color:#fff;cursor:pointer;">Copy code</button>
-        <button onclick="closeEmbed()" style="font-family:'Roboto Mono',monospace;font-size:0.72rem;font-weight:600;padding:6px 14px;border-radius:6px;border:1px solid #d1d5db;background:#fff;color:#6b7280;cursor:pointer;">Close</button>
+        <button class="embed-copy-btn" onclick="copyEmbed()" style="font-family:'JetBrains Mono', ui-monospace, monospace;font-size:0.72rem;font-weight:600;padding:6px 14px;border-radius:6px;border:1px solid #C84609;background:#C84609;color:#fff;cursor:pointer;">Copy code</button>
+        <button onclick="closeEmbed()" style="font-family:'JetBrains Mono', ui-monospace, monospace;font-size:0.72rem;font-weight:600;padding:6px 14px;border-radius:6px;border:1px solid #D3C4AF;background:#fff;color:#6B5B4A;cursor:pointer;">Close</button>
       </div>
     </div>
   </div>
@@ -226,21 +259,21 @@ document.addEventListener('DOMContentLoaded', function () {
 
 // Agency data: sorted by MCB3 abs count descending
 const AGENCIES = [
-  { label: "SLA (State Liquor Authority)", short: "SLA",       mcb3Abs: 2285, abs311: 0,      color: "#2563eb" },
-  { label: "DOT (Transportation)",         short: "DOT",       mcb3Abs: 440,  abs311: 14682,  color: "#7c3aed" },
-  { label: "NYPD",                         short: "NYPD",      mcb3Abs: 368,  abs311: 320833, color: "#0891b2" },
-  { label: "NYC Council",                  short: "Council",   mcb3Abs: 207,  abs311: 0,      color: "#16a34a" },
-  { label: "NYC Parks",                    short: "Parks",     mcb3Abs: 128,  abs311: 9759,   color: "#65a30d" },
-  { label: "DCP (City Planning)",          short: "DCP",       mcb3Abs: 84,   abs311: 0,      color: "#d97706" },
-  { label: "DOB (Buildings)",              short: "DOB",       mcb3Abs: 93,   abs311: 10683,  color: "#dc2626" },
+  { label: "SLA (State Liquor Authority)", short: "SLA",       mcb3Abs: 2285, abs311: 0,      color: "#C84609" },
+  { label: "DOT (Transportation)",         short: "DOT",       mcb3Abs: 440,  abs311: 14682,  color: "#E84C8A" },
+  { label: "NYPD",                         short: "NYPD",      mcb3Abs: 368,  abs311: 320833, color: "#226287" },
+  { label: "NYC Council",                  short: "Council",   mcb3Abs: 207,  abs311: 0,      color: "#226287" },
+  { label: "NYC Parks",                    short: "Parks",     mcb3Abs: 128,  abs311: 9759,   color: "#B5B226" },
+  { label: "DCP (City Planning)",          short: "DCP",       mcb3Abs: 84,   abs311: 0,      color: "#A44D00" },
+  { label: "DOB (Buildings)",              short: "DOB",       mcb3Abs: 93,   abs311: 10683,  color: "#A44D00" },
   { label: "HPD (Housing)",                short: "HPD",       mcb3Abs: 66,   abs311: 230114, color: "#db2777" },
-  { label: "MTA",                          short: "MTA",       mcb3Abs: 56,   abs311: 0,      color: "#7c3aed" },
-  { label: "LPC (Landmarks)",              short: "LPC",       mcb3Abs: 45,   abs311: 0,      color: "#0d9488" },
-  { label: "DEP (Environment)",            short: "DEP",       mcb3Abs: 31,   abs311: 28196,  color: "#059669" },
+  { label: "MTA",                          short: "MTA",       mcb3Abs: 56,   abs311: 0,      color: "#E84C8A" },
+  { label: "LPC (Landmarks)",              short: "LPC",       mcb3Abs: 45,   abs311: 0,      color: "#226287" },
+  { label: "DEP (Environment)",            short: "DEP",       mcb3Abs: 31,   abs311: 28196,  color: "#226287" },
   { label: "FDNY",                         short: "FDNY",      mcb3Abs: 25,   abs311: 0,      color: "#ea580c" },
   { label: "Sanitation (DSNY)",            short: "DSNY",      mcb3Abs: 0,    abs311: 23715,  color: "#78716c" },
-  { label: "Health (DOHMH)",               short: "DOHMH",     mcb3Abs: 0,    abs311: 11880,  color: "#6b7280" },
-  { label: "Homeless Services (DHS)",      short: "DHS",       mcb3Abs: 0,    abs311: 2822,   color: "#9ca3af" },
+  { label: "Health (DOHMH)",               short: "DOHMH",     mcb3Abs: 0,    abs311: 11880,  color: "#6B5B4A" },
+  { label: "Homeless Services (DHS)",      short: "DHS",       mcb3Abs: 0,    abs311: 2822,   color: "#9A8B7A" },
 ];
 
 // Indices of agencies present in BOTH datasets
@@ -356,14 +389,14 @@ const chart = new Chart(ctx, {
       {
         label: 'MCB3 resolutions %',
         data: ad.mcb3Data,
-        backgroundColor: '#2563eb',
+        backgroundColor: '#C84609',
         barPercentage: 0.65,
         categoryPercentage: 0.85,
       },
       {
         label: '311 complaints %',
         data: ad.data311,
-        backgroundColor: '#f59e0b',
+        backgroundColor: '#FFD23F',
         barPercentage: 0.65,
         categoryPercentage: 0.85,
       }

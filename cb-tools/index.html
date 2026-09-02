@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>NYC Community Board Tools — NYCuriosity Data</title>
   <meta name="description" content="Working tools for better NYC community board meetings: a Robert's Rules helper, an AI meeting review, a Manhattan board scorecard, and the Block Party resolutions archive.">
@@ -16,31 +17,32 @@
   <meta name="twitter:image"      content="https://data.nycuriosity.com/website_logo.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/brand.css">
   <link rel="stylesheet" href="/assets/chart.css">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --blue:       #2563eb;
-      --blue-hover: #1d4ed8;
-      --blue-light: #eff6ff;
-      --blue-mid:   #bfdbfe;
-      --text:       #111827;
-      --text-mid:   #374151;
-      --text-muted: #6b7280;
-      --text-faint: #9ca3af;
-      --bg:         #f8faff;
+      --blue:       #C84609;
+      --blue-hover: #A44D00;
+      --blue-light: #FAF6F1;
+      --blue-mid:   #EDC3A5;
+      --text:       #1A1208;
+      --text-mid:   #4A3B2C;
+      --text-muted: #6B5B4A;
+      --text-faint: #9A8B7A;
+      --bg:         #FAF6F1;
       --surface:    #ffffff;
-      --border:     #e5e7eb;
-      --border-mid: #d1d5db;
-      --shadow-sm:  0 1px 3px rgba(17,24,39,0.08);
-      --shadow-md:  0 4px 16px rgba(37,99,235,0.10);
+      --border:     #E7DDCE;
+      --border-mid: #D3C4AF;
+      --shadow-sm:  0 1px 3px rgba(26,18,8,0.08);
+      --shadow-md:  0 4px 16px rgba(207,75,12,0.10);
       --radius:     10px;
     }
 
     body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-family: 'Helvetica Neue', Helvetica, Arial, 'Inter', system-ui, sans-serif;
       background: var(--bg);
       color: var(--text);
       min-height: 100vh;
@@ -49,8 +51,8 @@
     }
 
     header {
-      background: #111827;
-      border-bottom: 1px solid #1f2937;
+      background: #170C03;
+      border-bottom: 1px solid #2E1C0C;
       padding: 0 clamp(20px, 5vw, 48px);
     }
     .header-inner {
@@ -62,10 +64,10 @@
       gap: 16px;
     }
     .back-link {
-      font-family: 'Roboto Mono', monospace;
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
       font-size: 0.75rem;
       font-weight: 600;
-      color: #9ca3af;
+      color: #9A8B7A;
       text-decoration: none;
       display: flex;
       align-items: center;
@@ -74,13 +76,13 @@
       border-radius: 5px;
       transition: color 0.15s, background 0.15s;
     }
-    .back-link:hover { color: #60a5fa; background: rgba(96,165,250,0.1); }
-    .header-divider { width: 1px; height: 20px; background: #374151; flex-shrink: 0; }
+    .back-link:hover { color: #FFD23F; background: rgba(255,210,63,0.1); }
+    .header-divider { width: 1px; height: 20px; background: #4A3B2C; flex-shrink: 0; }
     header h1 {
-      font-family: 'Roboto Mono', monospace;
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
       font-size: 0.95rem;
       font-weight: 700;
-      color: #e5e7eb;
+      color: #E7DDCE;
       letter-spacing: -0.02em;
     }
 
@@ -94,7 +96,7 @@
 
     .hero { margin-bottom: 24px; }
     .breadcrumb {
-      font-family: 'Roboto Mono', monospace;
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
       font-size: 0.72rem;
       color: var(--text-faint);
       margin-bottom: 12px;
@@ -134,7 +136,7 @@
       box-shadow: var(--shadow-sm);
     }
     .stat-num {
-      font-family: 'Roboto Mono', monospace;
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
       font-size: 1.25rem;
       font-weight: 700;
       color: var(--blue);
@@ -143,31 +145,31 @@
     .stat-label { font-size: 0.8rem; color: var(--text-muted); }
 
     .section-heading {
-      font-family: 'Roboto Mono', monospace;
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
       font-size: 0.72rem;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.1em;
-      color: #FF6319;
+      color: #A44D00;
       margin-bottom: 18px;
     }
 
     .proto-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; margin: 14px 0 8px; max-width: 1010px; }
-    .proto-card { background: #fff; border: 1.5px solid #e5e7eb; border-radius: 12px; box-shadow: 0 1px 3px rgba(17,24,39,0.08); text-decoration: none; color: inherit; display: flex; flex-direction: column; overflow: hidden; transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s; }
-    .proto-card:hover { border-color: #2563eb; box-shadow: 0 4px 20px rgba(37,99,235,0.13); transform: translateY(-3px); }
-    .proto-icon { height: 100px; background: #111827; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .proto-card { background: #fff; border: 1.5px solid #E7DDCE; border-radius: 12px; box-shadow: 0 1px 3px rgba(26,18,8,0.08); text-decoration: none; color: inherit; display: flex; flex-direction: column; overflow: hidden; transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s; }
+    .proto-card:hover { border-color: #C84609; box-shadow: 0 4px 20px rgba(207,75,12,0.13); transform: translateY(-3px); }
+    .proto-icon { height: 100px; background: #170C03; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
     .proto-body { padding: 20px 24px 24px; flex: 1; display: flex; flex-direction: column; }
-    .proto-label { font-family: 'Roboto Mono', monospace; font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #2563eb; margin-bottom: 8px; }
-    .proto-title { font-family: 'Roboto Mono', monospace; font-size: 1.05rem; font-weight: 700; color: #111827; letter-spacing: -0.02em; line-height: 1.25; margin-bottom: 10px; }
-    .proto-desc { font-size: 0.875rem; color: #6b7280; line-height: 1.6; flex: 1; margin-bottom: 20px; }
+    .proto-label { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #C84609; margin-bottom: 8px; }
+    .proto-title { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 1.05rem; font-weight: 700; color: #1A1208; letter-spacing: -0.02em; line-height: 1.25; margin-bottom: 10px; }
+    .proto-desc { font-size: 0.875rem; color: #6B5B4A; line-height: 1.6; flex: 1; margin-bottom: 20px; }
     .proto-meta { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-    .proto-stat { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; color: #9ca3af; }
-    .proto-cta { font-family: 'Roboto Mono', monospace; font-size: 0.78rem; font-weight: 700; color: #2563eb; display: flex; align-items: center; gap: 5px; transition: gap 0.15s; }
+    .proto-stat { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.72rem; color: #9A8B7A; }
+    .proto-cta { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.78rem; font-weight: 700; color: #C84609; display: flex; align-items: center; gap: 5px; transition: gap 0.15s; }
     .proto-card:hover .proto-cta { gap: 9px; }
     .proto-sub-links { display: flex; flex-direction: column; gap: 7px; margin: 0 0 18px; }
-    .proto-sub-links a { font-family: 'Roboto Mono', monospace; font-size: 0.76rem; font-weight: 600; color: #2563eb; text-decoration: none; }
+    .proto-sub-links a { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.76rem; font-weight: 600; color: #C84609; text-decoration: none; }
     .proto-sub-links a:hover { text-decoration: underline; }
-    .proto-section-label { font-family: 'Roboto Mono', monospace; font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: #9ca3af; margin: 30px 0 0; }
+    .proto-section-label { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: #9A8B7A; margin: 30px 0 0; }
     .card-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
@@ -192,7 +194,7 @@
       transform: translateY(-2px);
     }
     .card-preview {
-      background: #1e293b;
+      background: #2E1C0C;
       height: 100px;
       display: flex;
       align-items: center;
@@ -203,7 +205,7 @@
     .card-preview svg { opacity: 0.65; }
     .card-body { padding: 16px; flex: 1; display: flex; flex-direction: column; }
     .card-type {
-      font-family: 'Roboto Mono', monospace;
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
       font-size: 0.68rem;
       font-weight: 600;
       text-transform: uppercase;
@@ -226,7 +228,7 @@
       margin-bottom: 12px;
     }
     .card-stat {
-      font-family: 'Roboto Mono', monospace;
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
       font-size: 0.72rem;
       color: var(--text-faint);
       margin-bottom: 12px;
@@ -255,7 +257,7 @@
       box-shadow: var(--shadow-sm);
     }
     .insight-num {
-      font-family: 'Roboto Mono', monospace;
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
       font-size: 2rem;
       font-weight: 700;
       color: var(--blue);
@@ -284,17 +286,42 @@
     }
     footer a { color: var(--text-muted); text-decoration: none; }
     footer a:hover { color: var(--blue); }
+  
+    /* ── TOPIC COLOUR (2026 rebrand) ──────────────────────
+       Colour encodes what KIND of thing something is. The bright fills are
+       decorative only; the -ink twins are the only variants safe for text
+       (each is tuned to 4.5:1 on Canvas Cream). Tokens: assets/brand.css */
+    .card[data-topics~="transit"] .card-category { color: var(--b-topic-transit-ink); }
+    .card[data-topics~="cb"]      .card-category { color: var(--b-topic-cb-ink); }
+    .card[data-topics~="budget"]  .card-category { color: var(--b-topic-budget-ink); }
+    .card[data-topics~="govtech"] .card-category { color: var(--b-topic-govtech-ink); }
+    .tf-pill[data-topic="transit"]:hover  { border-color: var(--b-topic-transit-ink); color: var(--b-topic-transit-ink); }
+    .tf-pill[data-topic="cb"]:hover       { border-color: var(--b-topic-cb-ink); color: var(--b-topic-cb-ink); }
+    .tf-pill[data-topic="budget"]:hover   { border-color: var(--b-topic-budget-ink); color: var(--b-topic-budget-ink); }
+    .tf-pill[data-topic="govtech"]:hover  { border-color: var(--b-topic-govtech-ink); color: var(--b-topic-govtech-ink); }
+    .tf-pill[data-topic="transit"].active { background: var(--b-topic-transit-ink); border-color: var(--b-topic-transit-ink); color: #fff; }
+    .tf-pill[data-topic="cb"].active      { background: var(--b-topic-cb-ink); border-color: var(--b-topic-cb-ink); color: #fff; }
+    .tf-pill[data-topic="budget"].active  { background: var(--b-topic-budget-ink); border-color: var(--b-topic-budget-ink); color: #fff; }
+    .tf-pill[data-topic="govtech"].active { background: var(--b-topic-govtech-ink); border-color: var(--b-topic-govtech-ink); color: #fff; }
+    /* A row of figures should not read as one colour. */
+    .stat-pill:nth-child(4n+1) .sp-num { color: var(--b-topic-budget-ink); }
+    .stat-pill:nth-child(4n+2) .sp-num { color: var(--b-topic-transit-ink); }
+    .stat-pill:nth-child(4n+3) .sp-num { color: var(--b-topic-cb-ink); }
+    .stat-pill:nth-child(4n+4) .sp-num { color: var(--b-brown); }
+  
+    @media (max-width: 900px) { .header-actions .header-link { display:none; } }
+    @media (max-width: 560px) { .header-actions { display:none; } }
   </style>
 <style id="support-btn-css">
-.header-actions{display:flex;align-items:center;gap:14px;}
-.header-link{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border:1px solid rgba(255,255,255,0.15);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
+.header-actions{display:flex;align-items:center;gap:12px;margin-left:auto;flex-shrink:0;}
+.header-link{font-size:0.8rem;font-weight:500;color:#9A8B7A;text-decoration:none;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border:1px solid rgba(255,255,255,0.15);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
 .header-link:hover{color:#fff;border-color:rgba(255,255,255,0.35);background:rgba(255,255,255,0.08);}
 .header-link svg{flex-shrink:0;}
-.support-link{display:inline-flex;align-items:center;gap:5px;font-size:0.8rem;font-weight:500;color:#93c5fd;text-decoration:none;padding:5px 11px;border:1px solid rgba(37,99,235,0.45);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
-.support-link:hover{color:#fff;background:#2563eb;border-color:#2563eb;}
+.support-link{display:inline-flex;align-items:center;gap:5px;font-size:0.8rem;font-weight:500;color:#FFD23F;text-decoration:none;padding:5px 11px;border:1px solid rgba(207,75,12,0.45);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
+.support-link:hover{color:#fff;background:#C84609;border-color:#C84609;}
 .support-link svg{flex-shrink:0;}
-.footer-support{display:inline-flex;align-items:center;gap:5px;font-size:0.8rem;font-weight:500;color:#2563eb;text-decoration:none;padding:5px 11px;border:1px solid rgba(37,99,235,0.45);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
-.footer-support:hover{color:#fff;background:#2563eb;border-color:#2563eb;}
+.footer-support{display:inline-flex;align-items:center;gap:5px;font-size:0.8rem;font-weight:500;color:#C84609;text-decoration:none;padding:5px 11px;border:1px solid rgba(207,75,12,0.45);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
+.footer-support:hover{color:#fff;background:#C84609;border-color:#C84609;}
 .footer-support svg{flex-shrink:0;}
 .footer-support{vertical-align:middle;}
 .footer-links{align-items:center;}
@@ -305,35 +332,41 @@
 
 <header>
   <div class="header-inner">
+    <a href="/" class="header-mark" aria-label="NYCuriosity Data home"><img src="/assets/brand/Talbot.svg" alt="" style="height:32px;width:auto;display:block"></a>
     <a href="/" class="back-link">← nycuriosity/data</a>
     <div class="header-divider"></div>
     <h1>NYC CB Tools</h1>
+    <div class="header-actions">
+      <a href="https://talroded.nycuriosity.com" class="header-link" target="_blank" rel="noopener"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>About</a>
+      <a href="https://www.nycuriosity.com" class="header-link" target="_blank" rel="noopener"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v4H4z"/><path d="M4 10h16v10l-8-4-8 4z"/></svg>Substack</a>
+      <a href="https://buymeacoffee.com/nycuriosity" class="support-link" target="_blank" rel="noopener" aria-label="Support my work on Buy Me a Coffee"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>Support my work</a>
+    </div>
   </div>
 </header>
 
 <main>
   <div class="hero">
     <div class="breadcrumb">
-      <a href="/">nycuriosity/data</a> / <span style="color:#FF6319">cb-tools</span>
+      <a href="/">nycuriosity/data</a> / <span style="color:#A44D00">cb-tools</span>
     </div>
     <h2>NYC Community Board Tools</h2>
     <p>Working tools for improving how NYC community boards run: a member and leadership tracker for all 59 boards, a parliamentary procedure helper, an AI meeting review, and a citywide board scorecard, built alongside <a href="https://www.nycuriosity.com/p/fourteen-ways-to-make-nyc-community" target="_blank" rel="noopener">NYCuriosity’s recommendations</a> for the Civic Engagement Commission’s Better Public Meetings study, plus <a href="/cb-tools/block-party/" style="color:var(--blue)">Block Party</a>, the searchable archive of four decades of Manhattan community board resolutions and meetings.</p>
   </div>
 
   <div class="proto-section-label">Meeting Improvement Prototypes &middot; July 2026</div>
-  <p style="font-size:0.92rem;line-height:1.6;color:#374151;max-width:760px;margin:8px 0 0;">Three working prototypes built to accompany <a href="https://www.nycuriosity.com/p/fourteen-ways-to-make-nyc-community" target="_blank" rel="noopener">NYCuriosity&rsquo;s community board recommendations</a> for the Civic Engagement Commission&rsquo;s Better Public Meetings study.</p>
+  <p style="font-size:0.92rem;line-height:1.6;color:#4A3B2C;max-width:760px;margin:8px 0 0;">Three working prototypes built to accompany <a href="https://www.nycuriosity.com/p/fourteen-ways-to-make-nyc-community" target="_blank" rel="noopener">NYCuriosity&rsquo;s community board recommendations</a> for the Civic Engagement Commission&rsquo;s Better Public Meetings study.</p>
 
   <div class="proto-grid">
 
     <a class="proto-card" href="/cb-tools/board-scorecard/">
       <div class="proto-icon">
         <div style="display:flex;align-items:flex-end;gap:5px;height:48px;">
-          <div style="width:14px;height:100%;border-radius:3px 3px 0 0;background:#2563eb;"></div>
-          <div style="width:14px;height:88%;border-radius:3px 3px 0 0;background:#2563eb;"></div>
-          <div style="width:14px;height:76%;border-radius:3px 3px 0 0;background:#7c3aed;"></div>
-          <div style="width:14px;height:66%;border-radius:3px 3px 0 0;background:#16a34a;"></div>
-          <div style="width:14px;height:56%;border-radius:3px 3px 0 0;background:#c2410c;"></div>
-          <div style="width:14px;height:46%;border-radius:3px 3px 0 0;background:#c2410c;"></div>
+          <div style="width:14px;height:100%;border-radius:3px 3px 0 0;background:#C84609;"></div>
+          <div style="width:14px;height:88%;border-radius:3px 3px 0 0;background:#C84609;"></div>
+          <div style="width:14px;height:76%;border-radius:3px 3px 0 0;background:#E84C8A;"></div>
+          <div style="width:14px;height:66%;border-radius:3px 3px 0 0;background:#226287;"></div>
+          <div style="width:14px;height:56%;border-radius:3px 3px 0 0;background:#89C4E1;"></div>
+          <div style="width:14px;height:46%;border-radius:3px 3px 0 0;background:#89C4E1;"></div>
         </div>
       </div>
       <div class="proto-body">
@@ -347,11 +380,11 @@
     <a class="proto-card" href="/cb-tools/roberts-rules-helper/">
       <div class="proto-icon">
         <svg viewBox="0 0 120 60" width="110" height="55" xmlns="http://www.w3.org/2000/svg">
-          <rect x="10" y="10" width="46" height="14" rx="7" fill="#2563eb"/>
+          <rect x="10" y="10" width="46" height="14" rx="7" fill="#C84609"/>
           <rect x="62" y="10" width="34" height="14" rx="7" fill="rgba(255,255,255,0.25)"/>
           <rect x="10" y="30" width="30" height="14" rx="7" fill="rgba(255,255,255,0.25)"/>
           <rect x="46" y="30" width="42" height="14" rx="7" fill="rgba(255,255,255,0.25)"/>
-          <polyline points="96,37 104,37 101,33 104,37 101,41" fill="none" stroke="#16a34a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <polyline points="96,37 104,37 101,33 104,37 101,41" fill="none" stroke="#226287" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </div>
       <div class="proto-body">
@@ -369,11 +402,11 @@
           <rect x="14" y="22" width="72" height="6" rx="3" fill="rgba(255,255,255,0.2)"/>
           <rect x="14" y="34" width="54" height="6" rx="3" fill="rgba(255,255,255,0.2)"/>
           <rect x="14" y="46" width="66" height="6" rx="3" fill="rgba(255,255,255,0.2)"/>
-          <circle cx="98" cy="14" r="7" fill="#16a34a"/>
-          <polyline points="95,14 97,16.5 101.5,11.5" fill="none" stroke="#111827" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          <circle cx="98" cy="37" r="7" fill="#c2410c"/>
-          <rect x="97" y="33" width="2" height="5.5" rx="1" fill="#111827"/>
-          <rect x="97" y="40" width="2" height="2" rx="1" fill="#111827"/>
+          <circle cx="98" cy="14" r="7" fill="#226287"/>
+          <polyline points="95,14 97,16.5 101.5,11.5" fill="none" stroke="#1A1208" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="98" cy="37" r="7" fill="#89C4E1"/>
+          <rect x="97" y="33" width="2" height="5.5" rx="1" fill="#1A1208"/>
+          <rect x="97" y="40" width="2" height="2" rx="1" fill="#1A1208"/>
         </svg>
       </div>
       <div class="proto-body">
@@ -393,10 +426,10 @@
       <div class="proto-icon">
         <svg viewBox="0 0 120 60" width="110" height="55" xmlns="http://www.w3.org/2000/svg">
           <path d="M14 34 L26 18 L44 14 L52 26 L44 44 L24 46 Z" fill="rgba(255,255,255,0.25)"/>
-          <path d="M46 12 L66 8 L76 20 L66 36 L52 28 Z" fill="#2563eb"/>
+          <path d="M46 12 L66 8 L76 20 L66 36 L52 28 Z" fill="#C84609"/>
           <path d="M54 30 L68 38 L64 52 L44 46 Z" fill="rgba(255,255,255,0.15)"/>
-          <circle cx="92" cy="20" r="8" fill="#f8faff"/>
-          <path d="M80 48 c0-8 6-13 12-13 s12 5 12 13" fill="#f8faff"/>
+          <circle cx="92" cy="20" r="8" fill="#FAF6F1"/>
+          <path d="M80 48 c0-8 6-13 12-13 s12 5 12 13" fill="#FAF6F1"/>
         </svg>
       </div>
       <div class="proto-body">
@@ -416,12 +449,12 @@
         <svg viewBox="0 0 120 60" width="110" height="55" xmlns="http://www.w3.org/2000/svg">
           <rect x="22" y="16" width="44" height="34" rx="3" fill="rgba(255,255,255,0.15)"/>
           <rect x="28" y="10" width="44" height="34" rx="3" fill="rgba(255,255,255,0.3)"/>
-          <rect x="34" y="4"  width="44" height="34" rx="3" fill="#f8faff"/>
-          <rect x="40" y="12" width="30" height="4" rx="2" fill="#2563eb"/>
-          <rect x="40" y="20" width="24" height="4" rx="2" fill="#9ca3af"/>
-          <rect x="40" y="28" width="27" height="4" rx="2" fill="#9ca3af"/>
-          <circle cx="86" cy="42" r="10" fill="none" stroke="#2563eb" stroke-width="3.5"/>
-          <line x1="93" y1="49" x2="102" y2="56" stroke="#2563eb" stroke-width="3.5" stroke-linecap="round"/>
+          <rect x="34" y="4"  width="44" height="34" rx="3" fill="#FAF6F1"/>
+          <rect x="40" y="12" width="30" height="4" rx="2" fill="#C84609"/>
+          <rect x="40" y="20" width="24" height="4" rx="2" fill="#9A8B7A"/>
+          <rect x="40" y="28" width="27" height="4" rx="2" fill="#9A8B7A"/>
+          <circle cx="86" cy="42" r="10" fill="none" stroke="#C84609" stroke-width="3.5"/>
+          <line x1="93" y1="49" x2="102" y2="56" stroke="#C84609" stroke-width="3.5" stroke-linecap="round"/>
         </svg>
       </div>
       <div class="proto-body">
