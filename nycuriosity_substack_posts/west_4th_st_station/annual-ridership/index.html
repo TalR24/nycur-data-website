@@ -23,7 +23,7 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --blue:       #CF4B0C;
+      --blue:       #C84609;
       --blue-hover: #A44D00;
       --blue-light: #FAF6F1;
       --blue-mid:   #EDC3A5;
@@ -37,7 +37,7 @@
       --shadow-sm:  0 1px 3px rgba(26,18,8,0.08);
       --shadow-md:  0 4px 16px rgba(207,75,12,0.10);
       --radius:     10px;
-      --entries-color:  #CF4B0C;
+      --entries-color:  #C84609;
       --arrivals-color: #89C4E1;
     }
 
@@ -104,7 +104,7 @@
     .hero-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 14px; }
     .hero-tag {
       font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.68rem; font-weight: 600;
-      text-transform: uppercase; letter-spacing: 0.08em; color: #A44D00;
+      text-transform: uppercase; letter-spacing: 0.08em; color: var(--b-topic-transit-ink);
       background: #FAF6F1; border: 1px solid #E7DDCE; border-radius: 4px; padding: 3px 8px;
     }
     .hero-updated { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.72rem; color: var(--text-faint); }
@@ -166,9 +166,31 @@
     .footer-links { display: flex; gap: 20px; align-items: center; }
     .footer-links a { font-size: 0.8rem; color: var(--text-muted); text-decoration: none; transition: color 0.15s; }
     .footer-links a:hover { color: var(--blue); }
-    .footer-support { display: inline-flex; align-items: center; gap: 5px; font-size: 0.8rem; font-weight: 500; color: #CF4B0C; text-decoration: none; padding: 5px 11px; border: 1px solid rgba(207,75,12,0.45); border-radius: 6px; transition: color .15s, border-color .15s, background .15s; vertical-align: middle; }
-    .footer-support:hover { color: #fff; background: #CF4B0C; border-color: #CF4B0C; }
+    .footer-support { display: inline-flex; align-items: center; gap: 5px; font-size: 0.8rem; font-weight: 500; color: #C84609; text-decoration: none; padding: 5px 11px; border: 1px solid rgba(207,75,12,0.45); border-radius: 6px; transition: color .15s, border-color .15s, background .15s; vertical-align: middle; }
+    .footer-support:hover { color: #fff; background: #C84609; border-color: #C84609; }
     .footer-support svg { flex-shrink: 0; }
+  
+    /* ── TOPIC COLOUR (2026 rebrand) ──────────────────────
+       Colour encodes what KIND of thing something is. The bright fills are
+       decorative only; the -ink twins are the only variants safe for text
+       (each is tuned to 4.5:1 on Canvas Cream). Tokens: assets/brand.css */
+    .card[data-topics~="transit"] .card-category { color: var(--b-topic-transit-ink); }
+    .card[data-topics~="cb"]      .card-category { color: var(--b-topic-cb-ink); }
+    .card[data-topics~="budget"]  .card-category { color: var(--b-topic-budget-ink); }
+    .card[data-topics~="govtech"] .card-category { color: var(--b-topic-govtech-ink); }
+    .tf-pill[data-topic="transit"]:hover  { border-color: var(--b-topic-transit-ink); color: var(--b-topic-transit-ink); }
+    .tf-pill[data-topic="cb"]:hover       { border-color: var(--b-topic-cb-ink); color: var(--b-topic-cb-ink); }
+    .tf-pill[data-topic="budget"]:hover   { border-color: var(--b-topic-budget-ink); color: var(--b-topic-budget-ink); }
+    .tf-pill[data-topic="govtech"]:hover  { border-color: var(--b-topic-govtech-ink); color: var(--b-topic-govtech-ink); }
+    .tf-pill[data-topic="transit"].active { background: var(--b-topic-transit-ink); border-color: var(--b-topic-transit-ink); color: #fff; }
+    .tf-pill[data-topic="cb"].active      { background: var(--b-topic-cb-ink); border-color: var(--b-topic-cb-ink); color: #fff; }
+    .tf-pill[data-topic="budget"].active  { background: var(--b-topic-budget-ink); border-color: var(--b-topic-budget-ink); color: #fff; }
+    .tf-pill[data-topic="govtech"].active { background: var(--b-topic-govtech-ink); border-color: var(--b-topic-govtech-ink); color: #fff; }
+    /* A row of figures should not read as one colour. */
+    .stat-pill:nth-child(4n+1) .sp-num { color: var(--b-topic-budget-ink); }
+    .stat-pill:nth-child(4n+2) .sp-num { color: var(--b-topic-transit-ink); }
+    .stat-pill:nth-child(4n+3) .sp-num { color: var(--b-topic-cb-ink); }
+    .stat-pill:nth-child(4n+4) .sp-num { color: var(--b-brown); }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
   <script defer src="/assets/chart.js"></script>
@@ -179,7 +201,7 @@
 <!-- HEADER -->
 <header>
   <div class="header-inner">
-    <a href="/" class="header-mark" aria-label="NYCuriosity Data home"><img src="/assets/brand/Logomark_C.svg" alt="" style="height:21px;width:21px;display:block"></a>
+    <a href="/" class="header-mark" aria-label="NYCuriosity Data home"><img src="/assets/brand/Talbot.svg" alt="" style="height:32px;width:auto;display:block"></a>
     <a href="/nycuriosity_substack_posts/west_4th_st_station/" class="back-link">← west-4th-st-station</a>
     <div class="header-divider"></div>
     <h1>Annual Ridership</h1>
@@ -357,20 +379,20 @@
   // entries line (solid, actual)
   el('polyline', {
     points: ENTRIES.map(d => xFor(d.year) + ',' + yFor(d.v)).join(' '),
-    stroke: '#CF4B0C', class: 'c-series'
+    stroke: '#C84609', class: 'c-series'
   });
-  ENTRIES.forEach(d => el('circle', { cx: xFor(d.year), cy: yFor(d.v), r: 4, fill: '#CF4B0C' }));
+  ENTRIES.forEach(d => el('circle', { cx: xFor(d.year), cy: yFor(d.v), r: 4, fill: '#C84609' }));
 
   // key point labels
-  el('text', { x: xFor(2019), y: yFor(13998455) - 11, 'text-anchor': 'middle', class: 'c-val', fill: '#CF4B0C' }, '14.0M');
-  el('text', { x: xFor(2020) - 10, y: yFor(4513321) + 16, 'text-anchor': 'end', class: 'c-val', fill: '#CF4B0C' }, '4.5M');
-  el('text', { x: PADL - 6, y: yFor(12726517) + 20, 'text-anchor': 'start', class: 'c-val', fill: '#CF4B0C' }, '12.7M');
+  el('text', { x: xFor(2019), y: yFor(13998455) - 11, 'text-anchor': 'middle', class: 'c-val', fill: '#C84609' }, '14.0M');
+  el('text', { x: xFor(2020) - 10, y: yFor(4513321) + 16, 'text-anchor': 'end', class: 'c-val', fill: '#C84609' }, '4.5M');
+  el('text', { x: PADL - 6, y: yFor(12726517) + 20, 'text-anchor': 'start', class: 'c-val', fill: '#C84609' }, '12.7M');
 
   // direct series labels at the endpoints, which replace the legend entirely
   el('text', { x: xFor(2025) + 10, y: yFor(12590411) - 10, class: 'c-val', fill: '#89C4E1' }, 'Riders arriving');
   el('text', { x: xFor(2025) + 10, y: yFor(12590411) + 4, class: 'c-val', fill: '#89C4E1' }, '12.6M (estimate)');
-  el('text', { x: xFor(2025) + 10, y: yFor(12051684) + 30, class: 'c-val', fill: '#CF4B0C' }, 'Riders entering');
-  el('text', { x: xFor(2025) + 10, y: yFor(12051684) + 44, class: 'c-val', fill: '#CF4B0C' }, '12.1M');
+  el('text', { x: xFor(2025) + 10, y: yFor(12051684) + 30, class: 'c-val', fill: '#C84609' }, 'Riders entering');
+  el('text', { x: xFor(2025) + 10, y: yFor(12051684) + 44, class: 'c-val', fill: '#C84609' }, '12.1M');
 
   // annotations (COVID note pinned near the top of the plot, beside the 2020 marker)
   el('text', { x: xFor(2020) + 8, y: PADT + 14, class: 'c-annot' }, 'COVID-19:');

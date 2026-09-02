@@ -23,7 +23,7 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --blue:       #CF4B0C;
+      --blue:       #C84609;
       --blue-hover: #A44D00;
       --blue-light: #FAF6F1;
       --blue-mid:   #EDC3A5;
@@ -102,7 +102,7 @@
     .hero-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 14px; }
     .hero-tag {
       font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.68rem; font-weight: 600;
-      text-transform: uppercase; letter-spacing: 0.08em; color: #A44D00;
+      text-transform: uppercase; letter-spacing: 0.08em; color: var(--b-topic-budget-ink);
       background: #FAF6F1; border: 1px solid #E7DDCE; border-radius: 4px; padding: 3px 8px;
     }
     .hero-updated { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.72rem; color: var(--text-faint); }
@@ -164,9 +164,31 @@
     .footer-links { display: flex; gap: 20px; align-items: center; }
     .footer-links a { font-size: 0.8rem; color: var(--text-muted); text-decoration: none; transition: color 0.15s; }
     .footer-links a:hover { color: var(--blue); }
-    .footer-support { display: inline-flex; align-items: center; gap: 5px; font-size: 0.8rem; font-weight: 500; color: #CF4B0C; text-decoration: none; padding: 5px 11px; border: 1px solid rgba(207,75,12,0.45); border-radius: 6px; transition: color .15s, border-color .15s, background .15s; vertical-align: middle; }
-    .footer-support:hover { color: #fff; background: #CF4B0C; border-color: #CF4B0C; }
+    .footer-support { display: inline-flex; align-items: center; gap: 5px; font-size: 0.8rem; font-weight: 500; color: #C84609; text-decoration: none; padding: 5px 11px; border: 1px solid rgba(207,75,12,0.45); border-radius: 6px; transition: color .15s, border-color .15s, background .15s; vertical-align: middle; }
+    .footer-support:hover { color: #fff; background: #C84609; border-color: #C84609; }
     .footer-support svg { flex-shrink: 0; }
+  
+    /* ── TOPIC COLOUR (2026 rebrand) ──────────────────────
+       Colour encodes what KIND of thing something is. The bright fills are
+       decorative only; the -ink twins are the only variants safe for text
+       (each is tuned to 4.5:1 on Canvas Cream). Tokens: assets/brand.css */
+    .card[data-topics~="transit"] .card-category { color: var(--b-topic-transit-ink); }
+    .card[data-topics~="cb"]      .card-category { color: var(--b-topic-cb-ink); }
+    .card[data-topics~="budget"]  .card-category { color: var(--b-topic-budget-ink); }
+    .card[data-topics~="govtech"] .card-category { color: var(--b-topic-govtech-ink); }
+    .tf-pill[data-topic="transit"]:hover  { border-color: var(--b-topic-transit-ink); color: var(--b-topic-transit-ink); }
+    .tf-pill[data-topic="cb"]:hover       { border-color: var(--b-topic-cb-ink); color: var(--b-topic-cb-ink); }
+    .tf-pill[data-topic="budget"]:hover   { border-color: var(--b-topic-budget-ink); color: var(--b-topic-budget-ink); }
+    .tf-pill[data-topic="govtech"]:hover  { border-color: var(--b-topic-govtech-ink); color: var(--b-topic-govtech-ink); }
+    .tf-pill[data-topic="transit"].active { background: var(--b-topic-transit-ink); border-color: var(--b-topic-transit-ink); color: #fff; }
+    .tf-pill[data-topic="cb"].active      { background: var(--b-topic-cb-ink); border-color: var(--b-topic-cb-ink); color: #fff; }
+    .tf-pill[data-topic="budget"].active  { background: var(--b-topic-budget-ink); border-color: var(--b-topic-budget-ink); color: #fff; }
+    .tf-pill[data-topic="govtech"].active { background: var(--b-topic-govtech-ink); border-color: var(--b-topic-govtech-ink); color: #fff; }
+    /* A row of figures should not read as one colour. */
+    .stat-pill:nth-child(4n+1) .sp-num { color: var(--b-topic-budget-ink); }
+    .stat-pill:nth-child(4n+2) .sp-num { color: var(--b-topic-transit-ink); }
+    .stat-pill:nth-child(4n+3) .sp-num { color: var(--b-topic-cb-ink); }
+    .stat-pill:nth-child(4n+4) .sp-num { color: var(--b-brown); }
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
   <script defer src="/assets/chart.js"></script>
@@ -177,7 +199,7 @@
 <!-- HEADER -->
 <header>
   <div class="header-inner">
-    <a href="/" class="header-mark" aria-label="NYCuriosity Data home"><img src="/assets/brand/Logomark_C.svg" alt="" style="height:21px;width:21px;display:block"></a>
+    <a href="/" class="header-mark" aria-label="NYCuriosity Data home"><img src="/assets/brand/Talbot.svg" alt="" style="height:32px;width:auto;display:block"></a>
     <a href="/nycuriosity_substack_posts/council_obligations/" class="back-link">← council-obligations</a>
     <div class="header-divider"></div>
     <h1>Reports Due Every Year</h1>
@@ -343,23 +365,23 @@
   el('polygon', {
     points: REPORTS.map(d => xFor(d.year) + ',' + yFor(d.v)).join(' ')
       + ' ' + xFor(2026) + ',' + baseY + ' ' + xFor(2014) + ',' + baseY,
-    fill: '#CF4B0C', opacity: 0.12
+    fill: '#C84609', opacity: 0.12
   });
   // line
   el('polyline', {
     points: REPORTS.map(d => xFor(d.year) + ',' + yFor(d.v)).join(' '),
-    stroke: '#CF4B0C', class: 'c-series', style: 'stroke-width:3'
+    stroke: '#C84609', class: 'c-series', style: 'stroke-width:3'
   });
-  REPORTS.forEach(d => el('circle', { cx: xFor(d.year), cy: yFor(d.v), r: 4, fill: '#CF4B0C' }));
+  REPORTS.forEach(d => el('circle', { cx: xFor(d.year), cy: yFor(d.v), r: 4, fill: '#C84609' }));
 
   // key point labels, read straight off REPORTS so they cannot drift
   const first = REPORTS[0], mid = REPORTS[6], last = REPORTS[REPORTS.length - 1];
-  el('text', { x: xFor(first.year), y: yFor(first.v) - 11, 'text-anchor': 'start', class: 'c-val', fill: '#CF4B0C' }, String(first.v));
-  el('text', { x: xFor(mid.year), y: yFor(mid.v) - 13, 'text-anchor': 'middle', class: 'c-val', fill: '#CF4B0C' }, String(mid.v));
+  el('text', { x: xFor(first.year), y: yFor(first.v) - 11, 'text-anchor': 'start', class: 'c-val', fill: '#C84609' }, String(first.v));
+  el('text', { x: xFor(mid.year), y: yFor(mid.v) - 13, 'text-anchor': 'middle', class: 'c-val', fill: '#C84609' }, String(mid.v));
   // direct series label at the endpoint, which replaces the legend entirely
-  el('text', { x: xFor(last.year) + 10, y: yFor(last.v) + 4, 'text-anchor': 'start', class: 'c-val', fill: '#CF4B0C', style: 'font-size:15px' }, String(last.v));
-  el('text', { x: xFor(last.year) + 10, y: yFor(last.v) + 22, 'text-anchor': 'start', class: 'c-val', fill: '#CF4B0C' }, 'reports due');
-  el('text', { x: xFor(last.year) + 10, y: yFor(last.v) + 36, 'text-anchor': 'start', class: 'c-val', fill: '#CF4B0C' }, 'at least yearly');
+  el('text', { x: xFor(last.year) + 10, y: yFor(last.v) + 4, 'text-anchor': 'start', class: 'c-val', fill: '#C84609', style: 'font-size:15px' }, String(last.v));
+  el('text', { x: xFor(last.year) + 10, y: yFor(last.v) + 22, 'text-anchor': 'start', class: 'c-val', fill: '#C84609' }, 'reports due');
+  el('text', { x: xFor(last.year) + 10, y: yFor(last.v) + 36, 'text-anchor': 'start', class: 'c-val', fill: '#C84609' }, 'at least yearly');
 </script>
 
 </body>
