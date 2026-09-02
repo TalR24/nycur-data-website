@@ -97,9 +97,31 @@ jobs:
           else
             COUNT=$(python3 -c "import json; d=json.load(open('civic_reference/nyc_council_fiscal_impacts_tracker/data/fiscal_impacts.json')); print(d['metadata']['total_records'])")
             git commit -m "data: refresh fiscal impacts — $COUNT records [$(date -u '+%Y-%m-%d')]"
-            # The pipeline runs 30-40 min; other pushes can land on main in that
-            # window and reject a plain push (happened Aug 20 2026). Rebase our
-            # single data commit on top of whatever arrived, then push.
-            git pull --rebase origin main
-            git push
+            # The pipeline runs 30 min to several hours; other pushes can land
+            # on main in that window and reject a plain push (Aug 20 2026), and
+            # GitHub itself can reject with "remote: fatal error in commit_refs"
+            # (Sep 2 2026, which threw away a 2 h 16 min seed run). Rebase our
+            # single data commit on top of whatever arrived and retry the push
+            # with backoff before giving up.
+            for attempt in 1 2 3 4 5 6; do
+              git pull --rebase origin main
+              if git push; then echo "pushed on attempt $attempt"; break; fi
+              if [ "$attempt" = 6 ]; then echo "push failed 6 times"; exit 1; fi
+              sleep $((attempt * 45))
+            done
           fi
+
+      # Even if the push above fails, the run's output survives as an artifact
+      # (30 days). Recover with: gh run download <run id> -n fiscal-data, then
+      # copy the three files into place, re-run regenerate_agency_data.py,
+      # commit, push.
+      - name: Upload data files as artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fiscal-data
+          path: |
+            civic_reference/nyc_council_fiscal_impacts_tracker/data/fiscal_impacts.json
+            civic_reference/nyc_council_fiscal_impacts_tracker/agency-fiscal-impact/data.json
+            pipeline/no_impact_matters.json
+          retention-days: 30
