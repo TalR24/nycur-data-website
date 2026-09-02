@@ -39,6 +39,11 @@ import anthropic
 # ── Shared imports from main pipeline ─────────────────────────────────────────
 sys.path.insert(0, str(Path(__file__).parent))
 from fetch_fiscal_impacts import (
+    LAWS_PATH,
+    SKIP_PATH,
+    load_skip_list,
+    save_skip_list,
+    reconcile_totals,
     create_session,
     download_docx,
     extract_docx_text,
@@ -474,8 +479,32 @@ def main() -> int:
         log.info(f"Merged {added} new records into fiscal_impacts.json")
         return 0
 
-    # Existing matter IDs to skip in phase 2 (already in main file)
-    existing_ids = {str(r["matter_id"]) for r in load_existing(OUTPUT_PATH).get("records", [])}
+    # Dedup against the main file. Records there are keyed by WEB matter_id
+    # (REST-sourced ones keep their REST id in rest_matter_id, Sep 2026), so a
+    # REST enumeration must match on the REST id, on Legistar's File #
+    # (legistar_file == MatterFile), and on the web id mapped through laws.json.
+    _existing = load_existing(OUTPUT_PATH).get("records", [])
+    existing_ids = {str(r["matter_id"]) for r in _existing}
+    existing_ids |= {str(r["rest_matter_id"]) for r in _existing if r.get("rest_matter_id")}
+    existing_files = {r["legistar_file"] for r in _existing if r.get("legistar_file")}
+    skips = load_skip_list(SKIP_PATH)
+    existing_ids |= set(skips)
+
+    # MatterFile -> enacted law (web matter_id + GUID), so new records get real
+    # web links instead of URLs built from REST ids (the Aug 2026 defect).
+    laws_by_file: dict[str, dict] = {}
+    if LAWS_PATH.exists():
+        for law in json.load(open(LAWS_PATH, encoding="utf-8"))["laws"]:
+            if law.get("file_number") and law.get("matter_id"):
+                laws_by_file[law["file_number"]] = law
+
+    def mark_skip(rest_id: str, file_num: str, reason: str) -> None:
+        """Skip list carries the REST id and, when known, the web id, so the
+        validator's coverage table sees the law as checked."""
+        skips[rest_id] = reason
+        law = laws_by_file.get(file_num)
+        if law:
+            skips[str(law["matter_id"])] = reason
 
     # ── Phase 1: Enumerate ────────────────────────────────────────────────────
     if args.phase is None or args.phase == 1:
@@ -495,6 +524,8 @@ def main() -> int:
             (mid, info["guid"], info.get("file_number", "?"))
             for mid, info in cp["matters"].items()
             if mid not in processed_set and mid not in existing_ids
+            and info.get("file_number") not in existing_files
+            and str(laws_by_file.get(info.get("file_number", ""), {}).get("matter_id")) not in existing_ids
         ]
         log.info(
             f"Phase 2: {len(pending)} matters to check "
@@ -527,6 +558,7 @@ def main() -> int:
 
                 if not has_attachment:
                     cp["processed_ids"].append(matter_id)
+                    mark_skip(matter_id, file_num, "no_attachment")
                     continue
 
                 cp["stats"]["with_attachment"] = cp["stats"].get("with_attachment", 0) + 1
@@ -549,11 +581,13 @@ def main() -> int:
                 text = extract_docx_text(docx_path)
                 if not text.strip():
                     cp["processed_ids"].append(matter_id)
+                    mark_skip(matter_id, file_num, "unreadable_attachment")
                     continue
 
                 if text_is_zero_impact(text):
                     log.info(f"    Pre-check: all-zero — skipping Claude call")
                     cp["processed_ids"].append(matter_id)
+                    mark_skip(matter_id, file_num, "zero_precheck")
                     continue
 
                 log.info(f"    Calling Claude ...")
@@ -563,32 +597,52 @@ def main() -> int:
                 if not record_has_fiscal_impact(fiscal):
                     log.info(f"    Post-check: zero/unestimable — skipping")
                     cp["processed_ids"].append(matter_id)
+                    mark_skip(matter_id, file_num, "zero_or_unestimable")
                     continue
 
                 # Skip budget modification resolutions (MN-#).
                 if is_budget_modification(fiscal):
                     log.info(f"    Budget modification (MN-#) — skipping")
                     cp["processed_ids"].append(matter_id)
+                    mark_skip(matter_id, file_num, "budget_modification")
                     continue
 
                 # Skip proposed (not yet passed) bills.
                 if is_proposed_bill(fiscal):
                     log.info(f"    Proposed bill (not yet passed) — skipping")
                     cp["processed_ids"].append(matter_id)
+                    mark_skip(matter_id, file_num, "proposed")
                     continue
 
-                # Normalize agency attribution.
+                # Normalize agency attribution; reconcile totals with net.
                 fiscal = normalize_agency_attribution(fiscal)
+                fiscal = reconcile_totals(fiscal)
 
+                # REST ids are not web ids (never build a LegislationDetail URL
+                # from one). Key the record by the web id when laws.json knows
+                # the bill; otherwise keep the REST id and no link, and let
+                # backfill_legistar_file.py try to resolve it later.
+                law = laws_by_file.get(file_num) if args.token else None
+                if law:
+                    ident = {
+                        "matter_id":      str(law["matter_id"]),
+                        "legistar_guid":  law["legistar_guid"],
+                        "legistar_url":   (f"https://legistar.council.nyc.gov/LegislationDetail.aspx"
+                                           f"?ID={law['matter_id']}&GUID={law['legistar_guid']}"),
+                        "rest_matter_id": matter_id,
+                    }
+                elif args.token:
+                    ident = {"matter_id": matter_id, "legistar_guid": guid,
+                             "legistar_url": None, "rest_matter_id": matter_id}
+                else:  # web-scraped enumeration: matter_id IS the web id
+                    ident = {"matter_id": matter_id, "legistar_guid": guid,
+                             "legistar_url": (f"https://legistar.council.nyc.gov/LegislationDetail.aspx"
+                                              f"?ID={matter_id}&GUID={guid}")}
                 record = {
-                    "matter_id":     matter_id,
-                    "legistar_guid": guid,
-                    "legistar_url":  (
-                        f"https://legistar.council.nyc.gov/LegislationDetail.aspx"
-                        f"?ID={matter_id}&GUID={guid}"
-                    ),
+                    **ident,
                     "attachment_id": att_url if args.token else att_id,
                     "processed_at":  datetime.utcnow().isoformat() + "Z",
+                    "legistar_file": file_num if (args.token and file_num and file_num != "?") else None,
                     **fiscal,
                 }
                 cp["records"].append(record)
@@ -610,6 +664,8 @@ def main() -> int:
             time.sleep(0.8)
 
         save_checkpoint(cp)
+        if not args.dry_run:
+            save_skip_list(SKIP_PATH, skips)
         log.info(f"\nPhase 2 complete. New records this run: {total_new}")
         log.info(f"Stats: {cp['stats']}")
 

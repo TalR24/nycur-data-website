@@ -62,6 +62,14 @@ def title_sim(a: str, b: str) -> float:
 
 
 def crosswalk_rest_record(rec: dict, laws_by_num: dict) -> dict | None:
+    # Exact File # match first (records the historical scraper wrote with
+    # legistar_file = REST MatterFile, same format as laws.json).
+    lf = rec.get("legistar_file") or ""
+    m0 = re.match(r"Int\s+0*(\d+)-(\d{4})$", lf)
+    if m0:
+        for c in laws_by_num.get(int(m0.group(1)), []):
+            if c["file_number"] == lf:
+                return c
     fn = rec.get("file_number") or ""
     m = re.search(r"(\d{2,4})", fn)
     if not m:
@@ -135,10 +143,14 @@ def main() -> int:
     unresolved = []
 
     for rec in records:
-        if rec.get("legistar_file"):
+        is_rest = str(rec.get("attachment_id", "")).startswith("http")
+        # Done when the record has a File # and either a link or no way to get
+        # one (web-sourced). A REST record with a File # but no link (the
+        # historical scraper stores MatterFile up front since Sep 2026) still
+        # goes through the crosswalk to pick up its web id.
+        if rec.get("legistar_file") and (rec.get("legistar_url") or not is_rest):
             stats["skipped"] += 1
             continue
-        is_rest = str(rec.get("attachment_id", "")).startswith("http")
 
         if not is_rest:
             lf, _ = fetch_legistar_file(session, rec["matter_id"], rec["legistar_guid"])

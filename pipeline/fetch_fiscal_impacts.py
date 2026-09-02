@@ -797,6 +797,50 @@ def normalize_agency_attribution(fiscal: dict) -> dict:
     return fiscal
 
 
+def reconcile_totals(fiscal: dict) -> dict:
+    """
+    Make total_revenue / total_expenditure / total_capital agree with
+    net_fiscal_impact (= revenue - expenditure - capital). Two extraction
+    errors found by validate_fiscal_impacts.py on Sep 2 2026 (24 records):
+
+    1. Revenue LOSS stored as positive revenue: tax abatements/exemptions
+       ("$4,000,000 in abatements") came back as total_revenue=+4,000,000 with
+       net=-4,000,000. The net was right; the column was not. The prompt's
+       convention (NARRATIVE FORMAT rules) is that a revenue reduction is a
+       cost: revenue 0, the amount added to expenditure. Rule: if revenue > 0
+       and net == -(revenue + expenditure + capital), move revenue into
+       expenditure.
+    2. Capital double-counted inside expenditure: total_expenditure ==
+       total_capital (or contains it) with net == -expenditure. Rule: if
+       capital > 0 and net == -expenditure and expenditure >= capital, the
+       operational part is expenditure - capital.
+
+    Anything else that still disagrees is left alone and stays a soft finding.
+    """
+    rev, exp, cap, net = (fiscal.get(k) for k in
+                          ("total_revenue", "total_expenditure", "total_capital", "net_fiscal_impact"))
+    if None in (rev, exp, net):
+        return fiscal
+    cap0 = cap or 0
+    if abs((rev - exp - cap0) - net) <= 1:
+        return fiscal
+    if rev > 0 and abs(-(rev + exp + cap0) - net) <= 1:
+        fiscal["total_revenue"] = 0
+        fiscal["total_expenditure"] = exp + rev
+        for col in fiscal.get("fiscal_table_columns") or []:
+            cr = col.get("revenue") or 0
+            if cr > 0 and (col.get("net") or 0) < 0:
+                col["revenue"] = 0
+                col["expenditure"] = (col.get("expenditure") or 0) + cr
+        fiscal["totals_reconciled"] = "revenue_loss_moved_to_expenditure"
+        return fiscal
+    if cap0 > 0 and abs(-exp - net) <= 1 and exp >= cap0:
+        fiscal["total_expenditure"] = exp - cap0
+        fiscal["totals_reconciled"] = "capital_inside_expenditure"
+        return fiscal
+    return fiscal
+
+
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 def main() -> int:
@@ -956,6 +1000,7 @@ def main() -> int:
             # Normalize agency attribution: assign DOT to street sign line items
             # and prune agencies not present in program_breakdowns.
             fiscal = normalize_agency_attribution(fiscal)
+            fiscal = reconcile_totals(fiscal)
 
             record = {
                 "matter_id":    matter_id,

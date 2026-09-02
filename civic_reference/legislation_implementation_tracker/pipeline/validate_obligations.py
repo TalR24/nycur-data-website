@@ -170,9 +170,16 @@ def main() -> None:
             hard["identical_duplicate_obligations"].append(", ".join(ids))
 
     # --- HARD: law text must actually be present ----------------------------
+    # If the cache directory is absent altogether (CI runners, machines that
+    # never ran the fetch) that is an environment fact, not 1,933 bad records:
+    # record it once as a soft signal so the headline stays meaningful.
+    if not TEXT.exists():
+        soft["law_text_cache_absent"].append(f"{TEXT} does not exist; text-based checks skipped")
     for mid, group in by_matter.items():
         t = texts.get(mid)
         if t is None:
+            if not TEXT.exists():
+                continue
             hard["law_text_missing"].append(
                 f"{laws[mid]['law_number_display']}: {len(group)} obligations, no cached text")
         elif len(squash(t)) < 400:
