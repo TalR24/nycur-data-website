@@ -52,6 +52,12 @@ REPO_ROOT    = SCRIPT_DIR.parent   # data_website/ root (this repo)
 CACHE_DIR    = SCRIPT_DIR / "cache" / "docx"
 OUTPUT_PATH  = REPO_ROOT / "civic_reference" / "nyc_council_fiscal_impacts_tracker" / "data" / "fiscal_impacts.json"
 BASE_URL     = "https://legistar.council.nyc.gov"
+# Matters already downloaded and found to have no storable fiscal impact
+# (all-zero, unestimable, budget modification, proposed). Committed by the
+# monthly Action so they are not re-downloaded and re-extracted every run.
+SKIP_PATH    = SCRIPT_DIR / "no_impact_matters.json"
+# Enacted-law universe from the implementation tracker (web matter_id + GUID).
+LAWS_PATH    = REPO_ROOT / "civic_reference" / "legislation_implementation_tracker" / "data" / "laws.json"
 CLAUDE_MODEL = "claude-haiku-4-5-20251001"
 
 # ── Extraction prompt ─────────────────────────────────────────────────────────
@@ -417,12 +423,41 @@ def search_legistar_advanced_year(
     return []
 
 
+def parse_legistar_page(html: str) -> tuple[str | None, str | None]:
+    """
+    Read Legistar's own File # ("Int 1002-2026") and title off a
+    LegislationDetail page. Returns (file_number, title); None for either if
+    the page is an "Invalid parameters!" stub.
+    """
+    def label(name: str) -> str | None:
+        m = re.search(rf'id="ctl00_ContentPlaceHolder1_{name}"[^>]*>(.*?)</span>', html, re.S)
+        if not m:
+            return None
+        return re.sub(r"<[^>]+>", "", m.group(1)).strip() or None
+    return label("lblFile2"), label("lblTitle2")
+
+
+def fetch_legistar_file(
+    session: requests.Session, matter_id: str, guid: str
+) -> tuple[str | None, str | None]:
+    """Fetch a matter's detail page and return (legistar_file, title)."""
+    r = session.get(f"{BASE_URL}/LegislationDetail.aspx?ID={matter_id}&GUID={guid}", timeout=60)
+    r.raise_for_status()
+    return parse_legistar_page(r.text)
+
+
+# Filled by get_fiscal_attachment as a side effect (it already has the detail
+# page in hand); read by main() when building the record.
+LEGISTAR_FILE_BY_MATTER: dict[str, str | None] = {}
+
+
 def get_fiscal_attachment(
     session: requests.Session, matter_id: str, guid: str
 ) -> tuple[str | None, str | None]:
     """
     Fetch a matter's detail page and find the fiscal impact attachment.
     Returns (attachment_id, attachment_guid) or (None, None).
+    Also records Legistar's File # for the matter in LEGISTAR_FILE_BY_MATTER.
     """
     url = (
         f"{BASE_URL}/LegislationDetail.aspx"
@@ -430,6 +465,7 @@ def get_fiscal_attachment(
     )
     r = session.get(url, timeout=20)
     r.raise_for_status()
+    LEGISTAR_FILE_BY_MATTER[matter_id] = parse_legistar_page(r.text)[0]
 
     views = re.findall(
         r"View\.ashx\?M=F&ID=(\d+)&(?:amp;)?GUID=([A-F0-9\-]+)", r.text
@@ -547,6 +583,52 @@ def load_existing(path: Path) -> dict:
         with open(path, encoding="utf-8") as f:
             return json.load(f)
     return {"metadata": {}, "records": []}
+
+
+def load_skip_list(path: Path) -> dict[str, str]:
+    """matter_id -> reason for matters checked and found to have no storable impact."""
+    if path.exists():
+        with open(path, encoding="utf-8") as f:
+            return json.load(f)
+    return {}
+
+
+def save_skip_list(path: Path, skips: dict[str, str]) -> None:
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(dict(sorted(skips.items())), f, indent=1)
+    log.info(f"Saved {len(skips)} no-impact matter IDs -> {path}")
+
+
+def load_law_seed(years: str) -> list[tuple[str, str]]:
+    """
+    Seed matters from the implementation tracker's laws.json (every enacted
+    local law 2014–present, with web matter_id + GUID). Legistar's attachment
+    search only surfaces a few hundred matters, so this is the only token-free
+    way to reach the full set of fiscal impact statements.
+    `years`: "2024-2026", "2024", "all", or "auto" (previous + current year).
+    """
+    if not LAWS_PATH.exists():
+        log.warning(f"laws.json not found at {LAWS_PATH} — no law seed")
+        return []
+    if years == "auto":
+        y = datetime.utcnow().year
+        wanted = {str(y - 1), str(y)}
+    elif years == "all":
+        wanted = None
+    elif "-" in years:
+        a, b = years.split("-")
+        wanted = {str(v) for v in range(int(a), int(b) + 1)}
+    else:
+        wanted = {years}
+    with open(LAWS_PATH, encoding="utf-8") as f:
+        laws = json.load(f)["laws"]
+    out = []
+    for law in laws:
+        yr = str(law.get("enactment_date") or "")[:4]
+        if wanted is None or yr in wanted:
+            if law.get("matter_id") and law.get("legistar_guid"):
+                out.append((str(law["matter_id"]), law["legistar_guid"]))
+    return out
 
 
 def save_output(path: Path, records: list) -> None:
@@ -736,6 +818,12 @@ def main() -> int:
         metavar="START-END",
         help="Year range for --historical mode, e.g. '2010-2023' (default: 2014-2023)",
     )
+    parser.add_argument(
+        "--seed-laws", default=None, metavar="YEARS",
+        help="Also check every enacted local law in laws.json for a fiscal impact "
+             "statement: '2024-2026', '2024', 'all', or 'auto' (previous + current year). "
+             "Legistar's attachment search misses most of them.",
+    )
     args = parser.parse_args()
 
     api_key = os.environ.get("ANTHROPIC_API_KEY")
@@ -749,6 +837,14 @@ def main() -> int:
     existing     = load_existing(OUTPUT_PATH)
     existing_ids = {str(r["matter_id"]) for r in existing.get("records", [])}
     records      = list(existing.get("records", []))
+    skips        = load_skip_list(SKIP_PATH)
+    if args.incremental:
+        existing_ids |= set(skips)
+        log.info(f"Incremental: {len(records)} records + {len(skips)} known no-impact matters will be skipped")
+
+    def mark_skip(matter_id: str, reason: str) -> None:
+        existing_ids.add(matter_id)  # so a later duplicate hit in this run is skipped
+        skips[matter_id] = reason
 
     total_new = 0
 
@@ -789,6 +885,11 @@ def main() -> int:
             log.info(f"  Year {year}: {added} new unique matters (running total: {len(matters)})")
             time.sleep(3)  # be polite between year searches
 
+    if args.seed_laws:
+        seed = load_law_seed(args.seed_laws)
+        added = _add_matters(seed)
+        log.info(f"Law seed ({args.seed_laws}): {len(seed)} enacted laws, {added} new unique matters (running total: {len(matters)})")
+
     log.info(f"Total matters to process: {len(matters)}")
 
     for matter_id, guid in matters:
@@ -804,6 +905,7 @@ def main() -> int:
 
             if not att_id:
                 log.info(f"  No fiscal impact attachment found — skipping")
+                mark_skip(matter_id, "no_attachment")
                 continue
 
             docx_path = download_docx(session, att_id, att_guid)
@@ -814,7 +916,10 @@ def main() -> int:
 
             text = extract_docx_text(docx_path)
             if not text.strip():
+                # Usually a PDF or legacy .doc served under a "fiscal" filename;
+                # python-docx reports "Package not found". Not retried monthly.
                 log.warning(f"  Empty text from {docx_path} — skipping")
+                mark_skip(matter_id, "unreadable_attachment")
                 continue
 
             # Fast pre-check: skip obvious zero-impact bills before calling Claude.
@@ -822,7 +927,7 @@ def main() -> int:
             # there's nothing worth storing.
             if text_is_zero_impact(text):
                 log.info(f"  Pre-check: all-zero fiscal impact — skipping Claude call")
-                existing_ids.add(matter_id)  # mark as seen so --incremental skips it
+                mark_skip(matter_id, "zero_precheck")
                 continue
 
             log.info("  Calling Claude for extraction ...")
@@ -831,21 +936,21 @@ def main() -> int:
             # Post-extraction filter: skip if no real fiscal impact or unestimable.
             if not record_has_fiscal_impact(fiscal):
                 log.info(f"  Post-check: zero/unestimable fiscal impact — skipping")
-                existing_ids.add(matter_id)
+                mark_skip(matter_id, "zero_or_unestimable")
                 continue
 
             # Skip budget modification resolutions (MN-#) — these are Charter
             # §107(e) administrative approvals, not independent legislation.
             if is_budget_modification(fiscal):
                 log.info(f"  Budget modification (MN-#) — skipping")
-                existing_ids.add(matter_id)
+                mark_skip(matter_id, "budget_modification")
                 continue
 
             # Skip proposed (not yet passed) bills — only final/enacted legislation
             # belongs in the tracker.
             if is_proposed_bill(fiscal):
                 log.info(f"  Proposed bill (not yet passed) — skipping")
-                existing_ids.add(matter_id)
+                mark_skip(matter_id, "proposed")
                 continue
 
             # Normalize agency attribution: assign DOT to street sign line items
@@ -861,6 +966,10 @@ def main() -> int:
                 ),
                 "attachment_id": att_id,
                 "processed_at": datetime.utcnow().isoformat() + "Z",
+                # Legistar's own File # ("Int 1002-2026"); the frontend shows
+                # this over the statement's `file_number`, which is inconsistent
+                # and blank for bills numbered after the statement was drafted.
+                "legistar_file": LEGISTAR_FILE_BY_MATTER.get(matter_id),
                 **fiscal,
             }
 
@@ -868,7 +977,7 @@ def main() -> int:
             existing_ids.add(matter_id)
             total_new += 1
 
-            fn    = fiscal.get("file_number", "?")
+            fn    = record.get("legistar_file") or fiscal.get("file_number", "?")
             title = (fiscal.get("title") or "")[:60]
             log.info(f"  -> {fn}: {title}")
 
@@ -881,6 +990,7 @@ def main() -> int:
 
     if not args.dry_run:
         save_output(OUTPUT_PATH, records)
+        save_skip_list(SKIP_PATH, skips)
     else:
         log.info("--dry-run: not writing output file")
 

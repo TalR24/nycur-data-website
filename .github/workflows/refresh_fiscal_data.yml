@@ -14,6 +14,11 @@ on:
         default: "true"
         type: choice
         options: ["true", "false"]
+      seed_laws:
+        description: "Also check enacted laws from laws.json: 'auto' (prev + current year), '2024-2026', 'all', or blank"
+        required: false
+        default: "auto"
+        type: string
 
 jobs:
   refresh:
@@ -42,8 +47,13 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           INCREMENTAL="${{ github.event.inputs.incremental || 'true' }}"
+          # Legistar's attachment search surfaces only ~300 matters, so every
+          # run also walks the enacted-law list (laws.json) for the previous
+          # and current year. Pass a range like 2024-2026 or 'all' to backfill.
+          SEED="${{ github.event.inputs.seed_laws || 'auto' }}"
           FLAGS=""
           if [ "$INCREMENTAL" = "true" ]; then FLAGS="--incremental"; fi
+          if [ -n "$SEED" ]; then FLAGS="$FLAGS --seed-laws $SEED"; fi
           echo "Running: python pipeline/fetch_fiscal_impacts.py $FLAGS"
           python pipeline/fetch_fiscal_impacts.py $FLAGS
 
@@ -55,7 +65,8 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add civic_reference/nyc_council_fiscal_impacts_tracker/data/fiscal_impacts.json \
-                  civic_reference/nyc_council_fiscal_impacts_tracker/agency-fiscal-impact/data.json
+                  civic_reference/nyc_council_fiscal_impacts_tracker/agency-fiscal-impact/data.json \
+                  pipeline/no_impact_matters.json
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else

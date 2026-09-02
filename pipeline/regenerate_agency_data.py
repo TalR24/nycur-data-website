@@ -15,7 +15,12 @@ OUTPUT_PATH = TRACKER / "agency-fiscal-impact" / "data.json"
 
 
 def get_intro_year(rec):
-    # 1. date_prepared year (most reliable — FIS prep date closely tracks bill introduction)
+    # 0. Legistar's own File # carries the intro year: "Int 0408-2024" -> 2024
+    #    (backfilled Sep 2026; the statement can be prepared a year later)
+    m0 = re.search(r'-(20\d{2})$', str(rec.get("legistar_file") or ""))
+    if m0 and 2010 <= int(m0.group(1)) <= 2030:
+        return int(m0.group(1))
+    # 1. date_prepared year (FIS prep date usually tracks bill introduction)
     dp = rec.get("date_prepared") or ""
     m = re.search(r'\b(20\d{2})\b', str(dp))
     if m:

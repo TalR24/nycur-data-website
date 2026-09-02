@@ -284,9 +284,16 @@
     /* the bill table runs edge to edge inside its card */
     .chart-card > .c-plot { padding: 0; }
     .table-scroll { overflow-x: auto; }
+    /* Fixed layout: column widths come from the <colgroup>, not from whichever
+       50 rows happen to be on the page. With auto layout, sorting onto a page
+       with long bill numbers or committee names widened those columns past the
+       card and the only way back was the horizontal scrollbar at the foot of
+       the table. Below 1000px the table scrolls sideways inside the card. */
     table {
       width: 100%;
+      min-width: 1000px;
       border-collapse: collapse;
+      table-layout: fixed;
       font-size: 0.82rem;
     }
     thead th {
@@ -329,7 +336,8 @@
       font-size: 0.78rem;
       font-weight: 600;
       color: var(--blue);
-      white-space: nowrap;
+      overflow-wrap: anywhere;
+      line-height: 1.35;
     }
     td.file-cell a {
       color: inherit;
@@ -748,6 +756,11 @@
       <div class="c-plot">
       <div class="table-scroll">
         <table id="main-table">
+          <colgroup>
+            <col style="width:11%"><col style="width:6%"><col style="width:17%"><col style="width:12%">
+            <col style="width:10%"><col style="width:7%"><col style="width:8%"><col style="width:8%">
+            <col style="width:7%"><col style="width:7%"><col style="width:7%"><col style="width:28px">
+          </colgroup>
           <thead>
             <tr>
               <th data-col="file_number">Bill # <i class="sort-icon">↕</i></th>
@@ -761,7 +774,7 @@
               <th data-col="total_expenditure" style="text-align:right">Expense <i class="sort-icon">↕</i></th>
               <th data-col="total_capital" style="text-align:right">Capital <i class="sort-icon">↕</i></th>
               <th data-col="total_revenue" style="text-align:right">Revenue <i class="sort-icon">↕</i></th>
-              <th style="width:28px"></th>
+              <th></th>
             </tr>
           </thead>
           <tbody id="table-body">
@@ -847,6 +860,24 @@ function esc(s) {
   return (s || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 }
 
+// Bill number shown in the table. `legistar_file` is Legistar's own File #
+// ("Int 1002-2026"), backfilled Sep 2026; `file_number` is whatever the
+// fiscal impact statement itself printed ("Intro. No. 831-A", "Preconsidered
+// Int. No.", or nothing at all for bills numbered after the statement was
+// drafted). Prefer Legistar's, fall back to the statement's.
+function billLabel(r) {
+  return r.legistar_file || r.file_number || "No number";
+}
+// Sort key for the Bill # column: session year then bill number, so
+// "Int 0039-2024" sorts before "Int 1002-2024" and after "Int 1501-2023".
+function billKey(r) {
+  const m = (r.legistar_file || "").match(/^(\w+)\s+0*(\d+)-(\d{4})/);
+  if (m) return m[3] * 10000 + Number(m[2]);
+  const y = ((r.date_prepared || "").match(/^\d{4}/) || [0])[0];
+  const n = ((r.file_number || "").match(/\d{2,4}/) || [0])[0];
+  return Number(y) * 10000 + Number(n);
+}
+
 // ── Data loading ─────────────────────────────────────────────────────────────
 async function loadData() {
   try {
@@ -880,16 +911,20 @@ async function loadData() {
     // Deep link: ?intro=692 (or ?intro=Int.%20No.%20692) filters to that bill,
     // expands its row, and scrolls to the table. Matches on the digit sequence
     // with leading zeros stripped, since file_number formats vary
-    // ("Int. No. 692" / "Int. 579" / "Int. No. 0296").
+    // ("Int. No. 692" / "Int. 579" / "Int. No. 0296"). Legistar's own File #
+    // is tried first, the statement's number second. Records are in data
+    // order, newest session last, so a duplicate intro number across sessions
+    // resolves to the most recent one.
     const introParam = new URLSearchParams(location.search).get("intro");
     let introMatch = null;
     if (introParam) {
       const digits = (introParam.match(/\d+/) || [""])[0].replace(/^0+/, "");
-      introMatch = digits ? allRecords.find(r => {
-        const d = ((r.file_number || "").match(/\d+/) || [""])[0].replace(/^0+/, "");
-        return d === digits;
-      }) : null;
-      document.getElementById("f-search").value = introMatch ? introMatch.file_number : introParam;
+      const firstDigits = s => ((s || "").match(/\d+/) || [""])[0].replace(/^0+/, "");
+      const byLegistar = allRecords.filter(r => firstDigits(r.legistar_file) === digits);
+      const byStatement = allRecords.filter(r => firstDigits(r.file_number) === digits);
+      const pool = byLegistar.length ? byLegistar : byStatement;
+      introMatch = digits && pool.length ? pool.reduce((a, b) => billKey(b) >= billKey(a) ? b : a) : null;
+      document.getElementById("f-search").value = introMatch ? billLabel(introMatch) : introParam;
       if (introMatch) expandedId = introMatch.matter_id;
     }
 
@@ -967,7 +1002,7 @@ function applyFilters() {
 
   filtered = allRecords.filter(r => {
     if (search) {
-      const hay = ((r.file_number || "") + " " + (r.title || "")).toLowerCase();
+      const hay = ((r.legistar_file || "") + " " + (r.file_number || "") + " " + (r.title || "")).toLowerCase();
       if (!hay.includes(search)) return false;
     }
     if (!MS.type.pass(r.legislation_type)) return false;
@@ -1001,6 +1036,9 @@ function applyFilters() {
     if (sortCol === "date_prepared") {
       va = dateKey(a);
       vb = dateKey(b);
+    } else if (sortCol === "file_number") {
+      va = billKey(a);
+      vb = billKey(b);
     } else {
       va = a[sortCol] ?? "";
       vb = b[sortCol] ?? "";
@@ -1009,8 +1047,11 @@ function applyFilters() {
       va = va === null || va === "" ? -Infinity : va;
       vb = vb === null || vb === "" ? -Infinity : vb;
     }
-    if (va < vb) return sortDir;
-    if (va > vb) return -sortDir;
+    // sortDir -1 = descending (larger / later / higher first), +1 = ascending.
+    // Before Sep 2 2026 the signs were flipped, so the "most recent first"
+    // default actually showed the 16 undated 2014-era bills at the top.
+    if (va < vb) return -sortDir;
+    if (va > vb) return sortDir;
     return 0;
   });
 
@@ -1073,7 +1114,9 @@ function renderRow(r) {
 
   return `<tr class="data-row${expanded ? " expanded" : ""}" data-id="${r.matter_id}">
     <td class="file-cell">
-      <a href="${esc(r.legistar_url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${esc(r.file_number || r.matter_id)}</a>
+      ${r.legistar_url
+        ? `<a href="${esc(r.legistar_url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${esc(billLabel(r))}</a>`
+        : `<span title="No Legistar page could be matched to this historical record">${esc(billLabel(r))}</span>`}
     </td>
     <td>${typeBadge(r.legislation_type)}</td>
     <td class="title-cell"><div class="title-text">${esc(r.title || "")}</div></td>
@@ -1220,10 +1263,10 @@ function renderDetailRow(r) {
           <p class="detail-narrative">${esc(r.impact_narrative_expenditure)}</p>
         </div>` : ""}
 
-        <a href="${esc(r.legistar_url)}" target="_blank" rel="noopener" class="detail-link">
+        ${r.legistar_url ? `<a href="${esc(r.legistar_url)}" target="_blank" rel="noopener" class="detail-link">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
           View on Legistar
-        </a>
+        </a>` : `<p class="detail-narrative" style="color:var(--text-faint)">No Legistar page could be matched to this historical record${r.file_number ? `, numbered "${esc(r.file_number)}" on its fiscal impact statement` : ""}.</p>`}
       </div>
     </td>
   </tr>`;
