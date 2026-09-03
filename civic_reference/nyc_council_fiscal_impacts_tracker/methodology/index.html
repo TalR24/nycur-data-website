@@ -504,12 +504,17 @@
       </div>
       <p>Legistar doesn't provide a bulk download of fiscal impact statements. The tracker identifies relevant bills by searching Legistar's legislation index for attachments containing the phrase <strong>"Fiscal Impact Statement"</strong>, the standard title the Finance Division uses for these documents.</p>
 
-      <h3>Current bills (2024–present)</h3>
-      <p>The tracker searches Legistar's web interface using the attachment text search, retrieving all bills across all years that have a matching attachment. Results are paginated and deduplicated. This search is run monthly via an automated job to pick up newly introduced bills.</p>
+      <h3>Two sources, checked monthly</h3>
+      <p>The tracker searches Legistar's web interface using the attachment text search, retrieving every bill that has a matching attachment. That index is shallow: it returns roughly 300 matters in total, almost all from the current Council session, and in September 2026 it had missed every law enacted in 2024. So the monthly job also walks the full list of enacted local laws maintained by the <a href="/civic_reference/legislation_implementation_tracker/" style="color:var(--blue)">Legislation Implementation Tracker</a> and checks each one for a fiscal impact statement. Bills already checked and found to have no quantified impact are recorded in a skip list so they are not downloaded again.</p>
+      <p>As of September 2026 every local law enacted from 2014 onward has been checked. Only about one enacted law in twenty carries a non-zero fiscal impact statement; the rest are costed at $0 by the Finance Division and are not in the table.</p>
       <div class="callout note"><strong>Note on Legistar's year filter:</strong> Legistar's built-in year filter is non-functional for attachment searches, it returns the same set of results regardless of what year is selected. The tracker works around this by searching "All Years" and handling deduplication itself.</div>
 
       <h3>Historical bills (2014–2023)</h3>
-      <p>For older legislation, the tracker uses the Legistar REST API (<code>webapi.legistar.com/v1/nyc</code>) to enumerate all NYC Council matters and their attachment URLs. Each matter is checked for a fiscal impact statement attachment; if one is found, it's downloaded and processed using the same extraction logic as current bills.</p>
+      <p>The oldest records came from the Legistar REST API (<code>webapi.legistar.com/v1/nyc</code>), which enumerates every NYC Council matter and its attachment URLs. The API uses its own record numbers, distinct from the ones in Legistar's web links, so in September 2026 those records were re-matched to their web pages through the enacted-law list; a few dozen state bills and pre-considered introductions from 2014 to 2019 could not be matched and are shown without a Legistar link.</p>
+      <h3>Bill numbers</h3>
+      <p>The bill number shown in the table is Legistar's own file number (for example <code>Int 1002-2026</code>), read from the bill's Legistar page. The number printed inside the fiscal impact statement itself is kept in the data but not displayed, because the Finance Division writes it inconsistently and it is often blank when the statement was drafted before the bill was numbered.</p>
+      <h3>Data checks</h3>
+      <p>A validation script runs against the data on every refresh and in a monthly quality report. It checks internal consistency (net impact equals revenue minus expenditure minus capital, no duplicate records, no dead Legistar links) and compares the table against the enacted-law list so a coverage gap like the missing 2024 laws would show up as a count, not go unnoticed.</p>
 
       <h3>Finding the right attachment</h3>
       <p>A single bill may have many attachments, committee reports, hearing transcripts, legal memos, and more. The tracker identifies the fiscal impact statement specifically by checking the filename of each attachment for the words "fiscal" or "impact." Only that attachment is downloaded; all others are ignored.</p>

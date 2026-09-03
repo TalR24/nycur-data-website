@@ -344,6 +344,10 @@
       text-decoration: none;
     }
     td.file-cell a:hover { text-decoration: underline; }
+    /* Type column is 10% of the table; at the 1000px minimum that is 100px,
+       and the widest badge ("Pre-Consid.") is ~84px, so the cell's own
+       padding has to be lean or the badge truncates. */
+    td.type-cell { padding-left: 8px; padding-right: 6px; }
     td.title-cell {
       max-width: 280px;
     }
@@ -373,6 +377,15 @@
       padding: 2px 7px;
       border-radius: 4px;
       white-space: nowrap;
+      /* Fixed table layout: the cell cannot grow for the badge, so the badge
+         must never grow past the cell. "Pre-Consid." needs ~84px; the Type
+         column is 10% (>= 100px at the 1000px table minimum). If a future
+         label is longer it truncates with an ellipsis instead of spilling
+         into the Title column (Tal caught that on Sep 3 2026). */
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      vertical-align: middle;
     }
     .type-badge.intro { background: #FAF6F1; color: #A44D00; }
     .type-badge.res   { background: #FDF3D8; color: #773903; }
@@ -757,7 +770,7 @@
       <div class="table-scroll">
         <table id="main-table">
           <colgroup>
-            <col style="width:11%"><col style="width:6%"><col style="width:17%"><col style="width:12%">
+            <col style="width:11%"><col style="width:10%"><col style="width:13%"><col style="width:12%">
             <col style="width:10%"><col style="width:7%"><col style="width:8%"><col style="width:8%">
             <col style="width:7%"><col style="width:7%"><col style="width:7%"><col style="width:28px">
           </colgroup>
@@ -1118,7 +1131,7 @@ function renderRow(r) {
         ? `<a href="${esc(r.legistar_url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${esc(billLabel(r))}</a>`
         : `<span title="No Legistar page could be matched to this historical record">${esc(billLabel(r))}</span>`}
     </td>
-    <td>${typeBadge(r.legislation_type)}</td>
+    <td class="type-cell">${typeBadge(r.legislation_type)}</td>
     <td class="title-cell"><div class="title-text">${esc(r.title || "")}</div></td>
     <td>${esc(r.committee || "—")}</td>
     <td>${esc(r.prime_sponsor || "—")}</td>
