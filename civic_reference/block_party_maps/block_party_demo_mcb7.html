@@ -508,13 +508,13 @@ PLACES.forEach((p,i)=>{p._i=i;p._oc=outcomeFor((p.resolutions[0].title||'')+' '+
 // wrong path is why Streets showed blank tiles.) Satellite is Esri World Imagery: free, no key, and
 // unlike Google's tiles it's actually licensed for embedding without an API key + billing.
 const BASES={
-  light:{url:'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',sub:'abcd',attr:'© OpenStreetMap · © CARTO',max:20},
-  streets:{url:'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',sub:'abcd',attr:'© OpenStreetMap · © CARTO',max:20},
+  light:{url:'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',attr:'© Esri · © OpenStreetMap contributors',max:20,maxNative:16},
+  streets:{url:'https://tile.openstreetmap.org/{z}/{x}/{y}.png',attr:'© OpenStreetMap contributors',max:19},
   satellite:{url:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',attr:'Imagery © Esri · Maxar · Earthstar Geographics',max:19},
-  dark:{url:'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',sub:'abcd',attr:'© OpenStreetMap · © CARTO',max:20},
+  dark:{url:'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',attr:'© Esri · © OpenStreetMap contributors',max:20,maxNative:16},
 };
 let baseLayer=null;
-function setBase(k){if(baseLayer)map.removeLayer(baseLayer);const b=BASES[k];const o={attribution:b.attr,maxZoom:b.max,crossOrigin:true};if(b.sub)o.subdomains=b.sub;
+function setBase(k){if(baseLayer)map.removeLayer(baseLayer);const b=BASES[k];const o={attribution:b.attr,maxZoom:b.max,crossOrigin:true};if(b.sub)o.subdomains=b.sub;if(b.maxNative)o.maxNativeZoom=b.maxNative;
   baseLayer=L.tileLayer(b.url,o).addTo(map);baseLayer.bringToBack();}
 const map=L.map('map',{zoomControl:false}).setView([40.7869,-73.9763],14);
 L.control.zoom({position:'topright'}).addTo(map);   // top-RIGHT so the +/- never sit under the left controls card
