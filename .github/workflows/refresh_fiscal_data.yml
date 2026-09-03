@@ -74,6 +74,10 @@ jobs:
           # phase 2 is ~0.6 s per matter plus Claude for the non-zero ones, so
           # run a few years at a time. Then resolve web ids/links for anything
           # laws.json did not know.
+          if [ -z "$LEGISTAR_TOKEN" ]; then
+            echo "::error::LEGISTAR_TOKEN secret is empty. Set it with: gh secret set LEGISTAR_TOKEN --repo TalR24/nycur-data-website (paste the token at the prompt). Refusing to fall back to web scraping, which cannot reach historical years."
+            exit 1
+          fi
           python pipeline/fetch_fiscal_impacts_historical.py --years "${{ github.event.inputs.rest_years }}" --phase 1
           python pipeline/fetch_fiscal_impacts_historical.py --years "${{ github.event.inputs.rest_years }}" --phase 2
           python pipeline/backfill_legistar_file.py
