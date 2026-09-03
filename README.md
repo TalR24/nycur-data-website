@@ -30,10 +30,10 @@ Standalone reference tools, listed in homepage order. New tools live under `/civ
 Directory, segment view, affinity network, and matchmaking for 300+ organizations working on state capacity — research, advocacy, GovTech, philanthropy, fellowships, digital services, investors, and ecosystem-builders. Underlying database curated by Henry Grunzweig. Affinity score combines description TF-IDF, shared problem statements, named funders, and segment overlap, with semantic search powered by a precomputed TF-IDF index.
 
 - [`/state_capacity_ecosystem/`](https://statecapacityecosystem.com/) — hub
-- [`/state_capacity_ecosystem/ecosystem/directory/`](https://statecapacityecosystem.com/databases/organization-directory/) — searchable, filterable org table
-- [`/state_capacity_ecosystem/ecosystem/network/`](https://statecapacityecosystem.com/databases/affinity-map/) — D3 force-directed affinity graph + semantic search with geographic boosting
-- [`/state_capacity_ecosystem/ecosystem/connect/`](https://statecapacityecosystem.com/databases/opportunities-connections/) — directory of people and orgs working on specific problems, with self-submission form and intro request flow
-- [`/state_capacity_ecosystem/ecosystem/methodology/`](https://statecapacityecosystem.com/databases/methodology/) — scoring formula, taxonomy, inclusion criteria
+- [`/state_capacity_ecosystem/ecosystem/directory/`](https://statecapacityecosystem.com/ecosystem/organizations/) — searchable, filterable org table
+- [`/state_capacity_ecosystem/ecosystem/network/`](https://statecapacityecosystem.com/ecosystem/affinity-map/) — D3 force-directed affinity graph + semantic search with geographic boosting
+- [`/state_capacity_ecosystem/ecosystem/connect/`](https://statecapacityecosystem.com/ecosystem/connect/) — directory of people and orgs working on specific problems, with self-submission form and intro request flow
+- [`/state_capacity_ecosystem/ecosystem/methodology/`](https://statecapacityecosystem.com/ecosystem/methodology/) — scoring formula, taxonomy, inclusion criteria
 - [`/state_capacity_ecosystem/policy-programs/events/`](https://statecapacityecosystem.com/events/) — state capacity hackathons, with per-event pages covering overview, tracks, judges, and the projects produced (e.g. `events/civic-tech-build-night/`)
 
 ### [NYC Council Fiscal Impacts Tracker](https://data.nycuriosity.com/civic_reference/nyc_council_fiscal_impacts_tracker/)
