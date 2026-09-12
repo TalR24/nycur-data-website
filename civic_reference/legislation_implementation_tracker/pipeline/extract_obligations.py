@@ -63,7 +63,7 @@ log = logging.getLogger("extract_obligations")
 
 EXTRACTION_PROMPT = """You are analyzing the full text of an enacted New York City local law. Extract every concrete obligation the law imposes on a NYC GOVERNMENT entity (an agency, department, office, commission, board, or officer such as "the commissioner", "the mayor", "the department", "the office"). This is for a public implementation-tracking dashboard.
 
-Return ONLY a JSON object with this exact structure (no markdown, no explanation):
+Return a JSON object with this exact structure:
 
 {
  "effective_clause": {
@@ -118,6 +118,63 @@ LAW METADATA (for context only):
 LAW TEXT:
 {law_text}
 """
+
+# Enforced via output_config (structured outputs): the API guarantees the
+# response parses as JSON matching this shape, so no markdown-fence stripping
+# is needed. kind / deliverable_type / recurrence stay open strings rather
+# than enums: the prompt's rules use kinds beyond the template's list
+# (days_after_other), and the post-processing below already normalizes or
+# defaults unknown values.
+OBLIGATIONS_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "effective_clause": {
+            "type": "object",
+            "properties": {
+                "kind": {"type": "string"},
+                "offset_days": {"type": ["integer", "null"]},
+                "fixed_date": {"type": ["string", "null"]},
+                "text": {"type": ["string", "null"]},
+            },
+            "required": ["kind", "offset_days", "fixed_date", "text"],
+            "additionalProperties": False,
+        },
+        "obligations": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "actor_raw": {"type": "string"},
+                    "actor_resolved": {"type": "string"},
+                    "action_summary": {"type": "string"},
+                    "deliverable_type": {"type": "string"},
+                    "citation": {"type": "string"},
+                    "quote": {"type": "string"},
+                    "deadline": {
+                        "type": "object",
+                        "properties": {
+                            "kind": {"type": "string"},
+                            "fixed_date": {"type": ["string", "null"]},
+                            "offset_days": {"type": ["integer", "null"]},
+                            "text": {"type": ["string", "null"]},
+                        },
+                        "required": ["kind", "fixed_date", "offset_days", "text"],
+                        "additionalProperties": False,
+                    },
+                    "recurrence": {"type": "string"},
+                    "affected_groups": {"type": "array",
+                                        "items": {"type": "string"}},
+                },
+                "required": ["actor_raw", "actor_resolved", "action_summary",
+                             "deliverable_type", "citation", "quote",
+                             "deadline", "recurrence", "affected_groups"],
+                "additionalProperties": False,
+            },
+        },
+    },
+    "required": ["effective_clause", "obligations"],
+    "additionalProperties": False,
+}
 
 
 # ── Normalization helpers ─────────────────────────────────────────────────────
@@ -519,20 +576,19 @@ def resolve_deadline(dl: dict, enactment_date: str | None,
 # ── Claude call ───────────────────────────────────────────────────────────────
 
 def call_claude(client, model: str, prompt: str, retry_note: str | None = None):
-    messages = [{"role": "user", "content": prompt}]
     if retry_note:
-        messages.append({"role": "assistant", "content": "{"})
-        messages = [{"role": "user", "content": prompt + "\n\n" + retry_note}]
+        prompt = prompt + "\n\n" + retry_note
     # Streamed accumulation: required for attachment-scale laws (the plain
     # create() call drops the connection on very large prompts) and harmless
     # for normal ones.
     with client.messages.stream(
         model=model,
         max_tokens=16000,
-        messages=messages,
+        messages=[{"role": "user", "content": prompt}],
+        output_config={"format": {"type": "json_schema",
+                                  "schema": OBLIGATIONS_SCHEMA}},
     ) as stream:
         raw = "".join(chunk for chunk in stream.text_stream).strip()
-    raw = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw)
     return json.loads(raw)
 
 

@@ -61,12 +61,10 @@ LAWS_PATH    = REPO_ROOT / "civic_reference" / "legislation_implementation_track
 CLAUDE_MODEL = "claude-haiku-4-5-20251001"
 
 # ── Extraction prompt ─────────────────────────────────────────────────────────
-EXTRACTION_PROMPT = """You are extracting structured data from a New York City Council fiscal impact statement document. Extract the following fields and return ONLY a valid JSON object — no markdown fences, no explanation, just the JSON.
-
-DOCUMENT TEXT:
----
-{text}
----
+# Stable instructions first, per-document text last: the whole rule block is
+# then a constant prefix across the run's back-to-back calls, which prompt
+# caching can reuse (and it matches the other pipelines' prompt layout).
+EXTRACTION_PROMPT = """You are extracting structured data from a New York City Council fiscal impact statement document.
 
 Return a JSON object with exactly these fields (use null for missing/unknown, 0 for explicit zeros, true/false for booleans):
 
@@ -135,7 +133,6 @@ RULES:
 - program_breakdowns: extract named cost line items from the Impact on Expenditures section. May be empty [].
 - For program_breakdowns entries involving street sign installation, street sign fabrication, co-naming of thoroughfares, or sign procurement: set agency="DOT" regardless of which agency the document credits. DOT is responsible for all street signage in NYC.
 - For sponsors and prime_sponsor: strip all prefixes ("Council Member", "Council Members", "By Council Members", "(s):"). Return only the name. For "The Speaker (Council Member X)", return "X (Speaker)". Always use last name only as written in the document.
-- Return ONLY the JSON object — no markdown, no explanation.
 
 NARRATIVE FORMAT (older documents without a structured table):
 Some documents — particularly pre-2019 legislation — state fiscal impacts as prose rather than a year-by-year table. If there is no structured numeric table, synthesize the totals from the narrative text using these rules:
@@ -146,7 +143,94 @@ Some documents — particularly pre-2019 legislation — state fiscal impacts as
 - If a range is given (e.g. "$1 million to $2 million"), use the midpoint.
 - Create a single fiscal_table_columns entry with label "Total" and populate revenue/expenditure/capital/net from the narrative figures.
 - If the narrative gives a cost figure but says it "cannot be estimated precisely" or "will be determined", set cost_estimable to false.
+
+DOCUMENT TEXT:
+---
+{text}
+---
 """
+
+# Enforced via output_config (structured outputs): the API guarantees the
+# response parses as JSON matching this shape, so no markdown-fence stripping
+# or parse retries are needed. Field semantics live in the prompt above; every
+# field is nullable because the prompt says to use null for missing/unknown.
+_NUM_OR_NULL = {"type": ["number", "null"]}
+_STR_OR_NULL = {"type": ["string", "null"]}
+FISCAL_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "file_number": _STR_OR_NULL,
+        "legislation_type": _STR_OR_NULL,
+        "title": _STR_OR_NULL,
+        "committee": _STR_OR_NULL,
+        "sponsors": {"type": "array", "items": {"type": "string"}},
+        "prime_sponsor": _STR_OR_NULL,
+        "effective_date": _STR_OR_NULL,
+        "fy_first_effective": _STR_OR_NULL,
+        "fy_full_impact": _STR_OR_NULL,
+        "source_of_funds": _STR_OR_NULL,
+        "cost_estimable": {"type": ["boolean", "null"]},
+        "total_revenue": _NUM_OR_NULL,
+        "total_expenditure": _NUM_OR_NULL,
+        "total_capital": _NUM_OR_NULL,
+        "net_fiscal_impact": _NUM_OR_NULL,
+        "fiscal_table_columns": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "label": _STR_OR_NULL,
+                    "revenue": _NUM_OR_NULL,
+                    "expenditure": _NUM_OR_NULL,
+                    "capital": _NUM_OR_NULL,
+                    "net": _NUM_OR_NULL,
+                },
+                "required": ["label", "revenue", "expenditure", "capital", "net"],
+                "additionalProperties": False,
+            },
+        },
+        "agencies_abbrev": {"type": "array", "items": {"type": "string"}},
+        "agencies_full": {"type": "array", "items": {"type": "string"}},
+        "program_breakdowns": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "agency": _STR_OR_NULL,
+                    "program": _STR_OR_NULL,
+                    "description": _STR_OR_NULL,
+                    "cost_type": _STR_OR_NULL,
+                    "amount": _NUM_OR_NULL,
+                    "fy_range": _STR_OR_NULL,
+                    "offset_notes": _STR_OR_NULL,
+                },
+                "required": ["agency", "program", "description", "cost_type",
+                             "amount", "fy_range", "offset_notes"],
+                "additionalProperties": False,
+            },
+        },
+        "impact_narrative_revenue": _STR_OR_NULL,
+        "impact_narrative_expenditure": _STR_OR_NULL,
+        "omb_estimate_provided": {"type": ["boolean", "null"]},
+        "omb_estimate_notes": _STR_OR_NULL,
+        "estimate_prepared_by": _STR_OR_NULL,
+        "estimate_reviewed_by": {"type": "array", "items": {"type": "string"}},
+        "date_prepared": _STR_OR_NULL,
+        "hearing_date": _STR_OR_NULL,
+    },
+    "required": [
+        "file_number", "legislation_type", "title", "committee", "sponsors",
+        "prime_sponsor", "effective_date", "fy_first_effective",
+        "fy_full_impact", "source_of_funds", "cost_estimable",
+        "total_revenue", "total_expenditure", "total_capital",
+        "net_fiscal_impact", "fiscal_table_columns", "agencies_abbrev",
+        "agencies_full", "program_breakdowns", "impact_narrative_revenue",
+        "impact_narrative_expenditure", "omb_estimate_provided",
+        "omb_estimate_notes", "estimate_prepared_by", "estimate_reviewed_by",
+        "date_prepared", "hearing_date",
+    ],
+    "additionalProperties": False,
+}
 
 
 # ── Legistar scraping ─────────────────────────────────────────────────────────
@@ -550,16 +634,10 @@ def extract_fiscal_data(
                 model=CLAUDE_MODEL,
                 max_tokens=4096,
                 messages=[{"role": "user", "content": prompt}],
+                output_config={"format": {"type": "json_schema",
+                                          "schema": FISCAL_SCHEMA}},
             )
-            raw = msg.content[0].text.strip()
-
-            # Strip markdown fences if present
-            if raw.startswith("```"):
-                raw = re.sub(r"^```(?:json)?\n?", "", raw)
-                raw = re.sub(r"\n?```$", "", raw.rstrip())
-
-            data = json.loads(raw)
-            return data
+            return json.loads(msg.content[0].text)
 
         except json.JSONDecodeError as e:
             log.warning(f"  JSON decode error (attempt {attempt+1}): {e}")

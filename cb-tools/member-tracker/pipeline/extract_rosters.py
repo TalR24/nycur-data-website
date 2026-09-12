@@ -35,9 +35,55 @@ OUT_DIR = HERE / "extracted" / "rosters"
 DEFAULT_MODEL = "claude-haiku-4-5-20251001"
 MAX_CHARS = 250_000  # 90k truncated boards with many committee pages (104, 208)
 
+# Enforced via output_config (structured outputs): the API guarantees the
+# response parses as JSON matching this shape, so no markdown-fence stripping
+# is needed. Field semantics live in the prompt below.
+ROSTER_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "officers": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {"role": {"type": "string"},
+                               "name": {"type": "string"}},
+                "required": ["role", "name"],
+                "additionalProperties": False,
+            },
+        },
+        "members": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {"name": {"type": "string"},
+                               "roles": {"type": "array",
+                                         "items": {"type": "string"}}},
+                "required": ["name", "roles"],
+                "additionalProperties": False,
+            },
+        },
+        "committees": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {"name": {"type": "string"},
+                               "chair": {"type": ["string", "null"]},
+                               "members": {"type": "array",
+                                           "items": {"type": "string"}}},
+                "required": ["name", "chair", "members"],
+                "additionalProperties": False,
+            },
+        },
+        "as_of": {"type": ["string", "null"]},
+        "notes": {"type": "string"},
+    },
+    "required": ["officers", "members", "committees", "as_of", "notes"],
+    "additionalProperties": False,
+}
+
 PROMPT = """You are extracting a NYC community board's roster from its website pages.
 
-Return ONLY a JSON object with this exact shape (no markdown fences, no prose):
+Return a JSON object with this shape:
 {
   "officers": [{"role": "Chair", "name": "..."}],
   "members": [{"name": "...", "roles": []}],
@@ -126,10 +172,10 @@ def call_claude(client, model: str, text: str) -> dict:
         model=model,
         max_tokens=16000,
         messages=[{"role": "user", "content": PROMPT + text}],
+        output_config={"format": {"type": "json_schema",
+                                  "schema": ROSTER_SCHEMA}},
     )
-    raw = resp.content[0].text.strip()
-    raw = re.sub(r"^```(json)?|```$", "", raw, flags=re.M).strip()
-    return json.loads(raw)
+    return json.loads(resp.content[0].text)
 
 
 def main() -> None:
