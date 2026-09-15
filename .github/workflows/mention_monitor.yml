@@ -2,15 +2,23 @@ name: Mention Monitor
 
 on:
   schedule:
-    - cron: "30 11 * * 1"   # Mondays ~6:30-7:30am ET, after Site Health
+    - cron: "30 11 * * *"   # daily ~6:30-7:30am ET; Mondays send the digest
   workflow_dispatch:
     inputs:
       backfill:
         description: "Seed the seen-db from ~90 days back (no digest, no email)"
         type: boolean
         default: false
+      digest:
+        description: "Build and write the digest from pending items"
+        type: boolean
+        default: false
       send_email:
-        description: "Email the digest (scheduled runs always email)"
+        description: "Email the digest when it runs (implies digest; scheduled Monday runs always email)"
+        type: boolean
+        default: false
+      referrers_only:
+        description: "Run only the Cloudflare referrer source and print its rows/error; no other source, no db writes"
         type: boolean
         default: false
 
@@ -20,7 +28,7 @@ permissions:
 jobs:
   monitor:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -33,29 +41,55 @@ jobs:
       - name: Install dependencies
         run: pip install -r mention_monitor/requirements.txt
 
+      - name: Run offline tests
+        env:
+          MENTION_MONITOR_SKIP_LIVE_TESTS: "1"
+        run: python3 -m unittest discover -s mention_monitor -p "test_monitor.py" -v
+
+      - name: Determine if today is Monday
+        id: day
+        run: echo "is_monday=$([ "$(date -u +%u)" = "1" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+
       - name: Run mention monitor
         env:
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           MENTION_DIGEST_TO: ${{ secrets.MENTION_DIGEST_TO }}
+          CF_ANALYTICS_TOKEN: ${{ secrets.CF_ANALYTICS_TOKEN }}
+          CF_ZONE_ID: ${{ secrets.CF_ZONE_ID }}
+          GOOGLE_ALERT_FEEDS: ${{ secrets.GOOGLE_ALERT_FEEDS }}
+        # referrers_only runs the Cloudflare referrer probe alone, nothing
+        # else. Otherwise: digest fires on a scheduled Monday run, or when
+        # explicitly asked for via workflow_dispatch (inputs.digest), or
+        # whenever send_email is requested (send_email implies digest,
+        # since emailing with no digest built is a no-op). Email follows
+        # the same Monday/send_email rule. A manual dispatch on a Monday
+        # must NOT auto-add --digest/--email just because is_monday is true.
         run: |
-          python3 mention_monitor/monitor.py \
-            ${{ inputs.backfill && '--backfill' || '' }} \
-            ${{ (github.event_name == 'schedule' || inputs.send_email) && !inputs.backfill && '--email' || '' }}
+          if [ "${{ inputs.referrers_only }}" = "true" ]; then
+            python3 mention_monitor/monitor.py --referrers-only
+          else
+            python3 mention_monitor/monitor.py \
+              ${{ inputs.backfill && '--backfill' || '' }} \
+              ${{ (!inputs.backfill && ((github.event_name == 'schedule' && steps.day.outputs.is_monday == 'true') || inputs.digest || inputs.send_email)) && '--digest' || '' }} \
+              ${{ (!inputs.backfill && ((github.event_name == 'schedule' && steps.day.outputs.is_monday == 'true') || inputs.send_email)) && '--email' || '' }}
+          fi
 
       # Commit even if the email step inside the script failed — the seen-db
-      # must advance or next week double-reports everything.
+      # and pending table must advance or the next run double-reports.
       - name: Commit seen-db and digest
         if: always()
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          # -A on the directory: backfill runs create seen.db but no digest,
-          # and a literal pathspec for a missing path is a fatal git error.
+          # -A on the directory: collect-only and backfill runs create/update
+          # seen.db but no digest file, and a literal pathspec for a missing
+          # path is a fatal git error.
           git add -A mention_monitor
           if git diff --cached --quiet; then
             echo "No state changes."
           else
             git commit -m "Mention monitor: update seen-db and digest"
+            git pull --rebase origin main
             git push
           fi
