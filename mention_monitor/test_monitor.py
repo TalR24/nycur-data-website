@@ -488,6 +488,160 @@ class OfflineScannedTableTests(unittest.TestCase):
         # cleared: a second load returns nothing
         self.assertEqual(monitor.load_and_clear_source_errors(self.conn), [])
 
+    def test_is_backlog_notice_distinguishes_cap_budget_from_real_failures(self):
+        """Round 6 item 2: cap/budget carry-over notices are backlog, not
+        errors; HTTP/TLS/parse/GraphQL failures stay real errors."""
+        backlog_messages = [
+            "outlets/City & State NY: hit max_article_fetches cap (150); "
+            "22 entries skipped and will be retried next run",
+            "outlets: hit outlet_time_budget_seconds (300s); some article "
+            "fetches were skipped and will be retried next run",
+            "sitemap_scan/Vital City: hit cap/budget; 489 articles still to "
+            "scan, carries over to the next run",
+            "wp_search/site.example.com: hit max_article_fetches cap (150); "
+            "3 hits skipped and will be retried next run",
+            "google_news: hit query_time_budget_seconds (120s); remaining "
+            "queries were skipped and will be retried next run",
+        ]
+        real_messages = [
+            "outlets/Foo: HTTPSConnectionPool timeout",
+            "sitemap_scan/Vital City article https://x/y: TLS error",
+            "cloudflare_referrers: zone does not have access to the field "
+            "'clientrefererhost'",
+        ]
+        for m in backlog_messages:
+            self.assertTrue(monitor.is_backlog_notice(m), m)
+        for m in real_messages:
+            self.assertFalse(monitor.is_backlog_notice(m), m)
+
+    def test_backlog_notices_persist_latest_per_unit_and_clear(self):
+        now_iso = datetime.now(timezone.utc).isoformat(timespec="seconds")
+        monitor.record_backlog_notices(
+            self.conn,
+            ["sitemap_scan/Vital City: hit cap/budget; 519 articles still "
+             "to scan, carries over to the next run"],
+            now_iso)
+        self.conn.commit()
+        # A later run's smaller remaining count replaces the earlier one for
+        # the same unit, rather than accumulating both.
+        monitor.record_backlog_notices(
+            self.conn,
+            ["sitemap_scan/Vital City: hit cap/budget; 489 articles still "
+             "to scan, carries over to the next run"],
+            now_iso)
+        self.conn.commit()
+        notices = monitor.load_and_clear_backlog_notices(self.conn)
+        self.assertEqual(len(notices), 1)
+        self.assertIn("489 articles still to scan", notices[0])
+        self.assertEqual(monitor.load_and_clear_backlog_notices(self.conn), [])
+
+
+class OfflineBacklogDigestTests(unittest.TestCase):
+    """Round 6 item 2: backlog notices land in a separate "Scan progress"
+    section, never in "Source errors", in both the text and HTML digest."""
+
+    def test_backlog_in_scan_progress_not_source_errors(self):
+        cfg = {"queries": [{"id": "name", "match_terms": ["Tal Roded"]}]}
+        backlog = ["sitemap_scan/Vital City: hit cap/budget; 489 articles "
+                   "still to scan, carries over to the next run"]
+        real_errors = ["outlets/Foo: boom"]
+        digest = monitor.build_digest([], [], [], None, real_errors, cfg, "2026-09-15",
+                                       backlog_notices=backlog)
+        self.assertIn("## Scan progress", digest)
+        self.assertIn("Vital City", digest)
+        self.assertIn("## Source errors", digest)
+        self.assertIn("outlets/Foo: boom", digest)
+        # Not cross-contaminated: the backlog line isn't under Source errors
+        # and the real error isn't under Scan progress.
+        source_errors_section = digest.split("## Source errors")[1].split("## Scan progress")[0]
+        self.assertNotIn("Vital City", source_errors_section)
+        scan_progress_section = digest.split("## Scan progress")[1]
+        self.assertNotIn("outlets/Foo: boom", scan_progress_section)
+
+    def test_subject_error_count_excludes_backlog(self):
+        """build_digest_subject is never handed backlog notices (main()
+        passes it digest_errors, the real-errors-only list), so its error
+        count and the subject line can never include backlog."""
+        cfg = {"queries": [{"id": "name", "match_terms": ["Tal Roded"]}]}
+        subject = monitor.build_digest_subject([], [], [], [], None, None, cfg, "2026-09-15")
+        self.assertNotIn("error", subject)
+        subject_with_real_error = monitor.build_digest_subject(
+            [], [], [], ["outlets/Foo: boom"], None, None, cfg, "2026-09-15")
+        self.assertIn("1 error", subject_with_real_error)
+
+
+class OfflineCloudflareReferrerTests(unittest.TestCase):
+    """Round 6 item 4: Web Analytics (RUM) referrer source, account-scoped."""
+
+    def setUp(self):
+        self.cfg = {"cloudflare_referrers_enabled": True,
+                    "referrer_ignore_hosts": ["google.", "substack.com"]}
+        self.env = unittest.mock.patch.dict(
+            os.environ, {"CF_ANALYTICS_TOKEN": "tok", "CF_ACCOUNT_ID": "acct123"})
+        self.env.start()
+
+    def tearDown(self):
+        self.env.stop()
+
+    def _rum_response(self, groups):
+        return FakeResponse(200, json_data={
+            "data": {"viewer": {"accounts": [
+                {"rumPageloadEventsAdaptiveGroups": groups}
+            ]}}
+        })
+
+    def test_rows_parsed_ignore_list_applied_own_hosts_dropped(self):
+        groups = [
+            {"count": 5, "dimensions": {"refererHost": "news.example.com",
+                                         "requestHost": "www.nycuriosity.com",
+                                         "requestPath": "/p/a"}},
+            {"count": 3, "dimensions": {"refererHost": "www.google.com",
+                                         "requestHost": "www.nycuriosity.com",
+                                         "requestPath": "/p/b"}},
+            {"count": 2, "dimensions": {"refererHost": "nycuriosity.com",
+                                         "requestHost": "www.nycuriosity.com",
+                                         "requestPath": "/p/c"}},
+        ]
+        with unittest.mock.patch.object(
+                monitor.SESSION, "post", return_value=self._rum_response(groups)):
+            rows, err, skipped = monitor.fetch_cloudflare_referrers(
+                self.cfg, datetime.now(timezone.utc))
+        self.assertIsNone(err)
+        self.assertFalse(skipped)
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["host"], "news.example.com")
+        self.assertEqual(rows[0]["requests"], 5)
+
+    def test_graphql_error_reports_message_only_ids_redacted(self):
+        def fake_post(url, json=None, headers=None, timeout=None):
+            return FakeResponse(200, json_data={
+                "errors": [{"message": "zone acct123 does not have access to "
+                                        "the field 'refererHost'"}]
+            })
+        with unittest.mock.patch.object(monitor.SESSION, "post", side_effect=fake_post):
+            rows, err, skipped = monitor.fetch_cloudflare_referrers(
+                self.cfg, datetime.now(timezone.utc))
+        self.assertEqual(rows, [])
+        self.assertFalse(skipped)
+        self.assertIn("does not have access", err)
+        self.assertNotIn("acct123", err)
+
+    def test_skipped_when_disabled(self):
+        self.cfg["cloudflare_referrers_enabled"] = False
+        rows, err, skipped = monitor.fetch_cloudflare_referrers(
+            self.cfg, datetime.now(timezone.utc))
+        self.assertEqual(rows, [])
+        self.assertIsNone(err)
+        self.assertTrue(skipped)
+
+    def test_skipped_when_account_id_missing(self):
+        del os.environ["CF_ACCOUNT_ID"]
+        rows, err, skipped = monitor.fetch_cloudflare_referrers(
+            self.cfg, datetime.now(timezone.utc))
+        self.assertEqual(rows, [])
+        self.assertIsNone(err)
+        self.assertTrue(skipped)
+
 
 class FakeResponse:
     def __init__(self, status_code=200, json_data=None, text="", content=None):
@@ -1392,6 +1546,59 @@ class OfflineEmailTests(unittest.TestCase):
         html = monitor.build_digest_html([item], [], [], None, [], cfg, "2026-09-15")
         self.assertNotIn("<script>alert(1)</script>", html)
         self.assertIn("&lt;script&gt;", html)
+
+    def test_html_digest_every_section_has_no_raw_markdown(self):
+        """Round 6 item 1: every digest section renders as real HTML (h2,
+        <li>/<strong>/<a>); only the Claude Code prompt text itself stays in
+        a <pre> block."""
+        cfg = load_config()
+        queries_by_id = {q["id"]: q for q in cfg["queries"]}
+        news_item = monitor.make_item(
+            "outlets", "name", "Some Outlet", "outlet.example.com", "A headline",
+            "https://outlet.example.com/a", datetime.now(timezone.utc), "snippet")
+        news_item["queries"] = {"name"}
+        news_item["signal"] = "term:name"
+
+        removal_suggestions = [{
+            "unit": "outlets:Dead Outlet", "reason": "zero flagged items",
+            "weeks_silent": 9, "items_fetched": 12, "last_flagged": "2026-01-01",
+            "config_location": 'config.json → outlets[name="Dead Outlet"]',
+        }]
+        discovery_added = [{"domain": "newsite.example.com", "type": "feed",
+                             "found_via": "google_news"}]
+        discovery_reviewed = [{"domain": "maybesite.example.com", "passed": False,
+                                "found_via": "alert_feeds"}]
+        backlog_notices = ["sitemap_scan/Vital City: hit cap/budget; 489 "
+                            "articles still to scan, carries over to the next run"]
+
+        with unittest.mock.patch.object(monitor, "http_get",
+                                         return_value=FakeResponse(404, text="")):
+            html = monitor.build_digest_html(
+                [news_item], [], [], None, ["outlets/Foo: boom"], cfg, "2026-09-15",
+                removal_suggestions=removal_suggestions,
+                discovery_added=discovery_added,
+                discovery_reviewed=discovery_reviewed,
+                backlog_notices=backlog_notices,
+            )
+
+        self.assertIn("<h2", html)
+        self.assertIn("Suggested website updates", html)
+        self.assertIn("Suggested removals", html)
+        self.assertIn("Added this week", html)
+        self.assertIn("Candidates needing manual review", html)
+        self.assertIn("Scan progress", html)
+        self.assertIn("Vital City", html)
+        self.assertNotIn("**", html)
+        self.assertNotIn("## ", html)
+        self.assertNotIn("\n- ", html)
+
+        # The Claude Code prompt (built for the news item, which gets a
+        # real prompt since it has no already-listed page match) still
+        # lives inside a <pre> block, exactly copyable.
+        entries = monitor.site_update_entries([news_item], [], [], cfg, queries_by_id)
+        prompt = next(p for _, _, p in entries if p)
+        self.assertIn(f"<pre", html)
+        self.assertIn(monitor.html_mod.escape(prompt), html)
 
 
 class OfflineSiteUpdateTests(unittest.TestCase):

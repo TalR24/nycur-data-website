@@ -29,9 +29,14 @@ outside citation to the personal site / tracker pages.
 
 `.github/workflows/mention_monitor.yml` runs daily at 11:30 UTC. Every day
 it collects and queues pending items; on Mondays it also builds and emails
-the digest via the existing `GMAIL_USER` / `GMAIL_APP_PASSWORD` secrets, then
-commits `seen.db` + the digest back to the repo. Optional secret
-`MENTION_DIGEST_TO` overrides the recipient (defaults to `GMAIL_USER`).
+the digest via the existing `GMAIL_USER` / `GMAIL_APP_PASSWORD` secrets.
+Optional secret `MENTION_DIGEST_TO` overrides the recipient (defaults to
+`GMAIL_USER`).
+
+State (`seen.db`, the digests, `discovered_sources.json`) lives in the
+private premium repo under `mention_monitor_state/`, not in this public
+repo: the workflow passes `--db`, `--outdir`, and `--discovered-path`
+pointing there, and commits state back to that repo, not this one.
 
 **First run:** trigger the workflow manually with `backfill: true` (or run
 `python3 monitor.py --backfill` locally and commit `seen.db`). That seeds the
@@ -129,9 +134,10 @@ Edit the config, not the code.
   next run (nothing is skipped just because it's older than the newest
   entry). The per-URL `scanned` table, not the window, is what stops an
   already-fetched entry from being refetched. Hitting the cap/budget
-  records a source error naming how many entries remain. A paywalled page
-  with no usable article-body text (Hell Gate) is recorded scanned with a
-  note, not an error.
+  records a backlog notice naming how many entries remain (see "Scan
+  progress" below), not a source error. A paywalled page with no usable
+  article-body text (Hell Gate) is recorded scanned with a note, not an
+  error.
 - **`openalex`**: weekly (digest/backfill), no key. Fetches
   `openalex_author_ids`' own works, then works citing any of them
   (`filter=cites:...`). New citing works go to "Research citations"; new
@@ -181,26 +187,60 @@ per `site_update_rules` in config.json. URLs in `never_feature_urls` are
 always skipped; a citation already live on the relevant page (checked via
 `site_pages`) is marked "already listed" instead of getting a prompt.
 
-## Cloudflare referrer report (dormant)
+## Scan progress (backlog, not errors)
+
+Cap/budget carry-over, when an outlet, `wp_search` site, `sitemap_scan`
+outlet, or the shared `google_news` query budget runs out before every
+candidate is scanned, is routine backlog, not a failure: it lands in its
+own "Scan progress" section at the end of the digest (small, muted text in
+the HTML email), one line per unit naming how many are left, instead of
+"Source errors". Real failures (HTTP errors, TLS errors, parse errors,
+GraphQL errors) still go to "Source errors". Backlog-only content never
+triggers an email by itself, and the subject line's error count excludes
+it.
+
+## Budgets (round 6)
+
+Raised so a normal run (about 3.5 to 4 minutes against a 30-minute job
+timeout) has real headroom before hitting a cap: `max_article_fetches`
+150 (was 60), `outlet_time_budget_seconds` 300 (was 90),
+`run_time_budget_seconds` 1500 (was 900). `sitemap_scan` still splits
+whatever is left of `max_article_fetches` into an equal share per
+sitemap, recomputed from the remainder so an early large backlog can't
+starve the sitemaps after it.
+
+## Cloudflare Web Analytics referrer report (dormant)
 
 **Off by default** (`cloudflare_referrers_enabled: false` in config.json).
 The first real run on Sep 15 2026 returned "zone does not have access to
 the field 'clientRefererHost'": referrer hosts aren't available to this
-zone's plan in `httpRequestsAdaptiveGroups`. The secrets are set; the source
-stays off until it is pointed at a dataset the plan can read (for example
-Cloudflare Web Analytics, which exposes referrer hosts on the free plan).
-Error text from this source has hex ids redacted, since digests are public.
+zone's plan in `httpRequestsAdaptiveGroups`. Round 6 switched the source to
+Cloudflare Web Analytics (RUM), which is account-scoped instead of
+zone-scoped and exposes referrer hosts on the free plan; the source stays
+off until Web Analytics setup below is confirmed against real data.
 
-When enabled and both `CF_ANALYTICS_TOKEN` and `CF_ZONE_ID` secrets are set,
-every run queries the Cloudflare GraphQL Analytics API for the last 24 hours of
-`clientRefererHost` traffic to the site, filters out nycuriosity.com hosts
-and `referrer_ignore_hosts`, and stores daily rows in `seen.db`. The Monday
-digest aggregates the last 7 days into a "Sites sending visitors this week"
-section: hosts by request count, with their top landing paths. Without
-both secrets this source is silently skipped (one info line, not an error).
-The exact field names and what's available on Cloudflare's free plan are
-**unverified**, since no token exists yet to test against; any GraphQL
-error is recorded as a source error rather than failing the run.
+Setup required before enabling:
+- An Account Analytics Read API token (`CF_ANALYTICS_TOKEN` secret).
+- The account id, not the zone id (`CF_ACCOUNT_ID` secret).
+- Web Analytics turned on for nycuriosity.com's hostnames in the Cloudflare
+  dashboard (Speed → Web Analytics or Analytics → Web Analytics), since RUM
+  data only exists for hostnames it's enabled on.
+- Optional `CF_WA_SITE_TAG` to scope the query to one Web Analytics site
+  when more than one is configured on the account.
+
+When enabled and both `CF_ANALYTICS_TOKEN` and `CF_ACCOUNT_ID` secrets are
+set, every run queries the Cloudflare GraphQL Analytics API
+(`rumPageloadEventsAdaptiveGroups`) for the last 24 hours of `refererHost`
+traffic, filters out nycuriosity.com hosts and `referrer_ignore_hosts`, and
+stores daily rows in `seen.db`. The Monday digest aggregates the last 7
+days into a "Sites sending visitors this week" section: hosts by request
+count, with their top landing paths. Without both secrets, or with
+`cloudflare_referrers_enabled` still false, this source is silently
+skipped (one info line, not an error). The exact field names and what's
+available on Cloudflare's plan are **unverified**, since no Web Analytics
+data exists yet to test against; any GraphQL error is recorded as a source
+error, message text only, with hex ids redacted, rather than failing the
+run.
 
 ## Dedup
 

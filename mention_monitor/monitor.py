@@ -31,8 +31,9 @@ Email (only used with --digest --email; all optional otherwise):
   GMAIL_USER / GMAIL_APP_PASSWORD     # same secrets the other repo pipelines use
   MENTION_DIGEST_TO                   # recipient; defaults to GMAIL_USER
 
-Cloudflare referrer report (dormant until both secrets exist):
-  CF_ANALYTICS_TOKEN / CF_ZONE_ID     # optional; silently skipped without them
+Cloudflare Web Analytics referrer report (dormant until both secrets exist):
+  CF_ANALYTICS_TOKEN / CF_ACCOUNT_ID  # optional; silently skipped without them
+  CF_WA_SITE_TAG                      # optional: scope to one Web Analytics site
 
 Dedup notes: Google News RSS links are opaque redirects that can't be decoded
 offline, so each item is keyed on BOTH its normalized URL and an
@@ -972,11 +973,11 @@ def fetch_sitemap_scan(cfg, queries, delay, conn=None, now=None, cap_override=No
                 name, domain, title, loc, lm_dt, full_html, author))
 
         if cut_short and stats[name]["remaining"]:
-            # Stable text (count lives in stats) so the digest groups repeats
-            # instead of listing "519/459/399 remaining" separately.
+            remaining = stats[name]["remaining"]
             errors.append(
-                f"sitemap_scan/{name}: hit cap/budget; unscanned entries carry "
-                f"over to the next run")
+                f"sitemap_scan/{name}: hit cap/budget; {remaining} article"
+                f"{'s' if remaining != 1 else ''} still to scan, carries over "
+                "to the next run")
         if not cut_short and conn is not None:
             # Every in-window entry was either already scanned or scanned
             # just now: advance the successful-scan marker so the window
@@ -1336,6 +1337,17 @@ def db_connect(path):
             created TEXT
         )
     """)
+    # Round 6 item 2: routine cap/budget carry-over notices, kept separate
+    # from source_errors (real failures). One row per unit, overwritten with
+    # the latest notice rather than accumulated, since only the newest
+    # remaining-count matters.
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS backlog_notices (
+            unit    TEXT PRIMARY KEY,
+            message TEXT,
+            created TEXT
+        )
+    """)
     # sitemap_scan's per-outlet high-water mark (newest lastmod actually
     # scanned), so a later run only looks at newer entries.
     conn.execute("""
@@ -1436,6 +1448,62 @@ def record_fetch_failure(conn, url):
         "SELECT count FROM fetch_failures WHERE url = ?", (url,)).fetchone()[0]
 
 
+# Round 6 item 2: cap/budget carry-over notices are routine backlog, not a
+# failure; they share these substrings across outlets/wp_search/sitemap_scan/
+# collect() and get routed to a separate "Scan progress" category instead of
+# "Source errors".
+BACKLOG_MARKERS = (
+    "hit max_article_fetches cap",
+    "hit outlet_time_budget_seconds",
+    "hit cap/budget",
+    "hit query_time_budget_seconds",
+)
+
+
+def is_backlog_notice(message):
+    return any(marker in message for marker in BACKLOG_MARKERS)
+
+
+def backlog_unit(message):
+    """Grouping key for a backlog message, e.g. 'sitemap_scan/Vital City'
+    from 'sitemap_scan/Vital City: hit cap/budget; ...'."""
+    return message.split(":", 1)[0].strip()
+
+
+def backlog_display(message):
+    """Readable one-liner for the Scan progress section, e.g. 'Vital City
+    sitemap: 414 articles still to scan'."""
+    unit = backlog_unit(message)
+    kind, _, name = unit.partition("/")
+    label = {"sitemap_scan": f"{name} sitemap", "outlets": f"{name} feed" if name else "Outlet feeds",
+             "wp_search": f"{name} site search"}.get(kind, unit)
+    m = re.search(r"(\d+) (?:articles still to scan|entries skipped|remaining)", message)
+    if m:
+        return f"{label}: {m.group(1)} articles still to scan"
+    return f"{label}: more to scan on the next run"
+
+
+def record_backlog_notices(conn, notices, now_iso):
+    """Persist the latest backlog notice per unit (overwrite, not append,
+    since only the most recent remaining-count matters for a carry-over
+    notice)."""
+    for message in notices:
+        unit = backlog_unit(message)
+        conn.execute(
+            "INSERT INTO backlog_notices (unit, message, created) VALUES (?,?,?) "
+            "ON CONFLICT(unit) DO UPDATE SET message=excluded.message, "
+            "created=excluded.created",
+            (unit, message, now_iso),
+        )
+
+
+def load_and_clear_backlog_notices(conn):
+    rows = conn.execute(
+        "SELECT message FROM backlog_notices ORDER BY unit").fetchall()
+    conn.execute("DELETE FROM backlog_notices")
+    return [m for (m,) in rows]
+
+
 def record_source_errors(conn, errors, now_iso):
     for message in errors:
         conn.execute(
@@ -1451,6 +1519,8 @@ def load_and_clear_source_errors(conn):
     counts = {}
     order = []
     for (message,) in rows:
+        if is_backlog_notice(message):
+            continue  # carry-over notices persisted by older runs; not errors
         if message not in counts:
             order.append(message)
         counts[message] = counts.get(message, 0) + 1
@@ -1585,90 +1655,89 @@ def redact_ids(text, *secrets):
 
 
 def fetch_cloudflare_referrers(cfg, now):
-    """Dormant until CF_ANALYTICS_TOKEN and CF_ZONE_ID both exist. Returns
-    (rows, error_or_none, skipped_bool). Field names / free-plan
-    availability for httpRequestsAdaptiveGroups are UNVERIFIED (no token to
-    test against); any GraphQL-reported error becomes a source error rather
-    than a crash."""
+    """Dormant until CF_ANALYTICS_TOKEN and CF_ACCOUNT_ID both exist and
+    `cloudflare_referrers_enabled` is true. Returns (rows, error_or_none,
+    skipped_bool). Round 6 item 4: `httpRequestsAdaptiveGroups` isn't
+    available on this zone's plan (no `clientRefererHost` field), so this
+    queries Cloudflare Web Analytics (RUM) instead, account-scoped via
+    `rumPageloadEventsAdaptiveGroups`. Field names are UNVERIFIED (no Web
+    Analytics data exists yet to test against); any GraphQL-reported error
+    becomes a source error (message only, ids redacted) rather than a
+    crash."""
     token = os.environ.get("CF_ANALYTICS_TOKEN")
-    zone_id = os.environ.get("CF_ZONE_ID")
-    # Off by default: clientRefererHost isn't available to this zone's plan
-    # in httpRequestsAdaptiveGroups (first real run, Sep 15 2026).
-    if not (token and zone_id) or not cfg.get("cloudflare_referrers_enabled", False):
+    account_id = os.environ.get("CF_ACCOUNT_ID")
+    site_tag = os.environ.get("CF_WA_SITE_TAG")
+    if not (token and account_id) or not cfg.get("cloudflare_referrers_enabled", False):
         return [], None, True
 
     ignore = [h.lower() for h in cfg.get("referrer_ignore_hosts", [])]
     since = (now - timedelta(hours=24)).strftime("%Y-%m-%dT%H:%M:%SZ")
     until = now.strftime("%Y-%m-%dT%H:%M:%SZ")
-    # Server-side filtering (empty referer, non-eyeball traffic, and Tal's
-    # own hosts where the filter syntax allows it) so the 1000-row cap is
-    # spent on real outside referrers, not on noise. clientRefererHost_neq
-    # / _notlike and requestSource follow Cloudflare's GraphQL Analytics
-    # API docs' httpRequestsAdaptiveGroups example query shape; $zoneTag is
-    # declared lowercase ("string") per that same example.
+    # Web Analytics (RUM) is account-scoped, not zone-scoped, and exposes
+    # referrer hosts on the free plan (unlike httpRequestsAdaptiveGroups on
+    # this zone). Field/type names below follow Cloudflare's GraphQL
+    # Analytics API docs' rumPageloadEventsAdaptiveGroups example shape and
+    # are UNVERIFIED against real data.
     query = """
-    query MentionReferrers($zoneTag: string!, $since: Time!, $until: Time!) {
+    query MentionReferrers($accountTag: string!, $since: Time!, $until: Time!, $siteTag: string) {
       viewer {
-        zones(filter: { zoneTag: $zoneTag }) {
-          httpRequestsAdaptiveGroups(
+        accounts(filter: { accountTag: $accountTag }) {
+          rumPageloadEventsAdaptiveGroups(
             limit: 1000
             orderBy: [count_DESC]
             filter: {
               datetime_geq: $since
               datetime_lt: $until
-              clientRefererHost_neq: ""
-              requestSource: "eyeball"
-              clientRefererHost_notlike: "%nycuriosity.com"
+              refererHost_neq: ""
+              siteTag: $siteTag
             }
           ) {
             count
             dimensions {
-              clientRefererHost
-              clientRequestHTTPHost
-              clientRequestPath
+              refererHost
+              requestHost
+              requestPath
             }
           }
         }
       }
     }
     """
+    variables = {"accountTag": account_id, "since": since, "until": until}
+    if site_tag:
+        variables["siteTag"] = site_tag
     try:
         check_run_budget()
         r = SESSION.post(
             CF_GRAPHQL,
-            json={"query": query,
-                  "variables": {"zoneTag": zone_id, "since": since, "until": until}},
+            json={"query": query, "variables": variables},
             headers={"Authorization": f"Bearer {token}"},
             timeout=30,
         )
         r.raise_for_status()
         data = r.json()
     except Exception as e:  # noqa: BLE001
-        return [], redact_ids(f"cloudflare_referrers: {e}", zone_id), False
+        return [], redact_ids(f"cloudflare_referrers: {e}", account_id, token), False
     if data.get("errors"):
         messages = "; ".join(str(err.get("message", err)) for err in data["errors"])
-        return [], redact_ids(f"cloudflare_referrers: {messages}", zone_id), False
+        return [], redact_ids(f"cloudflare_referrers: {messages}", account_id, token), False
 
     rows = []
-    zones = ((data.get("data") or {}).get("viewer") or {}).get("zones") or []
-    for z in zones:
-        for g in z.get("httpRequestsAdaptiveGroups", []) or []:
+    accounts = ((data.get("data") or {}).get("viewer") or {}).get("accounts") or []
+    for a in accounts:
+        for g in a.get("rumPageloadEventsAdaptiveGroups", []) or []:
             dims = g.get("dimensions") or {}
-            host = (dims.get("clientRefererHost") or "").lower()
+            host = (dims.get("refererHost") or "").lower()
             if not host:
                 continue
-            # Server-side clientRefererHost_notlike already excludes exact
-            # "*nycuriosity.com" suffixes; keep this client-side check too
-            # since _notlike is a plain LIKE pattern, not a domain match
-            # (it would not catch e.g. "nycuriosity.com.evil.example").
             if domain_matches(norm_domain(host), "nycuriosity.com"):
                 continue
             if host_ignored(host, ignore):
                 continue
             rows.append({
                 "host": host,
-                "dest_host": (dims.get("clientRequestHTTPHost") or "").lower(),
-                "path": dims.get("clientRequestPath") or "",
+                "dest_host": (dims.get("requestHost") or "").lower(),
+                "path": dims.get("requestPath") or "",
                 "requests": g.get("count", 0),
             })
     return rows, None, False
@@ -2292,7 +2361,8 @@ def format_site_update_section(entries):
 
 
 def build_digest(new_items, own_items, research_items, ref_summary, errors, cfg, run_date,
-                  removal_suggestions=None, discovery_added=None, discovery_reviewed=None):
+                  removal_suggestions=None, discovery_added=None, discovery_reviewed=None,
+                  backlog_notices=None):
     queries_by_id = {q["id"]: q for q in cfg["queries"]}
     roundups = [i for i in new_items if is_roundup(i, cfg)]
     new_items = [i for i in new_items if not is_roundup(i, cfg)]
@@ -2390,15 +2460,93 @@ def build_digest(new_items, own_items, research_items, ref_summary, errors, cfg,
         lines += [f"- {e}" for e in errors]
         lines.append("")
 
+    if backlog_notices:
+        lines += ["## Scan progress", "",
+                   "Routine cap/budget carry-over, not a failure; these "
+                   "sources will keep working through the backlog on later "
+                   "runs.", ""]
+        lines += [f"- {backlog_display(n)}" for n in backlog_notices]
+        lines.append("")
+
     return "\n".join(lines)
 
 
+def _html_website_updates(entries, esc):
+    """Round 6 item 1: real HTML for the "Suggested website updates" section
+    (no raw markdown); only the Claude Code prompt text itself stays in a
+    <pre> block so it's exactly copyable."""
+    if not entries:
+        return []
+    parts = ['<h2 style="font-size:17px;">Suggested website updates</h2>']
+    for item, note, prompt in entries:
+        label = f'{esc(item["title"]) or esc(item["domain"])} ({esc(item["outlet"] or item["domain"])})'
+        parts.append(f'<div style="margin:0 0 14px 0;"><strong>{label}</strong>')
+        if note:
+            parts.append(f'<p style="color:#444;font-size:13px;margin:4px 0;">{esc(note)}.</p>')
+        else:
+            parts.append(
+                '<pre style="white-space:pre-wrap;font-size:13px;background:#f6f6f6;'
+                'padding:10px;border-radius:6px;overflow-x:auto;margin:4px 0;">'
+                + esc(prompt) + '</pre>')
+        parts.append('</div>')
+    return parts
+
+
+def _html_removals(suggestions, esc):
+    if not suggestions:
+        return []
+    parts = ['<h2 style="font-size:17px;">Suggested removals</h2>',
+             '<ul style="font-size:13px;">']
+    for s in suggestions:
+        weeks = s["weeks_silent"]
+        parts.append(
+            f'<li><strong>{esc(s["unit"])}</strong>: {esc(s["reason"])} for {weeks} week'
+            f'{"s" if weeks != 1 else ""} (fetched {s["items_fetched"]} items in that span; '
+            f'last flagged {esc(s.get("last_flagged") or "never")}). Remove it at '
+            f'{esc(s.get("config_location", "config.json"))}.</li>')
+    parts.append('</ul>')
+    return parts
+
+
+def _html_discovery(added, reviewed, esc):
+    parts = []
+    if added:
+        parts.append('<h2 style="font-size:17px;">Added this week</h2><ul style="font-size:13px;">')
+        for a in added:
+            parts.append(
+                f'<li><strong>{esc(a["domain"])}</strong> ({esc(a["type"])}): found via '
+                f'{esc(a["found_via"])}. Remove: delete its entry from discovered_sources.json.</li>')
+        parts.append('</ul>')
+    if reviewed:
+        parts.append(
+            '<h2 style="font-size:17px;">Candidates needing manual review</h2>'
+            '<ul style="font-size:13px;">')
+        for r in reviewed:
+            status = "auto-add off" if r["passed"] else "probe failed"
+            parts.append(
+                f'<li><strong>{esc(r["domain"])}</strong>: {esc(status)} '
+                f'(found via {esc(r["found_via"])}).</li>')
+        parts.append('</ul>')
+    return parts
+
+
+def _html_scan_progress(notices, esc):
+    if not notices:
+        return []
+    parts = ['<h2 style="font-size:14px;color:#888;margin-top:24px;">Scan progress</h2>',
+             '<ul style="font-size:12px;color:#888;">']
+    parts += [f'<li>{esc(backlog_display(n))}</li>' for n in notices]
+    parts.append('</ul>')
+    return parts
+
+
 def build_digest_html(new_items, own_items, research_items, ref_summary, errors, cfg, run_date,
-                       removal_suggestions=None, discovery_added=None, discovery_reviewed=None):
+                       removal_suggestions=None, discovery_added=None, discovery_reviewed=None,
+                       backlog_notices=None):
     """HTML companion to build_digest for the multipart email: rich per-item
-    cards for the mention sections, and the text-oriented extra sections
-    (site-update prompts, removals, discovery) reused verbatim inside <pre>
-    so the Claude Code prompts stay exactly copyable."""
+    cards for the mention sections, and real HTML (not raw markdown) for
+    every other section; only the Claude Code prompt text itself stays in a
+    <pre> block so it's exactly copyable."""
     queries_by_id = {q["id"]: q for q in cfg["queries"]}
     roundups = [i for i in new_items if is_roundup(i, cfg)]
     new_items = [i for i in new_items if not is_roundup(i, cfg)]
@@ -2452,17 +2600,10 @@ def build_digest_html(new_items, own_items, research_items, ref_summary, errors,
         body.append(f'<h2 style="font-size:17px;">Mentioned in roundups ({len(ru)})</h2>')
         body += [item_card(i) for i in ru]
 
-    extra_lines = (
-        format_site_update_section(
-            site_update_entries(new_items, own_items, research_citing, cfg, queries_by_id))
-        + format_removal_section(removal_suggestions or [])
-        + format_discovery_sections(discovery_added or [], discovery_reviewed or [])
-    )
-    if extra_lines:
-        body.append(
-            '<pre style="white-space:pre-wrap;font-size:13px;background:#f6f6f6;'
-            'padding:12px;border-radius:6px;overflow-x:auto;">'
-            + esc("\n".join(extra_lines)) + '</pre>')
+    body += _html_website_updates(
+        site_update_entries(new_items, own_items, research_citing, cfg, queries_by_id), esc)
+    body += _html_removals(removal_suggestions or [], esc)
+    body += _html_discovery(discovery_added or [], discovery_reviewed or [], esc)
 
     if ref_summary:
         body.append('<h2 style="font-size:17px;">Sites sending visitors this week</h2>')
@@ -2473,6 +2614,8 @@ def build_digest_html(new_items, own_items, research_items, ref_summary, errors,
         body.append('<h2 style="font-size:17px;">Source errors</h2>')
         body.append('<ul style="font-size:13px;color:#a00;">'
                      + "".join(f"<li>{esc(e)}</li>" for e in errors) + '</ul>')
+
+    body += _html_scan_progress(backlog_notices or [], esc)
 
     return (
         '<html><body style="font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,'
@@ -2725,7 +2868,7 @@ def main():
     if args.referrers_only:
         rows, err, skipped = fetch_cloudflare_referrers(cfg, now)
         if skipped:
-            print("cloudflare_referrers skipped: CF_ANALYTICS_TOKEN/CF_ZONE_ID not set.")
+            print("cloudflare_referrers skipped: CF_ANALYTICS_TOKEN/CF_ACCOUNT_ID not set.")
         elif err:
             print(f"cloudflare_referrers error: {err}")
         else:
@@ -2797,7 +2940,7 @@ def main():
         errors.append(ref_err)
     elif ref_skipped:
         print("info: cloudflare_referrers skipped "
-              "(CF_ANALYTICS_TOKEN/CF_ZONE_ID not set).", file=sys.stderr)
+              "(CF_ANALYTICS_TOKEN/CF_ACCOUNT_ID not set).", file=sys.stderr)
     elif ref_rows:
         store_referrers(conn, now.strftime("%Y-%m-%d"), ref_rows)
 
@@ -2849,7 +2992,12 @@ def main():
     if yield_rows:
         record_yield(conn, date_str, yield_rows)
 
-    record_source_errors(conn, errors, now_iso)
+    # Round 6 item 2: cap/budget carry-over notices are routine backlog, not
+    # a failure; kept out of source_errors entirely.
+    real_errors = [e for e in errors if not is_backlog_notice(e)]
+    backlog = [e for e in errors if is_backlog_notice(e)]
+    record_source_errors(conn, real_errors, now_iso)
+    record_backlog_notices(conn, backlog, now_iso)
     conn.commit()
 
     counts_str = ", ".join(f"{k}: {v}" for k, v in sorted(per_source_counts.items()))
@@ -2899,16 +3047,19 @@ def main():
     new_items, own_items, research_items, pending_ids = pending_load(conn)
     ref_summary = load_referrer_summary(conn, (now - timedelta(days=7)).strftime("%Y-%m-%d"))
     digest_errors = load_and_clear_source_errors(conn)
+    backlog_notices = load_and_clear_backlog_notices(conn)
     removal_suggestions = suggest_removals(conn, cfg_runtime)
     discovery_added, discovery_reviewed = load_and_clear_discovery_results(conn)
 
     run_date = now.strftime("%Y-%m-%d")
     digest = build_digest(new_items, own_items, research_items, ref_summary,
                            digest_errors, cfg_runtime, run_date,
-                           removal_suggestions, discovery_added, discovery_reviewed)
+                           removal_suggestions, discovery_added, discovery_reviewed,
+                           backlog_notices)
     digest_html = build_digest_html(new_items, own_items, research_items, ref_summary,
                                      digest_errors, cfg_runtime, run_date,
-                                     removal_suggestions, discovery_added, discovery_reviewed)
+                                     removal_suggestions, discovery_added, discovery_reviewed,
+                                     backlog_notices)
 
     outdir = Path(args.outdir)
     outdir.mkdir(parents=True, exist_ok=True)
