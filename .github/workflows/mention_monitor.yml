@@ -1,0 +1,59 @@
+name: Mention Monitor
+
+on:
+  schedule:
+    - cron: "30 11 * * 1"   # Mondays ~6:30-7:30am ET, after Site Health
+  workflow_dispatch:
+    inputs:
+      backfill:
+        description: "Seed the seen-db from ~90 days back (no digest, no email)"
+        type: boolean
+        default: false
+      send_email:
+        description: "Email the digest (scheduled runs always email)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r mention_monitor/requirements.txt
+
+      - name: Run mention monitor
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          MENTION_DIGEST_TO: ${{ secrets.MENTION_DIGEST_TO }}
+        run: |
+          python3 mention_monitor/monitor.py \
+            ${{ inputs.backfill && '--backfill' || '' }} \
+            ${{ (github.event_name == 'schedule' || inputs.send_email) && !inputs.backfill && '--email' || '' }}
+
+      # Commit even if the email step inside the script failed — the seen-db
+      # must advance or next week double-reports everything.
+      - name: Commit seen-db and digest
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add mention_monitor/seen.db mention_monitor/digests
+          if git diff --cached --quiet; then
+            echo "No state changes."
+          else
+            git commit -m "Mention monitor: update seen-db and digest"
+            git push
+          fi
