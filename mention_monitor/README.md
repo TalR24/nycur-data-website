@@ -183,8 +183,16 @@ always skipped; a citation already live on the relevant page (checked via
 
 ## Cloudflare referrer report (dormant)
 
-If both `CF_ANALYTICS_TOKEN` and `CF_ZONE_ID` secrets are set, every run
-queries the Cloudflare GraphQL Analytics API for the last 24 hours of
+**Off by default** (`cloudflare_referrers_enabled: false` in config.json).
+The first real run on Sep 15 2026 returned "zone does not have access to
+the field 'clientRefererHost'": referrer hosts aren't available to this
+zone's plan in `httpRequestsAdaptiveGroups`. The secrets are set; the source
+stays off until it is pointed at a dataset the plan can read (for example
+Cloudflare Web Analytics, which exposes referrer hosts on the free plan).
+Error text from this source has hex ids redacted, since digests are public.
+
+When enabled and both `CF_ANALYTICS_TOKEN` and `CF_ZONE_ID` secrets are set,
+every run queries the Cloudflare GraphQL Analytics API for the last 24 hours of
 `clientRefererHost` traffic to the site, filters out nycuriosity.com hosts
 and `referrer_ignore_hosts`, and stores daily rows in `seen.db`. The Monday
 digest aggregates the last 7 days into a "Sites sending visitors this week"

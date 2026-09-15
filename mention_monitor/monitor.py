@@ -1575,6 +1575,15 @@ def load_referrer_summary(conn, since_date):
 
 # ---------------------------------------------------- cloudflare referrers
 
+def redact_ids(text, *secrets):
+    """Digests are committed to a public repo and emailed: strip the zone id
+    and any other 32+ char hex ids from error text."""
+    for s in secrets:
+        if s:
+            text = text.replace(s, "<redacted>")
+    return re.sub(r"\b[0-9a-f]{32,}\b", "<redacted>", text)
+
+
 def fetch_cloudflare_referrers(cfg, now):
     """Dormant until CF_ANALYTICS_TOKEN and CF_ZONE_ID both exist. Returns
     (rows, error_or_none, skipped_bool). Field names / free-plan
@@ -1583,7 +1592,9 @@ def fetch_cloudflare_referrers(cfg, now):
     than a crash."""
     token = os.environ.get("CF_ANALYTICS_TOKEN")
     zone_id = os.environ.get("CF_ZONE_ID")
-    if not (token and zone_id):
+    # Off by default: clientRefererHost isn't available to this zone's plan
+    # in httpRequestsAdaptiveGroups (first real run, Sep 15 2026).
+    if not (token and zone_id) or not cfg.get("cloudflare_referrers_enabled", False):
         return [], None, True
 
     ignore = [h.lower() for h in cfg.get("referrer_ignore_hosts", [])]
@@ -1633,9 +1644,10 @@ def fetch_cloudflare_referrers(cfg, now):
         r.raise_for_status()
         data = r.json()
     except Exception as e:  # noqa: BLE001
-        return [], f"cloudflare_referrers: {e}", False
+        return [], redact_ids(f"cloudflare_referrers: {e}", zone_id), False
     if data.get("errors"):
-        return [], f"cloudflare_referrers: {data['errors']}", False
+        messages = "; ".join(str(err.get("message", err)) for err in data["errors"])
+        return [], redact_ids(f"cloudflare_referrers: {messages}", zone_id), False
 
     rows = []
     zones = ((data.get("data") or {}).get("viewer") or {}).get("zones") or []
@@ -1823,6 +1835,14 @@ MULTI_PART_SUFFIXES = {
     "co.nz", "net.nz", "org.nz",
     "com.br", "net.br", "org.br",
 }
+# Hosting platforms where each subdomain is a separate publication
+# (someone.substack.com), so the publication, not the platform, is the
+# discovery candidate.
+PLATFORM_SUFFIXES = {
+    "substack.com", "medium.com", "beehiiv.com", "ghost.io", "wordpress.com",
+    "blogspot.com", "github.io", "tumblr.com", "buttondown.email",
+}
+MULTI_PART_SUFFIXES |= PLATFORM_SUFFIXES
 
 
 def registrable_domain(host):
@@ -1882,6 +1902,8 @@ def extract_candidate_domains(items, cfg, discovered_path=None, referrer_hosts=N
         if is_covered_host(host, covered):
             return
         domain = registrable_domain(host)
+        if domain in PLATFORM_SUFFIXES:
+            return  # the platform itself (substack.com/home/post/...), not a publication
         found_via.setdefault(domain, {"via": via, "first_item_url": url})
 
     for item in items:
