@@ -92,6 +92,11 @@ Edit the config, not the code.
   (`substack.com/@nycuriosity`, the LinkedIn/Instagram/Facebook profiles)
 - `own_columns`: Citizens Union Searchlight (matched by domain or the
   keyword "searchlight" in outlet/title).
+- `own_byline_page`: Tal's live Publications page. On digest and backfill
+  runs the monitor reads it and treats every entry outside its "In the
+  press" section as his own writing, so a piece he publishes elsewhere is
+  never reported as outside coverage just because the config list wasn't
+  updated. A failed fetch leaves the configured lists in place.
 - `own_author_names` / `own_byline_urls` / `own_byline_titles`: Tal's own
   writing that runs in an outside outlet (a Streetsblog op-ed, a Vital City
   guest post). Matched by feed/article author metadata, an explicit seeded

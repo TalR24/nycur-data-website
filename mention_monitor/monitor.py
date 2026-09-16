@@ -1871,6 +1871,59 @@ def save_discovered_sources(rows, path=None):
     path.write_text(json.dumps(rows, indent=2) + "\n")
 
 
+def fetch_own_bylines_from_site(cfg):
+    """Read Tal's Publications page and treat everything outside its "In the
+    press" section as his own writing. Hand-keeping `own_byline_urls` means a
+    piece he publishes elsewhere and forgets to add here comes back as
+    outside coverage with a prompt to add it to his own site. Returns
+    (urls, titles); on any fetch/parse failure returns ([], []) so the
+    configured lists still stand."""
+    page = cfg.get("own_byline_page")
+    if not page:
+        return [], []
+    try:
+        html = http_get(page, timeout=20, retries=2).text
+    except Exception as e:  # noqa: BLE001
+        print(f"own_byline_page: {e}", file=sys.stderr)
+        return [], []
+    own_hosts = cfg.get("own_link_domains", []) + ["nycuriosity.com"]
+    urls, titles = [], []
+    # Sections are "<p class="section-label">Name</p>" followed by their items;
+    # "In the press" is outside coverage ABOUT him, not written by him.
+    chunks = re.split(r'<p class="section-label">', html)[1:]
+    for chunk in chunks:
+        label = strip_html(chunk.split("</p>", 1)[0]).strip().lower()
+        if "in the press" in label:
+            continue
+        # Only entries, never the page footer (which follows the last
+        # section and links to his social profiles).
+        for item in re.findall(r'<div class="pub-item">(.*?)</div>\s*</div>', chunk, re.S):
+            m = re.search(r'<div class="pub-title">(.*?)</div>', item, re.S)
+            title = strip_html(m.group(1)).strip() if m else ""
+            if title:
+                titles.append(title)
+            for mu in re.finditer(r'href="(https?://[^"]+)"', item):
+                url = mu.group(1)
+                host = norm_domain(urlparse(url).netloc)
+                if any(domain_matches(host, d) for d in own_hosts):
+                    continue
+                urls.append(url)
+    return urls, titles
+
+
+def apply_own_bylines(cfg):
+    """Merge the Publications page's bylines into a copy of cfg."""
+    urls, titles = fetch_own_bylines_from_site(cfg)
+    if not (urls or titles):
+        return cfg
+    cfg = dict(cfg)
+    cfg["own_byline_urls"] = list(dict.fromkeys(list(cfg.get("own_byline_urls", [])) + urls))
+    cfg["own_byline_titles"] = list(dict.fromkeys(list(cfg.get("own_byline_titles", [])) + titles))
+    print(f"own_byline_page: +{len(urls)} urls, +{len(titles)} titles from the live page",
+          file=sys.stderr)
+    return cfg
+
+
 def apply_discovered_sources(cfg, path=None):
     """Merge discovered_sources.json into a copy of cfg's outlets /
     wp_search_sites / sitemap_scan lists, so a discovered source is scanned
@@ -2887,6 +2940,10 @@ def main():
     weekly = args.backfill or args.digest  # wp_search + openalex: item 1/4
 
     cfg_runtime = apply_discovered_sources(cfg)
+    # Weekly (digest/backfill), refresh own bylines from the live
+    # Publications page so the hand-kept list can't fall behind.
+    if args.digest or args.backfill:
+        cfg_runtime = apply_own_bylines(cfg_runtime)
     # Each outlet's (including discovered ones') configured tier drives
     # digest ordering the same way a manual tier_overrides entry would.
     overrides = cfg_runtime.setdefault("tier_overrides", {})

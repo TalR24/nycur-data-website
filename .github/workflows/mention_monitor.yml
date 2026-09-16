@@ -92,6 +92,31 @@ jobs:
 
       # Commit even if the email step inside the script failed — the seen-db
       # and pending table must advance or the next run double-reports.
+      # A failed run means no digest and no email, which looks the same as a
+      # quiet week. Say so directly.
+      - name: Email on failure
+        if: failure()
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          MENTION_DIGEST_TO: ${{ secrets.MENTION_DIGEST_TO }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          python3 - <<'EOF'
+          import os, smtplib
+          from email.mime.text import MIMEText
+          user, pw = os.environ.get("GMAIL_USER"), os.environ.get("GMAIL_APP_PASSWORD")
+          if user and pw:
+              msg = MIMEText("The mention monitor run failed. Nothing was collected or "
+                             "emailed today.\n\n" + os.environ["RUN_URL"] + "\n")
+              msg["Subject"] = "Mention monitor run failed"
+              msg["From"] = user
+              msg["To"] = os.environ.get("MENTION_DIGEST_TO") or user
+              with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=30) as s:
+                  s.login(user, pw); s.send_message(msg)
+              print("Failure email sent.")
+          EOF
+
       - name: Commit state to the private repo
         if: always()
         run: |

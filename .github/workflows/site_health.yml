@@ -35,6 +35,21 @@ jobs:
         run: |
           python3 site_health/check_site.py ${{ inputs.dry_run && '--dry-run' || '' }}
 
+      # The mention monitor commits state to the private repo daily. Silence
+      # there is indistinguishable from a quiet week in the inbox, so check
+      # it here: a failing run, a disabled schedule, or an expired credential
+      # all show up as stale state.
+      - name: Mention monitor freshness
+        if: always()
+        env:
+          PREMIUM_PUSH_TOKEN: ${{ secrets.PREMIUM_PUSH_TOKEN }}
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          MENTION_DIGEST_TO: ${{ secrets.MENTION_DIGEST_TO }}
+        run: |
+          pip install requests
+          python3 mention_monitor/check_freshness.py --max-age-days 3 ${{ inputs.dry_run && '--dry-run' || '' }}
+
       # Post-deploy SEO verification of what production actually serves
       # (robots, sitemap, every sitemap URL's title/description/canonical) on
       # all three public sites. Emails only on ERROR-level findings.

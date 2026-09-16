@@ -2046,3 +2046,54 @@ class OfflineRoundupTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class OfflineOwnBylinePageTests(unittest.TestCase):
+    """Bylines are read from the live Publications page so the hand-kept
+    config list can't fall behind; "In the press" (coverage ABOUT Tal) and
+    the page footer (his social profiles) must be excluded."""
+
+    PAGE = """
+    <section class="section"><p class="section-label">In the press</p>
+      <div class="pub-list">
+        <div class="pub-item">
+          <div class="pub-title">Someone Else Wrote About Tal</div>
+          <div class="pub-meta"><a href="https://outside-outlet.example/story/">Read it</a></div>
+        </div>
+      </div>
+    </section>
+    <section class="section"><p class="section-label">Policy</p>
+      <div class="pub-list">
+        <div class="pub-item">
+          <div class="pub-title">A Piece Tal Wrote</div>
+          <div class="pub-meta"><a href="https://host-outlet.example/piece/">Read it</a></div>
+        </div>
+      </div>
+    </section>
+    <footer><a href="https://www.linkedin.com/in/tal-roded">LinkedIn</a></footer>
+    """
+
+    def _run(self):
+        cfg = {"own_byline_page": "https://example.test/publications/",
+               "own_link_domains": ["nycuriosity.com"]}
+        resp = FakeResponse(200, text=self.PAGE)
+        with unittest.mock.patch.object(monitor, "http_get", return_value=resp):
+            return monitor.fetch_own_bylines_from_site(cfg)
+
+    def test_only_own_sections_are_collected(self):
+        urls, titles = self._run()
+        self.assertEqual(urls, ["https://host-outlet.example/piece/"])
+        self.assertEqual(titles, ["A Piece Tal Wrote"])
+
+    def test_footer_and_press_links_excluded(self):
+        urls, _ = self._run()
+        self.assertNotIn("https://www.linkedin.com/in/tal-roded", urls)
+        self.assertNotIn("https://outside-outlet.example/story/", urls)
+
+    def test_fetch_failure_leaves_config_list_alone(self):
+        cfg = {"own_byline_page": "https://example.test/publications/",
+               "own_byline_urls": ["https://kept.example/"], "own_byline_titles": ["Kept"]}
+        with unittest.mock.patch.object(monitor, "http_get", side_effect=RuntimeError("down")):
+            merged = monitor.apply_own_bylines(cfg)
+        self.assertEqual(merged["own_byline_urls"], ["https://kept.example/"])
+        self.assertEqual(merged["own_byline_titles"], ["Kept"])
