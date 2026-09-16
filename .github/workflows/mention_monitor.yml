@@ -2,7 +2,7 @@ name: Mention Monitor
 
 on:
   schedule:
-    - cron: "30 11 * * *"   # daily ~6:30-7:30am ET; Mondays send the digest
+    - cron: "30 11 * * *"   # daily ~6:30-7:30am ET; Sundays send the digest
   workflow_dispatch:
     inputs:
       backfill:
@@ -14,7 +14,7 @@ on:
         type: boolean
         default: false
       send_email:
-        description: "Email the digest when it runs (implies digest; scheduled Monday runs always email)"
+        description: "Email the digest when it runs (implies digest; scheduled Sunday runs always email)"
         type: boolean
         default: false
       referrers_only:
@@ -59,9 +59,9 @@ jobs:
           mkdir -p "$RUNNER_TEMP/premium/mention_monitor_state/digests"
           echo "STATE_DIR=$RUNNER_TEMP/premium/mention_monitor_state" >> "$GITHUB_ENV"
 
-      - name: Determine if today is Monday
+      - name: Determine if today is Sunday
         id: day
-        run: echo "is_monday=$([ "$(date -u +%u)" = "1" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+        run: echo "is_digest_day=$([ "$(date -u +%u)" = "7" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
 
       - name: Run mention monitor
         env:
@@ -73,12 +73,12 @@ jobs:
           CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
           GOOGLE_ALERT_FEEDS: ${{ secrets.GOOGLE_ALERT_FEEDS }}
         # referrers_only runs the Cloudflare referrer probe alone, nothing
-        # else. Otherwise: digest fires on a scheduled Monday run, or when
+        # else. Otherwise: digest fires on a scheduled Sunday run, or when
         # explicitly asked for via workflow_dispatch (inputs.digest), or
         # whenever send_email is requested (send_email implies digest,
         # since emailing with no digest built is a no-op). Email follows
-        # the same Monday/send_email rule. A manual dispatch on a Monday
-        # must NOT auto-add --digest/--email just because is_monday is true.
+        # the same Sunday/send_email rule. A manual dispatch on a Sunday
+        # must NOT auto-add --digest/--email just because is_digest_day is true.
         run: |
           STATE_ARGS="--db $STATE_DIR/seen.db --outdir $STATE_DIR/digests --discovered-path $STATE_DIR/discovered_sources.json"
           if [ "${{ inputs.referrers_only }}" = "true" ]; then
@@ -86,8 +86,8 @@ jobs:
           else
             python3 mention_monitor/monitor.py $STATE_ARGS \
               ${{ inputs.backfill && '--backfill' || '' }} \
-              ${{ (!inputs.backfill && ((github.event_name == 'schedule' && steps.day.outputs.is_monday == 'true') || inputs.digest || inputs.send_email)) && '--digest' || '' }} \
-              ${{ (!inputs.backfill && ((github.event_name == 'schedule' && steps.day.outputs.is_monday == 'true') || inputs.send_email)) && '--email' || '' }}
+              ${{ (!inputs.backfill && ((github.event_name == 'schedule' && steps.day.outputs.is_digest_day == 'true') || inputs.digest || inputs.send_email)) && '--digest' || '' }} \
+              ${{ (!inputs.backfill && ((github.event_name == 'schedule' && steps.day.outputs.is_digest_day == 'true') || inputs.send_email)) && '--email' || '' }}
           fi
 
       # Commit even if the email step inside the script failed — the seen-db

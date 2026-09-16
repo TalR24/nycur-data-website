@@ -4,7 +4,7 @@
 Daily: fetches Google News RSS for the name/brand/tracker queries, scans a
 fixed list of outlet RSS feeds (full text) for the figure queries and for
 any link back to nycuriosity.com, dedupes against a local SQLite db, and
-queues newly-flagged items as "pending". Monday (or --digest): builds a
+queues newly-flagged items as "pending". Sunday (or --digest): builds a
 digest from everything pending, writes it to digests/YYYY-MM-DD.md, marks
 those items digested, and optionally emails it. Tal's own bylines
 (Streetsblog, Vital City guest posts, Searchlight columns, etc.) are
@@ -1328,7 +1328,7 @@ def db_connect(path):
             first_scanned TEXT
         )
     """)
-    # Source errors persist across collect-only runs; the Monday digest
+    # Source errors persist across collect-only runs; the Sunday digest
     # loads and clears everything accumulated since the last digest.
     conn.execute("""
         CREATE TABLE IF NOT EXISTS source_errors (
@@ -1357,7 +1357,7 @@ def db_connect(path):
         )
     """)
     # One row per run per scanned unit (outlet feed, wp_search site, sitemap
-    # outlet, google_news query id), feeding the Monday "Suggested removals"
+    # outlet, google_news query id), feeding the Sunday "Suggested removals"
     # section (item 8).
     conn.execute("""
         CREATE TABLE IF NOT EXISTS source_yield (

@@ -12,7 +12,7 @@ runs a WordPress REST search (`wp_search`) across outlets with no full-text
 feed, an OpenAlex lookup (`openalex`) for citations of Tal's academic work,
 and, daily, a Ghost sitemap scan (`sitemap_scan`) and any configured Google
 Alerts RSS feeds (`alert_feeds`). It dedupes against `seen.db` (SQLite),
-queues newly-flagged items as pending, and on Mondays (or `--digest`)
+queues newly-flagged items as pending, and on Sundays (or `--digest`)
 builds `digests/YYYY-MM-DD.md` from everything pending, prints it, marks
 those items digested, emails it (as a multipart text/HTML message) if
 `--email`, and self-updates: a "Suggested removals" section flags
@@ -28,7 +28,7 @@ outside citation to the personal site / tracker pages.
 ## How it runs
 
 `.github/workflows/mention_monitor.yml` runs daily at 11:30 UTC. Every day
-it collects and queues pending items; on Mondays it also builds and emails
+it collects and queues pending items; on Sundays it also builds and emails
 the digest via the existing `GMAIL_USER` / `GMAIL_APP_PASSWORD` secrets.
 Optional secret `MENTION_DIGEST_TO` overrides the recipient (defaults to
 `GMAIL_USER`).
@@ -48,8 +48,8 @@ Local / cron alternative:
 ```
 pip install -r mention_monitor/requirements.txt
 python3 mention_monitor/monitor.py --backfill        # once
-# crontab: daily, Monday sends the digest
-0 7 * * *  cd /path/to/nycur-data-website && python3 mention_monitor/monitor.py $([ "$(date +%u)" = "1" ] && echo "--digest --email")
+# crontab: daily, Sunday sends the digest
+0 7 * * *  cd /path/to/nycur-data-website && python3 mention_monitor/monitor.py $([ "$(date +%u)" = "7" ] && echo "--digest --email")
 ```
 
 Flags: `--backfill` (seed db, no pending items, no digest, no email),
@@ -228,7 +228,7 @@ When enabled and both `CF_ANALYTICS_TOKEN` and `CF_ACCOUNT_ID` secrets are
 set, every run queries the Cloudflare GraphQL Analytics API
 (`rumPageloadEventsAdaptiveGroups`) for the last 24 hours of `refererHost`
 traffic, filters out nycuriosity.com hosts and `referrer_ignore_hosts`, and
-stores daily rows in `seen.db`. The Monday digest aggregates the last 7
+stores daily rows in `seen.db`. The Sunday digest aggregates the last 7
 days into a "Sites sending visitors this week" section: hosts by request
 count, with their top landing paths. Without both secrets, or with
 `cloudflare_referrers_enabled` still false, this source is silently
