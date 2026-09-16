@@ -1654,7 +1654,7 @@ def redact_ids(text, *secrets):
     return re.sub(r"\b[0-9a-f]{32,}\b", "<redacted>", text)
 
 
-def fetch_cloudflare_referrers(cfg, now):
+def fetch_cloudflare_referrers(cfg, now, window_hours=24):
     """Dormant until CF_ANALYTICS_TOKEN and CF_ACCOUNT_ID both exist and
     `cloudflare_referrers_enabled` is true. Returns (rows, error_or_none,
     skipped_bool). Round 6 item 4: `httpRequestsAdaptiveGroups` isn't
@@ -1671,7 +1671,7 @@ def fetch_cloudflare_referrers(cfg, now):
         return [], None, True
 
     ignore = [h.lower() for h in cfg.get("referrer_ignore_hosts", [])]
-    since = (now - timedelta(hours=24)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    since = (now - timedelta(hours=window_hours)).strftime("%Y-%m-%dT%H:%M:%SZ")
     until = now.strftime("%Y-%m-%dT%H:%M:%SZ")
     # Web Analytics (RUM) is account-scoped, not zone-scoped, and exposes
     # referrer hosts on the free plan (unlike httpRequestsAdaptiveGroups on
@@ -2846,6 +2846,10 @@ def main():
                           "pending items and mark them digested")
     ap.add_argument("--email", action="store_true",
                      help="email the digest when --digest produces one")
+    ap.add_argument("--referrers-window-hours", type=int, default=24,
+                     help="how far back --referrers-only looks (default 24); "
+                          "a wider window tells 'no traffic yet' apart from a "
+                          "broken query")
     ap.add_argument("--referrers-only", action="store_true",
                      help="run only the Cloudflare referrer source and print "
                           "its rows or the exact GraphQL error; no db writes")
@@ -2866,7 +2870,8 @@ def main():
     now = datetime.now(timezone.utc)
 
     if args.referrers_only:
-        rows, err, skipped = fetch_cloudflare_referrers(cfg, now)
+        rows, err, skipped = fetch_cloudflare_referrers(
+            cfg, now, window_hours=args.referrers_window_hours)
         if skipped:
             print("cloudflare_referrers skipped: CF_ANALYTICS_TOKEN/CF_ACCOUNT_ID not set.")
         elif err:

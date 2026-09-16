@@ -21,6 +21,9 @@ on:
         description: "Run only the Cloudflare referrer source and print its rows/error; no other source, no db writes"
         type: boolean
         default: false
+      referrers_window_hours:
+        description: "How far back referrers_only looks, in hours (default 24)"
+        default: "24"
 
 permissions:
   contents: read   # state commits go to the private repo via PREMIUM_PUSH_TOKEN
@@ -79,7 +82,7 @@ jobs:
         run: |
           STATE_ARGS="--db $STATE_DIR/seen.db --outdir $STATE_DIR/digests --discovered-path $STATE_DIR/discovered_sources.json"
           if [ "${{ inputs.referrers_only }}" = "true" ]; then
-            python3 mention_monitor/monitor.py $STATE_ARGS --referrers-only
+            python3 mention_monitor/monitor.py $STATE_ARGS --referrers-only --referrers-window-hours ${{ inputs.referrers_window_hours || '24' }}
           else
             python3 mention_monitor/monitor.py $STATE_ARGS \
               ${{ inputs.backfill && '--backfill' || '' }} \
