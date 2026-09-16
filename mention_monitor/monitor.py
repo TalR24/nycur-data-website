@@ -1660,10 +1660,9 @@ def fetch_cloudflare_referrers(cfg, now, window_hours=24):
     skipped_bool). Round 6 item 4: `httpRequestsAdaptiveGroups` isn't
     available on this zone's plan (no `clientRefererHost` field), so this
     queries Cloudflare Web Analytics (RUM) instead, account-scoped via
-    `rumPageloadEventsAdaptiveGroups`. Field names are UNVERIFIED (no Web
-    Analytics data exists yet to test against); any GraphQL-reported error
-    becomes a source error (message only, ids redacted) rather than a
-    crash."""
+    `rumPageloadEventsAdaptiveGroups`. Verified against real data Sep 16
+    2026 (6 referrer rows over 30 days); any GraphQL-reported error becomes
+    a source error (message only, ids redacted) rather than a crash."""
     token = os.environ.get("CF_ANALYTICS_TOKEN")
     account_id = os.environ.get("CF_ACCOUNT_ID")
     site_tag = os.environ.get("CF_WA_SITE_TAG")
@@ -1676,8 +1675,9 @@ def fetch_cloudflare_referrers(cfg, now, window_hours=24):
     # Web Analytics (RUM) is account-scoped, not zone-scoped, and exposes
     # referrer hosts on the free plan (unlike httpRequestsAdaptiveGroups on
     # this zone). Field/type names below follow Cloudflare's GraphQL
-    # Analytics API docs' rumPageloadEventsAdaptiveGroups example shape and
-    # are UNVERIFIED against real data.
+    # Analytics API docs' rumPageloadEventsAdaptiveGroups example shape,
+    # confirmed against real data Sep 16 2026. Counts are RUM-sampled, so
+    # they arrive in multiples of the sample rate.
     query = """
     query MentionReferrers($accountTag: string!, $since: Time!, $until: Time!, $siteTag: string) {
       viewer {

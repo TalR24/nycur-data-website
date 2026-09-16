@@ -211,22 +211,18 @@ starve the sitemaps after it.
 
 ## Cloudflare Web Analytics referrer report (dormant)
 
-**Off by default** (`cloudflare_referrers_enabled: false` in config.json).
-The first real run on Sep 15 2026 returned "zone does not have access to
-the field 'clientRefererHost'": referrer hosts aren't available to this
-zone's plan in `httpRequestsAdaptiveGroups`. Round 6 switched the source to
-Cloudflare Web Analytics (RUM), which is account-scoped instead of
-zone-scoped and exposes referrer hosts on the free plan; the source stays
-off until Web Analytics setup below is confirmed against real data.
+**On** (`cloudflare_referrers_enabled: true`). `clientRefererHost` is not
+available to this zone's plan in `httpRequestsAdaptiveGroups`, so the source
+queries Cloudflare Web Analytics (RUM) instead, account-scoped. It needs
+`CF_ANALYTICS_TOKEN` with Account Analytics Read plus `CF_ACCOUNT_ID`, and
+Web Analytics enabled on the hostnames (data.nycuriosity.com and
+talroded.nycuriosity.com carry the beacon snippet in every page head;
+automatic edge injection covers only one hostname per zone, already used by
+nycuriosity.com). Verified Sep 16 2026: 6 rows over 30 days. Counts are
+RUM-sampled, so they arrive in multiples of the sample rate. Error text has
+hex ids redacted. `--referrers-only --referrers-window-hours N` prints the
+rows or the error for any window.
 
-Setup required before enabling:
-- An Account Analytics Read API token (`CF_ANALYTICS_TOKEN` secret).
-- The account id, not the zone id (`CF_ACCOUNT_ID` secret).
-- Web Analytics turned on for nycuriosity.com's hostnames in the Cloudflare
-  dashboard (Speed → Web Analytics or Analytics → Web Analytics), since RUM
-  data only exists for hostnames it's enabled on.
-- Optional `CF_WA_SITE_TAG` to scope the query to one Web Analytics site
-  when more than one is configured on the account.
 
 When enabled and both `CF_ANALYTICS_TOKEN` and `CF_ACCOUNT_ID` secrets are
 set, every run queries the Cloudflare GraphQL Analytics API
