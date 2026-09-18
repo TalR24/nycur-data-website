@@ -244,7 +244,7 @@
     <figure class="chart-card" id="chart-box" data-slug="city-funded-spending-growth">
       <div class="c-head">
         <h2 class="c-title">Health insurance and wages are set to grow faster than the budget, and pension payments shrink</h2>
-        <p class="c-deck">Projected change in city-funded spending by line, fiscal 2026 to fiscal 2030, in the June 2026 financial plan. Wage figures assume 1.25% annual raises after current contracts expire.</p>
+        <p class="c-deck">Projected change in city-funded spending by line, fiscal 2026 to fiscal 2030, in the June 2026 financial plan, with each line's dollars in both years at right. Wage figures assume 1.25% annual raises after current contracts expire.</p>
         <ul class="c-legend">
           <li><span class="sw" style="background:var(--c-cat-1)"></span>Labor costs</li>
           <li><span class="sw" style="background:var(--c-cat-2)"></span>Other spending</li>
@@ -252,7 +252,7 @@
         </ul>
       </div>
       <div class="c-plot c-plot--scroll">
-        <svg id="growthChart" viewBox="0 0 1000 340" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Horizontal bar chart of projected change in New York City spending by line, fiscal 2026 to 2030, ranging from plus 55.2 percent for debt service to minus 19.3 percent for pension contributions."></svg>
+        <svg id="growthChart" viewBox="0 0 1000 346" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Horizontal bar chart of projected change in New York City spending by line, fiscal 2026 to 2030, ranging from plus 55.2 percent for debt service to minus 19.3 percent for pension contributions."></svg>
       </div>
       <figcaption class="c-foot">
         <div class="c-foot-text">
@@ -308,20 +308,27 @@
     svgEl.appendChild(node);
     return node;
   }
-  var DATA = [['Debt service', 55.2, 'other'], ['Health insurance', 21.4, 'labor'], ['Salaries and wages', 19.1, 'labor'], ['Total city-funded spending', 16.1, 'total'], ['Other fringe benefits', 10.8, 'labor'], ['Medicaid', 7.2, 'other'], ['Pension contributions', -19.3, 'labor']];
+  var DATA = [['Debt service', 55.2, 'other', 8008, 12425], ['Health insurance', 21.4, 'labor', 8826, 10719], ['Salaries and wages', 19.1, 'labor', 24132, 28732], ['Total city-funded spending', 16.1, 'total', 94340, 109552], ['Other fringe benefits', 10.8, 'labor', 4120, 4565], ['Medicaid', 7.2, 'other', 6661, 7138], ['Pension contributions', -19.3, 'labor', 9566, 7717]];
   var COLOR = { labor: 'var(--c-cat-1)', other: 'var(--c-cat-2)', total: 'var(--c-cat-3)' };
-  var PADL = 260, PADR = 60, PADT = 20, PADB = 34, VW = 1000, rowH = 40, barH = 22;
+  var PADL = 250, PADR = 270, PADT = 46, PADB = 20, VW = 1000, rowH = 40, barH = 22;
+  var COL1 = 872, COL2 = 982;
+  function fmtB(m) { return '$' + (m / 1000).toFixed(1).replace(/\.0$/, '') + 'B'; }
   var VH = PADT + rowH * DATA.length + PADB;
   var plotW = VW - PADL - PADR, XMIN = -25, XMAX = 62;
   var xFor = function (v) { return PADL + (v - XMIN) / (XMAX - XMIN) * plotW; };
   var zeroX = xFor(0);
   el('line', { x1: zeroX, y1: PADT - 6, x2: zeroX, y2: PADT + rowH * DATA.length - 12, class: 'c-baseline' });
+  el('text', { x: COL1, y: PADT - 18, 'text-anchor': 'end', class: 'c-tick' }, 'FY2026');
+  el('text', { x: COL2, y: PADT - 18, 'text-anchor': 'end', class: 'c-tick' }, 'FY2030');
+  el('line', { x1: COL1 - 78, y1: PADT - 8, x2: COL2, y2: PADT - 8, class: 'c-grid' });
   DATA.forEach(function (row, i) {
     var yTop = PADT + rowH * i;
     var label = row[0], v = row[1], grp = row[2];
     el('text', { x: PADL - 14, y: yTop + barH / 2 + 5, 'text-anchor': 'end', class: 'c-tick' }, label);
     var x0 = Math.min(zeroX, xFor(v)), w = Math.abs(xFor(v) - zeroX);
     el('rect', { x: x0, y: yTop, width: w, height: barH, fill: COLOR[grp], rx: 2 });
+    el('text', { x: COL1, y: yTop + barH / 2 + 5, 'text-anchor': 'end', class: 'c-val', fill: 'var(--c-ink-3)' }, fmtB(row[3]));
+    el('text', { x: COL2, y: yTop + barH / 2 + 5, 'text-anchor': 'end', class: 'c-val', fill: 'var(--c-ink)' }, fmtB(row[4]));
     var sign = v >= 0 ? '+' : '';
     var lx = v >= 0 ? xFor(v) + 8 : zeroX + 8;
     el('text', { x: lx, y: yTop + barH / 2 + 5, 'text-anchor': 'start', class: 'c-val', fill: 'var(--c-ink)' }, sign + v.toFixed(1) + '%');
