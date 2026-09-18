@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#170C03">
+  <title>NYC Labor Costs and the 2026 Bargaining Round &mdash; NYCuriosity</title>
+  <meta name="description" content="Six charts on what New York City spends on its workforce, what the budget reserves for new union contracts, and how unionized its public workers are.">
+  <link rel="canonical" href="https://data.nycuriosity.com/nycuriosity_substack_posts/public_sector_unions_2026/">
+  <meta property="og:image" content="https://data.nycuriosity.com/website_logo.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta property="og:type"        content="website">
+  <meta property="og:url"         content="https://data.nycuriosity.com/nycuriosity_substack_posts/public_sector_unions_2026/">
+  <meta property="og:title"       content="NYC Labor Costs and the 2026 Bargaining Round &mdash; NYCuriosity">
+  <meta property="og:description" content="Six charts on what New York City spends on its workforce, what the budget reserves for new union contracts, and how unionized its public workers are.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/brand.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue:       #C84609;
+      --blue-hover: #A44D00;
+      --blue-light: #FAF6F1;
+      --blue-mid:   #EDC3A5;
+      --text:       #1A1208;
+      --text-mid:   #4A3B2C;
+      --text-muted: #6B5B4A;
+      --text-faint: #9A8B7A;
+      --bg:         #FAF6F1;
+      --surface:    #ffffff;
+      --border:     #E7DDCE;
+      --shadow-sm:  0 1px 3px rgba(26,18,8,0.08);
+      --shadow-md:  0 4px 16px rgba(207,75,12,0.10);
+      --radius:     10px;
+    }
+
+    body {
+      font-family: 'Helvetica Neue', Helvetica, Arial, 'Inter', system-ui, sans-serif;
+      background: var(--bg); color: var(--text);
+      min-height: 100vh; display: flex; flex-direction: column;
+    }
+
+    header { background: #170C03; border-bottom: 1px solid #2E1C0C; padding: 0 clamp(20px, 5vw, 48px); }
+    .header-inner { max-width: 1100px; margin: 0 auto; height: 56px; display: flex; align-items: center; gap: 16px; }
+    .back-link {
+      font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.75rem; font-weight: 600;
+      color: #9A8B7A; text-decoration: none; display: flex; align-items: center; gap: 5px;
+      padding: 4px 8px 4px 4px; border-radius: 5px; transition: color 0.15s, background 0.15s; white-space: nowrap;
+    }
+    .back-link:hover { color: #FFD23F; background: rgba(255,210,63,0.1); }
+    .header-divider { width: 1px; height: 20px; background: #4A3B2C; flex-shrink: 0; }
+    header h1 { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.95rem; font-weight: 700; color: #E7DDCE; letter-spacing: -0.02em; }
+
+    .hero { background: var(--surface); border-bottom: 1px solid var(--border); padding: clamp(32px, 5vw, 52px) clamp(20px, 5vw, 48px); }
+    .hero-inner { max-width: 1100px; margin: 0 auto; }
+    .breadcrumb {
+      font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.72rem; color: var(--text-faint);
+      margin-bottom: 14px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+    }
+    .breadcrumb a { color: var(--blue); text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+    .breadcrumb span:last-child { color: #A44D00; }
+    .hero-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .hero-tag {
+      font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.68rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.08em; color: var(--b-topic-budget-ink);
+      background: #FAF6F1; border: 1px solid #E7DDCE; border-radius: 4px; padding: 3px 8px;
+    }
+    .hero-updated { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.72rem; color: var(--text-faint); }
+    .hero h1 { font-family: 'Playfair Display', Georgia, serif; font-weight: 700; color: var(--text); letter-spacing: -0.012em; line-height: 1.2; margin-bottom: 10px; }
+    .hero h1 span { color: var(--blue); }
+    .hero p { font-size: 0.975rem; color: var(--text-muted); max-width: 680px; line-height: 1.7; }
+    .hero p a { color: var(--blue); text-decoration: none; border-bottom: 1px solid var(--blue-mid); }
+    .hero p a:hover { border-color: var(--blue); }
+
+    footer { background: var(--surface); border-top: 1px solid var(--border); padding: 20px clamp(20px, 5vw, 48px); margin-top: auto; }
+    .footer-inner { max-width: 1100px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+    .footer-copy { font-size: 0.8rem; color: var(--text-faint); }
+    .footer-links { display: flex; gap: 20px; align-items: center; }
+    .footer-links a { font-size: 0.8rem; color: var(--text-muted); text-decoration: none; transition: color 0.15s; }
+    .footer-links a:hover { color: var(--blue); }
+    .footer-support { display: inline-flex; align-items: center; gap: 5px; font-size: 0.8rem; font-weight: 500; color: #C84609; text-decoration: none; padding: 5px 11px; border: 1px solid rgba(207,75,12,0.45); border-radius: 6px; transition: color .15s, border-color .15s, background .15s; vertical-align: middle; }
+    .footer-support:hover { color: #fff; background: #C84609; border-color: #C84609; }
+    .footer-support svg { flex-shrink: 0; }
+
+    .hero h1 { font-size: clamp(1.5rem, 3.5vw, 2rem); }
+
+    .stat-row { background: var(--surface); border-bottom: 1px solid var(--border); padding: clamp(16px, 3vw, 24px) clamp(20px, 5vw, 48px); }
+    .stat-row-inner { max-width: 1100px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 12px; }
+    .stat-pill {
+      display: flex; flex-direction: column; gap: 2px;
+      padding: 12px 18px; background: var(--bg); border: 1px solid var(--border);
+      border-radius: var(--radius); flex: 1; min-width: 140px;
+    }
+    .stat-pill .sp-num { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 1.3rem; font-weight: 700; color: var(--text); letter-spacing: -0.03em; line-height: 1; }
+    .stat-pill .sp-num.blue { color: var(--blue); }
+    .stat-pill .sp-label { font-size: 0.75rem; color: var(--text-muted); line-height: 1.3; }
+
+    .charts-section { flex: 1; padding: clamp(32px, 5vw, 56px) clamp(20px, 5vw, 48px); }
+    .charts-inner { max-width: 1100px; margin: 0 auto; }
+    .section-label {
+      font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.7rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-faint); margin-bottom: 20px;
+    }
+    .charts-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+
+    .hub-card {
+      background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius);
+      box-shadow: var(--shadow-sm); text-decoration: none; color: inherit;
+      display: flex; flex-direction: column; overflow: hidden;
+      transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+    }
+    .hub-card:hover { border-color: var(--blue); box-shadow: var(--shadow-md); transform: translateY(-3px); }
+    .hub-card-icon { height: 100px; background: var(--text); display: flex; align-items: center; justify-content: center; gap: 10px; padding: 0 24px; flex-shrink: 0; }
+    .hub-card-body { padding: 20px 24px 24px; flex: 1; display: flex; flex-direction: column; }
+    .hub-card-label { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--blue); margin-bottom: 8px; }
+    .hub-card-title { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 1.05rem; font-weight: 700; color: var(--text); letter-spacing: -0.02em; line-height: 1.25; margin-bottom: 10px; }
+    .hub-card-desc { font-size: 0.875rem; color: var(--text-muted); line-height: 1.6; flex: 1; margin-bottom: 20px; }
+    .hub-card-meta { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .hub-card-stat { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.72rem; color: var(--text-faint); }
+    .hub-card-cta { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.78rem; font-weight: 700; color: var(--blue); display: flex; align-items: center; gap: 5px; transition: gap 0.15s; }
+    .hub-card:hover .hub-card-cta { gap: 9px; }
+
+    /* ── TOPIC COLOUR (2026 rebrand) ──────────────────────
+       Colour encodes what KIND of thing something is. The bright fills are
+       decorative only; the -ink twins are the only variants safe for text
+       (each is tuned to 4.5:1 on Canvas Cream). Tokens: assets/brand.css */
+    .card[data-topics~="transit"] .card-category { color: var(--b-topic-transit-ink); }
+    .card[data-topics~="cb"]      .card-category { color: var(--b-topic-cb-ink); }
+    .card[data-topics~="budget"]  .card-category { color: var(--b-topic-budget-ink); }
+    .card[data-topics~="govtech"] .card-category { color: var(--b-topic-govtech-ink); }
+    .tf-pill[data-topic="transit"]:hover  { border-color: var(--b-topic-transit-ink); color: var(--b-topic-transit-ink); }
+    .tf-pill[data-topic="cb"]:hover       { border-color: var(--b-topic-cb-ink); color: var(--b-topic-cb-ink); }
+    .tf-pill[data-topic="budget"]:hover   { border-color: var(--b-topic-budget-ink); color: var(--b-topic-budget-ink); }
+    .tf-pill[data-topic="govtech"]:hover  { border-color: var(--b-topic-govtech-ink); color: var(--b-topic-govtech-ink); }
+    .tf-pill[data-topic="transit"].active { background: var(--b-topic-transit-ink); border-color: var(--b-topic-transit-ink); color: #fff; }
+    .tf-pill[data-topic="cb"].active      { background: var(--b-topic-cb-ink); border-color: var(--b-topic-cb-ink); color: #fff; }
+    .tf-pill[data-topic="budget"].active  { background: var(--b-topic-budget-ink); border-color: var(--b-topic-budget-ink); color: #fff; }
+    .tf-pill[data-topic="govtech"].active { background: var(--b-topic-govtech-ink); border-color: var(--b-topic-govtech-ink); color: #fff; }
+    /* A row of figures should not read as one colour. */
+    .stat-pill:nth-child(4n+1) .sp-num { color: var(--b-topic-budget-ink); }
+    .stat-pill:nth-child(4n+2) .sp-num { color: var(--b-topic-transit-ink); }
+    .stat-pill:nth-child(4n+3) .sp-num { color: var(--b-topic-cb-ink); }
+    .stat-pill:nth-child(4n+4) .sp-num { color: var(--b-brown); }
+
+    /* Header action buttons on subpages (Tal, Sep 2026 — previously hub-only). */
+    .header-actions { display:flex; align-items:center; gap:12px; margin-left:auto; flex-shrink:0; }
+    .header-link { font-size:0.8rem; font-weight:500; color:#9A8B7A; text-decoration:none; display:inline-flex; align-items:center; gap:5px; padding:5px 11px; border:1px solid rgba(255,255,255,0.15); border-radius:6px; transition:color .15s,border-color .15s,background .15s; white-space:nowrap; }
+    .header-link:hover { color:#fff; border-color:rgba(255,255,255,0.35); background:rgba(255,255,255,0.08); }
+    .header-link svg, .support-link svg { flex-shrink:0; }
+    .support-link { font-size:0.8rem; font-weight:500; color:#FFD23F; text-decoration:none; display:inline-flex; align-items:center; gap:5px; padding:5px 11px; border:1px solid rgba(200,70,9,0.45); border-radius:6px; transition:color .15s,border-color .15s,background .15s; white-space:nowrap; }
+    .support-link:hover { color:#fff; background:#C84609; border-color:#C84609; }
+    header .header-inner { min-width: 0; }
+    header h1 { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    @media (max-width: 900px) { .header-actions .header-link { display: none; } }
+    @media (max-width: 560px) { .header-actions { display: none; } }
+    @media (max-width: 560px) { header h1 { white-space: normal; } }
+  </style>
+  <script defer src="/assets/site.js?v=20260918"></script>
+<!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d0dce16d32c14809bc15038314fb9a13"}'></script><!-- End Cloudflare Web Analytics -->
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <a href="/" class="header-mark" aria-label="NYCuriosity Data home"><img src="/assets/brand/Talbot.svg" alt="" style="height:32px;width:auto;display:block"></a>
+    <a href="/" class="back-link">&larr; nycuriosity/data</a>
+    <div class="header-divider"></div>
+    <h1>Public Sector Unions 2026</h1>
+    <div class="header-actions">
+      <a href="https://talroded.nycuriosity.com" class="header-link" target="_blank" rel="noopener"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>About</a>
+      <a href="https://www.nycuriosity.com" class="header-link" target="_blank" rel="noopener"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v4H4z"/><path d="M4 10h16v10l-8-4-8 4z"/></svg>Substack</a>
+      <a href="https://buymeacoffee.com/nycuriosity" class="support-link" target="_blank" rel="noopener" aria-label="Support my work on Buy Me a Coffee"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>Support my work</a>
+    </div>
+  </div>
+</header>
+
+<div class="hero">
+  <div class="hero-inner">
+    <div class="breadcrumb">
+      <a href="/">data.nycuriosity.com</a>
+      <span>&rsaquo;</span>
+      <span>Public Sector Unions 2026</span>
+    </div>
+    <div class="hero-meta">
+      <span class="hero-tag">Budget</span>
+      <span class="hero-updated">September 2026</span>
+    </div>
+    <h1>Mayor Mamdani's first contract round meets a budget that <span>funds 1.25% raises</span></h1>
+    <p>
+      Personnel is half of what New York City spends. DC 37's contract expires November 6, 2026, the financial plan
+      reserves 1.25% a year for raises, and the last round paid 3% a year. These six charts show where labor costs
+      stand going in.
+    </p>
+  </div>
+</div>
+
+<div class="stat-row">
+  <div class="stat-row-inner">
+    <div class="stat-pill">
+      <span class="sp-num blue">$550M&ndash;$600M</span>
+      <span class="sp-label">City-funded cost of each 1% raise for the full workforce</span>
+    </div>
+    <div class="stat-pill">
+      <span class="sp-num">1.25%</span>
+      <span class="sp-label">annual raises funded in the financial plan</span>
+    </div>
+    <div class="stat-pill">
+      <span class="sp-num blue">50.9%</span>
+      <span class="sp-label">personnel share of the FY2027 adopted budget, down from 54.1% in FY2017</span>
+    </div>
+    <div class="stat-pill">
+      <span class="sp-num">65.1%</span>
+      <span class="sp-label">of public sector workers in NYC belong to a union</span>
+    </div>
+  </div>
+</div>
+
+<section class="charts-section">
+  <div class="charts-inner">
+    <p class="section-label">Charts in this post</p>
+    <div class="charts-grid">
+
+      <a class="hub-card" href="labor-share/">
+        <div class="hub-card-icon">
+          <svg viewBox="0 0 150 60" width="150" height="60" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><polyline points="8,20 22,24 36,22 50,18 64,16 78,20 92,24 106,30 120,34 134,32 142,26" fill="none" stroke="#F26522" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><circle cx="8" cy="20" r="3.5" fill="#F26522"/><circle cx="142" cy="26" r="3.5" fill="#F26522"/></svg>
+        </div>
+        <div class="hub-card-body">
+          <div class="hub-card-label">Line Chart</div>
+          <div class="hub-card-title">Personnel costs fell from 54% to 51% of the adopted budget</div>
+          <div class="hub-card-desc">Personal services as a share of the adopted expense budget, fiscal 2017 to 2027.</div>
+          <div class="hub-card-meta">
+            <span class="hub-card-stat">11 fiscal years &middot; NYC Open Data</span>
+            <span class="hub-card-cta">Explore &rarr;</span>
+          </div>
+        </div>
+      </a>
+
+      <a class="hub-card" href="growth-by-line/">
+        <div class="hub-card-icon">
+          <svg viewBox="0 0 150 60" width="150" height="60" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="75" y="6" width="60" height="8" rx="2" fill="#89C4E1"/><rect x="75" y="18" width="34" height="8" rx="2" fill="#F26522"/><rect x="75" y="30" width="30" height="8" rx="2" fill="#F26522"/><rect x="75" y="42" width="12" height="8" rx="2" fill="#6B5B4A"/><rect x="55" y="54" width="20" height="0" fill="none"/><rect x="55" y="42" width="0" height="0"/><rect x="55" y="6" width="0" height="8"/><rect x="43" y="46" width="32" height="8" rx="2" fill="#F26522"/><line x1="75" y1="4" x2="75" y2="56" stroke="#EDC3A5" stroke-width="1.5"/></svg>
+        </div>
+        <div class="hub-card-body">
+          <div class="hub-card-label">Bar Chart</div>
+          <div class="hub-card-title">Health insurance and wages are set to outgrow the budget</div>
+          <div class="hub-card-desc">Projected growth by city-funded spending line, fiscal 2026 to 2030.</div>
+          <div class="hub-card-meta">
+            <span class="hub-card-stat">7 spending lines &middot; State Comptroller</span>
+            <span class="hub-card-cta">Explore &rarr;</span>
+          </div>
+        </div>
+      </a>
+
+      <a class="hub-card" href="raise-cost/">
+        <div class="hub-card-icon">
+          <svg viewBox="0 0 150 60" width="150" height="60" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="14" y="38" width="22" height="18" fill="#89C4E1"/><rect x="14" y="28" width="22" height="10" fill="#F26522"/><rect x="46" y="30" width="22" height="26" fill="#89C4E1"/><rect x="46" y="14" width="22" height="16" fill="#F26522"/><rect x="78" y="22" width="22" height="34" fill="#89C4E1"/><rect x="78" y="4" width="22" height="18" fill="#F26522"/><rect x="110" y="14" width="22" height="42" fill="#89C4E1"/><rect x="110" y="2" width="0" height="12"/><rect x="110" y="2" width="22" height="12" fill="#F26522"/></svg>
+        </div>
+        <div class="hub-card-body">
+          <div class="hub-card-label">Stacked Columns</div>
+          <div class="hub-card-title">Matching the last round's 3% would cost $4 billion a year more than the plan reserves by year four</div>
+          <div class="hub-card-desc">What raises cost by contract year at the reserved 1.25% and at the last round's 3%.</div>
+          <div class="hub-card-meta">
+            <span class="hub-card-stat">4 contract years &middot; City Comptroller</span>
+            <span class="hub-card-cta">Explore &rarr;</span>
+          </div>
+        </div>
+      </a>
+
+      <a class="hub-card" href="overtime/">
+        <div class="hub-card-icon">
+          <svg viewBox="0 0 150 60" width="150" height="60" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="8" y="10" width="42" height="8" rx="2" fill="#F26522"/><rect x="8" y="22" width="30" height="8" rx="2" fill="#89C4E1"/><rect x="8" y="34" width="24" height="8" rx="2" fill="#F26522"/><polyline points="80,46 92,38 104,40 116,24 128,16 140,12" fill="none" stroke="#6B5B4A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="hub-card-body">
+          <div class="hub-card-label">Bar and line charts</div>
+          <div class="hub-card-title">Overtime hit a record $2.85 billion</div>
+          <div class="hub-card-desc">Fiscal 2026 overtime against budget by agency, and overtime paid since fiscal 2014.</div>
+          <div class="hub-card-meta">
+            <span class="hub-card-stat">10 agencies &middot; 12 fiscal years</span>
+            <span class="hub-card-cta">Explore &rarr;</span>
+          </div>
+        </div>
+      </a>
+
+      <a class="hub-card" href="pension-contributions/">
+        <div class="hub-card-icon">
+          <svg viewBox="0 0 150 60" width="150" height="60" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="10" y="6" width="22" height="48" rx="2" fill="#692807"/><rect x="40" y="12" width="22" height="42" rx="2" fill="#692807"/><rect x="70" y="8" width="22" height="46" rx="2" fill="#692807"/><rect x="100" y="12" width="22" height="42" rx="2" fill="#692807"/><rect x="130" y="18" width="14" height="36" rx="2" fill="#692807"/></svg>
+        </div>
+        <div class="hub-card-body">
+          <div class="hub-card-label">Column Chart</div>
+          <div class="hub-card-title">The City's pension bill falls $1.8 billion by 2030</div>
+          <div class="hub-card-desc">Planned city-funded pension contributions after the 2026 restructuring.</div>
+          <div class="hub-card-meta">
+            <span class="hub-card-stat">5 fiscal years &middot; State Comptroller</span>
+            <span class="hub-card-cta">Explore &rarr;</span>
+          </div>
+        </div>
+      </a>
+
+      <a class="hub-card" href="union-density/">
+        <div class="hub-card-icon">
+          <svg viewBox="0 0 150 60" width="150" height="60" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><rect x="8" y="8" width="100" height="9" rx="2" fill="#F26522"/><rect x="8" y="21" width="22" height="9" rx="2" fill="#89C4E1"/><rect x="8" y="34" width="96" height="9" rx="2" fill="#F26522"/><rect x="8" y="47" width="19" height="9" rx="2" fill="#89C4E1"/></svg>
+        </div>
+        <div class="hub-card-body">
+          <div class="hub-card-label">Bar Chart</div>
+          <div class="hub-card-title">Two in three public workers in NYC are in a union</div>
+          <div class="hub-card-desc">Public and private sector union density in the city, the state and the nation.</div>
+          <div class="hub-card-meta">
+            <span class="hub-card-stat">3 geographies &middot; CUNY</span>
+            <span class="hub-card-cta">Explore &rarr;</span>
+          </div>
+        </div>
+      </a>
+
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-inner">
+    <span class="footer-copy">&copy; NYCuriosity &middot; Tal Roded</span>
+    <nav class="footer-links">
+      <a href="https://buymeacoffee.com/nycuriosity" class="footer-support" target="_blank" rel="noopener" aria-label="Support my work on Buy Me a Coffee"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>Support my work</a>
+      <a href="https://talroded.nycuriosity.com" target="_blank" rel="noopener">About</a>
+      <a href="https://www.nycuriosity.com" target="_blank" rel="noopener">Substack</a>
+      <a href="https://github.com/TalR24/nycur-data-website" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://www.youtube.com/@nycuriosity-yt" target="_blank" rel="noopener">YouTube</a>
+    </nav>
+  </div>
+</footer>
+
+</body>
+</html>
