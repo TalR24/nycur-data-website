@@ -7,14 +7,14 @@
   <link rel="manifest" href="/site.webmanifest">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#170C03">
-  <title>Obligations Table — NYC Legislation Implementation Tracker — NYCuriosity</title>
+  <title>Obligations Table — Obligations Tracker — NYCuriosity</title>
   <meta name="description" content="Every agency action required by NYC local laws enacted since 2014, in one filterable table: agency, deliverable, deadline, and the statutory language behind each obligation.">
   <link rel="canonical" href="https://data.nycuriosity.com/civic_reference/legislation_implementation_tracker/obligations-table/">
   <meta property="og:image" content="https://data.nycuriosity.com/website_logo.png">
   <meta name="twitter:card" content="summary_large_image">
   <meta property="og:type"        content="website">
   <meta property="og:url"         content="https://data.nycuriosity.com/civic_reference/legislation_implementation_tracker/obligations-table/">
-  <meta property="og:title"       content="Obligations Table — NYC Legislation Implementation Tracker">
+  <meta property="og:title"       content="Obligations Table — Obligations Tracker">
   <meta property="og:description" content="Every agency action required by NYC local laws enacted since 2014, in one filterable table.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -236,6 +236,8 @@
   <div class="hero-inner">
     <div class="breadcrumb">
       <a href="/">data.nycuriosity.com</a>
+      <span>›</span>
+      <a href="../../nyc_council_legislation_trackers/">NYC Council Legislation Trackers</a>
       <span>›</span>
       <a href="../">Obligations Tracker</a>
       <span>›</span>
@@ -461,8 +463,23 @@
     });
   }
 
+  // Normalize "LL 61" / "LL61" to "Local Law 61" so the search matches the
+  // law_number_display text, and let a single term match with or without a
+  // trailing "s" (Tal, Sep 24 2026).
+  function normalizeLL(s) {
+    return s.replace(/\bll\s*(\d+)/gi, 'local law $1');
+  }
+  function searchMatch(hay, qRaw) {
+    var q = normalizeLL(qRaw.toLowerCase().trim());
+    if (!q) return true;
+    hay = normalizeLL(hay.toLowerCase());
+    if (hay.indexOf(q) !== -1) return true;
+    var alt = /s$/.test(q) ? q.slice(0, -1) : q + 's';
+    return hay.indexOf(alt) !== -1;
+  }
+
   function applyFilters() {
-    var q = document.getElementById('fSearch').value.toLowerCase().trim();
+    var q = document.getElementById('fSearch').value.trim();
     var dlSel = MS.deadline.selected();
     var today = new Date(); today.setHours(0, 0, 0, 0);
     var yearOut = new Date(today.getFullYear() + 1, today.getMonth(), today.getDate());
@@ -500,8 +517,8 @@
       if (q) {
         var hay = (o.action_summary + ' ' + o.agency + ' ' + o.agency_full + ' ' +
                    o.law_number_display + ' ' + o.file_number + ' ' + o.law_title + ' ' +
-                   o.citation + ' ' + (o.quote || '')).toLowerCase();
-        if (hay.indexOf(q) === -1) return false;
+                   o.citation + ' ' + (o.quote || ''));
+        if (!searchMatch(hay, q)) return false;
       }
       return true;
     });

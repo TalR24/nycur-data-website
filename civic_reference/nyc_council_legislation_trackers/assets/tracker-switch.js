@@ -74,6 +74,40 @@
       if (anchor && anchor.parentNode) anchor.parentNode.insertBefore(bar, anchor);
     }
     css();
+    studioCallout();
+  }
+
+  // NYCuriosity Studio callout above the footer of every tracker page (Tal, Sep 24 2026)
+  function studioCallout() {
+    if (document.querySelector('.trk-studio')) return;
+    var foot = document.querySelector('body > footer');
+    if (!foot) return;
+    var box = document.createElement('aside');
+    box.className = 'trk-studio';
+    box.innerHTML = '<div class="trk-studio-inner"><div><p class="trk-studio-k">NYCuriosity Studio</p>' +
+      '<p class="trk-studio-h">Need a tracker like this for your records?</p>' +
+      '<p class="trk-studio-p">I build trackers, dashboards and searchable archives from public records, on commission.</p></div>' +
+      '<div class="trk-studio-btns"><a href="https://talroded.nycuriosity.com/services/case-studies/legislation-trackers/">How these trackers were built</a>' +
+      '<a class="primary" href="https://talroded.nycuriosity.com/services/#start">Start a project &rarr;</a></div></div>';
+    foot.parentNode.insertBefore(box, foot);
+    if (document.getElementById('trk-studio-css')) return;
+    var s = document.createElement('style');
+    s.id = 'trk-studio-css';
+    s.textContent =
+      '.trk-studio{padding:0 clamp(20px,5vw,48px) clamp(32px,5vw,48px)}' +
+      '.trk-studio-inner{max-width:1100px;margin:0 auto;background:var(--surface,#fff);border:1px solid var(--border);' +
+      'border-left:4px solid var(--b-tangerine-deep,var(--blue));border-radius:12px;padding:20px 24px;display:flex;flex-wrap:wrap;' +
+      'gap:16px;align-items:center;justify-content:space-between}' +
+      '.trk-studio-k{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:.68rem;font-weight:700;text-transform:uppercase;' +
+      'letter-spacing:.09em;color:var(--b-tangerine-deep,var(--blue));margin:0 0 4px}' +
+      '.trk-studio-h{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:1rem;font-weight:700;color:var(--text);margin:0 0 4px}' +
+      '.trk-studio-p{font-size:.88rem;color:var(--text-muted);margin:0}' +
+      '.trk-studio-btns{display:flex;gap:10px;flex-wrap:wrap}' +
+      '.trk-studio-btns a{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:.78rem;font-weight:600;text-decoration:none;' +
+      'padding:9px 16px;border-radius:8px;border:1px solid var(--border);color:var(--text);white-space:nowrap}' +
+      '.trk-studio-btns a:hover{border-color:var(--b-tangerine-deep,var(--blue))}' +
+      '.trk-studio-btns a.primary{background:var(--b-tangerine-deep,var(--blue));border-color:var(--b-tangerine-deep,var(--blue));color:var(--b-surface,#fff)}';
+    document.head.appendChild(s);
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', build);

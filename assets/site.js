@@ -12,7 +12,7 @@
 
   var TOOLS_MENU = [
     { label: 'NYC Council Legislation Trackers', href: '/civic_reference/nyc_council_legislation_trackers/', sub: [
-      { label: 'Fiscal Impacts', href: '/civic_reference/nyc_council_fiscal_impacts_tracker/' },
+      { label: 'Fiscal Impacts', href: '/civic_reference/nyc_council_fiscal_impacts_tracker/overview/' },
       { label: 'Obligations', href: '/civic_reference/legislation_implementation_tracker/' },
       { label: 'Powers', href: '/civic_reference/legislation_implementation_tracker/powers/' },
       { label: 'Council Members', href: '/civic_reference/nyc_council_legislation_trackers/council-members/' },

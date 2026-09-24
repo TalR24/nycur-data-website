@@ -741,10 +741,10 @@
 <!-- CHART NAV -->
 <div class="chart-nav">
   <span class="chart-nav-label">Views in this tool:</span>
-  <a href="/civic_reference/nyc_council_fiscal_impacts_tracker/overview/">Fiscal overview</a>
+  <a href="/civic_reference/nyc_council_fiscal_impacts_tracker/overview/">Fiscal Impacts overview</a>
   <a href="/civic_reference/nyc_council_fiscal_impacts_tracker/" class="active">Bill Table</a>
-  <a href="/civic_reference/nyc_council_fiscal_impacts_tracker/agency-fiscal-impact/">Fiscal Impact by Agency</a>
-  <a href="/civic_reference/nyc_council_fiscal_impacts_tracker/sponsor-fiscal-impact/">Fiscal Impact by Sponsor</a>
+  <a href="/civic_reference/nyc_council_fiscal_impacts_tracker/agency-fiscal-impact/">By Agency</a>
+  <a href="/civic_reference/nyc_council_fiscal_impacts_tracker/sponsor-fiscal-impact/">By Sponsor</a>
   <a href="/civic_reference/nyc_council_fiscal_impacts_tracker/intro-year-impact/">By Year Legislated</a>
   <a href="/civic_reference/nyc_council_fiscal_impacts_tracker/cost-revenue-breakdown/">Costs vs. Revenue</a>
   <a href="/civic_reference/nyc_council_fiscal_impacts_tracker/methodology/">Methodology</a>
@@ -759,7 +759,7 @@
       <div class="filter-row">
         <div class="filter-group search">
           <label class="filter-label" for="f-search">Search bill # or title</label>
-          <input type="text" id="f-search" class="filter-input" placeholder="e.g. Int. 805 or cool pavements …">
+          <input type="text" id="f-search" class="filter-input" placeholder="e.g. Int. No. 246 or cool pavements …">
         </div>
         <div id="ms-type"></div>
         <div id="ms-agency"></div>
@@ -1028,11 +1028,18 @@ function applyFilters() {
 
   filtered = allRecords.filter(r => {
     if (search) {
-      const hay = ((r.legistar_file || "") + " " + (r.file_number || "") + " " + (r.title || "")).toLowerCase();
+      const hay = (
+        (r.legistar_file || "") + " " + (r.file_number || "") + " " + (r.title || "") + " " +
+        (r.prime_sponsor || "") + " " + (r.sponsors || []).join(" ") + " " +
+        (r.agencies_full || []).join(" ") + " " + (r.agencies_abbrev || []).join(" ")
+      ).toLowerCase();
       if (!hay.includes(search)) return false;
     }
     if (!MS.type.pass(r.legislation_type)) return false;
-    if (agencyF !== null && !(r.agencies_abbrev || []).some(a => agencyF.has(a))) return false;
+    if (agencyF !== null) {
+      const agencies = r.agencies_abbrev || [];
+      if (agencies.length && !agencies.some(a => agencyF.has(a))) return false;
+    }
     if (!MS.committee.pass((r.committee || "").trim())) return false;
     if (!MS.sponsor.pass((r.prime_sponsor || "").trim())) return false;
     if (!MS.fy.pass((r.fy_full_impact || "").trim())) return false;

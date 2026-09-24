@@ -75,6 +75,7 @@
 
     /* Controls */
     .controls { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 16px 18px; margin-bottom: 16px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    .controls.controls--bare { background: transparent; border: none; box-shadow: none; padding: 0 0 16px; }
     .controls input[type="search"] { flex: 2 1 220px; min-width: 180px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 7px; font-family: 'Inter', sans-serif; font-size: 0.85rem; background: var(--bg); color: var(--text); }
     .controls select { flex: 1 1 160px; min-width: 140px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 7px; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.75rem; background: var(--bg); color: var(--text-mid); cursor: pointer; }
     .controls input:focus, .controls select:focus { outline: 2px solid var(--blue-mid); border-color: var(--blue); }
@@ -236,7 +237,7 @@
 <div class="pill-nav">
   <!-- shared views bar: every tracker page that belongs to no single tracker (Tal, Sep 24 2026) -->
   <span class="pill-label">Views in this tool:</span>
-  <a href="/civic_reference/nyc_council_fiscal_impacts_tracker/">Fiscal Impacts overview</a>
+  <a href="/civic_reference/nyc_council_fiscal_impacts_tracker/overview/">Fiscal Impacts overview</a>
   <a href="/civic_reference/legislation_implementation_tracker/">Obligations overview</a>
   <a href="/civic_reference/legislation_implementation_tracker/powers/">Powers overview</a>
   <a href="/civic_reference/nyc_council_legislation_trackers/council-members/">Council Members</a>
@@ -484,8 +485,15 @@
     ['fSearch', 'fSector', 'fSort'].forEach(function (id) {
       document.getElementById(id).style.display = mode === 'cards' ? '' : 'none';
     });
+    var controls = document.querySelector('.controls');
+    if (controls) controls.classList.toggle('controls--bare', mode === 'treemap');
     document.getElementById('treemapWrap').style.display = mode === 'treemap' ? 'block' : 'none';
     if (mode === 'treemap') renderTreemap();
+    // keep the view in the URL so Back returns to it (Tal, Sep 24 2026)
+    var url = new URL(location.href);
+    if (mode === 'treemap') url.searchParams.set('view', 'treemap');
+    else url.searchParams.delete('view');
+    history.replaceState(null, '', url.pathname + (url.search ? url.search : '') + url.hash);
   }
 
   function setMetric(metric) {
@@ -658,7 +666,7 @@
     document.getElementById('profileMeta').innerHTML =
       (chips.length ? '<div class="law-meta-row">' + chips.join('') + '</div>' : '')
       + '<div class="hero-actions">' + actions.join('')
-      + '<a class="tracker-alerts" href="../legislation_implementation_tracker/alerts/"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg> Monthly email alerts (members) →</a>'
+      + '<a class="tracker-alerts" href="/civic_reference/legislation_implementation_tracker/alerts/"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg> Monthly email alerts (members) →</a>'
       + '</div>';
 
     var t = a.trackers || {};
@@ -743,7 +751,7 @@
         + '<td>' + esc(f.title) + '</td>'
         + '<td class="num' + (f.net < 0 ? ' neg' : '') + '">' + fmtMoney(f.net) + '</td></tr>';
     }).join('');
-    html += '<table class="data-table"><thead><tr><th>Bill</th><th>Title</th><th>Net (full impact)</th></tr></thead><tbody>' + rows + '</tbody></table>';
+    html += '<div class="c-plot--scroll"><table class="data-table"><thead><tr><th>Bill</th><th>Title</th><th>Net (full impact)</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
     return html;
   }
 
@@ -807,7 +815,7 @@
       return '<tr><td>' + esc(p.description) + '</td><td class="num">' + fmtMoney(p.totalplannedcommit) + '</td>'
         + '<td>' + esc(yearOf(p.mindate)) + '–' + esc(yearOf(p.maxdate)) + '</td></tr>';
     }).join('');
-    html += '<table class="data-table"><thead><tr><th>Description</th><th>Planned commitment</th><th>Start–end</th></tr></thead><tbody>' + rows + '</tbody></table>';
+    html += '<div class="c-plot--scroll"><table class="data-table"><thead><tr><th>Description</th><th>Planned commitment</th><th>Start–end</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
     html += '<p class="section-sub credit">Capital Projects Database, ' + esc(cap.version) + '.</p>';
     return html;
   }
@@ -823,7 +831,7 @@
         + '<td class="num">' + esc(m.current_fy_authorized_budget) + '</td>'
         + '<td class="num">' + esc(m.next_fy_authorized_budget) + '</td><td>' + esc(m.trend) + '</td></tr>';
     }).join('');
-    html += '<table class="data-table"><thead><tr><th>Indicator</th><th>Current FY projected/actual</th><th>Current FY authorized</th><th>Next FY authorized</th><th>Trend</th></tr></thead><tbody>' + rows + '</tbody></table>';
+    html += '<div class="c-plot--scroll"><table class="data-table"><thead><tr><th>Indicator</th><th>Current FY projected/actual</th><th>Current FY authorized</th><th>Next FY authorized</th><th>Trend</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
     return html;
   }
 
@@ -836,7 +844,7 @@
       html += '<p class="section-note">No laws in the trackers name this agency.</p>';
       return html;
     }
-    html += '<table class="data-table" id="lawsTable"><thead><tr><th>Law</th><th>Title</th><th>Enacted</th><th>Duties</th><th>Powers</th></tr></thead><tbody id="lawsBody"></tbody></table>';
+    html += '<div class="c-plot--scroll"><table class="data-table" id="lawsTable"><thead><tr><th>Law</th><th>Title</th><th>Enacted</th><th>Duties</th><th>Powers</th></tr></thead><tbody id="lawsBody"></tbody></table></div>';
     html += '<nav class="pager" id="lawsPager"></nav>';
     return html;
   }

@@ -7,14 +7,14 @@
   <link rel="manifest" href="/site.webmanifest">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#170C03">
-  <title>NYC Legislation Implementation Tracker — NYCuriosity</title>
+  <title>Obligations Tracker — NYCuriosity</title>
   <meta name="description" content="Every enacted NYC local law tells city agencies to do something. This tracker extracts each required action from the legislation text: the agency, the deliverable, and the deadline.">
   <link rel="canonical" href="https://data.nycuriosity.com/civic_reference/legislation_implementation_tracker/">
   <meta property="og:image" content="https://data.nycuriosity.com/website_logo.png">
   <meta name="twitter:card" content="summary_large_image">
   <meta property="og:type"        content="website">
   <meta property="og:url"         content="https://data.nycuriosity.com/civic_reference/legislation_implementation_tracker/">
-  <meta property="og:title"       content="NYC Legislation Implementation Tracker — NYCuriosity">
+  <meta property="og:title"       content="Obligations Tracker — NYCuriosity">
   <meta property="og:description" content="Every enacted NYC local law tells city agencies to do something. This tracker extracts each required action from the legislation text: the agency, the deliverable, and the deadline.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -362,7 +362,7 @@
     <div class="hero-actions">
       <a class="btn btn-outline" href="alerts/">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-        Get new-law alerts (members)
+        Get monthly email alerts (members)
       </a>
     </div>
     <p class="hero-press">Featured in <a href="https://www.thecityreporter.nyc/2026/08/18/mamdani-agency-reporting-requirements-city-council-laws/" target="_blank" rel="noopener">The City Reporter</a>, <a href="https://www.vitalcitynyc.org/nyc-coge-charter-reform-government-operations-fixes/" target="_blank" rel="noopener">Vital City</a>, and <a href="https://searchlight.citizensunion.org/unfunded-and-unfinished-how-council-mandates-slow-the-city-down/" target="_blank" rel="noopener">Citizens Union&rsquo;s Searchlight</a> (Aug 2026)</p>
@@ -400,26 +400,6 @@
           <div class="view-card-desc">The master list: every extracted agency action with its law, deliverable type, deadline, and recurrence. Filter by agency, type, deadline year, or search the text. Click a row for the statutory language.</div>
           <div class="view-card-meta">
             <span class="view-card-stat" id="cardStatTable">filterable · sortable</span>
-            <span class="view-card-cta">Explore →</span>
-          </div>
-        </div>
-      </a>
-
-      <a class="view-card" href="powers-table/">
-        <div class="view-card-icon">
-          <div class="icon-table">
-            <div class="icon-table-row"><div class="icon-table-cell header w1"></div><div class="icon-table-cell header w2"></div><div class="icon-table-cell header w2"></div><div class="icon-table-cell header w3"></div></div>
-            <div class="icon-table-row"><div class="icon-table-cell w1"></div><div class="icon-table-cell w2"></div><div class="icon-table-cell w2"></div><div class="icon-table-cell w3"></div></div>
-            <div class="icon-table-row"><div class="icon-table-cell w1"></div><div class="icon-table-cell w2"></div><div class="icon-table-cell w2"></div><div class="icon-table-cell w3"></div></div>
-            <div class="icon-table-row"><div class="icon-table-cell w4"></div><div class="icon-table-cell w2"></div><div class="icon-table-cell w2"></div><div class="icon-table-cell w3"></div></div>
-          </div>
-        </div>
-        <div class="view-card-body">
-          <div class="view-card-label">Table</div>
-          <div class="view-card-title">Every Power a Law Grants, One Table</div>
-          <div class="view-card-desc">The authority local laws give agencies, from inspections to fees, kept out of the duty counts.</div>
-          <div class="view-card-meta">
-            <span class="view-card-stat">filterable · sortable</span>
             <span class="view-card-cta">Explore →</span>
           </div>
         </div>
@@ -519,7 +499,7 @@
 
       <figure class="chart-card" id="chart-box" data-slug="nyc-obligations-by-agency">
         <div class="c-head">
-          <h2 class="c-title">Ten agencies carry six in ten of the Council's mandates</h2>
+          <h2 class="c-title" id="titleAgency">Loading…</h2>
           <p class="c-deck">Obligations by responsible agency, top 12.</p>
         </div>
         <div class="c-plot">
@@ -637,8 +617,12 @@
     }
 
     // Chart 1: obligations by agency (top 12 horizontal bars)
-    var byAgency = countBy(obs.filter(function (o) { return o.agency_matched; }),
-                           function (o) { return o.agency; });
+    var matchedObs = obs.filter(function (o) { return o.agency_matched; });
+    var byAgency = countBy(matchedObs, function (o) { return o.agency; });
+    var top10Sum = topN(byAgency, 10).reduce(function (sum, p) { return sum + p[1]; }, 0);
+    var top10Pct = matchedObs.length ? Math.round((top10Sum / matchedObs.length) * 100) : 0;
+    document.getElementById('titleAgency').textContent =
+      'The top 10 agencies carry ' + top10Pct + '% of the Council\'s duties matched to an agency';
     hbars('chartAgency', topN(byAgency, 12));
 
     // Chart 2: by deliverable type
