@@ -58,7 +58,10 @@ BASE_URL     = "https://legistar.council.nyc.gov"
 SKIP_PATH    = SCRIPT_DIR / "no_impact_matters.json"
 # Enacted-law universe from the implementation tracker (web matter_id + GUID).
 LAWS_PATH    = REPO_ROOT / "civic_reference" / "legislation_implementation_tracker" / "data" / "laws.json"
-CLAUDE_MODEL = "claude-haiku-4-5-20251001"
+# Sonnet 5 since Sep 24 2026: Haiku 4.5 misapplied the judgment rules (lowest
+# "at least" scenario, whether the costed program itself sunsets) in blind
+# audit rounds 3 and 4; Tal approved the switch
+CLAUDE_MODEL = "claude-sonnet-5"
 # Haiku 4.5 reads 200K tokens; 18,000 chars (~4.5K tokens) cut the end of long
 # statements, where the OMB section, preparer and date live.
 FIS_TEXT_CAP = 150_000
