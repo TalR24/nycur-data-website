@@ -25,6 +25,11 @@ on:
         default: ""
         type: choice
         options: ["", "superseded", "all"]
+      matters:
+        description: "With reextract: comma-separated matter ids to limit the run to (blank = all)"
+        required: false
+        default: ""
+        type: string
       rest_years:
         description: "Legistar REST enumeration (needs LEGISTAR_TOKEN secret): year range like 2014-2023, or blank to skip"
         required: false
@@ -66,6 +71,8 @@ jobs:
           FLAGS=""
           if [ -n "$REEXTRACT" ]; then
             FLAGS="--reextract $REEXTRACT"
+            MATTERS="${{ github.event.inputs.matters }}"
+            if [ -n "$MATTERS" ]; then FLAGS="$FLAGS --matters $MATTERS"; fi
           else
             if [ "$INCREMENTAL" = "true" ]; then FLAGS="--incremental"; fi
             if [ -n "$SEED" ]; then FLAGS="$FLAGS --seed-laws $SEED"; fi

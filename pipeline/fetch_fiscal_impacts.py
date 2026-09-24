@@ -752,13 +752,31 @@ def is_budget_modification(fiscal: dict) -> bool:
     return bool(re.search(r"\bmn-\d+\b", title) or "modification (mn" in title)
 
 
-def is_proposed_bill(fiscal: dict) -> bool:
+_ENACTED_IDS: set[str] | None = None
+
+
+def enacted_matter_ids() -> set[str]:
+    """Web matter ids of every enacted local law (laws.json)."""
+    global _ENACTED_IDS
+    if _ENACTED_IDS is None:
+        try:
+            _ENACTED_IDS = {str(l["matter_id"]) for l in json.loads(LAWS_PATH.read_text())["laws"]}
+        except (OSError, ValueError, KeyError):
+            _ENACTED_IDS = set()
+    return _ENACTED_IDS
+
+
+def is_proposed_bill(fiscal: dict, matter_id: str | None = None) -> bool:
     """
     Returns True if this record is a proposed (not yet passed) bill.
-    File numbers beginning with 'Proposed' (e.g. 'Proposed Int. No. 893-A')
-    indicate draft legislation that has not been enacted as a local law.
-    Only final/passed bills belong in the tracker.
+    A matter in the enacted-law list is never proposed: the statement for an
+    amended bill's final version is itself titled "Proposed Int. No. 893-A"
+    because it is written before the vote (Sep 24 2026: that title removed 83
+    enacted laws in a re-extraction). Outside that list, a file number
+    beginning with 'Proposed' marks draft legislation.
     """
+    if matter_id and str(matter_id) in enacted_matter_ids():
+        return False
     file_number = (fiscal.get("file_number") or "").strip()
     return file_number.lower().startswith("proposed")
 
@@ -967,6 +985,10 @@ def main() -> int:
              "Legistar's attachment search misses most of them.",
     )
     parser.add_argument(
+        "--matters", default=None,
+        help="With --reextract: comma-separated matter ids (or @file.json with a list) to limit the run to",
+    )
+    parser.add_argument(
         "--reextract", choices=["superseded", "all"], default=None,
         help="Re-process records already in the table and replace them in place: "
              "'superseded' only where the page now carries a newer Council statement "
@@ -1014,8 +1036,13 @@ def main() -> int:
     index_by_id = {str(r["matter_id"]): i for i, r in enumerate(records)}
     replaced = removed = unchanged = 0
     if args.reextract:
+        only = None
+        if args.matters:
+            only = set(json.loads(Path(args.matters[1:]).read_text()) if args.matters.startswith("@")
+                       else args.matters.split(","))
         _add_matters([(str(r["matter_id"]), r["legistar_guid"]) for r in records
-                      if r.get("legistar_guid") and r.get("legistar_url")])
+                      if r.get("legistar_guid") and r.get("legistar_url")
+                      and (only is None or str(r["matter_id"]) in only)])
         log.info(f"Re-extract ({args.reextract}): {len(matters)} records with a Legistar page")
     else:
         # Basic all-years search — covers all available bills in Legistar's
@@ -1093,7 +1120,9 @@ def main() -> int:
             # Fast pre-check: skip obvious zero-impact bills before calling Claude.
             # If every dollar figure in the text is $0 and there's no "See below",
             # there's nothing worth storing.
-            if text_is_zero_impact(text):
+            # the pre-check counts only $-prefixed figures, and statement tables
+            # often print bare numbers; on a re-extraction let the model read it
+            if not args.reextract and text_is_zero_impact(text):
                 log.info(f"  Pre-check: all-zero fiscal impact — skipping Claude call")
                 mark_skip(matter_id, "zero_precheck")
                 _drop_if_reextracting(matter_id)
@@ -1124,7 +1153,7 @@ def main() -> int:
 
             # Skip proposed (not yet passed) bills — only final/enacted legislation
             # belongs in the tracker.
-            if is_proposed_bill(fiscal):
+            if is_proposed_bill(fiscal, matter_id):
                 log.info(f"  Proposed bill (not yet passed) — skipping")
                 mark_skip(matter_id, "proposed")
                 _drop_if_reextracting(matter_id)
