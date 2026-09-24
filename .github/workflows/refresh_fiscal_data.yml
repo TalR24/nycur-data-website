@@ -26,7 +26,7 @@ on:
         type: choice
         options: ["", "superseded", "all"]
       matters:
-        description: "With reextract: comma-separated matter ids to limit the run to (blank = all)"
+        description: "Comma-separated matter ids. With reextract: limit it to these records. Without: process exactly these laws (skip list ignored)"
         required: false
         default: ""
         type: string
@@ -73,6 +73,9 @@ jobs:
             FLAGS="--reextract $REEXTRACT"
             MATTERS="${{ github.event.inputs.matters }}"
             if [ -n "$MATTERS" ]; then FLAGS="$FLAGS --matters $MATTERS"; fi
+          elif [ -n "${{ github.event.inputs.matters }}" ]; then
+            # re-check named matters from laws.json (skip list ignored)
+            FLAGS="--matters ${{ github.event.inputs.matters }}"
           else
             if [ "$INCREMENTAL" = "true" ]; then FLAGS="--incremental"; fi
             if [ -n "$SEED" ]; then FLAGS="$FLAGS --seed-laws $SEED"; fi

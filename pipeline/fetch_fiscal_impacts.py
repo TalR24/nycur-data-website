@@ -173,6 +173,7 @@ Return a JSON object with exactly these fields (an empty string for missing text
 
 RULES:
 - total_revenue / total_expenditure / total_capital / net_fiscal_impact: the figures the document itself states as the total or full fiscal impact, copied rather than computed (0 if it states none). The pipeline recomputes them from fiscal_table_columns whenever the table has figures, so copy every column exactly as printed, with revenue reductions entered as negative revenue.
+- A cost the narrative states (for example "a one-time capital cost of $2 million" or "approximately $3.5 million for radios") is part of the estimate even when the table shows $0 or omits it: put it in total_capital or total_expenditure as described.
 - Every amount is in whole dollars: "$435 million" is 435000000 and "$2.3 million" is 2300000, never 435 or 2.3, including when a table is labelled "($000)" or "in millions" (multiply out).
 - A table cell that says "See below" points to the narrative: leave that cell null, and take the figure the Impact on Revenues or Impact on Expenditures paragraph gives (for example "a one-time capital cost of $1.8 million") as the document's stated total. Set cost_estimable to false only when the narrative itself says the cost cannot be estimated and gives no figure.
 - fiscal_table_columns must preserve the exact column structure from the document (there may be 2–6 columns).
@@ -1024,7 +1025,7 @@ def main() -> int:
     )
     parser.add_argument(
         "--matters", default=None,
-        help="With --reextract: comma-separated matter ids (or @file.json with a list) to limit the run to",
+        help="Comma-separated matter ids (or @file.json with a list). With --reextract: limit the re-extraction to these table records. Without: process exactly these matters from laws.json (skip list ignored), e.g. to re-check skip-listed laws.",
     )
     parser.add_argument(
         "--reextract", choices=["superseded", "all"], default=None,
@@ -1082,6 +1083,18 @@ def main() -> int:
                       if r.get("legistar_guid") and r.get("legistar_url")
                       and (only is None or str(r["matter_id"]) in only)])
         log.info(f"Re-extract ({args.reextract}): {len(matters)} records with a Legistar page")
+    elif args.matters:
+        # a named set of matters outside the table (e.g. skip-listed laws to
+        # re-check): take their GUIDs from laws.json and ignore the skip list
+        only = set(json.loads(Path(args.matters[1:]).read_text()) if args.matters.startswith("@")
+                   else args.matters.split(","))
+        laws = json.loads(LAWS_PATH.read_text())["laws"]
+        _add_matters([(str(l["matter_id"]), l["legistar_guid"]) for l in laws
+                      if str(l["matter_id"]) in only and l.get("legistar_guid")])
+        for m in only:
+            skips.pop(m, None)
+            existing_ids.discard(m)
+        log.info(f"Matters run: {len(matters)} of {len(only)} requested found in laws.json")
     else:
         # Basic all-years search — covers all available bills in Legistar's
         # attachment index (currently 2024+; the year filter is non-functional here).
