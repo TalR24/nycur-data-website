@@ -81,6 +81,8 @@ FISCAL_SCHEMA = _obj({
     "sponsors": _STR_LIST, "prime_sponsor": _STR, "effective_date": _STR,
     "fy_first_effective": _STR, "fy_full_impact": _STR, "source_of_funds": _STR,
     "cost_estimable": {"type": "boolean"},
+    "costs_already_in_financial_plan": {"type": "boolean"},
+    "time_limited_program": {"type": "boolean"},
     "total_revenue": _NUM_OR_NULL, "total_expenditure": _NUM_OR_NULL,
     "total_capital": _NUM_OR_NULL, "net_fiscal_impact": _NUM_OR_NULL,
     "fiscal_table_columns": {"type": "array", "items": _obj({
@@ -128,6 +130,8 @@ Return a JSON object with exactly these fields (an empty string for missing text
   "fy_full_impact": "e.g. FY27 or FY28 — just the FY label",
   "source_of_funds": "General Fund or N/A or Federal Funds or as written",
   "cost_estimable": true,
+  "costs_already_in_financial_plan": false,
+  "time_limited_program": false,
 
   "total_revenue": 0,
   "total_expenditure": 0,
@@ -172,8 +176,11 @@ Return a JSON object with exactly these fields (an empty string for missing text
 }}
 
 RULES:
-- total_revenue / total_expenditure / total_capital / net_fiscal_impact: the figures the document itself states as the total or full fiscal impact, copied rather than computed (0 if it states none). The pipeline recomputes them from fiscal_table_columns whenever the table has figures, so copy every column exactly as printed, with revenue reductions entered as negative revenue.
+- total_revenue / total_expenditure / total_capital / net_fiscal_impact: the figures the document itself states as the total or full fiscal impact, copied rather than computed except for the range rule below (0 if it states none). The pipeline recomputes them from fiscal_table_columns whenever the table has figures, so copy every column exactly as printed, with revenue reductions entered as negative revenue.
 - A cost the narrative states (for example "a one-time capital cost of $2 million" or "approximately $3.5 million for radios") is part of the estimate even when the table shows $0 or omits it: put it in total_capital or total_expenditure as described.
+- Ranges and scenarios, in the table or the narrative: when the statement gives an "at least" figure ("at least $750,000", "a minimum of $2 million"), use that figure. Otherwise use the midpoint of the range, or of the lowest and highest scenario figures ("$6.3 million to $11.6 million" is 8950000). Apply this to each table cell that prints a range, and to the stated totals. This is the only arithmetic you do.
+- costs_already_in_financial_plan: true when the statement says a cost is already reflected, included or funded in the City's Financial Plan or the agency's existing budget. Such a cost is not new: leave it out of every total and table column. Costs the statement describes as beyond the Financial Plan still count.
+- time_limited_program: true when the legislation creates a pilot or program that ends on a stated date or after a stated number of years (a sunset or expiration). Copy every year column; the pipeline totals a time-limited program over its life.
 - Every amount is in whole dollars: "$435 million" is 435000000 and "$2.3 million" is 2300000, never 435 or 2.3, including when a table is labelled "($000)" or "in millions" (multiply out).
 - A table cell that says "See below" points to the narrative: leave that cell null, and take the figure the Impact on Revenues or Impact on Expenditures paragraph gives (for example "a one-time capital cost of $1.8 million") as the document's stated total. Set cost_estimable to false only when the narrative itself says the cost cannot be estimated and gives no figure.
 - fiscal_table_columns must preserve the exact column structure from the document (there may be 2–6 columns).
@@ -189,7 +196,6 @@ Some documents — particularly pre-2019 legislation — state fiscal impacts as
 - If a dollar amount is given as an annual figure with no multi-year breakdown, use that figure as the total (do not multiply by years unless the document explicitly states a total cumulative cost).
 - Revenue REDUCTIONS (e.g. "this legislation would reduce revenues by $204,000") are a cost to the city: set total_revenue = 0 and add the reduction amount to total_expenditure so net_fiscal_impact is negative.
 - "No impact on revenues" or "existing resources" means 0 for that category — do NOT set cost_estimable to false.
-- If a range is given (e.g. "$1 million to $2 million"), use the midpoint.
 - Create a single fiscal_table_columns entry with label "Total" and populate revenue/expenditure/capital/net from the narrative figures.
 - If the narrative gives a cost figure and also says some further part "cannot be determined" or "cannot be projected", keep the stated figure as the estimate (cost_estimable stays true) and note the caveat in the narrative fields. Set cost_estimable to false only when the statement gives no cost figure at all.
 """
@@ -925,7 +931,22 @@ def totals_from_columns(fiscal: dict) -> dict:
     table_has_figures = any((c.get(k) or 0) for c in cols for k in ("revenue", "expenditure", "capital"))
     bases = set()
 
+    time_limited = bool(fiscal.get("time_limited_program"))
+    # the standard table repeats the succeeding year as "Full Fiscal Impact
+    # FY27"; summing it too would count that year twice
+    year_of = lambda c: (re.findall(r"FY\s*'?(\d{2,4})", c.get("label") or "", re.I) or [None])[-1]
+    other_years = lambda c: {year_of(o) for o in cols if o is not c}
+    life_cols = [c for c in cols
+                 if not ("full" in (c.get("label") or "").lower() and year_of(c) in other_years(c))]
+
     def pick(key):
+        # a pilot that ends has no steady-state year: its cost is the
+        # program's life, the sum of its year columns (Int 1085-2018)
+        if time_limited:
+            col_sum = sum((c.get(key) or 0) for c in life_cols)
+            if col_sum:
+                bases.add("program_life_sum")
+                return col_sum
         if full is not None and (full.get(key) or 0):
             bases.add(full_basis)
             return full.get(key)
@@ -1197,8 +1218,10 @@ def main() -> int:
 
             # Post-extraction filter: skip if no real fiscal impact or unestimable.
             if not record_has_fiscal_impact(fiscal):
-                log.info(f"  Post-check: zero/unestimable fiscal impact — skipping")
-                mark_skip(matter_id, "zero_or_unestimable")
+                reason = ("already_in_financial_plan" if fiscal.get("costs_already_in_financial_plan")
+                          else "zero_or_unestimable")
+                log.info(f"  Post-check: no new fiscal impact ({reason}), skipping")
+                mark_skip(matter_id, reason)
                 _drop_if_reextracting(matter_id)
                 continue
 
