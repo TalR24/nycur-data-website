@@ -883,34 +883,64 @@ def _full_impact_column(cols: list[dict]) -> dict | None:
 
 def totals_from_columns(fiscal: dict) -> dict:
     """
-    DECISION FOR TAL: what one number per bill should mean. Proposed: the
-    annual cost at full implementation (the statement's "Full Fiscal Impact"
-    column), falling back to the sum of columns when that column is zero, so a
-    one-time cost that appears only in the first year is not erased. The model
-    used to do this arithmetic from a "sum ALL columns" rule and applied three
-    different definitions across the 359 records (Sep 23 2026 audit).
+    One number per bill (Tal, Sep 24 2026): the annual cost at full
+    implementation, i.e. the statement's "Full Fiscal Impact" column, falling
+    back to the sum of columns when that column is zero (a one-time
+    first-year cost), and to the figure the statement states in its narrative
+    when the table has nothing for that category ("See below", or capital
+    described only in prose while the expense table shows $0).
+
+    Costs are always positive: statements print costs in parentheses, and a
+    cost read as negative flips a cost into a saving (3 of 14 audited records,
+    Sep 24 2026). A negative revenue is a revenue reduction, counted as cost.
+    `totals_basis` records where each figure came from.
     """
     if fiscal.get("cost_estimable") is False:
         return fiscal
     cols = fiscal.get("fiscal_table_columns") or []
+    for c in cols:                       # a cost cell is a cost whatever its printed sign
+        for k in ("expenditure", "capital"):
+            if isinstance(c.get(k), (int, float)):
+                c[k] = abs(c[k])
+        # a revenue loss written both as negative revenue and as the same
+        # amount of expenditure (older instructions asked for both) counts once
+        rv, ex = c.get("revenue") or 0, c.get("expenditure") or 0
+        if rv < 0 and ex and abs(ex + rv) <= 1:
+            c["expenditure"] = 0
+    stated = {
+        "revenue": fiscal.get("total_revenue") or 0,
+        "expenditure": abs(fiscal.get("total_expenditure") or 0),
+        "capital": abs(fiscal.get("total_capital") or 0),
+    }
     full = _full_impact_column(cols)
-    has_figures = any(c.get(k) for c in cols for k in ("revenue", "expenditure", "capital"))
-    if full is None or not has_figures:
-        fiscal["totals_basis"] = "document_stated"   # narrative-only statement: keep the copied figure
-        return fiscal
+    table_has_figures = any((c.get(k) or 0) for c in cols for k in ("revenue", "expenditure", "capital"))
+    bases = set()
 
     def pick(key):
-        v = full.get(key) or 0
-        return v if v else sum((c.get(key) or 0) for c in cols)
+        if full is not None and (full.get(key) or 0):
+            bases.add("full_impact_column")
+            return full.get(key)
+        col_sum = sum((c.get(key) or 0) for c in cols)
+        if col_sum:
+            bases.add("sum_of_columns")
+            return col_sum
+        # the statement's stated figure only when its table is empty: a table
+        # that already carries the cost (e.g. as negative revenue) must not
+        # get the same amount added again from the stated total
+        if stated[key] and not table_has_figures:
+            bases.add("document_stated")
+            return stated[key]
+        return 0
 
     rev, exp, cap = pick("revenue"), pick("expenditure"), pick("capital")
-    if rev < 0:                      # revenue reduction: a cost to the city
+    if rev < 0:                          # revenue reduction: a cost to the city
         exp, rev = exp - rev, 0
     fiscal["total_revenue"] = rev
     fiscal["total_expenditure"] = exp
     fiscal["total_capital"] = cap or None
     fiscal["net_fiscal_impact"] = rev - exp - (cap or 0)
-    fiscal["totals_basis"] = "full_impact_column" if (full.get("expenditure") or full.get("revenue") or full.get("capital")) else "sum_of_columns"
+    fiscal["totals_basis"] = (bases.pop() if len(bases) == 1 else
+                              "mixed:" + "+".join(sorted(bases)) if bases else "none")
     return fiscal
 
 
