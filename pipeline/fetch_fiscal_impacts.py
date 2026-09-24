@@ -173,7 +173,7 @@ Return a JSON object with exactly these fields (an empty string for missing text
 
 RULES:
 - total_revenue / total_expenditure / total_capital / net_fiscal_impact: the figures the document itself states as the total or full fiscal impact, copied rather than computed (0 if it states none). The pipeline recomputes them from fiscal_table_columns whenever the table has figures, so copy every column exactly as printed, with revenue reductions entered as negative revenue.
-- If ANY cell says "See below" or indicates the cost cannot be estimated, set cost_estimable to false and set that total to null.
+- A table cell that says "See below" points to the narrative: leave that cell null, and take the figure the Impact on Revenues or Impact on Expenditures paragraph gives (for example "a one-time capital cost of $1.8 million") as the document's stated total. Set cost_estimable to false only when the narrative itself says the cost cannot be estimated and gives no figure.
 - fiscal_table_columns must preserve the exact column structure from the document (there may be 2–6 columns).
 - agencies_abbrev: list only agencies that are directly responsible for implementing the legislation — i.e. agencies that have at least one line item in program_breakdowns. Do NOT list agencies that only appear in passing in narrative text (e.g. OMB as reviewer, IBO as analyst, NYC Council as introducer).
 - agencies_full: each agency's name as the document writes it. agencies_abbrev and program_breakdowns[].agency: the abbreviation the document uses, or the full name if it uses none; the pipeline canonicalizes both through the NYC agency crosswalk.
