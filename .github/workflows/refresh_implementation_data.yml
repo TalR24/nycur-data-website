@@ -99,31 +99,25 @@ jobs:
             git push
           fi
 
-      - name: Push members CSV to premium repo and send member alerts
+      - name: Send member alerts
         env:
           PREMIUM_PUSH_TOKEN: ${{ secrets.PREMIUM_PUSH_TOKEN }}
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
         run: |
-          # obligations.csv, alert subscriptions, and the alert state are
-          # members-only: they live in the private premium repo (served
-          # behind Cloudflare Access), never in this public repo
+          # alert subscriptions and the alert state are members-only: they
+          # live in the private premium repo (served behind Cloudflare
+          # Access), never in this public repo. The trackers offer no data
+          # downloads (Tal, Sep 24 2026), so no CSV is copied there.
           git clone --depth 1 "https://TalR24:${PREMIUM_PUSH_TOKEN}@github.com/TalR24/nycur-data-premium.git" /tmp/premium
-          CSV=civic_reference/legislation_implementation_tracker/data/obligations.csv
-          PCSV=civic_reference/legislation_implementation_tracker/data/powers.csv
-          mkdir -p "/tmp/premium/civic_reference/legislation_implementation_tracker/data"
-          for f in "$CSV" "$PCSV"; do
-            if [ -f "$f" ]; then cp "$f" "/tmp/premium/$f"; fi
-          done
           PREMIUM_DIR=/tmp/premium python3 civic_reference/nyc_council_legislation_trackers/pipeline/send_alerts.py
           cd /tmp/premium
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add "$CSV" civic_reference/legislation_implementation_tracker/data/alerts_state.json
-          if [ -f "$PCSV" ]; then git add "$PCSV"; fi
+          git add civic_reference/legislation_implementation_tracker/data/alerts_state.json
           if git diff --cached --quiet; then
-            echo "Premium data unchanged."
+            echo "Alert state unchanged."
           else
-            git commit -m "Monthly refresh: members CSV + alert state"
+            git commit -m "Monthly refresh: alert state"
             git push
           fi
