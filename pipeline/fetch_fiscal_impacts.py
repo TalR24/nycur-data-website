@@ -939,6 +939,13 @@ def reconcile_totals(fiscal: dict) -> dict:
     if None in (rev, exp, net):
         return fiscal
     cap0 = cap or 0
+    if cap0 > 0 and abs(exp - cap0) <= 1 and abs(net + exp + cap0) <= 1:
+        # the same capital figure written into both expenditure and capital
+        # (Int 353-2024, Sep 24 2026: $605M twice, net -$1.21B)
+        fiscal["total_expenditure"] = 0
+        fiscal["net_fiscal_impact"] = rev - cap0
+        fiscal["totals_reconciled"] = "capital_duplicated_as_expenditure"
+        return fiscal
     if abs((rev - exp - cap0) - net) <= 1:
         return fiscal
     if rev > 0 and abs(-(rev + exp + cap0) - net) <= 1:
