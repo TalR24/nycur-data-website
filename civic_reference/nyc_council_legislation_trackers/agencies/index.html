@@ -461,7 +461,11 @@
     document.getElementById('btnTreemap').classList.toggle('active', mode === 'treemap');
     document.getElementById('agencyGrid').style.display = mode === 'cards' ? 'grid' : 'none';
     document.getElementById('resultCount').style.display = mode === 'cards' ? 'block' : 'none';
-    document.querySelector('.controls').style.display = mode === 'cards' ? 'flex' : 'none';
+    // the treemap ignores search/sector/sort, so hide those, but keep the
+    // bar itself: it holds the Card grid / Treemap toggle
+    ['fSearch', 'fSector', 'fSort'].forEach(function (id) {
+      document.getElementById(id).style.display = mode === 'cards' ? '' : 'none';
+    });
     document.getElementById('treemapWrap').style.display = mode === 'treemap' ? 'block' : 'none';
     if (mode === 'treemap') renderTreemap();
   }
