@@ -874,12 +874,20 @@ def normalize_agency_attribution(fiscal: dict) -> dict:
     return fiscal
 
 
-def _full_impact_column(cols: list[dict]) -> dict | None:
-    """The column a statement labels as full fiscal impact, else the last fiscal-year column."""
+def _full_impact_column(cols: list[dict]) -> tuple[dict | None, str]:
+    """The column a statement labels as full fiscal impact, else the last
+    fiscal-year column, with the totals_basis label that says which: a
+    statement without a Full column (Int 76-2022) is "last_year_column", and
+    the single "Total" column the prompt builds from a narrative-only
+    statement (Int 1259-2016) is "document_stated"."""
     for c in cols:
         if "full" in (c.get("label") or "").lower():
-            return c
-    return cols[-1] if cols else None
+            return c, "full_impact_column"
+    if not cols:
+        return None, "none"
+    if len(cols) == 1 and (cols[0].get("label") or "").strip().lower() == "total":
+        return cols[0], "document_stated"
+    return cols[-1], "last_year_column"
 
 
 def totals_from_columns(fiscal: dict) -> dict:
@@ -913,13 +921,13 @@ def totals_from_columns(fiscal: dict) -> dict:
         "expenditure": abs(fiscal.get("total_expenditure") or 0),
         "capital": abs(fiscal.get("total_capital") or 0),
     }
-    full = _full_impact_column(cols)
+    full, full_basis = _full_impact_column(cols)
     table_has_figures = any((c.get(k) or 0) for c in cols for k in ("revenue", "expenditure", "capital"))
     bases = set()
 
     def pick(key):
         if full is not None and (full.get(key) or 0):
-            bases.add("full_impact_column")
+            bases.add(full_basis)
             return full.get(key)
         col_sum = sum((c.get(key) or 0) for c in cols)
         if col_sum:
