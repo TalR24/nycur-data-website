@@ -35,6 +35,9 @@ import re
 import sys
 import time
 from collections import Counter, defaultdict
+
+sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parent))
+from fetch_fiscal_impacts import is_proposed_bill  # noqa: E402  (one rule, shared with the pipeline)
 from datetime import date
 from pathlib import Path
 
@@ -106,7 +109,9 @@ def main() -> None:
             hard["cost_not_estimable_included"].append(label(r))
         if re.search(r"\bMN-\d+", (r.get("title") or "") + " " + (r.get("file_number") or "")):
             hard["budget_modification_included"].append(label(r))
-        if (r.get("file_number") or "").lower().startswith("proposed"):
+        # the pipeline's own rule: an enacted law's final statement is titled
+        # "Proposed Int. No. X-A", so a title check alone flags enacted laws
+        if is_proposed_bill(r, str(r.get("matter_id"))):
             hard["proposed_bill_included"].append(label(r))
         if None not in (rev, exp, net):
             expected = (rev or 0) - (exp or 0) - (cap or 0)
