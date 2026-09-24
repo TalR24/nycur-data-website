@@ -63,6 +63,36 @@ CLAUDE_MODEL = "claude-haiku-4-5-20251001"
 # statements, where the OMB section, preparer and date live.
 FIS_TEXT_CAP = 150_000
 
+# ── Output schema (structured outputs: the API guarantees parseable JSON) ────
+def _n(t):          # nullable
+    return {"anyOf": [{"type": t}, {"type": "null"}]}
+
+def _obj(props):
+    return {"type": "object", "properties": props, "required": list(props), "additionalProperties": False}
+
+_STR_LIST = {"type": "array", "items": {"type": "string"}}
+FISCAL_SCHEMA = _obj({
+    "file_number": _n("string"), "legislation_type": _n("string"), "title": _n("string"),
+    "committee": _n("string"), "sponsors": _STR_LIST, "prime_sponsor": _n("string"),
+    "effective_date": _n("string"), "fy_first_effective": _n("string"), "fy_full_impact": _n("string"),
+    "source_of_funds": _n("string"), "cost_estimable": {"type": "boolean"},
+    "total_revenue": _n("number"), "total_expenditure": _n("number"),
+    "total_capital": _n("number"), "net_fiscal_impact": _n("number"),
+    "fiscal_table_columns": {"type": "array", "items": _obj({
+        "label": {"type": "string"}, "revenue": _n("number"), "expenditure": _n("number"),
+        "capital": _n("number"), "net": _n("number")})},
+    "agencies_abbrev": _STR_LIST, "agencies_full": _STR_LIST,
+    "program_breakdowns": {"type": "array", "items": _obj({
+        "agency": _n("string"), "program": _n("string"), "description": _n("string"),
+        "cost_type": _n("string"), "amount": _n("number"), "fy_range": _n("string"),
+        "offset_notes": _n("string")})},
+    "impact_narrative_revenue": _n("string"), "impact_narrative_expenditure": _n("string"),
+    "omb_estimate_provided": {"type": "boolean"}, "omb_estimate_notes": _n("string"),
+    "estimate_prepared_by": _n("string"), "estimate_reviewed_by": _STR_LIST,
+    "date_prepared": _n("string"), "hearing_date": _n("string"),
+})
+
+
 # ── Extraction prompt ─────────────────────────────────────────────────────────
 EXTRACTION_PROMPT = """You are extracting structured data from a New York City Council fiscal impact statement document. Extract the fields below.
 
@@ -568,6 +598,7 @@ def extract_fiscal_data(
                 model=CLAUDE_MODEL,
                 max_tokens=16000,
                 messages=[{"role": "user", "content": prompt}],
+                output_config={"format": {"type": "json_schema", "schema": FISCAL_SCHEMA}},
             )
             if msg.stop_reason == "max_tokens":
                 raise json.JSONDecodeError("output truncated at max_tokens", "", 0)
@@ -922,6 +953,14 @@ def main() -> int:
              "statement: '2024-2026', '2024', 'all', or 'auto' (previous + current year). "
              "Legistar's attachment search misses most of them.",
     )
+    parser.add_argument(
+        "--reextract", choices=["superseded", "all"], default=None,
+        help="Re-process records already in the table and replace them in place: "
+             "'superseded' only where the page now carries a newer Council statement "
+             "than the one stored, 'all' every record with a Legistar page. Skips "
+             "the Legistar search. A record whose enacted statement shows no storable "
+             "impact is removed and added to the skip list; an error keeps the old record.",
+    )
     args = parser.parse_args()
 
     api_key = os.environ.get("ANTHROPIC_API_KEY")
@@ -959,12 +998,19 @@ def main() -> int:
                 added += 1
         return added
 
-    # Basic all-years search — covers all available bills in Legistar's
-    # attachment index (currently 2024+; the year filter is non-functional here).
-    basic = search_legistar_all(session)
-    _add_matters(basic)
-    log.info(f"Basic search: {len(basic)} results, {len(matters)} unique so far")
-    time.sleep(2)
+    index_by_id = {str(r["matter_id"]): i for i, r in enumerate(records)}
+    replaced = removed = unchanged = 0
+    if args.reextract:
+        _add_matters([(str(r["matter_id"]), r["legistar_guid"]) for r in records
+                      if r.get("legistar_guid") and r.get("legistar_url")])
+        log.info(f"Re-extract ({args.reextract}): {len(matters)} records with a Legistar page")
+    else:
+        # Basic all-years search — covers all available bills in Legistar's
+        # attachment index (currently 2024+; the year filter is non-functional here).
+        basic = search_legistar_all(session)
+        _add_matters(basic)
+        log.info(f"Basic search: {len(basic)} results, {len(matters)} unique so far")
+        time.sleep(2)
 
     # Optional historical search using the advanced form, which has a working
     # lstYearsAdvanced filter. Run year-by-year for 2014–2023 (or custom range).
@@ -990,8 +1036,15 @@ def main() -> int:
 
     log.info(f"Total matters to process: {len(matters)}")
 
+    def _drop_if_reextracting(matter_id: str) -> None:
+        nonlocal removed
+        if args.reextract and matter_id in index_by_id:
+            records[index_by_id[matter_id]] = None     # compacted before saving
+            removed += 1
+            log.info(f"  Re-extract: enacted statement has no storable impact; record removed")
+
     for matter_id, guid in matters:
-        if args.incremental and matter_id in existing_ids:
+        if args.incremental and matter_id in existing_ids and not args.reextract:
             log.info(f"  Skipping already-processed matter {matter_id}")
             continue
 
@@ -1000,6 +1053,10 @@ def main() -> int:
         try:
             att_id, att_guid = get_fiscal_attachment(session, matter_id, guid)
             time.sleep(0.5)
+            if (args.reextract == "superseded" and matter_id in index_by_id
+                    and str(records[index_by_id[matter_id]].get("attachment_id")) == str(att_id)):
+                unchanged += 1
+                continue
 
             if not att_id:
                 log.info(f"  No fiscal impact attachment found — skipping")
@@ -1026,15 +1083,22 @@ def main() -> int:
             if text_is_zero_impact(text):
                 log.info(f"  Pre-check: all-zero fiscal impact — skipping Claude call")
                 mark_skip(matter_id, "zero_precheck")
+                _drop_if_reextracting(matter_id)
                 continue
 
             log.info("  Calling Claude for extraction ...")
             fiscal = extract_fiscal_data(text, client)
+            if "extraction_error" in fiscal:
+                # a failed call is not evidence of zero impact: never skip-list
+                # it, and in --reextract mode keep the existing record
+                log.error(f"  Extraction failed, leaving matter for the next run: {fiscal['extraction_error']}")
+                continue
 
             # Post-extraction filter: skip if no real fiscal impact or unestimable.
             if not record_has_fiscal_impact(fiscal):
                 log.info(f"  Post-check: zero/unestimable fiscal impact — skipping")
                 mark_skip(matter_id, "zero_or_unestimable")
+                _drop_if_reextracting(matter_id)
                 continue
 
             # Skip budget modification resolutions (MN-#) — these are Charter
@@ -1042,6 +1106,7 @@ def main() -> int:
             if is_budget_modification(fiscal):
                 log.info(f"  Budget modification (MN-#) — skipping")
                 mark_skip(matter_id, "budget_modification")
+                _drop_if_reextracting(matter_id)
                 continue
 
             # Skip proposed (not yet passed) bills — only final/enacted legislation
@@ -1049,6 +1114,7 @@ def main() -> int:
             if is_proposed_bill(fiscal):
                 log.info(f"  Proposed bill (not yet passed) — skipping")
                 mark_skip(matter_id, "proposed")
+                _drop_if_reextracting(matter_id)
                 continue
 
             # Normalize agency attribution: assign DOT to street sign line items
@@ -1072,9 +1138,13 @@ def main() -> int:
                 **fiscal,
             }
 
-            records.append(record)
+            if args.reextract and matter_id in index_by_id:
+                records[index_by_id[matter_id]] = record
+                replaced += 1
+            else:
+                records.append(record)
+                total_new += 1
             existing_ids.add(matter_id)
-            total_new += 1
 
             fn    = record.get("legistar_file") or fiscal.get("file_number", "?")
             title = (fiscal.get("title") or "")[:60]
@@ -1085,6 +1155,9 @@ def main() -> int:
 
         time.sleep(1)  # be polite to Legistar
 
+    records[:] = [r for r in records if r is not None]
+    if args.reextract:
+        log.info(f"Re-extract: {replaced} replaced, {removed} removed, {unchanged} already current")
     log.info(f"Processed {total_new} new matters (total in file: {len(records)})")
 
     if not args.dry_run:

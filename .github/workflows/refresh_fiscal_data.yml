@@ -19,6 +19,12 @@ on:
         required: false
         default: "auto"
         type: string
+      reextract:
+        description: "Re-extract records already in the table and replace them: 'superseded' (newer statement on the page) or 'all'. Blank = normal run"
+        required: false
+        default: ""
+        type: choice
+        options: ["", "superseded", "all"]
       rest_years:
         description: "Legistar REST enumeration (needs LEGISTAR_TOKEN secret): year range like 2014-2023, or blank to skip"
         required: false
@@ -56,9 +62,14 @@ jobs:
           # run also walks the enacted-law list (laws.json) for the previous
           # and current year. Pass a range like 2024-2026 or 'all' to backfill.
           SEED="${{ github.event.inputs.seed_laws || 'auto' }}"
+          REEXTRACT="${{ github.event.inputs.reextract }}"
           FLAGS=""
-          if [ "$INCREMENTAL" = "true" ]; then FLAGS="--incremental"; fi
-          if [ -n "$SEED" ]; then FLAGS="$FLAGS --seed-laws $SEED"; fi
+          if [ -n "$REEXTRACT" ]; then
+            FLAGS="--reextract $REEXTRACT"
+          else
+            if [ "$INCREMENTAL" = "true" ]; then FLAGS="--incremental"; fi
+            if [ -n "$SEED" ]; then FLAGS="$FLAGS --seed-laws $SEED"; fi
+          fi
           echo "Running: python pipeline/fetch_fiscal_impacts.py $FLAGS"
           python pipeline/fetch_fiscal_impacts.py $FLAGS
 

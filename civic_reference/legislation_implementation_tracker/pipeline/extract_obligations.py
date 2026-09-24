@@ -59,6 +59,27 @@ DELIVERABLE_TYPES = [
     "notice or posting", "designation or staffing", "other",
 ]
 
+# Duty / power / neither, as the model is asked to judge it. The same wording
+# the blind reviewers applied in the Sep 2026 audit (methodology page).
+KIND_DEFINITIONS = """- duty: the provision REQUIRES a NYC government agency, office, board or official to do something, or to refrain from something ("shall", "must", "is required to"). A prohibition on the government actor ("no agency may purchase", "the board may not approve") is a duty. "Shall have the power and duty to" is a duty. A provision that requires anything of the government actor is a duty even if it also grants discretion ("shall inspect and may impose a fee"). Street co-naming ("the following street name is hereby designated") is a duty (DOT signage).
+- power: the provision AUTHORIZES a NYC government agency, office, board or official to act, and it may choose not to ("may", "is authorized to", "is empowered to", "shall have the power/authority to").
+- neither: a right, option, duty or prohibition of a private party ("a tenant may elect", "the owner shall post", "no person shall"), a definition, or text that neither requires nor authorizes a government actor.
+Judge the provision the quote comes from: the clause it sits in (an "except that" or "provided that" clause is its own provision), its full sentence, and for a bare list item the list's lead-in. If the quote spans several sentences or clauses and any imposes a duty on a named government actor, it is a duty."""
+KINDS = ["duty", "power", "neither"]
+# How the code rule and the model label combine into `kind`. Chosen by
+# measurement against the 350 blind reviewer labels (label_kinds.py --score).
+KIND_POLICY = "model"
+
+
+def final_kind(rule: str | None, model: str | None) -> str:
+    """The published kind. The model label decides when present; the rule is the fallback."""
+    if KIND_POLICY == "model" and model in KINDS:
+        return model
+    if KIND_POLICY == "agree_else_model" and model in KINDS:
+        return model
+    return rule or "duty"
+
+
 RECURRENCES = [
     "one-time", "ongoing", "daily", "weekly", "monthly", "every 2 months",
     "quarterly", "three times a year", "semiannual", "annual", "biennial",
@@ -118,9 +139,10 @@ OBLIGATIONS_SCHEMA = {
                         "required": ["kind", "fixed_date", "offset", "text"], "additionalProperties": False,
                     },
                     "recurrence": {"type": "string", "enum": RECURRENCES},
+                    "provision_kind": {"type": "string", "enum": ["duty", "power", "neither"]},
                     "affected_groups": {"type": "array", "items": {"type": "string"}},
                 },
-                "required": ["actor_raw", "actor_resolved", "action_summary", "deliverable_type",
+                "required": ["actor_raw", "actor_resolved", "action_summary", "deliverable_type", "provision_kind",
                              "citation", "quote", "deadline", "recurrence", "affected_groups"],
                 "additionalProperties": False,
             },
@@ -166,14 +188,17 @@ Return a JSON object with this structure (the API enforces the schema; the notes
        "text": "<the deadline phrase verbatim, e.g. 'no later than 180 days after the effective date of this local law', or null if none stated>"
      },
      "recurrence": one of {recurrences} ("semiannual" = twice a year, which Council drafting calls "biannual"; "biennial" = every two years),
-     "affected_groups": ["<who benefits or is regulated, e.g. 'tenants', 'small businesses', 'older adults'>", ...]
+     "affected_groups": ["<who benefits or is regulated, e.g. 'tenants', 'small businesses', 'older adults'>", ...],
+     "provision_kind": "duty" | "power" | "neither"
    }
  ]
 }
 
 RULES:
 - Include ONLY duties of NYC government entities. Obligations the law imposes on private parties (employers, landlords, businesses) are NOT obligations records — but if the law directs an agency to enforce, administer, or write rules for those private-party requirements, THOSE agency duties are included.
-- Record both kinds of provision: duties the law imposes ("shall", "must", "is required to") and powers it grants ("may", "is authorized to", "shall have the power to"). The pipeline files each record as a duty or a power from the wording of its quote, so quote the sentence that actually imposes or grants it, and do not describe a power as a duty in action_summary.
+- Record both kinds of provision: duties the law imposes ("shall", "must", "is required to") and powers it grants ("may", "is authorized to", "shall have the power to"). Quote the sentence that actually imposes or grants it, and do not describe a power as a duty in action_summary.
+- provision_kind sorts each record for the public tables, by these definitions:
+{kind_definitions}
 - One record per distinct duty. A recurring report is ONE record with the appropriate recurrence, not one record per year.
 - A duty shared by multiple named agencies: create one record per named agency, same quote allowed.
 - "Ongoing" recurrence is for continuous operational duties (maintain, enforce, operate, post and keep updated). "One-time" is for single deliverables.
@@ -510,8 +535,9 @@ def is_power(quote, text=None):
 
 
 def _kind(o: dict) -> str:
-    """Stored kind (set at extraction or by the backfill); quote-only fallback."""
-    return o.get("kind") or classify(o.get("quote"))
+    """Published kind from the stored rule and model labels (quote-only rule as a last resort)."""
+    rule = o.get("kind_rule") or o.get("kind") or classify(o.get("quote"))
+    return final_kind(rule, o.get("kind_model"))
 
 
 # Bare generic actor references that must never surface as agency tags.
@@ -947,6 +973,7 @@ def extract_law(client, model: str, law: dict, text: str,
     prompt = (EXTRACTION_PROMPT
               .replace("{deliverable_types}", json.dumps(DELIVERABLE_TYPES))
               .replace("{recurrences}", json.dumps(RECURRENCES))
+              .replace("{kind_definitions}", KIND_DEFINITIONS)
               .replace("{metadata}", metadata)
               .replace("{law_text}", text))
 
@@ -1045,7 +1072,8 @@ def extract_law(client, model: str, law: dict, text: str,
             "citation": o.get("citation", ""),
             "quote": o.get("quote", ""),
             "quote_verified": quote_ok,
-            "kind": classify(o.get("quote", ""), text),
+            "kind_rule": classify(o.get("quote", ""), text),
+            "kind_model": o.get("provision_kind"),
             "deadline_kind": (o.get("deadline") or {}).get("kind", "none"),
             "deadline_text": (o.get("deadline") or {}).get("text"),
             "deadline_date": deadline_date,

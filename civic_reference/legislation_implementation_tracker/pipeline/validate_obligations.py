@@ -307,7 +307,7 @@ def main() -> None:
     # and stores `kind`. Re-derive it wherever the law text is cached; a
     # mismatch means the rule changed without a backfill, or a hand edit
     # bypassed it. Without text (CI) only the stored kinds are checked.
-    from extract_obligations import classify
+    from extract_obligations import classify, final_kind
     powers_path = DATA / "powers.json"
     powers = json.loads(powers_path.read_text())["powers"] if powers_path.exists() else []
     if not powers_path.exists():
@@ -317,11 +317,18 @@ def main() -> None:
             if o.get("kind") != want:
                 hard[f"wrong_kind_in_{table}_table"].append(f"{o['obligation_id']}: kind={o.get('kind')}")
                 continue
+            rule = o.get("kind_rule") or o.get("kind")
+            if final_kind(rule, o.get("kind_model")) != o.get("kind"):
+                hard["kind_not_from_policy"].append(o["obligation_id"])
+            if o.get("kind_model") is None:
+                soft["kind_without_model_label"].append(o["obligation_id"])
+            elif o.get("kind_model") != rule:
+                soft["model_label_differs_from_rule"].append(o["obligation_id"])
             t = texts.get(o["matter_id"]) or load_texts([o["matter_id"]]).get(o["matter_id"])
             if t is None:
                 soft["kind_not_rederived_no_text"].append(o["obligation_id"])
-            elif classify(o.get("quote"), t) != want:
-                hard["stored_kind_differs_from_rule"].append(f"{o['obligation_id']} ({table})")
+            elif classify(o.get("quote"), t) != rule:
+                hard["stored_rule_label_differs_from_rule"].append(f"{o['obligation_id']} ({table})")
     for o in powers:
         if o.get("deadline_date"):
             hard["power_with_deadline"].append(o["obligation_id"])

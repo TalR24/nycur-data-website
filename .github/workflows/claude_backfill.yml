@@ -1,0 +1,74 @@
+name: Claude backfill (one-off tasks)
+
+# Manual-only jobs that call the Anthropic API outside the monthly refreshes.
+# No member alerts are sent from here.
+#   canary                 one call per structured-output schema; run first
+#   label_kinds            model duty/power/neither label for every obligation record
+#   reextract_obligations  re-extract the laws in reextract_queue.json, rebuild data
+on:
+  workflow_dispatch:
+    inputs:
+      task:
+        description: "Task to run"
+        required: true
+        type: choice
+        options: ["canary", "label_kinds", "reextract_obligations"]
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: |
+          pip install -r pipeline/requirements.txt
+          pip install -r civic_reference/legislation_implementation_tracker/pipeline/requirements.txt
+
+      - name: Canary
+        if: ${{ inputs.task == 'canary' }}
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: python3 pipeline/api_canary.py
+
+      - name: Label duty / power / neither
+        if: ${{ inputs.task == 'label_kinds' }}
+        working-directory: civic_reference/legislation_implementation_tracker
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          LABEL_WORKERS: "6"
+        run: python3 pipeline/label_kinds.py
+
+      - name: Re-extract queued laws and rebuild
+        if: ${{ inputs.task == 'reextract_obligations' }}
+        working-directory: civic_reference/legislation_implementation_tracker
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          REEXTRACT_LIMIT: "400"
+        run: |
+          python3 pipeline/reextract_queued.py
+          python3 pipeline/extract_obligations.py --incremental
+          cd ../nyc_council_legislation_trackers && python3 pipeline/build_member_stats.py
+
+      - name: Commit results
+        if: ${{ always() && inputs.task != 'canary' }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          L=civic_reference/legislation_implementation_tracker
+          for f in $L/pipeline/kind_labels.json $L/data/obligations.json $L/data/powers.json \
+                   $L/data/laws.json $L/pipeline/reextract_queue.json \
+                   civic_reference/nyc_council_legislation_trackers/data/members.json; do
+            if [ -f "$f" ]; then git add "$f"; fi
+          done
+          if git diff --cached --quiet; then echo "Nothing to commit"; exit 0; fi
+          git commit -m "Claude backfill: ${{ inputs.task }} [$(date -u '+%Y-%m-%d')]"
+          for attempt in 1 2 3 4 5; do
+            git pull --rebase origin main && git push && break
+            sleep $((attempt * 30))
+          done
