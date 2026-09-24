@@ -109,6 +109,12 @@ def main() -> None:
             hard["cost_not_estimable_included"].append(label(r))
         if re.search(r"\bMN-\d+", (r.get("title") or "") + " " + (r.get("file_number") or "")):
             hard["budget_modification_included"].append(label(r))
+        # units: a total under $10,000 while the narrative speaks in millions or
+        # billions means the model wrote the figure in millions (Sep 24 2026)
+        big = max(abs(r.get(k) or 0) for k in ("total_expenditure", "total_capital", "total_revenue"))
+        narr = (r.get("impact_narrative_expenditure") or "") + " " + (r.get("impact_narrative_revenue") or "")
+        if 0 < big < 10000 and re.search(r"million|billion", narr, re.I):
+            hard["amount_not_in_whole_dollars"].append(label(r))
         # the pipeline's own rule: an enacted law's final statement is titled
         # "Proposed Int. No. X-A", so a title check alone flags enacted laws
         if is_proposed_bill(r, str(r.get("matter_id"))):
