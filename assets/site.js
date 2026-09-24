@@ -15,22 +15,15 @@
       { label: 'Fiscal Impacts', href: '/civic_reference/nyc_council_fiscal_impacts_tracker/' },
       { label: 'Obligations', href: '/civic_reference/legislation_implementation_tracker/' },
       { label: 'Powers', href: '/civic_reference/legislation_implementation_tracker/powers/' },
-      { label: 'Council Members', href: '/civic_reference/nyc_council_legislation_trackers/council-members/' }
-    ]},
-    { label: 'CB Member Tracker', href: '/cb-tools/member-tracker/', sub: [
-      { label: 'Term-limit openings', href: '/cb-tools/member-tracker/openings/' },
-      { label: 'Email alerts', href: '/cb-tools/member-tracker/alerts/' },
-      { label: 'Methodology', href: '/cb-tools/member-tracker/methodology/' }
+      { label: 'Council Members', href: '/civic_reference/nyc_council_legislation_trackers/council-members/' },
+      { label: 'Agencies', href: '/civic_reference/nyc_council_legislation_trackers/agencies/' }
     ]},
     { label: 'Community Board Tools', href: '/cb-tools/', sub: [
+      { label: 'Member Tracker', href: '/cb-tools/member-tracker/' },
+      { label: 'Member Guide', href: '/civic_reference/cb_member_guide/' },
       { label: 'Block Party archive', href: '/cb-tools/block-party/' },
       { label: 'Robert’s Rules helper', href: '/cb-tools/roberts-rules-helper/' },
-      { label: 'AI meeting review', href: '/cb-tools/meeting-review/' },
-      { label: 'Board scorecard', href: '/cb-tools/board-scorecard/' }
-    ]},
-    { label: 'CB Member Field Guide', href: '/civic_reference/cb_member_guide/' },
-    { label: 'NYC Government Bodies Explorer', href: '/civic_reference/nyc-gov-bodies-explorer/', sub: [
-      { label: 'Methodology', href: '/civic_reference/nyc-gov-bodies-explorer/methodology/' }
+      { label: 'AI meeting review', href: '/cb-tools/meeting-review/' }
     ]}
   ];
 

@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#170C03">
+  <title>Agencies — NYC Council Legislation Trackers — NYCuriosity</title>
+  <meta name="description" content="Every New York City agency the Council's laws touch: the duties and powers laws give it, fiscal estimates, and its budget, staff, payroll, and capital projects.">
+  <link rel="canonical" href="https://data.nycuriosity.com/civic_reference/nyc_council_legislation_trackers/agencies/">
+  <meta property="og:image" content="https://data.nycuriosity.com/website_logo.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta property="og:type"        content="website">
+  <meta property="og:url"         content="https://data.nycuriosity.com/civic_reference/nyc_council_legislation_trackers/agencies/">
+  <meta property="og:title"       content="Agencies — NYC Council Legislation Trackers — NYCuriosity">
+  <meta property="og:description" content="Every New York City agency the Council's laws touch: the duties and powers laws give it, fiscal estimates, and its budget, staff, payroll, and capital projects.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/brand.css">
+  <link rel="stylesheet" href="/assets/chart.css">
+  <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --blue: #C84609; --blue-hover: #A44D00; --blue-light: #FAF6F1; --blue-mid: #EDC3A5;
+      --text: #1A1208; --text-mid: #4A3B2C; --text-muted: #6B5B4A; --text-faint: #9A8B7A;
+      --bg: #FAF6F1; --surface: #ffffff; --border: #E7DDCE; --border-mid: #D3C4AF;
+      --shadow-sm: 0 1px 3px rgba(26,18,8,0.08); --shadow-md: 0 4px 16px rgba(207,75,12,0.10);
+      --radius: 10px;
+      --red: #A44D00; --green: #226287;
+    }
+    body { font-family: 'Helvetica Neue', Helvetica, Arial, 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
+
+    header { background: #170C03; border-bottom: 1px solid #2E1C0C; padding: 0 clamp(20px, 5vw, 48px); }
+    .header-inner { max-width: 1100px; margin: 0 auto; height: 56px; display: flex; align-items: center; gap: 16px; }
+    .back-link { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.75rem; font-weight: 600; color: #9A8B7A; text-decoration: none; display: flex; align-items: center; gap: 5px; padding: 4px 8px 4px 4px; border-radius: 5px; transition: color 0.15s, background 0.15s; white-space: nowrap; }
+    .back-link:hover { color: #FFD23F; background: rgba(255,210,63,0.1); }
+    .header-divider { width: 1px; height: 20px; background: #4A3B2C; flex-shrink: 0; }
+    header h1 { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.95rem; font-weight: 700; color: #E7DDCE; letter-spacing: -0.02em; }
+
+    .hero { background: var(--surface); border-bottom: 1px solid var(--border); padding: clamp(28px, 4vw, 44px) clamp(20px, 5vw, 48px); }
+    .hero-inner { max-width: 1100px; margin: 0 auto; }
+    .breadcrumb { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.72rem; color: var(--text-faint); margin-bottom: 14px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .breadcrumb a { color: var(--blue); text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+    .breadcrumb span:last-child { color: #A44D00; }
+    .hero-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .hero-tag { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--b-topic-cb-ink); background: #FAF6F1; border: 1px solid #E7DDCE; border-radius: 4px; padding: 3px 8px; }
+    .hero-updated { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.72rem; color: var(--text-faint); }
+    .hero h1 { font-family: 'Playfair Display', Georgia, serif; font-size: clamp(1.4rem, 3vw, 1.8rem); font-weight: 700; letter-spacing: -0.012em; line-height: 1.25; margin-bottom: 10px; }
+    .hero h1 span { color: var(--blue); }
+    .hero p { font-size: 0.95rem; color: var(--text-muted); max-width: 720px; line-height: 1.7; }
+    .hero-actions { margin-top: 18px; display: flex; gap: 10px; flex-wrap: wrap; }
+    .law-meta-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+    .law-meta-chip { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.7rem; color: var(--text-mid); background: var(--bg); border: 1px solid var(--border); border-radius: 7px; padding: 6px 10px; }
+    .law-meta-chip strong { color: var(--text); }
+    .btn { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.78rem; font-weight: 600; padding: 8px 14px; border-radius: 7px; text-decoration: none; display: inline-flex; align-items: center; gap: 7px; cursor: pointer; border: 1.5px solid var(--blue); transition: all 0.15s; }
+    .btn-outline { color: var(--blue); background: var(--surface); }
+    .btn-outline:hover { background: var(--blue-light); }
+    .tracker-alerts { display: inline-flex; align-items: center; gap: 7px; align-self: flex-start; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.76rem; font-weight: 700; color: var(--b-topic-cb-ink); text-decoration: none; padding: 6px 12px; border: 1.5px solid var(--b-topic-cb-ink); border-radius: 8px; background: color-mix(in srgb, var(--b-topic-cb-ink) 8%, transparent); transition: background 0.15s, color 0.15s; }
+    .tracker-alerts:hover { background: var(--b-topic-cb-ink); color: #fff; }
+
+    main { flex: 1; padding: clamp(24px, 4vw, 40px) clamp(20px, 5vw, 48px); }
+    .main-inner { max-width: 1100px; margin: 0 auto; }
+
+    /* Directory stat pills */
+    .stat-pills { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; }
+    .stat-pill { display: flex; flex-direction: column; gap: 2px; padding: 12px 18px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); flex: 1; min-width: 150px; }
+    .stat-pill .sp-num { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 1.2rem; font-weight: 700; color: var(--blue); letter-spacing: -0.03em; line-height: 1; }
+    .stat-pill .sp-num.neg { color: var(--red); }
+    .stat-pill .sp-label { font-size: 0.72rem; color: var(--text-muted); line-height: 1.3; }
+
+    /* Controls */
+    .controls { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 16px 18px; margin-bottom: 16px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    .controls input[type="search"] { flex: 2 1 220px; min-width: 180px; padding: 8px 12px; border: 1px solid var(--border); border-radius: 7px; font-family: 'Inter', sans-serif; font-size: 0.85rem; background: var(--bg); color: var(--text); }
+    .controls select { flex: 1 1 160px; min-width: 140px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 7px; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.75rem; background: var(--bg); color: var(--text-mid); cursor: pointer; }
+    .controls input:focus, .controls select:focus { outline: 2px solid var(--blue-mid); border-color: var(--blue); }
+    .view-toggle { display: inline-flex; border: 1px solid var(--border); border-radius: 20px; overflow: hidden; margin-left: auto; }
+    .view-toggle button { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.72rem; font-weight: 600; padding: 7px 14px; background: var(--bg); color: var(--text-muted); border: none; cursor: pointer; transition: all 0.15s; }
+    .view-toggle button.active { background: var(--blue); color: #fff; }
+    .result-count { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 12px; }
+    .result-count strong { color: var(--blue); }
+
+    /* Agency card grid (directory) */
+    .agency-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+    .agency-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 16px 18px; text-decoration: none; color: inherit; display: flex; flex-direction: column; gap: 8px; transition: border-color 0.15s, box-shadow 0.18s, transform 0.12s; cursor: pointer; }
+    .agency-card:hover { border-color: var(--blue-mid); box-shadow: var(--shadow-md); transform: translateY(-2px); }
+    .ac-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+    .ac-name { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.9rem; font-weight: 700; color: var(--text); letter-spacing: -0.01em; line-height: 1.3; }
+    .ac-head { font-size: 0.76rem; color: var(--text-muted); }
+    .sector-badge { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.62rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; padding: 3px 8px; border-radius: 4px; display: inline-block; align-self: flex-start; }
+    .ac-nums { margin-top: auto; display: flex; gap: 14px; flex-wrap: wrap; padding-top: 6px; border-top: 1px solid var(--border); }
+    .ac-num { display: flex; flex-direction: column; gap: 1px; }
+    .ac-num-val { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.82rem; font-weight: 700; color: var(--text); line-height: 1; }
+    .ac-num-label { font-size: 0.64rem; color: var(--orange, var(--blue)); line-height: 1; }
+    .no-results { grid-column: 1 / -1; text-align: center; padding: 60px 20px; color: var(--text-faint); font-size: 0.9rem; }
+    .no-results strong { display: block; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 1rem; color: var(--text-muted); margin-bottom: 6px; }
+
+    /* Treemap */
+    .treemap-controls { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+    .treemap-metric-toggle { display: flex; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 4px; gap: 2px; }
+    .metric-btn { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.72rem; font-weight: 600; padding: 5px 14px; border-radius: 5px; border: none; cursor: pointer; background: transparent; color: var(--text-muted); transition: background 0.15s, color 0.15s; letter-spacing: 0.02em; }
+    .metric-btn.active { background: var(--blue); color: #fff; }
+    .metric-btn:not(.active):hover { background: var(--blue-light); color: var(--blue); }
+    .treemap-hint { font-size: 0.75rem; color: var(--text-faint); font-style: italic; }
+    .treemap-legend { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; }
+    .legend-item { display: flex; align-items: center; gap: 5px; font-size: 0.72rem; color: var(--text-muted); }
+    .legend-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+    #treemap-container { width: 100%; height: 520px; overflow: hidden; position: relative; }
+    #treemap-container svg { display: block; width: 100%; height: 100%; }
+    .treemap-tooltip { position: fixed; background: #170C03; color: #FAF6F1; padding: 10px 14px; border-radius: 8px; font-size: 0.8rem; pointer-events: none; opacity: 0; transition: opacity 0.15s; z-index: 1000; max-width: 240px; box-shadow: 0 4px 20px rgba(0,0,0,0.25); }
+    .treemap-tooltip.visible { opacity: 1; }
+    .tt-name { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.78rem; font-weight: 700; margin-bottom: 4px; line-height: 1.3; }
+    .tt-sector { font-size: 0.7rem; color: #9A8B7A; margin-bottom: 6px; }
+    .tt-stats { display: flex; flex-direction: column; gap: 2px; }
+    .tt-stat { display: flex; justify-content: space-between; gap: 12px; font-size: 0.73rem; }
+    .tt-stat-label { color: #9A8B7A; }
+    .tt-stat-val { font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight: 600; color: #FAF6F1; }
+
+    /* Profile view */
+    .profile-stats { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 20px; }
+    .section-head { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.8rem; font-weight: 700; color: var(--text); margin: 26px 0 12px; padding-top: 4px; border-top: 1px solid var(--border); }
+    .section-head:first-of-type { border-top: none; margin-top: 0; }
+    .section-head[data-accent="fiscal"] { color: var(--b-topic-budget-ink); }
+    .section-head[data-accent="obligations"] { color: var(--b-topic-transit-ink); }
+    .section-head[data-accent="powers"] { color: var(--b-topic-cb-ink); }
+    .section-sub { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 10px; line-height: 1.55; }
+    .section-sub .credit { display: block; margin-top: 4px; font-size: 0.72rem; color: var(--text-faint); }
+    .section-link { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.75rem; font-weight: 600; color: var(--blue); text-decoration: none; display: inline-block; margin-top: 8px; }
+    .section-link:hover { text-decoration: underline; }
+    .section-note { font-size: 0.82rem; color: var(--text-faint); font-style: italic; margin-bottom: 8px; }
+
+    .data-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; margin-bottom: 6px; }
+    .data-table th { text-align: left; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-faint); padding: 6px 10px; border-bottom: 1px solid var(--border); }
+    .data-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); color: var(--text-mid); vertical-align: top; }
+    .data-table td.num { font-family: 'JetBrains Mono', ui-monospace, monospace; text-align: right; white-space: nowrap; }
+    .data-table td.num.neg { color: var(--red); font-weight: 600; }
+    .data-table a { color: var(--blue); text-decoration: none; }
+    .data-table a:hover { text-decoration: underline; }
+
+    .pager { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px; margin-bottom: 8px; }
+    .pg-btn { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.72rem; font-weight: 600; padding: 5px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text-mid); cursor: pointer; }
+    .pg-btn:hover:not(:disabled) { border-color: var(--blue); color: var(--blue); }
+    .pg-btn:disabled { opacity: 0.4; cursor: default; }
+    .pg-btn.is-current { background: var(--blue); color: #fff; border-color: var(--blue); }
+    .pg-count { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.68rem; color: var(--text-faint); margin-left: 6px; }
+
+    .fy-charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; margin-bottom: 8px; }
+    .fy-charts .chart-card { margin: 0; }
+    .fy-charts .c-bars { --c-bar-label-w: 62px; }
+    .fy-charts .c-bar-label { text-align: left; }
+
+    .sponsor-list { display: flex; flex-wrap: wrap; gap: 8px; }
+    .sponsor-chip { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.76rem; padding: 6px 12px; border: 1px solid var(--border); border-radius: 20px; background: var(--surface); color: var(--text-mid); }
+    .sponsor-chip a { color: var(--blue); text-decoration: none; font-weight: 600; }
+    .sponsor-chip a:hover { text-decoration: underline; }
+    .sponsor-chip .n { color: var(--text-faint); margin-left: 4px; }
+
+    .footnotes { margin-top: 24px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; }
+    .footnotes p { font-size: 0.8rem; color: var(--text-muted); line-height: 1.65; margin-bottom: 10px; }
+    .footnotes p:last-child { margin-bottom: 0; }
+    .footnotes a { color: var(--blue); text-decoration: none; }
+    .footnotes a:hover { text-decoration: underline; }
+    .loading-note { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.85rem; color: var(--text-faint); padding: 40px; text-align: center; }
+
+    footer { background: var(--surface); border-top: 1px solid var(--border); padding: 20px clamp(20px, 5vw, 48px); }
+    .footer-inner { max-width: 1100px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+    .footer-copy { font-size: 0.8rem; color: var(--text-faint); }
+    .footer-links { display: flex; gap: 20px; align-items: center; }
+    .footer-links a { font-size: 0.8rem; color: var(--text-muted); text-decoration: none; transition: color 0.15s; }
+    .footer-links a:hover { color: var(--blue); }
+    .footer-support { display: inline-flex; align-items: center; gap: 5px; font-size: 0.8rem; font-weight: 500; color: #C84609; text-decoration: none; padding: 5px 11px; border: 1px solid rgba(207,75,12,0.45); border-radius: 6px; transition: color .15s, border-color .15s, background .15s; vertical-align: middle; }
+    .footer-support:hover { color: #fff; background: #C84609; border-color: #C84609; }
+
+    @media (max-width: 760px) {
+      .view-toggle { margin-left: 0; }
+      #treemap-container { height: 420px; }
+    }
+
+    /* ── TOPIC COLOUR (2026 rebrand) ──────────────────────
+       Colour encodes what KIND of thing something is. The bright fills are
+       decorative only; the -ink twins are the only variants safe for text
+       (each is tuned to 4.5:1 on Canvas Cream). Tokens: assets/brand.css */
+    .card[data-topics~="transit"] .card-category { color: var(--b-topic-transit-ink); }
+    .card[data-topics~="cb"]      .card-category { color: var(--b-topic-cb-ink); }
+    .card[data-topics~="budget"]  .card-category { color: var(--b-topic-budget-ink); }
+    .card[data-topics~="govtech"] .card-category { color: var(--b-topic-govtech-ink); }
+    /* A row of figures should not read as one colour. */
+    .stat-pill:nth-child(4n+1) .sp-num { color: var(--b-topic-budget-ink); }
+    .stat-pill:nth-child(4n+2) .sp-num { color: var(--b-topic-transit-ink); }
+    .stat-pill:nth-child(4n+3) .sp-num { color: var(--b-topic-cb-ink); }
+    .stat-pill:nth-child(4n+4) .sp-num { color: var(--b-brown); }
+
+    /* Header action buttons on subpages (Tal, Sep 2026 — previously hub-only). */
+    .header-actions { display:flex; align-items:center; gap:12px; margin-left:auto; flex-shrink:0; }
+    .header-link { font-size:0.8rem; font-weight:500; color:#9A8B7A; text-decoration:none; display:inline-flex; align-items:center; gap:5px; padding:5px 11px; border:1px solid rgba(255,255,255,0.15); border-radius:6px; transition:color .15s,border-color .15s,background .15s; white-space:nowrap; }
+    .header-link:hover { color:#fff; border-color:rgba(255,255,255,0.35); background:rgba(255,255,255,0.08); }
+    .header-link svg, .support-link svg { flex-shrink:0; }
+    .support-link { font-size:0.8rem; font-weight:500; color:#FFD23F; text-decoration:none; display:inline-flex; align-items:center; gap:5px; padding:5px 11px; border:1px solid rgba(200,70,9,0.45); border-radius:6px; transition:color .15s,border-color .15s,background .15s; white-space:nowrap; }
+    .support-link:hover { color:#fff; background:#C84609; border-color:#C84609; }
+    header .header-inner { min-width: 0; }
+    header h1 { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    @media (max-width: 900px) { .header-actions .header-link { display: none; } }
+    @media (max-width: 560px) { .header-actions { display: none; } }
+    @media (max-width: 560px) { header h1 { white-space: normal; } }
+  </style>
+  <script defer src="/assets/chart.js"></script>
+  <script defer src="/assets/site.js?v=20260918"></script>
+  <script defer src="/civic_reference/nyc_council_legislation_trackers/assets/tracker-switch.js"></script>
+<!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d0dce16d32c14809bc15038314fb9a13"}'></script><!-- End Cloudflare Web Analytics -->
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <a href="/" class="header-mark" aria-label="NYCuriosity Data home"><img src="/assets/brand/Talbot.svg" alt="" style="height:32px;width:auto;display:block"></a>
+    <a href="../" class="back-link">← nyc_council_legislation_trackers</a>
+    <div class="header-divider"></div>
+    <h1>Agencies</h1>
+    <div class="header-actions">
+      <a href="https://talroded.nycuriosity.com" class="header-link" target="_blank" rel="noopener"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>About</a>
+      <a href="https://www.nycuriosity.com" class="header-link" target="_blank" rel="noopener"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v4H4z"/><path d="M4 10h16v10l-8-4-8 4z"/></svg>Substack</a>
+      <a href="https://buymeacoffee.com/nycuriosity" class="support-link" target="_blank" rel="noopener" aria-label="Support my work on Buy Me a Coffee"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>Support my work</a>
+    </div>
+  </div>
+</header>
+
+<div class="hero">
+  <div class="hero-inner" id="heroInner">
+    <div class="breadcrumb">
+      <a href="/">data.nycuriosity.com</a>
+      <span>›</span>
+      <a href="../">NYC Council Legislation Trackers</a>
+      <span>›</span>
+      <span id="crumbLast">Agencies</span>
+    </div>
+    <div class="hero-meta">
+      <span class="hero-tag">Civic Reference</span>
+      <span class="hero-updated" id="heroUpdated"></span>
+    </div>
+    <h1 id="heroTitle">What the Council asks of each city agency, <span>and what each one has to work with</span></h1>
+    <p id="heroDesc">
+      Every agency, office, and board the three trackers touch, in one place: the duties Council laws
+      place on it and its report filing record, the powers it holds, the fiscal estimates for bills that
+      affect it, and its budget, staff, payroll, and capital projects from city data. Pick an agency to
+      open its profile.
+    </p>
+    <div id="profileMeta"></div>
+  </div>
+</div>
+
+<!-- TOOLTIP (for treemap) -->
+<div class="treemap-tooltip" id="tooltip">
+  <div class="tt-name" id="tt-name"></div>
+  <div class="tt-sector" id="tt-sector"></div>
+  <div class="tt-stats">
+    <div class="tt-stat"><span class="tt-stat-label">Adopted budget</span><span class="tt-stat-val" id="tt-budget"></span></div>
+    <div class="tt-stat"><span class="tt-stat-label">Council duties</span><span class="tt-stat-val" id="tt-duties"></span></div>
+  </div>
+</div>
+
+<main>
+  <div class="main-inner" id="mainContent">
+    <p class="loading-note">Loading agencies…</p>
+  </div>
+</main>
+
+<footer>
+  <div class="footer-inner">
+    <span class="footer-copy">© NYCuriosity · Tal Roded</span>
+    <nav class="footer-links" style="flex-wrap:wrap">
+      <a href="https://buymeacoffee.com/nycuriosity" class="footer-support" target="_blank" rel="noopener" aria-label="Support my work on Buy Me a Coffee"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>Support my work</a>
+      <a href="https://talroded.nycuriosity.com" target="_blank" rel="noopener">About</a>
+      <a href="https://www.nycuriosity.com" target="_blank" rel="noopener" aria-label="NYCuriosity on Substack" title="Substack" style="display:inline-flex;align-items:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M22.539 8.242H1.46V5.406h21.08v2.836zM1.46 10.812V24L12 18.11 22.54 24V10.812H1.46zM22.54 0H1.46v2.836h21.08V0z"/></svg></a>
+      <a href="https://www.linkedin.com/in/tal-roded" target="_blank" rel="noopener" aria-label="Tal Roded on LinkedIn" title="LinkedIn" style="display:inline-flex;align-items:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.225 0z"/></svg></a>
+      <a href="https://x.com/TalR24" target="_blank" rel="noopener" aria-label="NYCuriosity on X" title="X" style="display:inline-flex;align-items:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z"/></svg></a>
+      <a href="https://www.instagram.com/talroded" target="_blank" rel="noopener" aria-label="Tal Roded on Instagram" title="Instagram" style="display:inline-flex;align-items:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg></a>
+      <a href="https://www.tiktok.com/@tal_nycuriosity" target="_blank" rel="noopener" aria-label="NYCuriosity on TikTok" title="TikTok" style="display:inline-flex;align-items:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/></svg></a>
+      <a href="https://www.youtube.com/@nycuriosity-yt" target="_blank" rel="noopener" aria-label="NYCuriosity on YouTube" title="YouTube" style="display:inline-flex;align-items:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814z M9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg></a>
+      <a href="https://github.com/TalR24/nycur-data-website" target="_blank" rel="noopener" aria-label="TalR24 on GitHub" title="GitHub" style="display:inline-flex;align-items:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg></a>
+    </nav>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var DATA = null, membersPromise = null;
+
+  // ── Sector palette (carried over from the retired gov bodies explorer) ──
+  var SECTOR_COLORS = {
+    "Public Safety": "#8A360B", "Education": "#226287", "Health & Human Services": "#226287",
+    "Housing & Development": "#A44D00", "Transportation & Infrastructure": "#E84C8A",
+    "Finance & Administration": "#6B5B4A", "Parks & Culture": "#226287",
+    "Economic Development": "#A44D00", "Elected & Legal": "#A44D00",
+    "Other offices and boards": "#6B5B4A"
+  };
+  var SECTOR_LIGHT = {
+    "Public Safety": "#F2D7C4", "Education": "#EFF7FA", "Health & Human Services": "#DCEDF4",
+    "Housing & Development": "#FDF3D8", "Transportation & Infrastructure": "#FCF1EB",
+    "Finance & Administration": "#F6F5F4", "Parks & Culture": "#DCEDF4",
+    "Economic Development": "#F9EEC8", "Elected & Legal": "#F6E7DA",
+    "Other offices and boards": "#F6F5F4"
+  };
+  var SECTOR_TEXT = {
+    "Public Safety": "#692807", "Education": "#1B5670", "Health & Human Services": "#133F53",
+    "Housing & Development": "#773903", "Transportation & Infrastructure": "#8A360B",
+    "Finance & Administration": "#4A3B2C", "Parks & Culture": "#133F53",
+    "Economic Development": "#78320F", "Elected & Legal": "#7F3E1D",
+    "Other offices and boards": "#4A3B2C"
+  };
+  var OTHER_SECTOR = "Other offices and boards";
+
+  var viewMode = 'cards';
+  var currentMetric = 'budget';
+
+  fetch('../data/agencies.json').then(function (r) {
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return r.json();
+  }).then(function (d) {
+    DATA = d;
+    if (DATA.generated_at) {
+      var gen = new Date(DATA.generated_at);
+      var months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+      document.getElementById('heroUpdated').textContent = 'Updated ' + months[gen.getMonth()] + ' ' + gen.getFullYear();
+    }
+    var params = new URLSearchParams(location.search);
+    var agencyId = params.get('agency');
+    if (agencyId) renderProfile(agencyId); else renderDirectory();
+  }).catch(function () {
+    document.getElementById('mainContent').innerHTML = '<p class="loading-note">Data failed to load.</p>';
+  });
+
+  function fetchMembers() {
+    if (!membersPromise) {
+      membersPromise = fetch('../data/members.json').then(function (r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      });
+    }
+    return membersPromise;
+  }
+
+  /* ── Shared helpers ─────────────────────────────────── */
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+  function fmtMoney(n) {
+    if (n == null) return '—';
+    var sign = n < 0 ? '-' : '';
+    var a = Math.abs(n);
+    if (a >= 1e9) return sign + '$' + (a / 1e9).toFixed(1).replace(/\.0$/, '') + 'B';
+    if (a >= 1e6) return sign + '$' + (a / 1e6).toFixed(1).replace(/\.0$/, '') + 'M';
+    if (a >= 1e3) return sign + '$' + Math.round(a / 1e3) + 'K';
+    return sign + '$' + Math.round(a).toLocaleString();
+  }
+  function fmtNum(n) {
+    if (n == null) return '—';
+    return Math.round(n).toLocaleString();
+  }
+  function sectorOf(a) { return a.sector || OTHER_SECTOR; }
+  function latestBudget(a) { return (a.budget && a.budget.length) ? a.budget[0] : null; }
+  function latestHeadcount(a) { return (a.headcount && a.headcount.length) ? a.headcount[0] : null; }
+  function latestAdopted(a) { var b = latestBudget(a); return b ? b.adopted : 0; }
+  function dutiesOf(a) { return (a.trackers && a.trackers.duties) || 0; }
+  function powersOf(a) { return (a.trackers && a.trackers.powers) || 0; }
+  function yearOf(iso) { return iso ? String(iso).slice(0, 4) : '?'; }
+
+  /* ── Directory view ──────────────────────────────────── */
+
+  function renderDirectory() {
+    document.title = 'Agencies — NYC Council Legislation Trackers — NYCuriosity';
+    var agencies = DATA.agencies;
+    var totalDuties = 0, totalPowers = 0, totalBudget = 0;
+    agencies.forEach(function (a) {
+      totalDuties += dutiesOf(a);
+      totalPowers += powersOf(a);
+      totalBudget += latestAdopted(a);
+    });
+
+    var sectors = {};
+    agencies.forEach(function (a) { sectors[sectorOf(a)] = 1; });
+    var sectorList = Object.keys(sectors).sort();
+
+    var el = document.getElementById('mainContent');
+    var html = '<div class="stat-pills">'
+      + '<div class="stat-pill"><span class="sp-num">' + agencies.length + '</span><span class="sp-label">Agencies profiled</span></div>'
+      + '<div class="stat-pill"><span class="sp-num">' + totalDuties.toLocaleString() + '</span><span class="sp-label">Duties across them</span></div>'
+      + '<div class="stat-pill"><span class="sp-num">' + totalPowers.toLocaleString() + '</span><span class="sp-label">Powers</span></div>'
+      + '<div class="stat-pill"><span class="sp-num">' + fmtMoney(totalBudget) + '</span><span class="sp-label">Combined adopted budget, latest fiscal year</span></div>'
+      + '</div>'
+      + '<div class="controls">'
+      + '<input type="search" id="fSearch" placeholder="Search agencies by name…" aria-label="Search agencies">'
+      + '<select id="fSector" aria-label="Filter by sector"><option value="">All sectors</option>'
+      + sectorList.map(function (s) { return '<option value="' + esc(s) + '">' + esc(s) + '</option>'; }).join('')
+      + '</select>'
+      + '<select id="fSort" aria-label="Sort agencies">'
+      + '<option value="duties">Most duties</option>'
+      + '<option value="budget">Largest budget</option>'
+      + '<option value="name">Name</option>'
+      + '</select>'
+      + '<div class="view-toggle"><button id="btnCards" class="active">Card grid</button><button id="btnTreemap">Treemap</button></div>'
+      + '</div>'
+      + '<p class="result-count" id="resultCount"></p>'
+      + '<div class="agency-grid" id="agencyGrid"></div>'
+      + '<div id="treemapWrap" style="display:none">'
+      + '<div class="treemap-controls">'
+      + '<div class="treemap-metric-toggle">'
+      + '<button class="metric-btn active" id="btnMetricBudget">Adopted budget</button>'
+      + '<button class="metric-btn" id="btnMetricDuties">Council duties</button>'
+      + '</div>'
+      + '<span class="treemap-hint">Hover a block for details · click to open its profile</span>'
+      + '</div>'
+      + '<figure class="chart-card" id="chart-box" data-slug="nyc-agencies-treemap">'
+      + '<div class="c-head"><div class="treemap-legend" id="treemapLegend"></div></div>'
+      + '<div class="c-plot"><div id="treemap-container"></div></div>'
+      + '<figcaption class="c-foot"><div class="c-foot-text"><span>Source: NYC OMB Adopted Budget and the trackers\' own data.</span></div></figcaption>'
+      + '</figure>'
+      + '</div>'
+      + footnotesHtml();
+    el.innerHTML = html;
+
+    ['fSearch', 'fSector', 'fSort'].forEach(function (id) {
+      document.getElementById(id).addEventListener('input', drawCards);
+    });
+    document.getElementById('btnCards').addEventListener('click', function () { setView('cards'); });
+    document.getElementById('btnTreemap').addEventListener('click', function () { setView('treemap'); });
+    document.getElementById('btnMetricBudget').addEventListener('click', function () { setMetric('budget'); });
+    document.getElementById('btnMetricDuties').addEventListener('click', function () { setMetric('duties'); });
+
+    drawCards();
+    if (window.NYCChart) window.NYCChart.injectMarks(el);
+    // shareable link straight to the treemap: ?view=treemap
+    if (new URLSearchParams(location.search).get('view') === 'treemap') setView('treemap');
+  }
+
+  function setView(mode) {
+    viewMode = mode;
+    document.getElementById('btnCards').classList.toggle('active', mode === 'cards');
+    document.getElementById('btnTreemap').classList.toggle('active', mode === 'treemap');
+    document.getElementById('agencyGrid').style.display = mode === 'cards' ? 'grid' : 'none';
+    document.getElementById('resultCount').style.display = mode === 'cards' ? 'block' : 'none';
+    document.querySelector('.controls').style.display = mode === 'cards' ? 'flex' : 'none';
+    document.getElementById('treemapWrap').style.display = mode === 'treemap' ? 'block' : 'none';
+    if (mode === 'treemap') renderTreemap();
+  }
+
+  function setMetric(metric) {
+    currentMetric = metric;
+    document.getElementById('btnMetricBudget').classList.toggle('active', metric === 'budget');
+    document.getElementById('btnMetricDuties').classList.toggle('active', metric === 'duties');
+    renderTreemap();
+  }
+
+  function filteredAgencies() {
+    var q = document.getElementById('fSearch').value.toLowerCase().trim();
+    var sector = document.getElementById('fSector').value;
+    return DATA.agencies.filter(function (a) {
+      if (sector && sectorOf(a) !== sector) return false;
+      if (q && a.name.toLowerCase().indexOf(q) === -1 && a.id.toLowerCase().indexOf(q) === -1) return false;
+      return true;
+    });
+  }
+
+  function drawCards() {
+    var rows = filteredAgencies();
+    var sort = document.getElementById('fSort').value;
+    rows.sort(function (a, b) {
+      switch (sort) {
+        case 'name': return a.name.localeCompare(b.name);
+        case 'budget': return latestAdopted(b) - latestAdopted(a);
+        default: return dutiesOf(b) - dutiesOf(a);
+      }
+    });
+    document.getElementById('resultCount').innerHTML =
+      'Showing <strong>' + rows.length + '</strong> of ' + DATA.agencies.length + ' agencies';
+    var html = '';
+    rows.forEach(function (a) { html += cardHtml(a); });
+    document.getElementById('agencyGrid').innerHTML =
+      html || '<div class="no-results"><strong>No agencies found</strong>Try a different search or filter.</div>';
+  }
+
+  function cardHtml(a) {
+    var sector = sectorOf(a);
+    var bg = SECTOR_LIGHT[sector] || '#F2EBE1';
+    var txt = SECTOR_TEXT[sector] || '#1A1208';
+    var b = latestAdopted(a);
+    return '<a class="agency-card" href="?agency=' + encodeURIComponent(a.id) + '">'
+      + '<div class="ac-top"><span class="ac-name">' + esc(a.name) + '</span></div>'
+      + (a.head ? '<span class="ac-head">Led by ' + esc(a.head.title) + ' ' + esc(a.head.name) + '</span>' : '')
+      + '<span class="sector-badge" style="background:' + bg + ';color:' + txt + '">' + esc(sector) + '</span>'
+      + '<div class="ac-nums">'
+      + '<div class="ac-num"><span class="ac-num-val">' + dutiesOf(a) + '</span><span class="ac-num-label">duties</span></div>'
+      + '<div class="ac-num"><span class="ac-num-val">' + powersOf(a) + '</span><span class="ac-num-label">powers</span></div>'
+      + '<div class="ac-num"><span class="ac-num-val">' + (b ? fmtMoney(b) : '—') + '</span><span class="ac-num-label">budget</span></div>'
+      + '</div>'
+      + '</a>';
+  }
+
+  /* ── Treemap ─────────────────────────────────────────── */
+
+  function renderTreemap() {
+    var container = document.getElementById('treemap-container');
+    container.innerHTML = '';
+    var agencies = DATA.agencies.filter(function (a) {
+      return currentMetric === 'budget' ? latestAdopted(a) > 0 : dutiesOf(a) > 0;
+    });
+
+    var W = container.clientWidth, H = container.clientHeight;
+    var sectors = [];
+    var seen = {};
+    agencies.forEach(function (a) { var s = sectorOf(a); if (!seen[s]) { seen[s] = 1; sectors.push(s); } });
+
+    var data = {
+      name: 'Agencies',
+      children: sectors.map(function (sector) {
+        return {
+          name: sector,
+          children: agencies.filter(function (a) { return sectorOf(a) === sector; }).map(function (a) {
+            return { id: a.id, name: a.name, sector: sector,
+              budget: latestAdopted(a), duties: dutiesOf(a),
+              value: currentMetric === 'budget' ? latestAdopted(a) : dutiesOf(a) };
+          })
+        };
+      }).filter(function (s) { return s.children.length > 0; })
+    };
+
+    var root = d3.hierarchy(data).sum(function (d) { return d.value || 0; })
+      .sort(function (a, b) { return b.value - a.value; });
+    d3.treemap().size([W, H]).padding(3).paddingTop(20).round(true)(root);
+
+    var svg = d3.select('#treemap-container').append('svg').attr('width', W).attr('height', H);
+    var tooltip = document.getElementById('tooltip');
+
+    root.children.forEach(function (sNode) {
+      var color = SECTOR_COLORS[sNode.data.name] || '#4A3B2C';
+      svg.append('rect').attr('x', sNode.x0).attr('y', sNode.y0)
+        .attr('width', sNode.x1 - sNode.x0).attr('height', 18)
+        .attr('fill', color).attr('rx', 3);
+      var labelW = sNode.x1 - sNode.x0;
+      if (labelW > 60) {
+        svg.append('text').attr('x', sNode.x0 + 5).attr('y', sNode.y0 + 13)
+          .attr('fill', '#fff').attr('font-family', "'JetBrains Mono', ui-monospace, monospace")
+          .attr('font-size', '9px').attr('font-weight', '700').attr('letter-spacing', '0.04em')
+          .text(sNode.data.name.length > labelW / 7
+            ? sNode.data.name.substring(0, Math.floor(labelW / 7) - 1) + '…'
+            : sNode.data.name);
+      }
+    });
+
+    var cell = svg.selectAll('g.cell').data(root.leaves()).enter().append('g')
+      .attr('class', 'cell').attr('transform', function (d) { return 'translate(' + d.x0 + ',' + d.y0 + ')'; });
+
+    cell.append('rect')
+      .attr('width', function (d) { return Math.max(0, d.x1 - d.x0); })
+      .attr('height', function (d) { return Math.max(0, d.y1 - d.y0); })
+      .attr('fill', function (d) { return (SECTOR_COLORS[d.data.sector] || '#4A3B2C') + 'cc'; })
+      .attr('stroke', '#fff').attr('stroke-width', 1).attr('rx', 2)
+      .style('cursor', 'pointer')
+      .on('mousemove', function (event, d) {
+        document.getElementById('tt-name').textContent = d.data.name;
+        document.getElementById('tt-sector').textContent = d.data.sector;
+        document.getElementById('tt-budget').textContent = d.data.budget ? fmtMoney(d.data.budget) : '—';
+        document.getElementById('tt-duties').textContent = d.data.duties.toLocaleString();
+        tooltip.classList.add('visible');
+        tooltip.style.left = (event.clientX + 14) + 'px';
+        tooltip.style.top = (event.clientY - 10) + 'px';
+      })
+      .on('mouseleave', function () { tooltip.classList.remove('visible'); })
+      .on('click', function (event, d) { location.href = '?agency=' + encodeURIComponent(d.data.id); });
+
+    cell.append('text').attr('x', 5).attr('y', 13)
+      .attr('fill', '#fff').attr('font-family', "'JetBrains Mono', ui-monospace, monospace")
+      .attr('font-size', '9px').attr('font-weight', '700').attr('pointer-events', 'none')
+      .text(function (d) { return (d.x1 - d.x0 < 46 || d.y1 - d.y0 < 20) ? '' : d.data.id.toUpperCase(); });
+
+    renderLegend(sectors);
+  }
+
+  function renderLegend(sectors) {
+    var legend = document.getElementById('treemapLegend');
+    legend.innerHTML = sectors.map(function (s) {
+      return '<div class="legend-item"><span class="legend-dot" style="background:' + (SECTOR_COLORS[s] || '#4A3B2C') + '"></span><span>' + esc(s) + '</span></div>';
+    }).join('');
+  }
+
+  /* ── Profile view ────────────────────────────────────── */
+
+  function findAgency(id) {
+    var found = null;
+    DATA.agencies.forEach(function (x) { if (x.id === id) found = x; });
+    return found;
+  }
+
+  function renderProfile(id) {
+    var a = findAgency(id);
+    var el = document.getElementById('mainContent');
+    if (!a) {
+      el.innerHTML = '<p class="loading-note">Agency not found. <a href="./">Back to all agencies</a></p>'
+        + renderDirectoryInline();
+      renderDirectory();
+      return;
+    }
+    document.title = a.name + ' — Agencies — NYCuriosity';
+    document.getElementById('crumbLast').textContent = a.name;
+    document.getElementById('heroTitle').innerHTML = esc(a.name);
+    var sector = sectorOf(a);
+    document.getElementById('heroDesc').textContent = a.description || '';
+
+    var chips = [];
+    chips.push('<span class="law-meta-chip"><strong>Sector:</strong> ' + esc(sector) + '</span>');
+    if (a.head) chips.push('<span class="law-meta-chip"><strong>Led by:</strong> ' + esc(a.head.title) + ' ' + esc(a.head.name) + (a.head.term ? ' (' + esc(a.head.term) + ')' : '') + '</span>');
+    var actions = ['<a class="btn btn-outline" href="./">← All agencies</a>'];
+    if (a.url) actions.push('<a class="btn btn-outline" href="' + esc(a.url) + '" target="_blank" rel="noopener">Official website ↗</a>');
+    document.getElementById('profileMeta').innerHTML =
+      (chips.length ? '<div class="law-meta-row">' + chips.join('') + '</div>' : '')
+      + '<div class="hero-actions">' + actions.join('')
+      + '<a class="tracker-alerts" href="../legislation_implementation_tracker/alerts/"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg> Monthly email alerts (members) →</a>'
+      + '</div>';
+
+    var t = a.trackers || {};
+    var b = latestBudget(a), hc = latestHeadcount(a);
+
+    var html = '<div class="profile-stats">'
+      + '<div class="stat-pill"><span class="sp-num">' + (t.duties || 0) + '</span><span class="sp-label">Duties</span></div>'
+      + '<div class="stat-pill"><span class="sp-num">' + (t.open_deadlines || 0) + '</span><span class="sp-label">Open deadlines</span></div>'
+      + '<div class="stat-pill"><span class="sp-num">' + (t.powers || 0) + '</span><span class="sp-label">Powers</span></div>'
+      + '<div class="stat-pill"><span class="sp-num">' + (t.fiscal_bills || 0) + '</span><span class="sp-label">Bills with fiscal estimates</span></div>'
+      + '<div class="stat-pill"><span class="sp-num">' + (b ? fmtMoney(b.adopted) : '—') + '</span><span class="sp-label">' + (b ? 'Adopted operating budget, FY' + b.fy + ' (all funds)' : 'Adopted operating budget') + '</span></div>'
+      + '<div class="stat-pill"><span class="sp-num">' + (hc ? fmtNum(hc.total) : '—') + '</span><span class="sp-label">' + (hc ? 'Budgeted positions, FY' + hc.fy + ' (full-time and FTE, OMB plan)' : 'Budgeted positions') + '</span></div>'
+      + '</div>';
+
+    html += section1Duties(t);
+    html += section2Powers(t);
+    html += section3Fiscal(t);
+    html += section4Budget(a);
+    html += section5Capital(a.capital);
+    html += section6Mmr(a.mmr);
+    html += section7Laws(t.laws || []);
+    html += '<div id="sponsorSection">' + section8Sponsors(t.top_sponsors || []) + '</div>';
+    html += footnotesHtml();
+
+    el.innerHTML = html;
+    initPager(t.laws || []);
+    resolveSponsorLinks(t.top_sponsors || []);
+    if (window.NYCChart) window.NYCChart.injectMarks(el);
+  }
+
+  function renderDirectoryInline() { return ''; }
+
+  function section1Duties(t) {
+    var html = '<div class="section-head" data-accent="obligations">Duties Council laws place on it</div>';
+    if (!t.duties) {
+      html += '<p class="section-note">No duties recorded for this agency.</p>';
+      return html;
+    }
+    var rf = t.report_filing || {};
+    var statuses = Object.keys(rf);
+    var max = Math.max.apply(null, statuses.map(function (k) { return rf[k]; }).concat([1]));
+    var bars = statuses.map(function (k) {
+      var label = /^not tracked by doris$/i.test(k) ? 'Not tracked by DORIS' : (k.charAt(0).toUpperCase() + k.slice(1));
+      var pct = Math.round((rf[k] / max) * 100);
+      return '<div class="c-bar-row"><span class="c-bar-label">' + esc(label) + '</span>'
+        + '<div class="c-bar-track"><div class="c-bar-fill" style="width:' + pct + '%;background:var(--b-topic-transit-ink)"></div></div>'
+        + '<span class="c-bar-value">' + rf[k] + '</span></div>';
+    }).join('');
+    html += '<p class="section-sub">' + t.duties + ' dut' + (t.duties === 1 ? 'y' : 'ies') + ' from ' + (t.laws_with_duties || 0)
+      + ' law' + (t.laws_with_duties === 1 ? '' : 's') + ', with '
+      + (t.open_deadlines || 0) + ' open deadline' + (t.open_deadlines === 1 ? '' : 's') + ' and '
+      + (t.passed_deadlines || 0) + ' passed.</p>';
+    if (statuses.length) {
+      html += '<div class="c-bars">' + bars + '</div>';
+    }
+    html += '<a class="section-link" href="../../legislation_implementation_tracker/obligations-table/">See these duties in the obligations table →</a>';
+    html += '<p class="section-sub credit">Report filing status from the city\'s DORIS required-reports list, using Josh Greenman\'s rules.</p>';
+    return html;
+  }
+
+  function section2Powers(t) {
+    var html = '<div class="section-head" data-accent="powers">Powers it holds</div>';
+    if (!t.powers) {
+      html += '<p class="section-note">No powers recorded for this agency.</p>';
+      return html;
+    }
+    html += '<p class="section-sub">' + t.powers + ' power' + (t.powers === 1 ? '' : 's') + ' from ' + (t.laws_with_powers || 0)
+      + ' law' + (t.laws_with_powers === 1 ? '' : 's') + '.</p>';
+    html += '<a class="section-link" href="../../legislation_implementation_tracker/powers-table/">See these powers in the powers table →</a>';
+    return html;
+  }
+
+  function section3Fiscal(t) {
+    var html = '<div class="section-head" data-accent="fiscal">Bills with fiscal estimates</div>';
+    var fiscal = t.fiscal || [];
+    if (!fiscal.length) {
+      html += '<p class="section-note">No bills with a fiscal estimate recorded for this agency.</p>';
+      return html;
+    }
+    var rows = fiscal.map(function (f) {
+      return '<tr><td><a href="../../nyc_council_fiscal_impacts_tracker/">' + esc(f.bill) + '</a></td>'
+        + '<td>' + esc(f.title) + '</td>'
+        + '<td class="num' + (f.net < 0 ? ' neg' : '') + '">' + fmtMoney(f.net) + '</td></tr>';
+    }).join('');
+    html += '<table class="data-table"><thead><tr><th>Bill</th><th>Title</th><th>Net (full impact)</th></tr></thead><tbody>' + rows + '</tbody></table>';
+    return html;
+  }
+
+  function fyBarsHtml(rows, fyKey, valKey, valFmt, accent) {
+    var vals = rows.map(function (r) { return r[valKey] || 0; });
+    var max = Math.max.apply(null, vals.concat([1]));
+    return '<div class="c-bars">' + rows.map(function (r) {
+      var pct = Math.round(((r[valKey] || 0) / max) * 100);
+      return '<div class="c-bar-row"><span class="c-bar-label">FY' + r[fyKey] + '</span>'
+        + '<div class="c-bar-track"><div class="c-bar-fill" style="width:' + pct + '%;background:' + accent + '"></div></div>'
+        + '<span class="c-bar-value">' + valFmt(r[valKey]) + '</span></div>';
+    }).join('') + '</div>';
+  }
+
+  function section4Budget(a) {
+    var html = '<div class="section-head">Budget, staff, and payroll</div>';
+    var budget = a.budget || [], headcount = a.headcount || [], payroll = a.payroll || [];
+    if (!budget.length && !headcount.length && !payroll.length) {
+      html += '<p class="section-note">No budget, staff, or payroll data recorded for this agency.</p>';
+      return html;
+    }
+    html += '<div class="fy-charts">';
+    if (budget.length) {
+      html += '<figure class="chart-card" data-slug="' + esc(a.id) + '-budget-by-fy">'
+        + '<div class="c-head"><h2 class="c-title">Adopted operating budget by fiscal year (all funds)</h2></div>'
+        + '<div class="c-plot">' + fyBarsHtml(budget, 'fy', 'adopted', fmtMoney, 'var(--b-topic-budget-ink)') + '</div>'
+        + '<figcaption class="c-foot"><div class="c-foot-text"><span>Source: NYC OMB Adopted Budget.</span></div></figcaption>'
+        + '</figure>';
+    }
+    if (headcount.length) {
+      html += '<figure class="chart-card" data-slug="' + esc(a.id) + '-headcount-by-fy">'
+        + '<div class="c-head"><h2 class="c-title">Budgeted positions by fiscal year</h2>'
+        + '<p class="c-deck">Full-time and FTE, an OMB plan rather than a count of staff.</p></div>'
+        + '<div class="c-plot">' + fyBarsHtml(headcount, 'fy', 'total', fmtNum, 'var(--b-topic-transit-ink)') + '</div>'
+        + '<figcaption class="c-foot"><div class="c-foot-text"><span>Source: NYC OMB.</span></div></figcaption>'
+        + '</figure>';
+    }
+    if (payroll.length) {
+      html += '<figure class="chart-card" data-slug="' + esc(a.id) + '-payroll-by-fy">'
+        + '<div class="c-head"><h2 class="c-title">People paid by fiscal year</h2>'
+        + '<p class="c-deck">Payroll records during the fiscal year, including part-time, seasonal, and people who left. Regular pay and overtime totals below.</p></div>'
+        + '<div class="c-plot">'
+        + '<p class="section-note" style="margin-bottom:4px">People paid</p>' + fyBarsHtml(payroll, 'fy', 'employees', fmtNum, 'var(--b-topic-cb-ink)')
+        + '<p class="section-note" style="margin:10px 0 4px">Regular pay total</p>' + fyBarsHtml(payroll, 'fy', 'regular_gross_paid_sum', fmtMoney, 'var(--b-brown)')
+        + '<p class="section-note" style="margin:10px 0 4px">Overtime paid total</p>' + fyBarsHtml(payroll, 'fy', 'ot_paid_sum', fmtMoney, 'var(--b-topic-budget-ink)') + '</div>'
+        + '<figcaption class="c-foot"><div class="c-foot-text"><span>Source: NYC OPA Payroll.</span></div></figcaption>'
+        + '</figure>';
+    }
+    html += '</div>';
+    return html;
+  }
+
+  function section5Capital(cap) {
+    var html = '<div class="section-head">Capital projects</div>';
+    if (!cap || !cap.projects) {
+      html += '<p class="section-note">No capital projects recorded for this agency.</p>';
+      return html;
+    }
+    html += '<p class="section-sub">Planned capital commitments for projects this agency manages: ' + cap.projects.toLocaleString() + ' projects, ' + fmtMoney(cap.total_planned_commit) + ' total planned commitment.</p>';
+    var rows = (cap.top || []).map(function (p) {
+      return '<tr><td>' + esc(p.description) + '</td><td class="num">' + fmtMoney(p.totalplannedcommit) + '</td>'
+        + '<td>' + esc(yearOf(p.mindate)) + '–' + esc(yearOf(p.maxdate)) + '</td></tr>';
+    }).join('');
+    html += '<table class="data-table"><thead><tr><th>Description</th><th>Planned commitment</th><th>Start–end</th></tr></thead><tbody>' + rows + '</tbody></table>';
+    html += '<p class="section-sub credit">Capital Projects Database, ' + esc(cap.version) + '.</p>';
+    return html;
+  }
+
+  function section6Mmr(mmr) {
+    var html = '<div class="section-head">Mayor\'s Management Report resources</div>';
+    if (!mmr || !mmr.length) {
+      html += '<p class="section-note">No Mayor\'s Management Report indicators recorded for this agency.</p>';
+      return html;
+    }
+    var rows = mmr.map(function (m) {
+      return '<tr><td>' + esc(m.indicator) + '</td><td class="num">' + esc(m.current_fy_projected_actual) + '</td>'
+        + '<td class="num">' + esc(m.current_fy_authorized_budget) + '</td>'
+        + '<td class="num">' + esc(m.next_fy_authorized_budget) + '</td><td>' + esc(m.trend) + '</td></tr>';
+    }).join('');
+    html += '<table class="data-table"><thead><tr><th>Indicator</th><th>Current FY projected/actual</th><th>Current FY authorized</th><th>Next FY authorized</th><th>Trend</th></tr></thead><tbody>' + rows + '</tbody></table>';
+    return html;
+  }
+
+  var PAGE_SIZE = 25;
+  var lawsPage = 1;
+
+  function section7Laws(laws) {
+    var html = '<div class="section-head">Laws that name it</div>';
+    if (!laws.length) {
+      html += '<p class="section-note">No laws in the trackers name this agency.</p>';
+      return html;
+    }
+    html += '<table class="data-table" id="lawsTable"><thead><tr><th>Law</th><th>Title</th><th>Enacted</th><th>Duties</th><th>Powers</th></tr></thead><tbody id="lawsBody"></tbody></table>';
+    html += '<nav class="pager" id="lawsPager"></nav>';
+    return html;
+  }
+
+  function initPager(laws) {
+    var body = document.getElementById('lawsBody');
+    if (!body) return;
+    lawsPage = 1;
+    drawLawsPage(laws);
+  }
+
+  function drawLawsPage(laws) {
+    var body = document.getElementById('lawsBody');
+    var pages = Math.max(1, Math.ceil(laws.length / PAGE_SIZE));
+    if (lawsPage > pages) lawsPage = pages;
+    var start = (lawsPage - 1) * PAGE_SIZE;
+    var slice = laws.slice(start, start + PAGE_SIZE);
+    body.innerHTML = slice.map(function (l) {
+      return '<tr><td><a href="../../legislation_implementation_tracker/law/?law=' + encodeURIComponent(l.matter_id) + '">' + esc(l.law) + '</a></td>'
+        + '<td>' + esc(l.title) + '</td><td>' + esc(l.enacted) + '</td>'
+        + '<td class="num">' + (l.duties || 0) + '</td><td class="num">' + (l.powers || 0) + '</td></tr>';
+    }).join('');
+    renderLawsPager(pages, laws.length, laws);
+  }
+
+  function renderLawsPager(pages, total, laws) {
+    var el = document.getElementById('lawsPager');
+    if (!el) return;
+    if (pages < 2) { el.innerHTML = ''; return; }
+    var want = {}; want[1] = 1; want[pages] = 1;
+    for (var i = lawsPage - 2; i <= lawsPage + 2; i++) if (i >= 1 && i <= pages) want[i] = 1;
+    var html = '<button class="pg-btn" data-page="' + (lawsPage - 1) + '"' + (lawsPage === 1 ? ' disabled' : '') + '>← Prev</button>';
+    var last = 0;
+    Object.keys(want).map(Number).sort(function (a, b) { return a - b; }).forEach(function (n) {
+      if (last && n - last > 1) html += '<span class="pg-count">…</span>';
+      html += '<button class="pg-btn pg-num' + (n === lawsPage ? ' is-current' : '') + '" data-page="' + n + '">' + n + '</button>';
+      last = n;
+    });
+    html += '<button class="pg-btn" data-page="' + (lawsPage + 1) + '"' + (lawsPage === pages ? ' disabled' : '') + '>Next →</button>';
+    html += '<span class="pg-count">' + total.toLocaleString() + ' laws · 25 per page</span>';
+    el.innerHTML = html;
+    el.querySelectorAll('.pg-btn[data-page]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        lawsPage = parseInt(b.getAttribute('data-page'), 10);
+        drawLawsPage(laws);
+        el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      });
+    });
+  }
+
+  function section8Sponsors(sponsors) {
+    var html = '<div class="section-head">Council members who legislate on it most</div>';
+    if (!sponsors.length) {
+      html += '<p class="section-note">No sponsor data recorded for this agency.</p>';
+      return html;
+    }
+    var chips = sponsors.map(function (s, i) {
+      return '<span class="sponsor-chip" data-sponsor-idx="' + i + '">' + esc(s.sponsor) + '<span class="n">' + s.laws + ' law' + (s.laws === 1 ? '' : 's') + '</span></span>';
+    }).join('');
+    html += '<div class="sponsor-list" id="sponsorList">' + chips + '</div>';
+    return html;
+  }
+
+  function resolveSponsorLinks(sponsors) {
+    var list = document.getElementById('sponsorList');
+    if (!list || !sponsors.length) return;
+    fetchMembers().then(function (md) {
+      sponsors.forEach(function (s, i) {
+        var last = String(s.sponsor).trim().split(/\s+/).pop().replace(/[.,]/g, '').toLowerCase();
+        var matches = (md.members || []).filter(function (m) { return (m.last_name || '').toLowerCase() === last; });
+        if (matches.length === 1) {
+          var chip = list.querySelector('[data-sponsor-idx="' + i + '"]');
+          if (chip) {
+            chip.innerHTML = '<a href="../council-members/?member=' + encodeURIComponent(matches[0].id) + '">' + esc(s.sponsor) + '</a><span class="n">' + s.laws + ' law' + (s.laws === 1 ? '' : 's') + '</span>';
+          }
+        }
+      });
+    }).catch(function () {});
+  }
+
+  function footnotesHtml() {
+    var sources = (DATA && DATA.sources) || {};
+    var lines = [];
+    Object.keys(sources).forEach(function (key) {
+      var s = sources[key];
+      var bits = [key.replace(/_/g, ' ')];
+      if (s.publisher) bits.push(s.publisher);
+      if (s.id) bits.push('dataset ' + s.id);
+      if (s.latest_fiscal_year) bits.push('latest FY ' + s.latest_fiscal_year);
+      lines.push(bits.join(', '));
+    });
+    return '<div class="footnotes">'
+      + '<p><strong>What this page joins:</strong> every agency, office, and board named in the Fiscal Impacts, Obligations, or Powers trackers, joined by agency name to the city\'s own budget, headcount, payroll, capital, and Mayor\'s Management Report data. Agency descriptions and leaders come from the NYC Government Bodies Explorer this page replaced.</p>'
+      + '<p><strong>Datasets:</strong> ' + esc(lines.join(' · ')) + '.</p>'
+      + '<p><strong>Sponsor matching:</strong> the trackers record sponsors by last name only; they are matched to <a href="../council-members/">council members</a> by last name, and linked only when exactly one member matches.</p>'
+      + '</div>';
+  }
+})();
+</script>
+
+</body>
+</html>

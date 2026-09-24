@@ -57,6 +57,11 @@ jobs:
         working-directory: civic_reference/nyc_council_legislation_trackers
         run: python3 pipeline/build_member_stats.py
 
+      - name: Rebuild agency profiles
+        working-directory: civic_reference/nyc_council_legislation_trackers
+        continue-on-error: true  # a city Open Data outage should never block the monthly refresh
+        run: python3 pipeline/build_agency_profiles.py
+
       - name: Commit and push if data changed
         run: |
           git config user.name "github-actions[bot]"
@@ -66,7 +71,8 @@ jobs:
                   civic_reference/legislation_implementation_tracker/data/powers.json \
                   civic_reference/legislation_implementation_tracker/data/report_filings.json \
                   civic_reference/legislation_implementation_tracker/pipeline/reextract_queue.json \
-                  civic_reference/nyc_council_legislation_trackers/data/members.json
+                  civic_reference/nyc_council_legislation_trackers/data/members.json \
+                  civic_reference/nyc_council_legislation_trackers/data/agencies.json
           if git diff --cached --quiet; then
             echo "No data changes this month."
           else
