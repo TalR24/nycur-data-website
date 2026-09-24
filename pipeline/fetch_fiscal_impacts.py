@@ -189,7 +189,7 @@ Some documents — particularly pre-2019 legislation — state fiscal impacts as
 - "No impact on revenues" or "existing resources" means 0 for that category — do NOT set cost_estimable to false.
 - If a range is given (e.g. "$1 million to $2 million"), use the midpoint.
 - Create a single fiscal_table_columns entry with label "Total" and populate revenue/expenditure/capital/net from the narrative figures.
-- If the narrative gives a cost figure but says it "cannot be estimated precisely" or "will be determined", set cost_estimable to false.
+- If the narrative gives a cost figure and also says some further part "cannot be determined" or "cannot be projected", keep the stated figure as the estimate (cost_estimable stays true) and note the caveat in the narrative fields. Set cost_estimable to false only when the statement gives no cost figure at all.
 """
 
 
