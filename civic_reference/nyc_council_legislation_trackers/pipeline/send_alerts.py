@@ -5,20 +5,23 @@ Send member alert emails for newly tracked legislation.
 Runs in the monthly refresh Action after the data rebuild. Reads member alert
 preferences and the already-announced state from a checkout of the PRIVATE
 premium repo (subscriber emails are PII and never live in the public repo),
-matches newly added records in BOTH trackers against each subscriber's
+matches newly added records in all three trackers (obligations, powers,
+fiscal impacts) against each subscriber's
 watched trackers, agencies, council members, and keywords, and sends one
 plain-text digest per subscriber via Gmail SMTP.
 
 Inputs (public repo):
   civic_reference/legislation_implementation_tracker/data/laws.json
   civic_reference/legislation_implementation_tracker/data/obligations.json
+  civic_reference/legislation_implementation_tracker/data/powers.json
   civic_reference/nyc_council_fiscal_impacts_tracker/data/fiscal_impacts.json
   civic_reference/nyc_council_legislation_trackers/data/members.json
 
 Inputs (premium checkout, path via PREMIUM_DIR):
   civic_reference/legislation_implementation_tracker/data/alert_subscriptions.csv
       columns: email,
-               trackers  (semicolon-separated: "impl;fiscal"; blank = both),
+               trackers  (semicolon-separated: "impl;powers;fiscal"; blank = all
+                          three; "impl" = the obligations tracker, duties only),
                agencies  (semicolon-separated canonical abbrevs),
                members   (semicolon-separated member slugs from members.json),
                keywords  (semicolon-separated words/phrases, matched on word
@@ -100,6 +103,8 @@ def main() -> None:
 
     laws = json.loads((IMPL_DATA / "laws.json").read_text())["laws"]
     obligations = json.loads((IMPL_DATA / "obligations.json").read_text())["obligations"]
+    powers_path = IMPL_DATA / "powers.json"
+    powers = json.loads(powers_path.read_text())["powers"] if powers_path.exists() else []
     fiscal = json.loads(FISCAL_JSON.read_text())["records"]
     members_doc = json.loads(MEMBERS_JSON.read_text())
 
@@ -131,6 +136,21 @@ def main() -> None:
                  f"{l.get('title','')} {l.get('summary','')} "
                  + " ".join(impl_text.get(l["matter_id"], []))
                  for l in new_laws}
+
+    # powers arrive with their law, so a new law is the unit here too, and the
+    # announced-laws state covers them (no backlog of powers added to old laws)
+    power_agencies_by_law: dict[str, set] = {}
+    powers_by_law: dict[str, list] = {}
+    for o in powers:
+        mid = o["matter_id"]
+        if mid not in new_law_ids:
+            continue
+        if o.get("agency_matched"):
+            power_agencies_by_law.setdefault(mid, set()).add(o["agency"])
+        powers_by_law.setdefault(mid, []).append(o)
+    power_blob = {mid: " ".join(
+        f"{o.get('action_summary','')} {o.get('deliverable_type','')} {o.get('agency_full','')} {o.get('quote','')}"
+        for o in rows) for mid, rows in powers_by_law.items()}
 
     fiscal_blob = {}
     for r in new_fiscal:
@@ -169,12 +189,12 @@ def main() -> None:
         def splitfield(name):
             return {x.strip() for x in (sub.get(name) or "").split(";") if x.strip()}
 
-        want_trackers = {t.lower() for t in splitfield("trackers")} or {"impl", "fiscal"}
+        want_trackers = {t.lower() for t in splitfield("trackers")} or {"impl", "powers", "fiscal"}
         want_ag = splitfield("agencies")
         want_mem = splitfield("members")
         want_kw = {k.lower() for k in splitfield("keywords")}
 
-        impl_matches, fiscal_matches = [], []
+        impl_matches, power_matches, fiscal_matches = [], [], []
         if "impl" in want_trackers:
             for l in new_laws:
                 mid = l["matter_id"]
@@ -190,6 +210,23 @@ def main() -> None:
                     why.append("keywords: " + ", ".join(hit_kw))
                 if why:
                     impl_matches.append((l, why))
+        if "powers" in want_trackers:
+            for l in new_laws:
+                mid = l["matter_id"]
+                if mid not in powers_by_law:
+                    continue
+                why = []
+                hit_ag = sorted(want_ag & power_agencies_by_law.get(mid, set()))
+                hit_mem = sorted(s for s in want_mem if mid in impl_by_member.get(s, set()))
+                hit_kw = kw_hit(want_kw, f"{l.get('title','')} {power_blob[mid]}")
+                if hit_ag:
+                    why.append("agencies: " + ", ".join(hit_ag))
+                if hit_mem:
+                    why.append("sponsors: " + ", ".join(member_names.get(s, s) for s in hit_mem))
+                if hit_kw:
+                    why.append("keywords: " + ", ".join(hit_kw))
+                if why:
+                    power_matches.append((l, why))
         if "fiscal" in want_trackers:
             for r in new_fiscal:
                 mid = r["matter_id"]
@@ -206,7 +243,7 @@ def main() -> None:
                 if why:
                     fiscal_matches.append((r, why))
 
-        total = len(impl_matches) + len(fiscal_matches)
+        total = len(impl_matches) + len(power_matches) + len(fiscal_matches)
         if not total:
             continue
 
@@ -215,13 +252,23 @@ def main() -> None:
             f"match{'' if total != 1 else 'es'} your alert preferences:",
             ""]
         if impl_matches:
-            lines.append("NEW ENACTED LAWS (Implementation Tracker)")
+            lines.append("NEW ENACTED LAWS: DUTIES ON AGENCIES (Obligations Tracker)")
             lines.append("")
             for l, why in impl_matches:
                 lines += [
                     f"- {l['law_number_display'] or l['file_number']}: {l['title']}",
                     f"  Matched {'; '.join(why)}",
                     f"  Checklist: {TRACKER_URL}/law/?law={l['matter_id']}",
+                    ""]
+        if power_matches:
+            lines.append("NEW ENACTED LAWS: POWERS GRANTED TO AGENCIES (Powers Tracker)")
+            lines.append("")
+            for l, why in power_matches:
+                n = len(powers_by_law[l["matter_id"]])
+                lines += [
+                    f"- {l['law_number_display'] or l['file_number']}: {l['title']}",
+                    f"  Grants {n} power{'s' if n != 1 else ''}; matched {'; '.join(why)}",
+                    f"  Law page: {TRACKER_URL}/law/?law={l['matter_id']}",
                     ""]
         if fiscal_matches:
             lines.append("NEW BILLS WITH FISCAL IMPACT STATEMENTS (Fiscal Impacts Tracker)")

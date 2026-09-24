@@ -12,10 +12,10 @@
 
   var TOOLS_MENU = [
     { label: 'NYC Council Legislation Trackers', href: '/civic_reference/nyc_council_legislation_trackers/', sub: [
-      { label: 'Implementation Tracker', href: '/civic_reference/legislation_implementation_tracker/' },
-      { label: 'Fiscal Impacts Tracker', href: '/civic_reference/nyc_council_fiscal_impacts_tracker/' },
-      { label: 'Council Members', href: '/civic_reference/nyc_council_legislation_trackers/council-members/' },
-      { label: 'Email alerts', href: '/civic_reference/legislation_implementation_tracker/alerts/' }
+      { label: 'Fiscal Impacts', href: '/civic_reference/nyc_council_fiscal_impacts_tracker/' },
+      { label: 'Obligations', href: '/civic_reference/legislation_implementation_tracker/' },
+      { label: 'Powers', href: '/civic_reference/legislation_implementation_tracker/powers/' },
+      { label: 'Council Members', href: '/civic_reference/nyc_council_legislation_trackers/council-members/' }
     ]},
     { label: 'CB Member Tracker', href: '/cb-tools/member-tracker/', sub: [
       { label: 'Term-limit openings', href: '/cb-tools/member-tracker/openings/' },

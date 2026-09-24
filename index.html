@@ -450,6 +450,9 @@
 
     /* ── SUITE CARD SUB-LINKS ────────────────────────────── */
     .card-main { display: flex; flex-direction: column; flex: 1; text-decoration: none; color: inherit; }
+    /* a featured card built on .card-main needs the row layout back (same specificity, later rule) */
+    .card-main.card-featured { flex-direction: row; }
+    @media (max-width: 640px) { .card-main.card-featured { flex-direction: column; } }
     .card-sublinks { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 24px 20px; }
     .card-sublinks a {
       font-family: 'JetBrains Mono', ui-monospace, monospace;
@@ -587,7 +590,7 @@
       <a class="start-card" href="/civic_reference/nyc_council_legislation_trackers/">
         <span class="start-tag">Flagship tool</span>
         <span class="start-title">NYC Council Legislation Trackers</span>
-        <span class="start-desc">What every Council law costs, and what it makes city agencies do.</span>
+        <span class="start-desc">What Council laws cost, what they require of city agencies, and what they allow them to do.</span>
         <span class="start-cta">Explore →</span>
       </a>
       <a class="start-card" href="/cb-tools/member-tracker/">
@@ -615,30 +618,31 @@
       <h2 class="section-heading">Trackers and explorers I keep up to date</h2>
     </div>
 
-    <div class="grid" id="tools-grid">
-
-      <!-- NYC Council Legislation Trackers (umbrella: fiscal impacts + implementation + members) -->
-      <div class="card" data-topics="budget">
-      <a class="card-main" href="/civic_reference/nyc_council_legislation_trackers/">
+    <!-- NYC Council Legislation Trackers (umbrella: fiscal impacts + obligations + powers + members) -->
+    <div class="card card-featured-wrap" data-topics="budget">
+      <a class="card-main card-featured" href="/civic_reference/nyc_council_legislation_trackers/">
         <div class="card-preview card-preview--glyph">
           <svg viewBox="0 0 84 56"><rect x="4" y="8" width="12" height="44" rx="3" fill="#F26522"/><rect x="20" y="18" width="12" height="34" rx="3" fill="#F26522"/><rect x="36" y="26" width="12" height="26" rx="3" fill="#89C4E1"/><rect x="52" y="32" width="12" height="20" rx="3" fill="#F26522"/><rect x="68" y="40" width="12" height="12" rx="3" fill="#89C4E1"/></svg>
         </div>
         <div class="card-body">
           <div class="card-category card-category--orange">Tool</div>
-          <div class="card-title">NYC Council Legislation Trackers</div>
-          <div class="card-desc">What Council legislation costs, and what it makes city agencies do. Two interactive trackers built from every fiscal impact statement since 2014 and every enacted local law since 2014, plus a legislation profile for every council member, browsable by district map.</div>
+          <div class="card-title">NYC Council Legislation Trackers: what Council laws cost, require, and allow</div>
+          <div class="card-desc">Three trackers built from every enacted local law and fiscal impact statement since 2014. Fiscal Impacts follows what bills cost the city. Obligations lists the duties laws place on agencies, with deadlines. Powers lists the authority laws hand them. Members get monthly email alerts from any of the three, and every council member has a profile across all of them.</div>
           <div class="card-meta">
-            <span class="card-stat">2 trackers · member profiles · district map</span>
+            <span class="card-stat">3 trackers · council member profiles · monthly alerts</span>
             <span class="card-cta">Explore →</span>
           </div>
         </div>
       </a>
       <div class="card-sublinks">
-        <a href="/civic_reference/legislation_implementation_tracker/">Implementation tracker</a>
-        <a href="/civic_reference/nyc_council_fiscal_impacts_tracker/">Fiscal impacts tracker</a>
+        <a href="/civic_reference/nyc_council_fiscal_impacts_tracker/">Fiscal Impacts tracker</a>
+        <a href="/civic_reference/legislation_implementation_tracker/">Obligations tracker</a>
+        <a href="/civic_reference/legislation_implementation_tracker/powers/">Powers tracker</a>
         <a href="/civic_reference/nyc_council_legislation_trackers/council-members/">Council members</a>
       </div>
-      </div>
+    </div>
+
+    <div class="grid" id="tools-grid">
 
       <!-- CB Member Tracker -->
       <div class="card" data-topics="cb">
@@ -1113,8 +1117,11 @@
 
     var toolsGrid = document.getElementById('tools-grid');
     var toolsHead = document.getElementById('tools');
+    var toolsFeatured = document.querySelector('.card-featured-wrap');
     if (toolsGrid && toolsHead) {
-      var anyTool = Array.prototype.slice.call(toolsGrid.querySelectorAll('[data-topics]')).some(function (c) {
+      var toolCards = Array.prototype.slice.call(toolsGrid.querySelectorAll('[data-topics]'));
+      if (toolsFeatured) toolCards.push(toolsFeatured);
+      var anyTool = toolCards.some(function (c) {
         return !c.classList.contains('hide-topic');
       });
       toolsGrid.style.display = anyTool ? '' : 'none';

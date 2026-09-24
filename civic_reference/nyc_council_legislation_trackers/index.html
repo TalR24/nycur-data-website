@@ -103,6 +103,47 @@
     .hub-card-cta { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.78rem; font-weight: 700; color: var(--blue); display: flex; align-items: center; gap: 5px; transition: gap 0.15s; }
     .hub-card:hover .hub-card-cta { gap: 9px; }
 
+    /* ── TRACKER PANELS ────────────────────────────────────
+       Three large panels, one per tracker. Accent set per-panel via
+       data-accent so colour encodes which tracker (topic tokens, not
+       new hexes). No horizontal scroll at 360px: single column below
+       the site's tablet breakpoint. */
+    .tracker-panels { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+    @media (max-width: 900px) { .tracker-panels { grid-template-columns: 1fr; } }
+    .tracker-panel { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 24px; display: flex; flex-direction: column; }
+    .tracker-panel[data-accent="budget"] .tracker-eyebrow,
+    .tracker-panel[data-accent="budget"] .tracker-stat-num { color: var(--b-topic-budget-ink); }
+    .tracker-panel[data-accent="transit"] .tracker-eyebrow,
+    .tracker-panel[data-accent="transit"] .tracker-stat-num { color: var(--b-topic-transit-ink); }
+    .tracker-panel[data-accent="cb"] .tracker-eyebrow,
+    .tracker-panel[data-accent="cb"] .tracker-stat-num { color: var(--b-topic-cb-ink); }
+    .tracker-eyebrow { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+    .tracker-title { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 1.1rem; font-weight: 700; color: var(--text); letter-spacing: -0.02em; line-height: 1.25; margin-bottom: 10px; }
+    .tracker-facet { font-size: 0.875rem; color: var(--text-muted); line-height: 1.6; margin-bottom: 18px; }
+    .tracker-stats { display: flex; gap: 14px; margin-bottom: 18px; padding-bottom: 18px; border-bottom: 1px solid var(--border); }
+    .tracker-stat { flex: 1; min-width: 0; }
+    .tracker-stat-num { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 1.15rem; font-weight: 700; color: var(--text); letter-spacing: -0.03em; line-height: 1; display: block; margin-bottom: 3px; }
+    .tracker-stat-label { font-size: 0.68rem; color: var(--text-muted); line-height: 1.3; }
+    .tracker-links { list-style: none; margin-bottom: 18px; flex: 1; }
+    .tracker-links li { margin-bottom: 7px; }
+    .tracker-links a { font-size: 0.82rem; color: var(--text-mid); text-decoration: none; border-bottom: 1px solid var(--border); }
+    .tracker-links a:hover { color: var(--blue); border-color: var(--blue); }
+    .tracker-alerts { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.72rem; color: var(--text-faint); text-decoration: none; margin-bottom: 14px; display: inline-block; }
+    .tracker-alerts:hover { color: var(--blue); }
+    .tracker-cta { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.85rem; font-weight: 700; color: var(--blue); text-decoration: none; display: flex; align-items: center; gap: 5px; transition: gap 0.15s; }
+    .tracker-cta:hover { gap: 9px; }
+
+    /* ── MEMBERS BAND ──────────────────────────────────────── */
+    .members-band { background: var(--text); border-radius: var(--radius); padding: clamp(24px, 4vw, 36px); margin-top: 24px; color: #fff; display: flex; flex-wrap: wrap; align-items: center; gap: 24px; justify-content: space-between; }
+    .members-band-text { flex: 1; min-width: 240px; }
+    .members-band h2 { font-family: 'Playfair Display', Georgia, serif; font-size: 1.4rem; font-weight: 700; margin-bottom: 8px; }
+    .members-band p { font-size: 0.9rem; color: rgba(255,255,255,0.75); line-height: 1.6; max-width: 560px; }
+    .members-band-side { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
+    .members-band-num { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 2rem; font-weight: 700; color: #FFD23F; line-height: 1; }
+    .members-band-label { font-size: 0.78rem; color: rgba(255,255,255,0.65); margin-bottom: 4px; }
+    .members-band a { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.85rem; font-weight: 700; color: #FFD23F; text-decoration: none; }
+    .members-band a:hover { text-decoration: underline; }
+
     footer { background: var(--surface); border-top: 1px solid var(--border); padding: 20px clamp(20px, 5vw, 48px); }
     .footer-inner { max-width: 1100px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
     .footer-copy { font-size: 0.8rem; color: var(--text-faint); }
@@ -177,97 +218,103 @@
       <span class="hero-tag">Civic Reference</span>
       <span class="hero-updated">Updated monthly from NYC Legistar</span>
     </div>
-    <h1>Council legislation, tracked from <span>price tag to to-do list</span></h1>
+    <h1>Three trackers on what Council legislation <span>costs, requires, and allows</span></h1>
     <p>
-      Two interactive trackers built from NYC Legistar, refreshed monthly. The Fiscal Impacts Tracker reads
-      every bill's fiscal impact statement to show what legislation costs. The Legislation Implementation
-      Tracker reads every enacted local law to show what it requires city agencies to actually do. The
-      Council Members page connects both to the people who write the bills.
+      Council legislation since 2014, read three ways. The Fiscal Impacts Tracker follows what each bill costs
+      the city, from the Finance Division's own estimates. The Obligations Tracker lists the duties each local
+      law places on city agencies, with deadlines. The Powers Tracker lists the authority each law hands those
+      agencies. Each tracker has its own charts, tables, and member alerts.
     </p>
     <div class="hero-actions">
       <a class="btn btn-outline" href="../legislation_implementation_tracker/alerts/">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
-        Get new-law alerts (members)
+        Get monthly alerts (members)
       </a>
     </div>
     <p class="hero-press">Featured in <a href="https://www.thecityreporter.nyc/2026/08/18/mamdani-agency-reporting-requirements-city-council-laws/" target="_blank" rel="noopener">The City Reporter</a> and <a href="https://www.vitalcitynyc.org/nyc-coge-charter-reform-government-operations-fixes/" target="_blank" rel="noopener">Vital City</a> (Aug 2026)</p>
   </div>
 </div>
 
-<div class="stat-row">
-  <div class="stat-row-inner">
-    <div class="stat-pill"><span class="sp-num blue" id="spBills">244</span><span class="sp-label">Bills with estimated fiscal impacts (2014 to present)</span></div>
-    <div class="stat-pill"><span class="sp-num blue" id="spLaws">–</span><span class="sp-label">Enacted local laws parsed for agency obligations (2014 to present)</span></div>
-    <div class="stat-pill"><span class="sp-num" id="spObs">–</span><span class="sp-label">Agency obligations extracted</span></div>
-    <div class="stat-pill"><span class="sp-num" id="spMembers">–</span><span class="sp-label">Council members profiled</span></div>
-  </div>
-</div>
-
 <section class="charts-section">
   <div class="charts-inner">
-    <p class="section-label">Trackers in this collection</p>
-    <div class="charts-grid">
+    <p class="section-label">Each tracker answers a different question about the same laws</p>
+    <div class="tracker-panels">
 
-      <a class="hub-card" href="../nyc_council_fiscal_impacts_tracker/">
-        <div class="hub-card-icon">
-          <div class="icon-money">
-            <div class="bar" style="height:100%"></div>
-            <div class="bar" style="height:70%"></div>
-            <div class="bar neg" style="height:55%"></div>
-            <div class="bar" style="height:42%"></div>
-            <div class="bar neg" style="height:30%"></div>
-            <div class="bar" style="height:18%"></div>
-          </div>
+      <div class="tracker-panel" data-accent="budget">
+        <div class="tracker-eyebrow">What it costs</div>
+        <div class="tracker-title">Fiscal Impacts Tracker</div>
+        <p class="tracker-facet">The Finance Division's estimate of what each bill adds to the city budget, by agency, sponsor, and year.</p>
+        <div class="tracker-stats">
+          <div class="tracker-stat"><span class="tracker-stat-num" id="fiscalStatBills">–</span><span class="tracker-stat-label">Bills with fiscal estimates</span></div>
+          <div class="tracker-stat"><span class="tracker-stat-num" id="fiscalStatAgencies">–</span><span class="tracker-stat-label">Agencies with estimated costs</span></div>
+          <div class="tracker-stat"><span class="tracker-stat-num" id="fiscalStatSponsors">–</span><span class="tracker-stat-label">Sponsoring council members</span></div>
         </div>
-        <div class="hub-card-body">
-          <div class="hub-card-label">Fiscal Impacts Tracker</div>
-          <div class="hub-card-title">What Council legislation costs</div>
-          <div class="hub-card-desc">Every bill with a Finance Division fiscal impact statement since 2014: operational costs, capital costs, revenues, and net fiscal impact, filterable by agency, committee, and sponsor, with year-by-year breakdowns per bill.</div>
-          <div class="hub-card-meta">
-            <span class="hub-card-stat">244 bills · 6 views</span>
-            <span class="hub-card-cta">Explore →</span>
-          </div>
-        </div>
-      </a>
+        <ul class="tracker-links">
+          <li><a href="../nyc_council_fiscal_impacts_tracker/">Bill table</a></li>
+          <li><a href="../nyc_council_fiscal_impacts_tracker/agency-fiscal-impact/">Costs by agency</a></li>
+          <li><a href="../nyc_council_fiscal_impacts_tracker/cost-revenue-breakdown/">Costs and revenues</a></li>
+          <li><a href="../nyc_council_fiscal_impacts_tracker/intro-year-impact/">Impact by year introduced</a></li>
+          <li><a href="../nyc_council_fiscal_impacts_tracker/sponsor-fiscal-impact/">Costs by sponsor</a></li>
+          <li><a href="../nyc_council_fiscal_impacts_tracker/methodology/">Methodology</a></li>
+        </ul>
+        <a class="tracker-alerts" href="../legislation_implementation_tracker/alerts/">Alerts →</a>
+        <a class="tracker-cta" href="../nyc_council_fiscal_impacts_tracker/">Open tracker →</a>
+      </div>
 
-      <a class="hub-card" href="../legislation_implementation_tracker/">
-        <div class="hub-card-icon">
-          <div class="icon-checklist">
-            <div class="row"><div class="box done"></div><div class="line" style="width:80%"></div></div>
-            <div class="row"><div class="box done"></div><div class="line" style="width:60%"></div></div>
-            <div class="row"><div class="box"></div><div class="line" style="width:70%"></div></div>
-          </div>
+      <div class="tracker-panel" data-accent="transit">
+        <div class="tracker-eyebrow">What it requires</div>
+        <div class="tracker-title">Obligations Tracker</div>
+        <p class="tracker-facet">Every duty a local law places on a city agency: reports, rules, programs, and the deadline for each.</p>
+        <div class="tracker-stats">
+          <div class="tracker-stat"><span class="tracker-stat-num" id="oblStatDuties">–</span><span class="tracker-stat-label">Duties recorded</span></div>
+          <div class="tracker-stat"><span class="tracker-stat-num" id="oblStatLaws">–</span><span class="tracker-stat-label">Laws that create them</span></div>
+          <div class="tracker-stat"><span class="tracker-stat-num" id="oblStatAgencies">–</span><span class="tracker-stat-label">Agencies that owe them</span></div>
         </div>
-        <div class="hub-card-body">
-          <div class="hub-card-label">Implementation Tracker</div>
-          <div class="hub-card-title">What enacted laws require agencies to do</div>
-          <div class="hub-card-desc">Every local law enacted since 2014, parsed into the concrete actions it demands of city agencies: the rules, reports, programs, and deadlines, each backed by the exact statutory language.</div>
-          <div class="hub-card-meta">
-            <span class="hub-card-stat" id="cardStatImpl">4 views</span>
-            <span class="hub-card-cta">Explore →</span>
-          </div>
-        </div>
-      </a>
+        <ul class="tracker-links">
+          <li><a href="../legislation_implementation_tracker/">Overview charts</a></li>
+          <li><a href="../legislation_implementation_tracker/obligations-table/">Obligations table</a></li>
+          <li><a href="../legislation_implementation_tracker/agency-workload/">Agency workload</a></li>
+          <li><a href="../legislation_implementation_tracker/deadline-timeline/">Deadline timeline</a></li>
+          <li><a href="../legislation_implementation_tracker/law/">Law explorer</a></li>
+          <li><a href="../legislation_implementation_tracker/methodology/">Methodology</a></li>
+        </ul>
+        <a class="tracker-alerts" href="../legislation_implementation_tracker/alerts/">Alerts →</a>
+        <a class="tracker-cta" href="../legislation_implementation_tracker/">Open tracker →</a>
+      </div>
 
-      <a class="hub-card" href="council-members/">
-        <div class="hub-card-icon">
-          <div class="icon-people">
-            <div class="icon-person dim"><div class="head"></div><div class="body"></div></div>
-            <div class="icon-person hl"><div class="head"></div><div class="body"></div></div>
-            <div class="icon-person dim"><div class="head"></div><div class="body"></div></div>
-          </div>
+      <div class="tracker-panel" data-accent="cb">
+        <div class="tracker-eyebrow">What it allows</div>
+        <div class="tracker-title">Powers Tracker</div>
+        <p class="tracker-facet">The authority local laws hand city agencies, from inspections to fees, kept out of the duty counts.</p>
+        <div class="tracker-stats">
+          <div class="tracker-stat"><span class="tracker-stat-num" id="powStatPowers">–</span><span class="tracker-stat-label">Powers recorded</span></div>
+          <div class="tracker-stat"><span class="tracker-stat-num" id="powStatLaws">–</span><span class="tracker-stat-label">Laws that grant them</span></div>
+          <div class="tracker-stat"><span class="tracker-stat-num" id="powStatAgencies">–</span><span class="tracker-stat-label">Agencies that hold them</span></div>
         </div>
-        <div class="hub-card-body">
-          <div class="hub-card-label">Council Members</div>
-          <div class="hub-card-title">Who writes the bills, and what they add up to</div>
-          <div class="hub-card-desc">A profile for every council member appearing in either tracker: all their sponsored legislation, total fiscal impact, obligations created, and sponsorship patterns. Browse as cards or on a district map of the city.</div>
-          <div class="hub-card-meta">
-            <span class="hub-card-stat" id="cardStatMembers">cards · district map</span>
-            <span class="hub-card-cta">Explore →</span>
-          </div>
-        </div>
-      </a>
+        <ul class="tracker-links">
+          <li><a href="../legislation_implementation_tracker/powers/">Overview charts</a></li>
+          <li><a href="../legislation_implementation_tracker/powers-table/">Powers table</a></li>
+          <li><a href="../legislation_implementation_tracker/law/">Law explorer</a></li>
+          <li><a href="../legislation_implementation_tracker/methodology/#powers">Methodology</a></li>
+        </ul>
+        <a class="tracker-alerts" href="../legislation_implementation_tracker/alerts/">Alerts →</a>
+        <a class="tracker-cta" href="../legislation_implementation_tracker/powers/">Open tracker →</a>
+      </div>
 
+    </div>
+
+    <div class="members-band">
+      <div class="members-band-text">
+        <h2>Who wrote them</h2>
+        <p>Every council member since 2014, with the bills they sponsored across all three trackers, how they voted, and a district map.</p>
+      </div>
+      <div class="members-band-side">
+        <div>
+          <div class="members-band-num" id="spMembers">–</div>
+          <div class="members-band-label">Council members profiled</div>
+        </div>
+        <a href="council-members/">Browse council members →</a>
+      </div>
     </div>
   </div>
 </section>
@@ -294,10 +341,26 @@
   fetch('../legislation_implementation_tracker/data/obligations.json')
     .then(function (r) { return r.json(); })
     .then(function (d) {
-      document.getElementById('spLaws').textContent = (d.law_count || 0).toLocaleString();
-      document.getElementById('spObs').textContent = (d.obligation_count || 0).toLocaleString();
-      document.getElementById('cardStatImpl').textContent =
-        (d.obligation_count || 0).toLocaleString() + ' obligations · 4 views';
+      var obs = d.obligations || [];
+      document.getElementById('oblStatDuties').textContent = (d.obligation_count || obs.length || 0).toLocaleString();
+      var lawsWithObs = (d.laws || []).filter(function (l) { return (l.obligation_count || 0) > 0; }).length;
+      document.getElementById('oblStatLaws').textContent = lawsWithObs.toLocaleString();
+      var agencySet = {};
+      obs.forEach(function (o) { if (o.agency_matched) agencySet[o.agency] = 1; });
+      document.getElementById('oblStatAgencies').textContent = Object.keys(agencySet).length.toLocaleString();
+    })
+    .catch(function () {});
+  fetch('../legislation_implementation_tracker/data/powers.json')
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      var powers = d.powers || [];
+      document.getElementById('powStatPowers').textContent = (d.power_count || powers.length || 0).toLocaleString();
+      var matterSet = {};
+      powers.forEach(function (p) { if (p.matter_id) matterSet[p.matter_id] = 1; });
+      document.getElementById('powStatLaws').textContent = Object.keys(matterSet).length.toLocaleString();
+      var agencySet = {};
+      powers.forEach(function (p) { if (p.agency_matched) agencySet[p.agency] = 1; });
+      document.getElementById('powStatAgencies').textContent = Object.keys(agencySet).length.toLocaleString();
     })
     .catch(function () {});
   fetch('data/members.json')
@@ -305,14 +368,21 @@
     .then(function (d) {
       var n = (d.members || []).length;
       document.getElementById('spMembers').textContent = n.toLocaleString();
-      document.getElementById('cardStatMembers').textContent = n + ' members · district map';
     })
     .catch(function () {});
   fetch('../nyc_council_fiscal_impacts_tracker/data/fiscal_impacts.json')
     .then(function (r) { return r.json(); })
     .then(function (d) {
-      var n = (d.metadata && d.metadata.total_records) || (d.records || []).length;
-      if (n) document.getElementById('spBills').textContent = n.toLocaleString();
+      var records = d.records || [];
+      var n = (d.metadata && d.metadata.total_records) || records.length;
+      if (n) document.getElementById('fiscalStatBills').textContent = n.toLocaleString();
+      var agencySet = {}; var sponsorSet = {};
+      records.forEach(function (r) {
+        (r.agencies_abbrev || []).forEach(function (a) { agencySet[a] = 1; });
+        if (r.prime_sponsor) sponsorSet[r.prime_sponsor] = 1;
+      });
+      document.getElementById('fiscalStatAgencies').textContent = Object.keys(agencySet).length.toLocaleString();
+      document.getElementById('fiscalStatSponsors').textContent = Object.keys(sponsorSet).length.toLocaleString();
     })
     .catch(function () {});
 })();
