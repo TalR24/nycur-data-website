@@ -330,6 +330,24 @@
   };
   var OTHER_SECTOR = "Other offices and boards";
 
+  // Treemap: one distinct brand hue per sector (Tal, Sep 24 2026: the card
+  // palette above repeats blue and brown across sectors). Tokens resolve at
+  // runtime because SVG fill attributes cannot read CSS variables; light hues
+  // take dark labels.
+  var TREEMAP_TOKENS = {
+    "Public Safety": "--b-tangerine-deep", "Education": "--b-topic-transit-ink",
+    "Health & Human Services": "--b-topic-cb-ink", "Housing & Development": "--b-brown",
+    "Transportation & Infrastructure": "--b-lightblue", "Finance & Administration": "--b-ink-2",
+    "Parks & Culture": "--b-topic-govtech-ink", "Economic Development": "--b-marigold",
+    "Elected & Legal": "--b-fuchsia", "Other offices and boards": "--b-ink-4"
+  };
+  var LIGHT_TOKENS = { "--b-lightblue": 1, "--b-marigold": 1 };
+  function tokenValue(name) {
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  }
+  function tmColor(sector) { return tokenValue(TREEMAP_TOKENS[sector] || "--b-ink-3") || tokenValue("--b-ink-3"); }
+  function tmLabel(sector) { return LIGHT_TOKENS[TREEMAP_TOKENS[sector]] ? tokenValue("--b-ink") : tokenValue("--b-surface"); }
+
   var viewMode = 'cards';
   var currentMetric = 'budget';
 
@@ -558,14 +576,14 @@
     var tooltip = document.getElementById('tooltip');
 
     root.children.forEach(function (sNode) {
-      var color = SECTOR_COLORS[sNode.data.name] || '#4A3B2C';
+      var color = tmColor(sNode.data.name);
       svg.append('rect').attr('x', sNode.x0).attr('y', sNode.y0)
         .attr('width', sNode.x1 - sNode.x0).attr('height', 18)
         .attr('fill', color).attr('rx', 3);
       var labelW = sNode.x1 - sNode.x0;
       if (labelW > 60) {
         svg.append('text').attr('x', sNode.x0 + 5).attr('y', sNode.y0 + 13)
-          .attr('fill', '#fff').attr('font-family', "'JetBrains Mono', ui-monospace, monospace")
+          .attr('fill', tmLabel(sNode.data.name)).attr('font-family', "'JetBrains Mono', ui-monospace, monospace")
           .attr('font-size', '9px').attr('font-weight', '700').attr('letter-spacing', '0.04em')
           .text(sNode.data.name.length > labelW / 7
             ? sNode.data.name.substring(0, Math.floor(labelW / 7) - 1) + '…'
@@ -579,7 +597,7 @@
     cell.append('rect')
       .attr('width', function (d) { return Math.max(0, d.x1 - d.x0); })
       .attr('height', function (d) { return Math.max(0, d.y1 - d.y0); })
-      .attr('fill', function (d) { return (SECTOR_COLORS[d.data.sector] || '#4A3B2C') + 'cc'; })
+      .attr('fill', function (d) { return tmColor(d.data.sector) + 'cc'; })
       .attr('stroke', '#fff').attr('stroke-width', 1).attr('rx', 2)
       .style('cursor', 'pointer')
       .on('mousemove', function (event, d) {
@@ -595,7 +613,7 @@
       .on('click', function (event, d) { location.href = '?agency=' + encodeURIComponent(d.data.id); });
 
     cell.append('text').attr('x', 5).attr('y', 13)
-      .attr('fill', '#fff').attr('font-family', "'JetBrains Mono', ui-monospace, monospace")
+      .attr('fill', function (d) { return tmLabel(d.data.sector); }).attr('font-family', "'JetBrains Mono', ui-monospace, monospace")
       .attr('font-size', '9px').attr('font-weight', '700').attr('pointer-events', 'none')
       .text(function (d) { return (d.x1 - d.x0 < 46 || d.y1 - d.y0 < 20) ? '' : d.data.id.toUpperCase(); });
 
@@ -605,7 +623,7 @@
   function renderLegend(sectors) {
     var legend = document.getElementById('treemapLegend');
     legend.innerHTML = sectors.map(function (s) {
-      return '<div class="legend-item"><span class="legend-dot" style="background:' + (SECTOR_COLORS[s] || '#4A3B2C') + '"></span><span>' + esc(s) + '</span></div>';
+      return '<div class="legend-item"><span class="legend-dot" style="background:' + tmColor(s) + '"></span><span>' + esc(s) + '</span></div>';
     }).join('');
   }
 
