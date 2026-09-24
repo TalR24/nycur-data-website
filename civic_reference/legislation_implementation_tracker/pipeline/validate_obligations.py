@@ -318,7 +318,7 @@ def main() -> None:
                 hard[f"wrong_kind_in_{table}_table"].append(f"{o['obligation_id']}: kind={o.get('kind')}")
                 continue
             rule = o.get("kind_rule") or o.get("kind")
-            if final_kind(rule, o.get("kind_model")) != o.get("kind"):
+            if final_kind(rule, o.get("kind_model"), bool(o.get("kind_list_item"))) != o.get("kind"):
                 hard["kind_not_from_policy"].append(o["obligation_id"])
             if o.get("kind_model") is None:
                 soft["kind_without_model_label"].append(o["obligation_id"])

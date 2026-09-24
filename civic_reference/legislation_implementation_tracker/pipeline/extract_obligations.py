@@ -66,16 +66,20 @@ KIND_DEFINITIONS = """- duty: the provision REQUIRES a NYC government agency, of
 - neither: a right, option, duty or prohibition of a private party ("a tenant may elect", "the owner shall post", "no person shall"), a definition, or text that neither requires nor authorizes a government actor.
 Judge the provision the quote comes from: the clause it sits in (an "except that" or "provided that" clause is its own provision), its full sentence, and for a bare list item the list's lead-in. If the quote spans several sentences or clauses and any imposes a duty on a named government actor, it is a duty."""
 KINDS = ["duty", "power", "neither"]
-# How the code rule and the model label combine into `kind`. Chosen by
-# measurement against the 350 blind reviewer labels (label_kinds.py --score).
-KIND_POLICY = "model"
+# How the code rule and the model label combine into `kind`, chosen by
+# measurement against the 350 blind reviewer labels (Sep 24 2026): the model
+# decides (85 of 90 on the round neither was tuned on, rule 78), except for a
+# provision with no verb of its own (a list item, a report-content fragment),
+# where the rule reads the lead-in ("the report shall include: ... the number
+# of ...") and the model tends to call the item neither (86 of 90 with this
+# exception; 327 of 350 overall, 287 of 294 high-confidence).
 
 
-def final_kind(rule: str | None, model: str | None) -> str:
-    """The published kind. The model label decides when present; the rule is the fallback."""
-    if KIND_POLICY == "model" and model in KINDS:
-        return model
-    if KIND_POLICY == "agree_else_model" and model in KINDS:
+def final_kind(rule: str | None, model: str | None, list_item: bool = False) -> str:
+    """The published kind: the model label, except the rule for a bare list item."""
+    if list_item and rule in KINDS:
+        return rule
+    if model in KINDS:
         return model
     return rule or "duty"
 
@@ -530,6 +534,19 @@ def classify(quote, text=None):
         if k in kinds:
             return k
 
+def is_list_item(quote, text=None) -> bool:
+    """A provision with no verb of its own: a bare list item under a lead-in, or a
+    verbless fragment ("the number of complaints ...") that is content some duty
+    requires. The rule, not the model, sorts these (needs the law text)."""
+    ctx = provision_context(quote, text) if text else None
+    if not ctx:
+        return False
+    lead, sentence, offset, _more = ctx
+    clause = _clause(sentence, offset)
+    own = MODAL.search(_strip_subordinate(EPISTEMIC.sub(" ", MONTH_MAY.sub(" ", clause)), 0))
+    return not own or (bool(lead) and bool(NOUN_ITEM.match(clause)))
+
+
 def is_power(quote, text=None):
     return classify(quote, text) == "power"
 
@@ -537,7 +554,7 @@ def is_power(quote, text=None):
 def _kind(o: dict) -> str:
     """Published kind from the stored rule and model labels (quote-only rule as a last resort)."""
     rule = o.get("kind_rule") or o.get("kind") or classify(o.get("quote"))
-    return final_kind(rule, o.get("kind_model"))
+    return final_kind(rule, o.get("kind_model"), bool(o.get("kind_list_item")))
 
 
 # Bare generic actor references that must never surface as agency tags.
@@ -1073,6 +1090,7 @@ def extract_law(client, model: str, law: dict, text: str,
             "quote": o.get("quote", ""),
             "quote_verified": quote_ok,
             "kind_rule": classify(o.get("quote", ""), text),
+            "kind_list_item": is_list_item(o.get("quote", ""), text),
             "kind_model": o.get("provision_kind"),
             "deadline_kind": (o.get("deadline") or {}).get("kind", "none"),
             "deadline_text": (o.get("deadline") or {}).get("text"),

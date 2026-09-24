@@ -129,7 +129,11 @@ def apply() -> None:
         changed = False
         for o in rec.get("obligations", []):
             k = labels.get(o["obligation_id"])
-            if k in KINDS and o.get("kind_model") != k:
+            # never overwrite a label the extraction call produced: records
+            # re-extracted after the backfill have new ids the labels predate
+            if o.get("kind_model") in KINDS:
+                continue
+            if k in KINDS:
                 o["kind_model"] = k
                 changed = True
                 n += 1
