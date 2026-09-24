@@ -402,17 +402,39 @@ def build_agencies_for_members(members: list[dict], agencies: list[dict]) -> dic
 # ── 311 ───────────────────────────────────────────────────────────────────
 
 
+def month_windows(window_start: str, window_end: str):
+    """(first-of-month, first-of-next-month) pairs covering the window."""
+    cur, end = date.fromisoformat(window_start), date.fromisoformat(window_end)
+    while cur < end:
+        nxt = date(cur.year + (cur.month == 12), cur.month % 12 + 1, 1)
+        yield cur, nxt
+        cur = nxt
+
+
+def socrata_page_retry(params: dict, tries: int = 2) -> list[dict]:
+    """311 is ~3.8M rows a year and the API's speed varies by the hour: retry
+    a timed-out month once before failing the build."""
+    for i in range(tries):
+        try:
+            return socrata_page(params)
+        except requests.exceptions.RequestException:
+            if i == tries - 1:
+                raise
+            time.sleep(30)
+
+
 def fetch_311(window_start: str, window_end: str) -> tuple[list[dict], int]:
-    where = (
-        f"created_date >= '{window_start}' and created_date < '{window_end}' "
-        "and council_district IS NOT NULL"
-    )
-    rows = socrata_page({
-        "$select": "council_district, complaint_type, agency, count(*) as n",
-        "$group": "council_district, complaint_type, agency",
-        "$where": where,
-        "$order": "council_district, complaint_type, agency",
-    })
+    # one call per month: a single 12-month grouped call timed out (180 s) on
+    # Sep 24 2026; build_districts_311 sums rows that repeat across months
+    rows: list[dict] = []
+    for cur, nxt in month_windows(window_start, window_end):
+        rows.extend(socrata_page_retry({
+            "$select": "council_district, complaint_type, agency, count(*) as n",
+            "$group": "council_district, complaint_type, agency",
+            "$where": (f"created_date >= '{cur.isoformat()}' and created_date < '{nxt.isoformat()}' "
+                       "and council_district IS NOT NULL"),
+            "$order": "council_district, complaint_type, agency",
+        }))
     return rows, len(rows)
 
 
@@ -433,12 +455,16 @@ def fetch_311_monthly(window_start: str, window_end: str) -> tuple[list[dict], i
             f"created_date >= '{cur.isoformat()}' and created_date < '{nxt.isoformat()}' "
             "and council_district IS NOT NULL"
         )
-        batch = socrata_page({
-            "$select": "council_district, date_trunc_ym(created_date) as month, count(*) as n",
-            "$group": "council_district, month",
+        # the month is fixed by the where clause; grouping on date_trunc_ym
+        # made Socrata time out (180 s), district-only grouping takes ~5 s
+        batch = socrata_page_retry({
+            "$select": "council_district, count(*) as n",
+            "$group": "council_district",
             "$where": where,
             "$order": "council_district",
         })
+        for r in batch:
+            r["month"] = cur.isoformat()
         rows.extend(batch)
         cur = nxt
     return rows, len(rows)
@@ -590,18 +616,9 @@ def main() -> int:
             "districts": len(districts_311),
         }
 
-        # verification: separate count(*) with same window
-        total_check = socrata_get({
-            "$select": "count(*)",
-            "$where": (
-                f"created_date >= '{window_start}' and created_date < '{window_end}' "
-                "and council_district IS NOT NULL"
-            ),
-        })
-        check_count = int(total_check[0]["count"]) if total_check else None
-        sum_grouped = sum(v["total"] for v in districts_311.values())
-        print(f"Sum of district totals: {sum_grouped:,}; separate count(*): "
-              f"{check_count:,} {'OK' if check_count == sum_grouped else 'MISMATCH'}")
+        # the monthly (district) counts come from a separate query, so the
+        # per-district assertion above is the independent check on the totals
+        print(f"Sum of district totals: {sum(v['total'] for v in districts_311.values()):,}")
 
     out = {
         "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
