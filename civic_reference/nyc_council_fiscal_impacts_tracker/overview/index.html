@@ -94,7 +94,9 @@
     .stat-row { background: var(--surface); border-bottom: 1px solid var(--border); padding: clamp(16px, 3vw, 24px) clamp(20px, 5vw, 48px); }
     .stat-row-inner { max-width: 1200px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 12px; }
     .stat-pill { display: flex; flex-direction: column; gap: 2px; padding: 12px 18px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); flex: 1; min-width: 140px; }
-    .stat-pill .sp-num { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 1.3rem; font-weight: 700; color: var(--text); letter-spacing: -0.03em; line-height: 1; }
+    .stat-pill .sp-num { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 1.3rem; font-weight: 700; color: var(--b-topic-budget-ink); letter-spacing: -0.03em; line-height: 1; }
+    .hero-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+    .hero-updated { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.72rem; color: var(--text-faint); }
     .stat-pill .sp-label { font-size: 0.75rem; color: var(--text-muted); line-height: 1.3; }
 
     /* ── SECTIONS ── */
@@ -143,6 +145,9 @@
     .col-item { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; justify-content: flex-end; }
     .col-bar { width: 100%; max-width: 46px; background: var(--blue); border-radius: 3px 3px 0 0; transition: height 0.7s ease; }
     .col-num { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.68rem; font-weight: 600; color: var(--text-mid); min-width: 0; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    @media (max-width: 1320px) {
+      .col-num { font-size: 0.62rem; letter-spacing: -0.02em; }
+    }
     .col-num.col-num-hidden { visibility: hidden; }
     .col-label { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.62rem; color: var(--text-faint); text-align: center; line-height: 1.2; }
     .chart-note { font-size: 0.72rem; color: var(--text-faint); margin-top: 14px; line-height: 1.5; }
@@ -175,6 +180,7 @@
     @media (max-width: 900px) { .header-actions .header-link { display: none; } }
     @media (max-width: 560px) { .header-actions { display: none; } }
     @media (max-width: 560px) { header h1 { white-space: normal; } }
+    @media (max-width: 520px) { header h1 { display: none; } }
   </style>
   <script defer src="/assets/site.js?v=20260926"></script>
 <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d0dce16d32c14809bc15038314fb9a13"}'></script><!-- End Cloudflare Web Analytics -->
@@ -223,7 +229,10 @@
       <span>›</span>
       <span>Overview</span>
     </div>
-    <div class="hero-tag">Fiscal Impacts Tracker</div>
+    <div class="hero-meta">
+      <span class="hero-tag">Fiscal Impacts Tracker</span>
+      <span class="hero-updated" id="heroUpdated"></span>
+    </div>
     <h1>What Council legislation <span>costs the city</span></h1>
     <p>Every Council bill and resolution since 2014 whose fiscal impact statement put a price on it, most of them now law. Each bill counts once, at its annual cost in a year of full implementation; pilots count over the years their statement prices.</p>
     <div class="hero-actions">
@@ -459,6 +468,18 @@
       });
     });
 
+  fetch('../data/fiscal_impacts.json')
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+      var lastUpdated = data.metadata && data.metadata.last_updated;
+      if (!lastUpdated) return;
+      var gen = new Date(lastUpdated);
+      var months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+      document.getElementById('heroUpdated').textContent =
+        'Updated ' + months[gen.getMonth()] + ' ' + gen.getFullYear();
+    })
+    .catch(function () {});
+
   function render(data) {
     var records = data.records || [];
     var total = records.length;
@@ -584,6 +605,14 @@
     animateBars(el);
   }
 
+  // column labels round to whole millions/billions so they fit at readable size
+  function shortMoney(v) {
+    var a = Math.abs(v);
+    if (a >= 1e9) return '$' + (a / 1e9).toFixed(a >= 1e10 ? 0 : 1) + 'B';
+    if (a >= 1e6) return '$' + Math.round(a / 1e6) + 'M';
+    if (a >= 1e3) return '$' + Math.round(a / 1e3) + 'K';
+    return '$' + Math.round(a);
+  }
   function columns(elId, pairs, rawPairs) {
     var el = document.getElementById(elId);
     if (!pairs.length) { el.innerHTML = '<p class="loading-note">No data.</p>'; return; }
@@ -594,7 +623,7 @@
     pairs.forEach(function (p, i) {
       var hideNum = skipLabels && (i % 2 === 1);
       html += '<div class="col-item">'
-        + '<span class="col-num' + (hideNum ? ' col-num-hidden' : '') + '">' + fmt(rawPairs[i][1]) + '</span>'
+        + '<span class="col-num' + (hideNum ? ' col-num-hidden' : '') + '">' + shortMoney(rawPairs[i][1]) + '</span>'
         + '<div class="col-bar" data-h="' + (max ? rawPairs[i][1] / max * 100 : 0) + '"></div>'
         + '<span class="col-label">' + esc(p[0]) + '</span>'
         + '</div>';

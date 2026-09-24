@@ -146,7 +146,14 @@
     .footer-support:hover { color: #fff; background: #C84609; border-color: #C84609; }
 
     @media (max-width: 640px) {
-      .detail-grid { grid-template-columns: 1fr; }
+      .detail-grid {
+        grid-template-columns: 1fr;
+        position: sticky;
+        left: 0;
+        width: min(100%, calc(100vw - 64px));
+        white-space: normal;
+        box-sizing: border-box;
+      }
     }
 
     /* ── TOPIC COLOUR (2026 rebrand) ──────────────────────
@@ -191,6 +198,7 @@
     @media (max-width: 900px) { .header-actions .header-link { display: none; } }
     @media (max-width: 560px) { .header-actions { display: none; } }
     @media (max-width: 560px) { header h1 { white-space: normal; } }
+    @media (max-width: 520px) { header h1 { display: none; } }
   </style>
   <script defer src="/assets/site.js?v=20260926"></script>
 <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d0dce16d32c14809bc15038314fb9a13"}'></script><!-- End Cloudflare Web Analytics -->
@@ -340,7 +348,7 @@
   </div>
 </footer>
 
-<script src="../../nyc_council_legislation_trackers/assets/multiselect.js"></script>
+<script src="../../nyc_council_legislation_trackers/assets/multiselect.js?v=2"></script>
 <script>
 (function () {
   var ALL = [];
@@ -385,15 +393,20 @@
     return o.agency;
   }
 
+  var UNMATCHED_KEY = '__unmatched__';
+
+  function agencyFilterKey(o) {
+    return o.agency_matched ? o.agency : UNMATCHED_KEY;
+  }
+
   var MS = {};
 
   function buildFilters() {
     var agLabel = {};
     ALL.forEach(function (o) {
-      if (!agLabel[o.agency]) {
+      if (o.agency_matched && !agLabel[o.agency]) {
         var full = agencyDisplay(o);
-        agLabel[o.agency] = (o.agency_matched && full !== o.agency)
-          ? full + ' (' + o.agency + ')' : full;
+        agLabel[o.agency] = (full !== o.agency) ? full + ' (' + o.agency + ')' : full;
       }
     });
     function opts(key, labelFn) {
@@ -401,9 +414,13 @@
         return { v: v, l: labelFn ? labelFn(v) : v };
       });
     }
+    var agencyOptions = Object.keys(agLabel).sort(function (a, b) {
+      return agLabel[a].localeCompare(agLabel[b]);
+    }).map(function (v) { return { v: v, l: agLabel[v] }; });
+    agencyOptions.push({ v: UNMATCHED_KEY, l: 'Not matched to an agency' });
     MS.agency = new MSFilter('msAgency', { label: 'Agency', allLabel: 'All agencies',
-      sort: 'alpha', onChange: applyFilters,
-      options: opts('agency', function (a) { return agLabel[a] || a; }) });
+      sort: 'none', onChange: applyFilters,
+      options: agencyOptions });
     MS.type = new MSFilter('msType', { label: 'Deliverable', allLabel: 'All types',
       sort: 'alpha', onChange: applyFilters, options: opts('deliverable_type') });
     MS.committee = new MSFilter('msCommittee', { label: 'Committee', allLabel: 'All committees',
@@ -451,7 +468,7 @@
     var q = document.getElementById('fSearch').value.trim();
 
     var rows = ALL.filter(function (o) {
-      if (!MS.agency.pass(o.agency)) return false;
+      if (!MS.agency.pass(agencyFilterKey(o))) return false;
       if (!MS.type.pass(o.deliverable_type)) return false;
       if (!MS.committee.pass(o.committee)) return false;
       if (!MS.sponsor.pass(o.prime_sponsor)) return false;
