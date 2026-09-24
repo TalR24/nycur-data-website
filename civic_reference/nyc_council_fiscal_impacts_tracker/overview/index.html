@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#170C03">
+  <title>Fiscal Impacts Overview — NYC Council Fiscal Impacts Tracker — NYCuriosity</title>
+  <meta name="description" content="What NYC Council legislation costs the city: annual fiscal impact estimates for enacted local laws since 2014, by agency, sponsor, year and cost versus revenue.">
+  <link rel="canonical" href="https://data.nycuriosity.com/civic_reference/nyc_council_fiscal_impacts_tracker/overview/">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://data.nycuriosity.com/civic_reference/nyc_council_fiscal_impacts_tracker/overview/">
+  <meta property="og:title" content="Fiscal Impacts Overview — NYC Council Fiscal Impacts Tracker — NYCuriosity">
+  <meta property="og:description" content="What NYC Council legislation costs the city: annual fiscal impact estimates for enacted local laws since 2014, by agency, sponsor, year and cost versus revenue.">
+  <meta property="og:image" content="https://data.nycuriosity.com/website_logo.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/brand.css">
+  <link rel="stylesheet" href="/assets/chart.css">
+  <script defer src="/assets/chart.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue:       #C84609;
+      --blue-hover: #A44D00;
+      --blue-light: #FAF6F1;
+      --blue-mid:   #EDC3A5;
+      --text:       #1A1208;
+      --text-mid:   #4A3B2C;
+      --text-muted: #6B5B4A;
+      --text-faint: #9A8B7A;
+      --bg:         #FAF6F1;
+      --surface:    #ffffff;
+      --border:     #E7DDCE;
+      --red:        #A44D00;
+      --green:      #226287;
+      --shadow-sm:  0 1px 3px rgba(26,18,8,0.08);
+      --shadow-md:  0 4px 20px rgba(207,75,12,0.13);
+      --radius:     10px;
+    }
+
+    body {
+      font-family: 'Helvetica Neue', Helvetica, Arial, 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── HEADER ── */
+    header { background: #170C03; border-bottom: 1px solid #2E1C0C; padding: 0 clamp(20px, 5vw, 48px); }
+    .header-inner { max-width: 1200px; margin: 0 auto; height: 56px; display: flex; align-items: center; gap: 16px; }
+    .back-link { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.75rem; font-weight: 600; color: #9A8B7A; text-decoration: none; display: flex; align-items: center; gap: 5px; padding: 4px 8px 4px 4px; border-radius: 5px; transition: color 0.15s, background 0.15s; white-space: nowrap; }
+    .back-link:hover { color: #FFD23F; background: rgba(255,210,63,0.1); }
+    .header-divider { width: 1px; height: 20px; background: #4A3B2C; flex-shrink: 0; }
+    header h1 { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.95rem; font-weight: 700; color: #E7DDCE; letter-spacing: -0.02em; }
+    .header-actions { display: flex; align-items: center; gap: 12px; margin-left: auto; flex-shrink: 0; }
+    .header-link { font-size: 0.8rem; font-weight: 500; color: #9A8B7A; text-decoration: none; display: inline-flex; align-items: center; gap: 5px; padding: 5px 11px; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; transition: color .15s, border-color .15s, background .15s; white-space: nowrap; }
+    .header-link:hover { color: #fff; border-color: rgba(255,255,255,0.35); background: rgba(255,255,255,0.08); }
+    .header-link svg, .support-link svg { flex-shrink: 0; }
+    .support-link { font-size: 0.8rem; font-weight: 500; color: #FFD23F; text-decoration: none; display: inline-flex; align-items: center; gap: 5px; padding: 5px 11px; border: 1px solid rgba(200,70,9,0.45); border-radius: 6px; transition: color .15s, border-color .15s, background .15s; white-space: nowrap; }
+    .support-link:hover { color: #fff; background: #C84609; border-color: #C84609; }
+
+    /* ── CHART NAV (shared views bar across the tracker) ── */
+    .chart-nav { background: var(--surface); border-bottom: 1px solid var(--border); padding: 10px clamp(16px, 4vw, 48px); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .chart-nav-label { font-size: 0.75rem; color: var(--text-muted); font-weight: 500; white-space: nowrap; margin-right: 4px; }
+    .chart-nav a { font-size: 0.78rem; font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight: 600; padding: 4px 12px; border-radius: 20px; text-decoration: none; border: 1px solid var(--border); color: var(--text-muted); background: var(--bg); transition: all 0.15s; white-space: nowrap; }
+    .chart-nav a:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
+    .chart-nav a.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+
+    /* ── HERO ── */
+    .hero { background: var(--surface); border-bottom: 1px solid var(--border); padding: clamp(28px, 4vw, 44px) clamp(20px, 5vw, 48px); }
+    .hero-inner { max-width: 1200px; margin: 0 auto; }
+    .breadcrumb { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.72rem; color: var(--text-faint); margin-bottom: 14px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .breadcrumb a { color: var(--blue); text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+    .breadcrumb span:last-child { color: #A44D00; }
+    .hero-tag { display: inline-block; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--blue); background: var(--blue-light); border: 1px solid var(--blue-mid); border-radius: 4px; padding: 3px 8px; margin-bottom: 12px; }
+    .hero h1 { font-family: 'Playfair Display', Georgia, serif; font-size: clamp(1.5rem, 3.5vw, 2rem); font-weight: 700; color: var(--text); letter-spacing: -0.012em; line-height: 1.2; margin-bottom: 10px; }
+    .hero h1 span { color: var(--blue); }
+    .hero p { font-size: 0.975rem; color: var(--text-muted); max-width: 760px; line-height: 1.7; }
+    .hero-actions { display: flex; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
+    .btn { display: inline-flex; align-items: center; gap: 6px; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.78rem; font-weight: 600; border-radius: 7px; padding: 8px 14px; transition: all 0.15s; cursor: pointer; border: 1.5px solid var(--blue); text-decoration: none; }
+    .btn-outline { color: var(--blue); background: var(--surface); }
+    .btn-outline:hover { background: var(--blue-light); }
+
+    /* ── STAT PILLS ── */
+    .stat-row { background: var(--surface); border-bottom: 1px solid var(--border); padding: clamp(16px, 3vw, 24px) clamp(20px, 5vw, 48px); }
+    .stat-row-inner { max-width: 1200px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 12px; }
+    .stat-pill { display: flex; flex-direction: column; gap: 2px; padding: 12px 18px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); flex: 1; min-width: 140px; }
+    .stat-pill .sp-num { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 1.3rem; font-weight: 700; color: var(--text); letter-spacing: -0.03em; line-height: 1; }
+    .stat-pill .sp-label { font-size: 0.75rem; color: var(--text-muted); line-height: 1.3; }
+
+    /* ── SECTIONS ── */
+    .charts-section { padding: clamp(28px, 4vw, 48px) clamp(20px, 5vw, 48px) 0; }
+    .charts-section:last-of-type { padding-bottom: clamp(28px, 4vw, 48px); flex: 1; }
+    .charts-inner { max-width: 1200px; margin: 0 auto; }
+    .section-label { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-faint); margin-bottom: 20px; }
+    .charts-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+
+    /* ── VIEW CARD ── */
+    .view-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); text-decoration: none; color: inherit; display: flex; flex-direction: column; overflow: hidden; transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s; }
+    .view-card:hover { border-color: var(--blue); box-shadow: var(--shadow-md); transform: translateY(-3px); }
+    .view-card-icon { height: 92px; background: var(--text); display: flex; align-items: center; justify-content: center; gap: 10px; padding: 0 20px; flex-shrink: 0; }
+    .icon-table { display: flex; flex-direction: column; gap: 5px; }
+    .icon-table-row { display: flex; gap: 4px; }
+    .icon-table-cell { height: 8px; border-radius: 2px; background: rgba(255,255,255,0.2); }
+    .icon-table-cell.header { background: #C84609; }
+    .icon-table-cell.w1 { width: 52px; }
+    .icon-table-cell.w2 { width: 28px; }
+    .icon-table-cell.w3 { width: 36px; }
+    .icon-table-cell.w4 { width: 80px; }
+    .icon-hbars { display: flex; flex-direction: column; gap: 6px; width: 110px; }
+    .icon-hbar { height: 9px; border-radius: 2px; background: #C84609; }
+    .icon-doc { display: flex; flex-direction: column; gap: 5px; width: 90px; padding: 10px 12px; border: 2px solid rgba(255,255,255,0.25); border-radius: 4px; }
+    .icon-doc-line { height: 6px; border-radius: 2px; background: rgba(255,255,255,0.2); }
+    .icon-doc-line.blue { background: #C84609; }
+
+    .view-card-body { padding: 18px 20px 20px; flex: 1; display: flex; flex-direction: column; }
+    .view-card-label { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--blue); margin-bottom: 8px; }
+    .view-card-title { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 1.0rem; font-weight: 700; color: var(--text); letter-spacing: -0.02em; line-height: 1.25; margin-bottom: 10px; }
+    .view-card-desc { font-size: 0.85rem; color: var(--text-muted); line-height: 1.6; flex: 1; margin-bottom: 18px; }
+    .view-card-meta { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .view-card-stat { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.72rem; color: var(--text-faint); }
+    .view-card-cta { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.78rem; font-weight: 700; color: var(--blue); display: flex; align-items: center; gap: 5px; transition: gap 0.15s; }
+    .view-card:hover .view-card-cta { gap: 9px; }
+
+    /* ── HUB SUMMARY CHARTS ── */
+    .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(460px, 100%), 1fr)); gap: 20px; }
+    .summary-bars { --c-bar-label-w: 150px; --c-bar-h: 16px; }
+    .summary-bars .c-bar-label { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.72rem; color: var(--text-mid); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .summary-bars .c-bar-track { background: var(--blue-light); border-radius: 4px; overflow: hidden; }
+    .summary-bars .c-bar-fill { background: var(--blue); border-radius: 4px; transition: width 0.7s ease; }
+    .summary-bars .c-bar-fill.negative { background: var(--red); }
+    .summary-bars .c-bar-value { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.72rem; font-weight: 600; color: var(--text); }
+    .col-chart { display: flex; align-items: flex-end; gap: 6px; height: 150px; margin-top: 8px; }
+    .col-item { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; justify-content: flex-end; }
+    .col-bar { width: 100%; max-width: 46px; background: var(--blue); border-radius: 3px 3px 0 0; transition: height 0.7s ease; }
+    .col-num { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.68rem; font-weight: 600; color: var(--text-mid); }
+    .col-label { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.62rem; color: var(--text-faint); text-align: center; line-height: 1.2; }
+    .chart-note { font-size: 0.72rem; color: var(--text-faint); margin-top: 14px; line-height: 1.5; }
+    .loading-note { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.8rem; color: var(--text-faint); padding: 20px 0; }
+
+    @media (max-width: 640px) {
+      .col-num { display: none; }
+      .summary-bars { --c-bar-label-w: 104px; }
+      .header-actions { display: none; }
+    }
+
+    /* ── FOOTER ── */
+    footer { background: var(--surface); border-top: 1px solid var(--border); padding: 18px clamp(16px, 4vw, 48px); }
+    .footer-inner { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+    .footer-copy { font-size: 0.78rem; color: var(--text-faint); }
+    .footer-links { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+    .footer-links a { font-size: 0.78rem; color: var(--text-faint); text-decoration: none; transition: color .15s; }
+    .footer-links a:hover { color: var(--blue); }
+    .footer-support { display: inline-flex; align-items: center; gap: 5px; font-size: 0.78rem; font-weight: 500; color: #C84609; text-decoration: none; padding: 5px 11px; border: 1px solid rgba(207,75,12,0.45); border-radius: 6px; transition: color .15s, border-color .15s, background .15s; vertical-align: middle; }
+    .footer-support:hover { color: #fff; background: #C84609; border-color: #C84609; }
+    .footer-support svg { flex-shrink: 0; }
+
+    /* The subpage header carries a mark, a back-link, a page title AND the
+       action buttons, so shed the optional links before the row can overflow.
+       These MUST live in the last style block on the page: several pages carry
+       a second <style id="support-btn-css"> that re-declares .header-actions
+       and would otherwise override the media query. */
+    header .header-inner { min-width: 0; }
+    header h1 { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    @media (max-width: 900px) { .header-actions .header-link { display: none; } }
+    @media (max-width: 560px) { .header-actions { display: none; } }
+    @media (max-width: 560px) { header h1 { white-space: normal; } }
+  </style>
+  <script defer src="/assets/site.js?v=20260918"></script>
+<!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d0dce16d32c14809bc15038314fb9a13"}'></script><!-- End Cloudflare Web Analytics -->
+  <script defer src="/civic_reference/nyc_council_legislation_trackers/assets/tracker-switch.js"></script>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <a href="/" class="header-mark" aria-label="NYCuriosity Data home"><img src="/assets/brand/Talbot.svg" alt="" style="height:32px;width:auto;display:block"></a>
+    <a href="/civic_reference/nyc_council_fiscal_impacts_tracker/" class="back-link">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+      Fiscal Impacts Tracker
+    </a>
+    <div class="header-divider"></div>
+    <h1>Fiscal Overview</h1>
+    <div class="header-actions">
+      <a href="https://talroded.nycuriosity.com" class="header-link" target="_blank" rel="noopener"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>About</a>
+      <a href="https://www.nycuriosity.com" class="header-link" target="_blank" rel="noopener"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v4H4z"/><path d="M4 10h16v10l-8-4-8 4z"/></svg>Substack</a>
+      <a href="https://buymeacoffee.com/nycuriosity" class="support-link" target="_blank" rel="noopener" aria-label="Support my work on Buy Me a Coffee"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>Support my work</a>
+    </div>
+  </div>
+</header>
+
+<!-- CHART NAV -->
+<div class="chart-nav">
+  <span class="chart-nav-label">Views in this tool:</span>
+  <a href="/civic_reference/nyc_council_fiscal_impacts_tracker/overview/" class="active">Fiscal overview</a>
+  <a href="/civic_reference/nyc_council_fiscal_impacts_tracker/">Bill Table</a>
+  <a href="/civic_reference/nyc_council_fiscal_impacts_tracker/agency-fiscal-impact/">Fiscal Impact by Agency</a>
+  <a href="/civic_reference/nyc_council_fiscal_impacts_tracker/sponsor-fiscal-impact/">Fiscal Impact by Sponsor</a>
+  <a href="/civic_reference/nyc_council_fiscal_impacts_tracker/intro-year-impact/">By Year Legislated</a>
+  <a href="/civic_reference/nyc_council_fiscal_impacts_tracker/cost-revenue-breakdown/">Costs vs. Revenue</a>
+  <a href="/civic_reference/nyc_council_fiscal_impacts_tracker/methodology/">Methodology</a>
+</div>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-inner">
+    <div class="breadcrumb">
+      <a href="https://data.nycuriosity.com/">data.nycuriosity.com</a>
+      <span>›</span>
+      <a href="/civic_reference/nyc_council_legislation_trackers/">Legislation Trackers</a>
+      <span>›</span>
+      <a href="../">Fiscal Impacts Tracker</a>
+      <span>›</span>
+      <span>Overview</span>
+    </div>
+    <div class="hero-tag">Fiscal Impacts Tracker</div>
+    <h1>What Council laws <span>cost the city</span></h1>
+    <p>Every enacted local law since 2014 whose fiscal impact statement put a price on it. Each bill counts once, at its annual cost in a year of full implementation; pilots count over the years their statement prices.</p>
+    <div class="hero-actions">
+      <a href="/civic_reference/nyc_council_fiscal_impacts_tracker/" class="btn btn-outline">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+        Tracker home
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- STAT PILLS -->
+<div class="stat-row">
+  <div class="stat-row-inner" id="statRow">
+    <div class="stat-pill"><span class="sp-num" id="spBills">–</span><span class="sp-label">bills with a fiscal estimate</span></div>
+    <div class="stat-pill"><span class="sp-num" id="spCost">–</span><span class="sp-label">combined annual cost</span></div>
+    <div class="stat-pill"><span class="sp-num" id="spRevenue">–</span><span class="sp-label">combined annual revenue</span></div>
+    <div class="stat-pill"><span class="sp-num" id="spRevBills">–</span><span class="sp-label">bills that raise revenue</span></div>
+  </div>
+</div>
+
+<!-- SUMMARY CHARTS -->
+<section class="charts-section">
+  <div class="charts-inner">
+    <p class="section-label">The tracker at a glance</p>
+    <div class="summary-grid" id="summaryGrid">
+
+      <figure class="chart-card" id="chart-box-agency" data-slug="nyc-fiscal-cost-by-agency">
+        <div class="c-head">
+          <h2 class="c-title" id="titleAgency">Loading…</h2>
+          <p class="c-deck">Annual cost of enacted bills by the agency responsible, top 12. A bill with several agencies counts toward each.</p>
+        </div>
+        <div class="c-plot">
+          <div class="c-bars c-bars--compact summary-bars" id="chartAgency"><p class="loading-note">Loading…</p></div>
+        </div>
+        <figcaption class="c-foot"><div class="c-foot-text"><span>Source: NYC Council Finance Division fiscal impact statements, 2014 to present; NYCuriosity Fiscal Impacts Tracker</span></div></figcaption>
+      </figure>
+
+      <figure class="chart-card" id="chart-box-sponsor" data-slug="nyc-fiscal-cost-by-sponsor">
+        <div class="c-head">
+          <h2 class="c-title" id="titleSponsor">Loading…</h2>
+          <p class="c-deck">Combined annual cost of enacted bills by prime sponsor, top 10.</p>
+        </div>
+        <div class="c-plot">
+          <div class="c-bars c-bars--compact summary-bars" id="chartSponsor"><p class="loading-note">Loading…</p></div>
+        </div>
+        <figcaption class="c-foot"><div class="c-foot-text"><span>Source: NYC Council Finance Division fiscal impact statements, 2014 to present; NYCuriosity Fiscal Impacts Tracker</span></div></figcaption>
+      </figure>
+
+      <figure class="chart-card" id="chart-box-year" data-slug="nyc-fiscal-cost-by-year">
+        <div class="c-head">
+          <h2 class="c-title" id="titleYear">Loading…</h2>
+          <p class="c-deck">Combined annual cost by the year the bill was introduced.</p>
+        </div>
+        <div class="c-plot">
+          <div id="chartYear"><p class="loading-note">Loading…</p></div>
+        </div>
+        <figcaption class="c-foot"><div class="c-foot-text"><span>Source: NYC Council Finance Division fiscal impact statements, 2014 to present; NYCuriosity Fiscal Impacts Tracker</span></div></figcaption>
+      </figure>
+
+      <figure class="chart-card" id="chart-box-costrev" data-slug="nyc-fiscal-cost-vs-revenue">
+        <div class="c-head">
+          <h2 class="c-title" id="titleCostRev">Loading…</h2>
+          <p class="c-deck">Enacted bills by the sign of their net fiscal impact.</p>
+        </div>
+        <div class="c-plot">
+          <div class="c-bars c-bars--compact summary-bars" id="chartCostRev"><p class="loading-note">Loading…</p></div>
+        </div>
+        <figcaption class="c-foot"><div class="c-foot-text"><span>Source: NYC Council Finance Division fiscal impact statements, 2014 to present; NYCuriosity Fiscal Impacts Tracker</span></div></figcaption>
+      </figure>
+
+    </div>
+    <p class="chart-note" style="margin-top:18px">
+      Source: Author's analysis of NYC Council fiscal impact statements from <a href="https://legistar.council.nyc.gov" target="_blank" rel="noopener" style="color:var(--blue)">NYC Legistar</a>, extracted and structured by NYCuriosity.
+    </p>
+  </div>
+</section>
+
+<!-- VIEWS GRID -->
+<section class="charts-section">
+  <div class="charts-inner">
+    <p class="section-label">Views in this tool</p>
+    <div class="charts-grid">
+
+      <a class="view-card" href="/civic_reference/nyc_council_fiscal_impacts_tracker/">
+        <div class="view-card-icon">
+          <div class="icon-table">
+            <div class="icon-table-row"><div class="icon-table-cell header w1"></div><div class="icon-table-cell header w2"></div><div class="icon-table-cell header w2"></div><div class="icon-table-cell header w3"></div></div>
+            <div class="icon-table-row"><div class="icon-table-cell w1"></div><div class="icon-table-cell w2"></div><div class="icon-table-cell w2"></div><div class="icon-table-cell w3"></div></div>
+            <div class="icon-table-row"><div class="icon-table-cell w1"></div><div class="icon-table-cell w2"></div><div class="icon-table-cell w2"></div><div class="icon-table-cell w3"></div></div>
+            <div class="icon-table-row"><div class="icon-table-cell w4"></div><div class="icon-table-cell w2"></div><div class="icon-table-cell w2"></div><div class="icon-table-cell w3"></div></div>
+          </div>
+        </div>
+        <div class="view-card-body">
+          <div class="view-card-label">Table</div>
+          <div class="view-card-title">Bill Table</div>
+          <div class="view-card-desc">Every bill with a fiscal estimate, filterable by agency, sponsor, committee and year.</div>
+          <div class="view-card-meta">
+            <span class="view-card-stat">filterable · sortable</span>
+            <span class="view-card-cta">Explore →</span>
+          </div>
+        </div>
+      </a>
+
+      <a class="view-card" href="/civic_reference/nyc_council_fiscal_impacts_tracker/agency-fiscal-impact/">
+        <div class="view-card-icon">
+          <div class="icon-hbars">
+            <div class="icon-hbar" style="width:100%"></div>
+            <div class="icon-hbar" style="width:72%"></div>
+            <div class="icon-hbar" style="width:55%"></div>
+            <div class="icon-hbar" style="width:38%"></div>
+            <div class="icon-hbar" style="width:22%; background:rgba(255,255,255,0.25)"></div>
+          </div>
+        </div>
+        <div class="view-card-body">
+          <div class="view-card-label">Chart</div>
+          <div class="view-card-title">Fiscal Impact by Agency</div>
+          <div class="view-card-desc">Cost, revenue, or net impact, ranked by the agency responsible for implementation.</div>
+          <div class="view-card-meta">
+            <span class="view-card-stat">ranked · filterable</span>
+            <span class="view-card-cta">Explore →</span>
+          </div>
+        </div>
+      </a>
+
+      <a class="view-card" href="/civic_reference/nyc_council_fiscal_impacts_tracker/sponsor-fiscal-impact/">
+        <div class="view-card-icon">
+          <div class="icon-hbars">
+            <div class="icon-hbar" style="width:100%"></div>
+            <div class="icon-hbar" style="width:80%"></div>
+            <div class="icon-hbar" style="width:60%"></div>
+            <div class="icon-hbar" style="width:44%"></div>
+            <div class="icon-hbar" style="width:30%; background:rgba(255,255,255,0.25)"></div>
+          </div>
+        </div>
+        <div class="view-card-body">
+          <div class="view-card-label">Chart</div>
+          <div class="view-card-title">Fiscal Impact by Sponsor</div>
+          <div class="view-card-desc">Cost, revenue, or net impact, ranked by each bill's prime sponsor.</div>
+          <div class="view-card-meta">
+            <span class="view-card-stat">ranked · filterable</span>
+            <span class="view-card-cta">Explore →</span>
+          </div>
+        </div>
+      </a>
+
+      <a class="view-card" href="/civic_reference/nyc_council_fiscal_impacts_tracker/intro-year-impact/">
+        <div class="view-card-icon">
+          <div class="icon-hbars">
+            <div class="icon-hbar" style="width:40%"></div>
+            <div class="icon-hbar" style="width:58%"></div>
+            <div class="icon-hbar" style="width:75%"></div>
+            <div class="icon-hbar" style="width:100%"></div>
+            <div class="icon-hbar" style="width:62%; background:rgba(255,255,255,0.25)"></div>
+          </div>
+        </div>
+        <div class="view-card-body">
+          <div class="view-card-label">Chart</div>
+          <div class="view-card-title">By Year Legislated</div>
+          <div class="view-card-desc">Cost, revenue, or net impact, grouped by the year each bill was introduced.</div>
+          <div class="view-card-meta">
+            <span class="view-card-stat">chronological · filterable</span>
+            <span class="view-card-cta">Explore →</span>
+          </div>
+        </div>
+      </a>
+
+      <a class="view-card" href="/civic_reference/nyc_council_fiscal_impacts_tracker/cost-revenue-breakdown/">
+        <div class="view-card-icon">
+          <div class="icon-hbars">
+            <div class="icon-hbar" style="width:90%"></div>
+            <div class="icon-hbar" style="width:65%"></div>
+            <div class="icon-hbar" style="width:20%; background:rgba(255,255,255,0.25)"></div>
+            <div class="icon-hbar" style="width:35%; background:rgba(255,255,255,0.25)"></div>
+          </div>
+        </div>
+        <div class="view-card-body">
+          <div class="view-card-label">Chart</div>
+          <div class="view-card-title">Costs vs. Revenue</div>
+          <div class="view-card-desc">The bills that cost the city the most, next to the few that raise revenue.</div>
+          <div class="view-card-meta">
+            <span class="view-card-stat">diverging · filterable</span>
+            <span class="view-card-cta">Explore →</span>
+          </div>
+        </div>
+      </a>
+
+      <a class="view-card" href="/civic_reference/nyc_council_fiscal_impacts_tracker/methodology/">
+        <div class="view-card-icon">
+          <div class="icon-doc">
+            <div class="icon-doc-line blue" style="width:45%"></div>
+            <div class="icon-doc-line" style="width:95%"></div>
+            <div class="icon-doc-line" style="width:90%"></div>
+            <div class="icon-doc-line blue" style="width:40%"></div>
+            <div class="icon-doc-line" style="width:80%"></div>
+          </div>
+        </div>
+        <div class="view-card-body">
+          <div class="view-card-label">Methodology</div>
+          <div class="view-card-title">Methodology</div>
+          <div class="view-card-desc">How each fiscal estimate is extracted, structured, and attributed to agencies and sponsors.</div>
+          <div class="view-card-meta">
+            <span class="view-card-stat">sources · rules · limitations</span>
+            <span class="view-card-cta">Read →</span>
+          </div>
+        </div>
+      </a>
+
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <span class="footer-copy">Created by Tal Roded · NYCuriosity</span>
+    <div class="footer-links">
+      <a href="https://buymeacoffee.com/nycuriosity" class="footer-support" target="_blank" rel="noopener" aria-label="Support my work on Buy Me a Coffee"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>Support my work</a>
+      <a href="https://nycuriosity.substack.com" target="_blank" rel="noopener">Substack</a>
+      <a href="/civic_reference/nyc_council_fiscal_impacts_tracker/">← Fiscal Impacts Tracker</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function () {
+  fetch('../agency-fiscal-impact/data.json')
+    .then(function (r) { return r.json(); })
+    .then(render)
+    .catch(function () {
+      document.querySelectorAll('.loading-note').forEach(function (el) {
+        el.textContent = 'Data failed to load.';
+      });
+    });
+
+  function render(data) {
+    var records = data.records || [];
+    var total = records.length;
+
+    // ── STAT PILLS ──────────────────────────────────────────────────────────
+    var totalCost = 0, totalRevenue = 0, revBillCount = 0;
+    records.forEach(function (r) {
+      totalCost += (r.total_expenditure || 0) + (r.total_capital || 0);
+      totalRevenue += r.total_revenue || 0;
+      if (r.net_fiscal_impact != null && r.net_fiscal_impact > 0) revBillCount += 1;
+    });
+    document.getElementById('spBills').textContent = total.toLocaleString();
+    document.getElementById('spCost').textContent = fmt(totalCost);
+    document.getElementById('spRevenue').textContent = fmt(totalRevenue);
+    document.getElementById('spRevBills').textContent = revBillCount.toLocaleString();
+
+    // ── CHART 1: annual cost by agency, top 12 + "All other agencies" ────────
+    // Each bill's cost counts in full toward every agency listed (matches
+    // aggregateByAgency on the Fiscal Impact by Agency chart).
+    var byAgency = {}, fullName = {};
+    records.forEach(function (r) {
+      var agencies = r.agencies_abbrev || [];
+      if (!agencies.length) return;
+      var cost = (r.total_expenditure || 0) + (r.total_capital || 0);
+      agencies.forEach(function (a, i) {
+        if (!a) return;
+        byAgency[a] = (byAgency[a] || 0) + cost;
+        var full = (r.agencies_full || [])[i];
+        if (full && !fullName[a]) fullName[a] = full;
+      });
+    });
+    var agencyPairs = Object.keys(byAgency)
+      .map(function (k) { return [k, byAgency[k], fullName[k] || k]; })
+      .sort(function (a, b) { return b[1] - a[1]; });
+    var agencyTop12 = agencyPairs.slice(0, 12);
+    var agencyRest = agencyPairs.slice(12).reduce(function (s, p) { return s + p[1]; }, 0);
+    var agencyChartPairs = agencyTop12.map(function (p) { return [p[0], p[1], p[2]]; });
+    if (agencyRest > 0) agencyChartPairs.push(['All other agencies', agencyRest]);
+    hbars('chartAgency', agencyChartPairs, true);
+    if (agencyTop12.length) {
+      document.getElementById('titleAgency').textContent =
+        agencyTop12[0][2] + ' is attached to ' + fmt(agencyTop12[0][1]) +
+        ' in annual costs, more than any other agency';
+    }
+
+    // ── CHART 2: annual cost by prime sponsor, top 10 ─────────────────────────
+    var bySponsor = {};
+    records.forEach(function (r) {
+      if (!r.prime_sponsor) return;
+      var cost = (r.total_expenditure || 0) + (r.total_capital || 0);
+      bySponsor[r.prime_sponsor] = (bySponsor[r.prime_sponsor] || 0) + cost;
+    });
+    var sponsorPairs = Object.keys(bySponsor)
+      .map(function (k) { return [k, bySponsor[k]]; })
+      .sort(function (a, b) { return b[1] - a[1]; })
+      .slice(0, 10);
+    hbars('chartSponsor', sponsorPairs, true);
+    if (sponsorPairs.length) {
+      document.getElementById('titleSponsor').textContent =
+        sponsorPairs[0][0] + ' sponsored bills with the largest combined annual cost: ' + fmt(sponsorPairs[0][1]);
+    }
+
+    // ── CHART 3: annual cost by year legislated ───────────────────────────────
+    var byYear = {};
+    records.forEach(function (r) {
+      var yr = r.intro_year;
+      if (!yr) return;
+      var cost = (r.total_expenditure || 0) + (r.total_capital || 0);
+      byYear[yr] = (byYear[yr] || 0) + cost;
+    });
+    var yearPairs = Object.keys(byYear)
+      .map(function (k) { return [k, byYear[k]]; })
+      .sort(function (a, b) { return parseInt(a[0]) - parseInt(b[0]); });
+    columns('chartYear', yearPairs.map(function (p) { return ["'" + String(p[0]).slice(2), p[1]]; }), yearPairs);
+    if (yearPairs.length) {
+      var topYear = yearPairs.slice().sort(function (a, b) { return b[1] - a[1]; })[0];
+      document.getElementById('titleYear').textContent =
+        'Bills from ' + topYear[0] + ' carry the largest combined annual cost: ' + fmt(topYear[1]);
+    }
+
+    // ── CHART 4: bills by sign of net fiscal impact ───────────────────────────
+    var withNet = records.filter(function (r) { return r.net_fiscal_impact != null; });
+    var costBills = withNet.filter(function (r) { return r.net_fiscal_impact < 0; });
+    var revBills = withNet.filter(function (r) { return r.net_fiscal_impact > 0; });
+    var zeroBills = withNet.filter(function (r) { return r.net_fiscal_impact === 0; });
+    var costRevPairs = [
+      ['Cost the city', costBills.length],
+      ['Raise revenue', revBills.length],
+    ];
+    if (zeroBills.length) costRevPairs.push(['Net zero', zeroBills.length]);
+    hbars('chartCostRev', costRevPairs, false);
+    document.getElementById('titleCostRev').textContent =
+      costBills.length.toLocaleString() + ' of ' + total.toLocaleString() +
+      ' bills cost the city money; ' + revBills.length.toLocaleString() + ' raise revenue';
+  }
+
+  // ── MONEY FORMAT (matches the fmt() helper on the tracker's chart pages) ──
+  function fmt(v) {
+    if (v == null) return '—';
+    var abs = Math.abs(v);
+    var sign = v < 0 ? '−' : '';
+    if (abs >= 1e9) return sign + '$' + (abs / 1e9).toFixed(1) + 'B';
+    if (abs >= 1e6) return sign + '$' + (abs / 1e6).toFixed(1) + 'M';
+    if (abs >= 1e3) return sign + '$' + (abs / 1e3).toFixed(0) + 'K';
+    return sign + '$' + abs.toFixed(0);
+  }
+
+  function hbars(elId, pairs, money) {
+    var el = document.getElementById(elId);
+    if (!pairs.length) { el.innerHTML = '<p class="loading-note">No data.</p>'; return; }
+    var max = 0;
+    pairs.forEach(function (p) { if (Math.abs(p[1]) > max) max = Math.abs(p[1]); });
+    var html = '';
+    pairs.forEach(function (p) {
+      var w = max ? (Math.abs(p[1]) / max * 100) : 0;
+      html += '<div class="c-bar-row">'
+        + '<span class="c-bar-label" title="' + esc(p[2] || p[0]) + '">' + esc(p[0]) + '</span>'
+        + '<div class="c-bar-track"><div class="c-bar-fill" data-w="' + w + '"></div></div>'
+        + '<span class="c-bar-value">' + (money ? fmt(p[1]) : p[1].toLocaleString()) + '</span>'
+        + '</div>';
+    });
+    el.innerHTML = html;
+    animateBars(el);
+  }
+
+  function columns(elId, pairs, rawPairs) {
+    var el = document.getElementById(elId);
+    if (!pairs.length) { el.innerHTML = '<p class="loading-note">No data.</p>'; return; }
+    var max = 0;
+    rawPairs.forEach(function (p) { if (p[1] > max) max = p[1]; });
+    var html = '<div class="col-chart">';
+    pairs.forEach(function (p, i) {
+      html += '<div class="col-item">'
+        + '<span class="col-num">' + fmt(rawPairs[i][1]) + '</span>'
+        + '<div class="col-bar" data-h="' + (max ? rawPairs[i][1] / max * 100 : 0) + '"></div>'
+        + '<span class="col-label">' + esc(p[0]) + '</span>'
+        + '</div>';
+    });
+    html += '</div>';
+    el.innerHTML = html;
+    requestAnimationFrame(function () {
+      el.querySelectorAll('.col-bar').forEach(function (b) {
+        b.style.height = Math.max(2, parseFloat(b.getAttribute('data-h'))) + '%';
+      });
+    });
+  }
+
+  function animateBars(el) {
+    requestAnimationFrame(function () {
+      el.querySelectorAll('.c-bar-fill').forEach(function (b) {
+        b.style.width = parseFloat(b.getAttribute('data-w')) + '%';
+      });
+    });
+  }
+
+  function esc(s) {
+    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+})();
+</script>
+
+</body>
+</html>

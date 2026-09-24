@@ -1,7 +1,7 @@
 /* Tracker switcher: one bar on every Council tracker page for moving between
  * the three trackers (Fiscal Impacts, Obligations, Powers). Inserted above the
  * page's own view row (.pill-nav / .chart-nav), or above the hero on pages
- * without one. Each button opens that tracker's table, its main feature.
+ * without one. Each button opens that tracker's overview page (Tal, Sep 24 2026).
  * The current tracker is read from the URL; law/ and methodology/ are shared
  * by Obligations and Powers, so nothing is highlighted there.
  * Include with: <script defer src="/civic_reference/nyc_council_legislation_trackers/assets/tracker-switch.js"></script>
@@ -10,11 +10,11 @@
   var BASE = '/civic_reference/';
   var TRACKERS = [
     { key: 'fiscal', label: 'Fiscal Impacts', note: 'what it costs',
-      href: BASE + 'nyc_council_fiscal_impacts_tracker/', ink: '--b-topic-budget-ink' },
+      href: BASE + 'nyc_council_fiscal_impacts_tracker/overview/', ink: '--b-topic-budget-ink' },
     { key: 'obligations', label: 'Obligations', note: 'what it requires',
-      href: BASE + 'legislation_implementation_tracker/obligations-table/', ink: '--b-topic-transit-ink' },
+      href: BASE + 'legislation_implementation_tracker/', ink: '--b-topic-transit-ink' },
     { key: 'powers', label: 'Powers', note: 'what it allows',
-      href: BASE + 'legislation_implementation_tracker/powers-table/', ink: '--b-topic-cb-ink' }
+      href: BASE + 'legislation_implementation_tracker/powers/', ink: '--b-topic-cb-ink' }
   ];
 
   function current() {
