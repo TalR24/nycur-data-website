@@ -64,33 +64,46 @@ CLAUDE_MODEL = "claude-haiku-4-5-20251001"
 FIS_TEXT_CAP = 150_000
 
 # ── Output schema (structured outputs: the API guarantees parseable JSON) ────
-def _n(t):          # nullable
-    return {"anyOf": [{"type": t}, {"type": "null"}]}
+# The API caps union types per schema (30 nullable fields were rejected, Sep 24
+# 2026), so text fields are plain strings ("" = missing, turned back into None
+# by _blank_to_none) and only numbers whose "unknown" matters stay nullable.
+_NUM_OR_NULL = {"anyOf": [{"type": "number"}, {"type": "null"}]}
+_STR = {"type": "string"}
+
 
 def _obj(props):
     return {"type": "object", "properties": props, "required": list(props), "additionalProperties": False}
 
-_STR_LIST = {"type": "array", "items": {"type": "string"}}
+
+_STR_LIST = {"type": "array", "items": _STR}
 FISCAL_SCHEMA = _obj({
-    "file_number": _n("string"), "legislation_type": _n("string"), "title": _n("string"),
-    "committee": _n("string"), "sponsors": _STR_LIST, "prime_sponsor": _n("string"),
-    "effective_date": _n("string"), "fy_first_effective": _n("string"), "fy_full_impact": _n("string"),
-    "source_of_funds": _n("string"), "cost_estimable": {"type": "boolean"},
-    "total_revenue": _n("number"), "total_expenditure": _n("number"),
-    "total_capital": _n("number"), "net_fiscal_impact": _n("number"),
+    "file_number": _STR, "legislation_type": _STR, "title": _STR, "committee": _STR,
+    "sponsors": _STR_LIST, "prime_sponsor": _STR, "effective_date": _STR,
+    "fy_first_effective": _STR, "fy_full_impact": _STR, "source_of_funds": _STR,
+    "cost_estimable": {"type": "boolean"},
+    "total_revenue": _NUM_OR_NULL, "total_expenditure": _NUM_OR_NULL,
+    "total_capital": _NUM_OR_NULL, "net_fiscal_impact": _NUM_OR_NULL,
     "fiscal_table_columns": {"type": "array", "items": _obj({
-        "label": {"type": "string"}, "revenue": _n("number"), "expenditure": _n("number"),
-        "capital": _n("number"), "net": _n("number")})},
+        "label": _STR, "revenue": _NUM_OR_NULL, "expenditure": _NUM_OR_NULL,
+        "capital": _NUM_OR_NULL, "net": _NUM_OR_NULL})},
     "agencies_abbrev": _STR_LIST, "agencies_full": _STR_LIST,
     "program_breakdowns": {"type": "array", "items": _obj({
-        "agency": _n("string"), "program": _n("string"), "description": _n("string"),
-        "cost_type": _n("string"), "amount": _n("number"), "fy_range": _n("string"),
-        "offset_notes": _n("string")})},
-    "impact_narrative_revenue": _n("string"), "impact_narrative_expenditure": _n("string"),
-    "omb_estimate_provided": {"type": "boolean"}, "omb_estimate_notes": _n("string"),
-    "estimate_prepared_by": _n("string"), "estimate_reviewed_by": _STR_LIST,
-    "date_prepared": _n("string"), "hearing_date": _n("string"),
+        "agency": _STR, "program": _STR, "description": _STR, "cost_type": _STR,
+        "amount": _NUM_OR_NULL, "fy_range": _STR, "offset_notes": _STR})},
+    "impact_narrative_revenue": _STR, "impact_narrative_expenditure": _STR,
+    "omb_estimate_provided": {"type": "boolean"}, "omb_estimate_notes": _STR,
+    "estimate_prepared_by": _STR, "estimate_reviewed_by": _STR_LIST,
+    "date_prepared": _STR, "hearing_date": _STR,
 })
+
+
+def _blank_to_none(v):
+    """Empty strings from the schema's plain-string fields are stored as None, as before."""
+    if isinstance(v, dict):
+        return {k: _blank_to_none(x) for k, x in v.items()}
+    if isinstance(v, list):
+        return [_blank_to_none(x) for x in v]
+    return None if v == "" else v
 
 
 # ── Extraction prompt ─────────────────────────────────────────────────────────
@@ -101,7 +114,7 @@ DOCUMENT TEXT:
 {text}
 ---
 
-Return a JSON object with exactly these fields (use null for missing/unknown, 0 for explicit zeros, true/false for booleans):
+Return a JSON object with exactly these fields (an empty string for missing text, null for an unknown number, 0 for explicit zeros, true/false for booleans):
 
 {{
   "file_number": "e.g. Int. No. 805  or  T2026-1631  or  Res. No. 1234-A  — as written",
@@ -602,7 +615,7 @@ def extract_fiscal_data(
             )
             if msg.stop_reason == "max_tokens":
                 raise json.JSONDecodeError("output truncated at max_tokens", "", 0)
-            data = json.loads(next(b.text for b in msg.content if b.type == "text"))
+            data = _blank_to_none(json.loads(next(b.text for b in msg.content if b.type == "text")))
             return totals_from_columns(data)
 
         except json.JSONDecodeError as e:
