@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#170C03">
+  <title>Agency Powers — NYC Council Powers Tracker — NYCuriosity</title>
+  <meta name="description" content="Which NYC agencies hold the most powers granted by local laws enacted since 2014, ranked and split by type: rulemaking, enforcement, designation, programs.">
+  <link rel="canonical" href="https://data.nycuriosity.com/civic_reference/legislation_implementation_tracker/powers/agency-powers/">
+  <meta property="og:image" content="https://data.nycuriosity.com/website_logo.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta property="og:type"        content="website">
+  <meta property="og:url"         content="https://data.nycuriosity.com/civic_reference/legislation_implementation_tracker/powers/agency-powers/">
+  <meta property="og:title"       content="Agency Powers — NYC Council Powers Tracker">
+  <meta property="og:description" content="Which NYC agencies hold the most powers granted by local laws enacted since 2014, ranked and split by type: rulemaking, enforcement, designation, programs.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/brand.css">
+  <link rel="stylesheet" href="/assets/chart.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
+  <script defer src="/assets/chart.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --blue: #C84609; --blue-hover: #A44D00; --blue-light: #FAF6F1; --blue-mid: #EDC3A5;
+      --text: #1A1208; --text-mid: #4A3B2C; --text-muted: #6B5B4A; --text-faint: #9A8B7A;
+      --bg: #FAF6F1; --surface: #ffffff; --border: #E7DDCE;
+      --shadow-sm: 0 1px 3px rgba(26,18,8,0.08); --radius: 10px;
+    }
+    body { font-family: 'Helvetica Neue', Helvetica, Arial, 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
+
+    header { background: #170C03; border-bottom: 1px solid #2E1C0C; padding: 0 clamp(20px, 5vw, 48px); }
+    .header-inner { max-width: 1100px; margin: 0 auto; height: 56px; display: flex; align-items: center; gap: 16px; }
+    .back-link { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.75rem; font-weight: 600; color: #9A8B7A; text-decoration: none; display: flex; align-items: center; gap: 5px; padding: 4px 8px 4px 4px; border-radius: 5px; transition: color 0.15s, background 0.15s; white-space: nowrap; }
+    .back-link:hover { color: #FFD23F; background: rgba(255,210,63,0.1); }
+    .header-divider { width: 1px; height: 20px; background: #4A3B2C; flex-shrink: 0; }
+    header h1 { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.95rem; font-weight: 700; color: #E7DDCE; letter-spacing: -0.02em; }
+
+    .pill-nav { background: var(--surface); border-bottom: 1px solid var(--border); padding: 10px clamp(20px, 5vw, 48px); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .pill-nav a { font-size: 0.78rem; font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight: 600; padding: 4px 12px; border-radius: 20px; text-decoration: none; border: 1px solid var(--border); color: var(--text-muted); background: var(--bg); transition: all 0.15s; white-space: nowrap; }
+    .pill-nav a:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
+    .pill-nav a.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+    .pill-label { font-size: 0.72rem; color: var(--text-faint); font-family: 'JetBrains Mono', ui-monospace, monospace; white-space: nowrap; }
+
+    .hero { background: var(--surface); border-bottom: 1px solid var(--border); padding: clamp(28px, 4vw, 44px) clamp(20px, 5vw, 48px); }
+    .hero-inner { max-width: 1100px; margin: 0 auto; }
+    .breadcrumb { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.72rem; color: var(--text-faint); margin-bottom: 14px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .breadcrumb a { color: var(--blue); text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+    .breadcrumb span:last-child { color: #A44D00; }
+    .hero-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .hero-tag { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--b-topic-cb-ink); background: #FAF6F1; border: 1px solid #E7DDCE; border-radius: 4px; padding: 3px 8px; }
+    .hero-updated { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.72rem; color: var(--text-faint); }
+    .hero h1 { font-family: 'Playfair Display', Georgia, serif; font-size: clamp(1.4rem, 3vw, 1.8rem); font-weight: 700; letter-spacing: -0.012em; line-height: 1.2; margin-bottom: 10px; }
+    .hero h1 span { color: var(--blue); }
+    .hero p { font-size: 0.95rem; color: var(--text-muted); max-width: 680px; line-height: 1.7; }
+    .hero-actions { margin-top: 18px; display: flex; gap: 10px; flex-wrap: wrap; }
+    .btn { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.78rem; font-weight: 600; padding: 8px 14px; border-radius: 7px; text-decoration: none; display: inline-flex; align-items: center; gap: 7px; cursor: pointer; border: 1.5px solid var(--blue); transition: all 0.15s; }
+    .btn-outline { color: var(--blue); background: var(--surface); }
+    .btn-outline:hover { background: var(--blue-light); }
+
+    main { flex: 1; padding: clamp(24px, 4vw, 40px) clamp(20px, 5vw, 48px); }
+    .main-inner { max-width: 900px; margin: 0 auto; }
+
+    .filters { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 16px 18px; margin-bottom: 16px; display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+    .fgroup { display: flex; flex-direction: column; gap: 5px; flex: 1 1 150px; min-width: 135px; }
+    .fgroup label { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.62rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted); }
+    .filters .msf { flex: 1 1 150px; min-width: 135px; }
+    .filters select { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 7px; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.75rem; background: var(--bg); color: var(--text-mid); cursor: pointer; }
+    .filters select:focus { outline: 2px solid var(--blue-mid); border-color: var(--blue); }
+    .reset-btn { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.72rem; font-weight: 600; color: var(--text-muted); background: none; border: 1px solid var(--border); border-radius: 7px; padding: 8px 12px; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+    .reset-btn:hover { color: #A44D00; border-color: #A44D00; }
+
+    .stat-strip { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
+    .stat-pill { display: flex; flex-direction: column; gap: 2px; padding: 12px 18px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); flex: 1; min-width: 130px; }
+    .stat-pill .sp-num { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 1.2rem; font-weight: 700; color: var(--blue); letter-spacing: -0.03em; line-height: 1; }
+    .stat-pill .sp-label { font-size: 0.72rem; color: var(--text-muted); line-height: 1.3; }
+
+    /* stacked bar rows on the shared .c-bars system: the track holds one
+       coloured .bar-seg per power type instead of a single fill. */
+    #chartArea { --c-bar-label-w: 170px; --c-bar-h: 18px; }
+    #chartArea .c-bar-row { cursor: pointer; }
+    #chartArea .c-bar-label { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.73rem; color: var(--text-mid); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #chartArea .c-bar-track { background: var(--blue-light); border-radius: 4px; overflow: hidden; display: flex; }
+    #chartArea .c-bar-value { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.73rem; font-weight: 600; color: var(--text); }
+    .bar-seg { height: 100%; transition: width 0.6s ease; }
+    .loading-note { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.85rem; color: var(--text-faint); padding: 40px; text-align: center; }
+
+    .chart-tooltip {
+      display: none; position: fixed; z-index: 60; pointer-events: none;
+      background: #170C03; color: #FAF6F1; border-radius: 7px; padding: 8px 12px;
+      font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.72rem; line-height: 1.5;
+      max-width: 320px; box-shadow: 0 4px 16px rgba(26,18,8,0.35);
+    }
+    .chart-tooltip .tt-name { font-weight: 700; }
+    .chart-tooltip .tt-count { color: #FFD23F; }
+    .chart-tooltip .tt-seg { color: #D3C4AF; }
+    .chart-tooltip .tt-hint { color: #9A8B7A; font-size: 0.66rem; }
+
+    .obl-section { margin-top: 20px; }
+    .obl-hint { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.78rem; color: var(--text-faint); background: var(--surface); border: 1.5px dashed var(--border); border-radius: var(--radius); padding: 14px 18px; }
+    .obl-search { display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 10px 14px; margin-bottom: 14px; }
+    .obl-search input { flex: 1; border: none; outline: none; background: none; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.82rem; color: var(--text); }
+    .obl-search input::placeholder { color: var(--text-faint); }
+    .obl-search .os-count { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.72rem; color: var(--text-muted); white-space: nowrap; }
+    .obl-search .os-clear { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.72rem; color: var(--text-faint); background: none; border: none; cursor: pointer; padding: 2px 6px; }
+    .obl-search .os-clear:hover { color: #A44D00; }
+    .obl-group { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); margin-bottom: 14px; overflow: hidden; }
+    .obl-group-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 14px 18px; background: var(--bg); border-bottom: 1px solid var(--border); }
+    .obl-group-head .g-name { font-family: 'JetBrains Mono', ui-monospace, monospace; font-weight: 700; font-size: 0.95rem; }
+    .obl-group-head .g-full { font-size: 0.8rem; color: var(--text-muted); }
+    .obl-group-head .g-count { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.78rem; font-weight: 600; color: var(--blue); white-space: nowrap; }
+    .obl-item { padding: 12px 18px; border-bottom: 1px solid var(--border); }
+    .obl-item:last-child { border-bottom: none; }
+    .obl-item .o-law { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.72rem; }
+    .obl-item .o-law a { color: var(--blue); text-decoration: none; }
+    .obl-item .o-law a:hover { text-decoration: underline; }
+    .obl-item .o-summary { font-size: 0.85rem; color: var(--text-mid); line-height: 1.55; margin: 4px 0 6px; }
+    .obl-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .obl-chip { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.64rem; padding: 2px 8px; border-radius: 10px; background: var(--blue-light); border: 1px solid var(--blue-mid); color: var(--text-mid); }
+
+    .footnotes { margin-top: 20px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; }
+    .footnotes p { font-size: 0.8rem; color: var(--text-muted); line-height: 1.65; margin-bottom: 10px; }
+    .footnotes p:last-child { margin-bottom: 0; }
+    .footnotes a { color: var(--blue); text-decoration: none; }
+    .footnotes a:hover { text-decoration: underline; }
+
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(26,18,8,0.55); z-index: 50; align-items: center; justify-content: center; padding: 20px; }
+    .modal { background: var(--surface); border-radius: var(--radius); max-width: 560px; width: 100%; padding: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.25); }
+    .modal h3 { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 1rem; margin-bottom: 12px; }
+    .modal textarea { width: 100%; height: 90px; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.72rem; padding: 10px; border: 1px solid var(--border); border-radius: 7px; resize: none; background: var(--bg); color: var(--text-mid); }
+    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 14px; }
+    .modal-btn { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.75rem; font-weight: 600; padding: 8px 14px; border-radius: 7px; cursor: pointer; border: 1.5px solid var(--blue); }
+    .modal-btn.primary { background: var(--blue); color: #fff; }
+    .modal-btn.ghost { background: var(--surface); color: var(--blue); }
+
+    footer { background: var(--surface); border-top: 1px solid var(--border); padding: 20px clamp(20px, 5vw, 48px); }
+    .footer-inner { max-width: 1100px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+    .footer-copy { font-size: 0.8rem; color: var(--text-faint); }
+    .footer-links { display: flex; gap: 20px; align-items: center; }
+    .footer-links a { font-size: 0.8rem; color: var(--text-muted); text-decoration: none; transition: color 0.15s; }
+    .footer-links a:hover { color: var(--blue); }
+    .footer-support { display: inline-flex; align-items: center; gap: 5px; font-size: 0.8rem; font-weight: 500; color: #C84609; text-decoration: none; padding: 5px 11px; border: 1px solid rgba(207,75,12,0.45); border-radius: 6px; transition: color .15s, border-color .15s, background .15s; vertical-align: middle; }
+    .footer-support:hover { color: #fff; background: #C84609; border-color: #C84609; }
+
+    /* ── TOPIC COLOUR (2026 rebrand) ──────────────────────
+       Colour encodes what KIND of thing something is. The bright fills are
+       decorative only; the -ink twins are the only variants safe for text
+       (each is tuned to 4.5:1 on Canvas Cream). Tokens: assets/brand.css */
+    .card[data-topics~="transit"] .card-category { color: var(--b-topic-transit-ink); }
+    .card[data-topics~="cb"]      .card-category { color: var(--b-topic-cb-ink); }
+    .card[data-topics~="budget"]  .card-category { color: var(--b-topic-budget-ink); }
+    .card[data-topics~="govtech"] .card-category { color: var(--b-topic-govtech-ink); }
+    .tf-pill[data-topic="transit"]:hover  { border-color: var(--b-topic-transit-ink); color: var(--b-topic-transit-ink); }
+    .tf-pill[data-topic="cb"]:hover       { border-color: var(--b-topic-cb-ink); color: var(--b-topic-cb-ink); }
+    .tf-pill[data-topic="budget"]:hover   { border-color: var(--b-topic-budget-ink); color: var(--b-topic-budget-ink); }
+    .tf-pill[data-topic="govtech"]:hover  { border-color: var(--b-topic-govtech-ink); color: var(--b-topic-govtech-ink); }
+    .tf-pill[data-topic="transit"].active { background: var(--b-topic-transit-ink); border-color: var(--b-topic-transit-ink); color: #fff; }
+    .tf-pill[data-topic="cb"].active      { background: var(--b-topic-cb-ink); border-color: var(--b-topic-cb-ink); color: #fff; }
+    .tf-pill[data-topic="budget"].active  { background: var(--b-topic-budget-ink); border-color: var(--b-topic-budget-ink); color: #fff; }
+    .tf-pill[data-topic="govtech"].active { background: var(--b-topic-govtech-ink); border-color: var(--b-topic-govtech-ink); color: #fff; }
+    /* A row of figures should not read as one colour. */
+    .stat-pill:nth-child(4n+1) .sp-num { color: var(--b-topic-budget-ink); }
+    .stat-pill:nth-child(4n+2) .sp-num { color: var(--b-topic-transit-ink); }
+    .stat-pill:nth-child(4n+3) .sp-num { color: var(--b-topic-cb-ink); }
+    .stat-pill:nth-child(4n+4) .sp-num { color: var(--b-brown); }
+
+    /* Header action buttons on subpages (Tal, Sep 2026 — previously hub-only). */
+    .header-actions { display:flex; align-items:center; gap:12px; margin-left:auto; flex-shrink:0; }
+    .header-link { font-size:0.8rem; font-weight:500; color:#9A8B7A; text-decoration:none; display:inline-flex; align-items:center; gap:5px; padding:5px 11px; border:1px solid rgba(255,255,255,0.15); border-radius:6px; transition:color .15s,border-color .15s,background .15s; white-space:nowrap; }
+    .header-link:hover { color:#fff; border-color:rgba(255,255,255,0.35); background:rgba(255,255,255,0.08); }
+    .header-link svg, .support-link svg { flex-shrink:0; }
+    .support-link { font-size:0.8rem; font-weight:500; color:#FFD23F; text-decoration:none; display:inline-flex; align-items:center; gap:5px; padding:5px 11px; border:1px solid rgba(200,70,9,0.45); border-radius:6px; transition:color .15s,border-color .15s,background .15s; white-space:nowrap; }
+    .support-link:hover { color:#fff; background:#C84609; border-color:#C84609; }
+
+    /* The subpage header carries a mark, a back-link, a page title AND the
+       action buttons, so shed the optional links before the row can overflow.
+       These MUST live in the last style block on the page: several pages carry
+       a second <style id="support-btn-css"> that re-declares .header-actions
+       and would otherwise override the media query. */
+    header .header-inner { min-width: 0; }
+    header h1 { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    @media (max-width: 900px) { .header-actions .header-link { display: none; } }
+    @media (max-width: 560px) { .header-actions { display: none; } }
+    @media (max-width: 560px) { header h1 { white-space: normal; } }
+  </style>
+  <script defer src="/assets/site.js?v=20260918"></script>
+<!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d0dce16d32c14809bc15038314fb9a13"}'></script><!-- End Cloudflare Web Analytics -->
+  <script defer src="/civic_reference/nyc_council_legislation_trackers/assets/tracker-switch.js"></script>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <a href="/" class="header-mark" aria-label="NYCuriosity Data home"><img src="/assets/brand/Talbot.svg" alt="" style="height:32px;width:auto;display:block"></a>
+    <a href="../" class="back-link">← Powers Tracker</a>
+    <div class="header-divider"></div>
+    <h1>Agency Powers</h1>
+    <div class="header-actions">
+      <a href="https://talroded.nycuriosity.com" class="header-link" target="_blank" rel="noopener"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>About</a>
+      <a href="https://www.nycuriosity.com" class="header-link" target="_blank" rel="noopener"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v4H4z"/><path d="M4 10h16v10l-8-4-8 4z"/></svg>Substack</a>
+      <a href="https://buymeacoffee.com/nycuriosity" class="support-link" target="_blank" rel="noopener" aria-label="Support my work on Buy Me a Coffee"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>Support my work</a>
+    </div>
+  </div>
+</header>
+
+<div class="pill-nav">
+  <span class="pill-label">Views in this tool:</span>
+  <a href="../">Powers overview</a>
+  <a href="./" class="active">Agency Powers</a>
+  <a href="../../powers-table/">Powers Table</a>
+  <a href="../../law/">Law Explorer</a>
+  <a href="../../methodology/#powers">Methodology</a>
+</div>
+
+<div class="hero">
+  <div class="hero-inner">
+    <div class="breadcrumb">
+      <a href="/">data.nycuriosity.com</a>
+      <span>›</span>
+      <a href="../../../nyc_council_legislation_trackers/">Legislation Trackers</a>
+      <span>›</span>
+      <a href="../">Powers Tracker</a>
+      <span>›</span>
+      <span>Agency Powers</span>
+    </div>
+    <div class="hero-meta">
+      <span class="hero-tag">Civic Reference</span>
+      <span class="hero-updated" id="heroUpdated"></span>
+    </div>
+    <h1>The Council's grants of power <span>go to a few agencies</span></h1>
+    <p>
+      Each bar is one agency, split by the kind of power its laws grant. Click a bar to list that agency's
+      powers, with the law and the text that grants each one.
+    </p>
+    <div class="hero-actions">
+      <a class="btn btn-outline" href="/members/?file=civic_reference/legislation_implementation_tracker/data/powers.csv">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download CSV (members)
+      </a>
+    </div>
+  </div>
+</div>
+
+<main>
+  <div class="main-inner">
+
+    <div class="filters">
+      <div id="msAgency"></div>
+      <div id="msCommittee"></div>
+      <div id="msSponsor"></div>
+      <div id="msYear"></div>
+      <div id="msType"></div>
+      <button class="reset-btn" id="fReset">Reset all</button>
+    </div>
+
+    <div class="stat-strip">
+      <div class="stat-pill"><span class="sp-num" id="stPow">–</span><span class="sp-label">Powers in view</span></div>
+      <div class="stat-pill"><span class="sp-num" id="stAgencies">–</span><span class="sp-label">Agencies</span></div>
+      <div class="stat-pill"><span class="sp-num" id="stLaws">–</span><span class="sp-label">Laws with powers</span></div>
+    </div>
+
+    <div class="c-actions">
+      <button class="c-action-btn" onclick="downloadChart(this)">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download PNG
+      </button>
+      <button class="c-action-btn" onclick="showEmbed()">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+        Embed
+      </button>
+    </div>
+
+    <figure class="chart-card" id="chart-box" data-slug="nyc-agency-powers">
+      <div class="c-head">
+        <h2 class="c-title" id="chartTitle">Loading…</h2>
+        <p class="c-deck">Powers granted by local laws enacted since 2014, by agency and type.</p>
+        <ul class="c-legend" id="legend"></ul>
+      </div>
+      <div class="c-plot">
+        <div class="c-bars" id="chartArea"><p class="loading-note">Loading…</p></div>
+      </div>
+      <figcaption class="c-foot">
+        <div class="c-foot-text" id="chartFoot">
+          <span>Created by Tal Roded · NYCuriosity · Source: Author's analysis of enacted local law text from <a href="https://legistar.council.nyc.gov" target="_blank" rel="noopener">NYC Legistar</a></span>
+        </div>
+      </figcaption>
+    </figure>
+
+    <div class="obl-section" id="oblSection">
+      <p class="obl-hint">Filter to one or more agencies above, or click a bar, and every matching power is listed here.</p>
+    </div>
+
+    <div class="footnotes">
+      <p><strong>Reading the bars:</strong> each bar counts distinct powers, not how often an agency uses them. A rulemaking power an agency exercises constantly and one it has never used each count once.</p>
+      <p><strong>Power types:</strong> the legend lists the full taxonomy of what a law can hand an agency, from rulemaking and enforcement to designations and data publication. The <a href="../../powers-table/">powers table</a> shows the exact type for every record.</p>
+      <p><strong>Method:</strong> powers are extracted from enacted local law text on <a href="https://legistar.council.nyc.gov" target="_blank" rel="noopener">NYC Legistar</a> using Claude, with every quoted passage mechanically checked against the source text. Agency names are normalized with the <a href="https://data.cityofnewyork.us/City-Government/NYC-Agencies-and-Governance-Organizations/t3jq-9nkf/about_data" target="_blank" rel="noopener">NYC Agencies and Governance Organizations</a> dataset. Powers whose holding entity could not be matched to a known agency (for example "an agency designated by the mayor") are excluded from this chart but appear in the table.</p>
+    </div>
+
+  </div>
+</main>
+
+<div class="modal-overlay" id="embedModal">
+  <div class="modal">
+    <h3>Embed this chart</h3>
+    <textarea id="embedCode" readonly></textarea>
+    <div class="modal-actions">
+      <button class="modal-btn ghost" onclick="document.getElementById('embedModal').style.display='none'">Close</button>
+      <button class="modal-btn primary" id="copyBtn" onclick="copyEmbed()">Copy</button>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-inner">
+    <span class="footer-copy">© NYCuriosity · Tal Roded</span>
+    <nav class="footer-links" style="flex-wrap:wrap">
+      <a href="https://buymeacoffee.com/nycuriosity" class="footer-support" target="_blank" rel="noopener" aria-label="Support my work on Buy Me a Coffee"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>Support my work</a>
+      <a href="https://talroded.nycuriosity.com" target="_blank" rel="noopener">About</a>
+      <a href="https://www.nycuriosity.com" target="_blank" rel="noopener" aria-label="NYCuriosity on Substack" title="Substack" style="display:inline-flex;align-items:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M22.539 8.242H1.46V5.406h21.08v2.836zM1.46 10.812V24L12 18.11 22.54 24V10.812H1.46zM22.54 0H1.46v2.836h21.08V0z"/></svg></a>
+      <a href="https://www.linkedin.com/in/tal-roded" target="_blank" rel="noopener" aria-label="Tal Roded on LinkedIn" title="LinkedIn" style="display:inline-flex;align-items:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.225 0z"/></svg></a>
+      <a href="https://x.com/TalR24" target="_blank" rel="noopener" aria-label="NYCuriosity on X" title="X" style="display:inline-flex;align-items:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z"/></svg></a>
+      <a href="https://www.instagram.com/talroded" target="_blank" rel="noopener" aria-label="Tal Roded on Instagram" title="Instagram" style="display:inline-flex;align-items:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg></a>
+      <a href="https://www.tiktok.com/@tal_nycuriosity" target="_blank" rel="noopener" aria-label="NYCuriosity on TikTok" title="TikTok" style="display:inline-flex;align-items:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/></svg></a>
+      <a href="https://www.youtube.com/@nycuriosity-yt" target="_blank" rel="noopener" aria-label="NYCuriosity on YouTube" title="YouTube" style="display:inline-flex;align-items:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814z M9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg></a>
+      <a href="https://github.com/TalR24/nycur-data-website" target="_blank" rel="noopener" aria-label="TalR24 on GitHub" title="GitHub" style="display:inline-flex;align-items:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg></a>
+    </nav>
+  </div>
+</footer>
+
+<script src="../../../nyc_council_legislation_trackers/assets/multiselect.js"></script>
+<script>
+var ALL = [];
+var TYPES = [
+  { key: 'rulemaking', label: 'Rulemaking', color: 'var(--b-lightblue)' },
+  { key: 'enforcement or inspection', label: 'Enforcement or inspection', color: 'var(--b-topic-cb-ink)' },
+  { key: 'designation or staffing', label: 'Designation or staffing', color: 'var(--b-topic-govtech-ink)' },
+  { key: 'program or service', label: 'Program or service', color: 'var(--c-good)' },
+  { key: 'monitoring or testing', label: 'Monitoring or testing', color: 'var(--b-ink-3)' },
+  { key: 'notice or posting', label: 'Notice or posting', color: 'var(--b-tangerine)' },
+  { key: 'database or data publication', label: 'Database or data publication', color: 'var(--b-ink-2)' },
+  { key: 'outreach or education', label: 'Outreach or education', color: 'var(--b-ink-4)' },
+  { key: 'report', label: 'Report', color: 'var(--b-tangerine-deep)' },
+  { key: 'study or audit', label: 'Study or audit', color: 'var(--b-fuchsia)' },
+  { key: 'other', label: 'Everything else', color: 'var(--blue-mid)' }
+];
+
+(function () {
+  fetch('../../data/powers.json')
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+      ALL = data.powers || [];
+      if (data.generated_at) {
+        var gen = new Date(data.generated_at);
+        var months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+        document.getElementById('heroUpdated').textContent = 'Updated ' + months[gen.getMonth()] + ' ' + gen.getFullYear();
+      }
+      buildFilters();
+      buildLegend();
+      render();
+    })
+    .catch(function () {
+      document.getElementById('chartArea').innerHTML = '<p class="loading-note">Data failed to load.</p>';
+    });
+})();
+
+function uniqueSorted(key, fn) {
+  var seen = {};
+  ALL.forEach(function (o) { var v = fn ? fn(o) : o[key]; if (v) seen[v] = (seen[v] || 0) + 1; });
+  return Object.keys(seen).sort(function (a, b) { return seen[b] - seen[a]; });
+}
+
+var MS = {};
+
+function buildFilters() {
+  var agLabel = {};
+  ALL.forEach(function (o) {
+    if (!o.agency_matched || agLabel[o.agency]) return;
+    var full = (o.agency_full || o.agency).replace(/^New York City /, '');
+    agLabel[o.agency] = full !== o.agency ? full + ' (' + o.agency + ')' : full;
+  });
+  function opts(values, labelFn) {
+    return values.map(function (v) { return { v: v, l: labelFn ? labelFn(v) : v }; });
+  }
+  MS.agency = new MSFilter('msAgency', { label: 'Agency', allLabel: 'All agencies',
+    sort: 'alpha', onChange: render,
+    options: opts(Object.keys(agLabel), function (a) { return agLabel[a]; }) });
+  MS.committee = new MSFilter('msCommittee', { label: 'Committee', allLabel: 'All committees',
+    sort: 'alpha', onChange: render,
+    options: opts(uniqueSorted('committee'), function (c) { return c.replace(/^Committee on /, ''); }) });
+  MS.sponsor = new MSFilter('msSponsor', { label: 'Prime sponsor', allLabel: 'All sponsors',
+    sort: 'alpha', onChange: render, options: opts(uniqueSorted('prime_sponsor')) });
+  MS.year = new MSFilter('msYear', { label: 'Enacted year', allLabel: 'All years',
+    sort: 'none', onChange: render,
+    options: opts(uniqueSorted(null, function (o) {
+      return o.enactment_date ? o.enactment_date.slice(0, 4) : null;
+    }).sort().reverse()) });
+  MS.type = new MSFilter('msType', { label: 'Power type', allLabel: 'All types',
+    sort: 'alpha', onChange: render, options: opts(uniqueSorted('deliverable_type')) });
+  document.getElementById('fReset').addEventListener('click', function () {
+    Object.keys(MS).forEach(function (k) { MS[k].reset(); });
+    render();
+  });
+}
+
+function buildLegend() {
+  var html = '';
+  TYPES.forEach(function (t) {
+    html += '<li class="c-legend-item"><span class="sw" style="background:' + t.color + '"></span>' + t.label + '</li>';
+  });
+  document.getElementById('legend').innerHTML = html;
+}
+
+function typeOf(type) {
+  for (var i = 0; i < TYPES.length; i++) {
+    if (TYPES[i].key === type) return TYPES[i].key;
+  }
+  return 'other';
+}
+
+function render() {
+  var rows = ALL.filter(function (o) {
+    if (!MS.agency.pass(o.agency)) return false;
+    if (!MS.committee.pass(o.committee)) return false;
+    if (!MS.sponsor.pass(o.prime_sponsor)) return false;
+    if (!MS.year.pass(o.enactment_date ? o.enactment_date.slice(0, 4) : '')) return false;
+    if (!MS.type.pass(o.deliverable_type)) return false;
+    return true;
+  });
+
+  var lawSet = {}, agencyCounts = {}, unmatched = 0;
+  rows.forEach(function (o) {
+    lawSet[o.matter_id] = 1;
+    if (!o.agency_matched) { unmatched++; return; }
+    if (!agencyCounts[o.agency]) {
+      agencyCounts[o.agency] = { total: 0, segs: {}, full: o.agency_full };
+    }
+    agencyCounts[o.agency].total++;
+    var tk = typeOf(o.deliverable_type);
+    agencyCounts[o.agency].segs[tk] = (agencyCounts[o.agency].segs[tk] || 0) + 1;
+  });
+
+  document.getElementById('stPow').textContent = rows.length.toLocaleString();
+  document.getElementById('stAgencies').textContent = Object.keys(agencyCounts).length.toLocaleString();
+  document.getElementById('stLaws').textContent = Object.keys(lawSet).length.toLocaleString();
+
+  var ranked = Object.keys(agencyCounts).map(function (a) {
+    return { agency: a, full: agencyCounts[a].full, total: agencyCounts[a].total, segs: agencyCounts[a].segs };
+  }).sort(function (a, b) { return b.total - a.total; }).slice(0, 20);
+
+  var matchedTotal = 0;
+  Object.keys(agencyCounts).forEach(function (a) { matchedTotal += agencyCounts[a].total; });
+  var top10Sum = ranked.slice(0, 10).reduce(function (s, r) { return s + r.total; }, 0);
+  if (matchedTotal > 0) {
+    document.getElementById('chartTitle').textContent =
+      'The top 10 agencies hold ' + Math.round(top10Sum / matchedTotal * 100) + '% of the ' +
+      matchedTotal.toLocaleString() + ' powers matched to an agency';
+  }
+
+  var area = document.getElementById('chartArea');
+  if (!ranked.length) {
+    area.innerHTML = '<p class="loading-note">No powers match these filters.</p>';
+    document.getElementById('chartFoot').innerHTML =
+      '<span>Created by Tal Roded · NYCuriosity · Source: Author\'s analysis of enacted local law text from <a href="https://legistar.council.nyc.gov" target="_blank" rel="noopener">NYC Legistar</a></span>';
+    renderOblList(rows);
+    return;
+  }
+  var max = ranked[0].total;
+  var html = '';
+  ranked.forEach(function (r) {
+    var segsHtml = '';
+    TYPES.forEach(function (t) {
+      var n = r.segs[t.key] || 0;
+      if (!n) return;
+      segsHtml += '<div class="bar-seg" data-seg="' + esc(t.label) + ': ' + n + '" style="background:' + t.color + ';width:' + (n / max * 100) + '%"></div>';
+    });
+    html += '<div class="c-bar-row" data-full="' + esc(r.full || r.agency) + '" data-total="' + r.total + '">'
+      + '<span class="c-bar-label">' + esc(r.agency) + '</span>'
+      + '<div class="c-bar-track">' + segsHtml + '</div>'
+      + '<span class="c-bar-value">' + r.total.toLocaleString() + '</span>'
+      + '</div>';
+  });
+  area.innerHTML = html;
+  renderOblList(rows);
+
+  document.getElementById('chartFoot').innerHTML =
+    '<span>Created by Tal Roded · NYCuriosity · Source: Author\'s analysis of enacted local law text from <a href="https://legistar.council.nyc.gov" target="_blank" rel="noopener">NYC Legistar</a>'
+    + (unmatched > 0 ? '. ' + unmatched.toLocaleString() + ' powers in this filter could not be matched to an agency and are left out of the bars.' : '') + '</span>';
+
+  var filterBits = [];
+  [['agency', 'agencies'], ['committee', 'committees'], ['sponsor', 'sponsors'],
+   ['year', 'years'], ['type', 'power types']]
+    .forEach(function (pair) {
+      var sel = MS[pair[0]].selected();
+      if (sel !== null) {
+        filterBits.push(sel.size <= 2 ? Array.from(sel).join(', ')
+          : sel.size + ' ' + pair[1]);
+      }
+    });
+}
+
+function esc(s) {
+  return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function renderOblList(rows) {
+  var box = document.getElementById('oblSection');
+  var sel = MS.agency.selected();
+  if (sel === null) {
+    box.innerHTML = '<p class="obl-hint">Filter to one or more agencies above, or click a bar, and every matching power is listed here.</p>';
+    return;
+  }
+  var groups = {};
+  rows.forEach(function (o) {
+    if (!sel.has(o.agency)) return;
+    (groups[o.agency] = groups[o.agency] || { full: o.agency_full || o.agency, items: [] }).items.push(o);
+  });
+  var keys = Object.keys(groups).sort(function (a, b) { return groups[b].items.length - groups[a].items.length; });
+  if (!keys.length) {
+    box.innerHTML = '<p class="obl-hint">No powers match the selected agencies and filters.</p>';
+    return;
+  }
+  var html = '<div class="obl-search">'
+    + '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9A8B7A" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>'
+    + '<input id="oblSearch" type="text" placeholder="Search these powers (summary, law, citation, quote)" value="' + esc(oblQuery) + '">'
+    + '<span class="os-count" id="oblSearchCount"></span>'
+    + '<button class="os-clear" id="oblSearchClear" title="Clear search">✕</button>'
+    + '</div>';
+  keys.forEach(function (k) {
+    var g = groups[k];
+    g.items.sort(function (a, b) { return (b.enactment_date || '').localeCompare(a.enactment_date || ''); });
+    html += '<div class="obl-group" data-agency="' + esc(k) + '">'
+      + '<div class="obl-group-head"><span><span class="g-name">' + esc(k) + '</span>'
+      + (g.full && g.full !== k ? ' <span class="g-full">' + esc(g.full) + '</span>' : '')
+      + '</span><span class="g-count" data-total="' + g.items.length + '">' + g.items.length.toLocaleString() + ' power' + (g.items.length === 1 ? '' : 's') + '</span></div>';
+    g.items.forEach(function (o) {
+      var chips = '<span class="obl-chip">' + esc(o.deliverable_type || 'other') + '</span>';
+      var hay = [o.action_summary, o.quote, o.citation, o.law_number_display, o.file_number, o.law_title, o.deliverable_type, o.prime_sponsor].join(' ').toLowerCase();
+      html += '<div class="obl-item" data-search="' + esc(hay) + '">'
+        + '<div class="o-law"><a href="../../law/?law=' + encodeURIComponent(o.matter_id) + '">' + esc(o.law_number_display || o.file_number) + '</a>'
+        + ' · ' + esc((o.enactment_date || '').slice(0, 4)) + (o.citation ? ' · ' + esc(o.citation) : '') + '</div>'
+        + '<div class="o-summary">' + esc(o.action_summary || '') + '</div>'
+        + '<div class="obl-chips">' + chips + '</div>'
+        + '</div>';
+    });
+    html += '</div>';
+  });
+  box.innerHTML = html;
+  var inp = document.getElementById('oblSearch');
+  inp.addEventListener('input', function () { oblQuery = inp.value; applyOblSearch(); });
+  document.getElementById('oblSearchClear').addEventListener('click', function () {
+    oblQuery = ''; inp.value = ''; applyOblSearch(); inp.focus();
+  });
+  applyOblSearch();
+}
+
+var oblQuery = '';
+function applyOblSearch() {
+  var terms = oblQuery.toLowerCase().split(/\s+/).filter(Boolean);
+  var total = 0, shown = 0;
+  document.querySelectorAll('#oblSection .obl-group').forEach(function (g) {
+    var visible = 0;
+    g.querySelectorAll('.obl-item').forEach(function (item) {
+      var hay = item.getAttribute('data-search') || '';
+      var ok = terms.every(function (t) { return hay.indexOf(t) !== -1; });
+      item.style.display = ok ? '' : 'none';
+      total++; if (ok) { visible++; shown++; }
+    });
+    var count = g.querySelector('.g-count');
+    var all = parseInt(count.getAttribute('data-total'), 10);
+    count.textContent = terms.length && visible !== all
+      ? visible.toLocaleString() + ' of ' + all.toLocaleString() + ' match'
+      : all.toLocaleString() + ' power' + (all === 1 ? '' : 's');
+    g.style.display = (terms.length && visible === 0) ? 'none' : '';
+  });
+  var c = document.getElementById('oblSearchCount');
+  if (c) c.textContent = terms.length ? shown.toLocaleString() + ' of ' + total.toLocaleString() + ' match' : '';
+}
+
+// Bar click: select exactly that agency in the filter (click again to reset to all)
+function setAgencySelection(only) {
+  var mount = document.getElementById('msAgency');
+  var inputs = mount.querySelectorAll('.msf-list input');
+  var cur = MS.agency.selected();
+  var reset = only === null || (cur !== null && cur.size === 1 && cur.has(only));
+  inputs.forEach(function (i) {
+    var want = reset ? true : (i.value === only);
+    i.checked = want;
+    MS.agency.checked[i.value] = want;
+  });
+  MS.agency.updateBtn();
+  render();
+}
+document.getElementById('chartArea').addEventListener('click', function (e) {
+  var row = e.target.closest ? e.target.closest('.c-bar-row') : null;
+  if (!row) return;
+  var label = row.querySelector('.c-bar-label');
+  if (label) setAgencySelection(label.textContent);
+});
+
+// Hover tooltip: full agency name + power count anywhere on a bar row,
+// plus the hovered segment's type breakdown when over a colored segment.
+(function () {
+  var tip = document.createElement('div');
+  tip.className = 'chart-tooltip';
+  document.body.appendChild(tip);
+  var chartArea = document.getElementById('chartArea');
+
+  chartArea.addEventListener('mousemove', function (e) {
+    var row = e.target.closest ? e.target.closest('.c-bar-row') : null;
+    if (!row) { tip.style.display = 'none'; return; }
+    var html = '<span class="tt-name">' + esc(row.getAttribute('data-full')) + '</span><br>'
+      + '<span class="tt-count">' + Number(row.getAttribute('data-total')).toLocaleString() + ' powers</span>';
+    var seg = e.target.closest('.bar-seg');
+    if (seg && seg.getAttribute('data-seg')) {
+      html += '<br><span class="tt-seg">' + esc(seg.getAttribute('data-seg')) + '</span>';
+    }
+    html += '<br><span class="tt-hint">Click to list this agency\'s powers below</span>';
+    tip.innerHTML = html;
+    tip.style.display = 'block';
+    var pad = 14;
+    var w = tip.offsetWidth, h = tip.offsetHeight;
+    var x = e.clientX + pad, y = e.clientY + pad;
+    if (x + w > window.innerWidth - 8) x = e.clientX - w - pad;
+    if (y + h > window.innerHeight - 8) y = e.clientY - h - pad;
+    tip.style.left = x + 'px';
+    tip.style.top = y + 'px';
+  });
+  chartArea.addEventListener('mouseleave', function () { tip.style.display = 'none'; });
+})();
+</script>
+
+</body>
+</html>

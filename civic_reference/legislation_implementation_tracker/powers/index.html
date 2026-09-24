@@ -322,6 +322,7 @@
 <div class="pill-nav">
   <span class="pill-label">Views in this tool:</span>
   <a href="./" class="active">Powers overview</a>
+  <a href="agency-powers/">Agency Powers</a>
   <a href="../powers-table/">Powers Table</a>
   <a href="../law/">Law Explorer</a>
   <a href="../methodology/#powers">Methodology</a>
@@ -480,6 +481,17 @@
         </figcaption>
       </figure>
 
+      <figure class="chart-card" id="chart-box-sponsor" data-slug="nyc-powers-by-prime-sponsor">
+        <div class="c-head">
+          <h2 class="c-title" id="titleSponsor">Loading…</h2>
+          <p class="c-deck">Powers by the prime sponsor of the law that grants them, top 10.</p>
+        </div>
+        <div class="c-plot">
+          <div class="c-bars c-bars--compact summary-bars" id="chartSponsor"><p class="loading-note">Loading…</p></div>
+        </div>
+        <figcaption class="c-foot"><div class="c-foot-text"><span>Source: NYC Legistar enacted local laws, 2014 to present; NYCuriosity Powers Tracker</span></div></figcaption>
+      </figure>
+
     </div>
     <p class="chart-note" style="margin-top:18px">
       Source: Author's analysis of enacted local law text from <a href="https://legistar.council.nyc.gov" target="_blank" rel="noopener" style="color:var(--blue)">NYC Legistar</a>.
@@ -587,6 +599,17 @@
       var topYear = years.slice().sort(function (a, b) { return b[1] - a[1]; })[0];
       document.getElementById('titleYear').textContent =
         topYear[0] + ' laws granted the most powers: ' + topYear[1].toLocaleString();
+    }
+
+    // Chart 4: powers by prime sponsor of the granting law
+    var bySponsor = countBy(powers.filter(function (p) { return p.prime_sponsor; }),
+                             function (p) { return p.prime_sponsor; });
+    var sponsorPairs = topN(bySponsor, 10);
+    hbars('chartSponsor', sponsorPairs);
+    if (sponsorPairs.length) {
+      document.getElementById('titleSponsor').textContent =
+        sponsorPairs[0][0] + ' wrote the laws behind ' + sponsorPairs[0][1].toLocaleString() +
+        ' powers, more than any other council member';
     }
   }
 
