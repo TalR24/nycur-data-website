@@ -184,7 +184,7 @@ RULES:
 - total_revenue / total_expenditure / total_capital / net_fiscal_impact: the figures the document itself states as the total or full fiscal impact, copied rather than computed except for the range rule below (0 if it states none). The pipeline recomputes them from fiscal_table_columns whenever the table has figures, so copy every column exactly as printed, with revenue reductions entered as negative revenue.
 - A cost the narrative states (for example "a one-time capital cost of $2 million" or "approximately $3.5 million for radios") is part of the estimate even when the table shows $0 or omits it: put it in total_capital or total_expenditure as described.
 - Ranges and scenarios, in the table or the narrative: when the statement gives an "at least" figure ("at least $750,000", "a minimum of $2 million"), use that figure; when several scenarios each give an "at least" figure, use the lowest one. Otherwise use the midpoint of the range, or of the lowest and highest scenario figures ("$6.3 million to $11.6 million" is 8950000). Apply this to each table cell that prints a range, and to the stated totals. This is the only arithmetic you do.
-- costs_already_in_financial_plan: true when the statement says a cost or a revenue is already reflected, included, assumed or funded in the City's Financial Plan or Adopted Budget, or that existing agency resources cover it. Such an amount is not new: leave it out of every total and table column. Amounts the statement describes as beyond the Financial Plan still count.
+- costs_already_in_financial_plan: true when the statement says a cost or a revenue is already reflected, included, assumed or funded in the City's Financial Plan or Adopted Budget, or that existing agency resources cover it. Such an amount is not new: leave it out of every total and table column. When only part is already reflected ("the plan reflects $183 million of the $352.8 million"), enter only the remainder. Amounts the statement describes as beyond the Financial Plan still count.
 - time_limited_program: true only when the program or pilot that carries the cost itself ends on a stated date or after a stated number of years, and the statement says so. A sunset of one subsection (for example a reporting requirement) or of a separate authority, a discretionary end ("may discontinue"), or a statement that merely shows several years does NOT count. When true, copy into sunset_quote the exact sentence from the document that states the end; otherwise sunset_quote is "". Copy every year column; the pipeline totals a time-limited program over its life.
 - A figure in the table or the narrative is a fiscal impact. "See below" pointing to a figure, a $0 Full Fiscal Impact column beside non-zero year columns, or an unknown revenue next to a known cost is NOT zero impact and NOT unestimable.
 - Every amount is in whole dollars: "$435 million" is 435000000 and "$2.3 million" is 2300000, never 435 or 2.3, including when a table is labelled "($000)" or "in millions" (multiply out).
@@ -200,6 +200,8 @@ NARRATIVE FORMAT (older documents without a structured table):
 Some documents — particularly pre-2019 legislation — state fiscal impacts as prose rather than a year-by-year table. If there is no structured numeric table, synthesize the totals from the narrative text using these rules:
 - Look for phrases like "estimated to cost $X", "increase expenditures by $X annually", "reduce revenues by $X", "capital cost of $X", "estimated at $X million".
 - If a dollar amount is given as an annual figure with no multi-year breakdown, use that figure as the total (do not multiply by years unless the document explicitly states a total cumulative cost).
+- When the narrative gives several figures (an annual cost growing over time, a multi-year or lifetime total), use the annual figure for the full-impact year (fy_full_impact); use a multi-year total only for a time_limited_program.
+- Savings are negative costs: "$67,000 in savings" lowers total_expenditure; a bill whose only effect is a saving has a positive net_fiscal_impact.
 - Revenue REDUCTIONS (e.g. "this legislation would reduce revenues by $204,000") are a cost to the city: set total_revenue = 0 and add the reduction amount to total_expenditure so net_fiscal_impact is negative.
 - "No impact on revenues" or "existing resources" means 0 for that category — do NOT set cost_estimable to false.
 - Create a single fiscal_table_columns entry with label "Total" and populate revenue/expenditure/capital/net from the narrative figures.
@@ -932,6 +934,10 @@ def totals_from_columns(fiscal: dict) -> dict:
         rv, ex = c.get("revenue") or 0, c.get("expenditure") or 0
         if rv < 0 and ex and abs(ex + rv) <= 1:
             c["expenditure"] = 0
+        # the column's net follows its own figures (statements print costs
+        # unsigned, and the model copied a positive "Net" for a cost; round 5)
+        if any(isinstance(c.get(k), (int, float)) for k in ("revenue", "expenditure", "capital")):
+            c["net"] = (c.get("revenue") or 0) - (c.get("expenditure") or 0) - (c.get("capital") or 0)
     stated = {
         "revenue": fiscal.get("total_revenue") or 0,
         "expenditure": abs(fiscal.get("total_expenditure") or 0),
@@ -970,7 +976,10 @@ def totals_from_columns(fiscal: dict) -> dict:
         # the statement's stated figure only when its table is empty: a table
         # that already carries the cost (e.g. as negative revenue) must not
         # get the same amount added again from the stated total
-        if stated[key] and not table_has_figures:
+        # ...and never when the statement says the money is already in the
+        # Financial Plan: the prose figure is then the budgeted amount (Int
+        # 253-2014, round 5), and the bill adds nothing new
+        if stated[key] and not table_has_figures and not fiscal.get("costs_already_in_financial_plan"):
             bases.add("document_stated")
             return stated[key]
         return 0
