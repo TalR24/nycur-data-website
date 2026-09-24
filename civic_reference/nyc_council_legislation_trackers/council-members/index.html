@@ -135,6 +135,21 @@
     .leg-title { font-size: 0.83rem; color: var(--text-mid); line-height: 1.55; }
     .profile-note { font-size: 0.78rem; color: var(--text-muted); line-height: 1.6; margin-top: 6px; }
 
+    /* Committees, agencies, 311 */
+    .chip-group-label { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-faint); margin: 12px 0 6px; }
+    .chip-group-label:first-child { margin-top: 0; }
+    .chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 4px; }
+    .law-meta-chip.chair-chip { border-color: var(--blue); color: var(--blue-hover); font-weight: 700; background: var(--blue-light); }
+    .agency-row { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 13px 16px; margin-bottom: 9px; display: block; text-decoration: none; color: inherit; transition: border-color 0.12s; }
+    .agency-row:hover { border-color: var(--blue); }
+    .agency-row .leg-top { margin-bottom: 0; }
+    .district-311-note { font-size: 0.83rem; color: var(--text-mid); line-height: 1.6; margin-bottom: 14px; }
+    .c-bar-row .c-bar-label { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .data-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; margin-bottom: 6px; }
+    .data-table th { text-align: left; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-faint); padding: 6px 10px; border-bottom: 1px solid var(--border); }
+    .data-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); color: var(--text-mid); vertical-align: top; }
+    .data-table td.num { font-family: 'JetBrains Mono', ui-monospace, monospace; text-align: right; white-space: nowrap; }
+
     /* Voting record */
     .vote-pills { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
     .vote-pill { display: flex; flex-direction: column; gap: 2px; padding: 9px 14px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); min-width: 108px; }
@@ -298,6 +313,33 @@
       });
     }
     return votesPromise;
+  }
+
+  var contextPromise = null; // member_context.json, fetched once on first profile open
+  function fetchMemberContext() {
+    if (!contextPromise) {
+      contextPromise = fetch('../data/member_context.json').then(function (r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      });
+    }
+    return contextPromise;
+  }
+
+  function ordinal(n) {
+    var s = ['th', 'st', 'nd', 'rd'], v = n % 100;
+    return n + (s[(v - 20) % 10] || s[v] || s[0]);
+  }
+
+  function fmtMonthYear(iso, offsetMonths) {
+    if (!iso) return '';
+    var parts = iso.split('-');
+    var y = parseInt(parts[0], 10), m = parseInt(parts[1], 10) - 1 + (offsetMonths || 0);
+    while (m < 0) { m += 12; y -= 1; }
+    while (m > 11) { m -= 12; y += 1; }
+    var months = ['January', 'February', 'March', 'April', 'May', 'June', 'July',
+      'August', 'September', 'October', 'November', 'December'];
+    return months[m] + ' ' + y;
   }
 
   Promise.all([
@@ -579,6 +621,9 @@
       + '<div class="stat-pill"><span class="sp-num">' + (pct == null ? '—' : pct + '%') + '</span><span class="sp-label">Share of their enacted laws carrying at least one agency obligation</span></div>'
       + '</div>';
 
+    html += '<div id="committeesSection"></div>';
+    html += '<div id="agenciesSection"></div>';
+
     // per-member entries are {k: "tracker:matter_id", prime}; details live
     // once in the DATA.legislation lookup table
     var resolved = m.legislation.map(function (x) {
@@ -616,15 +661,144 @@
       html += '<p class="profile-note">No legislation by this member appears in either tracker: no bill of theirs carries a non-zero fiscal impact statement, and none of their sponsored laws since 2014 has been parsed for obligations.</p>';
     }
 
-    html += '<div id="voteSection"><p class="profile-note">Loading voting record…</p></div>';
+    if (m.current) html += '<div id="district311Section"></div>';
+    html += '<div id="voteSection">'
+      + '<div id="attendanceSlot"><p class="profile-note">Loading attendance…</p></div>'
+      + '<div id="votingRecordSlot"><p class="profile-note">Loading voting record…</p></div>'
+      + '</div>';
     html += footnotesHtml();
     document.getElementById('mainContent').innerHTML = html;
     renderVotes(m.id);
+    renderMemberContext(m);
+  }
+
+  function committeesHtml(committees, isCurrent) {
+    if (!committees) return '';
+    var head = 'Committees and caucuses' + (isCurrent ? '' : ', ' + committees.term_label);
+    var html = '<div class="section-head">' + esc(head) + '</div>';
+    if (committees.chairs && committees.chairs.length) {
+      html += '<div class="chip-group-label">Chairs</div><div class="chip-row">'
+        + committees.chairs.map(function (c) {
+          return '<span class="law-meta-chip chair-chip">' + esc(c.title) + ': ' + esc(c.body) + '</span>';
+        }).join('') + '</div>';
+    }
+    if (committees.members && committees.members.length) {
+      html += '<div class="chip-group-label">Committees</div><div class="chip-row">'
+        + committees.members.map(function (b) {
+          return '<span class="law-meta-chip">' + esc(b) + '</span>';
+        }).join('') + '</div>';
+    }
+    if (committees.caucuses && committees.caucuses.length) {
+      html += '<div class="chip-group-label">Caucuses and delegations</div><div class="chip-row">'
+        + committees.caucuses.map(function (c) {
+          return (c.title && c.title !== 'Member')
+            ? '<span class="law-meta-chip chair-chip">' + esc(c.title) + ': ' + esc(c.body) + '</span>'
+            : '<span class="law-meta-chip">' + esc(c.body) + '</span>';
+        }).join('') + '</div>';
+    }
+    if (committees.past_chairs && committees.past_chairs.length) {
+      html += '<div class="chip-group-label">Past chair roles</div><div class="chip-row">'
+        + committees.past_chairs.map(function (p) {
+          var yrs = p.start_year + (p.end_year && p.end_year !== p.start_year ? '–' + p.end_year : '');
+          return '<span class="law-meta-chip">' + esc(p.title) + ': ' + esc(p.body) + ' (' + yrs + ')</span>';
+        }).join('') + '</div>';
+    }
+    if (!(committees.chairs && committees.chairs.length) && !(committees.members && committees.members.length)
+      && !(committees.caucuses && committees.caucuses.length) && !(committees.past_chairs && committees.past_chairs.length)) {
+      html += '<p class="profile-note">No committee, subcommittee, or caucus assignment found in the archive.</p>';
+    }
+    return html;
+  }
+
+  function agenciesHtml(agencies) {
+    if (!agencies || !agencies.length) return '';
+    var html = '<div class="section-head">Agencies their laws put to work</div>'
+      + '<p class="profile-note">Duties and powers in enacted laws they sponsored or co-sponsored since 2014. Laws as prime sponsor in parentheses.</p>';
+    agencies.forEach(function (a) {
+      html += '<a class="agency-row" href="../agencies/?agency=' + encodeURIComponent(a.id) + '">'
+        + '<div class="leg-top"><span class="leg-label">' + esc(a.name) + '</span>'
+        + '<span class="leg-num">' + a.duties + ' duties · ' + a.powers + ' powers</span></div>'
+        + '<div class="leg-title">' + a.laws + ' law' + (a.laws === 1 ? '' : 's') + ' (' + a.laws_prime + ' prime)</div>'
+        + '</a>';
+    });
+    return html;
+  }
+
+  function district311Html(ctx, district) {
+    var d = ctx.districts_311 && ctx.districts_311[String(district)];
+    if (!d) return '';
+    var win = ctx.window_311 || {};
+    var median = (ctx.citywide_311 && ctx.citywide_311.median_district_total) || 0;
+    var html = '<div class="section-head">District ' + district + ' residents filed '
+      + d.total.toLocaleString() + ' 311 requests in the last 12 months</div>';
+    html += '<p class="district-311-note">' + ordinal(d.rank) + ' most of 51 districts; the median district filed '
+      + median.toLocaleString() + '. ' + fmtMonthYear(win.start, 0) + ' to ' + fmtMonthYear(win.end, -1) + '.</p>';
+    var maxT = Math.max.apply(null, (d.top_types || []).map(function (t) { return t.n; }).concat([1]));
+    html += '<div class="c-bars">' + (d.top_types || []).map(function (t) {
+      var pct = Math.round((t.n / maxT) * 100);
+      return '<div class="c-bar-row"><span class="c-bar-label">' + esc(t.type) + '</span>'
+        + '<div class="c-bar-track"><div class="c-bar-fill" style="width:' + pct + '%;background:var(--blue)"></div></div>'
+        + '<span class="c-bar-value">' + t.n.toLocaleString() + '</span></div>';
+    }).join('') + '</div>';
+    if (d.top_agencies && d.top_agencies.length) {
+      html += '<div class="chip-row" style="margin-top:10px">' + d.top_agencies.map(function (a) {
+        var inner = esc(a.code) + ' <span class="leg-num" style="margin-left:6px">' + a.n.toLocaleString() + '</span>';
+        return a.agency_id
+          ? '<a class="law-meta-chip" href="../agencies/?agency=' + encodeURIComponent(a.agency_id) + '">' + inner + '</a>'
+          : '<span class="law-meta-chip">' + inner + '</span>';
+      }).join('') + '</div>';
+    }
+    return html;
+  }
+
+  function attendanceHtml(att) {
+    if (!att) return '';
+    var sp = att.stated, cp = att.committee;
+    var statedPct = sp.total ? Math.round((sp.present / sp.total) * 100) : null;
+    var commPct = cp.total ? Math.round((cp.present / cp.total) * 100) : null;
+    var html = '<div class="section-head">Meeting attendance (2014 on)</div>';
+    html += '<div class="vote-pills">'
+      + '<div class="vote-pill"><span class="vp-num">' + (statedPct == null ? '—' : statedPct + '%') + '</span>'
+      + '<span class="vp-label">Present at ' + sp.present + ' of ' + sp.total + ' stated meeting roll calls</span></div>';
+    if (cp.total) {
+      html += '<div class="vote-pill"><span class="vp-num">' + (commPct == null ? '—' : commPct + '%') + '</span>'
+        + '<span class="vp-label">Present at ' + cp.present + ' of ' + cp.total + ' committee roll calls</span></div>';
+    }
+    html += '</div>';
+    var excused = (sp.excused || 0) + (cp.excused || 0);
+    html += '<p class="profile-note">' + excused + ' excused absence' + (excused === 1 ? '' : 's') + '</p>';
+    if (att.by_session && att.by_session.length) {
+      var rows = att.by_session.map(function (s) {
+        return '<tr><td>' + esc(s.session) + '</td>'
+          + '<td class="num">' + s.stated_present + ' / ' + s.stated_total + '</td>'
+          + '<td class="num">' + s.committee_present + ' / ' + s.committee_total + '</td></tr>';
+      }).join('');
+      html += '<table class="data-table"><thead><tr><th>Session</th><th>Stated</th><th>Committee</th></tr></thead><tbody>' + rows + '</tbody></table>';
+    }
+    return html;
+  }
+
+  function renderMemberContext(m) {
+    fetchMemberContext().then(function (ctx) {
+      var rec = ctx.members[m.id] || {};
+      var cEl = document.getElementById('committeesSection');
+      if (cEl) cEl.innerHTML = committeesHtml(rec.committees, m.current);
+      var aEl = document.getElementById('agenciesSection');
+      if (aEl) aEl.innerHTML = agenciesHtml(rec.agencies);
+      var dEl = document.getElementById('district311Section');
+      if (dEl) dEl.innerHTML = district311Html(ctx, m.district);
+      var vEl = document.getElementById('attendanceSlot');
+      if (vEl) vEl.innerHTML = attendanceHtml(rec.attendance)
+        || '<p class="profile-note">No meeting attendance found in the archive.</p>';
+    }).catch(function () {
+      var vEl = document.getElementById('attendanceSlot');
+      if (vEl) vEl.innerHTML = '';
+    });
   }
 
   function renderVotes(id) {
     fetchVotes().then(function (v) {
-      var el = document.getElementById('voteSection');
+      var el = document.getElementById('votingRecordSlot');
       if (!el) return;
       var startYear = (v.coverage || '2014').slice(0, 4);
       var rec = v.members[id];
@@ -654,7 +828,7 @@
       }
       el.innerHTML = html;
     }).catch(function () {
-      var el = document.getElementById('voteSection');
+      var el = document.getElementById('votingRecordSlot');
       if (el) el.innerHTML = '<p class="profile-note">Voting record failed to load.</p>';
     });
   }
@@ -665,6 +839,9 @@
       + '<p><strong>Summed fiscal impacts overlap:</strong> a bill with 10 sponsors counts toward all 10 members\' totals, so member totals cannot be added together.</p>'
       + '<p><strong>Voting records:</strong> recorded committee and full-council votes on introductions (bills), compiled from the <a href="https://github.com/jehiah/nyc_legislation" target="_blank" rel="noopener">jehiah/nyc_legislation</a> archive of NYC Council Legistar data. Coverage begins in 2014; votes on resolutions and land use items are not included. The "excused or other" count bundles excused, medical, parental, bereavement, jury duty, conflict, abstain, and non-voting entries.</p>'
       + '<p><strong>Sponsor matching:</strong> the fiscal tracker records last names only; they are matched to members using service years, with ambiguous cases resolved manually. Roster of members, parties, and districts compiled from Wikipedia\'s New York City Council pages and council.nyc.gov; district boundaries from the NYC ArcGIS City Council Districts layer (2023 lines).</p>'
+      + '<p><strong>Committees and attendance:</strong> committee, subcommittee, caucus and delegation assignments and meeting roll calls come from the <a href="https://github.com/jehiah/nyc_legislation" target="_blank" rel="noopener">jehiah/nyc_legislation</a> archive of NYC Council Legistar data. Attendance counts one roll call per meeting from 2014 on: stated meetings of the full Council, and meetings of committees and subcommittees. Excused absences count as not present; recusals for a conflict of interest and suspensions are left out of the count.</p>'
+      + '<p><strong>Agencies:</strong> built from the duties and powers the <a href="../../legislation_implementation_tracker/">Implementation Tracker</a> extracted from each enacted law the member sponsored or co-sponsored. A law with several sponsors counts for each of them.</p>'
+      + '<p><strong>311:</strong> service requests in the last 12 full months with this council district recorded, from NYC Open Data\'s <a href="https://data.cityofnewyork.us/Social-Services/311-Service-Requests-from-2010-to-Present/erm2-nwe9" target="_blank" rel="noopener">311 Service Requests</a>. Counts are requests, and one problem can generate several. Shown for current members only, on today\'s district lines.</p>'
       + '</div>';
   }
 })();

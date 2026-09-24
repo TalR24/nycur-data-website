@@ -45,6 +45,7 @@ import requests
 HERE = Path(__file__).resolve().parent
 TRACKERS_DATA = HERE.parent / "data"
 IMPL_DATA = HERE.parent.parent / "legislation_implementation_tracker" / "data"
+MEMBERS_PATH = HERE.parent / "data" / "members.json"
 FISCAL_DATA = HERE.parent.parent / "nyc_council_fiscal_impacts_tracker" / "data"
 EXPLORER_HTML = HERE.parent.parent / "nyc-gov-bodies-explorer" / "index.html"
 GOV_BODIES_PATH = TRACKERS_DATA / "gov_bodies.json"
@@ -468,6 +469,29 @@ def fetch_capital(overrides: dict, code_map: dict):
 # ── trackers ──────────────────────────────────────────────────────────
 
 
+def _norm_sponsor_name(s: str) -> str:
+    return re.sub(r"\s+", " ", re.sub(r"[.,]", "", (s or "")).strip().lower())
+
+
+def load_member_impl_index() -> dict:
+    """Name keys -> [(member_id, set(matter_id) of impl laws they prime-sponsored)].
+
+    Keyed by the normalized full name and by the last name, so sponsor strings
+    that carry a middle initial the roster omits ("Corey D. Johnson") still
+    resolve; the shared prime-sponsored law keeps the last-name key unambiguous.
+    """
+    doc = json.loads(MEMBERS_PATH.read_text())
+    by_name: defaultdict[str, list] = defaultdict(list)
+    for m in doc["members"]:
+        prime_matters = {
+            leg["k"].split(":", 1)[1] for leg in m.get("legislation", [])
+            if leg["k"].startswith("impl:") and leg.get("prime")
+        }
+        by_name[_norm_sponsor_name(m["full_name"])].append((m["id"], prime_matters))
+        by_name["last:" + _norm_sponsor_name(m["last_name"])].append((m["id"], prime_matters))
+    return by_name
+
+
 def load_trackers(overrides: dict):
     obligations_doc = json.loads((IMPL_DATA / "obligations.json").read_text())
     powers_doc = json.loads((IMPL_DATA / "powers.json").read_text())
@@ -508,6 +532,7 @@ def load_trackers(overrides: dict):
 
     return {
         "laws_by_matter": laws_by_matter,
+        "member_by_name": load_member_impl_index(),
         "duties_by_canon": duties_by_canon,
         "powers_by_canon": powers_by_canon,
         "fiscal_by_canon": fiscal_by_canon,
@@ -557,10 +582,26 @@ def build_trackers_profile(canon: str, full_name: str, tr: dict) -> dict:
     for p in powers:
         if p.get("prime_sponsor"):
             sponsor_counts[p["prime_sponsor"]].add(p["matter_id"])
-    top_sponsors = sorted(
-        ({"sponsor": s, "laws": len(m)} for s, m in sponsor_counts.items()),
-        key=lambda x: -x["laws"],
-    )[:5]
+    member_by_name = tr["member_by_name"]
+    top_sponsors = []
+    for s, matter_ids in sponsor_counts.items():
+        entry = {"sponsor": s, "laws": len(matter_ids)}
+        candidates = [
+            mid for mid, impl_matters in member_by_name.get(_norm_sponsor_name(s), [])
+            if impl_matters & matter_ids
+        ]
+        if not candidates:
+            last = re.sub(r"\s+(jr|sr|ii|iii|iv)$", "", _norm_sponsor_name(re.sub(r"\s*\(.*?\)", "", s))).split(" ")[-1]
+            candidates = sorted({
+                mid for key, rows in member_by_name.items()
+                if key.startswith("last:") and key[5:].split(" ")[-1] == last
+                for mid, impl_matters in rows if impl_matters & matter_ids
+            })
+        if len(candidates) == 1:
+            entry["member_id"] = candidates[0]
+        top_sponsors.append(entry)
+    top_sponsors.sort(key=lambda x: (-x["laws"], x["sponsor"]))
+    top_sponsors = top_sponsors[:5]
 
     matter_ids = {d["matter_id"] for d in duties} | {p["matter_id"] for p in powers}
     laws_list = []
@@ -576,7 +617,7 @@ def build_trackers_profile(canon: str, full_name: str, tr: dict) -> dict:
             "duties": sum(1 for d in duties if d["matter_id"] == mid),
             "powers": sum(1 for p in powers if p["matter_id"] == mid),
         })
-    laws_list.sort(key=lambda x: x["enacted"] or "", reverse=True)
+    laws_list.sort(key=lambda x: (x["enacted"] or "", x["matter_id"]), reverse=True)
 
     fiscal_net_total = 0.0
     has_fiscal_value = False
@@ -593,7 +634,7 @@ def build_trackers_profile(canon: str, full_name: str, tr: dict) -> dict:
             "net": net,
             "fy_full_impact": rec.get("fy_full_impact"),
         })
-    fiscal_list.sort(key=lambda x: (x["net"] if x["net"] is not None else 0))
+    fiscal_list.sort(key=lambda x: ((x["net"] if x["net"] is not None else 0), x["matter_id"]))
 
     return {
         "duties": len(duties),

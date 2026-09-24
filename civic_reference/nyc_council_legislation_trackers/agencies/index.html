@@ -864,15 +864,28 @@
   function resolveSponsorLinks(sponsors) {
     var list = document.getElementById('sponsorList');
     if (!list || !sponsors.length) return;
+    var direct = sponsors.map(function (s) { return s.member_id || null; });
+    if (direct.every(function (id) { return id; })) {
+      sponsors.forEach(function (s, i) {
+        var chip = list.querySelector('[data-sponsor-idx="' + i + '"]');
+        if (chip) {
+          chip.innerHTML = '<a href="../council-members/?member=' + encodeURIComponent(s.member_id) + '">' + esc(s.sponsor) + '</a><span class="n">' + s.laws + ' law' + (s.laws === 1 ? '' : 's') + '</span>';
+        }
+      });
+      return;
+    }
     fetchMembers().then(function (md) {
       sponsors.forEach(function (s, i) {
+        var chip = list.querySelector('[data-sponsor-idx="' + i + '"]');
+        if (!chip) return;
+        if (s.member_id) {
+          chip.innerHTML = '<a href="../council-members/?member=' + encodeURIComponent(s.member_id) + '">' + esc(s.sponsor) + '</a><span class="n">' + s.laws + ' law' + (s.laws === 1 ? '' : 's') + '</span>';
+          return;
+        }
         var last = String(s.sponsor).trim().split(/\s+/).pop().replace(/[.,]/g, '').toLowerCase();
         var matches = (md.members || []).filter(function (m) { return (m.last_name || '').toLowerCase() === last; });
         if (matches.length === 1) {
-          var chip = list.querySelector('[data-sponsor-idx="' + i + '"]');
-          if (chip) {
-            chip.innerHTML = '<a href="../council-members/?member=' + encodeURIComponent(matches[0].id) + '">' + esc(s.sponsor) + '</a><span class="n">' + s.laws + ' law' + (s.laws === 1 ? '' : 's') + '</span>';
-          }
+          chip.innerHTML = '<a href="../council-members/?member=' + encodeURIComponent(matches[0].id) + '">' + esc(s.sponsor) + '</a><span class="n">' + s.laws + ' law' + (s.laws === 1 ? '' : 's') + '</span>';
         }
       });
     }).catch(function () {});

@@ -62,6 +62,22 @@ jobs:
         continue-on-error: true  # a city Open Data outage should never block the monthly refresh
         run: python3 pipeline/build_agency_profiles.py
 
+      - name: Clone Council archive
+        continue-on-error: true  # a GitHub outage should never block the monthly refresh
+        run: |
+          git clone --depth 1 --filter=blob:none --sparse https://github.com/jehiah/nyc_legislation "$RUNNER_TEMP/nyc_legislation"
+          git -C "$RUNNER_TEMP/nyc_legislation" sparse-checkout set people events introduction
+
+      - name: Rebuild member votes
+        working-directory: civic_reference/nyc_council_legislation_trackers
+        continue-on-error: true
+        run: python3 pipeline/build_member_votes.py --archive "$RUNNER_TEMP/nyc_legislation"
+
+      - name: Rebuild member context
+        working-directory: civic_reference/nyc_council_legislation_trackers
+        continue-on-error: true  # a city Open Data or GitHub outage should never block the monthly refresh
+        run: python3 pipeline/build_member_context.py --archive "$RUNNER_TEMP/nyc_legislation"
+
       - name: Commit and push if data changed
         run: |
           git config user.name "github-actions[bot]"
@@ -72,7 +88,9 @@ jobs:
                   civic_reference/legislation_implementation_tracker/data/report_filings.json \
                   civic_reference/legislation_implementation_tracker/pipeline/reextract_queue.json \
                   civic_reference/nyc_council_legislation_trackers/data/members.json \
-                  civic_reference/nyc_council_legislation_trackers/data/agencies.json
+                  civic_reference/nyc_council_legislation_trackers/data/agencies.json \
+                  civic_reference/nyc_council_legislation_trackers/data/member_votes.json \
+                  civic_reference/nyc_council_legislation_trackers/data/member_context.json
           if git diff --cached --quiet; then
             echo "No data changes this month."
           else
