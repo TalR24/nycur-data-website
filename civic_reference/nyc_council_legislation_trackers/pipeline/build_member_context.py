@@ -416,6 +416,49 @@ def fetch_311(window_start: str, window_end: str) -> tuple[list[dict], int]:
     return rows, len(rows)
 
 
+def fetch_311_monthly(window_start: str, window_end: str) -> tuple[list[dict], int]:
+    """One grouped query per calendar month (each covers ~1/12 of the
+    window), since a single 12-month grouped query times out server-side."""
+    rows: list[dict] = []
+    start = date.fromisoformat(window_start)
+    end = date.fromisoformat(window_end)
+    cur = start
+    while cur < end:
+        ny, nm = cur.year, cur.month + 1
+        if nm > 12:
+            nm -= 12
+            ny += 1
+        nxt = date(ny, nm, 1)
+        where = (
+            f"created_date >= '{cur.isoformat()}' and created_date < '{nxt.isoformat()}' "
+            "and council_district IS NOT NULL"
+        )
+        batch = socrata_page({
+            "$select": "council_district, date_trunc_ym(created_date) as month, count(*) as n",
+            "$group": "council_district, month",
+            "$where": where,
+            "$order": "council_district",
+        })
+        rows.extend(batch)
+        cur = nxt
+    return rows, len(rows)
+
+
+def build_districts_311_monthly(rows: list[dict]) -> dict[str, list[dict]]:
+    per_district: dict[str, dict[str, int]] = defaultdict(dict)
+    for r in rows:
+        d = r.get("council_district")
+        month = r.get("month")
+        if not d or not month:
+            continue
+        ym = month[:7]
+        per_district[str(int(d))][ym] = per_district[str(int(d))].get(ym, 0) + int(r.get("n", 0))
+    out = {}
+    for d, months in per_district.items():
+        out[d] = [{"month": ym, "n": n} for ym, n in sorted(months.items())]
+    return out
+
+
 def agency_311_to_id(code: str, agency_ids: set[str]) -> str | None:
     if not code:
         return None
@@ -526,6 +569,20 @@ def main() -> int:
         rows, n_rows = fetch_311(window_start, window_end)
         print(f"Fetched {n_rows} grouped (district, type, agency) rows.")
         districts_311 = build_districts_311(rows, agency_ids)
+
+        print("Fetching 311 monthly grouped counts...")
+        monthly_rows, n_monthly_rows = fetch_311_monthly(window_start, window_end)
+        print(f"Fetched {n_monthly_rows} grouped (district, month) rows.")
+        monthly_by_district = build_districts_311_monthly(monthly_rows)
+        for d, rec in districts_311.items():
+            months = monthly_by_district.get(d, [])
+            rec["monthly"] = months
+            month_sum = sum(m["n"] for m in months)
+            assert month_sum == rec["total"], (
+                f"district {d}: monthly sum {month_sum} != total {rec['total']}")
+        print(f"Monthly check OK: sum(monthly) == total for all "
+              f"{len(districts_311)} districts.")
+
         district_totals = sorted(v["total"] for v in districts_311.values())
         median = district_totals[len(district_totals) // 2] if district_totals else 0
         citywide_311 = {
