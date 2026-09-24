@@ -110,6 +110,13 @@
     .treemap-legend { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 10px; }
     .legend-item { display: flex; align-items: center; gap: 5px; font-size: 0.72rem; color: var(--text-muted); }
     .legend-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
+    .legend-btn { display: inline-flex; align-items: center; gap: 6px; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.72rem; font-weight: 600; padding: 6px 11px; border-radius: 20px; border: 1.5px solid var(--border); background: var(--surface); color: var(--text-muted); cursor: pointer; transition: opacity 0.15s, transform 0.1s; }
+    .legend-btn:hover { transform: translateY(-1px); }
+    .legend-btn.on .legend-dot { display: none; }
+    .legend-btn:not(.on) { opacity: 0.8; }
+    .legend-btn:focus-visible, .legend-link:focus-visible { outline: 2px solid var(--text); outline-offset: 2px; }
+    .legend-all { display: inline-flex; gap: 12px; align-items: center; margin-left: 6px; }
+    .legend-link { background: none; border: 0; padding: 4px 0; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.72rem; font-weight: 600; color: var(--blue); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
     #treemap-container { width: 100%; height: 520px; overflow: hidden; position: relative; }
     #treemap-container svg { display: block; width: 100%; height: 100%; }
     .treemap-tooltip { position: fixed; background: #170C03; color: #FAF6F1; padding: 10px 14px; border-radius: 8px; font-size: 0.8rem; pointer-events: none; opacity: 0; transition: opacity 0.15s; z-index: 1000; max-width: 240px; box-shadow: 0 4px 20px rgba(0,0,0,0.25); }
@@ -215,7 +222,7 @@
   </style>
   <script defer src="/assets/chart.js"></script>
   <script defer src="/assets/site.js?v=20260925"></script>
-  <script defer src="/civic_reference/nyc_council_legislation_trackers/assets/tracker-switch.js?v=3"></script>
+  <script defer src="/civic_reference/nyc_council_legislation_trackers/assets/tracker-switch.js?v=4"></script>
 <!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d0dce16d32c14809bc15038314fb9a13"}'></script><!-- End Cloudflare Web Analytics -->
 </head>
 <body>
@@ -330,6 +337,7 @@
     "Other offices and boards": "#4A3B2C"
   };
   var OTHER_SECTOR = "Other offices and boards";
+  var hiddenSectors = {};  // treemap legend filter (Tal, Sep 24 2026)
 
   // Treemap: one distinct brand hue per sector (Tal, Sep 24 2026: the card
   // palette above repeats blue and brown across sectors). Tokens resolve at
@@ -561,6 +569,14 @@
     var sectors = [];
     var seen = {};
     agencies.forEach(function (a) { var s = sectorOf(a); if (!seen[s]) { seen[s] = 1; sectors.push(s); } });
+    // legend buttons filter the treemap: hidden sectors drop out and the rest re-lay
+    var allSectors = sectors.slice();
+    sectors = sectors.filter(function (s) { return !hiddenSectors[s]; });
+    if (!sectors.length) {
+      container.innerHTML = '<p class="loading-note" style="padding:40px 0;text-align:center">Pick at least one group above to draw the treemap.</p>';
+      renderLegend(allSectors);
+      return;
+    }
 
     var data = {
       name: 'Agencies',
@@ -625,14 +641,34 @@
       .attr('font-size', '9px').attr('font-weight', '700').attr('pointer-events', 'none')
       .text(function (d) { return (d.x1 - d.x0 < 46 || d.y1 - d.y0 < 20) ? '' : d.data.id.toUpperCase(); });
 
-    renderLegend(sectors);
+    renderLegend(allSectors);
   }
 
   function renderLegend(sectors) {
     var legend = document.getElementById('treemapLegend');
     legend.innerHTML = sectors.map(function (s) {
-      return '<div class="legend-item"><span class="legend-dot" style="background:' + tmColor(s) + '"></span><span>' + esc(s) + '</span></div>';
-    }).join('');
+      var on = !hiddenSectors[s];
+      var style = on ? 'background:' + tmColor(s) + ';border-color:' + tmColor(s) + ';color:' + tmLabel(s)
+                     : '--dot:' + tmColor(s);
+      return '<button type="button" class="legend-btn' + (on ? ' on' : '') + '" aria-pressed="' + on + '" data-sector="' + esc(s) + '" style="' + style + '">'
+        + '<span class="legend-dot" style="background:' + tmColor(s) + '"></span>' + esc(s) + '</button>';
+    }).join('')
+      + '<span class="legend-all"><button type="button" class="legend-link" data-all="1">Select all</button>'
+      + '<button type="button" class="legend-link" data-all="0">Select none</button></span>';
+    legend.querySelectorAll('.legend-btn').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var sct = b.getAttribute('data-sector');
+        if (hiddenSectors[sct]) delete hiddenSectors[sct]; else hiddenSectors[sct] = 1;
+        renderTreemap();
+      });
+    });
+    legend.querySelectorAll('.legend-link').forEach(function (b) {
+      b.addEventListener('click', function () {
+        hiddenSectors = {};
+        if (b.getAttribute('data-all') === '0') sectors.forEach(function (x) { hiddenSectors[x] = 1; });
+        renderTreemap();
+      });
+    });
   }
 
   /* ── Profile view ────────────────────────────────────── */

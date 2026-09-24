@@ -94,7 +94,7 @@
     var s = document.createElement('style');
     s.id = 'trk-studio-css';
     s.textContent =
-      '.trk-studio{padding:0 clamp(20px,5vw,48px) clamp(32px,5vw,48px)}' +
+      '.trk-studio{padding:28px clamp(20px,5vw,48px) clamp(32px,5vw,48px)}' +
       '.trk-studio-inner{max-width:1100px;margin:0 auto;background:var(--surface,#fff);border:1px solid var(--border);' +
       'border-left:4px solid var(--b-tangerine-deep,var(--blue));border-radius:12px;padding:20px 24px;display:flex;flex-wrap:wrap;' +
       'gap:16px;align-items:center;justify-content:space-between}' +
