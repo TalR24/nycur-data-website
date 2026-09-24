@@ -83,7 +83,13 @@
     '.relwork{padding:8px clamp(20px,5vw,48px) 44px;}' +
     '.relwork-inner{max-width:900px;margin:0 auto;}' +
     '.relwork-label{font-family:\'JetBrains Mono\',ui-monospace,monospace;font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;color:#A44D00;margin-bottom:14px;}' +
-    '.relwork-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;}' +
+    // always one row (Tal, Sep 24 2026): cards share the width; 4+ cards get
+    // tighter type; on phones the single row scrolls sideways instead of wrapping
+    '.relwork-grid{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:14px;}' +
+    '.relwork-grid.dense{gap:10px;}' +
+    '.relwork-grid.dense .relwork-card{padding:13px 14px;}' +
+    '.relwork-grid.dense .relwork-title{font-size:0.78rem;}' +
+    '@media (max-width:640px){.relwork-grid,.relwork-grid.dense{grid-auto-columns:minmax(210px,78%);overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:8px;-webkit-overflow-scrolling:touch;}.relwork-card{scroll-snap-align:start;}}' +
     '.relwork-card{background:#fff;border:1px solid #E7DDCE;border-radius:10px;padding:16px 18px;display:flex;flex-direction:column;gap:6px;text-decoration:none;box-shadow:0 1px 3px rgba(26,18,8,0.08);transition:border-color 0.2s,box-shadow 0.2s,transform 0.15s;}' +
     '.relwork-card:hover{border-color:#C84609;transform:translateY(-2px);box-shadow:0 4px 16px rgba(207,75,12,0.10);}' +
     '.relwork-tag{font-family:\'JetBrains Mono\',ui-monospace,monospace;font-size:0.62rem;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:#A44D00;}' +
@@ -265,7 +271,7 @@
       sec.innerHTML =
         '<div class="relwork-inner">' +
         '<div class="relwork-label">More from NYCuriosity Data</div>' +
-        '<div class="relwork-grid">' +
+        '<div class="relwork-grid' + (items.length >= 4 ? ' dense' : '') + '">' +
         items.map(function (it) {
           return '<a class="relwork-card" href="' + it.href + '">' +
             '<span class="relwork-tag">' + it.tag + '</span>' +
