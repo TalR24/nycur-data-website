@@ -183,8 +183,10 @@ def main() -> None:
 
     data = json.loads((DATA / "obligations.json").read_text())
     laws = {l["matter_id"]: l for l in data["laws"]}
+    powers_path = DATA / "powers.json"      # powers carry the same flag
+    powers = json.loads(powers_path.read_text())["powers"] if powers_path.exists() else []
     by_matter: dict[str, list] = {}
-    for o in data["obligations"]:
+    for o in data["obligations"] + powers:
         by_matter.setdefault(o["matter_id"], []).append(o)
 
     targets = []

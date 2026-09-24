@@ -59,9 +59,12 @@ SKIP_PATH    = SCRIPT_DIR / "no_impact_matters.json"
 # Enacted-law universe from the implementation tracker (web matter_id + GUID).
 LAWS_PATH    = REPO_ROOT / "civic_reference" / "legislation_implementation_tracker" / "data" / "laws.json"
 CLAUDE_MODEL = "claude-haiku-4-5-20251001"
+# Haiku 4.5 reads 200K tokens; 18,000 chars (~4.5K tokens) cut the end of long
+# statements, where the OMB section, preparer and date live.
+FIS_TEXT_CAP = 150_000
 
 # ── Extraction prompt ─────────────────────────────────────────────────────────
-EXTRACTION_PROMPT = """You are extracting structured data from a New York City Council fiscal impact statement document. Extract the following fields and return ONLY a valid JSON object — no markdown fences, no explanation, just the JSON.
+EXTRACTION_PROMPT = """You are extracting structured data from a New York City Council fiscal impact statement document. Extract the fields below.
 
 DOCUMENT TEXT:
 ---
@@ -126,16 +129,14 @@ Return a JSON object with exactly these fields (use null for missing/unknown, 0 
 }}
 
 RULES:
-- total_revenue / total_expenditure / total_capital: sum across ALL fiscal-year columns. Always positive numbers.
-- net_fiscal_impact = total_revenue - total_expenditure - total_capital. Negative = net cost to city.
+- total_revenue / total_expenditure / total_capital / net_fiscal_impact: the figures the document itself states as the total or full fiscal impact, copied rather than computed (0 if it states none). The pipeline recomputes them from fiscal_table_columns whenever the table has figures, so copy every column exactly as printed, with revenue reductions entered as negative revenue.
 - If ANY cell says "See below" or indicates the cost cannot be estimated, set cost_estimable to false and set that total to null.
 - fiscal_table_columns must preserve the exact column structure from the document (there may be 2–6 columns).
 - agencies_abbrev: list only agencies that are directly responsible for implementing the legislation — i.e. agencies that have at least one line item in program_breakdowns. Do NOT list agencies that only appear in passing in narrative text (e.g. OMB as reviewer, IBO as analyst, NYC Council as introducer).
-- Standard NYC agency abbreviations: DOT, DPR, NYPD, FDNY, DOE, DSS, DFTA, DEP, HPD, HRA, DCAS, DSNY, DOF, DOB, DHS, NYCEM, TLC, SBS, DYCD, DOHMH, DCA, DDC, MTA, DOC, DCLA, ACS, MOCJ, OMB. Create reasonable abbreviations for others.
+- agencies_full: each agency's name as the document writes it. agencies_abbrev and program_breakdowns[].agency: the abbreviation the document uses, or the full name if it uses none; the pipeline canonicalizes both through the NYC agency crosswalk.
 - program_breakdowns: extract named cost line items from the Impact on Expenditures section. May be empty [].
 - For program_breakdowns entries involving street sign installation, street sign fabrication, co-naming of thoroughfares, or sign procurement: set agency="DOT" regardless of which agency the document credits. DOT is responsible for all street signage in NYC.
 - For sponsors and prime_sponsor: strip all prefixes ("Council Member", "Council Members", "By Council Members", "(s):"). Return only the name. For "The Speaker (Council Member X)", return "X (Speaker)". Always use last name only as written in the document.
-- Return ONLY the JSON object — no markdown, no explanation.
 
 NARRATIVE FORMAT (older documents without a structured table):
 Some documents — particularly pre-2019 legislation — state fiscal impacts as prose rather than a year-by-year table. If there is no structured numeric table, synthesize the totals from the narrative text using these rules:
@@ -467,6 +468,21 @@ def get_fiscal_attachment(
     r.raise_for_status()
     LEGISTAR_FILE_BY_MATTER[matter_id] = parse_legistar_page(r.text)[0]
 
+    # An amended bill carries one statement per version ("Fiscal Impact
+    # Statement - City Council", later "Int. No. 1208-A - Fiscal Impact
+    # Statement - City Council"), listed oldest first. The enacted version's
+    # is the newest Council statement; attachment IDs rise over time. OMB's
+    # own statement is a separate PDF the extractor does not read.
+    # the Search= parameter wraps matched words in <font> highlight tags, so
+    # read the whole link body and strip tags before matching the label
+    labeled = [(i, g, re.sub(r"<[^>]+>", "", body)) for i, g, body in re.findall(
+        r"View\.ashx\?M=F&(?:amp;)?ID=(\d+)&(?:amp;)?GUID=([A-F0-9\-]+)[^>]*>(.*?)</a>", r.text, re.S)]
+    council = [(int(i), i, g) for i, g, label in labeled
+               if "fiscal impact" in label.lower() and "omb" not in label.lower()]
+    if council:
+        _, att_id, att_guid = max(council)
+        return att_id, att_guid
+
     views = re.findall(
         r"View\.ashx\?M=F&ID=(\d+)&(?:amp;)?GUID=([A-F0-9\-]+)", r.text
     )
@@ -542,24 +558,21 @@ def extract_fiscal_data(
     text: str, client: anthropic.Anthropic
 ) -> dict:
     """Call Claude API to extract structured fiscal data from docx text."""
-    prompt = EXTRACTION_PROMPT.format(text=text[:18000])
+    if len(text) > FIS_TEXT_CAP:
+        log.warning(f"  Statement text is {len(text):,} chars; truncating to {FIS_TEXT_CAP:,}")
+    prompt = EXTRACTION_PROMPT.format(text=text[:FIS_TEXT_CAP])
 
     for attempt in range(3):
         try:
             msg = client.messages.create(
                 model=CLAUDE_MODEL,
-                max_tokens=4096,
+                max_tokens=16000,
                 messages=[{"role": "user", "content": prompt}],
             )
-            raw = msg.content[0].text.strip()
-
-            # Strip markdown fences if present
-            if raw.startswith("```"):
-                raw = re.sub(r"^```(?:json)?\n?", "", raw)
-                raw = re.sub(r"\n?```$", "", raw.rstrip())
-
-            data = json.loads(raw)
-            return data
+            if msg.stop_reason == "max_tokens":
+                raise json.JSONDecodeError("output truncated at max_tokens", "", 0)
+            data = json.loads(next(b.text for b in msg.content if b.type == "text"))
+            return totals_from_columns(data)
 
         except json.JSONDecodeError as e:
             log.warning(f"  JSON decode error (attempt {attempt+1}): {e}")
@@ -794,6 +807,47 @@ def normalize_agency_attribution(fiscal: dict) -> dict:
         fiscal["agencies_full"]   = [
             full_by_canon.get(a) or old_map.get(a, a) for a in seen]
 
+    return fiscal
+
+
+def _full_impact_column(cols: list[dict]) -> dict | None:
+    """The column a statement labels as full fiscal impact, else the last fiscal-year column."""
+    for c in cols:
+        if "full" in (c.get("label") or "").lower():
+            return c
+    return cols[-1] if cols else None
+
+
+def totals_from_columns(fiscal: dict) -> dict:
+    """
+    DECISION FOR TAL: what one number per bill should mean. Proposed: the
+    annual cost at full implementation (the statement's "Full Fiscal Impact"
+    column), falling back to the sum of columns when that column is zero, so a
+    one-time cost that appears only in the first year is not erased. The model
+    used to do this arithmetic from a "sum ALL columns" rule and applied three
+    different definitions across the 359 records (Sep 23 2026 audit).
+    """
+    if fiscal.get("cost_estimable") is False:
+        return fiscal
+    cols = fiscal.get("fiscal_table_columns") or []
+    full = _full_impact_column(cols)
+    has_figures = any(c.get(k) for c in cols for k in ("revenue", "expenditure", "capital"))
+    if full is None or not has_figures:
+        fiscal["totals_basis"] = "document_stated"   # narrative-only statement: keep the copied figure
+        return fiscal
+
+    def pick(key):
+        v = full.get(key) or 0
+        return v if v else sum((c.get(key) or 0) for c in cols)
+
+    rev, exp, cap = pick("revenue"), pick("expenditure"), pick("capital")
+    if rev < 0:                      # revenue reduction: a cost to the city
+        exp, rev = exp - rev, 0
+    fiscal["total_revenue"] = rev
+    fiscal["total_expenditure"] = exp
+    fiscal["total_capital"] = cap or None
+    fiscal["net_fiscal_impact"] = rev - exp - (cap or 0)
+    fiscal["totals_basis"] = "full_impact_column" if (full.get("expenditure") or full.get("revenue") or full.get("capital")) else "sum_of_columns"
     return fiscal
 
 

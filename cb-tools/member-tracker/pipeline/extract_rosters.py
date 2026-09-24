@@ -33,11 +33,34 @@ CACHE = HERE / "cache"
 OUT_DIR = HERE / "extracted" / "rosters"
 
 DEFAULT_MODEL = "claude-haiku-4-5-20251001"
-MAX_CHARS = 250_000  # 90k truncated boards with many committee pages (104, 208)
+MAX_CHARS = 250_000
+
+_STR_LIST = {"type": "array", "items": {"type": "string"}}
+ROSTER_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "officers": {"type": "array", "items": {
+            "type": "object", "properties": {"role": {"type": "string"}, "name": {"type": "string"}},
+            "required": ["role", "name"], "additionalProperties": False}},
+        "members": {"type": "array", "items": {
+            "type": "object", "properties": {"name": {"type": "string"}, "roles": _STR_LIST},
+            "required": ["name", "roles"], "additionalProperties": False}},
+        "committees": {"type": "array", "items": {
+            "type": "object",
+            "properties": {"name": {"type": "string"},
+                           "chair": {"anyOf": [{"type": "string"}, {"type": "null"}]},
+                           "members": _STR_LIST},
+            "required": ["name", "chair", "members"], "additionalProperties": False}},
+        "as_of": {"anyOf": [{"type": "string"}, {"type": "null"}]},
+        "notes": {"type": "string"},
+    },
+    "required": ["officers", "members", "committees", "as_of", "notes"],
+    "additionalProperties": False,
+}  # 90k truncated boards with many committee pages (104, 208)
 
 PROMPT = """You are extracting a NYC community board's roster from its website pages.
 
-Return ONLY a JSON object with this exact shape (no markdown fences, no prose):
+Return a JSON object with this shape:
 {
   "officers": [{"role": "Chair", "name": "..."}],
   "members": [{"name": "...", "roles": []}],
@@ -126,10 +149,11 @@ def call_claude(client, model: str, text: str) -> dict:
         model=model,
         max_tokens=16000,
         messages=[{"role": "user", "content": PROMPT + text}],
+        output_config={"format": {"type": "json_schema", "schema": ROSTER_SCHEMA}},
     )
-    raw = resp.content[0].text.strip()
-    raw = re.sub(r"^```(json)?|```$", "", raw, flags=re.M).strip()
-    return json.loads(raw)
+    if resp.stop_reason == "max_tokens":
+        raise json.JSONDecodeError("output truncated at max_tokens", "", 0)
+    return json.loads(next(b.text for b in resp.content if b.type == "text"))
 
 
 def main() -> None:

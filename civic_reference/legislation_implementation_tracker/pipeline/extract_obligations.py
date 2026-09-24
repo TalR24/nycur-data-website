@@ -18,7 +18,7 @@ Safeguards:
     NYC Open Data t3jq-9nkf), so "DOT", "Dept of Transportation", and
     "Department of Transportation" all resolve to one canonical agency.
 
-Outputs data/obligations.json. Per-law raw extractions checkpoint to
+Outputs data/obligations.json (duties) and data/powers.json (powers, split by is_power()). Per-law raw extractions checkpoint to
 cache/extracted/{matter_id}.json so interrupted runs resume for free.
 
 Usage:
@@ -47,6 +47,7 @@ EXTRACT_CACHE = HERE / "cache" / "extracted"
 LAWS_JSON = DATA / "laws.json"
 CROSSWALK_JSON = DATA / "agency_crosswalk.json"
 OUT_JSON = DATA / "obligations.json"
+POWERS_JSON = DATA / "powers.json"
 
 DEFAULT_MODEL = "claude-haiku-4-5-20251001"
 
@@ -58,17 +59,95 @@ DELIVERABLE_TYPES = [
     "notice or posting", "designation or staffing", "other",
 ]
 
+RECURRENCES = [
+    "one-time", "ongoing", "daily", "weekly", "monthly", "every 2 months",
+    "quarterly", "three times a year", "semiannual", "annual", "biennial",
+    "every 3 years", "every 4 years", "every 5 years", "every 6 years",
+    "every 8 years", "every 10 years", "as-needed", "multiple schedules",
+]
+OFFSET_UNIT_DAYS = {"days": 1, "months": 30, "years": 365}   # house convention, see compute_date
+
+
+def _nullable(schema: dict) -> dict:
+    return {"anyOf": [schema, {"type": "null"}]}
+
+
+_OFFSET = _nullable({
+    "type": "object",
+    "properties": {"amount": {"type": "integer"},
+                   "unit": {"type": "string", "enum": list(OFFSET_UNIT_DAYS)}},
+    "required": ["amount", "unit"], "additionalProperties": False})
+
+# Enforces the option lists the prompt describes. Off-list values used to reach
+# the data unchecked (33 invented deadline kinds that silently lost their date,
+# the "every N years" placeholder); an enum makes them impossible.
+OBLIGATIONS_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "effective_clause": {
+            "type": "object",
+            "properties": {
+                "kind": {"type": "string", "enum": ["immediate", "days_after_enactment", "fixed_date", "other"]},
+                "offset": _OFFSET,
+                "fixed_date": _nullable({"type": "string"}),
+                "text": {"type": "string"},
+            },
+            "required": ["kind", "offset", "fixed_date", "text"], "additionalProperties": False,
+        },
+        "obligations": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "actor_raw": {"type": "string"},
+                    "actor_resolved": {"type": "string"},
+                    "action_summary": {"type": "string"},
+                    "deliverable_type": {"type": "string", "enum": DELIVERABLE_TYPES},
+                    "citation": {"type": "string"},
+                    "quote": {"type": "string"},
+                    "deadline": {
+                        "type": "object",
+                        "properties": {
+                            "kind": {"type": "string", "enum": [
+                                "none", "fixed_date", "days_after_effective", "days_after_enactment",
+                                "on_effective_date", "days_after_other"]},
+                            "fixed_date": _nullable({"type": "string"}),
+                            "offset": _OFFSET,
+                            "text": _nullable({"type": "string"}),
+                        },
+                        "required": ["kind", "fixed_date", "offset", "text"], "additionalProperties": False,
+                    },
+                    "recurrence": {"type": "string", "enum": RECURRENCES},
+                    "affected_groups": {"type": "array", "items": {"type": "string"}},
+                },
+                "required": ["actor_raw", "actor_resolved", "action_summary", "deliverable_type",
+                             "citation", "quote", "deadline", "recurrence", "affected_groups"],
+                "additionalProperties": False,
+            },
+        },
+    },
+    "required": ["effective_clause", "obligations"], "additionalProperties": False,
+}
+
+
+def _offset_to_days(block: dict | None) -> None:
+    """Downstream code reads offset_days; derive it here from the law's own unit."""
+    if not isinstance(block, dict):
+        return
+    off = block.pop("offset", None)
+    block["offset_days"] = (off["amount"] * OFFSET_UNIT_DAYS[off["unit"]]) if off else None
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger("extract_obligations")
 
-EXTRACTION_PROMPT = """You are analyzing the full text of an enacted New York City local law. Extract every concrete obligation the law imposes on a NYC GOVERNMENT entity (an agency, department, office, commission, board, or officer such as "the commissioner", "the mayor", "the department", "the office"). This is for a public implementation-tracking dashboard.
+EXTRACTION_PROMPT = """You are analyzing the full text of an enacted New York City local law. Extract every concrete obligation the law imposes on, and every power it grants to, a NYC GOVERNMENT entity (an agency, department, office, commission, board, or officer such as "the commissioner", "the mayor", "the department", "the office"). This is for a public implementation-tracking dashboard.
 
-Return ONLY a JSON object with this exact structure (no markdown, no explanation):
+Return a JSON object with this structure (the API enforces the schema; the notes below say what each field means):
 
 {
  "effective_clause": {
    "kind": "immediate" | "days_after_enactment" | "fixed_date" | "other",
-   "offset_days": <integer or null>,
+   "offset": {"amount": <integer>, "unit": "days" | "months" | "years"} or null,
    "fixed_date": "YYYY-MM-DD" or null,
    "text": "<the effective-date sentence, verbatim>"
  },
@@ -81,12 +160,12 @@ Return ONLY a JSON object with this exact structure (no markdown, no explanation
      "citation": "<where the duty lives, e.g. 'NYC Admin. Code § 20-563.2(b)' if the law adds/amends that section, else 'Section 3 of the local law'>",
      "quote": "<verbatim contiguous excerpt from the law text containing the operative language imposing this duty, 10-60 words, copied EXACTLY character-for-character including capitalization>",
      "deadline": {
-       "kind": "none" | "fixed_date" | "days_after_effective" | "days_after_enactment" | "on_effective_date",
+       "kind": "none" | "fixed_date" | "days_after_effective" | "days_after_enactment" | "on_effective_date" | "days_after_other",
        "fixed_date": "YYYY-MM-DD" or null,
-       "offset_days": <integer or null; convert months to days as months*30, years to days as years*365>,
+       "offset": {"amount": <integer>, "unit": "days" | "months" | "years"} or null (the number and unit exactly as the law states them),
        "text": "<the deadline phrase verbatim, e.g. 'no later than 180 days after the effective date of this local law', or null if none stated>"
      },
-     "recurrence": "one-time" | "annual" | "biennial" | "quarterly" | "monthly" | "every N years" | "ongoing",
+     "recurrence": one of {recurrences} ("semiannual" = twice a year, which Council drafting calls "biannual"; "biennial" = every two years),
      "affected_groups": ["<who benefits or is regulated, e.g. 'tenants', 'small businesses', 'older adults'>", ...]
    }
  ]
@@ -94,7 +173,7 @@ Return ONLY a JSON object with this exact structure (no markdown, no explanation
 
 RULES:
 - Include ONLY duties of NYC government entities. Obligations the law imposes on private parties (employers, landlords, businesses) are NOT obligations records — but if the law directs an agency to enforce, administer, or write rules for those private-party requirements, THOSE agency duties are included.
-- Mandatory duties only: "shall", "must", "is required to". Skip purely permissive language ("may") unless it establishes a program the law clearly expects to exist.
+- Record both kinds of provision: duties the law imposes ("shall", "must", "is required to") and powers it grants ("may", "is authorized to", "shall have the power to"). The pipeline files each record as a duty or a power from the wording of its quote, so quote the sentence that actually imposes or grants it, and do not describe a power as a duty in action_summary.
 - One record per distinct duty. A recurring report is ONE record with the appropriate recurrence, not one record per year.
 - A duty shared by multiple named agencies: create one record per named agency, same quote allowed.
 - "Ongoing" recurrence is for continuous operational duties (maintain, enforce, operate, post and keep updated). "One-time" is for single deliverables.
@@ -107,9 +186,8 @@ RULES:
 - Deadlines anchored to an event the law does not date are NOT effective-date deadlines. This covers recurring or per-case events (each application received, each hearing held, each review completed, the occurrence of a vacancy) AND one-time future events (the conclusion of a pilot, the commencement of a program, the completion of a study, the formation of a body, the filing of construction documents). Use kind=days_after_other with no offset, even when the clause says "within 60 days". Only a clock the law expressly ties to enactment or the effective date gets days_after_enactment or days_after_effective.
 - Amendment texts ("is amended to read as follows"): the restated body of the amended section is PRE-EXISTING law. Only newly added matter (in Legistar's published text, the underlined portions) can create obligations for this law. Never extract a duty whose operative language exists unchanged in the prior law.
 - "In consultation with X" or "in coordination with X" does not make X a duty-holder. Record the obligation only for the lead agency; list consulted agencies nowhere.
-- Permissive rulemaking ("the commissioner may promulgate rules") becomes an obligation ONLY when other provisions clearly presume the rules will exist (e.g. employers must follow "rules of the department"). Otherwise skip it.
-- If the actor is genuinely undetermined (e.g. "an agency designated by the mayor"), keep actor_resolved as written; do not guess.
-- Deadlines: if the law says "within 18 months of the effective date", use kind=days_after_effective, offset_days=540. If no deadline is stated for a duty that begins at effectiveness, use kind=on_effective_date only when the duty clearly starts then; otherwise kind=none.
+- If the actor is genuinely undetermined (e.g. "an agency designated by the mayor"), set actor_resolved to "unspecified" and keep the phrase in actor_raw; do not guess.
+- Deadlines: if the law says "within 18 months of the effective date", use kind=days_after_effective, offset={"amount": 18, "unit": "months"}. If no deadline is stated for a duty that begins at effectiveness, use kind=on_effective_date only when the duty clearly starts then; otherwise kind=none.
 - Do not invent obligations from the bill summary or title; use only the enacted text ("Be it enacted...").
 
 LAW METADATA (for context only):
@@ -188,6 +266,253 @@ def normalize_quote(s: str) -> str:
 
 ACTOR_PREFIXES = re.compile(
     r"^(the\s+)?(new\s+york\s+city\s+|nyc\s+|city\s+)?", re.I)
+
+# ── Duty, power, or neither ───────────────────────────────────────────────────
+# The obligations table tracks what a law REQUIRES of an agency. A law also
+# grants powers ("the department may inspect", "shall have the power to
+# impose penalties"); those go to powers.json and never carry a deadline.
+# Options a law gives private parties ("an owner may apply") are neither and
+# are published in no table. The sort is decided in code from the full
+# provision the quote comes from (its sentence, the clause the quote sits in,
+# and a list lead-in for a bare item), read from the cached law text at
+# extraction time and stored on the record as `kind`, so CI (no text cache)
+# reproduces it exactly. Rules, in order: the month "May" is ignored; a
+# prohibition ("no agency may", "may not") is a duty; "power(s) and duty" is
+# a duty; a grant ("shall have the power to", "is authorized to") with no
+# other mandatory verb is a power; any mandatory verb outside a relative
+# clause is a duty; "may" is a power unless its subject is a private party.
+# Only the provision's main verb counts: a modal inside a subordinate or
+# complement clause ("may determine that X shall") does not; "may" of
+# possibility ("may have been", "as may be necessary") is ignored; a passive
+# grant ("may be issued") is a power; definitions and a private party's own
+# duty or option are neither.
+# Validated Sep 24 2026 against two blind reviews, 170 records (methodology page).
+
+MONTH_MAY = re.compile(r"\bMay\s+\d{1,2}(st|nd|rd|th)?\b|\bMay,?\s+\d{4}\b"
+                       r"|\bMay\s+(first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|eleventh|"
+                       r"twelfth|thirteenth|fourteenth|fifteenth|sixteenth|seventeenth|eighteenth|nineteenth|"
+                       r"twentieth|twenty-\w+|thirtieth|thirty-first)\b"
+                       r"|\b(of|in|by|before|after|until|through)\s+May\b")
+# "may" of possibility or reference, not permission
+EPISTEMIC = re.compile(r"\bmay\s+have\s+been\b|\bmay\s+(be|become)\s+(necessary|appropriate|applicable|needed|"
+                       r"required|warranted|relevant|available|practicable|feasible|convenient|affected)\b"
+                       r"|\b\w+s\s+or\s+may\s+\w+|\bas\s+may\b"
+                       r"|\bas\s+(the\s+)?[\w']+(\s+[\w']+){0,3}\s+may\s+(deem|determine|consider|find|require|specify|prescribe|direct|approve)\b|\bsuch\s+(other\s+)?[^,;]{0,60}?\bas\s+(\w+\s+){0,5}?may\b", re.I)
+DEFINITION = re.compile(r"\b(the term|as used in this)\b.{0,300}?\bmeans?\b|\bshall mean\b"
+                        r"|^\W*[\"“][^\"”]{1,80}[\"”]\s+(shall\s+)?means?\b", re.I | re.S)
+READER_NOTE = re.compile(r"^\W*(refer to|see)\b", re.I)
+POWER_AND_DUTY = re.compile(r"\bpowers?\s+and\s+(the\s+)?dut(y|ies)\b|\bdut(y|ies)\s+and\s+(the\s+)?powers?\b", re.I)
+GRANT = re.compile(r"\b(shall|is|are)\s+(hereby\s+)?(have|has|be|been)?\s*(all\s+(of\s+)?)?(the\s+)?"
+                   r"(powers?|authority|authorized|empowered)\b"
+                   r"|\b(is|are)\s+(hereby\s+)?(authorized|empowered)\b", re.I)
+MODAL = re.compile(r"\b(shall|must|is required|are required|is hereby required|may)\b", re.I)
+MANDATORY_WORD = {"shall", "must", "is required", "are required", "is hereby required"}
+# a modal inside a subordinate clause does not govern the provision
+# ...unless the relative pronoun has its own verb ("each agency that employs
+# covered employees shall ensure"): then the modal belongs to the main clause
+SUBORDINATE = re.compile(r"(?<!except )(?<!provided )(?<!so )(?<!however )(?<!however, )(?<!further )\b(that|which|who|whom|how|whether|where|when|if)\b"
+                         r"(?!\s+(is|are|was|were|has|have|had|(?!the\b|such\b|a\b|an\b|any\b|each\b|this\b|its\b|his\b|her\b|their\b)\w+(s|ed))\b)"
+                         r"[^;:,]{0,150}?\b(shall|must|may)\b", re.I)
+COMPLEMENT = re.compile(r"\b(ensure|determine|require|provide|find|certify|decide|direct)s?\s+(that\s+)?"
+                        r"[^;:]{0,150}?\b(shall|must)\b", re.I)
+COORDINATED_MANDATORY = re.compile(r"(,\s*|\s)(and|but|or)\s+((the|such|said)\s+[\w\s]{1,40}?\s+)?(shall|must)\b"
+                                   r"(?!\s+(have|has)\s+(all\s+)?(the\s+)?(powers?|authority)\b|\s+be\s+(authorized|empowered)\b)", re.I)
+PROHIBITION = re.compile(r"\bmay not\b|\bshall not\b|\bmust not\b|\b(no|neither|nor)\b[^.;:]{0,120}?\b(may|shall)\b", re.I)
+GOV_VERB_PASSIVE = re.compile(r"may\s+be\s+(issued|designated|established|imposed|granted|approved|promulgated|"
+                              r"adopted|revoked|suspended|waived|extended|modified|added|deleted|amended|"
+                              r"assessed|collected|enforced|inspected|audited|charged|awarded|certified|"
+                              r"licensed|permitted|registered|appointed|removed|seized|recovered|made|set|"
+                              r"determined|prescribed|authorized|required|renewed|denied|reduced|increased|"
+                              r"deferred|forgiven|compromised|remitted|abated|closed|sealed|towed|impounded)\b", re.I)
+AGENT_GOV = re.compile(r"\bby\s+(rule\s+of\s+|rules\s+of\s+|any\s+authorized\s+(employee|officer|agent)s?\s+(or\s+agent\s+)?of\s+|a\s+determination\s+(by|of)\s+)?(the\s+)?(department|commissioner|agency|office|board|"
+                       r"mayor|city|commission|director|council|comptroller|administrator|chair|"
+                       r"police|fire|corporation counsel|chancellor|authority|coordinator)\b", re.I)
+GOV = re.compile(r"\b(department|commissioner|agency|agencies|office|board|mayor|city|commission|"
+                 r"director|council|borough president|comptroller|administrator|chair(person)?|"
+                 r"police|fire|corporation counsel|chancellor|authority|coordinator|advocate|"
+                 r"task force|secretary|division|bureau|court|center|311|public advocate|trust|corporation of the city|"
+                 r"district attorneys?|sheriff|marshal|panel|committee|mayor's office|administration)\b", re.I)
+PRIVATE = re.compile(r"\b(owners?|tenants?|persons?|applicants?|employers?|employees?|landlords?|"
+                     r"members? of the public|residents?|contractors?|subcontractors?|operators?|"
+                     r"licensees?|permittees?|registrants?|business(es)?|individuals?|occupants?|"
+                     r"vendors?|drivers?|retail stores?|stores?|delivery services?|cafes?|restaurants?|establishments?|"
+                     r"shops?|not-for-profits?|nonprofits?|organizations?|developers?|lessees?|licensed \w+|"
+                     r"companies|company|corporations?|providers?|carriers?|"
+                     r"urinals?|devices?|vehicles?|signs?)\b", re.I)
+NOUN_ITEM = re.compile(r"^\W*(\(?[0-9ivxa-z]{1,4}[.)]\s*)?(a|an|the|any|each|all)?\s*(list|number|description|copy|"
+                       r"copies|summary|statement|breakdown|explanation|total|percentage|analysis|"
+                       r"identification|records?|information|data|documentation|documents?|name|names|"
+                       r"amount|date|dates|status|results?|recommendations?|assessment|procedures?|process|policy|policies|"
+                       r"steps|methods?|criteria|types?|sources?|reasons?)\b", re.I)
+
+_BOUND = re.compile(r"(?<=[.;])\s+(?=[A-Z(\d])|\n\s*\n")
+_ITEM_AT_END = re.compile(r"(^|[\s;:])\(?[0-9ivxa-z]{1,4}[.)]\s*$", re.I)
+_ITEM_AT_START = re.compile(r"^\s*\(?[0-9ivxa-z]{1,4}[.)]\s", re.I)
+# provisos, "except that", and enumerated sub-items are separate provisions
+CLAUSE_SPLIT = re.compile(r"[;,]?\s+(?=provided(,)?\s+(that|however|further)\b)|,?\s+(?=except that\b)"
+                          r"|(?<=[;:])\s*(?=(and\s+|or\s+)?\([ivx]{1,4}\)\s|(and\s+|or\s+)?\([a-z0-9]{1,3}\)\s)", re.I)
+
+
+def _norm(s):
+    s = s.replace("{{", "").replace("}}", "")
+    return re.sub(r"\s+", " ", s)
+
+
+def provision_context(quote, text):
+    """(lead_in, sentence, offset_of_quote_in_sentence) or None."""
+    if not quote or not text:
+        return None
+    t = _norm(re.sub(r"\[[^\[\]]{0,4000}?\]", " ", text))
+    keep = [(i, c.lower()) for i, c in enumerate(t) if c.isalnum()]
+    hay = "".join(c for _, c in keep)
+    q = "".join(c.lower() for c in _norm(re.sub(r"\[[^\[\]]{0,400}?\]", " ", quote)) if c.isalnum())
+    if len(q) < 12:
+        return None
+    at = -1
+    for n in (240, 120, 60, 30):       # longest unambiguous prefix first
+        at = hay.find(q[:n])
+        if at >= 0:
+            break
+    if at < 0:
+        return None
+    pos = keep[at][0]
+    qend = keep[min(at + len(q) - 1, len(keep) - 1)][0]
+    start = 0
+    for m in _BOUND.finditer(t, 0, min(len(t), pos + 1)):
+        start = m.end()
+    end_m = re.search(r"[.;](\s|$)", t[pos:])
+    end = pos + end_m.end() if end_m else len(t)
+    raw = t[start:end]
+    sentence = raw.strip()
+    lpad = len(raw) - len(raw.lstrip())
+    offset = pos - start - lpad
+    qend_in = min(len(sentence), qend - start - lpad)
+    lead = ""
+    before = t[max(0, start - 4000):start].rstrip()
+    if before.endswith(":") or _ITEM_AT_END.search(before) or _ITEM_AT_START.match(sentence):
+        colon = before.rfind(":")
+        if colon >= 0:
+            seg = before[:colon + 1]
+            ls = max(seg.rfind(". ", 0, colon - 1), seg.rfind("; ", 0, colon - 1))
+            cand = seg[ls + 1:].strip() if ls >= 0 else seg[-400:].strip()
+            if (len(cand) < 600 and not re.search(r"read as follows|be it enacted|following meanings", cand, re.I)
+                    and not DEFINITION.search(cand)):
+                lead = cand
+    more = []
+    cur = end
+    while cur < qend and len(more) < 4:
+        nxt = re.search(r"[.;](\s|$)", t[cur:])
+        stop = cur + nxt.end() if nxt else len(t)
+        piece = t[cur:stop].strip()
+        if piece:
+            more.append(piece)
+        cur = stop
+    # clauses of this sentence after the first one the quote covers
+    cuts = [0] + [m.end() for m in CLAUSE_SPLIT.finditer(sentence)] + [len(sentence)]
+    later = [sentence[a:b] for a, b in zip(cuts, cuts[1:]) if a > offset and a < qend_in]
+    return lead, sentence, max(0, offset), later + more
+
+
+def _clause(sentence, offset):
+    cuts = [0] + [m.end() for m in CLAUSE_SPLIT.finditer(sentence)] + [len(sentence)]
+    for a, b in zip(cuts, cuts[1:]):
+        if a <= offset < b:
+            return sentence[a:b]
+    return sentence
+
+
+def _subject_is_private(window):
+    window = re.split(r"[;:]|,\s", window)[-1]
+    return bool(PRIVATE.search(window)) and not GOV.search(window)
+
+
+def _strip_subordinate(t, after):
+    """Remove modals that sit in a subordinate or complement clause after position `after`."""
+    head, tail = t[:after], t[after:]
+    tail = SUBORDINATE.sub(lambda m: m.group(0)[:m.start(3) - m.start(0)], tail)
+    tail = COMPLEMENT.sub(lambda m: m.group(0)[:m.start(3) - m.start(0)], tail)
+    return head + tail
+
+
+def classify_text(t):
+    t = MONTH_MAY.sub(" ", t or "")
+    t = EPISTEMIC.sub(" ", t)
+    if READER_NOTE.match(t):
+        return "neither"
+    if DEFINITION.search(t) and not re.search(r"\b(shall|must)\s+(not\s+)?(\w+\s+){0,2}(establish|provide|submit|post|report|maintain|issue|develop|create|conduct|notify)\b", t, re.I):
+        return "neither"
+    if POWER_AND_DUTY.search(t):
+        return "duty"
+    t = _strip_subordinate(t, 0)
+    # "permits that are authorized to be issued" describes, it grants nothing
+    t = re.sub(r"\b(that|which|who)\s+(is|are)\s+(hereby\s+)?(authorized|empowered)\b", " ", t, flags=re.I)
+    g = GRANT.search(t)
+    m = MODAL.search(t)
+    if g and (m is None or g.start() <= m.start()):
+        rest = _strip_subordinate(t, g.end())[g.end():]
+        return "duty" if COORDINATED_MANDATORY.search(rest) else "power"
+    if m is None:
+        return "duty"
+    # everything after the main modal: drop modals in subordinate/complement clauses
+    main = _strip_subordinate(t, m.end())
+    word = m.group(1).lower()
+    before = main[max(0, m.start() - 160):m.start()]
+    p = PROHIBITION.search(main, max(0, m.start() - 125))
+    if p and p.start() <= m.end():
+        return "neither" if _subject_is_private(main[max(0, p.start() - 160):p.start()]) else "duty"
+    if word in MANDATORY_WORD:
+        if re.match(r"(shall|must)\s+be\s+\w+ed\b", main[m.start():m.start() + 60], re.I) and AGENT_GOV.search(main[m.start():m.start() + 140]):
+            return "duty"
+        return "neither" if _subject_is_private(before) else "duty"
+    # "may" is the main verb
+    if COORDINATED_MANDATORY.search(main[m.end():]):
+        return "duty"
+    after = main[m.start():m.start() + 200]
+    if GOV_VERB_PASSIVE.match(after) or (re.match(r"may\s+be\s+\w+ed\b", after, re.I)
+                                           and AGENT_GOV.search(after[:120])):
+        return "power"
+    if re.match(r"may\s+be\s+\w+ed\b", after, re.I) and not GOV.search(main):
+        return "neither"
+    if _subject_is_private(before):
+        return "neither"
+    return "power"
+
+
+def _gov_duty(x):
+    """A later sentence counts only as a duty a named government actor carries."""
+    if classify_text(x) != "duty":
+        return False
+    t = _strip_subordinate(EPISTEMIC.sub(" ", MONTH_MAY.sub(" ", x)), 0)
+    m = MODAL.search(t)
+    return bool(m) and m.group(1).lower() in MANDATORY_WORD and bool(
+        GOV.search(re.split(r"[;:]|,\s", t[max(0, m.start() - 160):m.start()])[-1] or t[:m.start()]))
+
+
+def classify(quote, text=None):
+    ctx = provision_context(quote, text) if text else None
+    if not ctx:
+        return classify_text(quote)
+    lead, sentence, offset, more = ctx
+    clause = _clause(sentence, offset)
+    own = MODAL.search(_strip_subordinate(EPISTEMIC.sub(" ", MONTH_MAY.sub(" ", clause)), 0))
+    if lead and (not own or NOUN_ITEM.match(clause)):
+        kinds = [classify_text(lead + " " + clause)]
+    else:
+        kinds = [classify_text(clause)]
+    # a quote that runs into later sentences covers them too; a duty in any wins
+    kinds += ["duty" for x in more if _gov_duty(x)]
+    for k in ("duty", "power", "neither"):
+        if k in kinds:
+            return k
+
+def is_power(quote, text=None):
+    return classify(quote, text) == "power"
+
+
+def _kind(o: dict) -> str:
+    """Stored kind (set at extraction or by the backfill); quote-only fallback."""
+    return o.get("kind") or classify(o.get("quote"))
+
 
 # Bare generic actor references that must never surface as agency tags.
 # When one of these survives unmatched, the record is labeled "Unspecified"
@@ -519,21 +844,23 @@ def resolve_deadline(dl: dict, enactment_date: str | None,
 # ── Claude call ───────────────────────────────────────────────────────────────
 
 def call_claude(client, model: str, prompt: str, retry_note: str | None = None):
-    messages = [{"role": "user", "content": prompt}]
-    if retry_note:
-        messages.append({"role": "assistant", "content": "{"})
-        messages = [{"role": "user", "content": prompt + "\n\n" + retry_note}]
-    # Streamed accumulation: required for attachment-scale laws (the plain
-    # create() call drops the connection on very large prompts) and harmless
-    # for normal ones.
+    content = prompt + ("\n\n" + retry_note if retry_note else "")
+    # Streamed: required for attachment-scale laws (the plain create() call
+    # drops the connection on very large prompts) and harmless for normal ones.
     with client.messages.stream(
         model=model,
         max_tokens=16000,
-        messages=messages,
+        messages=[{"role": "user", "content": content}],
+        output_config={"format": {"type": "json_schema", "schema": OBLIGATIONS_SCHEMA}},
     ) as stream:
-        raw = "".join(chunk for chunk in stream.text_stream).strip()
-    raw = re.sub(r"^```(?:json)?\s*|\s*```$", "", raw)
-    return json.loads(raw)
+        msg = stream.get_final_message()
+    if msg.stop_reason == "max_tokens":
+        raise json.JSONDecodeError("output truncated at max_tokens", "", 0)
+    result = json.loads(next(b.text for b in msg.content if b.type == "text"))
+    _offset_to_days(result.get("effective_clause"))
+    for o in result.get("obligations", []):
+        _offset_to_days(o.get("deadline"))
+    return result
 
 
 # A law longer than the model can read in one pass used to be handled by
@@ -619,6 +946,7 @@ def extract_law(client, model: str, law: dict, text: str,
     }, indent=1)
     prompt = (EXTRACTION_PROMPT
               .replace("{deliverable_types}", json.dumps(DELIVERABLE_TYPES))
+              .replace("{recurrences}", json.dumps(RECURRENCES))
               .replace("{metadata}", metadata)
               .replace("{law_text}", text))
 
@@ -717,6 +1045,7 @@ def extract_law(client, model: str, law: dict, text: str,
             "citation": o.get("citation", ""),
             "quote": o.get("quote", ""),
             "quote_verified": quote_ok,
+            "kind": classify(o.get("quote", ""), text),
             "deadline_kind": (o.get("deadline") or {}).get("kind", "none"),
             "deadline_text": (o.get("deadline") or {}).get("text"),
             "deadline_date": deadline_date,
@@ -769,7 +1098,11 @@ def main() -> None:
                        "committee", "prime_sponsor", "enactment_date",
                        "effective_date", "legistar_url", "law_sunset_date",
                        "quotes_restated_text", "filing"}
-        for o in prev.get("obligations", []):
+        # powers live in their own file; without them here, CI (no cache)
+        # would drop every power on its next rebuild
+        prev_powers = (json.loads(POWERS_JSON.read_text()).get("powers", [])
+                       if POWERS_JSON.exists() else [])
+        for o in prev.get("obligations", []) + prev_powers:
             obs_by_matter.setdefault(o["matter_id"], []).append(
                 {k: v for k, v in o.items() if k not in joined_keys})
         for l in prev.get("laws", []):
@@ -813,7 +1146,9 @@ def main() -> None:
 
     # Flatten, joining law metadata the frontend needs on every record
     law_by_id = {l["matter_id"]: l for l in laws}
-    flat = []
+    excluded = []      # kind "neither": published nowhere
+    flat = []          # duties -> obligations.json
+    powers = []        # powers -> powers.json
     law_summaries = []
     for res in all_results:
         law = law_by_id.get(res["matter_id"])
@@ -827,7 +1162,8 @@ def main() -> None:
                 "enactment_date", "legistar_indexes"]},
             "effective_date": res["effective_date"],
             "effective_clause_text": (res.get("effective_clause") or {}).get("text"),
-            "obligation_count": len(res["obligations"]),
+            "obligation_count": sum(1 for o in res["obligations"] if _kind(o) == "duty"),
+            "power_count": sum(1 for o in res["obligations"] if _kind(o) == "power"),
             "sunset_clause": law.get("sunset_clause"),
             "sunset_date": law.get("sunset_date"),
         })
@@ -836,7 +1172,14 @@ def main() -> None:
             o["deadline_date"] = sanitize_deadline(
                 o.get("deadline_date"), law.get("enactment_date"))
             o["recurrence"] = normalize_recurrence(o.get("recurrence"))
-            flat.append({
+            kind = _kind(o)
+            if kind == "neither":        # a private party's option: in no table
+                excluded.append(o["obligation_id"])
+                continue
+            if kind == "power":          # a power is never due by a date
+                o["deadline_kind"] = "none"
+                o["deadline_date"] = None
+            (powers if kind == "power" else flat).append({
                 **o,
                 "file_number": law["file_number"],
                 "law_number_display": law["law_number_display"],
@@ -849,14 +1192,15 @@ def main() -> None:
                 "law_sunset_date": law.get("sunset_date"),
                 "quotes_restated_text": o["obligation_id"] in RESTATED_IDS,
                 **({"filing": REPORT_FILINGS[o["obligation_id"]]}
-                   if o["obligation_id"] in REPORT_FILINGS else {}),
+                   if o["obligation_id"] in REPORT_FILINGS and kind == "duty" else {}),
+                "kind": kind,
             })
 
     # obligation_id must be unique: hand edits and cache syncs have twice
     # produced a matter with the same id on two records, which silently breaks
     # any join keyed on it (the restated-text flag, per-record links).
     from collections import Counter as _Counter
-    _dupes = [i for i, c in _Counter(o["obligation_id"] for o in flat).items() if c > 1]
+    _dupes = [i for i, c in _Counter(o["obligation_id"] for o in flat + powers).items() if c > 1]
     if _dupes:
         log.error("duplicate obligation_ids (fix the cache file, then rebuild): %s",
                   ", ".join(sorted(_dupes)))
@@ -874,6 +1218,12 @@ def main() -> None:
     # compact separators: the file is large (8k+ obligations) and every
     # tracker page fetches it; GitHub Pages gzips it over the wire
     OUT_JSON.write_text(json.dumps(out, separators=(",", ":")))
+    POWERS_JSON.write_text(json.dumps({
+        "generated_at": out["generated_at"],
+        "model": args.model,
+        "power_count": len(powers),
+        "powers": powers,
+    }, separators=(",", ":")))
 
     # CSV companion for the Download CSV button
     import csv as csvmod
@@ -895,6 +1245,15 @@ def main() -> None:
         for o in flat:
             w.writerow(o)
     log.info(f"Wrote {csv_path}")
+    powers_csv = DATA / "powers.csv"
+    power_cols = [c for c in csv_cols if not c.startswith(("deadline", "filing"))]
+    with open(powers_csv, "w", newline="", encoding="utf-8") as f:
+        w = csvmod.DictWriter(f, fieldnames=power_cols, extrasaction="ignore")
+        w.writeheader()
+        for o in powers:
+            w.writerow(o)
+    log.info(f"Wrote {powers_csv}: {len(powers)} powers; "
+             f"{len(excluded)} records classified neither (private parties' options) left out")
 
     verified = sum(1 for o in flat if o["quote_verified"])
     matched = sum(1 for o in flat if o["agency_matched"])

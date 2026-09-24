@@ -197,6 +197,7 @@
 <div class="pill-nav">
   <span class="pill-label">Views in this tool:</span>
   <a href="../obligations-table/">Obligations Table</a>
+  <a href="../powers-table/">Powers Table</a>
   <a href="../agency-workload/">Agency Workload</a>
   <a href="../deadline-timeline/">Deadline Timeline</a>
   <a href="./" class="active">Law Explorer</a>
@@ -252,14 +253,22 @@
 <script>
 (function () {
   var DATA = null;
+  var POWERS = [];
   var MS = {};
 
-  fetch('../data/obligations.json')
+  var powersReady = fetch('../data/powers.json')
     .then(function (r) { return r.json(); })
-    .then(function (data) {
-      DATA = data;
-      if (data.generated_at) {
-        var gen = new Date(data.generated_at);
+    .then(function (data) { POWERS = data.powers || []; })
+    .catch(function () { POWERS = []; });
+
+  var obligationsReady = fetch('../data/obligations.json')
+    .then(function (r) { return r.json(); })
+    .then(function (data) { DATA = data; });
+
+  Promise.all([obligationsReady, powersReady])
+    .then(function () {
+      if (DATA.generated_at) {
+        var gen = new Date(DATA.generated_at);
         var months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
         document.getElementById('heroUpdated').textContent = 'Updated ' + months[gen.getMonth()] + ' ' + gen.getFullYear();
       }
@@ -406,6 +415,29 @@
         + '</div>'
         + '</div>';
     });
+
+    var powers = POWERS.filter(function (p) { return p.matter_id === lawId; });
+    if (powers.length) {
+      html += '<div class="section-head">Powers this law grants (' + powers.length + ')</div>';
+      powers.forEach(function (p, i) {
+        html += '<div class="ob-card" id="pw' + i + '">'
+          + '<div class="ob-top">'
+          + '<span class="ob-num">' + String(i + 1).padStart(2, '0') + '</span>'
+          + '<span class="agency-badge' + (p.agency === 'Unspecified' ? ' unspec' : '') + '" title="' + esc(p.agency_full) + '">' + esc(p.agency) + '</span>'
+          + '<span class="type-badge">' + esc(p.deliverable_type) + '</span>'
+          + '</div>'
+          + '<div class="ob-action">' + esc(p.action_summary) + '</div>'
+          + (p.quote ? '<div class="ob-quote">“' + esc(p.quote) + '”'
+              + (p.quote_verified ? '' : '<div class="unverified-note">This quote could not be verified verbatim against the law text and may be paraphrased.</div>')
+              + (p.quotes_restated_text ? '<div class="restated-note">This wording predates the law shown. The law reprints the code section it amends, and this text sits outside the part it changed, so the power is real but an earlier law probably created it.</div>' : '')
+              + '</div>' : '')
+          + '<div class="ob-meta">'
+          + (p.citation ? '<span>' + esc(p.citation) + '</span>' : '')
+          + (p.quote ? '<button class="quote-toggle" data-target="pw' + i + '">Show statutory language</button>' : '')
+          + '</div>'
+          + '</div>';
+      });
+    }
 
     html += '<div class="footnotes">'
       + '<p><strong>Method:</strong> this checklist is extracted from the enacted text of ' + esc(law.law_number_display || law.file_number)
