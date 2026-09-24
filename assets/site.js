@@ -140,6 +140,7 @@
       '<div class="sitenav-menu">' + postsHtml() + '</div>' +
       '</div>' +
       '<span class="sitenav-spacer"></span>' +
+      '<a class="nav-pill" href="https://talroded.nycuriosity.com/services/">NYCuriosity Studio</a>' +
       '<a class="nav-pill" href="/members/">Memberships</a>' +
       '</div>';
     header.insertAdjacentElement('afterend', bar);
@@ -223,6 +224,15 @@
   }
 
   var footerNav = document.querySelector('footer .footer-links');
+  // NYCuriosity Studio (paid services) sits beside Memberships (Tal, Sep 24 2026)
+  var STUDIO_URL = 'https://talroded.nycuriosity.com/services/';
+  if (footerNav && !footerNav.querySelector('a[href="' + STUDIO_URL + '"]')) {
+    var studioLink = document.createElement('a');
+    studioLink.href = STUDIO_URL;
+    studioLink.textContent = 'NYCuriosity Studio';
+    var iconSlot = footerNav.querySelector('a[title]');
+    if (iconSlot) footerNav.insertBefore(studioLink, iconSlot); else footerNav.appendChild(studioLink);
+  }
   if (footerNav && !footerNav.querySelector('a[href="/members/"]')) {
     var memLink = document.createElement('a');
     memLink.href = '/members/';
