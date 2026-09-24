@@ -286,7 +286,7 @@
 
   const W = 1000;
   const PADL = 60, PADR = 90;
-  const colW = 56, colGap = 10;
+  const colW = 52, colGap = 10;
   const plotW = 13 * colW + 12 * colGap;
 
   const y0Duties = 48, plotHDuties = 170, baseDuties = y0Duties + plotHDuties;
@@ -328,6 +328,21 @@
     el('text', { x: PADL - 10, y: yForPowers(v) + 4, 'text-anchor': 'end', class: 'c-tick' }, String(v));
   });
 
+  // Average reference lines (2014-2021 = indices 0-7, 2022-2025 = indices 8-11).
+  // Drawn before the columns so value labels (haloed) sit on top.
+  // Labels sit in the right margin, past the last column, so they never cross
+  // a column's own value label; a vertical dy nudge keeps the two labels in a
+  // panel apart from each other when their values are close together.
+  function refLine(yForFn, val, startIdx, endIdx, dy, label) {
+    const x1 = xFor(startIdx), x2 = xFor(endIdx) + colW, y = yForFn(val);
+    el('line', { x1: x1, y1: y, x2: x2, y2: y, class: 'c-refline c-dash-ref' });
+    el('text', { x: PADL + plotW + 6, y: y + dy, class: 'c-annot' }, label);
+  }
+  refLine(yForDuties, 560, 0, 7, 10, '2014–21 avg 560');
+  refLine(yForDuties, 605, 8, 11, -5, '2022–25 avg 605');
+  refLine(yForPowers, 62, 0, 7, 3, '2014–21 avg 62');
+  refLine(yForPowers, 33, 8, 11, 3, '2022–25 avg 33');
+
   // Columns + value labels
   DATA.forEach((d, i) => {
     const isEst = d.year === 2026;
@@ -336,32 +351,19 @@
       fill: 'var(--c-cat-1)', opacity: isEst ? '0.4' : '1' };
     if (isEst) { dutiesAttrs.stroke = 'var(--c-cat-1)'; dutiesAttrs['stroke-width'] = '1.5'; dutiesAttrs.class = 'c-dash-est'; }
     el('rect', dutiesAttrs);
-    el('text', { x: centerFor(i), y: yD - 8, 'text-anchor': 'middle', class: 'c-val', fill: 'var(--c-ink)', style: 'font-size:11px' }, String(d.duties));
+    el('text', { x: centerFor(i), y: yD - 8, 'text-anchor': 'middle', class: 'c-val', fill: 'var(--c-ink)', style: 'font-size:11px;paint-order:stroke;stroke:var(--c-surface);stroke-width:4px;stroke-linejoin:round' }, String(d.duties));
 
     const xP = xFor(i), yP = yForPowers(d.powers), hP = basePowers - yP;
     const powersAttrs = { x: xP, y: yP, width: colW, height: hP, rx: 2,
       fill: 'var(--c-cat-2)', opacity: isEst ? '0.4' : '1' };
     if (isEst) { powersAttrs.stroke = 'var(--c-cat-2)'; powersAttrs['stroke-width'] = '1.5'; powersAttrs.class = 'c-dash-est'; }
     el('rect', powersAttrs);
-    el('text', { x: centerFor(i), y: yP - 8, 'text-anchor': 'middle', class: 'c-val', fill: 'var(--c-ink)', style: 'font-size:11px' }, String(d.powers));
+    el('text', { x: centerFor(i), y: yP - 8, 'text-anchor': 'middle', class: 'c-val', fill: 'var(--c-ink)', style: 'font-size:11px;paint-order:stroke;stroke:var(--c-surface);stroke-width:4px;stroke-linejoin:round' }, String(d.powers));
 
     // x-axis year labels
     el('text', { x: centerFor(i), y: xLabelY, 'text-anchor': 'middle', class: 'c-tick' }, isEst ? '2026*' : String(d.year));
   });
 
-  // Average reference lines (2014-2021 = indices 0-7, 2022-2025 = indices 8-11).
-  // Labels sit in the right margin, past the last column, so they never cross
-  // a column's own value label; a vertical dy nudge keeps the two labels in a
-  // panel apart from each other when their values are close together.
-  function refLine(yForFn, val, startIdx, endIdx, dy) {
-    const x1 = xFor(startIdx), x2 = xFor(endIdx) + colW, y = yForFn(val);
-    el('line', { x1: x1, y1: y, x2: x2, y2: y, class: 'c-refline c-dash-ref' });
-    el('text', { x: PADL + plotW + 6, y: y + dy, class: 'c-annot' }, 'avg ' + val);
-  }
-  refLine(yForDuties, 560, 0, 7, 10);
-  refLine(yForDuties, 605, 8, 11, -5);
-  refLine(yForPowers, 62, 0, 7, 3);
-  refLine(yForPowers, 33, 8, 11, 3);
 </script>
 
 </body>
