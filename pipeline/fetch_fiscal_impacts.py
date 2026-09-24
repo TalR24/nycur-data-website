@@ -83,6 +83,7 @@ FISCAL_SCHEMA = _obj({
     "cost_estimable": {"type": "boolean"},
     "costs_already_in_financial_plan": {"type": "boolean"},
     "time_limited_program": {"type": "boolean"},
+    "sunset_quote": _STR,
     "total_revenue": _NUM_OR_NULL, "total_expenditure": _NUM_OR_NULL,
     "total_capital": _NUM_OR_NULL, "net_fiscal_impact": _NUM_OR_NULL,
     "fiscal_table_columns": {"type": "array", "items": _obj({
@@ -132,6 +133,7 @@ Return a JSON object with exactly these fields (an empty string for missing text
   "cost_estimable": true,
   "costs_already_in_financial_plan": false,
   "time_limited_program": false,
+  "sunset_quote": "",
 
   "total_revenue": 0,
   "total_expenditure": 0,
@@ -178,9 +180,10 @@ Return a JSON object with exactly these fields (an empty string for missing text
 RULES:
 - total_revenue / total_expenditure / total_capital / net_fiscal_impact: the figures the document itself states as the total or full fiscal impact, copied rather than computed except for the range rule below (0 if it states none). The pipeline recomputes them from fiscal_table_columns whenever the table has figures, so copy every column exactly as printed, with revenue reductions entered as negative revenue.
 - A cost the narrative states (for example "a one-time capital cost of $2 million" or "approximately $3.5 million for radios") is part of the estimate even when the table shows $0 or omits it: put it in total_capital or total_expenditure as described.
-- Ranges and scenarios, in the table or the narrative: when the statement gives an "at least" figure ("at least $750,000", "a minimum of $2 million"), use that figure. Otherwise use the midpoint of the range, or of the lowest and highest scenario figures ("$6.3 million to $11.6 million" is 8950000). Apply this to each table cell that prints a range, and to the stated totals. This is the only arithmetic you do.
-- costs_already_in_financial_plan: true when the statement says a cost is already reflected, included or funded in the City's Financial Plan or the agency's existing budget. Such a cost is not new: leave it out of every total and table column. Costs the statement describes as beyond the Financial Plan still count.
-- time_limited_program: true when the legislation creates a pilot or program that ends on a stated date or after a stated number of years (a sunset or expiration). Copy every year column; the pipeline totals a time-limited program over its life.
+- Ranges and scenarios, in the table or the narrative: when the statement gives an "at least" figure ("at least $750,000", "a minimum of $2 million"), use that figure; when several scenarios each give an "at least" figure, use the lowest one. Otherwise use the midpoint of the range, or of the lowest and highest scenario figures ("$6.3 million to $11.6 million" is 8950000). Apply this to each table cell that prints a range, and to the stated totals. This is the only arithmetic you do.
+- costs_already_in_financial_plan: true when the statement says a cost or a revenue is already reflected, included, assumed or funded in the City's Financial Plan or Adopted Budget, or that existing agency resources cover it. Such an amount is not new: leave it out of every total and table column. Amounts the statement describes as beyond the Financial Plan still count.
+- time_limited_program: true only when the program or pilot that carries the cost itself ends on a stated date or after a stated number of years, and the statement says so. A sunset of one subsection (for example a reporting requirement) or of a separate authority, a discretionary end ("may discontinue"), or a statement that merely shows several years does NOT count. When true, copy into sunset_quote the exact sentence from the document that states the end; otherwise sunset_quote is "". Copy every year column; the pipeline totals a time-limited program over its life.
+- A figure in the table or the narrative is a fiscal impact. "See below" pointing to a figure, a $0 Full Fiscal Impact column beside non-zero year columns, or an unknown revenue next to a known cost is NOT zero impact and NOT unestimable.
 - Every amount is in whole dollars: "$435 million" is 435000000 and "$2.3 million" is 2300000, never 435 or 2.3, including when a table is labelled "($000)" or "in millions" (multiply out).
 - A table cell that says "See below" points to the narrative: leave that cell null, and take the figure the Impact on Revenues or Impact on Expenditures paragraph gives (for example "a one-time capital cost of $1.8 million") as the document's stated total. Set cost_estimable to false only when the narrative itself says the cost cannot be estimated and gives no figure.
 - fiscal_table_columns must preserve the exact column structure from the document (there may be 2–6 columns).
@@ -624,6 +627,10 @@ def extract_fiscal_data(
             if msg.stop_reason == "max_tokens":
                 raise json.JSONDecodeError("output truncated at max_tokens", "", 0)
             data = _blank_to_none(json.loads(next(b.text for b in msg.content if b.type == "text")))
+            # the sunset sentence must appear in the statement itself
+            norm = lambda t: re.sub(r"\s+", " ", t or "").strip().lower()
+            if data.get("time_limited_program") and norm(data.get("sunset_quote"))[:120] not in norm(text):
+                data["time_limited_program"] = False
             return totals_from_columns(data)
 
         except json.JSONDecodeError as e:
@@ -931,7 +938,10 @@ def totals_from_columns(fiscal: dict) -> dict:
     table_has_figures = any((c.get(k) or 0) for c in cols for k in ("revenue", "expenditure", "capital"))
     bases = set()
 
-    time_limited = bool(fiscal.get("time_limited_program"))
+    # a pilot counts only with the statement's own sunset sentence (round-4
+    # audit, Sep 24 2026: 3 of 8 flags had no sunset for the costed program);
+    # extract_fiscal_data checks the quote against the document text
+    time_limited = bool(fiscal.get("time_limited_program")) and bool((fiscal.get("sunset_quote") or "").strip())
     # the standard table repeats the succeeding year as "Full Fiscal Impact
     # FY27"; summing it too would count that year twice
     year_of = lambda c: (re.findall(r"FY\s*'?(\d{2,4})", c.get("label") or "", re.I) or [None])[-1]
@@ -1220,6 +1230,12 @@ def main() -> int:
             if not record_has_fiscal_impact(fiscal):
                 reason = ("already_in_financial_plan" if fiscal.get("costs_already_in_financial_plan")
                           else "zero_or_unestimable")
+                # a stored record with figures is never dropped as zero on a
+                # re-read (round-4 audit: 4 of 4 such drops were wrong); only
+                # the budget-plan rule may remove it
+                if args.reextract and matter_id in index_by_id and reason == "zero_or_unestimable":
+                    log.warning("  Re-extract read zero/unestimable for a stored record; keeping the stored record")
+                    continue
                 log.info(f"  Post-check: no new fiscal impact ({reason}), skipping")
                 mark_skip(matter_id, reason)
                 _drop_if_reextracting(matter_id)

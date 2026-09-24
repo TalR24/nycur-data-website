@@ -534,7 +534,10 @@
       <p>Fiscal impact statements don't follow a perfectly uniform format. While newer documents (post-2020) use a consistent three-column table, older bills used varied column structures, different terminology, or described costs entirely in prose paragraphs. A rule-based parser would break on edge cases. Claude reads the document's actual content and synthesizes the values regardless of layout.</p>
 
       <h3>Handling prose-only documents</h3>
-      <p>Pre-2019 fiscal impact statements often have no structured table at all, costs are stated in sentences like "this legislation is estimated to increase expenditures by $1.6 million annually." For these documents, the model synthesizes the totals from the narrative text. When a range is given (e.g. "$1 million to $2 million"), the midpoint is used.</p>
+      <p>Pre-2019 fiscal impact statements often have no structured table at all, costs are stated in sentences like "this legislation is estimated to increase expenditures by $1.6 million annually." For these documents, the model takes the totals from the narrative text.</p>
+
+      <h3>Ranges and scenarios</h3>
+      <p>When a statement gives an "at least" figure ("at least an additional $750,000"), the tracker records that figure. When it gives a range or several scenarios without one, the tracker records the midpoint: "$6.3 million to $11.6 million" is recorded as $8.95 million. The same rule applies to table cells and to figures stated in prose.</p>
 
       <h3>Pre-check before extraction</h3>
       <p>Before calling the AI, the tracker scans the raw document text for any non-zero dollar amounts. If every dollar figure in the document is literally <code>$0</code> and there's no "See below" language indicating a cost described elsewhere, the document is skipped without an AI call. This avoids spending resources on bills that clearly have no fiscal impact.</p>
@@ -551,13 +554,18 @@
       </div>
 
       <h3>Total expenditure, capital, and revenue</h3>
-      <p>Most fiscal impact statements present costs across multiple fiscal years in side-by-side columns, typically "Effective FY," "FY Succeeding Effective," and "Full Fiscal Impact FY." The tracker sums all column values to produce a single total for each category:</p>
+      <p>Most fiscal impact statements present costs across fiscal years in side-by-side columns, typically "Effective FY," "FY Succeeding Effective," and "Full Fiscal Impact FY." Each bill gets one figure per category, the annual cost once the law is fully in effect, chosen in this order:</p>
       <ul>
-        <li><strong>Total expenditure</strong>, sum of all operational expense amounts across all fiscal year columns. Always a positive number.</li>
-        <li><strong>Total capital</strong>, sum of all capital cost amounts across all fiscal year columns. Always a positive number, or <code>null</code> if the bill has no capital component.</li>
-        <li><strong>Total revenue</strong>, sum of all revenue amounts across all fiscal year columns. Always a positive number.</li>
+        <li><strong>The Full Fiscal Impact column.</strong> The statement's own figure for a year of full implementation. When a statement has no column labelled full impact, the last fiscal-year column is used.</li>
+        <li><strong>The sum of the columns</strong>, when the full-impact figure is zero: a one-time cost paid in the first year would otherwise disappear.</li>
+        <li><strong>The figure stated in prose</strong>, when the table has nothing for that category: a cell reading "See below", or a capital cost described only in the narrative while the table shows $0.</li>
+        <li><strong>Pilots and other time-limited programs</strong> never reach a steady year, so their figure is the sum of the years the statement shows, counting a year that appears twice (once as "FY Succeeding" and again as "Full Fiscal Impact") only once. A bill counts as time-limited only when the statement quotes an end date for the program that carries the cost; a sunset on one reporting clause does not qualify. Statements rarely cost the years after their second, so a pilot that runs five years shows only the years the statement prices.</li>
       </ul>
-      <div class="callout warn"><strong>These are multi-year totals, not annual figures.</strong> A bill with a $5M total expenditure across three fiscal years costs roughly $1.7M per year, not $5M per year. Always read the per-column breakdown in the bill detail panel for the year-by-year picture.</div>
+      <p>Expenditure and capital are always recorded as positive numbers, and capital is <code>null</code> when a bill has none. Each record's <code>totals_basis</code> field names which rule produced its figures.</p>
+      <div class="callout warn"><strong>Most figures are annual, and pilots are the exception.</strong> A $5M bill costs about $5M in each year of full implementation. A two-year pilot recorded at $750,000 costs that amount across both years. The bill detail panel shows the year-by-year columns.</div>
+
+      <h3>Costs already in the city's budget</h3>
+      <p>Some statements say a cost "has already been reflected" in the City's Financial Plan, or that the agency's existing resources cover it: the money was budgeted before the bill passed. The bill does not add that cost, so the tracker leaves it out of the totals. Revenue the Adopted Budget already assumes is left out the same way. Amounts a statement describes as beyond the Financial Plan still count. A bill whose only costs were already budgeted is excluded (see below).</p>
 
       <h3>Net fiscal impact</h3>
       <p>The net fiscal impact represents the overall cost or benefit to the city's budget:</p>
@@ -586,6 +594,10 @@
         <li>
           <span class="tag exclude">EXCLUDED</span>
           <strong>All fiscal values are zero.</strong> If total expenditure, total capital, total revenue, and net fiscal impact are all zero or null, the bill has no real fiscal impact and is not tracked.
+        </li>
+        <li>
+          <span class="tag exclude">EXCLUDED</span>
+          <strong>Every cost was already in the budget.</strong> When the statement says all of a bill's costs are already reflected in the City's Financial Plan, the bill adds no new cost and is not tracked.
         </li>
         <li>
           <span class="tag exclude">EXCLUDED</span>
@@ -638,7 +650,7 @@
       <p>Column structure varies by bill, custom labels based on the legislation's scope and effective date. May include a capital row. No OMB section. The tracker extracts whatever columns are present and sums them into totals.</p>
 
       <h3>Narrative format (pre-2019, common)</h3>
-      <p>No structured table at all. Fiscal impact is described entirely in prose: "This legislation is estimated to increase expenditures by $1.6 million annually." The tracker synthesizes totals from these narrative figures. When ranges are given, the midpoint is used. A single-column fiscal table labeled "Total" is created from the narrative figures for display purposes.</p>
+      <p>No structured table at all. Fiscal impact is described entirely in prose: "This legislation is estimated to increase expenditures by $1.6 million annually." The tracker takes totals from these narrative figures, using the range rule above. A single-column fiscal table labeled "Total" is created from the narrative figures for display purposes.</p>
     </div>
 
     <!-- 9. LIMITS -->
@@ -651,8 +663,8 @@
       <h3>These are estimates, not actual expenditures</h3>
       <p>Every figure in this tracker is a <em>pre-passage estimate</em> prepared by the City Council's Finance Division. They represent what the bill is expected to cost if enacted and implemented as written. Actual costs after a bill becomes law may differ significantly, appropriations may be lower, implementation may be phased, or agencies may absorb costs within existing budgets.</p>
 
-      <h3>Totals are multi-year sums</h3>
-      <p>The "total expenditure," "total capital," and "net fiscal impact" columns sum costs across all fiscal years in the document, typically two or three years. They are not annual figures. Two bills with the same total cost may have very different annual profiles depending on how costs are distributed over time.</p>
+      <h3>One figure per bill hides the ramp-up</h3>
+      <p>The "total expenditure," "total capital," and "net fiscal impact" columns show one year of full implementation (or a pilot's whole run), so a bill that phases in over three years shows only its final-year cost. Two bills with the same figure can spend very different amounts in their first years; the bill detail panel shows each year.</p>
 
       <h3>AI extraction may contain errors</h3>
       <p>Numbers are extracted from document text by a large language model. While the model performs well on structured tables, it can occasionally misread a figure, misattribute a cost to the wrong category, or misparse a complex multi-agency breakdown. If you spot a discrepancy, compare against the original document linked in each bill's detail panel (via the Legistar link).</p>
