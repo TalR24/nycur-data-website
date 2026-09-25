@@ -210,6 +210,9 @@ def main() -> None:
                   + (", truncated" if truncated else "") + ")")
             res = eo.extract_law(client, eo.DEFAULT_MODEL, law, text,
                                  lookup, agencies_by_canon)
+            res = eo.guard_reextraction(res, eo.committed_records(mid))
+            if res.get("fallback_prior"):
+                print(f"{mid}: kept prior records ({res['fallback_prior']})")
             if truncated:
                 res["truncated_extraction"] = True
             (EXTRACT_CACHE / f"{mid}.json").write_text(json.dumps(res, indent=1))

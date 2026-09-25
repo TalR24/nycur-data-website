@@ -70,9 +70,13 @@ def main() -> int:
             text = sanitize(text)[:MAX_CHARS * 40]
             (eo.TEXT_CACHE / f"{mid}.txt").write_text(text)
             res = eo.extract_law(client, args.model, law, text, lookup, agencies_by_canon)
+            res = eo.guard_reextraction(res, eo.committed_records(mid))
             res["pilot_model"] = args.model
             (eo.EXTRACT_CACHE / f"{mid}.json").write_text(json.dumps(res, indent=1))
-            print(f"{mid}: {len(res['obligations'])} records ({args.model})")
+            note = (f", FALLBACK to prior: {res['fallback_prior']}" if res.get("fallback_prior")
+                    else f", {res['restated_carried_over']} existing-code carried over"
+                    if res.get("restated_carried_over") else "")
+            print(f"{mid}: {len(res['obligations'])} records ({args.model}){note}")
             time.sleep(0.5)
         except Exception as e:  # keep going; report at the end
             failed.append(f"{mid}: {e}")

@@ -1183,13 +1183,59 @@ def merge_split_list_duplicates(obs: list[dict]) -> int:
 
 # ── Claude call ───────────────────────────────────────────────────────────────
 
+_JOINED_KEYS = {"file_number", "law_number_display", "law_title", "committee",
+                "prime_sponsor", "enactment_date", "effective_date",
+                "legistar_url", "law_sunset_date", "quotes_restated_text", "filing"}
+
+
+def committed_records(matter_id: str) -> list[dict]:
+    """The law's records in the committed obligations.json + powers.json, with
+    the joined law-level fields stripped (the inverse-flatten pattern)."""
+    out = []
+    for f, key in ((OUT_JSON, "obligations"), (POWERS_JSON, "powers")):
+        if f.exists():
+            out += [{k: v for k, v in o.items() if k not in _JOINED_KEYS}
+                    for o in json.loads(f.read_text()).get(key, [])
+                    if o.get("matter_id") == matter_id]
+    return out
+
+
+def guard_reextraction(res: dict, prior: list[dict]) -> dict:
+    """Safety net for a re-extraction (pilot 1 recommendations, Sep 25 2026).
+    1. A failed extraction, or 0 records where the committed data has some,
+       keeps the prior records (flagged fallback_prior) instead of wiping them.
+    2. Verified existing-code records (restated) the new pass omits are carried
+       over, so re-extraction never silently loses a standing duty."""
+    if not prior:
+        return res
+    if res.get("extraction_error") or not res.get("obligations"):
+        res["fallback_prior"] = res.get("extraction_error") or "0 records"
+        res["obligations"] = prior
+        return res
+    have = {normalize_quote(o.get("quote", ""))[:160] for o in res["obligations"]}
+    n = max([len(res["obligations"])] + [int(o["obligation_id"].rsplit("-", 1)[-1])
+             for o in res["obligations"]
+             if str(o.get("obligation_id", "")).rsplit("-", 1)[-1].isdigit()])
+    carried = 0
+    for o in prior:
+        if o.get("restated") and normalize_quote(o.get("quote", ""))[:160] not in have:
+            n += 1
+            res["obligations"].append({**o, "obligation_id": f"{res['matter_id']}-{n:02d}",
+                                       "carried_over": True})
+            carried += 1
+    if carried:
+        res["restated_carried_over"] = carried
+    return res
+
+
 def call_claude(client, model: str, prompt: str, retry_note: str | None = None):
     content = prompt + ("\n\n" + retry_note if retry_note else "")
     # Streamed: required for attachment-scale laws (the plain create() call
     # drops the connection on very large prompts) and harmless for normal ones.
     with client.messages.stream(
         model=model,
-        max_tokens=16000,
+        # 32k: pilot 1 (Sep 25 2026) truncated one dense law at 16k
+        max_tokens=32000,
         messages=[{"role": "user", "content": content}],
         output_config={"format": {"type": "json_schema", "schema": OBLIGATIONS_SCHEMA}},
     ) as stream:
@@ -1309,8 +1355,11 @@ def extract_law(client, model: str, law: dict, text: str,
                     "windows_refused": len(windows), "obligations": []}
         merged, seen = [], set()
         eff_clause, eff_date = None, None
+        window_errors = []
         for wi, window in enumerate(windows, 1):
             sub = extract_law(client, model, law, window, lookup, agencies_by_canon)
+            if sub.get("extraction_error"):
+                window_errors.append(f"window {wi}: {sub['extraction_error']}")
             if eff_clause is None:
                 eff_clause = (sub.get("effective_clause") or {}).get("text")
             if eff_date is None:
@@ -1329,6 +1378,9 @@ def extract_law(client, model: str, law: dict, text: str,
                 "effective_clause": {"text": eff_clause},
                 "effective_date": eff_date or law.get("effective_date"),
                 "windows": len(windows),
+                # a failed window means records are missing: surfaced so
+                # guard_reextraction keeps the prior records instead
+                "extraction_error": "; ".join(window_errors) or None,
                 "obligations": merged}
 
     norm_text = normalize_quote(text)
