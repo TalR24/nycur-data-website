@@ -743,9 +743,21 @@ def apply_overrides(records: list) -> list:
     return out
 
 
+def fill_blank_titles(records: list) -> list:
+    """A statement parsed without a title shows as a blank row: take the
+    enacted law's title from laws.json, else the bill's own file number."""
+    titles = {}
+    if LAWS_PATH.exists():
+        titles = {l["matter_id"]: l.get("title") for l in json.loads(LAWS_PATH.read_text()).get("laws", [])}
+    for r in records:
+        if not (r.get("title") or "").strip():
+            r["title"] = titles.get(str(r.get("matter_id"))) or (r.get("file_number") or "").strip() or None
+    return records
+
+
 def save_output(path: Path, records: list) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    records = apply_overrides(records)
+    records = fill_blank_titles(apply_overrides(records))
     data = {
         "metadata": {
             "last_updated": datetime.utcnow().isoformat() + "Z",
