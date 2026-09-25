@@ -1101,6 +1101,46 @@ def fix_two_fixed_dates_semiannual(o: dict) -> bool:
     return True
 
 
+# ── Sep 25 2026 data audit: actor fixes applied every build ────────────────
+# Private parties are never government duty holders: an "approved agency" is
+# a private special-inspection firm, an owner or design professional a private
+# person. Their obligations are "neither" and stay out of both tables.
+PRIVATE_ACTOR_RE = re.compile(
+    r"^(?:the |an |a |each |any |such )?(?:approved (?:inspection )?agenc(?:y|ies)|approved third[- ]part(?:y|ies)|"
+    r"(?:building |property )?owners?|registered design professionals?|design professionals?|"
+    r"permit ?holders?|permittees?|licensees?|contractors?)\b", re.I)
+# "the department" / "the commissioner" mean the department the amended code
+# title defines (Admin Code 17-101: the department of health and mental hygiene).
+TITLE_DEPARTMENT = {"16": "DSNY", "17": "DOHMH", "18": "DPR", "19": "DOT", "20": "DCWP",
+                    "24": "DEP", "26": "HPD", "28": "DOB"}
+GENERIC_DEPT_RE = re.compile(r"^(?:the |such |said )?(?:department|commissioner)$", re.I)
+ADMIN_TITLE_RE = re.compile(r"Admin(?:istrative)?\.? Code\s*§+\s*(\d+)-", re.I)
+ACTOR_ALIASES = {"the chancellor": "NYCPS", "chancellor": "NYCPS",
+                 "department of human resources administration": "HRA",
+                 "the department of human resources administration": "HRA"}
+
+
+def fix_actor(o: dict, lookup: dict, agencies_by_canon: dict) -> str | None:
+    """'private' when the actor is a private party; 'resolved' when the agency
+    was set from the code title or an alias; None otherwise."""
+    raw = (o.get("actor_raw") or "").strip()
+    if PRIVATE_ACTOR_RE.match(raw):
+        return "private"
+    target = None
+    if GENERIC_DEPT_RE.match(raw):
+        m = ADMIN_TITLE_RE.search(o.get("citation") or "")
+        if m:
+            target = TITLE_DEPARTMENT.get(m.group(1))
+    if not target and not o.get("agency_matched"):
+        target = ACTOR_ALIASES.get(raw.lower())
+    if target:
+        canon, full = match_agency(target, lookup, agencies_by_canon)
+        if canon and canon != o.get("agency"):
+            o["agency"], o["agency_full"], o["agency_matched"] = canon, full, True
+            return "resolved"
+    return None
+
+
 def merge_split_list_duplicates(obs: list[dict]) -> int:
     """Merge duplicate list-item splits within one law: same agency, same
     deliverable type, one quote a sub-span of the other's sentence. Keeps the
@@ -1456,6 +1496,7 @@ def main() -> None:
     law_summaries = []
     quotes_cleaned = quotes_deleted_flagged = deadlines_event_fixed = 0
     semiannual_fixed = merged_away = 0
+    private_excluded = actors_resolved = 0
     _law_text_cache: dict[str, str] = {}
     for res in all_results:
         law = law_by_id.get(res["matter_id"])
@@ -1494,6 +1535,13 @@ def main() -> None:
                 if has_deleted:
                     o["quote_has_deleted_text"] = True
                     quotes_deleted_flagged += 1
+            actor_fix = fix_actor(o, lookup, agencies_by_canon)
+            if actor_fix == "private":
+                private_excluded += 1
+                excluded.append(o["obligation_id"])
+                continue
+            if actor_fix == "resolved":
+                actors_resolved += 1
             if fix_event_anchored_deadline(o):
                 deadlines_event_fixed += 1
             if fix_two_fixed_dates_semiannual(o):
@@ -1563,6 +1611,7 @@ def main() -> None:
         ls["obligation_count"] = counts["obligation_count"]
         ls["power_count"] = counts["power_count"]
 
+    log.info(f"Actor fixes: private parties excluded {private_excluded}, agencies resolved from code title or alias {actors_resolved}")
     log.info(f"Step 2 mechanical fixes: quotes cleaned {quotes_cleaned}, "
              f"quote_has_deleted_text {quotes_deleted_flagged}, "
              f"event-anchored deadlines fixed {deadlines_event_fixed}, "
