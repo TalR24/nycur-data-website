@@ -708,8 +708,44 @@ def load_law_seed(years: str) -> list[tuple[str, str]]:
     return out
 
 
+OVERRIDES_PATH = SCRIPT_DIR / "fiscal_overrides.json"
+
+
+def apply_overrides(records: list) -> list:
+    """Blind-audit corrections, applied on every save (fiscal rounds 5-6, Sep 24
+    2026). Each entry is tied to the statement it was checked against
+    (attachment_id): a newer statement voids it and is read fresh. `remove`
+    drops a bill whose statement adds nothing new and skip-lists it; `set` pins
+    audited totals so reruns cannot drift. Net is recomputed after a `set`."""
+    if not OVERRIDES_PATH.exists():
+        return records
+    ov = json.loads(OVERRIDES_PATH.read_text())
+    out, removed = [], []
+    for r in records:
+        e = ov.get(str(r.get("matter_id")))
+        if not e or str(r.get("attachment_id")) != str(e.get("attachment_id")):
+            out.append(r)
+            continue
+        if e.get("remove"):
+            removed.append(r["matter_id"])
+            continue
+        r.update(e.get("set") or {})
+        r["net_fiscal_impact"] = ((r.get("total_revenue") or 0) - (r.get("total_expenditure") or 0)
+                                  - (r.get("total_capital") or 0))
+        r["audited"] = e.get("audit")
+        out.append(r)
+    if removed:
+        skip = json.loads(SKIP_PATH.read_text()) if SKIP_PATH.exists() else {}
+        for mid in removed:
+            skip[str(mid)] = "audited_no_new_cost"
+        SKIP_PATH.write_text(json.dumps(skip, indent=1, ensure_ascii=False) + "\n")
+        log.info(f"Overrides removed {len(removed)} audited records: {removed}")
+    return out
+
+
 def save_output(path: Path, records: list) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
+    records = apply_overrides(records)
     data = {
         "metadata": {
             "last_updated": datetime.utcnow().isoformat() + "Z",
