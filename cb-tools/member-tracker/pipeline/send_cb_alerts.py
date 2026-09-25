@@ -42,12 +42,29 @@ Usage:
 from __future__ import annotations
 
 import csv
+import difflib
 import json
 import os
 import smtplib
 import sys
 from email.mime.text import MIMEText
 from pathlib import Path
+
+_PLACEHOLDER_NAMES = {"vacant", "- vacant -", "tbd", ""}
+
+
+def _is_placeholder(name: str | None) -> bool:
+    return (name or "").strip().lower() in _PLACEHOLDER_NAMES
+
+
+def _is_spelling_fix(old: str | None, new: str | None) -> bool:
+    """A same-seat name change is a spelling correction, not a real
+    leadership change, when the old and new names are near-identical text
+    (difflib ratio >= 0.85). Never applies when either side is a
+    placeholder ("vacant", "tbd", empty): that is a real change."""
+    if not old or not new or _is_placeholder(old) or _is_placeholder(new):
+        return False
+    return difflib.SequenceMatcher(None, old.lower(), new.lower()).ratio() >= 0.85
 
 HERE = Path(__file__).resolve().parent
 DATA = HERE.parent / "data"
@@ -92,13 +109,15 @@ def diff_events(prev: dict, cur: dict, board_names: dict[str, str]) -> list[dict
         if not was:
             continue  # newly covered board: skip, everything would be "new"
         bname = board_names.get(cd, f"CD {cd}")
-        if was["chair"] != now["chair"] and now["chair"]:
+        if (was["chair"] != now["chair"] and now["chair"]
+                and not _is_spelling_fix(was["chair"], now["chair"])):
             events.append(
                 {"cd": cd, "type": "chair",
                  "text": f"{bname}: chair is now {now['chair']}"
                          + (f" (was {was['chair']})" if was["chair"] else "")}
             )
-        if was["dm"] != now["dm"] and now["dm"]:
+        if (was["dm"] != now["dm"] and now["dm"]
+                and not _is_spelling_fix(was["dm"], now["dm"])):
             events.append(
                 {"cd": cd, "type": "dm",
                  "text": f"{bname}: district manager is now {now['dm']}"
@@ -106,10 +125,11 @@ def diff_events(prev: dict, cur: dict, board_names: dict[str, str]) -> list[dict
             )
         for cname, chair in now["committee_chairs"].items():
             old = was["committee_chairs"].get(cname)
-            if old != chair:
+            if old != chair and not _is_spelling_fix(old, chair):
+                suffix = "" if cname.strip().lower().endswith("committee") else " committee"
                 events.append(
                     {"cd": cd, "type": "committee_chair",
-                     "text": f"{bname}: {cname} committee chair is now {chair}"
+                     "text": f"{bname}: {cname}{suffix} chair is now {chair}"
                              + (f" (was {old})" if old else "")}
                 )
         added = sorted(set(now["members"]) - set(was["members"]))

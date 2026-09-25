@@ -573,6 +573,12 @@ def build_trackers_profile(canon: str, full_name: str, tr: dict) -> dict:
     report_filing: defaultdict[str, int] = defaultdict(int)
     for d in reports:
         status = tr["filings"].get(d["obligation_id"], {}).get("status")
+        # "unknown" (the duty's actor never resolved to a real agency, so
+        # there was never a DORIS mandate to look for) and a missing entry
+        # (an actor that did resolve, but found no matching mandate) are
+        # both "we have nothing to show" to a reader; keep them one bucket.
+        if status == "unknown":
+            status = None
         report_filing[status or "not tracked by DORIS"] += 1
 
     sponsor_counts: defaultdict[str, set] = defaultdict(set)

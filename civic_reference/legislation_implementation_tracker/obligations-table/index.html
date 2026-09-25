@@ -127,7 +127,7 @@
     .filing-never-filed { background: #F6E7DA; color: #692807; }
     .filing-overdue { background: #FBE4D9; color: #9A3F12; }
     .filing-current { background: #DCEDF4; color: #1B5670; }
-    .filing-completed, .filing-waived, .filing-unscheduled, .filing-superseded { background: #E7DDCE; color: #4A3B2C; }
+    .filing-completed, .filing-waived, .filing-unscheduled, .filing-superseded, .filing-unknown { background: #E7DDCE; color: #4A3B2C; }
     .filing-notice { color: #9A3F12; font-weight: 600; }
     .filing-src { font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; }
     .filing-src a { color: var(--blue); }
@@ -482,6 +482,7 @@
         { v: 'current', l: 'Up to date' },
         { v: 'closed', l: 'Completed, waived or unscheduled' },
         { v: 'superseded', l: 'Superseded' },
+        { v: 'unknown', l: 'Not matched to a DORIS report' },
         { v: 'untracked', l: 'Not tracked by DORIS' }
       ] });
 
@@ -551,6 +552,7 @@
           if (fSel.has(st)) fok = true;
           if (fSel.has('missing') && (st === 'never filed' || st === 'overdue')) fok = true;
           if (fSel.has('closed') && (st === 'completed' || st === 'waived' || st === 'unscheduled')) fok = true;
+          if (fSel.has('unknown') && st === 'unknown') fok = true;
           if (fSel.has('late notice') && o.filing.late_notice) fok = true;
         }
         if (!fok) return false;
@@ -738,7 +740,7 @@
   var FILING_LABEL = {
     'never filed': 'Never filed', 'overdue': 'Overdue', 'current': 'Up to date',
     'completed': 'Completed', 'waived': 'Waived', 'unscheduled': 'No schedule',
-    'superseded': 'Superseded'
+    'superseded': 'Superseded', 'unknown': 'Not matched to a DORIS report'
   };
 
   function lateText(days) {

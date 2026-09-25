@@ -36,6 +36,7 @@ from __future__ import annotations
 
 import json
 import re
+import sys
 from collections import defaultdict
 from datetime import date, datetime
 from pathlib import Path
@@ -45,6 +46,87 @@ import requests
 HERE = Path(__file__).resolve().parent
 DATA = HERE.parent / "data"
 OUT = DATA / "report_filings.json"
+
+sys.path.insert(0, str(HERE.parent.parent.parent / "pipeline"))
+import agency_canon  # noqa: E402
+from agency_canon import canonicalize  # noqa: E402
+
+# DORIS names most agencies inverted, "Name, Department of (ABBR)", and puts
+# the short form in a trailing parenthetical that is not always a clean
+# 2-6 letter abbreviation ("NYC Aging", "H+H", "OIG-NYPD", "Sustainability").
+# Capture whatever is inside the trailing parens verbatim and let
+# canonicalize() judge it, rather than pre-filtering by shape.
+_DORIS_TAIL = re.compile(r"\(([^()]+)\)\s*$")
+
+
+def doris_canon(agency: str | None) -> str | None:
+    """Resolve a DORIS agency string (e.g. 'Education, Department of (DOE)',
+    'Aging, Department for the (NYC Aging)') to the same canonical code
+    agency_canon.py uses for our obligations, so NYCPS/DOE and every other
+    alias line up on one code."""
+    if not agency:
+        return None
+    base = agency.strip()
+    m = _DORIS_TAIL.search(base)
+    stripped = _DORIS_TAIL.sub("", base).strip().rstrip(",").strip()
+    candidates = []
+    if m:
+        candidates.append(m.group(1).strip())
+    if stripped:
+        candidates.append(stripped)
+        # "Aging, Department for the" -> "Department for the Aging":
+        # DORIS inverts "Head, Department of the Head" for alphabetizing;
+        # un-invert on the first comma and try that too.
+        if "," in stripped:
+            head, _, tail = stripped.partition(",")
+            candidates.append(f"{tail.strip()} {head.strip()}".strip())
+    candidates.append(base)
+    for cand in candidates:
+        canon, _ = canonicalize(cand)
+        if canon:
+            return canon
+    return None
+
+
+# Duty agency vs. DORIS filer are formally distinct entities that are, in
+# practice, the same office: a duty on the parent is filed under the
+# division that actually runs the program. Naming variants of the *same*
+# office (e.g. "Sustainability" for MOCEJ, "Office of Civil Justice" for
+# HRA, DOB's building energy office) are fixed in agency_crosswalk.json
+# instead, so doris_canon() and canonicalize() already agree on those
+# without needing an entry here.
+UMBRELLA: dict[str, set[str]] = {
+    "DSS": {"HRA", "DHS"},   # HRA and DHS are divisions of DSS; DORIS often
+                              # files their mandates under the division.
+    "311": {"OTI"},          # NYC311 is run by OTI; DORIS files under OTI.
+    # HRA and DHS share DSS's administration, and DORIS files some DHS
+    # shelter reports under HRA (5534271-08, housing specialists) and back
+    "DHS": {"HRA", "DSS"},
+    "HRA": {"DHS", "DSS"},
+}
+# "Mayor's Office" is a catch-all our extraction uses when a law just says
+# "the mayor" without naming a specific office. It may legitimately match
+# any DORIS mayoral office, but only when the report name itself is a
+# strong match -- unlike a real single-office duty, a generic "the mayor"
+# duty gives no agency signal at all.
+_MAYORS_OFFICE = "Mayor's Office"
+_MAYORAL_MIN_SCORE = 0.5
+_MAYORAL_CANONS = {
+    a["canonical"] for a in agency_canon._cw["agencies"]
+    if a.get("org_type") == "Mayoral Office"
+}
+
+
+def agency_ok(ours_canon: str, doris_c: str | None) -> bool:
+    if not doris_c:
+        return False
+    if doris_c == ours_canon:
+        return True
+    if doris_c in UMBRELLA.get(ours_canon, ()):
+        return True
+    if ours_canon == _MAYORS_OFFICE and doris_c in _MAYORAL_CANONS:
+        return True
+    return False
 
 MANDATES = "https://data.cityofnewyork.us/resource/9azj-tmjp.json"
 FILINGS = "https://data.cityofnewyork.us/resource/xip9-pe9k.json"
@@ -56,7 +138,18 @@ _FREQ = re.compile(r"every\s+(\d+)\s+(day|week|month|year)s?", re.I)
 _LL = re.compile(r"LL\s*(\d+)\s*/\s*(\d{4})", re.I)
 _STOP = {"the", "of", "a", "an", "and", "or", "to", "for", "on", "in", "by",
          "report", "reports", "reporting", "annual", "annually", "each", "such",
-         "shall", "submit", "publish", "post", "provide", "city", "new", "york"}
+         "shall", "submit", "publish", "post", "provide", "city", "new", "york",
+         # Procedural/temporal filler that shows up across many unrelated
+         # DORIS report names and inflates token overlap without saying
+         # anything about the report's actual subject.
+         "regarding", "immediately", "immediate", "preceding", "fiscal",
+         "calendar", "during", "year", "years"}
+# Cue words whose only job is to negate the phrase that follows. A shared
+# cue alone is not evidence of a match (it is common boilerplate, "shall
+# not include...", unrelated to the report's subject); what matters is
+# whether it negates the SAME shared word in both texts. See _polarity().
+_NEGATORS = {"not", "except", "excluding", "outside", "unless", "otherthan"}
+_NEG_WINDOW = 6
 
 
 def freq_days(freq: str | None) -> float | None:
@@ -73,8 +166,43 @@ def key(agency: str | None, name: str | None) -> str:
     return f"{re.sub(r'  +', ' ', norm(agency))}|{re.sub(r'  +', ' ', norm(name))}"
 
 
+def _destem(w: str) -> str:
+    """Fold cadence adverbs onto their adjective ("triennially" ->
+    "triennial", "quarterly" -> "quarter") so a duty phrased as a cadence
+    ("every three years") can still line up with a DORIS name that uses
+    the adjective form. Narrow on purpose: -ly only, and only for words
+    long enough that the strip can't collide with something short."""
+    if w.endswith("ly") and len(w) > 5:
+        return w[:-2]
+    return w
+
+
 def tokens(s: str | None) -> set[str]:
-    return {w for w in norm(s).split() if w not in _STOP and len(w) > 2}
+    out = set()
+    for w in norm(s).split():
+        if len(w) <= 2:
+            continue
+        w = _destem(w)
+        if w in _STOP:
+            continue
+        out.add(w)
+    return out
+
+
+def _polarity(raw: str | None, anchor: str) -> bool:
+    """True if `anchor` appears in `raw` with a negator within a few words
+    before it ("...jail other than a jail located on Rikers Island" negates
+    "rikers"; "...jail on Rikers Island" does not). Used to keep a shared
+    word from counting as a match when the two texts disagree on whether
+    it is negated, e.g. "Jails on Rikers Island" vs "Jails Not on Rikers
+    Island" sharing every other word."""
+    words = norm(re.sub(r"other\s+than", "otherthan", raw or "", flags=re.I)).split()
+    for idx, w in enumerate(words):
+        if w == anchor:
+            start = max(0, idx - _NEG_WINDOW)
+            if any(x in _NEGATORS for x in words[start:idx]):
+                return True
+    return False
 
 
 def law_of(local_law: str | None) -> str | None:
@@ -161,25 +289,69 @@ def main() -> None:
         if not cands:
             continue
         used: set[int] = set()
+        # How many of this law's own report obligations belong to each
+        # agency, so the "don't recheck a used mandate" rule below can be
+        # scoped to that agency instead of every obligation on the law
+        # (that mismatch let 5839385-15, LL 12/2023, escape it and steal a
+        # mandate a same-agency sibling was also competing for).
+        obs_by_agency: dict[str, int] = defaultdict(int)
+        for o2 in obs:
+            c2, _ = canonicalize(o2.get("agency"))
+            if c2:
+                obs_by_agency[c2] += 1
         for o in obs:
-            ours_tok = tokens(o.get("action_summary")) | tokens(o.get("quote"))
+            ours_canon, _ = canonicalize(o.get("agency"))
+            if not ours_canon:
+                # An obligation whose actor never resolved to a real agency
+                # ("not specified in the law text", "each covered agency", ...)
+                # gets no DORIS link and an explicit "unknown" status, never a
+                # name-token guess.
+                out[o["obligation_id"]] = {
+                    "status": "unknown",
+                    "days_late": None,
+                    "last_filed": None,
+                    "frequency": None,
+                    "doris_agency": None,
+                    "doris_name": None,
+                    "doris_url": None,
+                    "late_notice": None,
+                    "match_confidence": None,
+                }
+                continue
+            agency_cands = [i for i, m in enumerate(cands)
+                            if agency_ok(ours_canon, doris_canon(m.get("agency")))]
+            if not agency_cands:
+                continue
+            our_raw = f"{o.get('action_summary') or ''} {o.get('quote') or ''}"
+            ours_tok = tokens(our_raw)
+            own_obs = obs_by_agency.get(ours_canon, 0)
             best, best_score = None, 0.0
-            for i, m in enumerate(cands):
-                if i in used and len(cands) >= len(obs):
+            for i in agency_cands:
+                m = cands[i]
+                if i in used and len(agency_cands) >= own_obs:
                     continue
                 mt = tokens(m.get("name"))
                 if not mt:
                     continue
-                score = len(mt & ours_tok) / len(mt)
+                overlap = mt & ours_tok
+                if not overlap:
+                    continue
+                name_raw = m.get("name") or ""
+                if any(_polarity(name_raw, a) != _polarity(our_raw, a) for a in overlap):
+                    continue
+                score = len(overlap) / len(mt)
                 if score > best_score:
                     best, best_score = i, score
-            # A single mandate under a single-report law needs no name evidence.
-            # Everywhere else demand real overlap: an audit found a record paired
-            # with a same-law mandate it did not match, which published a filing
-            # status for the wrong duty. A missing status is honest; a wrong one
-            # is not.
-            solo = len(cands) == 1 and len(obs) == 1
-            if best is None or (not solo and best_score < 0.34):
+            # A single agency-matched mandate under a single-report law needs
+            # no name evidence. Everywhere else demand real overlap: an audit
+            # found a record paired with a same-law mandate it did not match,
+            # which published a filing status for the wrong duty. A missing
+            # status is honest; a wrong one is not. The "Mayor's Office"
+            # catch-all carries no agency signal of its own, so it needs a
+            # stronger name match before it borrows a mayoral office's record.
+            solo = len(agency_cands) == 1 and len(obs) == 1
+            min_score = _MAYORAL_MIN_SCORE if ours_canon == _MAYORS_OFFICE else 0.34
+            if best is None or (not solo and best_score < min_score):
                 continue
             # Never reuse a mandate for a second obligation when the law has
             # several: that is how one duty's filing date lands on another's.
@@ -216,13 +388,14 @@ def main() -> None:
             "dashboard": "https://joshgreenman1973.github.io/nyc-overdue-reports/",
             "code": "https://github.com/joshgreenman1973/nyc-overdue-reports",
         },
-        "matched": len(out),
+        "matched": sum(v for k, v in counts.items() if k != "unknown"),
         "status_counts": dict(sorted(counts.items(), key=lambda x: -x[1])),
         "filings": out,
     }
     OUT.write_text(json.dumps(payload, separators=(",", ":")))
-    print(f"matched {len(out)} of {sum(len(v) for v in our_reports.values())} "
-          f"report obligations to a DORIS mandate")
+    print(f"matched {payload['matched']} of "
+          f"{sum(len(v) for v in our_reports.values())} "
+          f"report obligations to a DORIS mandate ({counts.get('unknown', 0)} unknown)")
     for k2, v in payload["status_counts"].items():
         print(f"  {k2:14s} {v:5d}")
     print(f"wrote {OUT}")

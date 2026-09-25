@@ -31,6 +31,11 @@ Inputs (premium checkout, path via PREMIUM_DIR):
                           "dot"/"nyc-aging"; compared via build_agency_profiles
                           .slug() so either form matches),
                members   (semicolon-separated member slugs from members.json),
+               laws      (semicolon-separated matter_ids pinned on the
+                          watchlist; a pinned law's own new duties, powers,
+                          upcoming deadlines and overdue reports each count
+                          as a match within whichever trackers the
+                          subscriber has selected)
                keywords  (semicolon-separated words/phrases, matched on word
                           boundaries against titles, summaries, obligation
                           text, and fiscal narratives),
@@ -76,6 +81,10 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 from build_agency_profiles import slug  # noqa: E402
+sys.path.insert(0, str(HERE.parent.parent.parent / "pipeline"))
+from agency_canon import canonicalize  # noqa: E402
+
+_IGNORE_AGENCY_CODES = {"n/a", "coordinator"}
 BASE = HERE.parent
 IMPL_DATA = BASE.parent / "legislation_implementation_tracker" / "data"
 FISCAL_JSON = BASE.parent / "nyc_council_fiscal_impacts_tracker" / "data" / "fiscal_impacts.json"
@@ -112,15 +121,48 @@ def kw_hit(keywords: set[str], blob: str) -> list[str]:
 def fmt_money(n) -> str:
     if n is None:
         return "n/a"
-    sign = "-" if n < 0 else ""
     a = abs(n)
     if a >= 1e9:
-        return f"{sign}${a/1e9:.1f}B"
+        return f"${a/1e9:.1f}B"
     if a >= 1e6:
-        return f"{sign}${a/1e6:.1f}M"
+        return f"${a/1e6:.1f}M"
     if a >= 1e3:
-        return f"{sign}${round(a/1e3)}K"
-    return f"{sign}${a:,.0f}"
+        return f"${round(a/1e3)}K"
+    return f"${a:,.0f}"
+
+
+def fiscal_line(r) -> str:
+    """Net < 0 is a cost to the city, per the fiscal tracker's own sign
+    convention; > 0 is revenue; 0 is no net impact."""
+    n = r.get("net_fiscal_impact")
+    if n is None:
+        return "Net fiscal impact: n/a"
+    if n < 0:
+        return f"Net cost to the city: {fmt_money(n)}"
+    if n > 0:
+        return f"Net revenue for the city: {fmt_money(n)}"
+    return "No net fiscal impact"
+
+
+def fiscal_bill_url(r) -> tuple[str, str]:
+    """(label, url) for a fiscal record: a per-bill deep link into the
+    tracker (?intro=<digits>, the same param the tracker's own deep-link
+    code reads) when the file number has digits to key on, else the plain
+    tracker link."""
+    fn = r.get("file_number") or ""
+    m = re.search(r"\d+", fn)
+    if m:
+        return "Fiscal record", f"{FISCAL_URL}?intro={int(m.group())}"
+    return "Fiscal tracker", FISCAL_URL
+
+
+def agency_label(o) -> str:
+    """Display name for an obligation/power's actor. Unresolved actors
+    ("each covered agency", "not specified in the law text", "the
+    administrating agency", ...) never show that raw text in an alert."""
+    if o.get("agency_matched"):
+        return o.get("agency_full") or o.get("agency") or "Agency not named in the law"
+    return "Agency not named in the law"
 
 
 def parse_ymd(s: str | None) -> date | None:
@@ -141,11 +183,24 @@ def month_label(ym: str) -> str:
     return f"{date(int(y), int(mo), 1):%B %Y}"
 
 
-def agency_hits(want_ag_slugs: set[str], agency_codes) -> list[str]:
-    """Original-cased agency codes whose slug() matches a subscriber value,
-    so "DOT" (alerts page) and "dot" (watchlist id) both match."""
-    slugged = {slug(a): a for a in agency_codes}
-    return sorted(orig for sl, orig in slugged.items() if sl in want_ag_slugs)
+def agency_hits(want_ag_slugs: set[str], want_ag_canon: set[str], agency_codes) -> list[str]:
+    """Original-cased agency codes that match a subscriber value, either by
+    slug() (so "DOT" on the alerts page and "dot" on the watchlist both
+    match) or by agency_canon.py's canonical code (so "DOE" and "NYCPS"
+    match each other). A code like 'DOHMH, ACS, DSS' is split on commas
+    first; 'N/A' and 'Coordinator' are not agencies and never match."""
+    hits: list[str] = []
+    seen: set[str] = set()
+    for raw in agency_codes:
+        for part in str(raw).split(","):
+            part = part.strip()
+            if not part or part.lower() in _IGNORE_AGENCY_CODES or part in seen:
+                continue
+            canon, _ = canonicalize(part)
+            if slug(part) in want_ag_slugs or (canon and canon in want_ag_canon):
+                hits.append(part)
+                seen.add(part)
+    return sorted(hits)
 
 
 def main() -> None:
@@ -186,7 +241,9 @@ def main() -> None:
         dd = parse_ymd(o.get("deadline_date"))
         if dd is not None and today <= dd <= upcoming_cutoff:
             upcoming_all.append(o)
-        if is_overdue(o):
+        # Restated duties are existing code the law reprints, not a new
+        # obligation the agency owes a report on: never count them overdue.
+        if not o.get("restated") and is_overdue(o):
             overdue_all.append(o)
 
     deadline_seeded = bool(state.get("deadline_state_seeded"))
@@ -319,7 +376,7 @@ def main() -> None:
             overdue_count = 0
             for matter_id in impl_by_member.get(mid, set()):
                 for o in obligations_by_matter.get(matter_id, []):
-                    if is_overdue(o):
+                    if not o.get("restated") and is_overdue(o):
                         overdue_count += 1
             if overdue_count:
                 lines.append(
@@ -351,7 +408,9 @@ def main() -> None:
                           or {"impl", "powers", "fiscal", "deadlines"})
         want_ag = splitfield("agencies")
         want_ag_slugs = {slug(a) for a in want_ag}
+        want_ag_canon = {c for c in (canonicalize(a)[0] for a in want_ag) if c}
         want_mem = splitfield("members")
+        want_laws = splitfield("laws")
         want_kw = {k.lower() for k in splitfield("keywords")}
         want_districts = []
         for x in splitfield("districts"):
@@ -366,60 +425,50 @@ def main() -> None:
         if "impl" in want_trackers:
             for l in new_laws:
                 mid = l["matter_id"]
-                why = []
-                hit_ag = agency_hits(want_ag_slugs, agencies_by_law.get(mid, set()))
+                hit_ag = agency_hits(want_ag_slugs, want_ag_canon, agencies_by_law.get(mid, set()))
                 hit_mem = sorted(s for s in want_mem if mid in impl_by_member.get(s, set()))
                 hit_kw = kw_hit(want_kw, impl_blob[mid])
-                if hit_ag:
-                    why.append("agencies: " + ", ".join(hit_ag))
-                if hit_mem:
-                    why.append("sponsors: " + ", ".join(member_names.get(s, s) for s in hit_mem))
-                if hit_kw:
-                    why.append("keywords: " + ", ".join(hit_kw))
-                if why:
-                    impl_matches.append((l, why))
+                if hit_ag or hit_mem or hit_kw or mid in want_laws:
+                    impl_matches.append(l)
         if "powers" in want_trackers:
             for l in new_laws:
                 mid = l["matter_id"]
                 if mid not in powers_by_law:
                     continue
-                why = []
-                hit_ag = agency_hits(want_ag_slugs, power_agencies_by_law.get(mid, set()))
+                hit_ag = agency_hits(want_ag_slugs, want_ag_canon, power_agencies_by_law.get(mid, set()))
                 hit_mem = sorted(s for s in want_mem if mid in impl_by_member.get(s, set()))
                 hit_kw = kw_hit(want_kw, f"{l.get('title','')} {power_blob[mid]}")
-                if hit_ag:
-                    why.append("agencies: " + ", ".join(hit_ag))
-                if hit_mem:
-                    why.append("sponsors: " + ", ".join(member_names.get(s, s) for s in hit_mem))
-                if hit_kw:
-                    why.append("keywords: " + ", ".join(hit_kw))
-                if why:
-                    power_matches.append((l, why))
+                if hit_ag or hit_mem or hit_kw or mid in want_laws:
+                    power_matches.append(l)
         if "fiscal" in want_trackers:
             for r in new_fiscal:
                 mid = r["matter_id"]
-                why = []
-                hit_ag = agency_hits(want_ag_slugs, r.get("agencies_abbrev") or [])
+                hit_ag = agency_hits(want_ag_slugs, want_ag_canon, r.get("agencies_abbrev") or [])
                 hit_mem = sorted(s for s in want_mem if mid in fiscal_by_member.get(s, set()))
                 hit_kw = kw_hit(want_kw, fiscal_blob[mid])
-                if hit_ag:
-                    why.append("agencies: " + ", ".join(hit_ag))
-                if hit_mem:
-                    why.append("sponsors: " + ", ".join(member_names.get(s, s) for s in hit_mem))
-                if hit_kw:
-                    why.append("keywords: " + ", ".join(hit_kw))
-                if why:
-                    fiscal_matches.append((r, why))
+                if hit_ag or hit_mem or hit_kw or mid in want_laws:
+                    fiscal_matches.append(r)
+
+        # One entry per law: merge the duties (impl) and powers sections.
+        law_matches = []
+        seen_law_ids: set[str] = set()
+        for l in new_laws:
+            mid = l["matter_id"]
+            in_impl = any(x["matter_id"] == mid for x in impl_matches)
+            in_powers = any(x["matter_id"] == mid for x in power_matches)
+            if (in_impl or in_powers) and mid not in seen_law_ids:
+                seen_law_ids.add(mid)
+                law_matches.append(l)
 
         upcoming_matches, overdue_matches = [], []
         if "deadlines" in want_trackers:
             def deadline_hit(o):
-                hit_ag = agency_hits(want_ag_slugs, {o["agency"]}) if o.get("agency_matched") else []
+                hit_ag = agency_hits(want_ag_slugs, want_ag_canon, {o["agency"]}) if o.get("agency_matched") else []
                 hit_mem = {s for s in want_mem if o["matter_id"] in impl_by_member.get(s, set())}
                 blob = (f"{o.get('action_summary','')} {o.get('quote','')} "
                         f"{o.get('law_number_display','')} {o.get('agency_full','')}")
                 hit_kw = kw_hit(want_kw, blob)
-                return bool(hit_ag or hit_mem or hit_kw)
+                return bool(hit_ag or hit_mem or hit_kw or o["matter_id"] in want_laws)
 
             upcoming_matches = [o for o in new_upcoming if deadline_hit(o)]
             overdue_matches = [o for o in new_overdue if deadline_hit(o)]
@@ -428,54 +477,52 @@ def main() -> None:
         for n in sorted(want_districts):
             district_lines += district_section(n)
 
-        total = len(impl_matches) + len(power_matches) + len(fiscal_matches)
-        deadline_total = len(upcoming_matches) + len(overdue_matches)
-        if not total and not deadline_total and not district_lines:
+        if not law_matches and not fiscal_matches and not upcoming_matches \
+                and not overdue_matches and not district_lines:
             continue
 
-        lines = []
-        if total:
-            lines += [
-                f"{total} newly tracked item{'s' if total != 1 else ''} "
-                f"match{'' if total != 1 else 'es'} your alert preferences:",
-                ""]
-        if impl_matches:
-            lines.append("NEW ENACTED LAWS: DUTIES ON AGENCIES (Obligations Tracker)")
+        lines = ["New this month for what you follow:", ""]
+        if law_matches:
+            lines.append("New laws")
             lines.append("")
-            for l, why in impl_matches:
+            for l in law_matches:
+                mid = l["matter_id"]
+                duties_n = len(impl_text.get(mid, []))
+                powers_n = len(powers_by_law.get(mid, []))
+                parts = []
+                if duties_n:
+                    parts.append(f"{duties_n} dut{'y' if duties_n == 1 else 'ies'}")
+                if powers_n:
+                    parts.append(f"{powers_n} power{'s' if powers_n != 1 else ''}")
+                agencies = sorted(agencies_by_law.get(mid, set()) | power_agencies_by_law.get(mid, set()))
+                # "CB" is the crosswalk code for community boards
+                names = ["community boards" if a == "CB" else a for a in agencies]
+                agency_str = (", ".join(names[:-1]) + " and " + names[-1] if len(names) > 1
+                              else names[0] if names else "agencies the law does not name")
+                combo = " and ".join(parts) if parts else "no new duties or powers"
                 lines += [
                     f"- {l['law_number_display'] or l['file_number']}: {l['title']}",
-                    f"  Matched {'; '.join(why)}",
-                    f"  Checklist: {TRACKER_URL}/law/?law={l['matter_id']}",
-                    ""]
-        if power_matches:
-            lines.append("NEW ENACTED LAWS: POWERS GRANTED TO AGENCIES (Powers Tracker)")
-            lines.append("")
-            for l, why in power_matches:
-                n = len(powers_by_law[l["matter_id"]])
-                lines += [
-                    f"- {l['law_number_display'] or l['file_number']}: {l['title']}",
-                    f"  Grants {n} power{'s' if n != 1 else ''}; matched {'; '.join(why)}",
-                    f"  Law page: {TRACKER_URL}/law/?law={l['matter_id']}",
+                    f"  {combo[0].upper() + combo[1:]} for {agency_str}",
+                    f"  Law page: {TRACKER_URL}/law/?law={mid}",
                     ""]
         if fiscal_matches:
-            lines.append("NEW BILLS WITH FISCAL IMPACT STATEMENTS (Fiscal Impacts Tracker)")
+            lines.append("New fiscal estimates")
             lines.append("")
-            for r, why in fiscal_matches:
+            for r in fiscal_matches:
+                label, url = fiscal_bill_url(r)
                 lines += [
                     f"- {r.get('file_number')}: {r.get('title')}",
-                    f"  Net fiscal impact: {fmt_money(r.get('net_fiscal_impact'))}",
-                    f"  Matched {'; '.join(why)}",
+                    f"  {fiscal_line(r)}",
                     f"  Bill on Legistar: {r.get('legistar_url')}",
-                    f"  Explore: {FISCAL_URL}",
+                    f"  {label}: {url}",
                     ""]
         if upcoming_matches:
-            lines.append("Deadlines coming up in the next 45 days")
+            lines.append("Deadlines in the next 45 days")
             lines.append("")
             for o in upcoming_matches:
                 dd = parse_ymd(o["deadline_date"])
                 lines.append(
-                    f"- {o['agency_full']}: {o['action_summary']} "
+                    f"- {agency_label(o)}: {o['action_summary']} "
                     f"({o['law_number_display']}), due {fmt_date(dd)}")
             lines.append("")
         if overdue_matches:
@@ -486,7 +533,7 @@ def main() -> None:
                 filing = report_filings.get(o["obligation_id"]) or {}
                 status = filing.get("status")
                 due_part = f", due {fmt_date(dd)}" if dd else ""
-                line = (f"- {o['agency_full']}: {o['action_summary']} "
+                line = (f"- {agency_label(o)}: {o['action_summary']} "
                         f"({o['law_number_display']}){due_part}"
                         f" · DORIS status: {status}")
                 lines.append(line)
@@ -501,19 +548,26 @@ def main() -> None:
             "To stop receiving alerts, reply to this email.",
         ]
         body = "\n".join(lines)
-        if total:
-            subject = (f"NYCuriosity alert: {total} new item"
-                       f"{'s' if total != 1 else ''} on your legislation watchlist")
+
+        n_laws = len(law_matches)
+        n_fiscal = len(fiscal_matches)
+        n_upcoming = len(upcoming_matches)
+        n_overdue = len(overdue_matches)
+        bits = []
+        if n_laws:
+            bits.append(f"{n_laws} new law{'s' if n_laws != 1 else ''}")
+        if n_fiscal:
+            bits.append(f"{n_fiscal} fiscal estimate{'s' if n_fiscal != 1 else ''}")
+        if n_upcoming:
+            bits.append(f"{n_upcoming} upcoming deadline{'s' if n_upcoming != 1 else ''}")
+        if n_overdue:
+            bits.append(f"{n_overdue} overdue report{'s' if n_overdue != 1 else ''}")
+        if bits:
+            subject = "NYCuriosity alert: " + ", ".join(bits)
+        elif district_lines:
+            subject = "NYCuriosity alert: your district this month"
         else:
-            # say what is inside: deadlines, overdue reports, districts
-            bits = []
-            if upcoming_matches:
-                bits.append(f"{len(upcoming_matches)} deadline{'s' if len(upcoming_matches) != 1 else ''} coming up")
-            if overdue_matches:
-                bits.append(f"{len(overdue_matches)} report{'s' if len(overdue_matches) != 1 else ''} overdue")
-            if district_lines and not bits:
-                bits.append("your council district update")
-            subject = "NYCuriosity alert: " + (", ".join(bits) if bits else "your monthly legislation update")
+            subject = "NYCuriosity alert: your monthly legislation update"
 
         if dry:
             print(f"\n=== DRY RUN to {email}: {subject}\n{body}\n")

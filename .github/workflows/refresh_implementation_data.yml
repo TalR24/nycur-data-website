@@ -112,10 +112,11 @@ jobs:
           # downloads (Tal, Sep 24 2026), so no CSV is copied there.
           git clone --depth 1 "https://TalR24:${PREMIUM_PUSH_TOKEN}@github.com/TalR24/nycur-data-premium.git" /tmp/premium
           PREMIUM_DIR=/tmp/premium python3 civic_reference/nyc_council_legislation_trackers/pipeline/send_alerts.py
+          PREMIUM_DIR=/tmp/premium python3 civic_reference/nyc_council_legislation_trackers/pipeline/build_ask_index.py
           cd /tmp/premium
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add civic_reference/legislation_implementation_tracker/data/alerts_state.json
+          git add civic_reference/legislation_implementation_tracker/data/alerts_state.json worker/ask_index.json
           if git diff --cached --quiet; then
             echo "Alert state unchanged."
           else

@@ -29,6 +29,7 @@ import html as htmllib
 import json
 import logging
 import re
+import unicodedata
 import time
 from datetime import date, datetime, timedelta
 from pathlib import Path
@@ -367,10 +368,18 @@ def repair_title(title: str, text: str) -> str:
     letter at every other position; leave it alone if there is no unique match."""
     if not title or "?" not in title or not text:
         return title
+    def fold(w):
+        return unicodedata.normalize("NFKD", w).encode("ascii", "ignore").decode()
     def fix(m):
         word = m.group(0)
         pat = re.compile(r"(?<!\w)" + "".join("\\w" if ch == "?" else re.escape(ch) for ch in word) + r"(?!\w)")
         found = {w for w in pat.findall(text) if "?" not in w}
+        if not found:
+            # Legistar sometimes also flattens the other accents in the word
+            # ("?abanagic" for "Čabanagić"): compare accent-folded forms
+            fpat = re.compile("".join("." if ch == "?" else re.escape(fold(ch)) for ch in word) + "$")
+            found = {w for w in re.findall(r"\w+", text)
+                     if len(w) == len(word) and fpat.match(fold(w)) and "?" not in w}
         return found.pop() if len(found) == 1 else word
     return re.sub(r"[\w'’.-]*\?[\w'’.?-]*", fix, title)
 
