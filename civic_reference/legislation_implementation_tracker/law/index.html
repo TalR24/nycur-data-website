@@ -453,9 +453,12 @@
     }
 
     var links = RESTATED_LINKS[lawId] || [];
-    if (links.length) {
-      html += '<div class="section-head">Duties this law restates from earlier laws (' + links.length + ')</div>';
-      links.forEach(function (l) {
+    // duties and powers restated from earlier laws are listed separately
+    [['duty', 'Duties'], ['power', 'Powers']].forEach(function (kv) {
+      var group = links.filter(function (l) { return (l.kind || 'duty') === kv[0]; });
+      if (!group.length) return;
+      html += '<div class="section-head">' + kv[1] + ' this law restates from earlier laws (' + group.length + ')</div>';
+      group.forEach(function (l) {
         html += '<div class="ob-card restates-earlier">'
           + '<div class="ob-top">'
           + '<span class="agency-badge">' + esc(l.agency) + '</span>'
@@ -464,7 +467,7 @@
           + '<div class="ob-meta"><a href="./?law=' + esc(l.origin_matter_id) + '">Earlier version in ' + esc(l.origin_law) + ' →</a></div>'
           + '</div>';
       });
-    }
+    });
 
     var allPowers = POWERS.filter(function (p) { return p.matter_id === lawId; });
     var powers = allPowers.filter(function (p) { return !p.restated; });

@@ -840,6 +840,7 @@ def reattribute_reprints(flat: list[dict], powers: list[dict],
             dropped_ids.add(o["obligation_id"])
             links.setdefault(mid, []).append({
                 "obligation_id": o["obligation_id"],
+                "kind": o.get("kind") or "duty",
                 "quote": o.get("quote"),
                 "agency": o.get("agency"),
                 "origin_obligation_id": origin["obligation_id"],
