@@ -5,6 +5,7 @@ name: Claude backfill (one-off tasks)
 #   canary                 one call per structured-output schema; run first
 #   label_kinds            model duty/power/neither label for every obligation record
 #   reextract_obligations  re-extract the laws in reextract_queue.json, rebuild data
+#   pilot_obligations      try another model on a few laws; artifact only, never committed
 on:
   workflow_dispatch:
     inputs:
@@ -12,7 +13,17 @@ on:
         description: "Task to run"
         required: true
         type: choice
-        options: ["canary", "label_kinds", "reextract_obligations"]
+        options: ["canary", "label_kinds", "reextract_obligations", "pilot_obligations"]
+      matters:
+        description: "pilot_obligations: matter ids, space- or comma-separated"
+        required: false
+        default: ""
+        type: string
+      model:
+        description: "pilot_obligations: model id"
+        required: false
+        default: "claude-sonnet-5"
+        type: string
 
 jobs:
   run:
@@ -55,8 +66,27 @@ jobs:
           python3 pipeline/extract_obligations.py --incremental
           cd ../nyc_council_legislation_trackers && python3 pipeline/build_member_stats.py
 
+      - name: Pilot another model on a few laws (no commit)
+        if: ${{ inputs.task == 'pilot_obligations' }}
+        working-directory: civic_reference/legislation_implementation_tracker
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          python3 pipeline/pilot_extract.py --model "${{ inputs.model }}" --matters ${{ inputs.matters }}
+          python3 pipeline/extract_obligations.py --incremental
+          mkdir -p /tmp/pilot && cp data/obligations.json data/powers.json /tmp/pilot/
+          cp pipeline/cache/extracted/*.json /tmp/pilot/ 2>/dev/null || true
+
+      - name: Upload pilot output
+        if: ${{ inputs.task == 'pilot_obligations' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: pilot-obligations
+          path: /tmp/pilot/
+          retention-days: 30
+
       - name: Commit results
-        if: ${{ always() && inputs.task != 'canary' }}
+        if: ${{ always() && inputs.task != 'canary' && inputs.task != 'pilot_obligations' }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"

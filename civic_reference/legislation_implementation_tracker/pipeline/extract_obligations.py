@@ -809,7 +809,9 @@ def reattribute_reprints(flat: list[dict], powers: list[dict],
     for o in flat + powers:
         mid = o["matter_id"]
         if mid not in parsed:
-            continue
+            continue                 # no text here (CI): keep prior flags
+        o.pop("restated", None)
+        o.pop("origin", None)
         hay, idx, flags, spans = parsed[mid]
         frac = locate(hay, idx, flags, o.get("quote") or "", spans)
         if frac == 0.0:
@@ -1397,7 +1399,9 @@ def main() -> None:
         joined_keys = {"file_number", "law_number_display", "law_title",
                        "committee", "prime_sponsor", "enactment_date",
                        "effective_date", "legistar_url", "law_sunset_date",
-                       "quotes_restated_text", "filing", "restated", "origin"}
+                       "quotes_restated_text", "filing"}
+        # "restated"/"origin" are kept: in CI only newly fetched laws have
+        # cached text, so every other law must keep its prior re-attribution
         # powers live in their own file; without them here, CI (no cache)
         # would drop every power on its next rebuild
         prev_powers = (json.loads(POWERS_JSON.read_text()).get("powers", [])
@@ -1530,8 +1534,16 @@ def main() -> None:
         flat = [o for o in flat if o["obligation_id"] not in dropped_ids]
         powers = [o for o in powers if o["obligation_id"] not in dropped_ids]
     restated_kept = sum(1 for o in flat + powers if o.get("restated"))
-    (DATA / "restated_links.json").write_text(
-        json.dumps(restated_links, indent=1, ensure_ascii=False))
+    # recomputed only for laws whose text is cached; every other law keeps
+    # its saved links (CI has text only for the laws it just fetched)
+    links_path = DATA / "restated_links.json"
+    saved_links = json.loads(links_path.read_text()) if links_path.exists() else {}
+    with_text = {mid for mid in {o["matter_id"] for o in flat + powers}
+                 if (TEXT_CACHE / f"{mid}.txt").exists()}
+    merged_links = {m: v for m, v in saved_links.items() if m not in with_text}
+    merged_links.update(restated_links)
+    restated_links = merged_links
+    links_path.write_text(json.dumps(restated_links, indent=1, ensure_ascii=False))
     # Per-law counts exclude both dropped duplicates and kept existing-code
     # records: a law's checklist and count are what IT enacted, not what it
     # reprinted (Step 1, Sep 25 2026).
