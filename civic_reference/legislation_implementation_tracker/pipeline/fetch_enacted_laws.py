@@ -360,6 +360,21 @@ def parse_sunset(text: str, enactment_date: str | None) -> tuple[str | None, str
     return clause, None
 
 
+def repair_title(title: str, text: str) -> str:
+    """Legistar's title field stores accented letters as "?" ("Jenny Ben?tez
+    Way") while the law text on the same page keeps them ("Benítez"). Replace
+    each such word with the one word in the text that matches it letter for
+    letter at every other position; leave it alone if there is no unique match."""
+    if not title or "?" not in title or not text:
+        return title
+    def fix(m):
+        word = m.group(0)
+        pat = re.compile(r"(?<!\w)" + "".join("\\w" if ch == "?" else re.escape(ch) for ch in word) + r"(?!\w)")
+        found = {w for w in pat.findall(text) if "?" not in w}
+        return found.pop() if len(found) == 1 else word
+    return re.sub(r"[\w'’.-]*\?[\w'’.?-]*", fix, title)
+
+
 def parse_detail_page(html: str, matter_id: str, guid: str) -> dict:
     committee = ""
     c = re.search(r'id="ctl00_ContentPlaceHolder1_hypInControlOf[^"]*"[^>]*>([^<]+)<',
@@ -407,7 +422,7 @@ def parse_detail_page(html: str, matter_id: str, guid: str) -> dict:
         "law_number_display": law_display,               # "Local Law 61 of 2026"
         "status": _span(html, "lblStatus2"),
         "matter_type": _span(html, "lblType2"),
-        "title": _span(html, "lblTitle2"),
+        "title": repair_title(_span(html, "lblTitle2"), text),
         "summary": _span(html, "lblSummary2"),
         "committee": committee,
         "sponsors": sponsors,

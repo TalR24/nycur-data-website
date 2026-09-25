@@ -1542,7 +1542,7 @@ def main() -> None:
                  if (TEXT_CACHE / f"{mid}.txt").exists()}
     merged_links = {m: v for m, v in saved_links.items() if m not in with_text}
     merged_links.update(restated_links)
-    restated_links = merged_links
+    restated_links = dict(sorted(merged_links.items()))   # stable order, clean diffs
     links_path.write_text(json.dumps(restated_links, indent=1, ensure_ascii=False))
     # Per-law counts exclude both dropped duplicates and kept existing-code
     # records: a law's checklist and count are what IT enacted, not what it

@@ -294,11 +294,11 @@ def main() -> None:
                 pct = round(abs(last - avg) / avg * 100) if avg else 0
                 direction = "above" if last >= avg else "below"
                 lines.append(
-                    f"District {n} filed {last} 311 requests in {label}, "
+                    f"District {n} residents filed {last:,} requests to 311 in {label}, "
                     f"{pct}% {direction} its monthly average for the "
                     f"prior 11 months.")
             else:
-                lines.append(f"District {n} filed {last} 311 requests in {label}.")
+                lines.append(f"District {n} residents filed {last:,} requests to 311 in {label}.")
 
         if member:
             mid = member["id"]
@@ -505,7 +505,15 @@ def main() -> None:
             subject = (f"NYCuriosity alert: {total} new item"
                        f"{'s' if total != 1 else ''} on your legislation watchlist")
         else:
-            subject = "NYCuriosity alert: your monthly legislation update"
+            # say what is inside: deadlines, overdue reports, districts
+            bits = []
+            if upcoming_matches:
+                bits.append(f"{len(upcoming_matches)} deadline{'s' if len(upcoming_matches) != 1 else ''} coming up")
+            if overdue_matches:
+                bits.append(f"{len(overdue_matches)} report{'s' if len(overdue_matches) != 1 else ''} overdue")
+            if district_lines and not bits:
+                bits.append("your council district update")
+            subject = "NYCuriosity alert: " + (", ".join(bits) if bits else "your monthly legislation update")
 
         if dry:
             print(f"\n=== DRY RUN to {email}: {subject}\n{body}\n")
