@@ -1293,7 +1293,7 @@ def split_for_extraction(text: str, target: int = CHUNK_TARGET) -> list[str]:
     of them, and no cut is allowed to land inside a new-matter marker pair,
     which would strip the very signal the prompt relies on.
     """
-    if len(text) <= CHUNK_THRESHOLD:
+    if len(text) <= (CHUNK_THRESHOLD if target == CHUNK_TARGET else target * 1.6):
         return [text]
     bounds = [m.start() for m in _BILL_SECTION.finditer(text)] or [0]
     if bounds[0] != 0:
@@ -1320,8 +1320,14 @@ def split_for_extraction(text: str, target: int = CHUNK_TARGET) -> list[str]:
     return [c for c in out if c.strip()]
 
 
+# A single pass that runs out of output tokens (pilot 2, Sep 25 2026: three
+# 44-56k-char laws truncated at 32k) is retried in section windows this size.
+RETRY_WINDOW_TARGET = 15_000
+
+
 def extract_law(client, model: str, law: dict, text: str,
-                lookup: dict, agencies_by_canon: dict) -> dict:
+                lookup: dict, agencies_by_canon: dict,
+                window_target: int | None = None) -> dict:
     metadata = json.dumps({
         "file_number": law["file_number"],
         "law_number": law["law_number_display"],
@@ -1339,7 +1345,8 @@ def extract_law(client, model: str, law: dict, text: str,
 
     # Long law: extract each section window, then merge. Every other law takes
     # the single-pass path below unchanged.
-    windows = split_for_extraction(text)
+    windows = (split_for_extraction(text, window_target) if window_target
+               else split_for_extraction(text))
     if len(windows) > 1:
         log.info(f"  long law ({len(text):,} chars): extracting in "
                  f"{len(windows)} section windows")
@@ -1448,6 +1455,12 @@ def extract_law(client, model: str, law: dict, text: str,
             "affected_groups": o.get("affected_groups", []),
         })
 
+    if ("max_tokens" in (result.get("extraction_error") or "") and window_target is None
+            and len(text) > RETRY_WINDOW_TARGET * 1.6):
+        log.info("  %s: output truncated; retrying in ~%d-char section windows",
+                 law["matter_id"], RETRY_WINDOW_TARGET)
+        return extract_law(client, model, law, text, lookup, agencies_by_canon,
+                           window_target=RETRY_WINDOW_TARGET)
     return {
         "matter_id": law["matter_id"],
         "model": model,
