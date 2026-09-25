@@ -132,6 +132,10 @@
     .filing-src { font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; }
     .filing-src a { color: var(--blue); }
     .restated-note { font-size: 0.72rem; color: var(--text-muted); font-style: italic; margin-top: 6px; }
+    .existing-code-filter { display: flex; align-items: center; }
+    .existing-code-filter label { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.72rem; color: var(--text-mid); display: flex; align-items: center; gap: 6px; white-space: nowrap; }
+    .existing-code-tag { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); background: var(--bg-hover, #eee); border-radius: 4px; padding: 1px 5px; margin-left: 4px; }
+    tr.existing-code-row { opacity: 0.85; }
     .restated-summary { font-size: 0.78rem; color: var(--text-muted); margin: 0 0 10px; }
     .restated-summary a { color: var(--blue); }
     .detail-links { grid-column: 1 / -1; display: flex; gap: 14px; flex-wrap: wrap; }
@@ -299,6 +303,9 @@
       <div id="msRecur"></div>
       <div id="msDeadline"></div>
       <div id="msFiling"></div>
+      <div class="fgroup existing-code-filter">
+        <label for="fExistingCode" style="white-space:normal;display:flex;gap:6px;align-items:flex-start;max-width:100%"><input type="checkbox" id="fExistingCode" checked> Show existing code reprinted by later laws</label>
+      </div>
       <button class="reset-btn" id="fReset">Reset all</button>
     </div>
 
@@ -479,8 +486,10 @@
       ] });
 
     document.getElementById('fSearch').addEventListener('input', applyFilters);
+    document.getElementById('fExistingCode').addEventListener('change', applyFilters);
     document.getElementById('fReset').addEventListener('click', function () {
       document.getElementById('fSearch').value = '';
+      document.getElementById('fExistingCode').checked = true;
       Object.keys(MS).forEach(function (k) { MS[k].reset(); });
       applyFilters();
     });
@@ -511,10 +520,12 @@
   function applyFilters() {
     var q = document.getElementById('fSearch').value.trim();
     var dlSel = MS.deadline.selected();
+    var showExistingCode = document.getElementById('fExistingCode').checked;
     var today = new Date(); today.setHours(0, 0, 0, 0);
     var yearOut = new Date(today.getFullYear() + 1, today.getMonth(), today.getDate());
 
     var rows = ALL.filter(function (o) {
+      if (!showExistingCode && o.restated) return false;
       if (!MS.agency.pass(agencyFilterKey(o))) return false;
       if (!MS.type.pass(o.deliverable_type)) return false;
       if (!MS.committee.pass(o.committee)) return false;
@@ -557,12 +568,8 @@
     ROWS = rows;
     page = 1;
     paint();
-    var restated = rows.filter(function (o) { return o.quotes_restated_text; }).length;
     var notes = [];
-    if (restated) {
-      notes.push(restated.toLocaleString() + ' of these quote wording that predates the law shown, because '
-        + 'a law reprints the whole code section it amends. They are counted here and marked in the row detail.');
-    }
+    notes.push('Duties a law only reprints are listed under the law that created them, or marked as existing code.');
     var tracked = rows.filter(function (o) { return o.filing; });
     if (tracked.length) {
       var miss = tracked.filter(function (o) {
@@ -675,8 +682,9 @@
       if (d && o.recurrence === 'one-time') dlClass = d < today ? 'overdue' : 'upcoming';
       var dlText = o.deadline_date ? fmtDate(o.deadline_date) :
                    (o.deadline_kind === 'none' ? '—' : 'not dated');
-      html += '<tr class="data-row" data-id="' + esc(o.obligation_id) + '">'
+      html += '<tr class="data-row' + (o.restated ? ' existing-code-row' : '') + '" data-id="' + esc(o.obligation_id) + '">'
         + '<td class="law-cell">' + esc(o.law_number_display || o.file_number)
+        + (o.restated ? ' <span class="existing-code-tag">existing code</span>' : '')
         + '<span class="file-no">' + esc(o.file_number) + '</span></td>'
         + '<td class="agency-cell' + (o.agency === 'Unspecified' ? ' unspec' : '') + '" title="' + esc(o.agency_matched ? o.agency + ' · ' + o.agency_full : o.agency_full) + '">' + esc(agencyDisplay(o)) + '</td>'
         + '<td class="action-cell">' + esc(o.action_summary) + '</td>'

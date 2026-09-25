@@ -113,6 +113,12 @@
     .filing-completed, .filing-waived, .filing-unscheduled, .filing-superseded { background: #E7DDCE; color: #4A3B2C; }
     .filing-notice { color: #9A3F12; font-weight: 600; }
     .restated-note { font-size: 0.7rem; color: var(--text-muted); font-style: italic; margin-top: 4px; }
+    details.existing-code-section { margin: 24px 0 12px; }
+    details.existing-code-section > summary.section-head { cursor: pointer; margin: 0 0 8px; }
+    .existing-code-note { font-size: 0.8rem; color: var(--text-muted); margin: 0 0 12px; }
+    .existing-code-tag { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); background: var(--bg-hover, #eee); border-radius: 4px; padding: 2px 6px; }
+    .ob-card.existing-code { opacity: 0.85; }
+    .ob-card.restates-earlier { opacity: 0.85; }
 
     .section-head { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.78rem; font-weight: 700; color: var(--text); margin: 24px 0 12px; }
     .loading-note { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.85rem; color: var(--text-faint); padding: 40px; text-align: center; }
@@ -258,6 +264,7 @@
 (function () {
   var DATA = null;
   var POWERS = [];
+  var RESTATED_LINKS = {};
   var MS = {};
 
   var powersReady = fetch('../data/powers.json')
@@ -269,7 +276,12 @@
     .then(function (r) { return r.json(); })
     .then(function (data) { DATA = data; });
 
-  Promise.all([obligationsReady, powersReady])
+  var restatedLinksReady = fetch('../data/restated_links.json')
+    .then(function (r) { return r.json(); })
+    .then(function (data) { RESTATED_LINKS = data || {}; })
+    .catch(function () { RESTATED_LINKS = {}; });
+
+  Promise.all([obligationsReady, powersReady, restatedLinksReady])
     .then(function () {
       if (DATA.generated_at) {
         var gen = new Date(DATA.generated_at);
@@ -365,7 +377,9 @@
         '<p class="loading-note">Law not found. <a href="./">Back to all laws</a></p>';
       return;
     }
-    var obs = DATA.obligations.filter(function (o) { return o.matter_id === lawId; });
+    var allObs = DATA.obligations.filter(function (o) { return o.matter_id === lawId; });
+    var obs = allObs.filter(function (o) { return !o.restated; });
+    var existingObs = allObs.filter(function (o) { return o.restated; });
 
     document.title = law.law_number_display + ' — Obligations Tracker — NYCuriosity';
     document.getElementById('crumbLast').textContent = law.law_number_display || law.file_number;
@@ -420,7 +434,41 @@
         + '</div>';
     });
 
-    var powers = POWERS.filter(function (p) { return p.matter_id === lawId; });
+    if (existingObs.length) {
+      html += '<details class="existing-code-section">'
+        + '<summary class="section-head">Existing duties this law reprints (' + existingObs.length + ')</summary>'
+        + '<p class="existing-code-note">These duties were already law before this bill; the bill reprints the section it amends.</p>';
+      existingObs.forEach(function (o, i) {
+        html += '<div class="ob-card existing-code" id="ex' + i + '">'
+          + '<div class="ob-top">'
+          + '<span class="agency-badge' + (o.agency === 'Unspecified' ? ' unspec' : '') + '" title="' + esc(o.agency_full) + '">' + esc(o.agency) + '</span>'
+          + '<span class="type-badge">' + esc(o.deliverable_type) + '</span>'
+          + '<span class="existing-code-tag">existing code</span>'
+          + '</div>'
+          + '<div class="ob-action">' + esc(o.action_summary) + '</div>'
+          + (o.quote ? '<div class="ob-quote">“' + esc(o.quote) + '”</div>' : '')
+          + '</div>';
+      });
+      html += '</details>';
+    }
+
+    var links = RESTATED_LINKS[lawId] || [];
+    if (links.length) {
+      html += '<div class="section-head">Duties this law restates from earlier laws (' + links.length + ')</div>';
+      links.forEach(function (l) {
+        html += '<div class="ob-card restates-earlier">'
+          + '<div class="ob-top">'
+          + '<span class="agency-badge">' + esc(l.agency) + '</span>'
+          + '</div>'
+          + (l.quote ? '<div class="ob-action">“' + esc(l.quote.length > 220 ? l.quote.slice(0, 217).replace(/\s+\S*$/, '') + '…' : l.quote) + '”</div>' : '')
+          + '<div class="ob-meta"><a href="./?law=' + esc(l.origin_matter_id) + '">Earlier version in ' + esc(l.origin_law) + ' →</a></div>'
+          + '</div>';
+      });
+    }
+
+    var allPowers = POWERS.filter(function (p) { return p.matter_id === lawId; });
+    var powers = allPowers.filter(function (p) { return !p.restated; });
+    var existingPowers = allPowers.filter(function (p) { return p.restated; });
     if (powers.length) {
       html += '<div class="section-head">Powers this law grants (' + powers.length + ')</div>';
       powers.forEach(function (p, i) {
@@ -441,6 +489,24 @@
           + '</div>'
           + '</div>';
       });
+    }
+
+    if (existingPowers.length) {
+      html += '<details class="existing-code-section">'
+        + '<summary class="section-head">Existing powers this law reprints (' + existingPowers.length + ')</summary>'
+        + '<p class="existing-code-note">These powers were already law before this bill; the bill reprints the section it amends.</p>';
+      existingPowers.forEach(function (p, i) {
+        html += '<div class="ob-card existing-code" id="expw' + i + '">'
+          + '<div class="ob-top">'
+          + '<span class="agency-badge' + (p.agency === 'Unspecified' ? ' unspec' : '') + '" title="' + esc(p.agency_full) + '">' + esc(p.agency) + '</span>'
+          + '<span class="type-badge">' + esc(p.deliverable_type) + '</span>'
+          + '<span class="existing-code-tag">existing code</span>'
+          + '</div>'
+          + '<div class="ob-action">' + esc(p.action_summary) + '</div>'
+          + (p.quote ? '<div class="ob-quote">“' + esc(p.quote) + '”</div>' : '')
+          + '</div>';
+      });
+      html += '</details>';
     }
 
     html += '<div class="footnotes">'

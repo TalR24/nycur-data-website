@@ -50,7 +50,7 @@ _ANCHOR_IS_A_DATE = re.compile(
     r"|it becomes (a )?law|such local law becomes|enactment", re.I)
 EVENT_ANCHOR = re.compile(
     r"conclusion of|commencement of|completion of|after the pilot|termination of"
-    r"|receipt of|following any change|formation of"
+    r"|receives\b|receipt|following any change|formation of"
     r"|upon (the )?(submission|approval|determination|issuance)"
     r"|after (such|each|any) (summary|hearing|approval|determination|request|application|review)"
     r"|(prior to|before) (any|each|such) (hearing|meeting|removal|modification|sale|execution"
@@ -62,7 +62,11 @@ def event_anchored(text: str | None) -> bool:
     t = text or ""
     return bool(EVENT_ANCHOR.search(t)) and not _ANCHOR_IS_A_DATE.search(t)
 SIX_MONTHLY = re.compile(
-    r"every ?(6|six) months|semiannual|semi-annual|twice a year|twice each year", re.I)
+    r"every ?(6|six) months|semiannual|semi-annual|twice a year|twice each year"
+    # two fixed calendar dates repeating every year ("each July 31 and
+    # January 31 thereafter") are a semiannual cadence, not annual/biennial.
+    r"|each\s+[A-Za-z]+\s+\d{1,2}\s+and\s+[A-Za-z]+\s+\d{1,2}\s+"
+    r"(?:thereafter|of each year|annually|each year)", re.I)
 # Whether an actor phrase is too vague to publish as an agency is decided by
 # the extractor's own guard. The validator imports it rather than keeping a
 # parallel heuristic, so the two cannot drift apart: an earlier version used a
@@ -288,6 +292,15 @@ def main() -> None:
             if not clean:
                 hard["quote_inside_deleted_text"].append(
                     f"{o['obligation_id']} ({laws[mid]['law_number_display']})")
+
+    # --- HARD: a stored quote still carries a new-matter marker -------------
+    # Step 2f, Sep 25 2026 audit: {{...}} markers are a cache-text artifact
+    # and must never survive into a published quote.
+    _pw_path = DATA / "powers.json"
+    _pw = json.loads(_pw_path.read_text())["powers"] if _pw_path.exists() else []
+    for o in obs + _pw:
+        if "{{" in (o.get("quote") or ""):
+            hard["quote_contains_new_matter_marker"].append(o["obligation_id"])
 
     # --- HARD: schema placeholder left unsubstituted ------------------------
     # "every N years" is the template wording in the extraction schema. If it

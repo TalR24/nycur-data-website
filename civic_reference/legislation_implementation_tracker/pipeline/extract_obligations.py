@@ -31,6 +31,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import difflib
 import json
 import logging
 import os
@@ -41,6 +42,7 @@ from datetime import date, datetime, timedelta
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
+sys.path.insert(0, str(HERE))
 DATA = HERE.parent / "data"
 TEXT_CACHE = HERE / "cache" / "text"
 EXTRACT_CACHE = HERE / "cache" / "extracted"
@@ -261,6 +263,24 @@ def operative_text(s: str) -> str:
 
 def alnum(s: str) -> str:
     return re.sub(r"[^a-z0-9]", "", normalize_quote(s))
+
+
+_LOWER_BRACKET_RUN = re.compile(r"\[[a-z][^\[\]]{0,300}?\]")
+
+
+def clean_stored_quote(quote: str, law_text: str | None) -> tuple[str, bool]:
+    """Strip {{new-matter}} markers from a stored quote; if a lowercase-start
+    [bracketed] run (deleted matter Legistar publishes in brackets) survived
+    into the quote, drop that run when the remainder still verifies against
+    the law. Returns (cleaned_quote, quote_has_deleted_text)."""
+    q = (quote or "").replace("{{", "").replace("}}", "")
+    if not _LOWER_BRACKET_RUN.search(q):
+        return q, False
+    candidate = _LOWER_BRACKET_RUN.sub("", q)
+    candidate = re.sub(r"\s{2,}", " ", candidate).strip()
+    if law_text and quote_present(candidate, law_text):
+        return candidate, False
+    return q, True
 
 
 def quote_present(quote: str, law_text: str, operative: str | None = None) -> bool:
@@ -680,6 +700,157 @@ ACTOR_OVERRIDES: dict = (json.loads(_OVERRIDES_PATH.read_text())
                          if _OVERRIDES_PATH.exists() else {})
 
 
+# ── Sep 25 2026: build-time re-attribution of reprinted duties ──────────────
+# A law that amends a code section reprints the whole section, with the parts
+# it actually changes underlined ({{...}} in cache/text). A duty whose quote
+# sits entirely OUTSIDE the underlined runs is text this law only reprints,
+# not text it enacts. Computed fresh from cache/text every rebuild (not from
+# the one-off restated_candidates.json a prior sweep wrote), via the same
+# split_markers/restated_spans/condense/locate logic sweep_restated_duties.py
+# uses to find these blocks in the first place.
+from sweep_restated_duties import (  # noqa: E402
+    split_markers, restated_spans, condense, locate, AMENDED,
+)
+
+
+def _sim_norm(s: str) -> str:
+    """Normalize a quote for similarity comparison (marker/case/space-blind)."""
+    s = (s or "").replace("{{", "").replace("}}", "")
+    for a, b in (("“", '"'), ("”", '"'), ("‘", "'"),
+                 ("’", "'"), ("–", "-"), ("—", "-")):
+        s = s.replace(a, b)
+    return re.sub(r"\s+", " ", s.lower()).strip()
+
+
+_SECTION_RE = re.compile(r"§+\s*([0-9]+(?:-[0-9]+)?(?:\.[0-9]+)?)")
+
+
+def _code_section(citation: str | None) -> str | None:
+    """The code section a citation names ('... Code § 19-160(b)(1)' -> '19-160')."""
+    m = _SECTION_RE.search(citation or "")
+    return m.group(1) if m else None
+
+
+def _subdivision(citation: str | None) -> str | None:
+    """The subdivision path after the section ('§ 28-202.1(2)' -> '(2)';
+    '§ 28-202.1, item 1' -> '(1)'), or None when the citation names none."""
+    c = citation or ""
+    m = _SECTION_RE.search(c)
+    if not m:
+        return None
+    rest = c[m.end():]
+    item = re.match(r"\s*,?\s*(?:item|paragraph|subdivision)\s+([0-9a-z]+)", rest, re.I)
+    if item:
+        return f"({item.group(1).lower()})"
+    parts = re.match(r"((?:\([0-9a-z]+\))+)", rest.strip(), re.I)
+    return parts.group(1).lower() if parts else None
+
+
+def _same_provision(a: dict, b: dict) -> bool:
+    """Same section, and the same subdivision whenever both name one."""
+    sa, sb = _subdivision(a.get("citation")), _subdivision(b.get("citation"))
+    return not (sa and sb and sa != sb)
+
+
+def _same_actor(a: dict, b: dict) -> bool:
+    """Same duty holder: identical labels (case-blind), or one side not matched
+    to a known agency (a label variant such as "the chief privacy officer" for
+    OIP). Two DIFFERENT matched agencies are a transfer of the duty, not a
+    duplicate, so the reprint stays as existing code under the new agency."""
+    la, lb = (a.get("agency") or "").lower(), (b.get("agency") or "").lower()
+    if la and la == lb:
+        return True
+    return not (a.get("agency_matched") and b.get("agency_matched"))
+
+
+def quote_similarity(a: str, b: str) -> float:
+    """Normalized text similarity: difflib.SequenceMatcher ratio on quotes
+    stripped of new-matter markers, case-folded, and whitespace-collapsed.
+    0.9+ is treated as "the same statutory sentence"."""
+    a, b = _sim_norm(a), _sim_norm(b)
+    if not a or not b:
+        return 0.0
+    return difflib.SequenceMatcher(None, a, b).ratio()
+
+
+def reattribute_reprints(flat: list[dict], powers: list[dict],
+                         law_by_id: dict) -> tuple[list, dict]:
+    """Split every duty/power whose quote is 100% reprinted (new-matter
+    fraction 0) into a dropped duplicate (an earlier-enacted tracked law
+    already records the same duty for the same agency) or a kept
+    `existing code` record. Returns (dropped_ids, restated_links)."""
+    marked_text: dict[str, str] = {}
+    for mid in {o["matter_id"] for o in flat + powers}:
+        p = TEXT_CACHE / f"{mid}.txt"
+        if p.exists():
+            t = p.read_text(errors="ignore")
+            if "{{" in t and AMENDED.search(t):
+                marked_text[mid] = t
+
+    parsed: dict[str, tuple] = {}          # matter_id -> (hay, idx, flags, spans)
+    for mid, marked in marked_text.items():
+        plain, flags = split_markers(marked)
+        spans = restated_spans(plain)
+        hay, idx = condense(plain)
+        parsed[mid] = (hay, idx, flags, spans)
+
+    # Bucket every record by the code section its citation names. A reprint
+    # only duplicates a record for the SAME section: boilerplate sentences
+    # recur across chapters (a courier duty in 20-1507 read like a Fair
+    # Workweek duty in 20-1207; Sep 25 2026 review found 9 such false links).
+    # Records with no parsable section are never dropped.
+    buckets: dict[str, list[dict]] = {}
+    for o in flat + powers:
+        sec = _code_section(o.get("citation"))
+        if sec:
+            buckets.setdefault(sec, []).append(o)
+
+    reprint_candidates = []
+    for o in flat + powers:
+        mid = o["matter_id"]
+        if mid not in parsed:
+            continue
+        hay, idx, flags, spans = parsed[mid]
+        frac = locate(hay, idx, flags, o.get("quote") or "", spans)
+        if frac == 0.0:
+            reprint_candidates.append(o)
+
+    dropped_ids: set = set()
+    links: dict[str, list] = {}
+    for o in reprint_candidates:
+        mid = o["matter_id"]
+        law = law_by_id.get(mid, {})
+        my_enacted = law.get("enactment_date") or ""
+        sec = _code_section(o.get("citation"))
+        best = None
+        for other in (buckets.get(sec, []) if sec else []):
+            if other["matter_id"] == mid or not _same_actor(o, other) or not _same_provision(o, other):
+                continue
+            other_law = law_by_id.get(other["matter_id"], {})
+            other_enacted = other_law.get("enactment_date") or ""
+            if not other_enacted or not my_enacted or other_enacted >= my_enacted:
+                continue          # not earlier-enacted
+            sim = quote_similarity(o.get("quote"), other.get("quote"))
+            if sim >= 0.9 and (best is None or other_enacted < best[1]):
+                best = (other, other_enacted, sim)
+        if best:
+            origin, _, sim = best
+            dropped_ids.add(o["obligation_id"])
+            links.setdefault(mid, []).append({
+                "obligation_id": o["obligation_id"],
+                "quote": o.get("quote"),
+                "agency": o.get("agency"),
+                "origin_obligation_id": origin["obligation_id"],
+                "origin_matter_id": origin["matter_id"],
+                "origin_law": origin.get("law_number_display"),
+            })
+        else:
+            o["restated"] = True
+            o["origin"] = "existing code"
+
+    return dropped_ids, links
+
+
 def resolve_actor(matter_id: str, actors: list[str], lookup: dict,
                   agencies_by_canon: dict) -> tuple[str | None, str | None, str]:
     """Resolve an actor through overrides, then the crosswalk.
@@ -882,6 +1053,89 @@ def resolve_deadline(dl: dict, enactment_date: str | None,
     if kind == "on_effective_date":
         return effective_date
     return None
+
+
+# Sep 25 2026 audit fix: `days_after_enactment` is only right when the
+# deadline text actually names enactment/"becomes law"/the effective date. A
+# clause anchored to an EVENT ("receives", "receipt", "after the/such/each
+# <event>") has no fixed date, no matter what the model computed one from.
+_ENACT_ANCHOR = re.compile(r"enact|becomes?\s+(a\s+)?law|effective date", re.I)
+_EVENT_TEXT_ANCHOR = re.compile(
+    r"receives\b|receipt|after (the|such|each) [a-z]", re.I)
+
+
+def fix_event_anchored_deadline(o: dict) -> bool:
+    """Downgrade a wrongly-dated event-anchored deadline in place.
+    Returns True if the record changed."""
+    if o.get("deadline_kind") != "days_after_enactment":
+        return False
+    text = o.get("deadline_text") or ""
+    if _ENACT_ANCHOR.search(text):
+        return False
+    if not _EVENT_TEXT_ANCHOR.search(text):
+        return False
+    o["deadline_kind"] = "event"
+    o["deadline_date"] = None
+    return True
+
+
+# Two fixed calendar dates a law repeats every year ("no later than each July
+# 31 and January 31 thereafter") is a semiannual cadence, not the placeholder
+# "biennial"/"annual" the model sometimes stores. Only fires when BOTH dates
+# recur ("thereafter"/"each year"/"annually") so a one-time two-date range
+# ("between March 1 and March 15, 2025") is not mistaken for a schedule.
+_TWO_FIXED_DATES = re.compile(
+    r"each\s+([A-Za-z]+\s+\d{1,2})\s+and\s+([A-Za-z]+\s+\d{1,2})"
+    r"\s+(?:thereafter|of each year|annually|each year)", re.I)
+
+
+def fix_two_fixed_dates_semiannual(o: dict) -> bool:
+    text = " ".join(filter(None, [o.get("deadline_text"), o.get("quote")]))
+    if not _TWO_FIXED_DATES.search(text):
+        return False
+    if o.get("recurrence") == "semiannual":
+        return False
+    o["recurrence"] = "semiannual"
+    return True
+
+
+def merge_split_list_duplicates(obs: list[dict]) -> int:
+    """Merge duplicate list-item splits within one law: same agency, same
+    deliverable type, one quote a sub-span of the other's sentence. Keeps the
+    longest quote's record, drops the rest. Mutates `obs` in place and returns
+    the number of records merged away."""
+    groups: dict[tuple, list[dict]] = {}
+    for o in obs:
+        groups.setdefault((o.get("agency"), o.get("deliverable_type")), []).append(o)
+    to_drop: set[int] = set()
+    for group in groups.values():
+        if len(group) < 2:
+            continue
+        for i, a in enumerate(group):
+            if id(a) in to_drop:
+                continue
+            qa = alnum(a.get("quote") or "")
+            if not qa:
+                continue
+            for b in group[i + 1:]:
+                if id(b) in to_drop:
+                    continue
+                qb = alnum(b.get("quote") or "")
+                if not qb:
+                    continue
+                # never merge records whose schedules differ: a semiannual
+                # report and an annual one in the same sentence are two duties
+                if any((a.get(k) or None) != (b.get(k) or None)
+                       for k in ("deadline_kind", "deadline_date", "recurrence")):
+                    continue
+                if qa in qb or qb in qa:
+                    loser = a if len(qa) < len(qb) else b
+                    to_drop.add(id(loser))
+    if not to_drop:
+        return 0
+    n = len(to_drop)
+    obs[:] = [o for o in obs if id(o) not in to_drop]
+    return n
 
 
 # ── Claude call ───────────────────────────────────────────────────────────────
@@ -1143,7 +1397,7 @@ def main() -> None:
         joined_keys = {"file_number", "law_number_display", "law_title",
                        "committee", "prime_sponsor", "enactment_date",
                        "effective_date", "legistar_url", "law_sunset_date",
-                       "quotes_restated_text", "filing"}
+                       "quotes_restated_text", "filing", "restated", "origin"}
         # powers live in their own file; without them here, CI (no cache)
         # would drop every power on its next rebuild
         prev_powers = (json.loads(POWERS_JSON.read_text()).get("powers", [])
@@ -1196,6 +1450,9 @@ def main() -> None:
     flat = []          # duties -> obligations.json
     powers = []        # powers -> powers.json
     law_summaries = []
+    quotes_cleaned = quotes_deleted_flagged = deadlines_event_fixed = 0
+    semiannual_fixed = merged_away = 0
+    _law_text_cache: dict[str, str] = {}
     for res in all_results:
         law = law_by_id.get(res["matter_id"])
         if not law:
@@ -1213,11 +1470,30 @@ def main() -> None:
             "sunset_clause": law.get("sunset_clause"),
             "sunset_date": law.get("sunset_date"),
         })
+        law_flat, law_powers = [], []
         for o in res["obligations"]:
             # guards also apply to previously cached extractions
             o["deadline_date"] = sanitize_deadline(
                 o.get("deadline_date"), law.get("enactment_date"))
             o["recurrence"] = normalize_recurrence(o.get("recurrence"))
+            # Step 2 mechanical fixes (Sep 25 2026 audit): quote cleanup,
+            # event-anchored deadlines, two-fixed-dates-a-year recurrence.
+            mid = res["matter_id"]
+            if "{{" in (o.get("quote") or "") or re.search(r"\[[a-z]", o.get("quote") or ""):
+                if mid not in _law_text_cache:
+                    tp = TEXT_CACHE / f"{mid}.txt"
+                    _law_text_cache[mid] = tp.read_text(errors="ignore") if tp.exists() else ""
+                cleaned, has_deleted = clean_stored_quote(o.get("quote"), _law_text_cache[mid])
+                if cleaned != o.get("quote"):
+                    o["quote"] = cleaned
+                    quotes_cleaned += 1
+                if has_deleted:
+                    o["quote_has_deleted_text"] = True
+                    quotes_deleted_flagged += 1
+            if fix_event_anchored_deadline(o):
+                deadlines_event_fixed += 1
+            if fix_two_fixed_dates_semiannual(o):
+                semiannual_fixed += 1
             kind = _kind(o)
             if kind == "neither":        # a private party's option: in no table
                 excluded.append(o["obligation_id"])
@@ -1225,7 +1501,7 @@ def main() -> None:
             if kind == "power":          # a power is never due by a date
                 o["deadline_kind"] = "none"
                 o["deadline_date"] = None
-            (powers if kind == "power" else flat).append({
+            (law_powers if kind == "power" else law_flat).append({
                 **o,
                 "file_number": law["file_number"],
                 "law_number_display": law["law_number_display"],
@@ -1241,6 +1517,47 @@ def main() -> None:
                    if o["obligation_id"] in REPORT_FILINGS and kind == "duty" else {}),
                 "kind": kind,
             })
+        merged_away += merge_split_list_duplicates(law_flat)
+        merged_away += merge_split_list_duplicates(law_powers)
+        flat.extend(law_flat)
+        powers.extend(law_powers)
+
+    # Sep 25 2026: re-attribute duties/powers a law only reprints from an
+    # earlier tracked law (duplicates dropped, linked in restated_links.json)
+    # or existing code the law carries forward (kept, flagged).
+    dropped_ids, restated_links = reattribute_reprints(flat, powers, law_by_id)
+    if dropped_ids:
+        flat = [o for o in flat if o["obligation_id"] not in dropped_ids]
+        powers = [o for o in powers if o["obligation_id"] not in dropped_ids]
+    restated_kept = sum(1 for o in flat + powers if o.get("restated"))
+    (DATA / "restated_links.json").write_text(
+        json.dumps(restated_links, indent=1, ensure_ascii=False))
+    # Per-law counts exclude both dropped duplicates and kept existing-code
+    # records: a law's checklist and count are what IT enacted, not what it
+    # reprinted (Step 1, Sep 25 2026).
+    _law_counts: dict[str, dict] = {}
+    for o in flat:
+        if o.get("restated"):
+            continue
+        _law_counts.setdefault(o["matter_id"], {"obligation_count": 0, "power_count": 0})
+        _law_counts[o["matter_id"]]["obligation_count"] += 1
+    for o in powers:
+        if o.get("restated"):
+            continue
+        _law_counts.setdefault(o["matter_id"], {"obligation_count": 0, "power_count": 0})
+        _law_counts[o["matter_id"]]["power_count"] += 1
+    for ls in law_summaries:
+        counts = _law_counts.get(ls["matter_id"], {"obligation_count": 0, "power_count": 0})
+        ls["obligation_count"] = counts["obligation_count"]
+        ls["power_count"] = counts["power_count"]
+
+    log.info(f"Step 2 mechanical fixes: quotes cleaned {quotes_cleaned}, "
+             f"quote_has_deleted_text {quotes_deleted_flagged}, "
+             f"event-anchored deadlines fixed {deadlines_event_fixed}, "
+             f"semiannual-from-two-dates {semiannual_fixed}, "
+             f"list-item duplicates merged {merged_away}")
+    log.info(f"Step 1 re-attribution: reprint candidates dropped as duplicates "
+             f"{len(dropped_ids)}, kept as existing code {restated_kept}")
 
     # obligation_id must be unique: hand edits and cache syncs have twice
     # produced a matter with the same id on two records, which silently breaks

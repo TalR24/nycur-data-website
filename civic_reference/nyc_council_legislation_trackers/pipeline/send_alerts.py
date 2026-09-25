@@ -212,6 +212,8 @@ def main() -> None:
         mid = o["matter_id"]
         if mid not in new_law_ids:
             continue
+        if o.get("restated"):     # existing code the law reprints, not new
+            continue
         if o["agency_matched"]:
             agencies_by_law.setdefault(mid, set()).add(o["agency"])
         impl_text.setdefault(mid, []).append(
@@ -229,6 +231,8 @@ def main() -> None:
     for o in powers:
         mid = o["matter_id"]
         if mid not in new_law_ids:
+            continue
+        if o.get("restated"):     # existing code the law reprints, not new
             continue
         if o.get("agency_matched"):
             power_agencies_by_law.setdefault(mid, set()).add(o["agency"])
