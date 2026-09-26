@@ -65,7 +65,8 @@ jobs:
         working-directory: civic_reference/legislation_implementation_tracker
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          REEXTRACT_LIMIT: "200"   # 4 workers: ~50 min per run, so an outside cancellation (Sep 26: one at 69 min) loses one short batch
+          REEXTRACT_LIMIT: "100"   # ~25 min per run: two runs were cancelled mid-batch on Sep 26 (cause unknown), so a lost run costs little
+          PYTHONUNBUFFERED: "1"   # progress lines reach the log as they happen
           REEXTRACT_WORKERS: "4"
         run: |
           python3 pipeline/reextract_queued.py
