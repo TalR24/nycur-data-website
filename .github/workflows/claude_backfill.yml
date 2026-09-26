@@ -90,6 +90,23 @@ jobs:
           path: /tmp/pilot/
           retention-days: 30
 
+      # a failed push must never lose a batch again (Sep 26 2026): the rebuilt
+      # data and the per-law extractions survive 30 days as an artifact
+      - name: Upload re-extraction output
+        if: ${{ always() && inputs.task == 'reextract_obligations' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: reextract-output
+          path: |
+            civic_reference/legislation_implementation_tracker/data/obligations.json
+            civic_reference/legislation_implementation_tracker/data/powers.json
+            civic_reference/legislation_implementation_tracker/data/laws.json
+            civic_reference/legislation_implementation_tracker/data/restated_links.json
+            civic_reference/legislation_implementation_tracker/pipeline/reextract_queue.json
+            civic_reference/legislation_implementation_tracker/pipeline/cache/extracted/
+            civic_reference/nyc_council_legislation_trackers/data/members.json
+          retention-days: 30
+
       - name: Commit results
         if: ${{ always() && inputs.task != 'canary' && inputs.task != 'pilot_obligations' }}
         run: |
@@ -103,7 +120,12 @@ jobs:
           done
           if git diff --cached --quiet; then echo "Nothing to commit"; exit 0; fi
           git commit -m "Claude backfill: ${{ inputs.task }} [$(date -u '+%Y-%m-%d')]"
+          # autostash: any file the rebuild changed but this step does not
+          # stage blocked every rebase on Sep 26 2026 and the loop still
+          # exited green, losing a 250-law batch. Now it fails loudly.
+          pushed=0
           for attempt in 1 2 3 4 5; do
-            git pull --rebase origin main && git push && break
+            if git -c rebase.autoStash=true pull --rebase origin main && git push; then pushed=1; break; fi
             sleep $((attempt * 30))
           done
+          if [ "$pushed" != 1 ]; then echo "::error::push failed after 5 attempts"; exit 1; fi
