@@ -1223,9 +1223,24 @@ function renderDetailRow(r) {
   const sponsors = (r.sponsors || []).join(", ");
   const reviewers = (r.estimate_reviewed_by || []).join("; ");
 
+  // Time-limited programs (Tal, Sep 26 2026): a whole-run total only when the
+  // statement prices every year; otherwise the annual figure, with the end year
+  let pilotNote = "";
+  if (r.time_limited_program && (r.outlasts_statement || r.totals_basis === "program_life_sum")) {
+    const fys = [...new Set(cols.map(c => ((c.label || "").match(/FY\s*'?(\d{2,4})/gi) || [])
+      .map(m => parseInt(m.replace(/\D/g, ""), 10) % 100)).flat())].sort((a, b) => a - b);
+    const priced = fys.length > 1 ? `FY${fys[0]} to FY${fys[fys.length - 1]}` : fys.length ? `FY${fys[0]}` : "";
+    const end = r.program_end_fy ? ` It runs through FY${r.program_end_fy}.` : "";
+    const quote = r.sunset_quote ? ` The statement: “${esc(r.sunset_quote)}”` : "";
+    pilotNote = r.outlasts_statement
+      ? `<strong>Time-limited program.</strong>${end} The statement prices ${priced || "only its first years"}, so the figure shown is the annual cost at full implementation.${quote}`
+      : `<strong>Time-limited program.</strong>${end} The figure shown is its whole run, the sum of the years the statement prices${priced ? ", " + priced : ""}.${quote}`;
+  }
+
   return `<tr class="detail-row">
     <td colspan="12">
       <div class="detail-panel">
+        ${pilotNote ? `<div class="package-note-banner">${pilotNote}</div>` : ""}
         ${r.package_note ? `<div class="package-note-banner">
           <strong>Package assessment note:</strong> ${esc(r.package_note)}
         </div>` : ""}

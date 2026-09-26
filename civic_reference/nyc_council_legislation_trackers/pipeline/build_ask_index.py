@@ -374,6 +374,13 @@ def main() -> int:
         label = BASIS_LABEL.get(basis, "figure as the statement states it")
         in_plan = (" The statement says these costs are already in the city's financial plan."
                    if r.get("costs_already_in_financial_plan") else "")
+        if r.get("time_limited_program") and r.get("outlasts_statement"):
+            end = f" through FY20{r['program_end_fy']:02d}" if r.get("program_end_fy") else ""
+            in_plan += (f" Time-limited program{end}; the statement prices only its first years,"
+                        " so the figures are annual.")
+        elif r.get("time_limited_program") and basis == "program_life_sum":
+            end = f", ending FY20{r['program_end_fy']:02d}" if r.get("program_end_fy") else ""
+            in_plan += f" Time-limited program{end}; the figures cover its whole run."
         capital = (f", capital {money(r['total_capital'])} (sum of the fiscal years shown)"
                    if r.get("total_capital") else "")
         x = (

@@ -956,6 +956,47 @@ def _full_impact_column(cols: list[dict]) -> tuple[dict | None, str]:
     return cols[-1], "last_year_column"
 
 
+_MONTHS = {m: i for i, m in enumerate(
+    ["january", "february", "march", "april", "may", "june", "july", "august",
+     "september", "october", "november", "december"], 1)}
+_NUM_WORDS = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6,
+              "seven": 7, "eight": 8, "nine": 9, "ten": 10}
+# the bill title's standard clause, not a program end (Int 1126-2024)
+_BOILERPLATE_SUNSET = re.compile(r"providing for the repeal of such local law upon the expiration thereof", re.I)
+
+
+def _fy(year: int) -> int:
+    return year % 100
+
+
+def program_end_fy(quote: str, first_fy: int | None) -> int | None:
+    """The last fiscal year (2-digit) a time-limited program runs, read from
+    the statement's own sunset sentence; None when the sentence gives no end
+    that can be placed (then coverage is unconfirmed). City fiscal years end
+    June 30, so a date from July 3 on falls in the next year's FY; a law
+    that ends July 1 or 2 ran through the June 30 before."""
+    q = (quote or "").lower()
+    ends = []
+    for m, d, y in re.findall(r"(january|february|march|april|may|june|july|august|september|"
+                              r"october|november|december)\s+(\d{1,2}),?\s+(\d{4})", q):
+        mo, dd, yy = _MONTHS[m], int(d), int(y)
+        ends.append(_fy(yy + (1 if (mo > 7 or (mo == 7 and dd > 2)) else 0)))
+    for y in re.findall(r"\b(?:fiscal(?:\s+year)?|fy)\s*\(?f?y?\)?\s*'?(\d{4}|\d{2})\b", q):
+        ends.append(_fy(int(y)))
+    # durations run from the first fiscal year the statement prices; with
+    # several ("takes effect eight months after ... in effect for 36
+    # months") the longest is the program's run
+    if first_fy is not None:
+        for num, unit in re.findall(r"\b(\d+|one|two|three|four|five|six|seven|eight|nine|ten)"
+                                    r"[\s-]+(year|month|day)s?\b", q):
+            n = int(num) if num.isdigit() else _NUM_WORDS[num]
+            years = n if unit == "year" else n / 12 if unit == "month" else n / 365
+            ends.append(first_fy + int(max(1, -(-years // 1))) - 1)
+    # with several dates or durations (effective date + repeal) the latest
+    # is the end
+    return max(ends) if ends else None
+
+
 def totals_from_columns(fiscal: dict) -> dict:
     """
     One number per bill (Tal, Sep 24 2026): the annual cost at full
@@ -998,13 +1039,34 @@ def totals_from_columns(fiscal: dict) -> dict:
     # a pilot counts only with the statement's own sunset sentence (round-4
     # audit, Sep 24 2026: 3 of 8 flags had no sunset for the costed program);
     # extract_fiscal_data checks the quote against the document text
-    time_limited = bool(fiscal.get("time_limited_program")) and bool((fiscal.get("sunset_quote") or "").strip())
+    time_limited = (bool(fiscal.get("time_limited_program"))
+                    and bool((fiscal.get("sunset_quote") or "").strip())
+                    and not _BOILERPLATE_SUNSET.search(fiscal.get("sunset_quote") or ""))
     # the standard table repeats the succeeding year as "Full Fiscal Impact
     # FY27"; summing it too would count that year twice
     year_of = lambda c: (re.findall(r"FY\s*'?(\d{2,4})", c.get("label") or "", re.I) or [None])[-1]
     other_years = lambda c: {year_of(o) for o in cols if o is not c}
     life_cols = [c for c in cols
                  if not ("full" in (c.get("label") or "").lower() and year_of(c) in other_years(c))]
+
+    # Tal, Sep 26 2026: a program-life total only when the statement's
+    # columns cover the whole program. A pilot that outlasts them gets the
+    # annual full-impact figure like every other bill, plus its end year;
+    # the missing years are never extrapolated.
+    fiscal.pop("outlasts_statement", None)
+    fiscal.pop("program_end_fy", None)
+    if time_limited:
+        fys = [int(y) % 100 for y in (year_of(c) for c in cols) if y]
+        end = program_end_fy(fiscal.get("sunset_quote"), min(fys) if fys else None)
+        if end is not None:
+            fiscal["program_end_fy"] = end
+        if fys and (end is None or end > max(fys)):
+            fiscal["outlasts_statement"] = True
+            time_limited = False
+        elif fys and end is not None and end < max(fys):
+            # a law that starts mid-year runs into the year after its
+            # nominal end (ten years from FY19 -> FY29, Int 755-2018)
+            fiscal["program_end_fy"] = max(fys)
 
     def pick(key):
         # a pilot that ends has no steady-state year: its cost is the
