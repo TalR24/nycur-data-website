@@ -25,6 +25,11 @@ on:
         default: "claude-sonnet-5"
         type: string
 
+# shares a group with the monthly refresh so the two never commit over each other
+concurrency:
+  group: obligations-data
+  cancel-in-progress: false
+
 jobs:
   run:
     runs-on: ubuntu-latest
@@ -60,7 +65,7 @@ jobs:
         working-directory: civic_reference/legislation_implementation_tracker
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          REEXTRACT_LIMIT: "400"
+          REEXTRACT_LIMIT: "250"   # ~250 laws fit the 240-minute timeout on Sonnet
         run: |
           python3 pipeline/reextract_queued.py
           python3 pipeline/extract_obligations.py --incremental

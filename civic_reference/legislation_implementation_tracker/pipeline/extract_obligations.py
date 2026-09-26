@@ -51,7 +51,7 @@ CROSSWALK_JSON = DATA / "agency_crosswalk.json"
 OUT_JSON = DATA / "obligations.json"
 POWERS_JSON = DATA / "powers.json"
 
-DEFAULT_MODEL = "claude-haiku-4-5-20251001"
+DEFAULT_MODEL = "claude-sonnet-5"   # Tal, Sep 26 2026, after the pilot-2 blind A/B
 
 DELIVERABLE_TYPES = [
     "rulemaking", "report", "study or audit", "plan or strategy",
