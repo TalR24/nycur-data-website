@@ -10,10 +10,10 @@ A companion site to [NYCuriosity](https://www.nycuriosity.com), a Substack publi
 
 ## ⚠️ Premium data paywall (members-only tools)
 
-Two tools are **paywalled** (launched Jul 2026): the **NYC Council Fiscal Impacts Tracker** and the **NYC CB Resolutions Dashboard**. Their public URLs here now serve **teaser pages**; the working tools live on a separate **private** origin.
+The **NYC CB Resolutions Dashboard** is **paywalled** (launched Jul 2026); its public URL here serves a **teaser page** and the working tool lives on a separate **private** origin, alongside the member tools (Ask the Trackers, alerts, district briefs, watchlist). The NYC Council Fiscal Impacts Tracker was paywalled from Jul to Sep 24 2026 and is now free (see the Legislation Trackers section).
 
 - **Real tools live in the PRIVATE repo** `TalR24/nycur-data-premium` → Cloudflare Worker (static assets) → **`premium.nycuriosity.com`**, gated by **Cloudflare Access** (email one-time-PIN + allowlist). **Never put these tools' data back in this public repo** — that bypasses the paywall.
-- **Public side (this repo):** `civic_reference/nyc_council_fiscal_impacts_tracker/index.html` and `cb-resolutions/index.html` are **teaser pages** ("Become a member" → `buymeacoffee.com/nycuriosity`; "Sign in" → `premium.nycuriosity.com`). All their subpages + CSV/JSON were removed.
+- **Public side (this repo):** `cb-resolutions/index.html` is a **teaser page** ("Become a member" → `buymeacoffee.com/nycuriosity`; "Sign in" → `premium.nycuriosity.com`). All their subpages + CSV/JSON were removed.
 - **Access is manual:** when someone subscribes on Buy Me a Coffee, add their email in Cloudflare Zero Trust → Access → the app → policy **"NYCuriosity Premium"** → Emails; remove on cancellation.
 - **cb-resolutions teaser stats are HARDCODED.** When boards/resolutions are added to the database (done in other sessions), bump the `.stat-pills` + hero copy in `cb-resolutions/index.html` **and** the CB card in `index.html`.
 - **SEO:** teasers stay indexable (marketing); the premium origin is `noindex`/robots-disallowed. Keep `sitemap.xml` free of the removed gated subpages — it should list only the two teaser hubs, not their old subpages.
@@ -36,10 +36,14 @@ Directory, segment view, affinity network, and matchmaking for 300+ organization
 - [`/state_capacity_ecosystem/ecosystem/methodology/`](https://statecapacityecosystem.com/ecosystem/methodology/) — scoring formula, taxonomy, inclusion criteria
 - [`/state_capacity_ecosystem/policy-programs/events/`](https://statecapacityecosystem.com/events/) — state capacity hackathons, with per-event pages covering overview, tracks, judges, and the projects produced (e.g. `events/civic-tech-build-night/`)
 
-### [NYC Council Fiscal Impacts Tracker](https://data.nycuriosity.com/civic_reference/nyc_council_fiscal_impacts_tracker/)
-Estimated fiscal impact of every NYC Council bill with a Finance Division impact statement. Filterable by agency, committee, sponsor, and fiscal year, with cost/revenue/capital breakdowns and per-bill detail panels.
+### [NYC Council Legislation Trackers](https://data.nycuriosity.com/civic_reference/nyc_council_legislation_trackers/)
+Three free trackers of what NYC local laws since 2014 cost, require and allow, plus council member and agency profiles and a Law Explorer. No data downloads.
+- **[Fiscal Impacts Tracker](https://data.nycuriosity.com/civic_reference/nyc_council_fiscal_impacts_tracker/)**: every Council bill with a Finance Division fiscal impact statement, by agency, sponsor, committee and year. Pipeline: `pipeline/fetch_fiscal_impacts.py`; refreshed by `refresh_fiscal_data.yml`.
+- **[Obligations Tracker](https://data.nycuriosity.com/civic_reference/legislation_implementation_tracker/)**: the duties each enacted local law gives city agencies, with deadlines and each required report's filing status from DORIS.
+- **[Powers Tracker](https://data.nycuriosity.com/civic_reference/legislation_implementation_tracker/powers/)**: the powers those laws grant agencies (rulemaking, permits, enforcement).
+- Pipelines: `civic_reference/legislation_implementation_tracker/pipeline/` and `civic_reference/nyc_council_legislation_trackers/pipeline/`; refreshed by `refresh_implementation_data.yml`. One-off model runs go through `claude_backfill.yml`.
 
-**🔒 Members-only** (see the Premium data paywall section above). The public URL is now a teaser; the full tracker and its subpages (bill table, by agency, by sponsor, by year, costs vs. revenue, methodology) live in the private `nycur-data-premium` repo, served at `premium.nycuriosity.com`.
+Concept credit: the Obligations Tracker adapts the implementation-checklist approach Marci Dale prototyped for federal legislation in ["What if every new law came with a checklist?"](https://marcidale.substack.com/p/what-if-every-new-law-came-with-a).
 
 ### [NYC Government Bodies Explorer](https://data.nycuriosity.com/civic_reference/nyc-gov-bodies-explorer/)
 Browse all ~80 NYC government bodies — agencies, elected offices, DA offices, authorities, and boards — with FY2025 Adopted Budget and headcount data. Searchable card grid with inline detail panels and a D3.js treemap sized by budget or headcount, with sector-level filtering.
@@ -197,6 +201,6 @@ One scheduled workflow runs in `.github/workflows/`:
 |---|---|---|
 | `refresh_state_capacity.yml` | 6 AM ET daily | Detects changes to `directory.csv` (rebuilds org JSON + patches stat strings) and `connect_submissions.csv` (rebuilds connect.json + emails new entries) independently. Requires `GMAIL_USER` and `GMAIL_APP_PASSWORD` secrets. |
 
-The fiscal impacts refresh workflow (`refresh_fiscal_data.yml`, monthly) lives in the **private** `nycur-data-premium` repo alongside the pipeline scripts and the gated data, since the tracker went behind the membership paywall.
+The Legislation Trackers refresh in this repo on the 1st of each month: `refresh_implementation_data.yml` (14:40 UTC) and `refresh_fiscal_data.yml` (15:23 UTC). Other workflows in `.github/workflows/` cover the mention monitor, SEO, site health and community board data.
 
 Workflows require the repo's **Workflow permissions** set to "Read and write permissions" (Settings → Actions → General) so `GITHUB_TOKEN` can push commits.
