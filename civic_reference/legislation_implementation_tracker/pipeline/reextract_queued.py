@@ -27,6 +27,7 @@ import os
 import re
 import sys
 import time
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import requests
@@ -157,7 +158,7 @@ def main() -> None:
     if not os.environ.get("ANTHROPIC_API_KEY"):
         sys.exit("ANTHROPIC_API_KEY not set")
     import anthropic
-    client = anthropic.Anthropic()
+    client = anthropic.Anthropic(max_retries=8)   # rate-limit retries with parallel workers
 
     laws = {l["matter_id"]: l
             for l in json.loads(eo.LAWS_JSON.read_text())["laws"]}
@@ -175,15 +176,15 @@ def main() -> None:
     exclusions = load_exclusions()
     failed: dict[str, str] = {}
     skipped: dict[str, str] = {}
-    for mid, reason in todo.items():
+
+    def process(mid: str, reason: str) -> tuple[str, str | None, str | None]:
+        """Returns (mid, failure reason or None, skip reason or None)."""
         if mid in exclusions:
-            skipped[mid] = f"{reason} [protected: {exclusions[mid]}]"
             print(f"{mid}: SKIPPED, hand-corrected ({exclusions[mid]})")
-            continue
+            return mid, None, f"{reason} [protected: {exclusions[mid]}]"
         law = laws.get(mid)
         if not law:
-            failed[mid] = reason + " [matter not in laws.json]"
-            continue
+            return mid, reason + " [matter not in laws.json]", None
         try:
             html = fetch_page(law["legistar_url"])
             guid = law.get("legistar_guid", "")
@@ -195,8 +196,7 @@ def main() -> None:
                 if pdf_text and len(pdf_text) > len(text):
                     text = pdf_text
             if len(text) < 500:
-                failed[mid] = reason + " [no usable text found]"
-                continue
+                return mid, reason + " [no usable text found]", None
             text = sanitize(text)
             # No head+tail truncation any more: extract_law splits a long law at
             # its own section boundaries and extracts each window, so the middle
@@ -218,9 +218,22 @@ def main() -> None:
             (EXTRACT_CACHE / f"{mid}.json").write_text(json.dumps(res, indent=1))
             print(f"{mid}: -> {len(res['obligations'])} obligations")
             time.sleep(0.5)
+            return mid, None, None
         except Exception as e:  # keep going; queue retains the failure
-            failed[mid] = reason + f" [failed: {e}]"
             print(f"{mid}: FAILED {e}")
+            return mid, reason + f" [failed: {e}]", None
+
+    # Laws are independent, and nearly all the time is the model call, so a
+    # few run at once (REEXTRACT_WORKERS; the Sep 2026 full re-extraction used
+    # 4, where one at a time took ~3.4 h per 250 laws). Each law writes only
+    # its own cache files.
+    workers = max(1, int(os.environ.get("REEXTRACT_WORKERS", "1")))
+    with ThreadPoolExecutor(max_workers=workers) as pool:
+        for mid, fail, skip in pool.map(lambda kv: process(*kv), todo.items()):
+            if fail:
+                failed[mid] = fail
+            if skip:
+                skipped[mid] = skip
 
     # Protected matters are dropped rather than retried: they will be skipped
     # every run, and leaving them in makes the queue look like unfinished work.

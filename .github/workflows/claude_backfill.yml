@@ -65,7 +65,8 @@ jobs:
         working-directory: civic_reference/legislation_implementation_tracker
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          REEXTRACT_LIMIT: "250"   # ~250 laws fit the 240-minute timeout on Sonnet
+          REEXTRACT_LIMIT: "500"   # 4 workers: ~500 laws in ~2 h of the 240-minute timeout
+          REEXTRACT_WORKERS: "4"
         run: |
           python3 pipeline/reextract_queued.py
           python3 pipeline/extract_obligations.py --incremental
