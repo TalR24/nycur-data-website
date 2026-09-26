@@ -5,8 +5,9 @@ on:
     # 1st of each month, 14:40 UTC (late morning ET). Moved off the 7:30 UTC
     # slot Aug 2026: legistar.council.nyc.gov is unresponsive early morning and
     # timed out the fiscal tracker's Jul and Aug scheduled runs from 7:00 UTC.
-    # Kept ~40 min ahead of the fiscal refresh (15:23 UTC) so the two jobs do
-    # not race each other pushing to main.
+    # Kept 3h+ behind the fiscal refresh (11:23 UTC, Sep 26 2026) so alerts,
+    # the Ask index and member/agency profiles read that same month's fiscal
+    # data instead of lagging a month.
     - cron: "40 14 1 * *"
   workflow_dispatch:  # allow manual trigger from the Actions tab
 
@@ -44,7 +45,8 @@ jobs:
         continue-on-error: true
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          REEXTRACT_LIMIT: "400"
+          REEXTRACT_LIMIT: "200"
+          REEXTRACT_WORKERS: "4"
         run: python3 pipeline/reextract_queued.py
 
       - name: Refresh DORIS report filing status
@@ -83,6 +85,26 @@ jobs:
         continue-on-error: true  # a city Open Data or GitHub outage should never block the monthly refresh
         run: python3 pipeline/build_member_context.py --archive "$RUNNER_TEMP/nyc_legislation"
 
+      # a failed push must never lose a batch again (Sep 26 2026, copied from
+      # claude_backfill.yml): the rebuilt data survives 30 days as an artifact
+      - name: Upload refresh output
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: monthly-refresh-output
+          path: |
+            civic_reference/legislation_implementation_tracker/data/laws.json
+            civic_reference/legislation_implementation_tracker/data/obligations.json
+            civic_reference/legislation_implementation_tracker/data/powers.json
+            civic_reference/legislation_implementation_tracker/data/restated_links.json
+            civic_reference/legislation_implementation_tracker/data/report_filings.json
+            civic_reference/legislation_implementation_tracker/pipeline/reextract_queue.json
+            civic_reference/nyc_council_legislation_trackers/data/members.json
+            civic_reference/nyc_council_legislation_trackers/data/agencies.json
+            civic_reference/nyc_council_legislation_trackers/data/member_votes.json
+            civic_reference/nyc_council_legislation_trackers/data/member_context.json
+          retention-days: 30
+
       - name: Commit and push if data changed
         run: |
           git config user.name "github-actions[bot]"
@@ -99,13 +121,21 @@ jobs:
                   civic_reference/nyc_council_legislation_trackers/data/member_context.json
           if git diff --cached --quiet; then
             echo "No data changes this month."
-          else
-            git commit -m "Monthly legislation implementation data refresh"
-            git -c rebase.autoStash=true pull --rebase origin main
-            git push
+            exit 0
           fi
+          git commit -m "Monthly legislation implementation data refresh"
+          # autostash: any file the rebuild changed but this step does not
+          # stage blocked the rebase before (see claude_backfill.yml, Sep 26
+          # 2026). Now a stuck push fails loudly instead of exiting green.
+          pushed=0
+          for attempt in 1 2 3 4 5; do
+            if git -c rebase.autoStash=true pull --rebase origin main && git push; then pushed=1; break; fi
+            sleep $((attempt * 30))
+          done
+          if [ "$pushed" != 1 ]; then echo "::error::push failed after 5 attempts"; exit 1; fi
 
       - name: Send member alerts
+        continue-on-error: true  # an alert failure should never block the Ask index rebuild
         env:
           PREMIUM_PUSH_TOKEN: ${{ secrets.PREMIUM_PUSH_TOKEN }}
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
@@ -117,14 +147,34 @@ jobs:
           # downloads (Tal, Sep 24 2026), so no CSV is copied there.
           git clone --depth 1 "https://TalR24:${PREMIUM_PUSH_TOKEN}@github.com/TalR24/nycur-data-premium.git" /tmp/premium
           PREMIUM_DIR=/tmp/premium python3 civic_reference/nyc_council_legislation_trackers/pipeline/send_alerts.py
-          PREMIUM_DIR=/tmp/premium python3 civic_reference/nyc_council_legislation_trackers/pipeline/build_ask_index.py
           cd /tmp/premium
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add civic_reference/legislation_implementation_tracker/data/alerts_state.json worker/ask_index.json
+          git add civic_reference/legislation_implementation_tracker/data/alerts_state.json
           if git diff --cached --quiet; then
             echo "Alert state unchanged."
           else
             git commit -m "Monthly refresh: alert state"
+            git push
+          fi
+
+      - name: Rebuild Ask index
+        env:
+          PREMIUM_PUSH_TOKEN: ${{ secrets.PREMIUM_PUSH_TOKEN }}
+        run: |
+          # its own step (Sep 26 2026): a send_alerts failure must never skip
+          # this rebuild the way one shared step did before.
+          if [ ! -d /tmp/premium ]; then
+            git clone --depth 1 "https://TalR24:${PREMIUM_PUSH_TOKEN}@github.com/TalR24/nycur-data-premium.git" /tmp/premium
+          fi
+          PREMIUM_DIR=/tmp/premium python3 civic_reference/nyc_council_legislation_trackers/pipeline/build_ask_index.py
+          cd /tmp/premium
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add worker/ask_index.json
+          if git diff --cached --quiet; then
+            echo "Ask index unchanged."
+          else
+            git commit -m "Monthly refresh: Ask index"
             git push
           fi

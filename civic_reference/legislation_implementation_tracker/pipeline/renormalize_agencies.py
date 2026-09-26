@@ -5,7 +5,7 @@ agency_crosswalk.json, without any Claude calls.
 
 Use after the crosswalk gains variants or canonical overrides: it rewrites
 cache/extracted/*.json in place, then `extract_obligations.py --incremental`
-rebuilds obligations.json (and the members CSV) from the refreshed cache.
+rebuilds obligations.json and powers.json from the refreshed cache.
 
     python3 pipeline/renormalize_agencies.py
     python3 pipeline/extract_obligations.py --incremental

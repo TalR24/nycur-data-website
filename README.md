@@ -10,12 +10,12 @@ A companion site to [NYCuriosity](https://www.nycuriosity.com), a Substack publi
 
 ## ⚠️ Premium data paywall (members-only tools)
 
-The **NYC CB Resolutions Dashboard** is **paywalled** (launched Jul 2026); its public URL here serves a **teaser page** and the working tool lives on a separate **private** origin, alongside the member tools (Ask the Trackers, alerts, district briefs, watchlist). The NYC Council Fiscal Impacts Tracker was paywalled from Jul to Sep 24 2026 and is now free (see the Legislation Trackers section).
+The **NYC CB Resolutions Dashboard** is **paywalled** (launched Jul 2026); its public URL here serves a **teaser page** and the working tool lives on a separate **private** origin, alongside the member tools (Ask the Trackers, alerts, district briefs, watchlist). The NYC Council Fiscal Impacts Tracker was paywalled from Jul 5 to Jul 18 2026 and has been free since. On Sep 24 2026 the Legislation Trackers dropped all data downloads, members included (see the Legislation Trackers section).
 
 - **Real tools live in the PRIVATE repo** `TalR24/nycur-data-premium` → Cloudflare Worker (static assets) → **`premium.nycuriosity.com`**, gated by **Cloudflare Access** (email one-time-PIN + allowlist). **Never put these tools' data back in this public repo** — that bypasses the paywall.
-- **Public side (this repo):** `cb-resolutions/index.html` is a **teaser page** ("Become a member" → `buymeacoffee.com/nycuriosity`; "Sign in" → `premium.nycuriosity.com`). All their subpages + CSV/JSON were removed.
+- **Public side (this repo):** `cb-tools/block-party/index.html` is the **teaser page** for the resolutions dashboard (premium gate). `cb-resolutions/index.html` is now a redirect stub to `/cb-tools/`, the free Community Board tools hub (member tracker, meeting review, Robert's Rules helper, board scorecard). All the dashboard's subpages + CSV/JSON were removed from this repo.
 - **Access is manual:** when someone subscribes on Buy Me a Coffee, add their email in Cloudflare Zero Trust → Access → the app → policy **"NYCuriosity Premium"** → Emails; remove on cancellation.
-- **cb-resolutions teaser stats are HARDCODED.** When boards/resolutions are added to the database (done in other sessions), bump the `.stat-pills` + hero copy in `cb-resolutions/index.html` **and** the CB card in `index.html`.
+- **cb-tools/block-party teaser stats are HARDCODED.** When boards/resolutions are added to the database (done in other sessions), bump the `.stat-pills` + hero copy in `cb-tools/block-party/index.html` **and** the CB card in `index.html`.
 - **SEO:** teasers stay indexable (marketing); the premium origin is `noindex`/robots-disallowed. Keep `sitemap.xml` free of the removed gated subpages — it should list only the two teaser hubs, not their old subpages.
 
 Full architecture, deploy steps, and the approved Buy Me a Coffee copy are in the **private repo's README** (`nycur-data-premium/README.md`).
@@ -24,7 +24,7 @@ Full architecture, deploy steps, and the approved Buy Me a Coffee copy are in th
 
 ## Civic Reference
 
-Standalone reference tools, listed in homepage order. New tools live under `/civic_reference/`; the CB Resolutions Dashboard predates that convention and is served from `/cb-resolutions/`.
+Standalone reference tools, listed in homepage order. New tools live under `/civic_reference/`; the CB Resolutions Dashboard predates that convention and is served from `/cb-tools/block-party/` (renamed from `/cb-resolutions/`, which is now a redirect stub).
 
 ### [State Capacity Ecosystem](https://statecapacityecosystem.com/)
 Directory, segment view, affinity network, and matchmaking for 300+ organizations working on state capacity — research, advocacy, GovTech, philanthropy, fellowships, digital services, investors, and ecosystem-builders. Underlying database curated by Henry Grunzweig. Affinity score combines description TF-IDF, shared problem statements, named funders, and segment overlap, with semantic search powered by a precomputed TF-IDF index.
@@ -51,10 +51,10 @@ Browse all ~80 NYC government bodies — agencies, elected offices, DA offices, 
 - [`/civic_reference/nyc-gov-bodies-explorer/`](https://data.nycuriosity.com/civic_reference/nyc-gov-bodies-explorer/) — main explorer (card grid + treemap)
 - [`/civic_reference/nyc-gov-bodies-explorer/methodology/`](https://data.nycuriosity.com/civic_reference/nyc-gov-bodies-explorer/methodology/) — data sources, definitions, and known limitations
 
-### [NYC CB Resolutions Dashboard](https://data.nycuriosity.com/cb-resolutions/)
+### [NYC CB Resolutions Dashboard](https://data.nycuriosity.com/cb-tools/block-party/)
 Full-text search and visualization of resolutions across seven of Manhattan's Community Boards (2002–2026). Filter by board, search full text, and compare topic and agency mentions side-by-side.
 
-**🔒 Members-only** (see the Premium data paywall section above). The public URL is now a teaser; the working dashboard and its subpages (explorer, resolutions-per-year, top-agencies, top-topics) live in the private `nycur-data-premium` repo at `premium.nycuriosity.com`. *Board and resolution counts grow over time and the teaser stats are hardcoded — update them when the database expands.*
+**🔒 Members-only** (see the Premium data paywall section above). `cb-resolutions/` is now a redirect stub to `/cb-tools/`; the dashboard teaser is `/cb-tools/block-party/`, and the working dashboard and its subpages (explorer, resolutions-per-year, top-agencies, top-topics) live in the private `nycur-data-premium` repo at `premium.nycuriosity.com`. *Board and resolution counts grow over time and the teaser stats are hardcoded — update them when the database expands.*
 
 ---
 
@@ -162,19 +162,23 @@ Page types and how the button attaches:
 │       └── civic-tech-build-night/                → Event page + projects (incl. rehosted
 │                                                    TIDELINE dashboard under tideline/)
 │
+├── pipeline/                                       → Fiscal Impacts Tracker pipeline (fetch, agency
+│                                                    canon, regenerate_agency_data.py; see PIPELINE_REFERENCE.md)
+│
 ├── civic_reference/                               → Standalone interactive tools
 │   ├── cb_member_guide/                           → CB member field guide (slide deck + handout)
-│   ├── nyc_council_fiscal_impacts_tracker/
-│   │   ├── index.html                             → Members-only teaser (full tool + data live in
-│   │   │                                            the private nycur-data-premium repo)
-│   │   └── PIPELINE_REFERENCE.md                  → Pipeline + schema reference (pipeline scripts
-│   │                                                and monthly refresh also live in the private repo)
+│   ├── nyc_council_fiscal_impacts_tracker/        → Free tool: overview/, data/, methodology/
+│   │   ├── index.html                             → Fiscal Impacts Tracker (free since Jul 18 2026)
+│   │   └── PIPELINE_REFERENCE.md                  → Pipeline + schema reference
+│   ├── legislation_implementation_tracker/        → Obligations + Powers trackers, methodology, pipeline/
+│   ├── nyc_council_legislation_trackers/          → Shared Law Explorer, member/agency profiles, pipeline/
 │   └── nyc-gov-bodies-explorer/
 │       ├── index.html                             → Card grid + D3 treemap
 │       └── methodology/
 │
-├── cb-resolutions/                                → Pointer page → Block Party (blockparty.studio),
-│                                                    the external home of the CB resolutions data
+├── cb-tools/                                      → CB Resolutions Dashboard + explorer, member-tracker,
+│                                                    Block Party maps, and related CB tools
+├── cb-resolutions/                                → Redirect stub → /cb-tools/ (old URL — do not delete)
 │
 ├── nycuriosity_substack_posts/                    → Charts and tables tied to Substack posts
 │   ├── state_capacity_ai/
@@ -195,12 +199,18 @@ New post data projects follow the pattern described in `CLAUDE.md` and `visualiz
 
 ## GitHub Actions
 
-One scheduled workflow runs in `.github/workflows/`:
+Nine workflows live in `.github/workflows/`:
 
 | Workflow | Schedule | What it does |
 |---|---|---|
-| `refresh_state_capacity.yml` | 6 AM ET daily | Detects changes to `directory.csv` (rebuilds org JSON + patches stat strings) and `connect_submissions.csv` (rebuilds connect.json + emails new entries) independently. Requires `GMAIL_USER` and `GMAIL_APP_PASSWORD` secrets. |
-
-The Legislation Trackers refresh in this repo on the 1st of each month: `refresh_implementation_data.yml` (14:40 UTC) and `refresh_fiscal_data.yml` (15:23 UTC). Other workflows in `.github/workflows/` cover the mention monitor, SEO, site health and community board data.
+| `refresh_fiscal_data.yml` | 1st of each month, 11:23 UTC | Fetches new Council fiscal impact statements and rebuilds the Fiscal Impacts Tracker data. |
+| `refresh_implementation_data.yml` | 1st of each month, 14:40 UTC (3h+ after the fiscal refresh, so alerts, the Ask index and member/agency profiles read that month's fiscal data) | Fetches newly enacted laws, re-extracts queued laws, rebuilds obligations/powers/member/agency data, sends member alerts, and rebuilds the Ask index. |
+| `claude_backfill.yml` | Manual only | One-off Anthropic API tasks: schema canary, duty/power labeling, the full re-extraction backfill, and model pilots. |
+| `monthly_quality_report.yml` | 3rd of each month, 14:00 UTC | Runs the tracker validators and emails a quality report. |
+| `opportunity_monitor.yml` | Saturdays, 12:00 UTC | Scans for outreach or coverage opportunities. |
+| `mention_monitor.yml` | Daily, 11:30 UTC | Watches for new mentions of NYCuriosity; sends a Sunday digest. |
+| `refresh_cb_member_data.yml` | 5th of each month, 11:23 UTC | Refreshes Community Board member tracker data. |
+| `seo_monthly.yml` | 2nd of each month, 12:00 UTC | Builds the monthly SEO report. |
+| `site_health.yml` | Mondays, 11:00 UTC | Checks site health. |
 
 Workflows require the repo's **Workflow permissions** set to "Read and write permissions" (Settings → Actions → General) so `GITHUB_TOKEN` can push commits.

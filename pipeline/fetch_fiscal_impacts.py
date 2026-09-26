@@ -10,6 +10,9 @@ Usage:
     python fetch_fiscal_impacts.py --incremental
     python fetch_fiscal_impacts.py --incremental --historical
     python fetch_fiscal_impacts.py --incremental --historical --historical-years 2010-2023
+    python fetch_fiscal_impacts.py --seed-laws auto
+    python fetch_fiscal_impacts.py --matters 12345,67890
+    python fetch_fiscal_impacts.py --reextract superseded
     python fetch_fiscal_impacts.py --dry-run
     python fetch_fiscal_impacts.py --help
 
@@ -20,6 +23,10 @@ Notes:
     - Uses Legistar's public web interface (no API token required)
     - Caches downloaded .docx files in pipeline/cache/docx/ to avoid re-downloading
     - Run with --incremental in GitHub Actions to only process new matters
+    - --seed-laws checks laws.json directly for fiscal statements Legistar's
+      attachment search misses; --matters targets specific matter ids;
+      --reextract replaces records already in the table in place
+    - fiscal_overrides.json applies blind-audit corrections on every save
 """
 
 from __future__ import annotations
@@ -62,8 +69,10 @@ LAWS_PATH    = REPO_ROOT / "civic_reference" / "legislation_implementation_track
 # "at least" scenario, whether the costed program itself sunsets) in blind
 # audit rounds 3 and 4; Tal approved the switch
 CLAUDE_MODEL = "claude-sonnet-5"
-# Haiku 4.5 reads 200K tokens; 18,000 chars (~4.5K tokens) cut the end of long
-# statements, where the OMB section, preparer and date live.
+# Sonnet 5 (and the Haiku 4.5 it replaced) reads far more than this; 18,000
+# chars (~4.5K tokens) cut the end of long statements, where the OMB section,
+# preparer and date live, so the cap stays generous rather than tight to the
+# model's context window.
 FIS_TEXT_CAP = 150_000
 
 # ── Output schema (structured outputs: the API guarantees parseable JSON) ────

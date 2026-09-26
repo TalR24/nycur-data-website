@@ -1,8 +1,8 @@
-> **Note (Jul 2026):** The pipeline scripts, the monthly refresh GitHub Action, and the data files described below now live in the **private** `TalR24/nycur-data-premium` repo (the tracker is members-only). This public copy documents the methodology; paths below are relative to that private repo.
-
 # NYC Council Fiscal Impacts Tracker — Pipeline Reference
 
-This document is the complete reference for running, maintaining, and extending the NYC Council Fiscal Impacts Tracker. Read it before touching the pipeline, data, or frontend.
+The tracker is free (no paywall, no data downloads, since Sep 24 2026). Pipeline scripts, the monthly refresh GitHub Action, and the data files all live in this repo (`data_website/`); paths below are relative to it.
+
+For running the pipeline, environment variables, and current ops details, see the `fiscal-impacts-tracker` skill (`/Users/troded/nycur/.claude/skills/fiscal-impacts-tracker/SKILL.md`). This document keeps the schema and frontend reference below, which is still accurate.
 
 ---
 
@@ -12,7 +12,7 @@ An interactive data tool at `data.nycuriosity.com/civic_reference/nyc_council_fi
 
 **Live URL:** `https://data.nycuriosity.com/civic_reference/nyc_council_fiscal_impacts_tracker/`
 **GitHub repo:** `TalR24/nycur-data-website`
-**Current record count:** 244 bills (2014–2026, as of June 2026)
+**Current record count:** see `data/fiscal_impacts.json` (dated counts live in the `fiscal-impacts-tracker` skill, not here)
 
 ---
 
@@ -24,7 +24,7 @@ data_website/
 │   ├── index.html                          ← Frontend: interactive bill table page
 │   ├── PIPELINE_REFERENCE.md               ← This file
 │   ├── data/
-│   │   └── fiscal_impacts.json             ← Master data file (307 records)
+│   │   └── fiscal_impacts.json             ← Master data file (record count in the fiscal-impacts-tracker skill)
 │   └── agency-fiscal-impact/
 │       ├── index.html                      ← Bar chart: fiscal impact by agency
 │       └── data.json                       ← Enriched data for the agency chart
@@ -47,111 +47,16 @@ data_website/
 
 ## Running the Pipeline
 
-### Prerequisites
-
-```bash
-pip install -r pipeline/requirements.txt
-# Packages: requests, python-docx, anthropic
-```
-
-### Environment variables
-
-```bash
-export ANTHROPIC_API_KEY=sk-ant-...     # required for all Claude extraction runs
-export LEGISTAR_TOKEN=...               # required for historical scraper Phase 1 enumeration
-```
-
-Get/manage Anthropic keys at `console.anthropic.com`. Claude Haiku is used (~$0.001 per document).
-Legistar token: a public 2017 read token is stored in Claude memory (`reference_github.md`).
-For GitHub Actions, `ANTHROPIC_API_KEY` is stored as a repository secret.
-
-### Incremental run (monthly top-up for new 2024+ bills)
-
-```bash
-cd data_website
-python3 pipeline/fetch_fiscal_impacts.py --incremental
-```
-
-**No `--years` flag** — the pipeline searches "All Years" and paginates. Legistar's year filter is non-functional. The `--incremental` flag skips matter IDs already in `fiscal_impacts.json`.
-
-### Historical run (2014–2023, requires Legistar token)
-
-```bash
-cd data_website
-export LEGISTAR_TOKEN=...
-export ANTHROPIC_API_KEY=...
-
-# Phase 1: enumerate all matters via REST API (~10 seconds, no Claude)
-python3 pipeline/fetch_fiscal_impacts_historical.py --years 2014-2023 --phase 1
-
-# Phase 2: check each matter for fiscal attachment, extract via Claude, save
-python3 pipeline/fetch_fiscal_impacts_historical.py --years 2014-2023 --phase 2
-```
-
-The historical scraper checkpoints progress to `cache/historical_checkpoint.json` and auto-resumes if interrupted. After Phase 2, it automatically merges into `fiscal_impacts.json`.
+Full run instructions (prerequisites, environment variables, incremental and historical runs, current flags including `--seed-laws`, `--matters`, `--reextract`, and `fiscal_overrides.json`) live in the `fiscal-impacts-tracker` skill. The model is `claude-sonnet-5` (`pipeline/fetch_fiscal_impacts.py`), not Haiku.
 
 **After any pipeline run that adds new records**, regenerate `agency-fiscal-impact/data.json`:
 
 ```bash
-python3 - <<'EOF'
-import json, re
-
-with open("civic_reference/nyc_council_fiscal_impacts_tracker/data/fiscal_impacts.json") as f:
-    data = json.load(f)
-records = data["records"]
-
-def get_intro_year(rec):
-    # 1. date_prepared year (most reliable — FIS prep date closely tracks bill introduction)
-    dp = rec.get("date_prepared") or ""
-    m = re.search(r'\b(20\d{2})\b', str(dp))
-    if m:
-        yr = int(m.group(1))
-        if 2010 <= yr <= 2030:
-            return yr
-    # 2. T-type prefix in file_number: "Int. No. T2026-0123" → 2026
-    fn = str(rec.get("file_number") or "")
-    m2 = re.search(r'\bT(20\d{2})\b', fn)
-    if m2:
-        yr = int(m2.group(1))
-        if 2010 <= yr <= 2030:
-            return yr
-    # 3. Hyphenated year suffix: "Int 0360-2014" → 2014 (validated)
-    m3 = re.search(r'-(20\d{2})$', fn)
-    if m3:
-        yr = int(m3.group(1))
-        if 2010 <= yr <= 2030:
-            return yr
-    # 4. Fall back to processed_at year
-    pa = rec.get("processed_at") or ""
-    return int(pa[:4]) if pa else None
-
-def normalize_fy(fy):
-    if not fy: return None
-    m = re.search(r'(\d{2,4})', str(fy))
-    if not m: return None
-    yr = m.group(1)
-    if len(yr) == 4: yr = yr[2:]
-    return f"FY{yr}"
-
-enriched = []
-for rec in records:
-    r = dict(rec)
-    r["intro_year"] = get_intro_year(rec)
-    r["fy_first_normalized"] = normalize_fy(rec.get("fy_first_effective"))
-    enriched.append(r)
-
-committees  = sorted(set(r["committee"] for r in enriched if r.get("committee")))
-sponsors    = sorted(set(r["prime_sponsor"] for r in enriched if r.get("prime_sponsor")))
-intro_years = sorted(set(r["intro_year"] for r in enriched if r.get("intro_year")))
-fiscal_years= sorted(set(r["fy_first_normalized"] for r in enriched if r.get("fy_first_normalized")))
-
-output = {"records": enriched, "filter_options": {"committees": committees, "sponsors": sponsors, "intro_years": intro_years, "fiscal_years": fiscal_years}}
-
-with open("civic_reference/nyc_council_fiscal_impacts_tracker/agency-fiscal-impact/data.json","w") as f:
-    json.dump(output, f, indent=2, ensure_ascii=False)
-print(f"Written {len(enriched)} records")
-EOF
+cd data_website
+python3 pipeline/regenerate_agency_data.py
 ```
+
+`regenerate_agency_data.py` is the current generator (it also applies the Legistar File # intro-year rule); it replaces the inline script this doc used to carry, which had drifted out of sync with it.
 
 ---
 
@@ -331,9 +236,9 @@ def normalize_name(name):
 ## GitHub Actions Auto-Refresh
 
 **File:** `.github/workflows/refresh_fiscal_data.yml`
-**Schedule:** 1st of each month at 7:00 AM UTC (can be triggered manually)
+**Schedule:** 1st of each month at 11:23 UTC (can be triggered manually); current cron and env vars are in the workflow file and the `fiscal-impacts-tracker` skill, not repeated here.
 
-The workflow runs `fetch_fiscal_impacts.py --incremental` and commits `fiscal_impacts.json` if changed. It does **not** run the historical scraper — that requires the Legistar token which is not stored as a secret.
+The workflow runs `fetch_fiscal_impacts.py --incremental` and commits `fiscal_impacts.json` if changed. The historical scraper only runs on manual dispatch with a `rest_years` input, using the `LEGISTAR_TOKEN` repository secret (not skipped for lack of a secret, as this doc previously said).
 
 ---
 

@@ -3,9 +3,10 @@
 Populate reextract_queue.json with EVERY law except the audited exclusions
 (pipeline/reextract_exclusions.json) and laws already queued, for a full-corpus
 re-extraction with the hardened prompt. Run this, commit the queue, then
-dispatch the refresh workflow repeatedly; each run processes REEXTRACT_LIMIT
-laws (default 200) and defers the rest, so ~10 dispatches cover the corpus.
-Existing queue entries (e.g. attachment-only laws) are preserved.
+dispatch claude_backfill.yml (task reextract_obligations) repeatedly; each run
+processes REEXTRACT_LIMIT laws (200/run as of Sep 26 2026) and defers the
+rest, until the queue drains. Existing queue entries (e.g. attachment-only
+laws) are preserved. One-off: delete this script once the queue is empty.
 """
 import json
 from pathlib import Path

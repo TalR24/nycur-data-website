@@ -1695,9 +1695,13 @@ def main() -> None:
         log.error("duplicate obligation_ids (fix the cache file, then rebuild): %s",
                   ", ".join(sorted(_dupes)))
 
+    # Per-law model counts, not a single top-level label: a rebuild mid
+    # re-extraction has laws on more than one model at once (Sep 26 2026).
+    model_counts = dict(_Counter(res.get("model", "unknown") for res in all_results))
+
     out = {
         "generated_at": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"),
-        "model": args.model,
+        "model_counts": model_counts,
         "law_count": len(law_summaries),
         "obligation_count": len(flat),
         "laws": sorted(law_summaries,
@@ -1710,12 +1714,13 @@ def main() -> None:
     OUT_JSON.write_text(json.dumps(out, separators=(",", ":")))
     POWERS_JSON.write_text(json.dumps({
         "generated_at": out["generated_at"],
-        "model": args.model,
+        "model_counts": model_counts,
         "power_count": len(powers),
         "powers": powers,
     }, separators=(",", ":")))
 
-    # CSV companion for the Download CSV button
+    # Local-only analysis CSVs (gitignored). The trackers offer no data
+    # downloads, members included (Tal, Sep 24 2026); these are not served.
     import csv as csvmod
     csv_path = DATA / "obligations.csv"
     csv_cols = ["law_number_display", "file_number", "agency", "agency_full",

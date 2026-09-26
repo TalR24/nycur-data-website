@@ -15,9 +15,9 @@ Env:
     PREMIUM_DIR   path to a checkout of nycur-data-premium (required)
 
 The tokenizer here (`tokenize`, `law_number_tokens`) must stay in lockstep
-with worker/index.js's copy — see tests/tokenizer_parity in this folder's
-README note in section 7b of the build orders. Any change here needs the
-matching change there.
+with worker/index.js's copy. Parity is checked by
+nycur-data-premium/worker/tests/tokenizer_parity.test.js. Any change here
+needs the matching change there.
 """
 from __future__ import annotations
 

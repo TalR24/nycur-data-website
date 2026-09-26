@@ -70,7 +70,9 @@ jobs:
         run: |
           python3 pipeline/reextract_queued.py
           python3 pipeline/extract_obligations.py --incremental
-          cd ../nyc_council_legislation_trackers && python3 pipeline/build_member_stats.py
+          cd ../nyc_council_legislation_trackers
+          python3 pipeline/build_member_stats.py
+          python3 pipeline/build_agency_profiles.py
 
       - name: Pilot another model on a few laws (no commit)
         if: ${{ inputs.task == 'pilot_obligations' }}
@@ -106,6 +108,7 @@ jobs:
             civic_reference/legislation_implementation_tracker/pipeline/reextract_queue.json
             civic_reference/legislation_implementation_tracker/pipeline/cache/extracted/
             civic_reference/nyc_council_legislation_trackers/data/members.json
+            civic_reference/nyc_council_legislation_trackers/data/agencies.json
           retention-days: 30
 
       - name: Commit results
@@ -116,7 +119,8 @@ jobs:
           L=civic_reference/legislation_implementation_tracker
           for f in $L/pipeline/kind_labels.json $L/data/obligations.json $L/data/powers.json \
                    $L/data/laws.json $L/data/restated_links.json $L/pipeline/reextract_queue.json \
-                   civic_reference/nyc_council_legislation_trackers/data/members.json; do
+                   civic_reference/nyc_council_legislation_trackers/data/members.json \
+                   civic_reference/nyc_council_legislation_trackers/data/agencies.json; do
             if [ -f "$f" ]; then git add "$f"; fi
           done
           if git diff --cached --quiet; then echo "Nothing to commit"; exit 0; fi

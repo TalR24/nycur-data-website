@@ -2,8 +2,12 @@
 """
 Re-extract the laws listed in pipeline/reextract_queue.json.
 
-Runs inside the monthly Action (which holds ANTHROPIC_API_KEY) between the
-fetch and extract steps. For each queued matter it:
+Runs inside the monthly Action (refresh_implementation_data.yml, which holds
+ANTHROPIC_API_KEY) between the fetch and extract steps, using the
+REEXTRACT_LIMIT/REEXTRACT_WORKERS env vars, the exclusions list, and
+guard_reextraction. Also runs as the main path of the one-off backfill
+(claude_backfill.yml, task reextract_obligations), with its own
+REEXTRACT_LIMIT/REEXTRACT_WORKERS. For each queued matter it:
 
   1. fetches the Legistar detail page and pulls the enacted text; if the page
      text is an attachment placeholder (or too short), downloads the first

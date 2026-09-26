@@ -14,7 +14,7 @@ The full text is the input to Step 2 (extract_obligations.py). Detail pages
 render the latest (enacted) version of the bill text by default.
 
 Usage:
-    python3 pipeline/fetch_enacted_laws.py                 # years 2024-2026
+    python3 pipeline/fetch_enacted_laws.py                 # years 2014-current
     python3 pipeline/fetch_enacted_laws.py --years 2024 2025
     python3 pipeline/fetch_enacted_laws.py --incremental   # skip cached laws
 
