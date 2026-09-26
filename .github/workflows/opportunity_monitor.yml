@@ -1,0 +1,102 @@
+name: Opportunity Monitor
+
+on:
+  schedule:
+    - cron: "0 12 * * 6"   # Saturday 12:00 UTC = 8:00 EDT / 7:00 EST
+  workflow_dispatch:
+    inputs:
+      send_email:
+        description: "Email the digest when it runs"
+        type: boolean
+        default: false
+      no_fetch:
+        description: "Skip the page re-check (state and digest only)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read   # state commits go to the private repo via PREMIUM_PUSH_TOKEN
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r opportunity_monitor/requirements.txt
+
+      - name: Run offline tests
+        run: python3 -m unittest discover -s opportunity_monitor -p "test_monitor.py" -v
+
+      # State (pages.json, digests, last_run.json) lives in the private
+      # premium repo alongside the watch list it reads: the list is Tal's
+      # private opportunities pipeline and must not be public.
+      - name: Check out private state
+        env:
+          PREMIUM_PUSH_TOKEN: ${{ secrets.PREMIUM_PUSH_TOKEN }}
+        run: |
+          git clone --depth 1 "https://TalR24:${PREMIUM_PUSH_TOKEN}@github.com/TalR24/nycur-data-premium.git" "$RUNNER_TEMP/premium"
+          mkdir -p "$RUNNER_TEMP/premium/opportunities/state/digests"
+
+      - name: Run opportunity monitor
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          MENTION_DIGEST_TO: ${{ secrets.MENTION_DIGEST_TO }}
+          OPPS_DIGEST_TO: ${{ secrets.OPPS_DIGEST_TO }}
+          OPPS_TRACKER_URL: ${{ secrets.OPPS_TRACKER_URL }}
+        # A scheduled run always emails, even when quiet: a missing email
+        # must mean failure, not "nothing to report".
+        run: |
+          python3 opportunity_monitor/monitor.py \
+            --watchlist "$RUNNER_TEMP/premium/opportunities/watchlist.yaml" \
+            --state-dir "$RUNNER_TEMP/premium/opportunities/state" \
+            ${{ (github.event_name == 'schedule' || inputs.send_email) && '--email' || '' }} \
+            ${{ inputs.no_fetch && '--no-fetch' || '' }}
+
+      - name: Email on failure
+        if: failure()
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          OPPS_DIGEST_TO: ${{ secrets.OPPS_DIGEST_TO }}
+          MENTION_DIGEST_TO: ${{ secrets.MENTION_DIGEST_TO }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          python3 - <<'EOF'
+          import os, smtplib
+          from email.mime.text import MIMEText
+          user, pw = os.environ.get("GMAIL_USER"), os.environ.get("GMAIL_APP_PASSWORD")
+          if user and pw:
+              msg = MIMEText("The opportunities radar run failed. Nothing was checked or "
+                             "emailed today.\n\n" + os.environ["RUN_URL"] + "\n")
+              msg["Subject"] = "Opportunities radar run failed"
+              msg["From"] = user
+              msg["To"] = os.environ.get("OPPS_DIGEST_TO") or os.environ.get("MENTION_DIGEST_TO") or user
+              with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=30) as s:
+                  s.login(user, pw); s.send_message(msg)
+              print("Failure email sent.")
+          EOF
+
+      - name: Commit state to the private repo
+        if: always()
+        run: |
+          cd "$RUNNER_TEMP/premium"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -A opportunities/state
+          if git diff --cached --quiet; then
+            echo "No state changes."
+          else
+            git commit -m "Opportunities radar: update state and digest"
+            git pull --rebase origin main
+            git push
+          fi
