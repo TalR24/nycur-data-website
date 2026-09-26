@@ -500,5 +500,24 @@ class LoadRobustnessTests(unittest.TestCase):
         monitor.build_sections(monitor.filter_items(items), date(2026, 10, 3), [])
 
 
+class PrioritySectionTests(unittest.TestCase):
+    def test_priorities_first_chronological_and_not_duplicated(self):
+        today = date(2026, 10, 3)
+        items = [
+            {"id": "sod", "name": "School of Data", "priority": True, "deadline_kind": "expected", "expected_month": 12, "status": "watch"},
+            {"id": "uts", "name": "Urban Tech Summit", "priority": True, "deadline": date(2026, 11, 10), "deadline_kind": "event", "status": "watch"},
+            {"id": "vc", "name": "Vital City", "priority": True, "deadline_kind": "rolling", "status": "watch"},
+            {"id": "x", "name": "Other", "deadline": date(2026, 10, 20), "deadline_kind": "set", "status": "watch"},
+            {"id": "p", "name": "Pursued priority", "priority": True, "deadline": date(2026, 10, 9), "status": "pursue"},
+        ]
+        sections, _ = monitor.build_sections(items, today, [])
+        self.assertEqual([i["id"] for i in sections["priorities"]], ["uts", "sod", "vc"])
+        self.assertEqual([i["id"] for i in sections["closing45"]], ["x"])
+        self.assertEqual([i["id"] for i in sections["pursuing"]], ["p"])
+        self.assertNotIn("vc", [i["id"] for i in sections["rolling_open"]])
+        text = monitor.build_digest_text(sections, {}, today, None, [])
+        self.assertLess(text.index("Your priorities"), text.index("Closing in the next 45 days"))
+
+
 if __name__ == "__main__":
     unittest.main()

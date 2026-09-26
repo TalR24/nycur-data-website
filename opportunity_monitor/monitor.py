@@ -63,6 +63,7 @@ MONTH_NAMES = [
 ]
 
 SECTION_TITLES = [
+    ("priorities", "Your priorities"),
     ("pursuing", "Pursuing"),
     ("closing45", "Closing in the next 45 days"),
     ("new_week", "New this week"),
@@ -159,6 +160,19 @@ def score_item(item, today):
     return fit + payoffs + bonus - penalty
 
 
+def _next_date(item, today):
+    """When the item next matters: its deadline, else the first day of its
+    expected month (this year or next), else never. Orders the priorities
+    section chronologically."""
+    if item.get("deadline"):
+        return item["deadline"]
+    m = item.get("expected_month")
+    if _valid_month(m):
+        year = today.year if m >= today.month else today.year + 1
+        return date(year, m, 1)
+    return date.max
+
+
 def _sort_key(item, today):
     deadline = item.get("deadline") or date.max
     return (-score_item(item, today), deadline)
@@ -250,7 +264,7 @@ def check_pages(items, state, today, no_fetch, fetch_fn=None):
                     new_lines = [l for l in lines if l not in prev_lines][:6]
                     if new_lines:
                         changes.append({
-                            "id": item["id"], "name": item["name"], "url": item["url"],
+                            "id": item["id"], "name": item.get("name") or item["id"], "url": item.get("url") or "",
                             "new_lines": new_lines,
                         })
                 state[item["id"]] = {
@@ -270,14 +284,24 @@ def build_sections(items, today, page_changes):
     pursuing = [i for i in items if i.get("status") in PURSUING_STATUSES]
     pursuing_ids = {i["id"] for i in pursuing}
 
+    # Tal's named priorities show every week in their own section, so they
+    # are left out of the date-driven sections below to avoid listing them
+    # twice. Changed pages and past deadlines still include them.
+    priorities = sorted(
+        (i for i in items if i.get("priority") and i["id"] not in pursuing_ids),
+        key=lambda i: (_next_date(i, today), i.get("name") or ""),
+    )
+    priority_ids = {i["id"] for i in priorities}
+    items_np = [i for i in items if i["id"] not in priority_ids]
+
     closing45 = [
-        i for i in items
+        i for i in items_np
         if i.get("deadline") and i["id"] not in pursuing_ids
         and today <= i["deadline"] <= today + timedelta(days=45)
     ]
 
     new_week = [
-        i for i in items
+        i for i in items_np
         if i.get("status") == "new"
         or (i.get("added") and 0 <= (today - i["added"]).days <= 7)
     ]
@@ -285,7 +309,7 @@ def build_sections(items, today, page_changes):
     this_month = today.month
     next_month = (this_month % 12) + 1
     windows = [
-        i for i in items
+        i for i in items_np
         if i.get("deadline_kind") == "expected"
         and _valid_month(i.get("expected_month"))
         and i["expected_month"] in {this_month, next_month}
@@ -296,13 +320,13 @@ def build_sections(items, today, page_changes):
     rolling_open = []
     watching_no_date = []
     if today.day <= 7:
-        rolling_open = [i for i in items if i.get("deadline_kind") in {"rolling", "open"}]
+        rolling_open = [i for i in items_np if i.get("deadline_kind") in {"rolling", "open"}]
         # Not on the calendar at all yet: an expected call with no
         # expected_month, or an event with no deadline. Surfaced only
         # alongside rolling/open, on the same first-Saturday cadence, so
         # they get a periodic nudge to fill in a real date.
         watching_no_date = [
-            i for i in items
+            i for i in items_np
             if (i.get("deadline_kind") == "expected" and not _valid_month(i.get("expected_month")))
             or (i.get("deadline_kind") == "event" and not i.get("deadline"))
         ]
@@ -317,6 +341,7 @@ def build_sections(items, today, page_changes):
         return sorted(lst, key=lambda i: _sort_key(i, today))
 
     sections = {
+        "priorities": priorities,
         "pursuing": s(pursuing),
         "closing45": s(closing45),
         "new_week": s(new_week),
@@ -354,8 +379,8 @@ def _format_deadline(item, today):
 def _item_parts(item, today):
     deadline_str, days_str = _format_deadline(item, today)
     return {
-        "name": item["name"],
-        "url": item["url"],
+        "name": item.get("name") or item["id"],
+        "url": item.get("url") or "",
         "deadline": deadline_str,
         "days_left": days_str,
         "category": item.get("category") or "",
