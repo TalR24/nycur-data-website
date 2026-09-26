@@ -100,7 +100,16 @@
        horizontal scroll. Patched here because site.js is the one stylesheet
        shared across the site. Pages without site.js (SCE, /members/, redirect
        stubs) still need this locally. */
-    '.footer-links{flex-wrap:wrap;}';
+    '.footer-links{flex-wrap:wrap;}' +
+    /* Wider desktop layout (Tal, Sep 26 2026): on screens 1100px and up the
+       content column uses 1240px and intros 920px instead of a narrow 900/680.
+       Below 1100px every page keeps its own widths, so phones are unchanged.
+       !important because pages set these widths in their own <style>. */
+    '@media (min-width:1100px){' +
+      '.header-inner,.hero-inner,.main-inner,.footer-inner,.stat-row-inner,.charts-inner,' +
+      '.sitenav-inner,.relwork-inner,.trk-studio-inner{max-width:1240px !important;}' +
+      '.hero p{max-width:920px !important;}' +
+    '}';
   document.head.appendChild(styleEl);
 
   function toolsHtml() {
