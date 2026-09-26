@@ -224,8 +224,21 @@ def agency_records(records: list[dict]) -> dict:
     return out
 
 
+_ISO = re.compile(r"\b(20\d\d|19\d\d)-(\d\d)-(\d\d)\b")
+_MONTHS = ["January", "February", "March", "April", "May", "June", "July",
+           "August", "September", "October", "November", "December"]
+
+
+def tidy(x: str) -> str:
+    """ISO dates -> "January 3, 2026" (answers quote them), single spaces."""
+    x = _ISO.sub(lambda m: f"{_MONTHS[int(m[2]) - 1]} {int(m[3])}, {m[1]}"
+                 if 1 <= int(m[2]) <= 12 else m[0], x)
+    return re.sub(r"\s{2,}", " ", x)
+
+
 def add_record(records, postings, rtype, x, u, extra_tokens, agencies=(), year=None):
     idx = len(records)
+    x = tidy(x)
     rec = {"t": rtype, "x": x, "u": u}
     if agencies:
         rec["a"] = sorted({a for a in agencies if a})
@@ -328,6 +341,9 @@ def main() -> int:
         emit_duty_or_power(o, "power")
 
     # ── laws ───────────────────────────────────────────────────────────
+    # laws.json carries no counts; obligations.json's law rows do
+    counts_by_law = {l["matter_id"]: (l.get("obligation_count") or 0, l.get("power_count") or 0)
+                     for l in obligations_doc.get("laws", [])}
     by_matter: dict[str, list] = {}
     for o in obligations_doc.get("obligations", []) + powers_doc.get("powers", []):
         by_matter.setdefault(o.get("matter_id"), []).append(o)
@@ -339,7 +355,8 @@ def main() -> int:
         x = (
             f"{law_disp}: {title}. Enacted {law.get('enactment_date') or 'unknown date'}. "
             f"Prime sponsor {prime}; {co_sponsors} co-sponsor{'s' if co_sponsors != 1 else ''}. "
-            f"{law.get('obligation_count', 0)} duties, {law.get('power_count', 0)} powers."
+            f"{counts_by_law.get(law.get('matter_id'), (0, 0))[0]} duties, "
+            f"{counts_by_law.get(law.get('matter_id'), (0, 0))[1]} powers."
         )
         u = LAW_LINK_BASE + law.get("matter_id", "")
         tokens = tokenize(x) + law_number_tokens(law_disp) + tokenize(prime)
