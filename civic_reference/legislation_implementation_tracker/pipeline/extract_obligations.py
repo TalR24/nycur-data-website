@@ -1405,6 +1405,10 @@ def extract_law(client, model: str, law: dict, text: str,
                 merged.append(o)
         for i, o in enumerate(merged, 1):
             o["obligation_id"] = f"{law['matter_id']}-{i:02d}"
+            # labels were computed against the window's text, which can carry
+            # markers the split added; recompute against the whole law
+            o["kind_rule"] = classify(o.get("quote", ""), text)
+            o["kind_list_item"] = is_list_item(o.get("quote", ""), text)
         return {"matter_id": law["matter_id"],
                 "model": model,
                 "extracted_at": datetime.now().isoformat(timespec="seconds"),
@@ -1546,6 +1550,7 @@ def main() -> None:
                 "matter_id": l["matter_id"],
                 "effective_clause": {"text": l.get("effective_clause_text")},
                 "effective_date": l.get("effective_date"),
+                "model": l.get("extraction_model", "unknown"),
                 "obligations": obs_by_matter.get(l["matter_id"], []),
             }
 
@@ -1602,6 +1607,9 @@ def main() -> None:
                 "enactment_date", "legistar_indexes"]},
             "effective_date": res["effective_date"],
             "effective_clause_text": (res.get("effective_clause") or {}).get("text"),
+            # which model extracted this law, kept on the row so rebuilds that
+            # reconstruct a law from the committed data do not lose it
+            "extraction_model": res.get("model", "unknown"),
             "obligation_count": sum(1 for o in res["obligations"] if _kind(o) == "duty"),
             "power_count": sum(1 for o in res["obligations"] if _kind(o) == "power"),
             "sunset_clause": law.get("sunset_clause"),
