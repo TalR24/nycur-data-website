@@ -128,6 +128,7 @@ OBLIGATIONS_SCHEMA = {
                 "properties": {
                     "actor_raw": {"type": "string"},
                     "actor_resolved": {"type": "string"},
+                    "actor_unit": _nullable({"type": "string"}),
                     "action_summary": {"type": "string"},
                     "deliverable_type": {"type": "string", "enum": DELIVERABLE_TYPES},
                     "citation": {"type": "string"},
@@ -148,7 +149,7 @@ OBLIGATIONS_SCHEMA = {
                     "provision_kind": {"type": "string", "enum": ["duty", "power", "neither"]},
                     "affected_groups": {"type": "array", "items": {"type": "string"}},
                 },
-                "required": ["actor_raw", "actor_resolved", "action_summary", "deliverable_type", "provision_kind",
+                "required": ["actor_raw", "actor_resolved", "actor_unit", "action_summary", "deliverable_type", "provision_kind",
                              "citation", "quote", "deadline", "recurrence", "affected_groups"],
                 "additionalProperties": False,
             },
@@ -183,6 +184,7 @@ Return a JSON object with this structure (the API enforces the schema; the notes
    {
      "actor_raw": "<the responsible entity exactly as the law names it, e.g. 'the department of transportation', 'the commissioner of health and mental hygiene', 'the mayor', 'a designated agency'>",
      "actor_resolved": "<the actual agency name. Laws almost always define generic references: check the definitions section ('the term department means...'), the administrative code title being amended, and 'established within the department of X' phrasing. NEVER return a bare generic like 'the department', 'the center', 'the office', 'the commission', 'the task force' - resolve it to the specific agency, or to the full name of the body the law creates (e.g. 'center for older workforce development'), or if genuinely undeterminable (e.g. 'an agency designated by the mayor') return exactly 'unspecified'>",
+     "actor_unit": "<null, unless the duty-holder is an office, division, bureau, board, council, task force, working group or other body that sits inside a city agency or that a city agency convenes or staffs: then its proper name as the law writes it (e.g. 'office of labor standards', 'shelter accessibility advisory board'), and actor_resolved is that PARENT or CONVENING agency (read the establishing sentence and who appoints, chairs or staffs the body; the mayor's office when the mayor creates or appoints it and no agency is named)>",
      "action_summary": "<one plain-English sentence: what must be done. Start with a verb, e.g. 'Establish a cultural passport program encouraging visitation to participating sites in each borough.'>",
      "deliverable_type": <one of: {deliverable_types}>,
      "citation": "<where the duty lives, e.g. 'NYC Admin. Code § 20-563.2(b)' if the law adds/amends that section, else 'Section 3 of the local law'>",
@@ -223,6 +225,9 @@ RULES:
 
 LAW METADATA (for context only):
 {metadata}
+
+DEFINING AND ESTABLISHING SENTENCES IN THIS LAW (use them to resolve generic titles such as "the director", "the board", "the coordinator", "the administering agency"; empty when none were found):
+{definitions}
 
 LAW TEXT:
 {law_text}
@@ -572,7 +577,13 @@ def is_power(quote, text=None):
 
 
 def _kind(o: dict) -> str:
-    """Published kind from the stored rule and model labels (quote-only rule as a last resort)."""
+    """Published kind from the stored rule and model labels (quote-only rule
+    as a last resort). `kind_override` (record_overrides.json `set`, Sep 27
+    2026) wins over everything: it is the only way a hand override can move a
+    record between the duties and powers tables, since the tables are
+    rebuilt from `kind` right after overrides are applied."""
+    if o.get("kind_override") in KINDS:
+        return o["kind_override"]
     rule = o.get("kind_rule") or o.get("kind") or classify(o.get("quote"))
     return final_kind(rule, o.get("kind_model"), bool(o.get("kind_list_item")))
 
@@ -699,6 +710,119 @@ _OVERRIDES_PATH = HERE / "actor_overrides.json"
 ACTOR_OVERRIDES: dict = (json.loads(_OVERRIDES_PATH.read_text())
                          if _OVERRIDES_PATH.exists() else {})
 
+# Sep 27 2026: hand-fixed records that do not fit the actor/unit resolution
+# rules above (a one-off correction to a field, a record that should not
+# exist, a record the extractor missed). pipeline/record_overrides.json:
+# {matter_id: {"set": [...], "remove": [...], "add": [...]}}. Applied LAST,
+# after every other agency rule, by apply_record_overrides() below. Starts
+# empty; reconcile_protected.py apply is the intended writer.
+_RECORD_OVERRIDES_PATH = HERE / "record_overrides.json"
+RECORD_OVERRIDES: dict = (json.loads(_RECORD_OVERRIDES_PATH.read_text())
+                          if _RECORD_OVERRIDES_PATH.exists() else {})
+
+
+def _quote_prefix_match(prefix: str, quote: str) -> bool:
+    if not prefix or not quote:
+        return False
+    return normalize_quote(quote).startswith(normalize_quote(prefix))
+
+
+def _find_candidates(records: list[dict], prefix: str, agency: str | None) -> list[dict]:
+    """Records matching an override's quote_prefix (normalize_quote prefix,
+    falling back to quote_similarity >= 0.9 when no prefix match exists),
+    narrowed to `agency` when the override entry names one (item 4e: an entry
+    may carry "agency" to disambiguate a prefix several records share)."""
+    hits = [o for o in records if _quote_prefix_match(prefix, o.get("quote") or "")]
+    if not hits:
+        best, best_sim = None, 0.0
+        for o in records:
+            sim = quote_similarity(prefix, o.get("quote") or "")
+            if sim > best_sim:
+                best, best_sim = o, sim
+        hits = [best] if best is not None and best_sim >= 0.9 else []
+    if agency:
+        narrowed = [o for o in hits if o.get("agency") == agency]
+        if narrowed:
+            return narrowed
+    return hits
+
+
+def apply_record_overrides(records: list[dict], matter_id: str,
+                           overrides: dict | None = None
+                           ) -> tuple[list[dict], list[dict]]:
+    """Apply record_overrides.json's set/remove/add for one law's records.
+
+    `records` is the law's flattened obligations+powers (mutated in place for
+    `set`; `remove` entries are filtered out; `add` entries are returned as
+    new records to append, idempotently: an `add` matching an existing record
+    by normalized quote prefix + agency is skipped, so a CI rebuild from
+    committed data that already contains it does not duplicate it).
+
+    Returns (added_records, report). `report` entries have a `status` of
+    "stale" (matched nothing, and it was not a `remove`), "already_absent"
+    (a `remove` that matched nothing: item 4d, not stale), or "ambiguous"
+    (more than one candidate and no `agency` field to disambiguate: item 4e).
+    Reported by the caller and by validate_obligations.py's stale check."""
+    ov = (overrides if overrides is not None else RECORD_OVERRIDES).get(str(matter_id))
+    if not ov:
+        return [], []
+    added: list[dict] = []
+    report: list[dict] = []
+
+    for entry in ov.get("set", []):
+        prefix = entry.get("quote_prefix", "")
+        cands = _find_candidates(records, prefix, entry.get("agency"))
+        if not cands:
+            report.append({"matter_id": matter_id, "action": "set",
+                          "status": "stale", **entry})
+            continue
+        if len(cands) > 1:
+            report.append({"matter_id": matter_id, "action": "set",
+                          "status": "ambiguous",
+                          "candidates": [c.get("obligation_id") for c in cands],
+                          **entry})
+            continue
+        target = cands[0]
+        fields = entry.get("fields", {})
+        if "kind" in fields:
+            target["kind_override"] = fields["kind"]
+        target.update(fields)
+        if "agency" in fields:
+            target["agency_source"] = "record_override"
+    for entry in ov.get("remove", []):
+        prefix = entry.get("quote_prefix", "")
+        cands = _find_candidates(records, prefix, entry.get("agency"))
+        if not cands:
+            report.append({"matter_id": matter_id, "action": "remove",
+                          "status": "already_absent", **entry})
+            continue
+        if len(cands) > 1:
+            report.append({"matter_id": matter_id, "action": "remove",
+                          "status": "ambiguous",
+                          "candidates": [c.get("obligation_id") for c in cands],
+                          **entry})
+            continue
+        records.remove(cands[0])
+    for entry in ov.get("add", []):
+        fields = {k: v for k, v in entry.items() if k not in ("why", "source")}
+        prefix = normalize_quote(fields.get("quote", ""))[:80]
+        agency = fields.get("agency")
+        already = any(
+            normalize_quote(o.get("quote", "")).startswith(prefix)
+            and o.get("agency") == agency
+            for o in records + added
+        ) if prefix else False
+        if already:
+            continue
+        n = len(records) + len(added) + 1
+        added.append({
+            "obligation_id": f"{matter_id}-ov{n:02d}",
+            "matter_id": matter_id,
+            "agency_source": fields.get("agency_source", "record_override"),
+            **fields,
+        })
+    return added, report
+
 # Sep 27 2026: offices, divisions, task forces and advisory boards that sit
 # inside a department count under the parent agency, tagged with the unit's
 # own name (Tal's decision). pipeline/agency_units.json: {by_name: {lowercased
@@ -725,11 +849,19 @@ CITYWIDE_ALL_AGENCIES_RE = re.compile(
 
 
 def apply_agency_units(o: dict, matter_id: str, lookup: dict,
-                       agencies_by_canon: dict) -> bool:
+                       agencies_by_canon: dict, stage: str = "all") -> bool:
     """Assign a secondary unit label (office, division, task force, advisory
     board) to the parent agency already resolved for this record, or resolve
     an agency for a curated actor phrase the crosswalk alone cannot match.
-    Only runs on records fix_actor left unmatched. Returns True on a hit."""
+
+    `stage` splits the two curated maps so the caller can enforce the
+    precedence order (agency_units.json by_matter > law_definitions.py >
+    TITLE_DEPARTMENT > agency_units.json by_name; Sep 27 2026):
+      "by_matter": only the per-law UNITS_BY_MATTER map.
+      "by_name": only the generic UNITS_BY_NAME map (fills an unmatched
+        record, or re-parents an already-matched one that names a unit).
+      "all" (default): original combined behavior, kept for compatibility.
+    Returns True on a hit."""
     # keys: the stored agency and the law's own wording, each also without a
     # leading article ("The urban agriculture advisory board", audit 4)
     keys = []
@@ -742,18 +874,24 @@ def apply_agency_units(o: dict, matter_id: str, lookup: dict,
             keys += [k, k2, k3]
     if not keys:
         return False
-    # a per-law correction applies even to a record the crosswalk matched
-    # ("the council" in a DFTA law is its advisory council, not the Council)
-    hit = next((UNITS_BY_MATTER[f"{matter_id}|{k}"] for k in keys if f"{matter_id}|{k}" in UNITS_BY_MATTER), None)
-    if not hit and o.get("agency_matched"):
-        # a crosswalk entry that is itself an office inside another body (MOUA,
-        # a Division) is re-parented when the curated map names a different
-        # parent and a unit label; ordinary matches are left alone
-        cand = next((UNITS_BY_NAME[k] for k in keys if k in UNITS_BY_NAME), None)
-        if not (cand and cand.get("unit") and cand["agency"] != o.get("agency")):
+    hit = None
+    if stage in ("by_matter", "all"):
+        # a per-law correction applies even to a record the crosswalk matched
+        # ("the council" in a DFTA law is its advisory council, not the Council)
+        hit = next((UNITS_BY_MATTER[f"{matter_id}|{k}"] for k in keys if f"{matter_id}|{k}" in UNITS_BY_MATTER), None)
+    if stage == "by_matter":
+        if not hit:
             return False
-        hit = cand
-    hit = hit or next((UNITS_BY_NAME[k] for k in keys if k in UNITS_BY_NAME), None)
+    elif stage in ("by_name", "all"):
+        if not hit and o.get("agency_matched"):
+            # a crosswalk entry that is itself an office inside another body (MOUA,
+            # a Division) is re-parented when the curated map names a different
+            # parent and a unit label; ordinary matches are left alone
+            cand = next((UNITS_BY_NAME[k] for k in keys if k in UNITS_BY_NAME), None)
+            if not (cand and cand.get("unit") and cand["agency"] != o.get("agency")):
+                return False
+            hit = cand
+        hit = hit or next((UNITS_BY_NAME[k] for k in keys if k in UNITS_BY_NAME), None)
     if not hit:
         return False
     canon = hit["agency"]
@@ -798,6 +936,7 @@ def apply_unspecified_agency_rules(o: dict, agencies_by_canon: dict) -> bool:
 # the one-off restated_candidates.json a prior sweep wrote), via the same
 # split_markers/restated_spans/condense/locate logic sweep_restated_duties.py
 # uses to find these blocks in the first place.
+import law_definitions  # noqa: E402
 from sweep_restated_duties import (  # noqa: E402
     split_markers, restated_spans, condense, locate, AMENDED,
 )
@@ -1211,12 +1350,22 @@ ACTOR_ALIASES = {"the chancellor": "NYCPS", "chancellor": "NYCPS",
                  "the department of human resources administration": "HRA"}
 
 
-def fix_actor(o: dict, lookup: dict, agencies_by_canon: dict) -> str | None:
+def fix_actor(o: dict, lookup: dict, agencies_by_canon: dict,
+             stage: str = "all") -> str | None:
     """'private' when the actor is a private party; 'resolved' when the agency
-    was set from the code title or an alias; None otherwise."""
+    was set from the code title or an alias; None otherwise.
+
+    `stage` lets the caller enforce the precedence order (Sep 27 2026):
+      "private": only the private-actor check.
+      "title": only the TITLE_DEPARTMENT/alias resolution (used AFTER a law's
+        own definitions have had first shot at "the department"/"the
+        commissioner", per the precedence order in the main loop).
+      "all" (default): original combined behavior."""
     raw = (o.get("actor_raw") or "").strip()
-    if PRIVATE_ACTOR_RE.match(raw):
+    if stage in ("private", "all") and PRIVATE_ACTOR_RE.match(raw):
         return "private"
+    if stage == "private":
+        return None
     target = None
     if GENERIC_DEPT_RE.match(raw):
         m = ADMIN_TITLE_RE.search(o.get("citation") or "")
@@ -1230,6 +1379,75 @@ def fix_actor(o: dict, lookup: dict, agencies_by_canon: dict) -> str | None:
             o["agency"], o["agency_full"], o["agency_matched"] = canon, full, True
             return "resolved"
     return None
+
+
+# Generic titles a law can define for itself (Sep 27 2026, audit 4): resolved
+# through the SAME law's own definitions (law_definitions.definitions())
+# before falling back to TITLE_DEPARTMENT or the crosswalk. "the council" is
+# deliberately excluded from this generic set: unqualified it almost always
+# means the City Council, which the crosswalk already matches; a law that
+# means its OWN advisory council instead is handled by agency_units.json
+# by_matter, which outranks this step.
+GENERIC_TITLE_RE = re.compile(
+    r"^(the\s+)?(director|department|commissioner|office|board|advisory\s+board|"
+    r"task\s+force|working\s+group|coordinator|executive\s+director|"
+    r"administ(?:er|rat)ing\s+agency|chair(?:person)?|agency)$", re.I)
+
+
+def apply_law_definitions(o: dict, defs: dict,
+                          lookup: dict, agencies_by_canon: dict) -> bool:
+    """Resolve a generic actor title (o['actor_raw']) through the SAME law's
+    own definitions (established/defined entities found by law_definitions.
+    definitions()). Only acts on a record whose actor is one of the generic
+    titles GENERIC_TITLE_RE covers and that is not already matched by a
+    per-law override (agency_units.json by_matter runs before this and wins).
+    Sets agency_unit to the actor's own proper name when the law defines it
+    as a body INSIDE or convened by the resolved agency (X's parent is Y:
+    agency=Y, unit=X), rather than as a synonym for Y itself. Returns True on
+    a hit."""
+    if o.get("agency_matched"):
+        return False
+    raw = (o.get("actor_raw") or "").strip()
+    if not GENERIC_TITLE_RE.match(raw):
+        return False
+    defs = defs or {}
+    term = law_definitions.strip_articles(raw)
+    entity = defs.get(term)
+    if not entity:
+        return False
+    canon, full = match_agency(entity, lookup, agencies_by_canon)
+    if not canon:
+        # the definition itself may name another generic title ("the
+        # department"): try the code-title path on the SAME citation once,
+        # since Y is often "the department" whose meaning the amended Admin
+        # Code title supplies.
+        if GENERIC_DEPT_RE.match(law_definitions.strip_articles(entity)):
+            m = ADMIN_TITLE_RE.search(o.get("citation") or "")
+            if m:
+                canon = TITLE_DEPARTMENT.get(m.group(1))
+                full = agencies_by_canon.get(canon, {}).get("full_name", canon) if canon else None
+    if not canon:
+        return False
+    o["agency"], o["agency_full"], o["agency_matched"] = canon, full, True
+    o["agency_source"] = "law_definition"
+    # X is a body inside/convened by Y (agency != the bare generic word: the
+    # law named a specific unit, not just a synonym for the parent agency)
+    # the unit is the named office/body the definition points to ("the
+    # coordinator of the office of civil justice" -> Office of Civil Justice),
+    # never the bare title; a mayor-designated agency gets the shared label
+    if MAYOR_DESIGNATED_RE.search(entity) or re.search(r"designated by the mayor", entity, re.I):
+        o["agency_unit"] = "Agency designated by the mayor"
+    else:
+        named = re.search(r"\b((?:office|division|bureau|board|council|commission|task force|"
+                          r"unit|center|centre)\s+(?:of|for|on)\s+[a-z][a-z' ,-]{2,80}?)"
+                          r"(?=,|;|\s+(?:within|in|of the department|established|that|which)\b|$)",
+                          entity, re.I)
+        if named and match_agency(named.group(1), lookup, agencies_by_canon)[0] in (None, canon):
+            _SMALL = {"of", "the", "and", "for", "on", "in", "to"}
+            o["agency_unit"] = " ".join(
+                w if w.lower() in _SMALL else w[:1].upper() + w[1:]
+                for w in named.group(1).split())
+    return True
 
 
 def merge_split_list_duplicates(obs: list[dict]) -> int:
@@ -1457,6 +1675,7 @@ def extract_law(client, model: str, law: dict, text: str,
               .replace("{recurrences}", json.dumps(RECURRENCES))
               .replace("{kind_definitions}", KIND_DEFINITIONS)
               .replace("{metadata}", metadata)
+              .replace("{definitions}", law_definitions.defining_sentences(text) or "(none found)")
               .replace("{law_text}", text))
 
     # Long law: extract each section window, then merge. Every other law takes
@@ -1554,6 +1773,7 @@ def extract_law(client, model: str, law: dict, text: str,
             "obligation_id": f"{law['matter_id']}-{i:02d}",
             "matter_id": law["matter_id"],
             "actor_raw": o.get("actor_raw", ""),
+            "model_unit": (o.get("actor_unit") or "").strip() or None,
             "agency": canon or actor,
             "agency_full": full or (
                 "Not specified in the law text" if actor == "Unspecified"
@@ -1684,8 +1904,19 @@ def main() -> None:
     quotes_cleaned = quotes_deleted_flagged = deadlines_event_fixed = 0
     semiannual_fixed = merged_away = 0
     private_excluded = actors_resolved = 0
-    units_applied = unspecified_resolved = 0
+    units_applied = unspecified_resolved = definitions_applied = 0
+    overrides_applied = 0
+    stale_overrides: list[dict] = []
     _law_text_cache: dict[str, str] = {}
+    _definitions_cache: dict[str, dict] = {}
+
+    def definitions_by_matter(mid: str) -> dict:
+        if mid not in _definitions_cache:
+            if mid not in _law_text_cache:
+                tp = TEXT_CACHE / f"{mid}.txt"
+                _law_text_cache[mid] = tp.read_text(errors="ignore") if tp.exists() else ""
+            _definitions_cache[mid] = law_definitions.definitions(_law_text_cache[mid])
+        return _definitions_cache[mid]
     for res in all_results:
         law = law_by_id.get(res["matter_id"])
         if not law:
@@ -1736,17 +1967,41 @@ def main() -> None:
                 if has_deleted:
                     o["quote_has_deleted_text"] = True
                     quotes_deleted_flagged += 1
-            actor_fix = fix_actor(o, lookup, agencies_by_canon)
+            actor_fix = fix_actor(o, lookup, agencies_by_canon, stage="private")
             if actor_fix == "private":
                 private_excluded += 1
                 excluded.append(o["obligation_id"])
                 continue
-            if actor_fix == "resolved":
-                actors_resolved += 1
-            if apply_agency_units(o, mid, lookup, agencies_by_canon):
+            o.setdefault("agency_source", "model" if o.get("agency_matched") else None)
+            # Precedence (Sep 27 2026, audit 4): a per-law curated unit
+            # (agency_units.json by_matter) outranks everything; then this
+            # law's own definitions of a generic title; then the code-title
+            # rule (TITLE_DEPARTMENT); then the generic curated unit map
+            # (agency_units.json by_name); then the citywide/mayor rules.
+            if apply_agency_units(o, mid, lookup, agencies_by_canon, stage="by_matter"):
                 units_applied += 1
+                o["agency_source"] = "unit_name"
+            elif apply_law_definitions(o, definitions_by_matter(mid), lookup, agencies_by_canon):
+                definitions_applied += 1
+            else:
+                title_fix = fix_actor(o, lookup, agencies_by_canon, stage="title")
+                if title_fix == "resolved":
+                    actors_resolved += 1
+                    o["agency_source"] = "code_title"
+            if apply_agency_units(o, mid, lookup, agencies_by_canon, stage="by_name"):
+                units_applied += 1
+                if o.get("agency_source") in (None, "model"):
+                    o["agency_source"] = "unit_name"
             if apply_unspecified_agency_rules(o, agencies_by_canon):
                 unspecified_resolved += 1
+                o["agency_source"] = "rule"
+            # the extraction's own unit (actor_unit, Sep 27 2026 prompt) when
+            # no curated rule named one and the unit is not itself an agency
+            mu = o.pop("model_unit", None)
+            if (mu and o.get("agency_matched") and not o.get("agency_unit")
+                    and match_agency(mu, lookup, agencies_by_canon)[0] in (None, o.get("agency"))):
+                o["agency_unit"] = " ".join(w if w.lower() in {"of", "the", "and", "for", "on", "in", "to"}
+                                            else w[:1].upper() + w[1:] for w in mu.split())
             if fix_event_anchored_deadline(o):
                 deadlines_event_fixed += 1
             if fix_two_fixed_dates_semiannual(o):
@@ -1774,6 +2029,26 @@ def main() -> None:
                    if o["obligation_id"] in REPORT_FILINGS and kind == "duty" else {}),
                 "kind": kind,
             })
+        # record_overrides.json: applied LAST, after every agency rule above.
+        # ALWAYS rebuild the duty/power split from the combined list next
+        # (item 4a): `remove` mutates `combined` in place, and a `set` of
+        # kind (via kind_override) can move a record between the two tables,
+        # so keeping the pre-override law_flat/law_powers on a no-report run
+        # would silently undo both.
+        combined = law_flat + law_powers
+        added, report = apply_record_overrides(combined, res["matter_id"])
+        if report:
+            stale_overrides.extend(report)
+        for o in added:
+            o["kind"] = _kind(o)
+        for o in combined:
+            o["kind"] = _kind(o)
+        law_flat = [o for o in combined + added if o["kind"] == "duty"]
+        law_powers = [o for o in combined + added if o["kind"] == "power"]
+        for o in law_powers:
+            o["deadline_kind"], o["deadline_date"] = "none", None
+        overrides_applied += sum(len(RECORD_OVERRIDES.get(str(res["matter_id"]), {}).get(k, []))
+                                 for k in ("set", "remove", "add")) if RECORD_OVERRIDES.get(str(res["matter_id"])) else 0
         merged_away += merge_split_list_duplicates(law_flat)
         merged_away += merge_split_list_duplicates(law_powers)
         flat.extend(law_flat)
@@ -1818,7 +2093,16 @@ def main() -> None:
 
     log.info(f"Actor fixes: private parties excluded {private_excluded}, agencies resolved from code title or alias {actors_resolved}")
     log.info(f"Agency units: secondary-unit labels applied {units_applied}, "
+             f"law definitions resolved {definitions_applied}, "
              f"unspecified-agency quote rules resolved {unspecified_resolved}")
+    _stale_n = sum(1 for s in stale_overrides if s.get("status") == "stale")
+    _amb_n = sum(1 for s in stale_overrides if s.get("status") == "ambiguous")
+    _absent_n = sum(1 for s in stale_overrides if s.get("status") == "already_absent")
+    log.info(f"Record overrides: {overrides_applied} entries applied, "
+             f"{_stale_n} stale, {_amb_n} ambiguous, {_absent_n} already-absent removes")
+    for s in stale_overrides[:10]:
+        log.warning(f"  {s.get('status')} override: matter {s['matter_id']} action={s['action']} "
+                   f"prefix={s.get('quote_prefix', '')[:60]!r}")
     log.info(f"Step 2 mechanical fixes: quotes cleaned {quotes_cleaned}, "
              f"quote_has_deleted_text {quotes_deleted_flagged}, "
              f"event-anchored deadlines fixed {deadlines_event_fixed}, "

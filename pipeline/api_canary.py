@@ -17,6 +17,8 @@ import anthropic  # noqa: E402
 import fetch_fiscal_impacts as fis  # noqa: E402
 import extract_obligations as eo  # noqa: E402
 import label_kinds as lk  # noqa: E402
+import verify_fiscal as vf  # noqa: E402
+import verify_obligations as vo  # noqa: E402
 
 FIS_TEXT = """Fiscal Impact Statement. Proposed Int. No. 123-A. Committee: Transportation.
 Sponsors: Council Members Smith, Jones. Effective FY27, FY Succeeding Effective FY28, Full Fiscal Impact FY28.
@@ -43,7 +45,9 @@ def main() -> int:
         prompt = (eo.EXTRACTION_PROMPT.replace("{deliverable_types}", json.dumps(eo.DELIVERABLE_TYPES))
                   .replace("{recurrences}", json.dumps(eo.RECURRENCES))
                   .replace("{kind_definitions}", eo.KIND_DEFINITIONS)
-                  .replace("{metadata}", "Local Law 1 of 2026").replace("{law_text}", LAW_TEXT))
+                  .replace("{metadata}", "Local Law 1 of 2026")
+                  .replace("{definitions}", eo.law_definitions.defining_sentences(LAW_TEXT) or "(none found)")
+                  .replace("{law_text}", LAW_TEXT))
         r = eo.call_claude(client, eo.DEFAULT_MODEL, prompt)
         kinds = [(o["action_summary"][:40], o["provision_kind"], o["deadline"]) for o in r["obligations"]]
         assert kinds, r
@@ -64,6 +68,22 @@ def main() -> int:
     except Exception as e:  # noqa: BLE001
         ok = False
         print("LABEL FAILED:", e)
+    # the two Opus verifiers' schemas (Sep 27 2026): a rejected schema must
+    # cost one request, not a 358-call or 400-call run
+    for name, model, schema in (("verify_fiscal", vf.VERIFY_MODEL, vf.VERIFY_SCHEMA),
+                                ("verify_obligations", vo.MODEL, vo.RESULT_SCHEMA)):
+        try:
+            msg = client.messages.create(
+                model=model, max_tokens=4000,
+                messages=[{"role": "user", "content":
+                           "Schema test. Return a minimal valid object: one correct verdict, no errors or items "
+                           "beyond one placeholder where the schema requires a list.\n" + json.dumps(schema)[:3000]}],
+                output_config={"format": {"type": "json_schema", "schema": schema}})
+            out = json.loads(next(b.text for b in msg.content if b.type == "text"))
+            print(f"{name} ok:", json.dumps(out)[:200])
+        except Exception as e:  # noqa: BLE001
+            ok = False
+            print(f"{name.upper()} FAILED:", e)
     return 0 if ok else 1
 
 

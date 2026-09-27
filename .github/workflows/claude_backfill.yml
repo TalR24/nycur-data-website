@@ -6,6 +6,9 @@ name: Claude backfill (one-off tasks)
 #   label_kinds            model duty/power/neither label for every obligation record
 #   reextract_obligations  re-extract the laws in reextract_queue.json, rebuild data
 #   pilot_obligations      try another model on a few laws; artifact only, never committed
+#   verify_fiscal          blind-check every fiscal record against its statement (Opus); commits the report
+#   verify_obligations     after re-extracting the protected laws: diff them against the hand-fixed
+#                          snapshot and have Opus judge each disagreement; commits the decisions
 on:
   workflow_dispatch:
     inputs:
@@ -13,9 +16,14 @@ on:
         description: "Task to run"
         required: true
         type: choice
-        options: ["canary", "label_kinds", "reextract_obligations", "pilot_obligations"]
+        options: ["canary", "label_kinds", "reextract_obligations", "pilot_obligations", "verify_fiscal", "verify_obligations"]
+      include_protected:
+        description: "reextract_obligations: also re-extract laws in reextract_exclusions.json"
+        required: false
+        default: false
+        type: boolean
       matters:
-        description: "pilot_obligations: matter ids, space- or comma-separated"
+        description: "pilot_obligations / verify_fiscal: matter ids, space- or comma-separated"
         required: false
         default: ""
         type: string
@@ -68,12 +76,45 @@ jobs:
           REEXTRACT_LIMIT: "200"   # ~50 min per run (4 workers)
           PYTHONUNBUFFERED: "1"   # progress lines reach the log as they happen
           REEXTRACT_WORKERS: "4"
+          REEXTRACT_INCLUDE_PROTECTED: ${{ inputs.include_protected && '1' || '' }}
         run: |
           python3 pipeline/reextract_queued.py
           python3 pipeline/extract_obligations.py --incremental
           cd ../nyc_council_legislation_trackers
           python3 pipeline/build_member_stats.py
           python3 pipeline/build_agency_profiles.py
+
+      - name: Verify every fiscal record against its statement
+        if: ${{ inputs.task == 'verify_fiscal' }}
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          PYTHONUNBUFFERED: "1"
+          MATTERS: ${{ inputs.matters }}
+        run: |
+          if [ -n "$MATTERS" ]; then python3 pipeline/verify_fiscal.py --matters $(echo "$MATTERS" | tr ',' ' ')
+          else python3 pipeline/verify_fiscal.py; fi
+
+      - name: Reconcile re-extracted protected laws
+        if: ${{ inputs.task == 'verify_obligations' }}
+        working-directory: civic_reference/legislation_implementation_tracker
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          PYTHONUNBUFFERED: "1"
+        run: |
+          python3 pipeline/reconcile_protected.py diff
+          python3 pipeline/verify_obligations.py
+
+      - name: Upload verification output
+        if: ${{ always() && (inputs.task == 'verify_fiscal' || inputs.task == 'verify_obligations') }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: verify-output
+          path: |
+            civic_reference/nyc_council_legislation_trackers/quality/fiscal_verification_*.json
+            civic_reference/legislation_implementation_tracker/pipeline/reconcile_protected.json
+            civic_reference/legislation_implementation_tracker/pipeline/reconcile_decisions.json
+          if-no-files-found: ignore
+          retention-days: 30
 
       - name: Pilot another model on a few laws (no commit)
         if: ${{ inputs.task == 'pilot_obligations' }}
@@ -122,7 +163,9 @@ jobs:
           for f in $L/pipeline/kind_labels.json $L/data/obligations.json $L/data/powers.json \
                    $L/data/laws.json $L/data/restated_links.json $L/data/summary.json $L/pipeline/reextract_queue.json \
                    civic_reference/nyc_council_legislation_trackers/data/members.json \
-                   civic_reference/nyc_council_legislation_trackers/data/agencies.json; do
+                   civic_reference/nyc_council_legislation_trackers/data/agencies.json \
+                   $L/pipeline/reconcile_protected.json $L/pipeline/reconcile_decisions.json \
+                   civic_reference/nyc_council_legislation_trackers/quality/fiscal_verification_*.json; do
             if [ -f "$f" ]; then git add "$f"; fi
           done
           if git diff --cached --quiet; then echo "Nothing to commit"; exit 0; fi

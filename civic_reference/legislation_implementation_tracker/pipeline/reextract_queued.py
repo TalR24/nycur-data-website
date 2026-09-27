@@ -178,12 +178,17 @@ def main() -> None:
     if deferred:
         print(f"processing {len(todo)} of {len(matters)} queued (REEXTRACT_LIMIT={limit})")
     exclusions = load_exclusions()
+    if os.environ.get("REEXTRACT_INCLUDE_PROTECTED") == "1" and exclusions:
+        print(f"REEXTRACT_INCLUDE_PROTECTED=1: {len(exclusions)} protected "
+              f"matters are NOT being skipped this run")
     failed: dict[str, str] = {}
     skipped: dict[str, str] = {}
 
+    include_protected = os.environ.get("REEXTRACT_INCLUDE_PROTECTED") == "1"
+
     def process(mid: str, reason: str) -> tuple[str, str | None, str | None]:
         """Returns (mid, failure reason or None, skip reason or None)."""
-        if mid in exclusions:
+        if mid in exclusions and not include_protected:
             print(f"{mid}: SKIPPED, hand-corrected ({exclusions[mid]})")
             return mid, None, f"{reason} [protected: {exclusions[mid]}]"
         law = laws.get(mid)

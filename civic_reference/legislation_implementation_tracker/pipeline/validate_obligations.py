@@ -74,6 +74,10 @@ SIX_MONTHLY = re.compile(
 # names like "the office of child care and early childhood education".
 sys.path.insert(0, str(HERE))
 try:
+    from sweep_restated_duties import split_markers, restated_spans, condense, locate, AMENDED  # noqa: E402
+except Exception:                                        # noqa: BLE001
+    split_markers = restated_spans = condense = locate = AMENDED = None
+try:
     from extract_obligations import is_vague_actor, quote_present, operative_text  # noqa: E402
 except Exception:                                        # noqa: BLE001
     def is_vague_actor(_s):                              # type: ignore
@@ -342,9 +346,13 @@ def main() -> None:
                 soft["kind_not_rederived_no_text"].append(o["obligation_id"])
             elif classify(o.get("quote"), t) != rule:
                 hard["stored_rule_label_differs_from_rule"].append(f"{o['obligation_id']} ({table})")
-    for o in powers:
-        if o.get("deadline_date"):
-            hard["power_with_deadline"].append(o["obligation_id"])
+    # A power should never carry a deadline (extract_law strips it). Kept as a
+    # HARD invariant only while the corpus actually has zero of them: if a
+    # change ever leaves some in place, downgrading to a tracked SOFT count
+    # keeps the build green while the class gets fixed, rather than blocking
+    # every unrelated change behind it (Sep 27 2026).
+    _pwd = [o["obligation_id"] for o in powers if o.get("deadline_date")]
+    (hard if not _pwd else soft)["power_with_deadline"].extend(_pwd)
     shared = {o["obligation_id"] for o in obs} & {o["obligation_id"] for o in powers}
     for oid in sorted(shared):
         hard["id_in_both_tables"].append(oid)
@@ -425,6 +433,133 @@ def main() -> None:
                         f"{laws[mid]['law_number_display']} window {i + 1}")
     except Exception:                                    # noqa: BLE001
         pass
+
+    # --- SOFT: code-title agency vs. TITLE_DEPARTMENT (Sep 27 2026, item 3a) --
+    # A generic department/commissioner actor whose citation names a Title
+    # covered by TITLE_DEPARTMENT (plus the Housing Maintenance Code, whose
+    # own title numbering is HMC §27-2001..27-2155, all HPD) should resolve to
+    # that title's department. A different stored agency is worth a look: it
+    # means some other rule (a law definition, a by_name/by_matter override,
+    # or a stale hand edit) disagreed with the code title.
+    try:
+        from extract_obligations import TITLE_DEPARTMENT, GENERIC_DEPT_RE, ADMIN_TITLE_RE
+    except Exception:                                    # noqa: BLE001
+        TITLE_DEPARTMENT = GENERIC_DEPT_RE = ADMIN_TITLE_RE = None
+    if TITLE_DEPARTMENT is not None:
+        _HMC_TITLE_RE = re.compile(r"HMC\s*§+\s*27-2(?:0[0-9][0-9]|1[0-4][0-9]|15[0-5])\b", re.I)
+        for o in obs + powers:
+            raw = (o.get("actor_raw") or "").strip()
+            if not GENERIC_DEPT_RE.match(raw) or not o.get("agency_matched"):
+                continue
+            citation = o.get("citation") or ""
+            want = None
+            m = ADMIN_TITLE_RE.search(citation)
+            if m:
+                want = TITLE_DEPARTMENT.get(m.group(1))
+            elif _HMC_TITLE_RE.search(citation):
+                want = "HPD"
+            if want and o.get("agency") != want:
+                soft["code_title_agency_mismatch"].append(
+                    f"{o['obligation_id']}: citation {citation[:50]!r} implies {want}, stored {o.get('agency')}")
+
+    # --- SOFT: quote outside new matter, not flagged existing code (item 3b) -
+    # {{...}} markers are Legistar's underline styling for newly added text
+    # (confirmed present in the cached text: extract_obligations.reattribute_
+    # reprints already keys off it, and the Sep 23 audit's "3% underlined"
+    # read this same markup). A record whose quote sits wholly outside any
+    # underlined run, in a law with no marker at all, is unremarkable (the
+    # marker-free fallback rule governs there); this check only fires where
+    # markers ARE present but were not carried onto the record.
+    if split_markers is None:
+        soft["reprint_flag_check_unavailable"].append(
+            "sweep_restated_duties helpers not importable; check skipped")
+    else:
+        for mid, group in by_matter.items():
+            raw_text = texts.get(mid)
+            if not raw_text or "{{" not in raw_text or not AMENDED.search(raw_text):
+                continue
+            plain, flags = split_markers(raw_text)
+            spans = restated_spans(plain)
+            hay, idx = condense(plain)
+            for o in group:
+                if o.get("restated") or not (o.get("quote") or "").strip():
+                    continue
+                frac = locate(hay, idx, flags, o["quote"], spans)
+                if frac == 0.0:
+                    soft["quote_outside_new_matter_not_flagged"].append(
+                        f"{o['obligation_id']} ({laws[mid]['law_number_display']})")
+
+    # --- SOFT: two records in one law, same kind, near-identical quote ------
+    # (item 3c). quote_similarity is the SAME 0.9+ "same statutory sentence"
+    # threshold reattribute_reprints uses, applied within a law instead of
+    # across laws, so a genuine duplicate record is caught even when the
+    # duplicate was never a reprint of an earlier law.
+    try:
+        from extract_obligations import quote_similarity
+    except Exception:                                    # noqa: BLE001
+        quote_similarity = None
+    if quote_similarity is not None:
+        # a joint duty is stored once per co-responsible agency by design, so
+        # only same-agency pairs are duplicates (Sep 27 2026: 1,676 flags
+        # before, nearly all "X and Y shall" split per agency)
+        powers_by_matter = defaultdict(list)
+        for o in powers:
+            powers_by_matter[o["matter_id"]].append(o)
+        for mid, group in by_matter.items():
+            rows = list(group) + powers_by_matter.get(mid, [])
+            for i, a in enumerate(rows):
+                for b in rows[i + 1:]:
+                    if (a.get("kind") != b.get("kind") or a is b
+                            or a.get("agency") != b.get("agency")):
+                        continue
+                    if quote_similarity(a.get("quote"), b.get("quote")) >= 0.9:
+                        soft["duplicate_within_law"].append(
+                            f"{a['obligation_id']} ~ {b['obligation_id']} "
+                            f"({laws[mid]['law_number_display']})")
+
+    # --- SOFT: discretion ("may") typed as a duty (item 3d) ------------------
+    # Reuses the same MANDATORY_WORD/MODAL/PROHIBITION vocabulary the kind
+    # rule itself is built from, so this flags only a quote with "may" and no
+    # mandatory or prohibition language anywhere in it — the case the kind
+    # rule's own subordinate-clause/coordination logic (classify()) already
+    # tries to avoid, checked here as an independent, cruder cross-check.
+    try:
+        from extract_obligations import MANDATORY_WORD, MODAL, PROHIBITION
+    except Exception:                                    # noqa: BLE001
+        MANDATORY_WORD = MODAL = PROHIBITION = None
+    if MANDATORY_WORD is not None:
+        _MAY_RE = re.compile(r"\bmay\b", re.I)
+        for o in obs:
+            if o.get("kind") != "duty":
+                continue
+            q = o.get("quote") or ""
+            if not _MAY_RE.search(q):
+                continue
+            has_mandatory = any(re.search(r"\b" + re.escape(w) + r"\b", q, re.I)
+                                for w in MANDATORY_WORD)
+            if not has_mandatory and not PROHIBITION.search(q):
+                soft["discretion_typed_as_duty"].append(f"{o['obligation_id']}: {q[:100]}")
+
+    # --- SOFT: record_overrides.json entry matched nothing (item 3f) --------
+    try:
+        from extract_obligations import RECORD_OVERRIDES, apply_record_overrides
+    except Exception:                                    # noqa: BLE001
+        RECORD_OVERRIDES = None
+    if RECORD_OVERRIDES:
+        for mid, ov in RECORD_OVERRIDES.items():
+            rows = by_matter.get(mid, []) + [o for o in powers if o["matter_id"] == mid]
+            _, report = apply_record_overrides([dict(o) for o in rows], mid,
+                                               {mid: ov})
+            # consistent with extract_obligations.py 4(d)/4(e): a `remove`
+            # matching nothing is "already_absent", never stale; several
+            # candidates with no agency to disambiguate is "ambiguous", kept
+            # in its own soft count rather than folded into stale_override.
+            for s in report:
+                key = "stale_override" if s.get("status") == "stale" \
+                    else "override_ambiguous" if s.get("status") == "ambiguous" \
+                    else "override_already_absent"
+                soft[key].append(
+                    f"matter {mid} {s['action']}: {s.get('quote_prefix', '')[:60]!r}")
 
     # --- report -------------------------------------------------------------
     result = {

@@ -122,8 +122,24 @@ def main() -> None:
         if None not in (rev, exp, net):
             expected = (rev or 0) - (exp or 0) - (cap or 0)
             if abs(expected - net) > 1:
-                soft["net_differs_from_revenue_minus_costs"].append(
+                hard["net_differs_from_revenue_minus_costs"].append(
                     f"{label(r)}: net {net:,.0f} vs {expected:,.0f}")
+        # a time-limited program with no end year is unconfirmed coverage
+        # (program_end_fy() returned None): flag it rather than silently
+        # trusting an annual figure with no known program life
+        if r.get("time_limited_program") and not r.get("program_end_fy"):
+            soft["time_limited_without_program_end_fy"].append(label(r))
+        fy_first = r.get("fy_first_effective")
+        end_fy = r.get("program_end_fy")
+        if fy_first and end_fy is not None:
+            m_fy = re.search(r"(\d{2,4})", str(fy_first))
+            if m_fy:
+                first_num = int(m_fy.group(1)) % 100
+                if end_fy < first_num:
+                    hard["program_end_fy_before_fy_first_effective"].append(
+                        f"{label(r)}: end FY{end_fy} < first FY{first_num}")
+        if (rev or exp or cap) and not r.get("agencies_abbrev") and not r.get("package_note"):
+            soft["nonzero_totals_no_agencies"].append(label(r))
 
     # --- SOFT: fields the page depends on -----------------------------------
     for r in records:
