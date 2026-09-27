@@ -244,15 +244,16 @@
       <p>
         Obligations are extracted with Claude, Anthropic's language model. Since September 2026 the
         trackers use its Sonnet 5 model, which found 92% of the duties and powers in a blind review of
-        37 laws, against 69% for the Haiku model used before; laws are being re-read with Sonnet 5 in
-        batches, newest first. For each law the model returns
+        37 laws, against 69% for the Haiku model used before. In September 2026 every law was re-read
+        with Sonnet 5 except the <span data-sum="protected">423</span> whose records had already been
+        corrected by hand. For each law the model returns
         the responsible entity, a plain-language action summary, the deliverable type, the citation, the
         deadline clause, the recurrence, and a verbatim quote of the operative statutory language.
       </p>
       <p>
         The quote is the honesty anchor: every quoted passage is mechanically string-checked against the
-        law text, after normalizing whitespace and typography, and re-extracted once if it fails. 98.6% of
-        quotes verify (7,537 of 7,642 duties, September 2026); records whose quote could not be verified verbatim are flagged in the
+        law text, after normalizing whitespace and typography, and re-extracted once if it fails. <span data-sum="quote_pct">99.5%</span> of
+        quotes verify (<span data-sum="quote_n">7,963</span> of <span data-sum="duties">8,003</span> duties, as of <span data-sum="as_of">September 27, 2026</span>); records whose quote could not be verified verbatim are flagged in the
         interface as possibly paraphrased. Interpretation of statutory language ultimately requires human
         review, so treat the tracker as a research aid rather than legal advice.
       </p>
@@ -339,16 +340,16 @@
       <h2>An independent city list confirms the coverage</h2>
       <p>The Department of Records and Information Services keeps its own list of the reports agencies owe, built from a different process than this tracker: DORIS records the mandate, the local law behind it, and the date the report was last filed. It is the only external check available on this dataset, so the two were matched law by law in August 2026.</p>
       <p>DORIS traces 1,546 report mandates to local laws enacted since 2014, covering 661 laws this tracker also holds. <strong>There is no law among them where DORIS names a reporting duty and this tracker found nothing.</strong> On 66 of those laws the tracker recorded the duty under a different label, because DORIS counts plans, data publications, and outreach materials as required reports while this tracker splits them into their own deliverable types. Read the report counts here as reports narrowly defined; DORIS totals will run higher.</p>
-      <p>Because DORIS also records filing dates, the match says something this tracker cannot say on its own. Of the 1,306 recurring reports created by in-scope laws that carry a stated cadence, 396 are current, 316 are overdue, and DORIS records no filing at all for 589. Josh Greenman's <a href="https://joshgreenman1973.github.io/nyc-overdue-reports/" target="_blank" rel="noopener">overdue reports dashboard</a> applies this analysis to all of DORIS, including mandates older than 2014, and is the better tool for compliance questions. Re-run the match with <code>pipeline/validate_against_doris.py</code>.</p>
+      <p>Because DORIS also records filing dates, the match gives each reporting duty here a filing status, described in the next section. Josh Greenman's <a href="https://joshgreenman1973.github.io/nyc-overdue-reports/" target="_blank" rel="noopener">overdue reports dashboard</a> applies this analysis to all of DORIS, including mandates older than 2014, and is the better tool for compliance questions. Re-run the match with <code>pipeline/validate_against_doris.py</code>.</p>
       <p>One related caution, argued well by <a href="https://www.maximumnewyork.com/p/2023-reporting-requirements" target="_blank" rel="noopener">Maximum New York</a>: Legistar's own "Report Required" index tag is an unreliable count of reporting laws, applied inconsistently and blind to frequency and type. This tracker stores that tag as metadata but never counts from it; every obligation here comes from the enacted text.</p>
     </div>
 
     <div class="m-section">
       <h2>Whether the reports actually arrive</h2>
       <p>A law can require a report without the report ever being written. The Department of Records and Information Services keeps the city's list of required reports and the catalog of what agencies have filed, and Charter section 1133(d), added by Local Law 29 of 2019, makes it post a delinquent notice when one is late. Matching that against the reporting duties tracked here gives each one a filing status.</p>
-      <p>Of the 728 reporting obligations matched to a DORIS mandate, 214 have never been filed, 143 are overdue, 217 are up to date, and the rest are completed, waived, superseded, or carry no schedule. Filter the obligations table by filing status to see them, or open any report obligation for its last filing date, how late it is, and a link to its filings on the DORIS portal.</p>
+      <p>Of the <span data-sum="matched">538</span> reporting obligations matched to a DORIS mandate, <span data-sum="never">149</span> have never been filed, <span data-sum="overdue">134</span> are overdue, <span data-sum="current">167</span> are up to date, and the rest are completed, waived or carry no schedule. Another <span data-sum="unknown">155</span> are marked not matched, because their agency could not be tied to a DORIS mandate. Filter the obligations table by filing status to see them, or open any report obligation for its last filing date, how late it is, and a link to its filings on the DORIS portal.</p>
       <p><strong>This method is Josh Greenman's.</strong> His <a href="https://joshgreenman1973.github.io/nyc-overdue-reports/" target="_blank" rel="noopener">NYC Overdue Reports tracker</a> works out the status vocabulary used here (never filed, overdue, up to date, completed, waived, superseded, no schedule), the rule that a report is overdue once its last filing plus its stated interval has passed, and the handling of the city's own delinquent notices; his <a href="https://github.com/joshgreenman1973/nyc-overdue-reports" target="_blank" rel="noopener">code and methodology</a> are public. His dashboard covers every DORIS mandate, including those created before 2014, so it is the better tool for compliance questions across the whole city. What this tracker adds is the join to the law text: the duty as enacted, next to whether it is being met.</p>
-      <p>Two cautions. A mandate is matched to an obligation by local law and title, so where a law creates several reports the pairing can be wrong; the matched DORIS title is shown next to every status, and the filings link lets you check. And roughly half the reporting duties here have no DORIS counterpart at all, usually because the report goes to the Council or the mayor rather than being published through DORIS; those show no status rather than a clean bill of health.</p>
+      <p>Two cautions. A mandate is matched to an obligation by local law, agency and title, so where a law creates several reports the pairing can be wrong; the matched DORIS title is shown next to every status, and the filings link lets you check. And roughly half the reporting duties here have no DORIS counterpart at all, usually because the report goes to the Council or the mayor rather than being published through DORIS; those show no status rather than a clean bill of health.</p>
     </div>
 
     <div class="m-section">
@@ -400,5 +401,24 @@
   </div>
 </footer>
 
+<script>
+/* headline counts come from data/summary.json, written by every data build, so
+   this page never goes stale (the numbers in the HTML are the fallback) */
+(function () {
+  fetch('../data/summary.json').then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
+    if (!d) return;
+    var n = function (x) { return (x == null ? '' : Number(x).toLocaleString('en-US')); };
+    var st = d.doris_status_counts || {};
+    var prot = 0; Object.keys(d.model_counts || {}).forEach(function (k) { if (k.indexOf('protected') !== -1) prot += d.model_counts[k]; });
+    var vals = {
+      protected: n(prot), duties: n(d.duties), quote_n: n(d.duty_quotes_verified),
+      quote_pct: d.duties ? (100 * d.duty_quotes_verified / d.duties).toFixed(1) + '%' : '',
+      as_of: d.generated_at ? new Date(d.generated_at.slice(0, 10) + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '',
+      matched: n(d.doris_matched), never: n(st['never filed']), overdue: n(st.overdue), current: n(st.current), unknown: n(st.unknown)
+    };
+    document.querySelectorAll('[data-sum]').forEach(function (el) { var v = vals[el.getAttribute('data-sum')]; if (v) el.textContent = v; });
+  }).catch(function () {});
+})();
+</script>
 </body>
 </html>

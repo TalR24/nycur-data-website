@@ -1746,6 +1746,20 @@ def main() -> None:
     # compact separators: the file is large (8k+ obligations) and every
     # tracker page fetches it; GitHub Pages gzips it over the wire
     OUT_JSON.write_text(json.dumps(out, separators=(",", ":")))
+    # small summary for pages that show headline counts (the methodology page
+    # reads it instead of downloading the full obligations file)
+    _filings_doc = json.loads(_FILINGS_PATH.read_text()) if _FILINGS_PATH.exists() else {}
+    (DATA / "summary.json").write_text(json.dumps({
+        "generated_at": out.get("generated_at"),
+        "laws": len(law_summaries),
+        "duties": len(flat),
+        "powers": len(powers),
+        "duty_quotes_verified": sum(1 for o in flat if o.get("quote_verified")),
+        "reprinted_existing_code": sum(1 for o in flat + powers if o.get("restated")),
+        "model_counts": out.get("model_counts"),
+        "doris_matched": _filings_doc.get("matched"),
+        "doris_status_counts": _filings_doc.get("status_counts"),
+    }, indent=1) + "\n")
     POWERS_JSON.write_text(json.dumps({
         "generated_at": out["generated_at"],
         "model_counts": model_counts,
