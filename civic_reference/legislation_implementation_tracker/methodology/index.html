@@ -317,10 +317,15 @@
         agency)"), the resolution is accepted only when exactly one concrete agency emerges.
       </p>
       <p>
-        77% of obligations resolve to a canonical agency. The rest are either real bodies the dataset does
-        not list (shown as written, such as "the chief privacy officer") or genuinely undetermined actors,
-        "an agency designated by the mayor", "each agency", which are labeled <em>Unspecified</em> rather
-        than passed off as agencies. The exact phrase the law uses is always preserved in the record detail.
+        Offices, task forces and boards that sit inside a department are counted under that department and
+        shown with their own name. Duties a law gives every agency are grouped as Citywide (all agencies),
+        and the City Council and borough presidents appear as public bodies rather than agencies.
+      </p>
+      <p>
+        <span data-sum="agency_pct">92.7%</span> of duties and powers resolve to a city agency or a named
+        public body. The rest name no one the trackers can place, such as a duty the law gives "the
+        administrating agency" without saying which, and are kept as written or labeled <em>Unspecified</em>
+        rather than passed off as an agency. The exact phrase the law uses is always preserved in the record detail.
       </p>
     </div>
 
@@ -414,6 +419,7 @@
       protected: n(prot), duties: n(d.duties), quote_n: n(d.duty_quotes_verified),
       quote_pct: d.duties ? (100 * d.duty_quotes_verified / d.duties).toFixed(1) + '%' : '',
       as_of: d.generated_at ? new Date(d.generated_at.slice(0, 10) + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '',
+      agency_pct: d.records_total ? (100 * d.records_agency_matched / d.records_total).toFixed(1) + '%' : '',
       matched: n(d.doris_matched), never: n(st['never filed']), overdue: n(st.overdue), current: n(st.current), unknown: n(st.unknown)
     };
     document.querySelectorAll('[data-sum]').forEach(function (el) { var v = vals[el.getAttribute('data-sum')]; if (v) el.textContent = v; });

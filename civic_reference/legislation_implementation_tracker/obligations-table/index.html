@@ -100,6 +100,7 @@
     .law-cell .file-no { display: block; color: var(--text-faint); font-weight: 400; margin-top: 2px; }
     .agency-cell.unspec { color: var(--text-faint); font-weight: 400; font-style: italic; }
     .agency-cell { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.72rem; font-weight: 600; line-height: 1.45; min-width: 150px; max-width: 190px; overflow-wrap: break-word; }
+    .agency-unit { display: block; font-weight: 400; font-size: 0.66rem; color: var(--text-faint); margin-top: 2px; }
     .action-cell { min-width: 260px; }
     .type-badge { display: inline-block; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.65rem; font-weight: 600; padding: 2px 8px; border-radius: 10px; background: var(--blue-light); color: var(--blue); border: 1px solid var(--blue-mid); white-space: nowrap; }
     .deadline-cell { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.75rem; white-space: nowrap; }
@@ -560,7 +561,7 @@
         if (!fok) return false;
       }
       if (q) {
-        var hay = (o.action_summary + ' ' + o.agency + ' ' + o.agency_full + ' ' +
+        var hay = (o.action_summary + ' ' + o.agency + ' ' + o.agency_full + ' ' + (o.agency_unit || '') + ' ' +
                    o.law_number_display + ' ' + o.file_number + ' ' + o.law_title + ' ' +
                    o.citation + ' ' + (o.quote || ''));
         if (!searchMatch(hay, q)) return false;
@@ -690,7 +691,7 @@
         + '<td class="law-cell">' + esc(o.law_number_display || o.file_number)
         + (o.restated ? ' <span class="existing-code-tag">existing code</span>' : '')
         + '<span class="file-no">' + esc(o.file_number) + '</span></td>'
-        + '<td class="agency-cell' + (o.agency === 'Unspecified' ? ' unspec' : '') + '" title="' + esc(o.agency_matched ? o.agency + ' · ' + o.agency_full : o.agency_full) + '">' + esc(agencyDisplay(o)) + '</td>'
+        + '<td class="agency-cell' + (o.agency === 'Unspecified' ? ' unspec' : '') + '" title="' + esc(o.agency_matched ? o.agency + ' · ' + o.agency_full : o.agency_full) + '">' + esc(agencyDisplay(o)) + (o.agency_unit ? '<span class="agency-unit">' + esc(o.agency_unit) + '</span>' : '') + '</td>'
         + '<td class="action-cell">' + esc(o.action_summary) + '</td>'
         + '<td><span class="type-badge">' + esc(o.deliverable_type) + '</span></td>'
         + '<td class="meta-cell" title="' + esc(o.committee || '') + '">' + esc((o.committee || '—').replace(/^Committee on /, '')) + '</td>'

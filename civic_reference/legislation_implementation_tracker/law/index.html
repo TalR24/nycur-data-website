@@ -94,6 +94,7 @@
     .ob-num { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.7rem; font-weight: 700; color: var(--text-faint); padding-top: 2px; }
     .agency-badge.unspec { background: var(--bg); color: var(--text-faint); border-color: var(--border); font-style: italic; }
     .agency-badge { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.68rem; font-weight: 600; padding: 2px 8px; border-radius: 10px; background: var(--blue-light); color: var(--blue); border: 1px solid var(--blue-mid); white-space: nowrap; }
+    .agency-unit-line { display: block; font-size: 0.68rem; color: var(--text-faint); margin: -4px 0 6px; }
     .type-badge { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.65rem; font-weight: 600; padding: 2px 8px; border-radius: 10px; background: var(--bg); color: var(--text-muted); border: 1px solid var(--border); white-space: nowrap; }
     .ob-deadline { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.7rem; font-weight: 600; margin-left: auto; white-space: nowrap; }
     .ob-deadline.overdue { color: var(--red); }
@@ -272,6 +273,9 @@
     .then(function (data) { POWERS = data.powers || []; })
     .catch(function () { POWERS = []; });
 
+  function unitLine(x) {
+    return x.agency_unit ? '<span class="agency-unit-line">' + esc(x.agency_unit) + '</span>' : '';
+  }
   var obligationsReady = fetch('../data/obligations.json')
     .then(function (r) { return r.json(); })
     .then(function (data) { DATA = data; });
@@ -420,6 +424,7 @@
         + '<span class="type-badge">' + esc(o.deliverable_type) + '</span>'
         + dl
         + '</div>'
+        + unitLine(o)
         + '<div class="ob-action">' + esc(o.action_summary) + '</div>'
         + (o.quote ? '<div class="ob-quote">“' + esc(o.quote) + '”'
             + (o.quote_verified ? '' : '<div class="unverified-note">This quote could not be verified verbatim against the law text and may be paraphrased.</div>')
@@ -445,6 +450,7 @@
           + '<span class="type-badge">' + esc(o.deliverable_type) + '</span>'
           + '<span class="existing-code-tag">existing code</span>'
           + '</div>'
+          + unitLine(o)
           + '<div class="ob-action">' + esc(o.action_summary) + '</div>'
           + (o.quote ? '<div class="ob-quote">“' + esc(o.quote) + '”</div>' : '')
           + '</div>';
@@ -481,6 +487,7 @@
           + '<span class="agency-badge' + (p.agency === 'Unspecified' ? ' unspec' : '') + '" title="' + esc(p.agency_full) + '">' + esc(p.agency) + '</span>'
           + '<span class="type-badge">' + esc(p.deliverable_type) + '</span>'
           + '</div>'
+          + unitLine(p)
           + '<div class="ob-action">' + esc(p.action_summary) + '</div>'
           + (p.quote ? '<div class="ob-quote">“' + esc(p.quote) + '”'
               + (p.quote_verified ? '' : '<div class="unverified-note">This quote could not be verified verbatim against the law text and may be paraphrased.</div>')
@@ -505,6 +512,7 @@
           + '<span class="type-badge">' + esc(p.deliverable_type) + '</span>'
           + '<span class="existing-code-tag">existing code</span>'
           + '</div>'
+          + unitLine(p)
           + '<div class="ob-action">' + esc(p.action_summary) + '</div>'
           + (p.quote ? '<div class="ob-quote">“' + esc(p.quote) + '”</div>' : '')
           + '</div>';

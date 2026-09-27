@@ -89,6 +89,9 @@
     .agency-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
     .agency-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 16px 18px; text-decoration: none; color: inherit; display: flex; flex-direction: column; gap: 8px; transition: border-color 0.15s, box-shadow 0.18s, transform 0.12s; cursor: pointer; }
     .agency-card:hover { border-color: var(--blue-mid); box-shadow: var(--shadow-md); transform: translateY(-2px); }
+    .agency-card.public-body { border-style: dashed; }
+    .public-body-pill { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.62rem; font-weight: 600; color: var(--text-faint); background: var(--bg); border: 1px solid var(--border); border-radius: 4px; padding: 3px 7px; align-self: flex-start; }
+    .public-body-desc { font-size: 0.78rem; color: var(--text-muted); line-height: 1.5; }
     .ac-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
     .ac-name { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.9rem; font-weight: 700; color: var(--text); letter-spacing: -0.01em; line-height: 1.3; }
     .ac-head { font-size: 0.76rem; color: var(--text-muted); }
@@ -140,6 +143,7 @@
     .section-link { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.75rem; font-weight: 600; color: var(--blue); text-decoration: none; display: inline-block; margin-top: 8px; }
     .section-link:hover { text-decoration: underline; }
     .section-note { font-size: 0.82rem; color: var(--text-faint); font-style: italic; margin-bottom: 8px; }
+    .section-note-list { font-size: 0.85rem; color: var(--text-mid); line-height: 1.7; margin: 0 0 8px; padding-left: 20px; }
 
     .data-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; margin-bottom: 6px; }
     .data-table th { text-align: left; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-faint); padding: 6px 10px; border-bottom: 1px solid var(--border); }
@@ -433,7 +437,7 @@
 
     var el = document.getElementById('mainContent');
     var html = '<div class="stat-pills">'
-      + '<div class="stat-pill"><span class="sp-num">' + agencies.length + '</span><span class="sp-label">Agencies profiled</span></div>'
+      + '<div class="stat-pill"><span class="sp-num">' + agencies.length + '</span><span class="sp-label">Agencies and public bodies</span></div>'
       + '<div class="stat-pill"><span class="sp-num">' + totalDuties.toLocaleString() + '</span><span class="sp-label">Duties across them</span></div>'
       + '<div class="stat-pill"><span class="sp-num">' + totalPowers.toLocaleString() + '</span><span class="sp-label">Powers</span></div>'
       + '<div class="stat-pill"><span class="sp-num">' + fmtMoney(totalBudget) + '</span><span class="sp-label">Combined adopted budget, latest fiscal year</span></div>'
@@ -540,15 +544,23 @@
       html || '<div class="no-results"><strong>No agencies found</strong>Try a different search or filter.</div>';
   }
 
+  var PUBLIC_BODY_DESC = {
+    'Citywide (all agencies)': 'Duties and powers a law gives every city agency, or every agency of a kind.',
+    'Borough Presidents': 'Duties and powers laws give the five borough presidents.',
+    'NYCC': 'Duties and powers laws give the City Council and its Speaker.'
+  };
   function cardHtml(a) {
     var sector = sectorOf(a);
     var bg = SECTOR_LIGHT[sector] || '#F2EBE1';
     var txt = SECTOR_TEXT[sector] || '#1A1208';
     var b = latestAdopted(a);
-    return '<a class="agency-card" href="?agency=' + encodeURIComponent(a.id) + '">'
+    var desc = PUBLIC_BODY_DESC[a.id === 'nycc' ? 'NYCC' : a.name];
+    return '<a class="agency-card' + (a.public_body ? ' public-body' : '') + '" href="?agency=' + encodeURIComponent(a.id) + '">'
       + '<div class="ac-top"><span class="ac-name">' + esc(a.name) + '</span></div>'
+      + (a.public_body ? '<span class="public-body-pill">Public body, not a city agency</span>' : '')
+      + (desc ? '<span class="public-body-desc">' + esc(desc) + '</span>' : '')
       + (a.head ? '<span class="ac-head">Led by ' + esc(a.head.title) + ' ' + esc(a.head.name) + '</span>' : '')
-      + '<span class="sector-badge" style="background:' + bg + ';color:' + txt + '">' + esc(sector) + '</span>'
+      + (a.public_body ? '' : '<span class="sector-badge" style="background:' + bg + ';color:' + txt + '">' + esc(sector) + '</span>')
       + '<div class="ac-nums">'
       + '<div class="ac-num"><span class="ac-num-val">' + dutiesOf(a) + '</span><span class="ac-num-label">' + (dutiesOf(a) === 1 ? 'duty' : 'duties') + '</span></div>'
       + '<div class="ac-num"><span class="ac-num-val">' + powersOf(a) + '</span><span class="ac-num-label">' + (powersOf(a) === 1 ? 'power' : 'powers') + '</span></div>'
@@ -693,10 +705,15 @@
     document.getElementById('crumbLast').textContent = a.name;
     document.getElementById('heroTitle').innerHTML = esc(a.name);
     var sector = sectorOf(a);
-    document.getElementById('heroDesc').textContent = a.description || '';
+    document.getElementById('heroDesc').textContent = a.description || (a.public_body ? (PUBLIC_BODY_DESC[a.id === 'nycc' ? 'NYCC' : a.name] || '') : '');
 
     var chips = [];
-    chips.push('<span class="law-meta-chip"><strong>Sector:</strong> ' + esc(sector) + '</span>');
+    var pbDesc = PUBLIC_BODY_DESC[a.id === 'nycc' ? 'NYCC' : a.name];
+    if (a.public_body) {
+      chips.push('<span class="public-body-pill">Public body, not a city agency</span>');
+    } else {
+      chips.push('<span class="law-meta-chip"><strong>Sector:</strong> ' + esc(sector) + '</span>');
+    }
     if (a.head) chips.push('<span class="law-meta-chip"><strong>Led by:</strong> ' + esc(a.head.title) + ' ' + esc(a.head.name) + (a.head.term ? ' (' + esc(a.head.term) + ')' : '') + '</span>');
     var actions = ['<a class="btn btn-outline" href="./">← All agencies</a>'];
     if (a.url) actions.push('<a class="btn btn-outline" href="' + esc(a.url) + '" target="_blank" rel="noopener">Official website ↗</a>');
@@ -720,6 +737,7 @@
 
     html += section1Duties(t);
     html += section2Powers(t);
+    html += sectionUnits(a.units || []);
     html += section3Fiscal(t);
     html += section4Budget(a);
     html += section5Capital(a.capital);
@@ -735,6 +753,18 @@
   }
 
   function renderDirectoryInline() { return ''; }
+
+  function sectionUnits(units) {
+    if (!units.length) return '';
+    var html = '<div class="section-head" data-accent="obligations">Offices and bodies counted here</div>';
+    html += '<ul class="section-note-list">' + units.map(function (u) {
+      var parts = [];
+      if (u.duties) parts.push(u.duties + ' dut' + (u.duties === 1 ? 'y' : 'ies'));
+      if (u.powers) parts.push(u.powers + ' power' + (u.powers === 1 ? '' : 's'));
+      return '<li>' + esc(u.name) + ': ' + parts.join(', ') + '</li>';
+    }).join('') + '</ul>';
+    return html;
+  }
 
   function section1Duties(t) {
     var html = '<div class="section-head" data-accent="obligations">Duties Council laws place on it</div>';

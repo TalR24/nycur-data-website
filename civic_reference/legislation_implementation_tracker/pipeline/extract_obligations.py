@@ -699,6 +699,76 @@ _OVERRIDES_PATH = HERE / "actor_overrides.json"
 ACTOR_OVERRIDES: dict = (json.loads(_OVERRIDES_PATH.read_text())
                          if _OVERRIDES_PATH.exists() else {})
 
+# Sep 27 2026: offices, divisions, task forces and advisory boards that sit
+# inside a department count under the parent agency, tagged with the unit's
+# own name (Tal's decision). pipeline/agency_units.json: {by_name: {lowercased
+# actor name: {agency, unit}}, by_matter: {"<matter_id>|<lowercased name>":
+# {agency, unit}}}.
+_UNITS_PATH = HERE / "agency_units.json"
+_UNITS: dict = (json.loads(_UNITS_PATH.read_text())
+                if _UNITS_PATH.exists() else {"by_name": {}, "by_matter": {}})
+UNITS_BY_NAME: dict = _UNITS.get("by_name", {})
+UNITS_BY_MATTER: dict = _UNITS.get("by_matter", {})
+
+# Duties/powers still unmatched after fix_actor whose text designates whatever
+# agency or office the mayor names, rather than a fixed one.
+MAYOR_DESIGNATED_RE = re.compile(
+    r"\b(office or agency|agency or office|agency|office|entity)\s+designated\s+by\s+the\s+mayor"
+    r"|\bthe mayor shall designate\b|\bdesignated by the mayor\b", re.I)
+# Duties/powers a law gives every city agency, or every agency of a kind.
+CITYWIDE_ALL_AGENCIES_RE = re.compile(
+    r"\b(each|every|all|any|no)\s+(city\s+)?(agency|agencies)\b"
+    r"|\bcity agencies\s+(shall|may|must)\b|\bagencies\s+shall\b|\bthe city\s+(shall|may|must)\b",
+    re.I)
+
+
+def apply_agency_units(o: dict, matter_id: str, lookup: dict,
+                       agencies_by_canon: dict) -> bool:
+    """Assign a secondary unit label (office, division, task force, advisory
+    board) to the parent agency already resolved for this record, or resolve
+    an agency for a curated actor phrase the crosswalk alone cannot match.
+    Only runs on records fix_actor left unmatched. Returns True on a hit."""
+    if o.get("agency_matched"):
+        return False
+    key = (o.get("agency") or o.get("actor_raw") or "").strip().lower()
+    if not key:
+        return False
+    hit = UNITS_BY_MATTER.get(f"{matter_id}|{key}") or UNITS_BY_NAME.get(key)
+    if not hit:
+        return False
+    canon = hit["agency"]
+    info = agencies_by_canon.get(canon)
+    o["agency"] = canon
+    o["agency_full"] = (info or {}).get("full_name", canon)
+    o["agency_matched"] = True
+    if hit.get("unit"):
+        o["agency_unit"] = hit["unit"]
+    return True
+
+
+def apply_unspecified_agency_rules(o: dict, agencies_by_canon: dict) -> bool:
+    """For a record still unmatched with agency 'Unspecified' or empty, catch
+    the two recurring quote patterns Tal identified (Sep 27 2026): duties
+    left to whichever agency the mayor designates, and duties given to every
+    city agency. Returns True on a hit."""
+    if o.get("agency_matched") or o.get("agency") not in (None, "", "Unspecified"):
+        return False
+    quote = o.get("quote") or ""
+    if MAYOR_DESIGNATED_RE.search(quote):
+        canon = "Mayor's Office"
+        o["agency"] = canon
+        o["agency_full"] = agencies_by_canon.get(canon, {}).get("full_name", canon)
+        o["agency_matched"] = True
+        o["agency_unit"] = "Agency designated by the mayor"
+        return True
+    if CITYWIDE_ALL_AGENCIES_RE.search(quote):
+        canon = "Citywide (all agencies)"
+        o["agency"] = canon
+        o["agency_full"] = agencies_by_canon.get(canon, {}).get("full_name", canon)
+        o["agency_matched"] = True
+        return True
+    return False
+
 
 # ── Sep 25 2026: build-time re-attribution of reprinted duties ──────────────
 # A law that amends a code section reprints the whole section, with the parts
@@ -1594,6 +1664,7 @@ def main() -> None:
     quotes_cleaned = quotes_deleted_flagged = deadlines_event_fixed = 0
     semiannual_fixed = merged_away = 0
     private_excluded = actors_resolved = 0
+    units_applied = unspecified_resolved = 0
     _law_text_cache: dict[str, str] = {}
     for res in all_results:
         law = law_by_id.get(res["matter_id"])
@@ -1652,6 +1723,10 @@ def main() -> None:
                 continue
             if actor_fix == "resolved":
                 actors_resolved += 1
+            if apply_agency_units(o, mid, lookup, agencies_by_canon):
+                units_applied += 1
+            if apply_unspecified_agency_rules(o, agencies_by_canon):
+                unspecified_resolved += 1
             if fix_event_anchored_deadline(o):
                 deadlines_event_fixed += 1
             if fix_two_fixed_dates_semiannual(o):
@@ -1722,6 +1797,8 @@ def main() -> None:
         ls["power_count"] = counts["power_count"]
 
     log.info(f"Actor fixes: private parties excluded {private_excluded}, agencies resolved from code title or alias {actors_resolved}")
+    log.info(f"Agency units: secondary-unit labels applied {units_applied}, "
+             f"unspecified-agency quote rules resolved {unspecified_resolved}")
     log.info(f"Step 2 mechanical fixes: quotes cleaned {quotes_cleaned}, "
              f"quote_has_deleted_text {quotes_deleted_flagged}, "
              f"event-anchored deadlines fixed {deadlines_event_fixed}, "
@@ -1766,6 +1843,8 @@ def main() -> None:
         "powers": len(powers),
         "duty_quotes_verified": sum(1 for o in flat if o.get("quote_verified")),
         "reprinted_existing_code": sum(1 for o in flat + powers if o.get("restated")),
+        "records_total": len(flat) + len(powers),
+        "records_agency_matched": sum(1 for o in flat + powers if o.get("agency_matched")),
         "model_counts": out.get("model_counts"),
         "doris_matched": _filings_doc.get("matched"),
         "doris_status_counts": _filings_doc.get("status_counts"),
@@ -1782,6 +1861,7 @@ def main() -> None:
     import csv as csvmod
     csv_path = DATA / "obligations.csv"
     csv_cols = ["law_number_display", "file_number", "agency", "agency_full",
+                "agency_unit",
                 "action_summary", "deliverable_type", "deadline_date",
                 "deadline_text", "recurrence", "citation", "committee",
                 "prime_sponsor", "enactment_date", "effective_date",

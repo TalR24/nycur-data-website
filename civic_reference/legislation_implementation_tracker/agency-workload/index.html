@@ -116,6 +116,7 @@
     .obl-group-head .g-full { font-size: 0.8rem; color: var(--text-muted); }
     .obl-group-head .g-count { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.78rem; font-weight: 600; color: var(--blue); white-space: nowrap; }
     .obl-item { padding: 12px 18px; border-bottom: 1px solid var(--border); }
+    .obl-item .g-unit { display: block; font-size: 0.68rem; color: var(--text-faint); margin-top: -2px; }
     .obl-item:last-child { border-bottom: none; }
     .obl-item .o-law { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.72rem; }
     .obl-item .o-law a { color: var(--blue); text-decoration: none; }
@@ -545,11 +546,12 @@ function renderOblList(rows) {
         + '<span class="obl-chip">' + esc(o.recurrence || '') + '</span>';
       if (o.deadline_date) chips += '<span class="obl-chip due">due ' + esc(o.deadline_date) + '</span>';
       else if (o.deadline_text) chips += '<span class="obl-chip due">' + esc(o.deadline_text.length > 60 ? o.deadline_text.slice(0, 57) + '…' : o.deadline_text) + '</span>';
-      var hay = [o.action_summary, o.quote, o.citation, o.law_number_display, o.file_number, o.law_title, o.deliverable_type, o.recurrence, o.deadline_text, o.prime_sponsor].join(' ').toLowerCase();
+      var hay = [o.action_summary, o.quote, o.citation, o.law_number_display, o.file_number, o.law_title, o.deliverable_type, o.recurrence, o.deadline_text, o.prime_sponsor, o.agency_unit].join(' ').toLowerCase();
       html += '<div class="obl-item" data-search="' + esc(hay) + '">'
         + '<div class="o-law"><a href="../law/?law=' + encodeURIComponent(o.matter_id) + '">' + esc(o.law_number_display || o.file_number) + '</a>'
         + ' · ' + esc((o.enactment_date || '').slice(0, 4)) + (o.citation ? ' · ' + esc(o.citation) : '') + '</div>'
         + '<div class="o-summary">' + esc(o.action_summary || '') + '</div>'
+        + (o.agency_unit ? '<div class="g-unit">' + esc(o.agency_unit) + '</div>' : '')
         + '<div class="obl-chips">' + chips + '</div>'
         + '</div>';
     });

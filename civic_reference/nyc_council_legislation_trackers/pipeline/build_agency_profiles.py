@@ -642,8 +642,24 @@ def build_trackers_profile(canon: str, full_name: str, tr: dict) -> dict:
         })
     fiscal_list.sort(key=lambda x: ((x["net"] if x["net"] is not None else 0), x["matter_id"]))
 
+    # Offices, divisions, task forces and advisory boards inside this agency,
+    # tagged on the record as agency_unit (Tal's decision, Sep 27 2026).
+    unit_counts: defaultdict[str, dict] = defaultdict(lambda: {"duties": 0, "powers": 0})
+    for d in duties:
+        if d.get("agency_unit"):
+            unit_counts[d["agency_unit"]]["duties"] += 1
+    for p in powers:
+        if p.get("agency_unit"):
+            unit_counts[p["agency_unit"]]["powers"] += 1
+    units = [
+        {"name": name, "duties": c["duties"], "powers": c["powers"]}
+        for name, c in unit_counts.items()
+    ]
+    units.sort(key=lambda u: -(u["duties"] + u["powers"]))
+
     return {
         "duties": len(duties),
+        "units": units,
         "laws_with_duties": laws_with_duties,
         "open_deadlines": open_deadlines,
         "passed_deadlines": passed_deadlines,
@@ -702,6 +718,7 @@ def main():
     # canonical -> crosswalk full_name lookup
     crosswalk = json.loads((IMPL_DATA / "agency_crosswalk.json").read_text())
     full_name_by_canon = {a["canonical"]: a["full_name"] for a in crosswalk["agencies"]}
+    crosswalk_public_body = {a["canonical"]: bool(a.get("public_body")) for a in crosswalk["agencies"]}
 
     agencies = []
     for canon in sorted(all_canons):
@@ -724,6 +741,8 @@ def main():
                 "explorer_headcount": a["headcount"],
             })
         entry["trackers"] = build_trackers_profile(canon, full_name, tr)
+        entry["units"] = entry["trackers"].pop("units")
+        entry["public_body"] = crosswalk_public_body.get(canon, False)
         entry["budget"] = budget["budget_by_canon"].get(canon, [])
         entry["headcount"] = headcount["headcount_by_canon"].get(canon, [])
         entry["payroll"] = payroll["payroll_by_canon"].get(canon, [])
