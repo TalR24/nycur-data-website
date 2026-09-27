@@ -152,6 +152,17 @@ def fetch_statement(session, record: dict) -> tuple[str, dict]:
     matter_id = str(record["matter_id"])
     guid = record.get("legistar_guid", "")
     note: dict = {}
+    # historical records (fetch_fiscal_impacts_historical.py) carry the
+    # statement's direct legistar1 .docx URL and no Legistar page (Sep 27 2026:
+    # all 21 errors of the first full run)
+    direct = str(record.get("attachment_id") or "")
+    if direct.lower().startswith("http") and direct.lower().endswith(".docx"):
+        from fetch_fiscal_impacts_historical import download_docx_url
+        LEGISTAR_LIMITER.wait()
+        path = download_docx_url(session, direct)
+        if not path:
+            return "", {"fetch_error": "direct docx download failed"}
+        return extract_docx_text(path), {"source": "direct_docx"}
     LEGISTAR_LIMITER.wait()
     att_id, att_guid = get_fiscal_attachment(session, matter_id, guid)
     if not att_id:
@@ -263,6 +274,13 @@ def main() -> int:
                 res = {"matter_id": str(r["matter_id"]), "error": str(e)}
             results[res["matter_id"]] = res
 
+    # a same-day rerun (--matters for the ones that errored) merges into the
+    # day's report instead of replacing it
+    out_path = OUT_DIR / f"fiscal_verification_{date.today().isoformat()}.json"
+    if out_path.exists():
+        prior = json.loads(out_path.read_text()).get("results", {})
+        results = {**prior, **{k: v for k, v in results.items()
+                               if "verdict" in v or k not in prior}}
     checked = sum(1 for r in results.values() if "verdict" in r)
     correct = sum(1 for r in results.values() if r.get("verdict") == "correct")
     wrong = sum(1 for r in results.values() if r.get("verdict") == "wrong")
@@ -272,7 +290,6 @@ def main() -> int:
             by_field[e.get("field", "?")] = by_field.get(e.get("field", "?"), 0) + 1
     errored = len(results) - checked
 
-    out_path = OUT_DIR / f"fiscal_verification_{date.today().isoformat()}.json"
     out_path.write_text(json.dumps({
         "generated": date.today().isoformat(), "checked": checked, "correct": correct,
         "wrong": wrong, "errored": errored, "errors_by_field": by_field, "results": results,
