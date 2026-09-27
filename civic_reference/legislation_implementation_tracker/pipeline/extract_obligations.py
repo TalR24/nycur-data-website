@@ -1624,6 +1624,16 @@ def main() -> None:
             # Step 2 mechanical fixes (Sep 25 2026 audit): quote cleanup,
             # event-anchored deadlines, two-fixed-dates-a-year recurrence.
             mid = res["matter_id"]
+            # a quote stored with literal unicode escapes ("board\\u2019s") fails
+            # verification; decode them and re-check (4 records, Sep 27 2026)
+            if re.search(r"\\u[0-9a-fA-F]{4}", o.get("quote") or ""):
+                o["quote"] = re.sub(r"\\u([0-9a-fA-F]{4})", lambda m: chr(int(m.group(1), 16)), o["quote"])
+                if mid not in _law_text_cache:
+                    tp = TEXT_CACHE / f"{mid}.txt"
+                    _law_text_cache[mid] = tp.read_text(errors="ignore") if tp.exists() else ""
+                if _law_text_cache[mid]:
+                    o["quote_verified"] = quote_present(o["quote"], _law_text_cache[mid])
+                quotes_cleaned += 1
             if "{{" in (o.get("quote") or "") or re.search(r"\[[a-z]", o.get("quote") or ""):
                 if mid not in _law_text_cache:
                     tp = TEXT_CACHE / f"{mid}.txt"
