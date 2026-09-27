@@ -141,20 +141,22 @@
     .summary-bars .c-bar-fill { background: var(--blue); border-radius: 4px; transition: width 0.7s ease; }
     .summary-bars .c-bar-fill.negative { background: var(--red); }
     .summary-bars .c-bar-value { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.72rem; font-weight: 600; color: var(--text); }
-    .col-chart { display: flex; align-items: flex-end; gap: 6px; height: 150px; margin-top: 8px; }
+    .col-chart { display: flex; align-items: flex-end; gap: 6px; height: 150px; margin-top: 8px; container-type: inline-size; }
     .col-item { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; justify-content: flex-end; }
     .col-bar { width: 100%; max-width: 46px; background: var(--blue); border-radius: 3px 3px 0 0; transition: height 0.7s ease; }
-    .col-num { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.68rem; font-weight: 600; color: var(--text-mid); min-width: 0; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .col-num { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.68rem; font-weight: 600; color: var(--text-mid); white-space: nowrap; }  /* may overhang its column: a hidden neighbour leaves the room */
     @media (max-width: 1320px) {
       .col-num { font-size: 0.62rem; letter-spacing: -0.02em; }
     }
-    .col-num.col-num-hidden { visibility: hidden; }
+    /* every value shows when the columns have room; alternate values hide on a
+       narrow chart and all but the tallest on a very narrow one (Sep 27 2026) */
+    @container (max-width: 480px) { .col-num.col-num-alt:not(.col-num-top) { visibility: hidden; } }
+    @container (max-width: 380px) { .col-num:not(.col-num-top) { visibility: hidden; } }
     .col-label { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.62rem; color: var(--text-faint); text-align: center; line-height: 1.2; }
     .chart-note { font-size: 0.72rem; color: var(--text-faint); margin-top: 14px; line-height: 1.5; }
     .loading-note { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.8rem; color: var(--text-faint); padding: 20px 0; }
 
     @media (max-width: 640px) {
-      .col-num { display: none; }
       .summary-bars { --c-bar-label-w: 104px; }
       .header-actions { display: none; }
     }
@@ -619,12 +621,11 @@
     if (!pairs.length) { el.innerHTML = '<p class="loading-note">No data.</p>'; return; }
     var max = 0;
     rawPairs.forEach(function (p) { if (p[1] > max) max = p[1]; });
-    var skipLabels = pairs.length > 10;
+    var top = rawPairs.reduce(function (m, p, i) { return p[1] > rawPairs[m][1] ? i : m; }, 0);
     var html = '<div class="col-chart">';
     pairs.forEach(function (p, i) {
-      var hideNum = skipLabels && (i % 2 === 1);
       html += '<div class="col-item">'
-        + '<span class="col-num' + (hideNum ? ' col-num-hidden' : '') + '">' + shortMoney(rawPairs[i][1]) + '</span>'
+        + '<span class="col-num' + (i % 2 === 1 ? ' col-num-alt' : '') + (i === top ? ' col-num-top' : '') + '">' + shortMoney(rawPairs[i][1]) + '</span>'
         + '<div class="col-bar" data-h="' + (max ? rawPairs[i][1] / max * 100 : 0) + '"></div>'
         + '<span class="col-label">' + esc(p[0]) + '</span>'
         + '</div>';
