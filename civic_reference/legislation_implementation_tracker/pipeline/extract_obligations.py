@@ -717,8 +717,10 @@ MAYOR_DESIGNATED_RE = re.compile(
     r"|\bthe mayor shall designate\b|\bdesignated by the mayor\b", re.I)
 # Duties/powers a law gives every city agency, or every agency of a kind.
 CITYWIDE_ALL_AGENCIES_RE = re.compile(
+    # only duties on every agency (audit 4, Sep 27 2026: "the city shall" and
+    # "participating agencies" name a specific agency or a listed set)
     r"\b(each|every|all|any|no)\s+(city\s+)?(agency|agencies)\b"
-    r"|\bcity agencies\s+(shall|may|must)\b|\bagencies\s+shall\b|\bthe city\s+(shall|may|must)\b",
+    r"|\bcity agencies\s+(shall|may|must)\b",
     re.I)
 
 
@@ -728,12 +730,30 @@ def apply_agency_units(o: dict, matter_id: str, lookup: dict,
     board) to the parent agency already resolved for this record, or resolve
     an agency for a curated actor phrase the crosswalk alone cannot match.
     Only runs on records fix_actor left unmatched. Returns True on a hit."""
-    if o.get("agency_matched"):
+    # keys: the stored agency and the law's own wording, each also without a
+    # leading article ("The urban agriculture advisory board", audit 4)
+    keys = []
+    for raw in (o.get("agency"), o.get("actor_raw")):
+        k = (raw or "").strip().lower()
+        if k:
+            k2 = re.sub(r"^(the|a|an|such|said)\s+", "", k)
+            # "coordinator of the X" / "director of X": also try the body itself
+            k3 = re.sub(r"^(coordinator|director|commissioner|head|chair(person)?|chief|executive director)\s+of\s+(the\s+)?", "", k2)
+            keys += [k, k2, k3]
+    if not keys:
         return False
-    key = (o.get("agency") or o.get("actor_raw") or "").strip().lower()
-    if not key:
-        return False
-    hit = UNITS_BY_MATTER.get(f"{matter_id}|{key}") or UNITS_BY_NAME.get(key)
+    # a per-law correction applies even to a record the crosswalk matched
+    # ("the council" in a DFTA law is its advisory council, not the Council)
+    hit = next((UNITS_BY_MATTER[f"{matter_id}|{k}"] for k in keys if f"{matter_id}|{k}" in UNITS_BY_MATTER), None)
+    if not hit and o.get("agency_matched"):
+        # a crosswalk entry that is itself an office inside another body (MOUA,
+        # a Division) is re-parented when the curated map names a different
+        # parent and a unit label; ordinary matches are left alone
+        cand = next((UNITS_BY_NAME[k] for k in keys if k in UNITS_BY_NAME), None)
+        if not (cand and cand.get("unit") and cand["agency"] != o.get("agency")):
+            return False
+        hit = cand
+    hit = hit or next((UNITS_BY_NAME[k] for k in keys if k in UNITS_BY_NAME), None)
     if not hit:
         return False
     canon = hit["agency"]
