@@ -107,7 +107,7 @@
        !important because pages set these widths in their own <style>. */
     '@media (min-width:1100px){' +
       '.header-inner,.hero-inner,.main-inner,.footer-inner,.stat-row-inner,.charts-inner,' +
-      '.sitenav-inner,.relwork-inner,.trk-studio-inner{max-width:1240px !important;}' +
+      '.sitenav-inner,.relwork-inner,.trk-studio-inner,.projects-inner,.band-inner,.charts-nav-inner,.table-inner{max-width:1240px !important;}' +
       '.hero p{max-width:920px !important;}' +
     '}';
   document.head.appendChild(styleEl);
