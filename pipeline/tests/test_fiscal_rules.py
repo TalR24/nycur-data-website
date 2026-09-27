@@ -20,6 +20,22 @@ per the builder's orders: do not change fiscal extraction logic):
     date as closing the FY that just ended rather than the FY it falls in.
     Not covered by an assert below (it would fail against current code);
     left for a fiscal-pipeline fix.
+
+Rule gap found, not implemented (Sep 27 2026 adjudication REJECTED matter
+8034432; the task orders this reported, not fixed): a one-time cost split
+across two fiscal years by the statement itself ("$50,000 ... one-year
+feasibility study", no sunset sentence) prints two nonzero year columns
+(29,726 then 20,274) with the Full column equal to the second, smaller one.
+totals_from_columns() has no time_limited_program (no sunset sentence, so the
+program_life_sum path never runs) and picks the Full column (20,274), losing
+the first year's 29,726. Proposed rule: when the statement's own narrative
+states a single total one-time cost (here $50,000) and the columns split it
+across exactly the years the narrative names, sum those columns instead of
+taking the Full column alone — a "one_time_cost_split" totals_basis, keyed off
+a narrative-stated one-time total the way expenditure_is_savings and
+see_below_categories are keyed off their own flags. Needs a new schema
+signal (e.g. a nullable narrative_stated_one_time_total) since the columns
+alone don't say "these two years are one split cost, not a Full-column read."
 """
 from __future__ import annotations
 
@@ -148,6 +164,96 @@ check(
     out5["total_expenditure"] == 0 and out5["net_fiscal_impact"] == -605000000
     and out5.get("totals_reconciled") == "capital_duplicated_as_expenditure",
     f"got {out5}",
+)
+
+
+# ── totals_basis: a "See below" table that still got the narrative figure
+# written into the Full column reads document_stated, not full_impact_column
+# ─────────────────────────────────────────────────────────────────────────────
+# Source: Sep 27 2026 fiscal verification + adjudication (fiscal_adjudication.json),
+# matters 5534276, 6702327, 5839389, 2939936 (all CONFIRMED). Columns are the
+# pre-override values (git show HEAD~1 at rework time); see_below_categories is
+# the new field this rework adds to FISCAL_SCHEMA, set as a fresh extraction
+# of these statements would set it (the field did not exist when these were
+# first extracted).
+_SEE_BELOW_CASES = [
+    ("5534276", 100000, [
+        {"label": "Effective FY23", "revenue": 0, "expenditure": None, "capital": None, "net": 0},
+        {"label": "FY Succeeding Effective FY24", "revenue": 0, "expenditure": None, "capital": None, "net": 0},
+        {"label": "Full Fiscal Impact FY28", "revenue": 0, "expenditure": 100000, "capital": None, "net": -100000},
+    ]),
+    ("6702327", 170000, [
+        {"label": "Effective FY27", "revenue": 0, "expenditure": 170000, "capital": None, "net": -170000},
+        {"label": "FY Succeeding Effective FY28", "revenue": 0, "expenditure": 170000, "capital": None, "net": -170000},
+        {"label": "Full Fiscal Impact FY28", "revenue": 0, "expenditure": 170000, "capital": None, "net": -170000},
+    ]),
+    ("5839389", 200000, [
+        {"label": "Effective FY24", "revenue": 0, "expenditure": 200000, "capital": None, "net": -200000},
+        {"label": "FY Succeeding Effective FY25", "revenue": 0, "expenditure": 200000, "capital": None, "net": -200000},
+        {"label": "Full Fiscal Impact FY25", "revenue": 0, "expenditure": 200000, "capital": None, "net": -200000},
+    ]),
+    ("2939936", 4500000, [
+        {"label": "Effective FY18", "revenue": None, "expenditure": None, "capital": None, "net": None},
+        {"label": "FY Succeeding Effective FY19", "revenue": None, "expenditure": None, "capital": None, "net": None},
+        {"label": "Full Fiscal Impact FY19", "revenue": None, "expenditure": 4500000, "capital": None, "net": -4500000},
+    ]),
+]
+for matter_id, expected_exp, cols in _SEE_BELOW_CASES:
+    fiscal_sb = {
+        "cost_estimable": True, "time_limited_program": False, "sunset_quote": "",
+        "costs_already_in_financial_plan": False, "total_revenue": 0,
+        "total_expenditure": expected_exp, "total_capital": 0,
+        "see_below_categories": ["expenditure"], "fiscal_table_columns": cols,
+    }
+    out_sb = totals_from_columns(dict(fiscal_sb))
+    check(
+        f"totals_basis: See-below table -> document_stated, not full_impact_column (matter {matter_id}, "
+        f"Sep 27 2026 adjudication)",
+        out_sb["total_expenditure"] == expected_exp and out_sb["totals_basis"] == "document_stated",
+        f"got expenditure={out_sb['total_expenditure']} basis={out_sb['totals_basis']}",
+    )
+
+# ── costs_already_in_financial_plan: an already-budgeted revenue loss is not
+# added to expenditure ───────────────────────────────────────────────────────
+# Source: matter 5745591 (Sep 27 2026 adjudication, CONFIRMED): tracker had
+# 34,250,000 (the $33.75M already-in-plan revenue reduction moved into
+# expenditure on top of the real $500,000 cost); right expenditure is 500,000.
+fiscal_plan = {
+    "cost_estimable": True, "time_limited_program": False, "sunset_quote": "",
+    "costs_already_in_financial_plan": True, "total_revenue": 0, "total_expenditure": 0, "total_capital": 0,
+    "fiscal_table_columns": [
+        {"label": "Effective FY22", "revenue": -56250000, "expenditure": 0, "capital": None, "net": -56250000},
+        {"label": "FY Succeeding Effective FY23", "revenue": -33750000, "expenditure": 500000, "capital": None, "net": -34250000},
+        {"label": "Full Fiscal Impact FY23", "revenue": -33750000, "expenditure": 500000, "capital": None, "net": -34250000},
+    ],
+}
+out_plan = totals_from_columns(dict(fiscal_plan))
+check(
+    "costs_already_in_financial_plan: an already-budgeted revenue loss stays out of expenditure (matter 5745591, Sep 27 2026 adjudication)",
+    out_plan["total_expenditure"] == 500000 and out_plan["total_revenue"] == 0
+    and out_plan["net_fiscal_impact"] == -500000,
+    f"got {out_plan}",
+)
+
+# ── expenditure_is_savings: a savings row is a negative expenditure ─────────
+# Source: matter 2103602 (Sep 27 2026 adjudication, CONFIRMED): right
+# expenditure -790,400 ("annual expenditure savings of approximately
+# $790,000 ... reach $790,400 by Fiscal 2021"), net +790,400.
+fiscal_savings = {
+    "cost_estimable": True, "time_limited_program": False, "sunset_quote": "",
+    "costs_already_in_financial_plan": False, "expenditure_is_savings": True,
+    "total_revenue": 0, "total_expenditure": 0, "total_capital": 0,
+    "fiscal_table_columns": [
+        {"label": "Effective FY15", "revenue": 0, "expenditure": 0, "capital": None, "net": 0},
+        {"label": "FY Succeeding Effective FY16", "revenue": 0, "expenditure": 182000, "capital": None, "net": -182000},
+        {"label": "Full Fiscal Impact FY21", "revenue": 0, "expenditure": 790400, "capital": None, "net": -790400},
+    ],
+}
+out_savings = totals_from_columns(dict(fiscal_savings))
+check(
+    "expenditure_is_savings: a savings row is a negative expenditure (matter 2103602, Sep 27 2026 adjudication)",
+    out_savings["total_expenditure"] == -790400 and out_savings["net_fiscal_impact"] == 790400,
+    f"got {out_savings}",
 )
 
 

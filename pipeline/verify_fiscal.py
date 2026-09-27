@@ -43,6 +43,7 @@ from fetch_fiscal_impacts import (  # noqa: E402
 )
 
 FISCAL_DATA = REPO / "civic_reference" / "nyc_council_fiscal_impacts_tracker" / "data" / "fiscal_impacts.json"
+OVERRIDES_PATH = HERE / "fiscal_overrides.json"
 CRITERIA = REPO / "civic_reference" / "nyc_council_legislation_trackers" / "quality" / "criteria.md"
 CACHE_DIR = HERE / "cache" / "fiscal_verify"
 OUT_DIR = REPO / "civic_reference" / "nyc_council_legislation_trackers" / "quality"
@@ -103,9 +104,49 @@ TRACKER_FIELDS = [
     "costs_already_in_financial_plan", "agencies_abbrev", "fiscal_table_columns",
 ]
 
+# House rules the Opus verifier kept re-raising against correct records (Sep
+# 27 2026 adjudication of its first 60 "wrong" verdicts: 34 CONFIRMED, 82
+# REJECTED; the revenue-loss rule alone caused 50 of the 82 rejections).
+# Stated verbatim in the prompt so the verifier stops re-litigating them.
+HOUSE_RULES = """HOUSE RULES (do not re-raise these as errors; they are settled tracker conventions):
+- A revenue loss is stored as a positive expenditure (the cost of the reduction), not as negative
+  revenue. Judge total_revenue and total_expenditure together against net_fiscal_impact, not the
+  sign of total_revenue alone.
+- Fiscal years are stored as two digits: 30 means FY2030, not 1930 or year 30.
+- A program that ends on July 1 or July 2 closes out the prior fiscal year (the FY that had just
+  run its course), not the FY that technically begins on July 1.
+- Only the statement's own repeal/expiration/sunset sentence makes a program time-limited. A
+  multi-year spending schedule, a stated cost horizon ("over ten years"), or a one-year study does
+  NOT make the program itself time-limited unless the statement separately says the program ends.
+- An agency named only as consulted, reviewing, or using its own existing resources (no new cost
+  or line item) is not listed in agencies_abbrev.
+"""
+
+
+def load_override(record: dict) -> dict | None:
+    """The record's pinned override, if any, tied to the same attachment_id
+    (a newer statement voids it, same rule as apply_overrides() in
+    fetch_fiscal_impacts.py)."""
+    if not OVERRIDES_PATH.exists():
+        return None
+    overrides = json.loads(OVERRIDES_PATH.read_text())
+    entry = overrides.get(str(record.get("matter_id")))
+    if not entry or str(record.get("attachment_id")) != str(entry.get("attachment_id")):
+        return None
+    return entry
+
 
 def build_prompt(statement_text: str, record: dict, rules: str) -> str:
     tracker_view = {k: record.get(k) for k in TRACKER_FIELDS}
+    override = load_override(record)
+    override_block = ""
+    if override:
+        override_block = f"""
+PINNED HUMAN AUDIT (same statement, attachment_id {record.get('attachment_id')}):
+{json.dumps(override, indent=1, ensure_ascii=False)}
+These values were verified by a human audit; contradict them only if the statement plainly shows
+them wrong, and quote it.
+"""
     return f"""You are auditing one row of the NYC Council Fiscal Impacts tracker against the fiscal
 impact statement it was extracted from.
 
@@ -114,6 +155,8 @@ FISCAL RULES (from the tracker's own audit criteria):
 {rules}
 ---
 
+{HOUSE_RULES}
+{override_block}
 STATEMENT TEXT:
 ---
 {statement_text[:TEXT_CAP]}

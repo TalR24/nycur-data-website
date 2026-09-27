@@ -80,6 +80,7 @@ FIS_TEXT_CAP = 150_000
 # 2026), so text fields are plain strings ("" = missing, turned back into None
 # by _blank_to_none) and only numbers whose "unknown" matters stay nullable.
 _NUM_OR_NULL = {"anyOf": [{"type": "number"}, {"type": "null"}]}
+_BOOL_OR_NULL = {"anyOf": [{"type": "boolean"}, {"type": "null"}]}
 _STR = {"type": "string"}
 
 
@@ -96,8 +97,18 @@ FISCAL_SCHEMA = _obj({
     "costs_already_in_financial_plan": {"type": "boolean"},
     "time_limited_program": {"type": "boolean"},
     "sunset_quote": _STR,
+    # a genuine reduction in city spending (net positive), not a cost, per the
+    # savings rule in totals_from_columns(); null/false for an ordinary cost.
+    "expenditure_is_savings": _BOOL_OR_NULL,
     "total_revenue": _NUM_OR_NULL, "total_expenditure": _NUM_OR_NULL,
     "total_capital": _NUM_OR_NULL, "net_fiscal_impact": _NUM_OR_NULL,
+    # which categories' table cells read "(See Below)"/were blank for every
+    # column, pointing to the narrative for the real figure — even where the
+    # model still wrote that narrative figure into the Full column, so
+    # totals_from_columns() can label the basis document_stated, not
+    # full_impact_column (Sep 27 2026 adjudication: 5534276, 6702327, 5839389,
+    # 2939936 all had this shape).
+    "see_below_categories": {"type": "array", "items": {"type": "string", "enum": ["revenue", "expenditure", "capital"]}},
     "fiscal_table_columns": {"type": "array", "items": _obj({
         "label": _STR, "revenue": _NUM_OR_NULL, "expenditure": _NUM_OR_NULL,
         "capital": _NUM_OR_NULL, "net": _NUM_OR_NULL})},
@@ -146,11 +157,14 @@ Return a JSON object with exactly these fields (an empty string for missing text
   "costs_already_in_financial_plan": false,
   "time_limited_program": false,
   "sunset_quote": "",
+  "expenditure_is_savings": false,
 
   "total_revenue": 0,
   "total_expenditure": 0,
   "total_capital": null,
   "net_fiscal_impact": 0,
+
+  "see_below_categories": [],
 
   "fiscal_table_columns": [
     {{
@@ -197,7 +211,8 @@ RULES:
 - time_limited_program: true only when the program or pilot that carries the cost itself ends on a stated date or after a stated number of years, and the statement says so. A sunset of one subsection (for example a reporting requirement) or of a separate authority, a discretionary end ("may discontinue"), or a statement that merely shows several years does NOT count. When true, copy into sunset_quote the exact sentence from the document that states the end; otherwise sunset_quote is "". Copy every year column; the pipeline totals a time-limited program over its life.
 - A figure in the table or the narrative is a fiscal impact. "See below" pointing to a figure, a $0 Full Fiscal Impact column beside non-zero year columns, or an unknown revenue next to a known cost is NOT zero impact and NOT unestimable.
 - Every amount is in whole dollars: "$435 million" is 435000000 and "$2.3 million" is 2300000, never 435 or 2.3, including when a table is labelled "($000)" or "in millions" (multiply out).
-- A table cell that says "See below" points to the narrative: leave that cell null, and take the figure the Impact on Revenues or Impact on Expenditures paragraph gives (for example "a one-time capital cost of $1.8 million") as the document's stated total. Set cost_estimable to false only when the narrative itself says the cost cannot be estimated and gives no figure.
+- A table cell that says "See below" points to the narrative: leave that cell null, and take the figure the Impact on Revenues or Impact on Expenditures paragraph gives (for example "a one-time capital cost of $1.8 million") as the document's stated total. Set cost_estimable to false only when the narrative itself says the cost cannot be estimated and gives no figure. In see_below_categories, list "revenue"/"expenditure"/"capital" for each category where every column read "See below" (or was blank) and the figure came from the narrative — even if you also wrote that figure into the Full Fiscal Impact column, so the pipeline can label its source correctly.
+- expenditure_is_savings: true only when the statement itself describes the expenditure figure as savings or a reduction in city spending (a net positive to the city), not a cost — for example "annual expenditure savings of approximately $790,000". Leave the number itself positive (its magnitude); the pipeline applies the sign.
 - fiscal_table_columns must preserve the exact column structure from the document (there may be 2–6 columns).
 - agencies_abbrev: list only agencies that are directly responsible for implementing the legislation — i.e. agencies that have at least one line item in program_breakdowns. Do NOT list agencies that only appear in passing in narrative text (e.g. OMB as reviewer, IBO as analyst, NYC Council as introducer).
 - agencies_full: each agency's name as the document writes it. agencies_abbrev and program_breakdowns[].agency: the abbreviation the document uses, or the full name if it uses none; the pipeline canonicalizes both through the NYC agency crosswalk.
@@ -1086,7 +1101,13 @@ def totals_from_columns(fiscal: dict) -> dict:
                 bases.add("program_life_sum")
                 return col_sum
         if full is not None and (full.get(key) or 0):
-            bases.add(full_basis)
+            # the model sometimes writes the narrative's figure into the Full
+            # column even though every column read "See below" for this
+            # category (Sep 27 2026 adjudication: 5534276, 6702327, 5839389,
+            # 2939936); see_below_categories says so, so the basis still
+            # reads document_stated even though the number sits in the cell
+            basis = "document_stated" if key in (fiscal.get("see_below_categories") or []) else full_basis
+            bases.add(basis)
             return full.get(key)
         col_sum = sum((c.get(key) or 0) for c in cols)
         if col_sum:
@@ -1104,8 +1125,20 @@ def totals_from_columns(fiscal: dict) -> dict:
         return 0
 
     rev, exp, cap = pick("revenue"), pick("expenditure"), pick("capital")
-    if rev < 0:                          # revenue reduction: a cost to the city
-        exp, rev = exp - rev, 0
+    if rev < 0:
+        if fiscal.get("costs_already_in_financial_plan"):
+            # the loss is already reflected in the budget (Sep 27 2026
+            # adjudication, matter 5745591: tracker had added a $33.75M
+            # already-budgeted revenue reduction to expenditure, right
+            # answer left it out of both totals): it adds nothing new
+            rev = 0
+        else:                             # revenue reduction: a cost to the city
+            exp, rev = exp - rev, 0
+    # a genuine reduction in city spending, not a cost (Sep 27 2026
+    # adjudication, matter 2103602): keep it negative so net reflects the
+    # saving instead of forcing every expenditure figure positive
+    if fiscal.get("expenditure_is_savings") and exp > 0:
+        exp = -exp
     fiscal["total_revenue"] = rev
     fiscal["total_expenditure"] = exp
     fiscal["total_capital"] = cap or None
