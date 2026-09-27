@@ -1314,10 +1314,36 @@ def split_for_extraction(text: str, target: int = CHUNK_TARGET) -> list[str]:
     for c in chunks:
         while len(c) > target * 1.6:
             cut = _safe_cut(c, target)
+            start = _safe_start(c, max(0, cut - CHUNK_OVERLAP))
+            if cut >= len(c) or start <= 0:
+                # A new-matter block longer than the window (Sep 26 2026: 13
+                # laws). Refusing to cut inside it left `c` unchanged, so this
+                # loop never ended and ran the runner out of memory. Cut inside
+                # the block instead, closing the marker at the end of this
+                # window and reopening it at the start of the next, so both
+                # still read the text as new matter.
+                cut = target
+                start = cut - CHUNK_OVERLAP
+                out.append(c[:cut] + ("}}" if c.rfind("{{", 0, cut) > c.rfind("}}", 0, cut) else ""))
+                c = ("{{" if c.rfind("{{", 0, start) > c.rfind("}}", 0, start) else "") + c[start:]
+                continue
             out.append(c[:cut])
-            c = c[_safe_start(c, max(0, cut - CHUNK_OVERLAP)):]
+            c = c[start:]
         out.append(c)
-    return [c for c in out if c.strip()]
+    # every window must read as balanced new-matter markup: a window that
+    # starts inside a {{...}} block gets an opening marker, one that ends
+    # inside it gets a closing marker (3 windows in 3 laws, Sep 26 2026)
+    fixed = []
+    for c in out:
+        opens, closes = c.count("{{"), c.count("}}")
+        first_close, first_open = c.find("}}"), c.find("{{")
+        if first_close != -1 and (first_open == -1 or first_close < first_open):
+            c = "{{" + c
+            opens += 1
+        if opens > closes:
+            c = c + "}}" * (opens - closes)
+        fixed.append(c)
+    return [c for c in fixed if c.strip()]
 
 
 # A single pass that runs out of output tokens (pilot 2, Sep 25 2026: three
