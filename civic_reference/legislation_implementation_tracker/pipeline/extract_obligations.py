@@ -945,6 +945,13 @@ def _deadline_fields(fields: dict, target: dict) -> dict:
     override sets a kind when the record would otherwise have none."""
     if "deadline_type" in fields:
         fields["deadline_kind"] = fields.pop("deadline_type")
+    # the site marks reprinted Code with `restated`; verdicts arrive as
+    # existing_code, which nothing displays (audit 8, Sep 28 2026: 2524277's
+    # 28 judged reprints still showed as new matter)
+    if fields.get("existing_code") is not None and fields.get("restated") is None:
+        fields["restated"] = bool(fields["existing_code"])
+    if fields.get("restated") is not None:
+        fields["restated_source"] = "verdict"   # reattribute_reprints keeps it
     date = fields.get("deadline_date")
     kind = fields.get("deadline_kind", target.get("deadline_kind"))
     if date and kind in (None, "none"):
@@ -1013,12 +1020,19 @@ def apply_record_overrides(records: list[dict], matter_id: str,
         fields = _deadline_fields({k: v for k, v in entry.items() if k not in ("why", "source")}, {})
         prefix = normalize_quote(fields.get("quote", ""))[:80]
         agency = fields.get("agency")
-        already = any(
-            normalize_quote(o.get("quote", "")).startswith(prefix)
-            and o.get("agency") == agency
-            for o in records + added
-        ) if prefix else False
-        if already:
+        match = next((o for o in records + added
+                      if prefix and normalize_quote(o.get("quote", "")).startswith(prefix)
+                      and o.get("agency") == agency), None)
+        if match is not None:
+            # the judged record already exists: apply the judged values to it
+            # instead of dropping them (Sep 28 2026: 2524277's 27 judged
+            # reprints were skipped this way and still showed as new matter)
+            for k in ("kind", "agency_unit", "deadline_kind", "deadline_date",
+                      "recurrence", "existing_code", "restated", "restated_source"):
+                if k in fields:
+                    if k == "kind":
+                        match["kind_override"] = fields[k]
+                    match[k] = fields[k]
             continue
         # next free -ovNN: counting records reused an id already in the
         # committed data on a rebuild (2 duplicate ids, Sep 28 2026)
@@ -1306,6 +1320,8 @@ def reattribute_reprints(flat: list[dict], powers: list[dict],
         mid = o["matter_id"]
         if mid not in parsed:
             continue                 # no text here (CI): keep prior flags
+        if o.get("restated_source") == "verdict":
+            continue                 # a judged verdict outranks the text heuristic
         o.pop("restated", None)
         o.pop("origin", None)
         plain, hay, idx, flags, spans = parsed[mid]

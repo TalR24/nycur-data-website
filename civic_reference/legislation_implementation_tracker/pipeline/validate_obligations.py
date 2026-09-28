@@ -183,10 +183,18 @@ def main() -> None:
     # record it once as a soft signal so the headline stays meaningful.
     if not TEXT.exists():
         soft["law_text_cache_absent"].append(f"{TEXT} does not exist; text-based checks skipped")
+    # a fresh CI or cloud-routine checkout holds text only for the laws it just
+    # fetched: a missing text is a defect only where the cache is broadly
+    # present (Sep 28 2026: the Max routine's first run hit 1,854 false hard
+    # failures and could not commit 12 correct extractions)
+    partial_cache = len(texts) < 0.9 * len(by_matter)
+    if TEXT.exists() and partial_cache:
+        soft["law_text_cache_partial"].append(
+            f"{len(texts)} of {len(by_matter)} laws have cached text; missing-text check skipped")
     for mid, group in by_matter.items():
         t = texts.get(mid)
         if t is None:
-            if not TEXT.exists():
+            if not TEXT.exists() or partial_cache:
                 continue
             hard["law_text_missing"].append(
                 f"{laws[mid]['law_number_display']}: {len(group)} obligations, no cached text")

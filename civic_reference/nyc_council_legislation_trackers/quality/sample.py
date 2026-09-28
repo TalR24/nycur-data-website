@@ -146,7 +146,7 @@ def build_law_packet(matter_id: str, records: list[dict]) -> tuple[str, dict]:
         kind = r.get("kind") or r.get("kind_rule") or r.get("kind_model")
         lines.append(
             f"- {label} kind={kind} agency={r.get('agency')} unit={r.get('agency_unit')} "
-            f"actor={r.get('actor_raw')!r} existing_code={bool(r.get('quotes_restated_text'))}"
+            f"actor={r.get('actor_raw')!r} existing_code={bool(r.get('restated'))}"
         )
         lines.append(f"  summary: {r.get('action_summary')}")
         lines.append(f"  citation: {r.get('citation')} | deliverable: {r.get('deliverable_type')}")

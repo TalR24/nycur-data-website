@@ -29,7 +29,7 @@ OUT_JSON = HERE / "gold_score.json"
 
 # gold entries use the packet's human field names (criteria.md / audit_lib.py);
 # obligations.json's own field for "reprint of existing code" is quotes_restated_text.
-FIELD_ALIAS = {"existing_code": "quotes_restated_text"}
+FIELD_ALIAS = {"existing_code": "restated"}  # the field the site shows (Sep 28 2026)
 
 
 def load(p: Path, default):
@@ -100,6 +100,8 @@ def score_obligations() -> dict:
 
         for field, expected in (g.get("fields_expected") or {}).items():
             actual = match.get(FIELD_ALIAS.get(field, field))
+            if field == "existing_code":
+                actual = bool(actual)          # an absent flag means new matter
             field_total[field] = field_total.get(field, 0) + 1
             if isinstance(expected, dict) and "not" in expected:
                 ok = actual != expected["not"]
