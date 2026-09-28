@@ -39,3 +39,6 @@ above is the raw, unscored total from the source file, per this rework's instruc
 | 2026-09-28 | audit 8 Sonnet laws (Sep 28) | obligations | recent+sonnet | 133 | 97/122 = 0.795 [0.715, 0.857] | 97/108 = 0.898 [0.827, 0.942] | scored by score.py |
 | 2026-09-28 | audit 8 fiscal (Sep 28) | fiscal | plain+tricky | 18 | 15/18 = 0.833 [0.608, 0.942] | - | scored by score.py |
 | 2026-09-28 | audit 8 protected (reprint flag shown from quotes_restated_text: 60 criterion-6-only errors not comparable; 75.2% excluding them) | obligations | definitions+protected | 329 | 194/318 = 0.610 [0.555, 0.662] | 194/205 = 0.946 [0.906, 0.970] | scored by score.py |
+| 2026-09-28 | audit 9 Sonnet laws, after the class sweep (calibration: 43/45 = 95.6% agreement with audit 6) | obligations | recent+sonnet | 181 | 155/170 = 0.912 [0.860, 0.946] | 155/166 = 0.934 [0.885, 0.963] | scored by score.py |
+| 2026-09-28 | audit 9 fiscal | fiscal | plain+tricky | 18 | 18/18 = 1.000 [0.824, 1.000] | - | scored by score.py |
+| 2026-09-28 | audit 9 protected laws, after the class sweep and reprint fix | obligations | definitions+protected+recent | 314 | 280/300 = 0.933 [0.899, 0.956] | 280/294 = 0.952 [0.922, 0.971] | scored by score.py |
