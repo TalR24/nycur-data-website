@@ -54,6 +54,136 @@ OUT_JSON = DATA / "obligations.json"
 POWERS_JSON = DATA / "powers.json"
 BATCH_STATE_NEW = HERE / "batch_state_new.json"          # extract_obligations.py (new laws)
 BATCH_STATE_REEXTRACT = HERE / "batch_state_reextract.json"  # reextract_queued.py
+MAX_REFRESH_PATH = HERE / "max_refresh.json"
+
+
+def load_max_refresh() -> dict:
+    return json.loads(MAX_REFRESH_PATH.read_text()) if MAX_REFRESH_PATH.exists() else {}
+
+
+def gate_done_ids(marker: dict, tracker: str) -> set[str]:
+    """Ids the Max-plan routine already finished for THIS calendar month.
+    A marker from a prior month never gates anything (a new month always
+    needs its own extraction, on Max or as the API fallback)."""
+    if marker.get("month") != date.today().strftime("%Y-%m"):
+        return set()
+    return set(marker.get(tracker, {}).get("done", []))
+
+
+def validate_against_schema(value, schema: dict) -> bool:
+    """Minimal JSON Schema check covering the features OBLIGATIONS_SCHEMA
+    uses (required, enum, type, additionalProperties, items, anyOf/nullable);
+    jsonschema is not a project dependency (requirements.txt), so this is
+    hand-written rather than adding one for a single caller."""
+    if "anyOf" in schema:
+        return any(validate_against_schema(value, s) for s in schema["anyOf"])
+    t = schema.get("type")
+    if t == "object":
+        if not isinstance(value, dict):
+            return False
+        for k in schema.get("required", []):
+            if k not in value:
+                return False
+        if schema.get("additionalProperties") is False:
+            if set(value) - set(schema.get("properties", {})):
+                return False
+        for k, v in value.items():
+            sub = schema.get("properties", {}).get(k)
+            if sub is not None and not validate_against_schema(v, sub):
+                return False
+        return True
+    if t == "array":
+        if not isinstance(value, list):
+            return False
+        items_schema = schema.get("items")
+        return items_schema is None or all(validate_against_schema(v, items_schema) for v in value)
+    if t == "string":
+        if not isinstance(value, str):
+            return False
+        return "enum" not in schema or value in schema["enum"]
+    if t == "integer":
+        return isinstance(value, int) and not isinstance(value, bool)
+    if t == "null":
+        return value is None
+    return True  # no "type" declared: permissive
+
+
+def emit_packets(d: Path, todo: list[tuple[dict, str]]) -> None:
+    """One prompt file per law (one per WINDOW for a long law), for the
+    Max-plan routine to run itself: no Anthropic key, no call. Shared by
+    extract_obligations.py's own laws and reextract_queued.py's queued laws,
+    so both write the SAME packet/manifest shape --ingest reads."""
+    manifest = {}
+    for law, text in todo:
+        mid = law["matter_id"]
+        windows = split_for_extraction(text)
+        manifest[mid] = {"windows": len(windows)}
+        for wi, window in enumerate(windows, 1):
+            variable_prompt = render_variable_prompt(law, window)
+            name = f"{mid}__w{wi}" if len(windows) > 1 else mid
+            (d / f"{name}.txt").write_text(
+                _FIXED_PROMPT + variable_prompt +
+                f"\n\nANSWER FORMAT: write ONLY a JSON object matching this "
+                f"schema to results/{name}.json:\n" + json.dumps(OBLIGATIONS_SCHEMA))
+    (d / "manifest.json").write_text(json.dumps(manifest, indent=1))
+    (d / "schema.json").write_text(json.dumps(OBLIGATIONS_SCHEMA, indent=1))
+    log.info(f"wrote {len(todo)} packets ({sum(m['windows'] for m in manifest.values())} "
+             f"prompt files) to {d}")
+
+
+def ingest_packets(d: Path, todo: list[tuple[dict, str]], lookup: dict,
+                   agencies_by_canon: dict, model: str) -> tuple[list[str], list[str]]:
+    """Validates and finalizes each law's packet result(s) the SAME way a
+    synchronous or batch call is finalized (finalize_extraction /
+    merge_window_finalized; no second copy), writing cache/extracted/<id>.json
+    exactly as a normal run does. Returns (done, left) matter ids."""
+    manifest = json.loads((d / "manifest.json").read_text())
+    by_mid = {law["matter_id"]: (law, text) for law, text in todo}
+    done, left = [], []
+    for mid, info in manifest.items():
+        if mid not in by_mid:
+            continue
+        law, text = by_mid[mid]
+        n = info.get("windows", 1)
+        windows = split_for_extraction(text) if n > 1 else [text]
+        subs, ok = [], True
+        for wi in range(1, n + 1):
+            name = f"{mid}__w{wi}" if n > 1 else mid
+            rp = d / "results" / f"{name}.json"
+            if not rp.exists():
+                ok = False
+                break
+            try:
+                raw = json.loads(rp.read_text())
+            except json.JSONDecodeError:
+                ok = False
+                break
+            if not validate_against_schema(raw, OBLIGATIONS_SCHEMA):
+                ok = False
+                break
+            window_text = windows[wi - 1]
+            subs.append(finalize_extraction(raw, law, window_text, operative_text(window_text),
+                                            lookup, agencies_by_canon, model))
+        if not ok:
+            left.append(mid)
+            continue
+        res = subs[0] if n == 1 else merge_window_finalized(law, text, subs)
+        EXTRACT_CACHE.mkdir(parents=True, exist_ok=True)
+        (EXTRACT_CACHE / f"{mid}.json").write_text(json.dumps(res, indent=1))
+        done.append(mid)
+    return done, left
+
+
+def update_max_refresh(tracker: str, done: list[str], left: list[str]) -> None:
+    marker = load_max_refresh()
+    month = date.today().strftime("%Y-%m")
+    if marker.get("month") != month:
+        marker = {"month": month}
+    t = marker.setdefault(tracker, {"done": [], "left": []})
+    t["done"] = sorted(set(t.get("done", [])) | set(done))
+    t["left"] = sorted((set(t.get("left", [])) | set(left)) - set(done))
+    MAX_REFRESH_PATH.write_text(json.dumps(marker, indent=1))
+
 
 DEFAULT_MODEL = "claude-sonnet-5"   # Tal, Sep 26 2026, after the pilot-2 blind A/B
 
@@ -853,7 +983,13 @@ def apply_record_overrides(records: list[dict], matter_id: str,
         ) if prefix else False
         if already:
             continue
-        n = len(records) + len(added) + 1
+        # next free -ovNN: counting records reused an id already in the
+        # committed data on a rebuild (2 duplicate ids, Sep 28 2026)
+        used = {o.get("obligation_id") for o in records + added}
+        n = max([int(m.group(1)) for i in used
+                 if (m := re.search(r"-ov(\d+)$", str(i or "")))] + [0]) + 1
+        while f"{matter_id}-ov{n:02d}" in used:
+            n += 1
         added.append({
             "obligation_id": f"{matter_id}-ov{n:02d}",
             "matter_id": matter_id,
@@ -1901,41 +2037,60 @@ def extract_law(client, model: str, law: dict, text: str,
                     "effective_clause": {"text": None},
                     "effective_date": law.get("effective_date"),
                     "windows_refused": len(windows), "obligations": []}
-        merged, seen = [], set()
-        eff_clause, eff_date = None, None
-        window_errors = []
-        for wi, window in enumerate(windows, 1):
-            sub = extract_law(client, model, law, window, lookup, agencies_by_canon)
-            if sub.get("extraction_error"):
-                window_errors.append(f"window {wi}: {sub['extraction_error']}")
-            if eff_clause is None:
-                eff_clause = (sub.get("effective_clause") or {}).get("text")
-            if eff_date is None:
-                eff_date = sub.get("effective_date")
-            for o in sub.get("obligations", []):
-                key = (normalize_quote(o.get("quote", ""))[:160], o.get("citation", ""))
-                if key in seen:
-                    continue
-                seen.add(key)
-                merged.append(o)
-        for i, o in enumerate(merged, 1):
-            o["obligation_id"] = f"{law['matter_id']}-{i:02d}"
-            # labels were computed against the window's text, which can carry
-            # markers the split added; recompute against the whole law
-            o["kind_rule"] = classify(o.get("quote", ""), text)
-            o["kind_list_item"] = is_list_item(o.get("quote", ""), text)
-        return {"matter_id": law["matter_id"],
-                "model": model,
-                "extracted_at": datetime.now().isoformat(timespec="seconds"),
-                "effective_clause": {"text": eff_clause},
-                "effective_date": eff_date or law.get("effective_date"),
-                "windows": len(windows),
-                # a failed window means records are missing: surfaced so
-                # guard_reextraction keeps the prior records instead
-                "extraction_error": "; ".join(window_errors) or None,
-                "obligations": merged}
+        subs = [extract_law(client, model, law, window, lookup, agencies_by_canon)
+               for window in windows]
+        return merge_window_finalized(law, text, subs)
 
-    norm_text = normalize_quote(text)
+    return _extract_law_single(client, model, law, text, variable_prompt,
+                              lookup, agencies_by_canon, window_target)
+
+
+def merge_window_finalized(law: dict, text: str, subs: list[dict]) -> dict:
+    """Merge each window's ALREADY-FINALIZED result (finalize_extraction has
+    run on each) into one law-level result. Shared by the sync windowed path
+    above and --ingest (packet mode), which finalizes each window's packet
+    result the same way before calling this."""
+    merged, seen = [], set()
+    eff_clause, eff_date = None, None
+    window_errors = []
+    for wi, sub in enumerate(subs, 1):
+        if sub.get("extraction_error"):
+            window_errors.append(f"window {wi}: {sub['extraction_error']}")
+        if eff_clause is None:
+            eff_clause = (sub.get("effective_clause") or {}).get("text")
+        if eff_date is None:
+            eff_date = sub.get("effective_date")
+        for o in sub.get("obligations", []):
+            key = (normalize_quote(o.get("quote", ""))[:160], o.get("citation", ""))
+            if key in seen:
+                continue
+            seen.add(key)
+            merged.append(o)
+    for i, o in enumerate(merged, 1):
+        o["obligation_id"] = f"{law['matter_id']}-{i:02d}"
+        # labels were computed against the window's text, which can carry
+        # markers the split added; recompute against the whole law
+        o["kind_rule"] = classify(o.get("quote", ""), text)
+        o["kind_list_item"] = is_list_item(o.get("quote", ""), text)
+    return {"matter_id": law["matter_id"],
+            "model": subs[0].get("model") if subs else DEFAULT_MODEL,
+            "extracted_at": datetime.now().isoformat(timespec="seconds"),
+            "effective_clause": {"text": eff_clause},
+            "effective_date": eff_date or law.get("effective_date"),
+            "windows": len(subs),
+            # a failed window means records are missing: surfaced so
+            # guard_reextraction keeps the prior records instead
+            "extraction_error": "; ".join(window_errors) or None,
+            "obligations": merged}
+
+
+def _extract_law_single(client, model: str, law: dict, text: str, variable_prompt: str,
+                        lookup: dict, agencies_by_canon: dict,
+                        window_target: int | None) -> dict:
+    """The single-pass (non-windowed) extraction: call, verify, retry once,
+    finalize. Split out of extract_law() so packet mode can build the exact
+    same prompt without a call, and --ingest can finalize a packet's result
+    through the same path a synchronous or batch call uses."""
     op_text = operative_text(text)
     result = None
     for attempt in range(2):
@@ -2102,12 +2257,21 @@ def main() -> None:
     ap.add_argument("--limit", type=int, default=None)
     ap.add_argument("--matters", nargs="+", default=None)
     ap.add_argument("--incremental", action="store_true")
+    # Max-plan routine (Sep 28 2026): no API billing. --emit-packets writes
+    # one prompt per law (one per WINDOW for a long law) for the routine to
+    # run itself, no Anthropic key needed; --ingest decodes the routine's
+    # results the same way a synchronous or batch call is decoded.
+    ap.add_argument("--emit-packets", metavar="DIR", default=None)
+    ap.add_argument("--ingest", metavar="DIR", default=None)
     args = ap.parse_args()
 
-    if not os.environ.get("ANTHROPIC_API_KEY"):
+    packet_mode = args.emit_packets or args.ingest
+    if not packet_mode and not os.environ.get("ANTHROPIC_API_KEY"):
         sys.exit("ANTHROPIC_API_KEY not set")
-    import anthropic
-    client = anthropic.Anthropic()
+    client = None
+    if not packet_mode:
+        import anthropic
+        client = anthropic.Anthropic()
 
     EXTRACT_CACHE.mkdir(parents=True, exist_ok=True)
     laws = json.loads(LAWS_JSON.read_text())["laws"]
@@ -2119,6 +2283,17 @@ def main() -> None:
         laws = [l for l in laws if l["matter_id"] in set(args.matters)]
     if args.limit:
         laws = laws[:args.limit]
+
+    # Marker gate (Sep 28 2026): the Max-plan routine already extracted these
+    # ids this month; skip them here so the API fallback makes zero calls in
+    # the normal case. Never applied in packet mode (that IS the routine).
+    if not packet_mode and os.environ.get("MAX_REFRESH_GATE") == "1":
+        done_ids = gate_done_ids(load_max_refresh(), "obligations")
+        if done_ids:
+            before = len(laws)
+            laws = [l for l in laws if l["matter_id"] not in done_ids]
+            log.info(f"MAX_REFRESH_GATE=1: skipped {before - len(laws)} ids "
+                     f"done on Max this month")
 
     # Prior results let --incremental work in CI, where cache/ doesn't exist:
     # reconstruct per-law results from the committed obligations.json
@@ -2148,14 +2323,11 @@ def main() -> None:
                 "obligations": obs_by_matter.get(l["matter_id"], []),
             }
 
-    # Batch mode (CLAUDE_BATCH=1): pre-scan for the laws this run would
-    # otherwise call extract_law() for (same skip conditions as the loop
-    # below), submit them as ONE Message Batch, and use those results in the
-    # loop instead of a per-law synchronous call. New laws (this script) and
-    # the re-extraction queue (reextract_queued.py) both go through this.
-    batch_results: dict[str, dict] = {}
-    if os.environ.get("CLAUDE_BATCH") == "1":
-        todo = []
+    def select_todo() -> list[tuple[dict, str]]:
+        """Laws this run would otherwise call extract_law() for: same skip
+        conditions the main per-law loop below uses. Shared by packet mode
+        and batch mode so there is exactly one selection rule."""
+        out = []
         for law in laws:
             cache_file = EXTRACT_CACHE / f"{law['matter_id']}.json"
             if args.incremental and (cache_file.exists() or law["matter_id"] in prior):
@@ -2163,7 +2335,30 @@ def main() -> None:
             text_file = TEXT_CACHE / f"{law['matter_id']}.txt"
             if not text_file.exists():
                 continue
-            todo.append((law, text_file.read_text()))
+            out.append((law, text_file.read_text()))
+        return out
+
+    if packet_mode:
+        d = Path(args.emit_packets or args.ingest)
+        (d / "results").mkdir(parents=True, exist_ok=True)
+        todo = select_todo()
+        if args.emit_packets:
+            emit_packets(d, todo)
+            return
+        done, left = ingest_packets(d, todo, lookup, agencies_by_canon, args.model)
+        update_max_refresh("obligations", done, left)
+        log.info(f"ingested {len(done)} laws, {len(left)} left (invalid or missing result); "
+                 f"wrote {MAX_REFRESH_PATH}")
+        return
+
+    # Batch mode (CLAUDE_BATCH=1): pre-scan for the laws this run would
+    # otherwise call extract_law() for (same skip conditions as the loop
+    # below), submit them as ONE Message Batch, and use those results in the
+    # loop instead of a per-law synchronous call. New laws (this script) and
+    # the re-extraction queue (reextract_queued.py) both go through this.
+    batch_results: dict[str, dict] = {}
+    if os.environ.get("CLAUDE_BATCH") == "1":
+        todo = select_todo()
         if todo:
             log.info(f"CLAUDE_BATCH=1: batching {len(todo)} laws")
             # 120 min: this step's share of the job's 360-min cap alongside
