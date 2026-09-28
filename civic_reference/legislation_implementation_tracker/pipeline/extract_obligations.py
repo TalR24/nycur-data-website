@@ -2657,9 +2657,19 @@ def main() -> None:
                     o["agency"], o["agency_full"] = canon, full
                 o.setdefault("agency_full", o.get("agency"))
                 o.setdefault("agency_source", "record_override")
+            tp = TEXT_CACHE / f"{law['matter_id']}.txt"
+            ltext = tp.read_text(errors="ignore") if tp.exists() else None
+            # an added record goes through the same quote cleaning and rule
+            # label as an extracted one (Sep 28 2026: judges' quotes kept the
+            # {{ }} markers, and adds carried no kind_rule); the judge's kind
+            # stays the final kind through kind_override
+            o["quote"], _ = clean_stored_quote(o.get("quote", ""), ltext)
+            if not o.get("kind_rule"):
+                o["kind_rule"] = classify(o["quote"], ltext)
+            if o.get("kind") in ("duty", "power"):
+                o["kind_override"] = o["kind"]
             if "quote_verified" not in o:
-                tp = TEXT_CACHE / f"{law['matter_id']}.txt"
-                o["quote_verified"] = bool(tp.exists() and quote_present(o.get("quote", ""), tp.read_text(errors="ignore")))
+                o["quote_verified"] = bool(ltext and quote_present(o.get("quote", ""), ltext))
         for o in combined:
             o["kind"] = _kind(o)
         law_flat = [o for o in combined + added if o["kind"] == "duty"]
