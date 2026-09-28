@@ -71,10 +71,12 @@ def score_obligations() -> dict:
         verdict = g.get("verdict")
 
         if verdict == "missed":
+            # an audited miss is fixed once the data holds it (the Sep 27 2026
+            # version counted the fix as a regression and ignored real misses)
             match = find_match(g.get("quote", ""), records_for_law)
-            if match is not None:
+            if match is None:
                 regressions.append({
-                    "type": "gold_missed_item_now_present",
+                    "type": "gold_missed_item_still_missing",
                     "matter_id": mid, "quote": g.get("quote", ""), "note": g.get("note", ""),
                 })
             continue
