@@ -30,3 +30,6 @@ to gold_unparsed.json instead of the gold set. wrong (17) and missed (5) matched
 above is the raw, unscored total from the source file, per this rework's instruction.
 | 2026-09-27 | audit 5 Sonnet laws (Sep 28) | obligations | recent+sonnet | 118 | 86/111 = 0.775 [0.689, 0.843] | 86/93 = 0.925 [0.853, 0.963] | scored by score.py |
 | 2026-09-27 | audit 5 fiscal, verifier-passed bills (Sep 28) | fiscal | plain+tricky | 20 | 16/20 = 0.800 [0.584, 0.919] | - | scored by score.py |
+| 2026-09-27 | audit 6 Sonnet laws (Sep 28, after audit-5 rules) | obligations | recent+sonnet | 198 | 176/192 = 0.917 [0.869, 0.948] | 176/182 = 0.967 [0.930, 0.985] | scored by score.py |
+| 2026-09-27 | audit 6 protected laws (20 reconciled + 16 hand-fixed) | obligations | protected+recent | 219 | 145/191 = 0.759 [0.694, 0.814] | 145/173 = 0.838 [0.776, 0.886] | scored by score.py |
+| 2026-09-27 | audit 6 fiscal (Sep 28) | fiscal | plain+tricky | 18 | 15/18 = 0.833 [0.608, 0.942] | - | scored by score.py |
