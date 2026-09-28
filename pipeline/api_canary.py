@@ -22,7 +22,7 @@ import verify_obligations as vo  # noqa: E402
 from claude_batch import cached_content, run_batch, clear_state  # noqa: E402
 
 BATCH_STATE = Path("/tmp/api_canary_batch_state.json")
-CANARY_LAW = {"file_number": "Int 0-2026", "law_number_display": "Local Law 1 of 2026",
+CANARY_LAW = {"matter_id": "canary-0", "file_number": "Int 0-2026", "law_number_display": "Local Law 1 of 2026",
              "title": "canary test law", "committee": "Test", "enactment_date": "2026-01-01",
              "legistar_indexes": []}
 
