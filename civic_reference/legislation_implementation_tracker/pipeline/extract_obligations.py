@@ -937,6 +937,23 @@ def _find_candidates(records: list[dict], prefix: str, agency: str | None) -> li
     return hits
 
 
+_OVERRIDE_CW: dict | None = None
+
+
+def _resolve_override_agency(o: dict) -> None:
+    """An override that sets the agency must also set agency_matched and
+    agency_full, as extraction does (Sep 28 2026 sweep: 455 records carried a
+    canonical code with agency_matched false and the old full name)."""
+    global _OVERRIDE_CW
+    if _OVERRIDE_CW is None:
+        cw = json.loads(CROSSWALK_JSON.read_text())
+        _OVERRIDE_CW = {"lookup": cw["lookup"], "by": {a["canonical"]: a for a in cw["agencies"]}}
+    canon, full = match_agency(o.get("agency") or "", _OVERRIDE_CW["lookup"], _OVERRIDE_CW["by"])
+    o["agency_matched"] = canon is not None
+    if canon:
+        o["agency"], o["agency_full"] = canon, full
+
+
 def _deadline_fields(fields: dict, target: dict) -> dict:
     """Reconciliation verdicts name the deadline kind `deadline_type`; records
     call it `deadline_kind` (Sep 28 2026: 27 kind corrections landed in an
@@ -1002,6 +1019,7 @@ def apply_record_overrides(records: list[dict], matter_id: str,
         target.update(fields)
         if "agency" in fields:
             target["agency_source"] = "record_override"
+            _resolve_override_agency(target)
     for entry in ov.get("remove", []):
         prefix = entry.get("quote_prefix", "")
         cands = _find_candidates(records, prefix, entry.get("agency"))
@@ -2651,6 +2669,11 @@ def main() -> None:
         # a duty with no deadline kind keeps no date: the effective date left
         # on such records is an extraction artefact (audit 7, Sep 28 2026:
         # 2858175 R1, 5641331 R2, 5983600 R10/R12 and others)
+        # dates set by overrides pass the same house rule as extracted ones
+        # (Sep 28 2026 sweep: judges filled dates that precede enactment)
+        for o in law_flat:
+            if o.get("deadline_date"):
+                o["deadline_date"] = sanitize_deadline(o["deadline_date"], law.get("enactment_date"))
         for o in law_flat:
             if (o.get("deadline_kind") in (None, "none") and o.get("deadline_date")
                     and o["deadline_date"] == o.get("effective_date")):
