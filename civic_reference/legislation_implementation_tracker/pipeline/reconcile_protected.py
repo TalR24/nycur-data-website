@@ -269,6 +269,17 @@ def cmd_apply() -> None:
                 bucket = "set"
             key = _entry_key(new)
             if key in existing_keys[bucket]:
+                # a later verdict on the same record merges into its entry
+                # (Sep 28 2026: sweep corrections to records with an earlier
+                # override were dropped as "already present")
+                if bucket == "set":
+                    prev = next(e for e in entry["set"] if _entry_key(e) == key)
+                    merged = {**prev.get("fields", {}), **new.get("fields", {})}
+                    if merged != prev.get("fields", {}):
+                        prev["fields"] = merged
+                        prev["why"], prev["source"] = new.get("why"), new.get("source")
+                        n_set += 1
+                        continue
                 n_skipped += 1
                 continue
             entry[bucket].append(new)
