@@ -32,6 +32,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import random
 import sys
 import time
@@ -42,8 +43,10 @@ HERE = Path(__file__).resolve().parent
 DATA = HERE.parent / "data"
 TEXT_CACHE = HERE / "cache" / "text"
 VERIFY_CACHE = HERE / "cache" / "verify"
-DIFF_PATH = HERE / "reconcile_protected.json"
-DECISIONS_PATH = HERE / "reconcile_decisions.json"
+# RECONCILE_DIFF / RECONCILE_DECISIONS: a class sweep (Sep 28 2026) reuses this
+# judging path without touching the protected-law reconciliation files
+DIFF_PATH = Path(os.environ.get("RECONCILE_DIFF") or HERE / "reconcile_protected.json")
+DECISIONS_PATH = Path(os.environ.get("RECONCILE_DECISIONS") or HERE / "reconcile_decisions.json")
 
 sys.path.insert(0, str(HERE))
 import law_definitions  # noqa: E402

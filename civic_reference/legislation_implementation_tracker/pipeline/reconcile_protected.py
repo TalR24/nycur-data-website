@@ -31,6 +31,7 @@ Usage:
 from __future__ import annotations
 
 import json
+import os
 import sys
 from collections import defaultdict
 from datetime import date
@@ -42,7 +43,7 @@ EXCLUSIONS = HERE / "reextract_exclusions.json"
 SNAPSHOT = HERE / "protected_snapshot.json"
 QUEUE = HERE / "reextract_queue.json"
 DIFF = HERE / "reconcile_protected.json"
-DECISIONS = HERE / "reconcile_decisions.json"
+DECISIONS = Path(os.environ.get("RECONCILE_DECISIONS") or HERE / "reconcile_decisions.json")
 RECORD_OVERRIDES_PATH = HERE / "record_overrides.json"
 
 sys.path.insert(0, str(HERE))
