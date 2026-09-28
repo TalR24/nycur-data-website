@@ -26,6 +26,11 @@ on:
         required: false
         default: true
         type: boolean
+      no_sync_fallback:
+        description: "reextract_obligations batch: collect the batch only, no synchronous retries (laws needing one stay queued)"
+        required: false
+        default: false
+        type: boolean
       include_protected:
         description: "reextract_obligations: also re-extract laws in reextract_exclusions.json"
         required: false
@@ -89,6 +94,7 @@ jobs:
           # BILLING: batch mode is half price; waits up to 120 min, then leaves
           # batch_state_reextract.json committed for the monthly resume job
           CLAUDE_BATCH: ${{ inputs.batch && '1' || '' }}
+          BATCH_NO_SYNC_FALLBACK: ${{ inputs.no_sync_fallback && '1' || '' }}
         run: |
           python3 pipeline/reextract_queued.py
           python3 pipeline/extract_obligations.py --incremental

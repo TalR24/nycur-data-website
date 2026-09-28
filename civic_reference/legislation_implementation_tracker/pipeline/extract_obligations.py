@@ -977,7 +977,7 @@ def apply_unspecified_agency_rules(o: dict, agencies_by_canon: dict) -> bool:
 # uses to find these blocks in the first place.
 import law_definitions  # noqa: E402
 from sweep_restated_duties import (  # noqa: E402
-    split_markers, restated_spans, condense, locate, AMENDED,
+    split_markers, restated_spans, condense, locate, AMENDED, _squash,
 )
 
 
@@ -1041,6 +1041,61 @@ def quote_similarity(a: str, b: str) -> float:
     return difflib.SequenceMatcher(None, a, b).ratio()
 
 
+# Audit 6 (Sep 28 2026): measured against the 247 gold-set existing_code=
+# False, verdict=correct records with markup (genuinely new duties, some with
+# a short reprinted lead-in) before picking this: 0 false positives up to
+# 0.30 once the digit exclusion below is in place (without it, 0.2 already
+# had 3: a year and a day-count changed via the same "[old] {{new}}" shape).
+# 0.30 is needed to catch every named term-substitution example.
+TERM_SUBSTITUTION_FRAC_MAX = 0.30
+_SUBSTITUTION_LOOKBACK = 40
+
+
+def _is_pure_term_substitution(plain: str, idx: list[int], flags: list[bool],
+                               quote: str, hay: str) -> bool:
+    """True if every contiguous run of new-matter chars in the quote's
+    located span is immediately preceded (past whitespace) by a `]` - i.e.
+    the new matter is only the replacement half of a "[old] {{new}}" term
+    swap, never an addition of its own. Re-locates the same span
+    sweep_restated_duties.locate() finds (its match loop is small enough to
+    mirror here rather than change that module, which is out of scope)."""
+    needle = "".join(c for c in _squash(quote) if not c.isspace())
+    at = hay.find(needle)
+    if at < 0:
+        return False
+    span = idx[at:at + len(needle)]
+    if not span:
+        return False
+    i, n, found = 0, len(span), False
+    while i < n:
+        pos = span[i]
+        if flags[pos]:
+            found = True
+            j = i
+            while j < n and flags[span[j]]:
+                j += 1
+            before = plain[max(0, pos - _SUBSTITUTION_LOOKBACK):pos]
+            if not before.rstrip().endswith("]"):
+                return False
+            # A run that changes a NUMBER (a year, a day count) changes the
+            # provision's substance, not just its wording ("[2017] {{2019}}",
+            # "[upon the] {{within 10 days of}}": both audit 6 false
+            # positives on the gold set) - but a citation renumbering
+            # ("subdivision k of section 16-305" -> "subdivision b of
+            # section 16-316.5", 5570512) is exactly the cosmetic rename
+            # this rule should still catch, so only a BARE number, a 4-digit
+            # year, or a day/month/year count is rejected, not any digit.
+            run_text = plain[pos:span[j - 1] + 1]
+            if (re.fullmatch(r"\s*\d+\s*", run_text)
+                    or re.search(r"\b(19|20)\d{2}\b", run_text)
+                    or re.search(r"\d+\s*(day|month|year)s?\b", run_text, re.I)):
+                return False
+            i = j
+        else:
+            i += 1
+    return found
+
+
 def reattribute_reprints(flat: list[dict], powers: list[dict],
                          law_by_id: dict) -> tuple[list, dict]:
     """Split every duty/power whose quote is 100% reprinted (new-matter
@@ -1055,12 +1110,12 @@ def reattribute_reprints(flat: list[dict], powers: list[dict],
             if "{{" in t and AMENDED.search(t):
                 marked_text[mid] = t
 
-    parsed: dict[str, tuple] = {}          # matter_id -> (hay, idx, flags, spans)
+    parsed: dict[str, tuple] = {}          # matter_id -> (plain, hay, idx, flags, spans)
     for mid, marked in marked_text.items():
         plain, flags = split_markers(marked)
         spans = restated_spans(plain)
         hay, idx = condense(plain)
-        parsed[mid] = (hay, idx, flags, spans)
+        parsed[mid] = (plain, hay, idx, flags, spans)
 
     # Bucket every record by the code section its citation names. A reprint
     # only duplicates a record for the SAME section: boilerplate sentences
@@ -1080,9 +1135,18 @@ def reattribute_reprints(flat: list[dict], powers: list[dict],
             continue                 # no text here (CI): keep prior flags
         o.pop("restated", None)
         o.pop("origin", None)
-        hay, idx, flags, spans = parsed[mid]
+        plain, hay, idx, flags, spans = parsed[mid]
         frac = locate(hay, idx, flags, o.get("quote") or "", spans)
         if frac == 0.0:
+            reprint_candidates.append(o)
+        # Audit 6 (Sep 28 2026): a term substitution ("recycling" -> "zero
+        # waste", "inmate" -> "incarcerated individual") underlines only the
+        # new word, so frac is a small nonzero number and the record above
+        # never gets flagged, even though the sentence is reprinted code.
+        # Reuses the SAME located span `locate()` finds; only the acceptance
+        # threshold and the substitution check are new.
+        elif frac is not None and 0 < frac <= TERM_SUBSTITUTION_FRAC_MAX and \
+                _is_pure_term_substitution(plain, idx, flags, o.get("quote") or "", hay):
             reprint_candidates.append(o)
 
     dropped_ids: set = set()
@@ -1331,21 +1395,33 @@ def resolve_deadline(dl: dict, enactment_date: str | None,
 # clause anchored to an EVENT ("receives", "receipt", "after the/such/each
 # <event>") has no fixed date, no matter what the model computed one from.
 _ENACT_ANCHOR = re.compile(r"enact|becomes?\s+(a\s+)?law|effective date", re.I)
+# Audit 6 (Sep 28 2026): widened from "receives/receipt/after the X" to the
+# other event nouns the same audit found stored as enactment/effective clocks
+# ("within 7 business days of such request", 75 days "of such appointment"
+# instead of enactment) - a clock the law ties to a request, receipt,
+# appointment, notice, application, submission, or determination has no fixed
+# date, same as the events already caught here.
 _EVENT_TEXT_ANCHOR = re.compile(
-    r"receives\b|receipt|after (the|such|each) [a-z]", re.I)
+    r"receives\b|receipt|after (the|such|each) [a-z]|"
+    r"of (such|the|a|an) (request|receipt|appointment|notice|application|"
+    r"submission|determination|complaint)\b", re.I)
 
 
 def fix_event_anchored_deadline(o: dict) -> bool:
     """Downgrade a wrongly-dated event-anchored deadline in place.
     Returns True if the record changed."""
-    if o.get("deadline_kind") != "days_after_enactment":
+    if o.get("deadline_kind") not in ("days_after_enactment", "days_after_effective"):
         return False
     text = o.get("deadline_text") or ""
     if _ENACT_ANCHOR.search(text):
         return False
     if not _EVENT_TEXT_ANCHOR.search(text):
         return False
-    o["deadline_kind"] = "event"
+    # days_after_other: no fixed date, the standard enum value for a clock
+    # tied to something other than enactment/effectiveness (audit 6, Sep 28
+    # 2026, replacing the "event" value this fix used to write: the schema
+    # and validator both already expect days_after_other for this case).
+    o["deadline_kind"] = "days_after_other"
     o["deadline_date"] = None
     return True
 
@@ -1404,6 +1480,44 @@ def fix_fixed_date_recurring(o: dict, effective_date: str | None) -> bool:
     except ValueError:
         return False
     o["deadline_date"] = candidate.isoformat()
+    return True
+
+
+def fix_recurring_last_date_to_first(o: dict, enactment_date: str | None,
+                                     effective_date: str | None) -> bool:
+    """Audit 6 (Sep 28 2026): "on or before May 15 each year until May 15,
+    2025" stores the LAST year the recurring clause names as deadline_date;
+    a recurring duty's due date is its FIRST occurrence, not its last. Only
+    acts when the text names both a recurrence word and an end ("until"/
+    "through"), so a genuinely one-time date is untouched. Reuses
+    _RECURRING_CALENDAR_DATE (the year-less mention is always the first one:
+    fix_fixed_date_recurring's regex excludes any date followed by a 4-digit
+    year, which the stated end date always has)."""
+    if o.get("deadline_kind") != "fixed_date" or not o.get("deadline_date"):
+        return False
+    text = o.get("deadline_text") or ""
+    if not re.search(r"\b(each year|annually|annual|every year)\b", text, re.I):
+        return False
+    if not re.search(r"\buntil\b|\bthrough\b", text, re.I):
+        return False
+    matches = list(_RECURRING_CALENDAR_DATE.finditer(text))
+    if not matches:
+        return False
+    month, day = _MONTHS[matches[0].group(1).lower()], int(matches[0].group(2))
+    base = enactment_date or effective_date
+    if not base:
+        return False
+    try:
+        b = datetime.strptime(base, "%Y-%m-%d").date()
+        candidate = date(b.year, month, day)
+        if candidate < b:
+            candidate = date(b.year + 1, month, day)
+    except ValueError:
+        return False
+    new = candidate.isoformat()
+    if new == o["deadline_date"]:
+        return False
+    o["deadline_date"] = new
     return True
 
 
@@ -1951,6 +2065,11 @@ def run_extraction_batch(client, model: str, laws_and_texts: list[tuple[dict, st
     if out is None:
         return None
     results: dict[str, dict] = {}
+    # BATCH_NO_SYNC_FALLBACK=1 (Sep 28 2026, after the API balance ran out
+    # mid-fallback): collect the paid batch only. Unverified-quote results are
+    # kept (the validator flags them), and every other law is left out of the
+    # results so the caller keeps it queued. No synchronous call is made.
+    no_fallback = os.environ.get("BATCH_NO_SYNC_FALLBACK") == "1"
     for mid, (law, text) in by_id.items():
         if mid in eligible:
             status, payload = out.get(mid, ("errored", None))
@@ -1960,7 +2079,7 @@ def run_extraction_batch(client, model: str, laws_and_texts: list[tuple[dict, st
                     op_text = operative_text(text)
                     unverified = [o for o in parsed.get("obligations", [])
                                  if not quote_present(o.get("quote", ""), text, op_text)]
-                    if not unverified:
+                    if not unverified or no_fallback:
                         results[mid] = finalize_extraction(parsed, law, text, op_text,
                                                            lookup, agencies_by_canon, model)
                         continue
@@ -1970,6 +2089,9 @@ def run_extraction_batch(client, model: str, laws_and_texts: list[tuple[dict, st
                     log.warning(f"  {mid}: batch result unparseable ({e}); falling back to sync")
             else:
                 log.warning(f"  {mid}: batch item {status}; falling back to sync")
+        if no_fallback:
+            log.warning(f"  {mid}: left queued (no sync fallback in this run)")
+            continue
         results[mid] = extract_law(client, model, law, text, lookup, agencies_by_canon)
     return results
 
@@ -2100,7 +2222,7 @@ def main() -> None:
     powers = []        # powers -> powers.json
     law_summaries = []
     quotes_cleaned = quotes_deleted_flagged = deadlines_event_fixed = 0
-    semiannual_fixed = merged_away = recurring_dates_fixed = 0
+    semiannual_fixed = merged_away = recurring_dates_fixed = recurring_last_to_first_fixed = 0
     private_excluded = actors_resolved = 0
     units_applied = unspecified_resolved = definitions_applied = 0
     overrides_applied = 0
@@ -2206,6 +2328,8 @@ def main() -> None:
                 semiannual_fixed += 1
             if fix_fixed_date_recurring(o, res.get("effective_date")):
                 recurring_dates_fixed += 1
+            if fix_recurring_last_date_to_first(o, law.get("enactment_date"), res.get("effective_date")):
+                recurring_last_to_first_fixed += 1
             kind = _kind(o)
             if kind == "neither":        # a private party's option: in no table
                 excluded.append(o["obligation_id"])
@@ -2327,6 +2451,7 @@ def main() -> None:
              f"event-anchored deadlines fixed {deadlines_event_fixed}, "
              f"semiannual-from-two-dates {semiannual_fixed}, "
              f"recurring-calendar-dates computed {recurring_dates_fixed}, "
+             f"recurring last-date corrected to first {recurring_last_to_first_fixed}, "
              f"list-item duplicates merged {merged_away}")
     log.info(f"Step 1 re-attribution: reprint candidates dropped as duplicates "
              f"{len(dropped_ids)}, kept as existing code {restated_kept}")

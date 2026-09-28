@@ -277,6 +277,9 @@ def main() -> None:
             print(eo.USAGE.line())
             return
         for mid, (law, text, truncated) in fetched.items():
+            if mid not in result:            # no-fallback run: stays queued
+                deferred[mid] = todo_matters[mid]
+                continue
             write_result(mid, result[mid], truncated)
         eo.clear_state(eo.BATCH_STATE_REEXTRACT)  # only after cache files above are written
     else:
