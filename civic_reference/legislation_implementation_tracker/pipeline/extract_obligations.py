@@ -43,6 +43,8 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
+sys.path.insert(0, str(HERE.parent.parent.parent / "pipeline"))  # claude_batch.py
+from claude_batch import cached_content, run_batch, clear_state, Usage, message_text  # noqa: E402
 DATA = HERE.parent / "data"
 TEXT_CACHE = HERE / "cache" / "text"
 EXTRACT_CACHE = HERE / "cache" / "extracted"
@@ -50,6 +52,8 @@ LAWS_JSON = DATA / "laws.json"
 CROSSWALK_JSON = DATA / "agency_crosswalk.json"
 OUT_JSON = DATA / "obligations.json"
 POWERS_JSON = DATA / "powers.json"
+BATCH_STATE_NEW = HERE / "batch_state_new.json"          # extract_obligations.py (new laws)
+BATCH_STATE_REEXTRACT = HERE / "batch_state_reextract.json"  # reextract_queued.py
 
 DEFAULT_MODEL = "claude-sonnet-5"   # Tal, Sep 26 2026, after the pilot-2 blind A/B
 
@@ -168,6 +172,7 @@ def _offset_to_days(block: dict | None) -> None:
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger("extract_obligations")
+USAGE = Usage()  # totals across every sync + batch call this run (main() logs .line())
 
 EXTRACTION_PROMPT = """You are analyzing the full text of an enacted New York City local law. Extract every concrete obligation the law imposes on, and every power it grants to, a NYC GOVERNMENT entity (an agency, department, office, commission, board, or officer such as "the commissioner", "the mayor", "the department", "the office"). This is for a public implementation-tracking dashboard.
 
@@ -220,7 +225,7 @@ RULES:
 - Amendment texts ("is amended to read as follows"): the restated body of the amended section is PRE-EXISTING law. Only newly added matter (in Legistar's published text, the underlined portions) can create obligations for this law. Never extract a duty whose operative language exists unchanged in the prior law.
 - "In consultation with X" or "in coordination with X" does not make X a duty-holder. Record the obligation only for the lead agency; list consulted agencies nowhere.
 - If the actor is genuinely undetermined (e.g. "an agency designated by the mayor"), set actor_resolved to "unspecified" and keep the phrase in actor_raw; do not guess.
-- Deadlines: if the law says "within 18 months of the effective date", use kind=days_after_effective, offset={"amount": 18, "unit": "months"}. If no deadline is stated for a duty that begins at effectiveness, use kind=on_effective_date only when the duty clearly starts then; otherwise kind=none.
+- Deadlines: if the law says "within 18 months of the effective date", use kind=days_after_effective, offset={"amount": 18, "unit": "months"}. If no deadline is stated: a one-time setup duty the law needs in place when it takes effect (promulgate rules or procedures, create a program, form, pamphlet, curriculum or office, designate an officer) uses kind=on_effective_date; a duty that recurs or is triggered by events or requests (issue orders, inspect, respond, post as received) uses kind=none.
 - Do not invent obligations from the bill summary or title; use only the enacted text ("Be it enacted...").
 
 LAW METADATA (for context only):
@@ -232,6 +237,37 @@ DEFINING AND ESTABLISHING SENTENCES IN THIS LAW (use them to resolve generic tit
 LAW TEXT:
 {law_text}
 """
+
+# Prompt caching (Sep 28 2026): everything before "LAW METADATA" is identical
+# across every law, so it is the cached block; only the metadata/definitions/
+# law text after it varies per document. deliverable_types/recurrences/
+# kind_definitions are themselves fixed across every call, so they are filled
+# in once here rather than per document. Splitting is a pure string split: the
+# concatenation of the two parts, after the per-law placeholders are filled,
+# is byte-identical to the old single EXTRACTION_PROMPT.format(...) string
+# (proved for 3 real laws in scratch/A; see api_canary.py for a live check).
+_PROMPT_FILLED = (EXTRACTION_PROMPT
+                 .replace("{deliverable_types}", json.dumps(DELIVERABLE_TYPES))
+                 .replace("{recurrences}", json.dumps(RECURRENCES))
+                 .replace("{kind_definitions}", KIND_DEFINITIONS))
+_SPLIT_MARKER = "LAW METADATA (for context only):"
+_FIXED_PROMPT, _rest = _PROMPT_FILLED.split(_SPLIT_MARKER, 1)
+_VARIABLE_PROMPT_TEMPLATE = _SPLIT_MARKER + _rest
+
+
+def render_variable_prompt(law: dict, text: str) -> str:
+    metadata = json.dumps({
+        "file_number": law["file_number"],
+        "law_number": law["law_number_display"],
+        "title": law["title"],
+        "committee": law["committee"],
+        "enactment_date": law["enactment_date"],
+        "legistar_indexes": law.get("legistar_indexes", []),
+    }, indent=1)
+    return (_VARIABLE_PROMPT_TEMPLATE
+           .replace("{metadata}", metadata)
+           .replace("{definitions}", law_definitions.defining_sentences(text) or "(none found)")
+           .replace("{law_text}", text))
 
 
 # ── Normalization helpers ─────────────────────────────────────────────────────
@@ -644,7 +680,10 @@ DESCRIBED_AGENCY = re.compile(
     r"responsible\s+for|including)\b", re.I)
 
 NOT_AN_ACTOR = re.compile(
-    r"^(copies\s+of|for\s+city-owned|there\s+shall\s+be|all\s+solicitations)\b", re.I)
+    r"^(copies\s+of|for\s+city-owned|there\s+shall\s+be|all\s+solicitations)\b"
+    # audit 5 (Sep 28 2026), matter 3927506: the body appointing a member, or
+    # the members themselves, are not a government agency.
+    r"|^(the\s+)?appointing\s+authority$|^(the\s+|each\s+)?members?$", re.I)
 
 
 # A duty the law places on every city agency (Charter s 1150 defines "agency"
@@ -1331,6 +1370,43 @@ def fix_two_fixed_dates_semiannual(o: dict) -> bool:
     return True
 
 
+_MONTHS = {"january": 1, "february": 2, "march": 3, "april": 4, "may": 5, "june": 6,
+          "july": 7, "august": 8, "september": 9, "october": 10, "november": 11,
+          "december": 12}
+# "annually on or before August 31", "by June 1 of each year": a calendar
+# month/day the deadline recurs on, with no year of its own. Takes the LAST
+# such date in the text (the recurring clause, e.g. "...2016, and annually
+# thereafter on or before August 31" states the date twice; the second
+# mention is the one with no year attached).
+_RECURRING_CALENDAR_DATE = re.compile(
+   r"\b(" + "|".join(_MONTHS) + r")\s+(\d{1,2})(?:st|nd|rd|th)?\b(?!\s*,?\s*\d{4})", re.I)
+
+
+def fix_fixed_date_recurring(o: dict, effective_date: str | None) -> bool:
+    """Audit 5 (Sep 28 2026): deadline_kind fixed_date with a blank
+    deadline_date, where the text states a recurring calendar date with no
+    year ("annually on or before August 31") rather than a one-time date the
+    model could read a year off of. Computes the first occurrence on or after
+    the law's effective date. Returns True if the record changed."""
+    if o.get("deadline_kind") != "fixed_date" or o.get("deadline_date") or not effective_date:
+        return False
+    text = o.get("deadline_text") or ""
+    matches = list(_RECURRING_CALENDAR_DATE.finditer(text))
+    if not matches:
+        return False
+    m = matches[-1]
+    month, day = _MONTHS[m.group(1).lower()], int(m.group(2))
+    try:
+        eff = datetime.strptime(effective_date, "%Y-%m-%d").date()
+        candidate = date(eff.year, month, day)
+        if candidate < eff:
+            candidate = date(eff.year + 1, month, day)
+    except ValueError:
+        return False
+    o["deadline_date"] = candidate.isoformat()
+    return True
+
+
 # ── Sep 25 2026 data audit: actor fixes applied every build ────────────────
 # Private parties are never government duty holders: an "approved agency" is
 # a private special-inspection firm, an owner or design professional a private
@@ -1389,9 +1465,10 @@ def fix_actor(o: dict, lookup: dict, agencies_by_canon: dict,
 # means its OWN advisory council instead is handled by agency_units.json
 # by_matter, which outranks this step.
 GENERIC_TITLE_RE = re.compile(
-    r"^(the\s+)?(director|department|commissioner|office|board|advisory\s+board|"
+    r"^(the\s+|such\s+)?(director|department|commissioner|office|board|advisory\s+board|"
     r"task\s+force|working\s+group|coordinator|executive\s+director|"
-    r"administ(?:er|rat)ing\s+agency|chair(?:person)?|agency)$", re.I)
+    r"administ(?:er|rat)ing\s+agency|coordinating\s+agency|designated\s+agency|"
+    r"responsible\s+agency|chair(?:person)?|agency)$", re.I)
 
 
 def apply_law_definitions(o: dict, defs: dict,
@@ -1426,6 +1503,15 @@ def apply_law_definitions(o: dict, defs: dict,
             if m:
                 canon = TITLE_DEPARTMENT.get(m.group(1))
                 full = agencies_by_canon.get(canon, {}).get("full_name", canon) if canon else None
+        # audit 5 (Sep 28 2026): the law's OWN definition of a generic role
+        # actor ("the coordinating agency", "the designated agency") often
+        # reads "the agency designated by the mayor" instead of naming a real
+        # agency, so match_agency finds nothing. Reuse the same signal and
+        # target apply_unspecified_agency_rules already uses for this.
+        if not canon and (MAYOR_DESIGNATED_RE.search(entity)
+                          or re.search(r"designated by the mayor", entity, re.I)):
+            canon = "Mayor's Office"
+            full = agencies_by_canon.get(canon, {}).get("full_name", canon)
     if not canon:
         return False
     o["agency"], o["agency_full"], o["agency_matched"] = canon, full, True
@@ -1536,25 +1622,45 @@ def guard_reextraction(res: dict, prior: list[dict]) -> dict:
     return res
 
 
-def call_claude(client, model: str, prompt: str, retry_note: str | None = None):
-    content = prompt + ("\n\n" + retry_note if retry_note else "")
-    # Streamed: required for attachment-scale laws (the plain create() call
-    # drops the connection on very large prompts) and harmless for normal ones.
-    with client.messages.stream(
-        model=model,
-        # 32k: pilot 1 (Sep 25 2026) truncated one dense law at 16k
-        max_tokens=32000,
-        messages=[{"role": "user", "content": content}],
-        output_config={"format": {"type": "json_schema", "schema": OBLIGATIONS_SCHEMA}},
-    ) as stream:
-        msg = stream.get_final_message()
+OBLIGATIONS_MAX_TOKENS = 32000  # pilot 1 (Sep 25 2026) truncated one dense law at 16k
+
+
+def _obligations_content(variable_prompt: str, retry_note: str | None = None,
+                         ttl: str | None = None) -> list[dict]:
+    """The fixed instructions as a cached block, then the per-law text, then
+    (sync retry only) an uncached correction note."""
+    content = cached_content(_FIXED_PROMPT, variable_prompt, ttl=ttl)
+    if retry_note:
+        content.append({"type": "text", "text": retry_note})
+    return content
+
+
+def _obligations_params(model: str, content: list[dict]) -> dict:
+    """The request kwargs shared by the sync (messages.stream) and batch
+    (messages.batches) paths, so a schema/model change only happens once."""
+    return {"model": model, "max_tokens": OBLIGATIONS_MAX_TOKENS,
+           "messages": [{"role": "user", "content": content}],
+           "output_config": {"format": {"type": "json_schema", "schema": OBLIGATIONS_SCHEMA}}}
+
+
+def _parse_obligations_message(msg) -> dict:
+    USAGE.add(msg)
     if msg.stop_reason == "max_tokens":
         raise json.JSONDecodeError("output truncated at max_tokens", "", 0)
-    result = json.loads(next(b.text for b in msg.content if b.type == "text"))
+    result = json.loads(message_text(msg))
     _offset_to_days(result.get("effective_clause"))
     for o in result.get("obligations", []):
         _offset_to_days(o.get("deadline"))
     return result
+
+
+def call_claude(client, model: str, variable_prompt: str, retry_note: str | None = None):
+    content = _obligations_content(variable_prompt, retry_note)
+    # Streamed: required for attachment-scale laws (the plain create() call
+    # drops the connection on very large prompts) and harmless for normal ones.
+    with client.messages.stream(**_obligations_params(model, content)) as stream:
+        msg = stream.get_final_message()
+    return _parse_obligations_message(msg)
 
 
 # A law longer than the model can read in one pass used to be handled by
@@ -1662,21 +1768,7 @@ RETRY_WINDOW_TARGET = 15_000
 def extract_law(client, model: str, law: dict, text: str,
                 lookup: dict, agencies_by_canon: dict,
                 window_target: int | None = None) -> dict:
-    metadata = json.dumps({
-        "file_number": law["file_number"],
-        "law_number": law["law_number_display"],
-        "title": law["title"],
-        "committee": law["committee"],
-        "enactment_date": law["enactment_date"],
-        "legistar_indexes": law.get("legistar_indexes", []),
-    }, indent=1)
-    prompt = (EXTRACTION_PROMPT
-              .replace("{deliverable_types}", json.dumps(DELIVERABLE_TYPES))
-              .replace("{recurrences}", json.dumps(RECURRENCES))
-              .replace("{kind_definitions}", KIND_DEFINITIONS)
-              .replace("{metadata}", metadata)
-              .replace("{definitions}", law_definitions.defining_sentences(text) or "(none found)")
-              .replace("{law_text}", text))
+    variable_prompt = render_variable_prompt(law, text)
 
     # Long law: extract each section window, then merge. Every other law takes
     # the single-pass path below unchanged.
@@ -1743,7 +1835,7 @@ def extract_law(client, model: str, law: dict, text: str,
                 "character-for-character from the LAW TEXT above:\n"
                 + json.dumps(bad, indent=1))
         try:
-            result = call_claude(client, model, prompt, retry_note)
+            result = call_claude(client, model, variable_prompt, retry_note)
         except json.JSONDecodeError as e:
             log.warning(f"  JSON decode failed (attempt {attempt+1}): {e}")
             result = {"obligations": [], "extraction_error": str(e)}
@@ -1754,7 +1846,22 @@ def extract_law(client, model: str, law: dict, text: str,
             break
         log.warning(f"  {len(unverified)} unverified quotes (attempt {attempt+1})")
 
-    # Post-process
+    finalized = finalize_extraction(result, law, text, op_text, lookup, agencies_by_canon, model)
+    if ("max_tokens" in (result.get("extraction_error") or "") and window_target is None
+            and len(text) > RETRY_WINDOW_TARGET * 1.6):
+        log.info("  %s: output truncated; retrying in ~%d-char section windows",
+                 law["matter_id"], RETRY_WINDOW_TARGET)
+        return extract_law(client, model, law, text, lookup, agencies_by_canon,
+                           window_target=RETRY_WINDOW_TARGET)
+    return finalized
+
+
+def finalize_extraction(result: dict, law: dict, text: str, op_text: str,
+                        lookup: dict, agencies_by_canon: dict, model: str) -> dict:
+    """The same post-processing for a raw model result, whatever path
+    produced it (sync call_claude, or a succeeded batch item): resolve
+    actors, compute deadlines, and shape the obligations list. Used by both
+    the synchronous and the batch path so there is exactly one parser."""
     enactment = law.get("enactment_date") or None
     effective = resolve_effective_date(result.get("effective_clause", {}), enactment)
     obligations = []
@@ -1794,13 +1901,6 @@ def extract_law(client, model: str, law: dict, text: str,
             "recurrence": normalize_recurrence(o.get("recurrence")),
             "affected_groups": o.get("affected_groups", []),
         })
-
-    if ("max_tokens" in (result.get("extraction_error") or "") and window_target is None
-            and len(text) > RETRY_WINDOW_TARGET * 1.6):
-        log.info("  %s: output truncated; retrying in ~%d-char section windows",
-                 law["matter_id"], RETRY_WINDOW_TARGET)
-        return extract_law(client, model, law, text, lookup, agencies_by_canon,
-                           window_target=RETRY_WINDOW_TARGET)
     return {
         "matter_id": law["matter_id"],
         "model": model,
@@ -1810,6 +1910,68 @@ def extract_law(client, model: str, law: dict, text: str,
         "extraction_error": result.get("extraction_error"),
         "obligations": obligations,
     }
+
+
+# ── Batch path (Sep 28 2026): one request per single-window law ─────────────
+# A windowed (very long) law recurses through extract_law per window and is
+# never batched: batching would need a second round-trip per window to merge,
+# which defeats the point of a single overnight batch. Long laws are rare
+# (MAX_WINDOWS guard) and always go through the synchronous path, batch mode
+# or not.
+
+
+def batchable(text: str) -> bool:
+    return len(split_for_extraction(text)) <= 1
+
+
+def prepare_batch_request(law: dict, text: str, model: str = DEFAULT_MODEL) -> tuple[str, dict]:
+    """(custom_id, params) for one law, content cached with ttl=1h (batches
+    run spread over up to an hour, longer than the default 5-minute cache)."""
+    variable_prompt = render_variable_prompt(law, text)
+    content = _obligations_content(variable_prompt, ttl="1h")
+    return law["matter_id"], _obligations_params(model, content)
+
+
+def run_extraction_batch(client, model: str, laws_and_texts: list[tuple[dict, str]],
+                         lookup: dict, agencies_by_canon: dict,
+                         state_path: Path, max_wait_s: int = 2 * 3600,
+                         poll_s: int = 60) -> dict[str, dict] | None:
+    """Batch-extract every batchable law in `laws_and_texts`; a windowed law,
+    a batch item that errored or expired, or one whose result has an
+    unverified quote (same standard the sync path's retry-with-note enforces),
+    falls back to the synchronous extract_law() for that law only. Returns
+    {matter_id: result} or None when run_batch timed out (nothing else is
+    written; the state file carries the pending batch to the next run — the
+    caller must call claude_batch.clear_state(state_path) once its own
+    outputs are safely written, run_batch no longer does this itself)."""
+    by_id = {law["matter_id"]: (law, text) for law, text in laws_and_texts}
+    eligible = {mid: t for mid, (l, t) in by_id.items() if batchable(t)}
+    requests = [prepare_batch_request(by_id[mid][0], t, model) for mid, t in eligible.items()]
+    out = run_batch(client, requests, state_path, max_wait_s=max_wait_s, poll_s=poll_s) if requests else {}
+    if out is None:
+        return None
+    results: dict[str, dict] = {}
+    for mid, (law, text) in by_id.items():
+        if mid in eligible:
+            status, payload = out.get(mid, ("errored", None))
+            if status == "succeeded":
+                try:
+                    parsed = _parse_obligations_message(payload)
+                    op_text = operative_text(text)
+                    unverified = [o for o in parsed.get("obligations", [])
+                                 if not quote_present(o.get("quote", ""), text, op_text)]
+                    if not unverified:
+                        results[mid] = finalize_extraction(parsed, law, text, op_text,
+                                                           lookup, agencies_by_canon, model)
+                        continue
+                    log.warning(f"  {mid}: {len(unverified)} unverified quotes in batch "
+                               f"result; falling back to sync (same retry the sync path does)")
+                except Exception as e:  # noqa: BLE001  fall back to sync below
+                    log.warning(f"  {mid}: batch result unparseable ({e}); falling back to sync")
+            else:
+                log.warning(f"  {mid}: batch item {status}; falling back to sync")
+        results[mid] = extract_law(client, model, law, text, lookup, agencies_by_canon)
+    return results
 
 
 def main() -> None:
@@ -1864,6 +2026,39 @@ def main() -> None:
                 "obligations": obs_by_matter.get(l["matter_id"], []),
             }
 
+    # Batch mode (CLAUDE_BATCH=1): pre-scan for the laws this run would
+    # otherwise call extract_law() for (same skip conditions as the loop
+    # below), submit them as ONE Message Batch, and use those results in the
+    # loop instead of a per-law synchronous call. New laws (this script) and
+    # the re-extraction queue (reextract_queued.py) both go through this.
+    batch_results: dict[str, dict] = {}
+    if os.environ.get("CLAUDE_BATCH") == "1":
+        todo = []
+        for law in laws:
+            cache_file = EXTRACT_CACHE / f"{law['matter_id']}.json"
+            if args.incremental and (cache_file.exists() or law["matter_id"] in prior):
+                continue
+            text_file = TEXT_CACHE / f"{law['matter_id']}.txt"
+            if not text_file.exists():
+                continue
+            todo.append((law, text_file.read_text()))
+        if todo:
+            log.info(f"CLAUDE_BATCH=1: batching {len(todo)} laws")
+            # 120 min: this step's share of the job's 360-min cap alongside
+            # the re-extraction batch step's own 120 min wait, the DORIS/
+            # member/agency rebuild steps, and the commit (workflow comment
+            # has the full budget arithmetic).
+            result = run_extraction_batch(client, args.model, todo, lookup,
+                                          agencies_by_canon, BATCH_STATE_NEW,
+                                          max_wait_s=120 * 60)
+            if result is None:
+                log.info("batch still pending; nothing else written this run")
+                return
+            batch_results = result
+            for mid, res in batch_results.items():
+                (EXTRACT_CACHE / f"{mid}.json").write_text(json.dumps(res, indent=1))
+            clear_state(BATCH_STATE_NEW)  # only after the cache files above are safely written
+
     all_results = []
     for i, law in enumerate(laws, 1):
         cache_file = EXTRACT_CACHE / f"{law['matter_id']}.json"
@@ -1878,6 +2073,9 @@ def main() -> None:
         text_file = TEXT_CACHE / f"{law['matter_id']}.txt"
         if not text_file.exists():
             log.warning(f"[{i}] no cached text for {law['file_number']}; skipping")
+            continue
+        if law["matter_id"] in batch_results:
+            all_results.append(batch_results[law["matter_id"]])
             continue
         text = text_file.read_text()
         log.info(f"[{i}/{len(laws)}] {law['file_number']} "
@@ -1902,7 +2100,7 @@ def main() -> None:
     powers = []        # powers -> powers.json
     law_summaries = []
     quotes_cleaned = quotes_deleted_flagged = deadlines_event_fixed = 0
-    semiannual_fixed = merged_away = 0
+    semiannual_fixed = merged_away = recurring_dates_fixed = 0
     private_excluded = actors_resolved = 0
     units_applied = unspecified_resolved = definitions_applied = 0
     overrides_applied = 0
@@ -2006,6 +2204,8 @@ def main() -> None:
                 deadlines_event_fixed += 1
             if fix_two_fixed_dates_semiannual(o):
                 semiannual_fixed += 1
+            if fix_fixed_date_recurring(o, res.get("effective_date")):
+                recurring_dates_fixed += 1
             kind = _kind(o)
             if kind == "neither":        # a private party's option: in no table
                 excluded.append(o["obligation_id"])
@@ -2041,6 +2241,25 @@ def main() -> None:
             stale_overrides.extend(report)
         for o in added:
             o["kind"] = _kind(o)
+            # an added record never went through the per-record loop, so it
+            # lacks the law-level fields every other record carries
+            for k, v in {"matter_id": law["matter_id"], "file_number": law["file_number"],
+                         "law_number_display": law["law_number_display"], "law_title": law["title"],
+                         "committee": law["committee"], "prime_sponsor": law["prime_sponsor"],
+                         "enactment_date": law["enactment_date"], "effective_date": res["effective_date"],
+                         "legistar_url": law["legistar_url"], "law_sunset_date": law.get("sunset_date"),
+                         "quotes_restated_text": False}.items():
+                o.setdefault(k, v)
+            if "agency_matched" not in o:
+                canon, full = match_agency(o.get("agency") or "", lookup, agencies_by_canon)
+                o["agency_matched"] = canon is not None
+                if canon:
+                    o["agency"], o["agency_full"] = canon, full
+                o.setdefault("agency_full", o.get("agency"))
+                o.setdefault("agency_source", "record_override")
+            if "quote_verified" not in o:
+                tp = TEXT_CACHE / f"{law['matter_id']}.txt"
+                o["quote_verified"] = bool(tp.exists() and quote_present(o.get("quote", ""), tp.read_text(errors="ignore")))
         for o in combined:
             o["kind"] = _kind(o)
         law_flat = [o for o in combined + added if o["kind"] == "duty"]
@@ -2107,6 +2326,7 @@ def main() -> None:
              f"quote_has_deleted_text {quotes_deleted_flagged}, "
              f"event-anchored deadlines fixed {deadlines_event_fixed}, "
              f"semiannual-from-two-dates {semiannual_fixed}, "
+             f"recurring-calendar-dates computed {recurring_dates_fixed}, "
              f"list-item duplicates merged {merged_away}")
     log.info(f"Step 1 re-attribution: reprint candidates dropped as duplicates "
              f"{len(dropped_ids)}, kept as existing code {restated_kept}")
@@ -2198,6 +2418,7 @@ def main() -> None:
              f"{len(law_summaries)} laws "
              f"({verified}/{len(flat)} quotes verified, "
              f"{matched}/{len(flat)} agencies matched)")
+    log.info(USAGE.line())
 
 
 if __name__ == "__main__":

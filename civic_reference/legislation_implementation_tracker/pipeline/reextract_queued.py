@@ -186,14 +186,8 @@ def main() -> None:
 
     include_protected = os.environ.get("REEXTRACT_INCLUDE_PROTECTED") == "1"
 
-    def process(mid: str, reason: str) -> tuple[str, str | None, str | None]:
-        """Returns (mid, failure reason or None, skip reason or None)."""
-        if mid in exclusions and not include_protected:
-            print(f"{mid}: SKIPPED, hand-corrected ({exclusions[mid]})")
-            return mid, None, f"{reason} [protected: {exclusions[mid]}]"
-        law = laws.get(mid)
-        if not law:
-            return mid, reason + " [matter not in laws.json]", None
+    def fetch_text(mid: str, law: dict, reason: str) -> tuple[str | None, bool, str | None]:
+        """Returns (text or None, truncated, failure reason or None). No API call."""
         try:
             html = fetch_page(law["legistar_url"])
             guid = law.get("legistar_guid", "")
@@ -205,7 +199,7 @@ def main() -> None:
                 if pdf_text and len(pdf_text) > len(text):
                     text = pdf_text
             if len(text) < 500:
-                return mid, reason + " [no usable text found]", None
+                return None, False, reason + " [no usable text found]"
             text = sanitize(text)
             # No head+tail truncation any more: extract_law splits a long law at
             # its own section boundaries and extracts each window, so the middle
@@ -215,35 +209,90 @@ def main() -> None:
                 text = text[:MAX_CHARS * 40]
                 truncated = True
             (TEXT_CACHE / f"{mid}.txt").write_text(text)
-            print(f"{mid}: extracting ({len(text)} chars"
-                  + (", truncated" if truncated else "") + ")")
-            res = eo.extract_law(client, eo.DEFAULT_MODEL, law, text,
-                                 lookup, agencies_by_canon)
-            res = eo.guard_reextraction(res, eo.committed_records(mid))
-            if res.get("fallback_prior"):
-                print(f"{mid}: kept prior records ({res['fallback_prior']})")
-            if truncated:
-                res["truncated_extraction"] = True
-            (EXTRACT_CACHE / f"{mid}.json").write_text(json.dumps(res, indent=1))
-            print(f"{mid}: -> {len(res['obligations'])} obligations")
-            time.sleep(0.5)
-            return mid, None, None
+            return text, truncated, None
         except Exception as e:  # keep going; queue retains the failure
+            return None, False, reason + f" [failed: {e}]"
+
+    def write_result(mid: str, res: dict, truncated: bool) -> None:
+        res = eo.guard_reextraction(res, eo.committed_records(mid))
+        if res.get("fallback_prior"):
+            print(f"{mid}: kept prior records ({res['fallback_prior']})")
+        if truncated:
+            res["truncated_extraction"] = True
+        (EXTRACT_CACHE / f"{mid}.json").write_text(json.dumps(res, indent=1))
+        print(f"{mid}: -> {len(res['obligations'])} obligations")
+
+    def process(mid: str, reason: str) -> tuple[str, str | None, str | None]:
+        """Returns (mid, failure reason or None, skip reason or None). Sync path."""
+        if mid in exclusions and not include_protected:
+            print(f"{mid}: SKIPPED, hand-corrected ({exclusions[mid]})")
+            return mid, None, f"{reason} [protected: {exclusions[mid]}]"
+        law = laws.get(mid)
+        if not law:
+            return mid, reason + " [matter not in laws.json]", None
+        text, truncated, fail = fetch_text(mid, law, reason)
+        if fail:
+            print(f"{mid}: FAILED {fail}")
+            return mid, fail, None
+        print(f"{mid}: extracting ({len(text)} chars" + (", truncated" if truncated else "") + ")")
+        try:
+            res = eo.extract_law(client, eo.DEFAULT_MODEL, law, text, lookup, agencies_by_canon)
+        except Exception as e:
             print(f"{mid}: FAILED {e}")
             return mid, reason + f" [failed: {e}]", None
+        write_result(mid, res, truncated)
+        time.sleep(0.5)
+        return mid, None, None
 
-    # Laws are independent, and nearly all the time is the model call, so a
-    # few run at once (REEXTRACT_WORKERS; the Sep 2026 full re-extraction used
-    # 4, where one at a time took ~3.4 h per 250 laws). Each law writes only
-    # its own cache files.
-    workers = max(1, int(os.environ.get("REEXTRACT_WORKERS", "1")))
-    with ThreadPoolExecutor(max_workers=workers) as pool:
-        for mid, fail, skip in pool.map(lambda kv: process(*kv), todo.items()):
+    todo_matters = {mid: r for mid, r in todo.items()
+                    if mid in laws and (mid not in exclusions or include_protected)}
+    for mid, r in todo.items():
+        if mid in exclusions and not include_protected:
+            print(f"{mid}: SKIPPED, hand-corrected ({exclusions[mid]})")
+            skipped[mid] = f"{r} [protected: {exclusions[mid]}]"
+        elif mid not in laws:
+            failed[mid] = r + " [matter not in laws.json]"
+
+    if os.environ.get("CLAUDE_BATCH") == "1":
+        # Fetch every law's text first (no API call), THEN batch the model
+        # calls in one Message Batch. Billing: batch = half price; the fixed
+        # instructions are cached (Sep 28 2026).
+        fetched: dict[str, tuple[dict, str, bool]] = {}
+        for mid, reason in todo_matters.items():
+            law = laws[mid]
+            text, truncated, fail = fetch_text(mid, law, reason)
             if fail:
+                print(f"{mid}: FAILED {fail}")
                 failed[mid] = fail
-            if skip:
-                skipped[mid] = skip
+                continue
+            fetched[mid] = (law, text, truncated)
+        laws_and_texts = [(law, text) for law, text, _ in fetched.values()]
+        # 120 min: this step's share of the 360-min job cap (see the workflow
+        # comment for the full arithmetic alongside the new-laws batch step).
+        result = eo.run_extraction_batch(client, eo.DEFAULT_MODEL, laws_and_texts,
+                                         lookup, agencies_by_canon, eo.BATCH_STATE_REEXTRACT,
+                                         max_wait_s=120 * 60)
+        if result is None:
+            print("batch still pending; queue left unchanged for the next run")
+            print(eo.USAGE.line())
+            return
+        for mid, (law, text, truncated) in fetched.items():
+            write_result(mid, result[mid], truncated)
+        eo.clear_state(eo.BATCH_STATE_REEXTRACT)  # only after cache files above are written
+    else:
+        # Laws are independent, and nearly all the time is the model call, so a
+        # few run at once (REEXTRACT_WORKERS; the Sep 2026 full re-extraction used
+        # 4, where one at a time took ~3.4 h per 250 laws). Each law writes only
+        # its own cache files.
+        workers = max(1, int(os.environ.get("REEXTRACT_WORKERS", "1")))
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            for mid, fail, skip in pool.map(lambda kv: process(*kv), todo_matters.items()):
+                if fail:
+                    failed[mid] = fail
+                if skip:
+                    skipped[mid] = skip
 
+    print(eo.USAGE.line())
     # Protected matters are dropped rather than retried: they will be skipped
     # every run, and leaving them in makes the queue look like unfinished work.
     queue["matters"] = {**failed, **deferred}

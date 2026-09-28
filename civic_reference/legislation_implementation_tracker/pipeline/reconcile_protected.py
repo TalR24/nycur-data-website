@@ -196,6 +196,9 @@ def _right_values(item: dict) -> dict:
         v = rv.get(f)
         if v is None:
             continue
+        if isinstance(v, str) and v.strip().lower() == "null":
+            out[f] = None                # the judge asked to clear the field
+            continue
         if f in _BOOL_FIELDS and isinstance(v, str):
             v = v.strip().lower() in ("true", "yes", "1")
         out[f] = v

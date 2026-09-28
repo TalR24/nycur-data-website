@@ -334,6 +334,8 @@ def main() -> None:
             if o.get("kind") != want:
                 hard[f"wrong_kind_in_{table}_table"].append(f"{o['obligation_id']}: kind={o.get('kind')}")
                 continue
+            if o.get("kind_override") == o.get("kind"):
+                continue       # an adjudicated record override sets the kind
             rule = o.get("kind_rule") or o.get("kind")
             if final_kind(rule, o.get("kind_model"), bool(o.get("kind_list_item"))) != o.get("kind"):
                 hard["kind_not_from_policy"].append(o["obligation_id"])
@@ -353,6 +355,16 @@ def main() -> None:
     # every unrelated change behind it (Sep 27 2026).
     _pwd = [o["obligation_id"] for o in powers if o.get("deadline_date")]
     (hard if not _pwd else soft)["power_with_deadline"].extend(_pwd)
+
+    # --- SOFT: fixed_date deadline with no date (audit 5, Sep 28 2026) ------
+    # extract_obligations.fix_fixed_date_recurring() should have filled this
+    # in for a recurring calendar date ("annually on or before August 31");
+    # a record still blank here is either a date phrase the fix's month/day
+    # regex missed, or a genuinely undated fixed_date the model mis-typed.
+    for o in obs + powers:
+        if o.get("deadline_kind") == "fixed_date" and not o.get("deadline_date"):
+            soft["fixed_date_without_date"].append(
+                f"{o['obligation_id']}: {(o.get('deadline_text') or '')[:80]}")
     shared = {o["obligation_id"] for o in obs} & {o["obligation_id"] for o in powers}
     for oid in sorted(shared):
         hard["id_in_both_tables"].append(oid)

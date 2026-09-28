@@ -12,7 +12,16 @@ on:
     # the Ask index and member/agency profiles read that same month's fiscal
     # data instead of lagging a month.
     - cron: "40 14 1 * *"
+    # Cheap resume-only run, days 2-7: exits immediately when no batch is
+    # pending (batch_state_new.json and batch_state_reextract.json absent). Makes no other API call. Covers a
+    # batch that was still processing when the monthly run's job cap hit.
+    - cron: "0 13 2-7 * *"
   workflow_dispatch:  # allow manual trigger from the Actions tab
+    inputs:
+      sync:
+        description: "Force synchronous (non-batch) extraction instead of the default batch mode"
+        type: boolean
+        default: false
 
 # shares a group with claude_backfill.yml so the two never commit over each other
 concurrency:
@@ -21,9 +30,24 @@ concurrency:
 
 jobs:
   refresh:
+    # the resume-only cron does not run the full monthly job (see the
+    # "resume" job below); this job runs on the 1st and on manual dispatch
+    if: github.event.schedule != '0 13 2-7 * *'
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    # Budget arithmetic (Sep 28 2026, must fit the 360-min job cap):
+    #   re-extraction batch wait   <= 120 min (max_wait_s in reextract_queued.py)
+    #   new-laws batch wait        <= 120 min (max_wait_s in extract_obligations.py)
+    #   fetch/scrape/DORIS/members/agencies/archive clone/votes/context steps
+    #                               ~ 30-60 min combined, historically
+    #   commit + push retries      ~  5 min
+    #   ---------------------------------------
+    #   total                     <= 305-345 min, under the 360-min cap
+    # Either batch step returning None (still pending after its own wait)
+    # exits its script early rather than blocking on the other, so the two
+    # waits are sequential worst cases, not additive beyond the 240 min above.
+    timeout-minutes: 360
 
     steps:
       - name: Checkout repository
@@ -43,6 +67,10 @@ jobs:
         working-directory: civic_reference/legislation_implementation_tracker
         run: python3 pipeline/fetch_enacted_laws.py --incremental
 
+      # BILLING: batch mode (default here) is half price on every token and
+      # caches the fixed instructions (~0.1x price on every request after the
+      # first); a manual "sync" dispatch input can force the old synchronous
+      # path (still cached, just not batched) for a same-day result.
       - name: Re-extract queued laws
         working-directory: civic_reference/legislation_implementation_tracker
         continue-on-error: true
@@ -50,6 +78,7 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           REEXTRACT_LIMIT: "200"
           REEXTRACT_WORKERS: "4"
+          CLAUDE_BATCH: ${{ github.event.inputs.sync == 'true' && '0' || '1' }}
         run: python3 pipeline/reextract_queued.py
 
       - name: Refresh DORIS report filing status
@@ -57,10 +86,12 @@ jobs:
         continue-on-error: true
         run: python3 pipeline/build_report_filings.py
 
+      # BILLING: same batch + caching as above.
       - name: Extract obligations for new laws
         working-directory: civic_reference/legislation_implementation_tracker
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CLAUDE_BATCH: ${{ github.event.inputs.sync == 'true' && '0' || '1' }}
         run: python3 pipeline/extract_obligations.py --incremental
 
       - name: Rebuild council member stats
@@ -103,6 +134,8 @@ jobs:
             civic_reference/legislation_implementation_tracker/data/summary.json
             civic_reference/legislation_implementation_tracker/data/report_filings.json
             civic_reference/legislation_implementation_tracker/pipeline/reextract_queue.json
+            civic_reference/legislation_implementation_tracker/pipeline/batch_state_new.json
+            civic_reference/legislation_implementation_tracker/pipeline/batch_state_reextract.json
             civic_reference/nyc_council_legislation_trackers/data/members.json
             civic_reference/nyc_council_legislation_trackers/data/agencies.json
             civic_reference/nyc_council_legislation_trackers/data/member_votes.json
@@ -124,6 +157,18 @@ jobs:
                   civic_reference/nyc_council_legislation_trackers/data/agencies.json \
                   civic_reference/nyc_council_legislation_trackers/data/member_votes.json \
                   civic_reference/nyc_council_legislation_trackers/data/member_context.json
+          # batch_state_new.json / batch_state_reextract.json exist only
+          # while their batch is pending: `-A` stages the file whether this
+          # run created it, changed it, or (clear_state, batch done) deleted
+          # it. A plain `git add <path>` on an already-deleted, never-tracked
+          # path is a no-op, so a completed batch's deletion never committed
+          # without this (Sep 28 2026 review).
+          for f in civic_reference/legislation_implementation_tracker/pipeline/batch_state_new.json \
+                  civic_reference/legislation_implementation_tracker/pipeline/batch_state_reextract.json; do
+            if git ls-files --error-unmatch "$f" >/dev/null 2>&1 || [ -f "$f" ]; then
+              git add -A -- "$f"
+            fi
+          done
           if git diff --cached --quiet; then
             echo "No data changes this month."
             exit 0
@@ -183,3 +228,89 @@ jobs:
             git commit -m "Monthly refresh: Ask index"
             git push
           fi
+
+  # Cheap daily check, days 2-7 of the month: resumes a batch left pending by
+  # the monthly run (its 360-min cap can be hit by a batch still processing).
+  # Exits immediately, no other API call, when neither state file exists.
+  resume:
+    if: github.event.schedule == '0 13 2-7 * *'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install dependencies
+        run: pip install -r civic_reference/legislation_implementation_tracker/pipeline/requirements.txt
+
+      # BILLING: this resumes a pending batch (still half price, still
+      # cached); it makes no new API call when neither state file is present.
+      # Each script only resumes its OWN state file (reextract_queued.py:
+      # batch_state_reextract.json; extract_obligations.py: batch_state_new.
+      # json), so a pending new-laws batch is not re-submitted as a
+      # re-extraction batch or vice versa.
+      - name: Resume pending batches, if any
+        working-directory: civic_reference/legislation_implementation_tracker
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CLAUDE_BATCH: "1"
+        run: |
+          did_anything=0
+          if [ -f pipeline/batch_state_reextract.json ]; then
+            python3 pipeline/reextract_queued.py
+            did_anything=1
+          fi
+          if [ -f pipeline/batch_state_new.json ]; then
+            python3 pipeline/extract_obligations.py --incremental
+            did_anything=1
+          fi
+          if [ "$did_anything" = 0 ]; then
+            echo "no pending batch; nothing to do"
+            exit 0
+          fi
+          echo "RESUME_RAN=1" >> "$GITHUB_ENV"
+
+      - name: Rebuild council member stats
+        if: env.RESUME_RAN == '1'
+        working-directory: civic_reference/nyc_council_legislation_trackers
+        run: python3 pipeline/build_member_stats.py
+
+      - name: Rebuild agency profiles
+        if: env.RESUME_RAN == '1'
+        working-directory: civic_reference/nyc_council_legislation_trackers
+        continue-on-error: true
+        run: python3 pipeline/build_agency_profiles.py
+
+      - name: Commit and push if resume produced data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add civic_reference/legislation_implementation_tracker/data/obligations.json \
+                  civic_reference/legislation_implementation_tracker/data/powers.json \
+                  civic_reference/legislation_implementation_tracker/data/summary.json \
+                  civic_reference/legislation_implementation_tracker/pipeline/reextract_queue.json \
+                  civic_reference/nyc_council_legislation_trackers/data/members.json \
+                  civic_reference/nyc_council_legislation_trackers/data/agencies.json
+          # -A so a completed batch's state-file DELETION (clear_state) is
+          # staged too, not just a creation or a content change.
+          for f in civic_reference/legislation_implementation_tracker/pipeline/batch_state_new.json \
+                  civic_reference/legislation_implementation_tracker/pipeline/batch_state_reextract.json; do
+            if git ls-files --error-unmatch "$f" >/dev/null 2>&1 || [ -f "$f" ]; then
+              git add -A -- "$f"
+            fi
+          done
+          if git diff --cached --quiet; then
+            echo "Nothing to commit."
+            exit 0
+          fi
+          git commit -m "Resume pending legislation implementation batch"
+          git -c rebase.autoStash=true pull --rebase origin main && git push

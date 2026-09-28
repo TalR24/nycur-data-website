@@ -10,16 +10,12 @@ Plain asserts; runnable directly or with pytest:
     python3 pipeline/tests/test_fiscal_rules.py
     pytest pipeline/tests/test_fiscal_rules.py
 
-Known rule bug found while building these cases (reported, not fixed here
-per the builder's orders: do not change fiscal extraction logic):
-  - matter 4806326 (audit4_fiscal, Sep 27 2026): sunset "deemed repealed on
-    July 2, 2022" with first_fy=21. The audit's right value is FY23 (July 2
-    falls in the NYC FY23 window by the tracker's FY-containing-date
-    convention used elsewhere, e.g. matter 7984588 below). program_end_fy()
-    currently returns FY22 for this input: its July 1-2 handling treats the
-    date as closing the FY that just ended rather than the FY it falls in.
-    Not covered by an assert below (it would fail against current code);
-    left for a fiscal-pipeline fix.
+Correction (Sep 28 2026 rework): an earlier version of this file claimed
+matter 4806326's right program_end_fy was 23, not the code's 22. That was
+wrong — 22 is right under the house rule (a July 1-2 end date closes the
+prior fiscal year: 4806326's own test below asserts 22, alongside 7984588's
+Nov 1 -> FY27, which uses the ordinary FY-containing-date rule instead since
+Nov 1 isn't a July 1-2 boundary case).
 
 Rule gap found, not implemented (Sep 27 2026 adjudication REJECTED matter
 8034432; the task orders this reported, not fixed): a one-time cost split
@@ -256,6 +252,121 @@ check(
     f"got {out_savings}",
 )
 
+
+# ── totals_basis: an all-$0/blank table category whose figure is narrative-only
+# capital reads document_stated, not full_impact_column ────────────────────
+# Source: blind audit 5 (Sep 28 2026 rework), matters 5755073 and 7731697:
+# revenue/expenditure print $0 in every column, capital is blank except the
+# model wrote the narrative's one-time capital figure into the Full cell.
+# Pre-fix values (git HEAD at rework time; these two were never overridden).
+_CAPITAL_NARRATIVE_CASES = [
+    ("5755073", 2000000, [
+        {"label": "Effective FY23", "revenue": 0, "expenditure": 0, "capital": None, "net": 0},
+        {"label": "FY Succeeding Effective FY24", "revenue": 0, "expenditure": 0, "capital": None, "net": 0},
+        {"label": "Full Fiscal Impact FY24", "revenue": 0, "expenditure": 0, "capital": 2000000, "net": -2000000},
+    ]),
+    ("7731697", 3500000, [
+        {"label": "Effective FY26", "revenue": 0, "expenditure": 0, "capital": None, "net": 0},
+        {"label": "FY Succeeding Effective FY27", "revenue": 0, "expenditure": 0, "capital": None, "net": 0},
+        {"label": "Full Fiscal Impact FY27", "revenue": 0, "expenditure": 0, "capital": 3500000, "net": -3500000},
+    ]),
+]
+for matter_id, expected_cap, cols in _CAPITAL_NARRATIVE_CASES:
+    fiscal_cap = {
+        "cost_estimable": True, "time_limited_program": False, "sunset_quote": "",
+        "costs_already_in_financial_plan": False, "total_revenue": 0, "total_expenditure": 0,
+        "total_capital": expected_cap, "see_below_categories": ["capital"], "fiscal_table_columns": cols,
+    }
+    out_cap = totals_from_columns(dict(fiscal_cap))
+    check(
+        f"totals_basis: all-$0/blank table, narrative-only capital -> document_stated (matter {matter_id}, blind audit 5)",
+        out_cap["total_capital"] == expected_cap and out_cap["totals_basis"] == "document_stated",
+        f"got capital={out_cap['total_capital']} basis={out_cap['totals_basis']}",
+    )
+
+
+# ── program_end_fy: a mid-fiscal-year effective date, whole-year duration ───
+# Source: blind audit 5 (Sep 28 2026), matters 1681072 and 3521908 (tracker
+# rule was wrong, not the record): the old "-1" formula assumed the program
+# effectively starts July 1 of first_fy; enactment_date (LIT/data/laws.json)
+# + the statement's own effective-date offset shows both start mid-year, so a
+# 36-month duration lands a fiscal year later than the old formula gave.
+check(
+    "program_end_fy: 36 months from a Sep 2018 effective date -> FY22, not FY21 (matter 1681072, blind audit 5)",
+    program_end_fy("This local law would remain in effect for 36 months, after which it is deemed repealed.", 19) == 22,
+)
+check(
+    "program_end_fy: 36 months from an Oct 2020 effective date -> FY24, not FY23 (matter 3521908, blind audit 5)",
+    program_end_fy("This local law would take effect eight months after it becomes law and would remain in "
+                    "effect for 36 months, after which it would be deemed repealed.", 21) == 24,
+)
+
+# ── program_end_fy: an EXPLICIT start date + duration is not the mid-year
+# case above — a program that starts exactly July 1 ends at the close of its
+# Nth fiscal year (the old "-1"), because July 1 truly is the FY boundary.
+# Source: matter 1709673 (Int 243-2014, Sep 28 2026 refiscal.py regression):
+# the committed program_life_sum (288,702, end FY16) is right; the bare
+# mid-year formula above would wrongly give FY17 and flip it to
+# outlasts_statement/annual (144,351).
+check(
+    "program_end_fy: explicit July 1 start + duration ends at the close of the Nth FY (matter 1709673)",
+    program_end_fy("The State law takes effect July 1, 2014 and will expire two years thereafter", 15) == 16,
+)
+
+# ── program_end_fy: a bare duration with no explicit date, checked against
+# the statement's own 180-day effective offset ──────────────────────────────
+# Source: matter 6695263 (Int 890-2024, Sep 28 2026 refiscal.py regression):
+# enacted 2024-10-26, effective_date "180 days after becoming law" ->
+# 2025-04-24 (well inside FY25, not July 1); +3 years = 2028-04-24 = FY28,
+# not the old formula's FY27.
+check(
+    "program_end_fy: three-year pilot, no explicit start date -> FY28 not FY27 (matter 6695263)",
+    program_end_fy("This bill would require the Commissioner of Health and Mental Hygiene to implement a "
+                    "three-year pilot program to establish postpartum support groups focused on the mental "
+                    "health of postpartum individuals.", 25) == 28,
+)
+
+# ── program_end_fy: the two house-rule date cases still hold ────────────────
+check("program_end_fy: July 2 2022 closes the prior FY -> FY22 (matter 4806326)",
+      program_end_fy("it is deemed repealed on July 2, 2022", 21) == 22)
+check("program_end_fy: Nov 1 2026 -> FY27, ordinary FY-containing rule (matter 7984588)",
+      program_end_fy("the local law shall expire and be repealed on November 1, 2026", 26) == 27)
+
+# ── program_end_fy: the docstring's own worked example ───────────────────────
+check("program_end_fy: ten years from FY19, no explicit date -> FY29 (docstring example, Int 755-2018)",
+      program_end_fy("in effect for ten years", 19) == 29)
+
+# ── apply_overrides: outlasts_statement true must pair with full_impact_column,
+# never program_life_sum ─────────────────────────────────────────────────────
+# Source: matter 3597643 (Int 1085-2018, Sep 28 2026 refiscal.py regression):
+# a single-column narrative statement (totals_basis document_stated) whose
+# override pins outlasts_statement=true; totals_from_columns runs BEFORE the
+# override applies time_limited_program, so it never saw the pilot and left
+# document_stated, which then contradicted the pinned outlasts_statement.
+from fetch_fiscal_impacts import apply_overrides, OVERRIDES_PATH  # noqa: E402
+if OVERRIDES_PATH.exists():
+    import json as _json
+    _ov = _json.loads(OVERRIDES_PATH.read_text())
+    _entry = _ov.get("3597643")
+    if _entry and not _entry.get("remove"):
+        _rec = {
+            "matter_id": "3597643", "attachment_id": _entry["attachment_id"],
+            "totals_basis": "document_stated", "total_revenue": 0,
+            "total_expenditure": 750240, "total_capital": None,
+            "fiscal_table_columns": [{"label": "Total", "revenue": 0, "expenditure": 750240,
+                                       "capital": None, "net": -750240}],
+        }
+        _out = apply_overrides([dict(_rec)])[0]
+        check(
+            "apply_overrides: outlasts_statement true forces totals_basis full_impact_column (matter 3597643)",
+            _out.get("outlasts_statement") is True and _out.get("totals_basis") == "full_impact_column"
+            and _out.get("total_expenditure") == 750240,
+            f"got {_out}",
+        )
+    else:
+        print("  SKIP  apply_overrides consistency test: fiscal_overrides.json has no active 3597643 entry")
+else:
+    print("  SKIP  apply_overrides consistency test: fiscal_overrides.json not found")
 
 print(f"\n{PASSED} passed, {FAILED} failed")
 if FAILED:

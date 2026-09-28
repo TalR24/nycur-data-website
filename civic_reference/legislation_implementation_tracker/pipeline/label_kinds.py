@@ -26,6 +26,10 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 from extract_obligations import (DEFAULT_MODEL, EXTRACT_CACHE, KIND_DEFINITIONS, KINDS,  # noqa: E402
                                  TEXT_CACHE, _clause, provision_context)
+sys.path.insert(0, str(HERE.parent.parent.parent / "pipeline"))  # claude_batch.py
+from claude_batch import cached_content, Usage  # noqa: E402
+
+USAGE = Usage()
 
 INPUT = HERE / "kind_label_input.json"
 LABELS = HERE / "kind_labels.json"
@@ -55,6 +59,22 @@ QUOTED TEXT ON THE RECORD:
 {quote}
 
 Answer with the label and the few words of the law that decide it."""
+
+# Prompt caching (Sep 28 2026): the instructions + definitions are identical
+# for every record; only lead/clause/more/quote vary. Same fixed+variable
+# split as extract_obligations.py, reusing claude_batch.cached_content.
+_SPLIT_MARKER = "LEAD-IN (for a list item; may be empty):"
+_PROMPT_FILLED = PROMPT.format(definitions=KIND_DEFINITIONS, lead="{lead}", clause="{clause}",
+                               more="{more}", quote="{quote}")
+_FIXED_PROMPT, _rest = _PROMPT_FILLED.split(_SPLIT_MARKER, 1)
+_VARIABLE_TEMPLATE = _SPLIT_MARKER + _rest
+
+
+def render_variable(item: dict) -> str:
+    return (_VARIABLE_TEMPLATE.replace("{lead}", item["lead"] or "(none)")
+           .replace("{clause}", item["clause"])
+           .replace("{more}", item["more"] or "(none)")
+           .replace("{quote}", item["quote"]))
 
 
 def build_input() -> None:
@@ -87,21 +107,31 @@ def label(limit: int | None, workers: int) -> int:
     failures = []
 
     def one(item):
-        prompt = PROMPT.format(definitions=KIND_DEFINITIONS, lead=item["lead"] or "(none)",
-                               clause=item["clause"], more=item["more"] or "(none)", quote=item["quote"])
+        content = cached_content(_FIXED_PROMPT, render_variable(item))
         msg = client.messages.create(
             model=DEFAULT_MODEL, max_tokens=300,
-            messages=[{"role": "user", "content": prompt}],
+            messages=[{"role": "user", "content": content}],
             output_config={"format": {"type": "json_schema", "schema": SCHEMA}},
         )
+        USAGE.add(msg)
         if msg.stop_reason not in ("end_turn", "stop_sequence"):
             raise RuntimeError(f"stop_reason={msg.stop_reason}")
         out = json.loads(next(b.text for b in msg.content if b.type == "text"))
         return item["id"], out["kind"]
 
     t0 = time.time()
+    # Prompt caching + threads: a parallel request cannot read a cache entry
+    # until the first response has begun, so send ONE request first (primes
+    # the cache) and fan the rest out afterward (claude-api skill, Sep 28 2026).
+    first, rest = (todo[0], todo[1:]) if todo else (None, [])
+    if first is not None:
+        try:
+            oid, kind = one(first)
+            done[oid] = kind
+        except Exception as e:  # noqa: BLE001
+            failures.append((first["id"], str(e)[:120]))
     with cf.ThreadPoolExecutor(max_workers=workers) as pool:
-        futs = {pool.submit(one, i): i["id"] for i in todo}
+        futs = {pool.submit(one, i): i["id"] for i in rest}
         for n, fut in enumerate(cf.as_completed(futs), 1):
             try:
                 oid, kind = fut.result()
@@ -115,6 +145,7 @@ def label(limit: int | None, workers: int) -> int:
                 print(f"  {n}/{len(todo)} ({time.time() - t0:.0f}s), {len(failures)} failed", flush=True)
     LABELS.write_text(json.dumps(done, sort_keys=True, indent=0))
     print(f"labelled {len(done)} of {len(items)}; {len(failures)} failed this run", flush=True)
+    print(USAGE.line(), flush=True)
     for f in failures[:10]:
         print("  FAILED", f)
     # a run that labels nothing is broken (bad key, schema rejected): fail loudly

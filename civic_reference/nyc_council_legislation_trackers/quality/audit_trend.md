@@ -28,3 +28,5 @@ the ones named in wrong_detail"; for 20 of the 50 stated-correct records that in
 be made to match the stated count (7 of the round's ~54 matters), and those records were written
 to gold_unparsed.json instead of the gold set. wrong (17) and missed (5) matched exactly. The row
 above is the raw, unscored total from the source file, per this rework's instruction.
+| 2026-09-27 | audit 5 Sonnet laws (Sep 28) | obligations | recent+sonnet | 118 | 86/111 = 0.775 [0.689, 0.843] | 86/93 = 0.925 [0.853, 0.963] | scored by score.py |
+| 2026-09-27 | audit 5 fiscal, verifier-passed bills (Sep 28) | fiscal | plain+tricky | 20 | 16/20 = 0.800 [0.584, 0.919] | - | scored by score.py |

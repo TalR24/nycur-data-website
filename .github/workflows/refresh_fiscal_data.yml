@@ -12,8 +12,19 @@ on:
     # the implementation refresh (14:40 UTC) so alerts, the Ask index and
     # member/agency profiles read that same month's fiscal data.
     - cron: "23 11 1 * *"
+    # Cheap resume-only check, days 2-7 of the month: a batch submitted on the
+    # 1st is usually done within an hour but can take up to 24; this exits
+    # immediately (no API call at all) when no batch is pending, and only
+    # polls/finishes one when fiscal_batch_state.json exists.
+    - cron: "0 12 2-7 * *"
   workflow_dispatch:
     inputs:
+      sync:
+        description: "Force synchronous (non-batch) extraction instead of the scheduled run's batch mode"
+        required: false
+        default: "false"
+        type: choice
+        options: ["false", "true"]
       incremental:
         description: "Skip already-processed matters"
         required: false
@@ -53,6 +64,12 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    # Batch mode (half price) waits up to 5h (MAX_WAIT_S in fetch_fiscal_impacts.py)
+    # before leaving state for the next run; the rest of the job (checkout,
+    # install, validator, commit/push) needs some more room, so the job
+    # timeout is raised to the 360-minute account cap rather than left at it
+    # implicitly.
+    timeout-minutes: 360
 
     steps:
       - name: Checkout repository
@@ -70,9 +87,26 @@ jobs:
       - name: Install Python dependencies
         run: pip install -r pipeline/requirements.txt
 
-      - name: Run fiscal impacts pipeline
+      # Resume-only path (the cheap daily cron, days 2-7): exits immediately
+      # if no batch is pending, otherwise polls/finishes it. Never runs on
+      # the monthly cron or a manual dispatch.
+      - name: Resume a pending batch (daily check)
+        if: ${{ github.event.schedule == '0 12 2-7 * *' }}
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CLAUDE_BATCH: "1"   # must match the mode the batch was submitted under
+        run: python pipeline/fetch_fiscal_impacts.py --resume-only
+
+      # BILLING: batch mode (CLAUDE_BATCH=1) is half price on every token and
+      # reuses one submitted Message Batch across the run; prompt caching
+      # (claude_batch.cached_content, always on) reads the fixed instructions
+      # at ~0.1x price on every call after the first. On for the scheduled
+      # monthly run; `sync: true` on a manual dispatch turns batch off.
+      - name: Run fiscal impacts pipeline
+        if: ${{ github.event.schedule != '0 12 2-7 * *' }}
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          CLAUDE_BATCH: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.sync == 'true') && '0' || '1' }}
         run: |
           INCREMENTAL="${{ github.event.inputs.incremental || 'true' }}"
           # Legistar's attachment search surfaces only ~300 matters, so every
@@ -92,7 +126,7 @@ jobs:
             if [ "$INCREMENTAL" = "true" ]; then FLAGS="--incremental"; fi
             if [ -n "$SEED" ]; then FLAGS="$FLAGS --seed-laws $SEED"; fi
           fi
-          echo "Running: python pipeline/fetch_fiscal_impacts.py $FLAGS"
+          echo "Running (CLAUDE_BATCH=$CLAUDE_BATCH): python pipeline/fetch_fiscal_impacts.py $FLAGS"
           python pipeline/fetch_fiscal_impacts.py $FLAGS
 
       - name: Legistar REST enumeration (optional, workflow_dispatch only)
@@ -129,6 +163,19 @@ jobs:
           git add civic_reference/nyc_council_fiscal_impacts_tracker/data/fiscal_impacts.json \
                   civic_reference/nyc_council_fiscal_impacts_tracker/agency-fiscal-impact/data.json \
                   pipeline/no_impact_matters.json
+          # fiscal_batch_state.json / fiscal_batch_pending.json: a batch still
+          # pending leaves them present (stage the addition/update); a batch
+          # that finished and saved this run deletes both (stage the deletion
+          # too, or a committed state file with no matching batch makes the
+          # next run resume a batch that no longer exists, forever). `git add`
+          # alone never stages a deletion, so check either a tracked path
+          # (deleted from disk: stage removal) or a path that now exists
+          # (new/updated: stage it) and use `-A` either way.
+          for f in pipeline/fiscal_batch_state.json pipeline/fiscal_batch_pending.json; do
+            if git ls-files --error-unmatch "$f" >/dev/null 2>&1 || [ -f "$f" ]; then
+              git add -A -- "$f"
+            fi
+          done
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else

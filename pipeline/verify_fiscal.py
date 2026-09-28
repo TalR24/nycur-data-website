@@ -45,6 +45,9 @@ sys.path.insert(0, str(HERE))
 from fetch_fiscal_impacts import (  # noqa: E402
     create_session, get_fiscal_attachment, download_docx, extract_docx_text,
 )
+from claude_batch import cached_content, Usage, message_text  # noqa: E402
+
+USAGE = Usage()  # caching only here (verify_fiscal.py is not in batch mode's scope)
 
 FISCAL_DATA = REPO / "civic_reference" / "nyc_council_fiscal_impacts_tracker" / "data" / "fiscal_impacts.json"
 OVERRIDES_PATH = HERE / "fiscal_overrides.json"
@@ -140,7 +143,32 @@ def load_override(record: dict) -> dict | None:
     return entry
 
 
-def build_prompt(statement_text: str, record: dict, rules: str) -> str:
+# Prompt caching (Tal, Sep 28 2026): everything identical across every
+# record (the intro, FISCAL RULES, HOUSE_RULES, and the judging instructions,
+# which used to close the prompt AFTER the per-record data) is now one fixed
+# block that ends the same instructions but BEFORE the per-record data, so it
+# can be a stable cached prefix. Same wording throughout, just moved; "above"
+# became "below" since the fields it refers to now follow instead of precede.
+def build_prompt_fixed(rules: str) -> str:
+    return f"""You are auditing one row of the NYC Council Fiscal Impacts tracker against the fiscal
+impact statement it was extracted from.
+
+FISCAL RULES (from the tracker's own audit criteria):
+---
+{rules}
+---
+
+{HOUSE_RULES}
+Judge the record against the rules and the statement only. Return verdict "correct" if every
+tracker field below follows the rules from this statement; otherwise "wrong" with one entry per
+incorrect field: the field name, the tracker's current value, the right value per the rules, and
+the statement text or citation that shows it. Write tracker_value and right_value as plain text
+exactly as they should appear (e.g. "1800000", "true", "[\\"DOF\\", \\"DOB\\"]", or "null" for
+absent), not as JSON types.
+"""
+
+
+def build_prompt_variable(statement_text: str, record: dict) -> str:
     tracker_view = {k: record.get(k) for k in TRACKER_FIELDS}
     override = load_override(record)
     override_block = ""
@@ -151,16 +179,7 @@ PINNED HUMAN AUDIT (same statement, attachment_id {record.get('attachment_id')})
 These values were verified by a human audit; contradict them only if the statement plainly shows
 them wrong, and quote it.
 """
-    return f"""You are auditing one row of the NYC Council Fiscal Impacts tracker against the fiscal
-impact statement it was extracted from.
-
-FISCAL RULES (from the tracker's own audit criteria):
----
-{rules}
----
-
-{HOUSE_RULES}
-{override_block}
+    return f"""{override_block}
 STATEMENT TEXT:
 ---
 {statement_text[:TEXT_CAP]}
@@ -168,14 +187,12 @@ STATEMENT TEXT:
 
 TRACKER RECORD (the fields the rules govern):
 {json.dumps(tracker_view, indent=1, ensure_ascii=False)}
-
-Judge the record against the rules and the statement only. Return verdict "correct" if every
-field above follows the rules from this statement; otherwise "wrong" with one entry per incorrect
-field: the field name, the tracker's current value, the right value per the rules, and the
-statement text or citation that shows it. Write tracker_value and right_value as plain text
-exactly as they should appear (e.g. "1800000", "true", "[\\"DOF\\", \\"DOB\\"]", or "null" for
-absent), not as JSON types.
 """
+
+
+def build_prompt(statement_text: str, record: dict, rules: str) -> str:
+    """Kept for reference/back-compat: the single-string prompt, unsplit."""
+    return build_prompt_fixed(rules) + build_prompt_variable(statement_text, record)
 
 
 def load_records(matters: set[str] | None, limit: int | None) -> list[dict]:
@@ -244,18 +261,20 @@ def verify_one(client, session, record: dict, rules: str, force: bool) -> dict:
     truncated = len(text) > TEXT_CAP
     if truncated:
         note["truncated"] = True
-    prompt = build_prompt(text, record, rules)
+    fixed = build_prompt_fixed(rules)
+    variable = build_prompt_variable(text, record)
     for attempt in range(3):
         try:
             msg = client.messages.create(
                 model=VERIFY_MODEL,
                 max_tokens=MAX_TOKENS,
-                messages=[{"role": "user", "content": prompt}],
+                messages=[{"role": "user", "content": cached_content(fixed, variable)}],
                 output_config={"format": {"type": "json_schema", "schema": VERIFY_SCHEMA}},
             )
+            USAGE.add(msg)
             if msg.stop_reason == "max_tokens":
                 raise json.JSONDecodeError("output truncated at max_tokens", "", 0)
-            verdict = json.loads(next(b.text for b in msg.content if b.type == "text"))
+            verdict = json.loads(message_text(msg))
             result = {"matter_id": matter_id, "verdict": verdict["verdict"], "errors": verdict["errors"], **note}
             _cache_success(cp, result)
             return result
@@ -347,8 +366,17 @@ def main() -> int:
     session = create_session()
 
     results: dict[str, dict] = {}
+    # Prompt caching: a parallel request cannot read a cache entry until the
+    # first response naming it has begun, so the first record is verified
+    # alone (writing the cache), then the rest fan out across the pool.
+    remaining = records
+    if records:
+        first, remaining = records[0], records[1:]
+        res = verify_one(client, session, first, rules, args.force)
+        results[res["matter_id"]] = res
+
     with ThreadPoolExecutor(max_workers=CONCURRENCY) as pool:
-        futures = {pool.submit(verify_one, client, session, r, rules, args.force): r for r in records}
+        futures = {pool.submit(verify_one, client, session, r, rules, args.force): r for r in remaining}
         for fut in as_completed(futures):
             r = futures[fut]
             try:
@@ -380,6 +408,7 @@ def main() -> int:
 
     print(f"checked={checked} correct={correct} wrong={wrong} errored={errored} by_field={by_field}")
     print(f"wrote {out_path}")
+    log.info(USAGE.line())
     if records and errored / len(records) > ERROR_EXIT_THRESHOLD:
         log.error(f"{errored}/{len(records)} matters errored (> {ERROR_EXIT_THRESHOLD:.0%}) — failing the run")
         return 1

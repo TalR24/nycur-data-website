@@ -33,6 +33,7 @@ from __future__ import annotations
 
 import os
 import re
+import sys
 import json
 import time
 import logging
@@ -211,7 +212,7 @@ RULES:
 - time_limited_program: true only when the program or pilot that carries the cost itself ends on a stated date or after a stated number of years, and the statement says so. A sunset of one subsection (for example a reporting requirement) or of a separate authority, a discretionary end ("may discontinue"), or a statement that merely shows several years does NOT count. When true, copy into sunset_quote the exact sentence from the document that states the end; otherwise sunset_quote is "". Copy every year column; the pipeline totals a time-limited program over its life.
 - A figure in the table or the narrative is a fiscal impact. "See below" pointing to a figure, a $0 Full Fiscal Impact column beside non-zero year columns, or an unknown revenue next to a known cost is NOT zero impact and NOT unestimable.
 - Every amount is in whole dollars: "$435 million" is 435000000 and "$2.3 million" is 2300000, never 435 or 2.3, including when a table is labelled "($000)" or "in millions" (multiply out).
-- A table cell that says "See below" points to the narrative: leave that cell null, and take the figure the Impact on Revenues or Impact on Expenditures paragraph gives (for example "a one-time capital cost of $1.8 million") as the document's stated total. Set cost_estimable to false only when the narrative itself says the cost cannot be estimated and gives no figure. In see_below_categories, list "revenue"/"expenditure"/"capital" for each category where every column read "See below" (or was blank) and the figure came from the narrative — even if you also wrote that figure into the Full Fiscal Impact column, so the pipeline can label its source correctly.
+- A table cell that says "See below" points to the narrative: leave that cell null, and take the figure the Impact on Revenues or Impact on Expenditures paragraph gives (for example "a one-time capital cost of $1.8 million") as the document's stated total. Set cost_estimable to false only when the narrative itself says the cost cannot be estimated and gives no figure. In see_below_categories, list "revenue"/"expenditure"/"capital" for each category where the figure came from the narrative rather than the table — every column read "See below", was blank, or printed $0 with no capital/expenditure/revenue row while the narrative states a figure for it (e.g. a one-time capital cost mentioned only in prose) — even if you also wrote that figure into the Full Fiscal Impact column, so the pipeline can label its source correctly.
 - expenditure_is_savings: true only when the statement itself describes the expenditure figure as savings or a reduction in city spending (a net positive to the city), not a cost — for example "annual expenditure savings of approximately $790,000". Leave the number itself positive (its magnitude); the pipeline applies the sign.
 - fiscal_table_columns must preserve the exact column structure from the document (there may be 2–6 columns).
 - agencies_abbrev: list only agencies that are directly responsible for implementing the legislation — i.e. agencies that have at least one line item in program_breakdowns. Do NOT list agencies that only appear in passing in narrative text (e.g. OMB as reviewer, IBO as analyst, NYC Council as introducer).
@@ -231,6 +232,31 @@ Some documents — particularly pre-2019 legislation — state fiscal impacts as
 - Create a single fiscal_table_columns entry with label "Total" and populate revenue/expenditure/capital/net from the narrative figures.
 - If the narrative gives a cost figure and also says some further part "cannot be determined" or "cannot be projected", keep the stated figure as the estimate (cost_estimable stays true) and note the caveat in the narrative fields. Set cost_estimable to false only when the statement gives no cost figure at all.
 """
+
+# Prompt caching (Tal, Sep 28 2026): EXTRACTION_PROMPT's own text has the
+# per-document DOCUMENT TEXT block sandwiched between the intro and the
+# (much longer) field-by-field rules — fine for a single formatted string,
+# but prefix caching only caches a stable PREFIX, so the fixed instructions
+# have to move after the document text in what's actually sent. Built by
+# splitting EXTRACTION_PROMPT itself (not retyped) so the wording is
+# identical, just reordered: intro + rules, ending with the same "DOCUMENT
+# TEXT:\n---\n" header, then the statement text, then the same "\n---\n"
+# closer that used to follow it.
+_DOC_HEADER = "\n\nDOCUMENT TEXT:\n---\n"
+_DOC_CLOSER = "\n---\n"
+_EXTRACTION_PREFIX, _EXTRACTION_SUFFIX = EXTRACTION_PROMPT.split("{text}")
+_EXTRACTION_INTRO, _, _EXTRACTION_RULES = _EXTRACTION_PREFIX.partition(_DOC_HEADER)
+assert _EXTRACTION_SUFFIX.startswith(_DOC_CLOSER)
+_EXTRACTION_RULES += _EXTRACTION_SUFFIX[len(_DOC_CLOSER):]  # everything after the old {text} slot
+# the JSON example inside _EXTRACTION_RULES uses doubled braces so the old
+# single EXTRACTION_PROMPT.format(text=...) call could substitute {text}
+# without choking on the example's own braces; since this fixed block is
+# never run through .format(), resolve them here the same way format() would.
+EXTRACTION_PROMPT_FIXED = (
+    (_EXTRACTION_INTRO + "\n" + _EXTRACTION_RULES + "\n" + _DOC_HEADER.lstrip("\n"))
+    .replace("{{", "{").replace("}}", "}")
+)
+EXTRACTION_PROMPT_SUFFIX = _DOC_CLOSER
 
 
 # ── Legistar scraping ─────────────────────────────────────────────────────────
@@ -637,30 +663,69 @@ def extract_docx_text(docx_path: Path) -> str:
 
 # ── Claude extraction ─────────────────────────────────────────────────────────
 
+sys.path.insert(0, str(SCRIPT_DIR))
+from claude_batch import cached_content, run_batch, clear_state, Usage, message_text  # noqa: E402
+
+BATCH_STATE_PATH = SCRIPT_DIR / "fiscal_batch_state.json"
+# Not part of claude_batch.py's own state (that file only holds the batch id):
+# the matter_id -> {text, guid, att_id} a resumed run needs to finish phase 3
+# without repeating the Legistar search or re-downloading statements. Written
+# right before the batch is submitted, removed once results are collected.
+PENDING_PATH = SCRIPT_DIR / "fiscal_batch_pending.json"
+# refresh_fiscal_data.yml's job cap is 360 minutes. Budget for the rest of the
+# job: checkout + setup-python + pip install ~5 min; the Legistar search plus
+# per-matter fetch/download (phase 1, politeness sleeps included) ~30 min for
+# a typical monthly run's few hundred matters; regenerate_agency_data.py +
+# validate_fiscal_impacts.py ~5 min; commit/push with its retry-with-backoff
+# loop (up to 6 attempts, sleeps up to 5*45s) ~5 min. That is 45 min of
+# non-wait overhead, leaving 315 min; round down to 300 min (5 h) for margin.
+MAX_WAIT_S = 300 * 60
+USAGE = Usage()
+
+
+def extraction_messages(text: str, ttl: str | None = None) -> list[dict]:
+    """The user message content for one statement: EXTRACTION_PROMPT_FIXED
+    (identical for every document, cached) then the statement text (variable,
+    last). `ttl` "1h" inside a batch, default 5 minutes for a synchronous call."""
+    if len(text) > FIS_TEXT_CAP:
+        log.warning(f"  Statement text is {len(text):,} chars; truncating to {FIS_TEXT_CAP:,}")
+    variable = text[:FIS_TEXT_CAP] + EXTRACTION_PROMPT_SUFFIX
+    return cached_content(EXTRACTION_PROMPT_FIXED, variable, ttl=ttl)
+
+
+def extraction_params(text: str, ttl: str | None = None) -> dict:
+    """The messages.create kwargs for one statement — reused verbatim as
+    batch Request params, so there is exactly one place that builds them."""
+    return {
+        "model": CLAUDE_MODEL,
+        "max_tokens": 16000,
+        "messages": [{"role": "user", "content": extraction_messages(text, ttl=ttl)}],
+        "output_config": {"format": {"type": "json_schema", "schema": FISCAL_SCHEMA}},
+    }
+
+
+def _finish_extraction(msg, text: str) -> dict:
+    """Parse and post-process one successful response — the same step
+    whether it came from a synchronous call or a batch result."""
+    if msg.stop_reason == "max_tokens":
+        raise json.JSONDecodeError("output truncated at max_tokens", "", 0)
+    data = _blank_to_none(json.loads(message_text(msg)))
+    # the sunset sentence must appear in the statement itself
+    norm = lambda t: re.sub(r"\s+", " ", t or "").strip().lower()
+    if data.get("time_limited_program") and norm(data.get("sunset_quote"))[:120] not in norm(text):
+        data["time_limited_program"] = False
+    return totals_from_columns(data)
+
+
 def extract_fiscal_data(
     text: str, client: anthropic.Anthropic
 ) -> dict:
     """Call Claude API to extract structured fiscal data from docx text."""
-    if len(text) > FIS_TEXT_CAP:
-        log.warning(f"  Statement text is {len(text):,} chars; truncating to {FIS_TEXT_CAP:,}")
-    prompt = EXTRACTION_PROMPT.format(text=text[:FIS_TEXT_CAP])
-
     for attempt in range(3):
         try:
-            msg = client.messages.create(
-                model=CLAUDE_MODEL,
-                max_tokens=16000,
-                messages=[{"role": "user", "content": prompt}],
-                output_config={"format": {"type": "json_schema", "schema": FISCAL_SCHEMA}},
-            )
-            if msg.stop_reason == "max_tokens":
-                raise json.JSONDecodeError("output truncated at max_tokens", "", 0)
-            data = _blank_to_none(json.loads(next(b.text for b in msg.content if b.type == "text")))
-            # the sunset sentence must appear in the statement itself
-            norm = lambda t: re.sub(r"\s+", " ", t or "").strip().lower()
-            if data.get("time_limited_program") and norm(data.get("sunset_quote"))[:120] not in norm(text):
-                data["time_limited_program"] = False
-            return totals_from_columns(data)
+            msg = client.messages.create(**extraction_params(text))
+            USAGE.add(msg)
+            return _finish_extraction(msg, text)
 
         except json.JSONDecodeError as e:
             log.warning(f"  JSON decode error (attempt {attempt+1}): {e}")
@@ -675,6 +740,40 @@ def extract_fiscal_data(
             time.sleep(2 ** attempt)
 
     return {"extraction_error": "Failed after 3 attempts"}
+
+
+def extract_many(pending: list[tuple[str, str]], client: anthropic.Anthropic,
+                  max_wait_s: int | None = None) -> dict[str, dict] | None:
+    """Extract fiscal data for every (matter_id, text) in `pending`. Batch
+    mode (CLAUDE_BATCH=1) builds every request first and submits one Message
+    Batch (half price, ttl 1h so the cache survives the whole batch window);
+    an item that errored or expired in the batch falls back to the
+    synchronous path for that item only. Returns None when the batch timed
+    out (state left in BATCH_STATE_PATH for the next run's resume) — no
+    partial results, the caller must write nothing else and exit 0."""
+    if not pending:
+        return {}
+    if os.environ.get("CLAUDE_BATCH") == "1":
+        by_id = dict(pending)
+        requests = [(mid, extraction_params(text, ttl="1h")) for mid, text in pending]
+        kwargs = {"max_wait_s": max_wait_s} if max_wait_s is not None else {}
+        results = run_batch(client, requests, BATCH_STATE_PATH, **kwargs)
+        if results is None:
+            return None
+        out: dict[str, dict] = {}
+        for mid, text in pending:
+            status, payload = results.get(mid, ("missing", None))
+            if status == "succeeded":
+                try:
+                    out[mid] = _finish_extraction(payload, text)
+                except json.JSONDecodeError as e:
+                    log.warning(f"  {mid}: batch result JSON error, falling back to sync: {e}")
+                    out[mid] = extract_fiscal_data(text, client)
+            else:
+                log.warning(f"  {mid}: batch item {status}, falling back to sync")
+                out[mid] = extract_fiscal_data(by_id[mid], client)
+        return out
+    return {mid: extract_fiscal_data(text, client) for mid, text in pending}
 
 
 # ── Data persistence ──────────────────────────────────────────────────────────
@@ -754,6 +853,16 @@ def apply_overrides(records: list) -> list:
             removed.append(r["matter_id"])
             continue
         r.update(e.get("set") or {})
+        # An override that pins outlasts_statement true is saying the pilot
+        # outlasts its statement's columns, so the figure is the annual
+        # full-impact amount, never a program-life sum (matter 3597643, Sep
+        # 28 2026: totals_from_columns had already run and, on a single-
+        # column narrative statement, picked program_life_sum because the
+        # override's own time_limited_program hadn't been applied yet at that
+        # point — the two fields must agree). Left alone when the override
+        # states its own totals_basis.
+        if r.get("outlasts_statement") and "totals_basis" not in (e.get("set") or {}):
+            r["totals_basis"] = "full_impact_column"
         r["net_fiscal_impact"] = ((r.get("total_revenue") or 0) - (r.get("total_expenditure") or 0)
                                   - (r.get("total_capital") or 0))
         r["audited"] = e.get("audit")
@@ -1001,21 +1110,43 @@ def program_end_fy(quote: str, first_fy: int | None) -> int | None:
     that ends July 1 or 2 ran through the June 30 before."""
     q = (quote or "").lower()
     ends = []
+    dates_found: list[tuple[int, int, int]] = []
     for m, d, y in re.findall(r"(january|february|march|april|may|june|july|august|september|"
                               r"october|november|december)\s+(\d{1,2}),?\s+(\d{4})", q):
         mo, dd, yy = _MONTHS[m], int(d), int(y)
+        dates_found.append((mo, dd, yy))
+        # a date in the quote is usually the program's expiry: closes the
+        # prior fiscal year on July 1-2 (house rule; matters 4806326, 7984588)
         ends.append(_fy(yy + (1 if (mo > 7 or (mo == 7 and dd > 2)) else 0)))
     for y in re.findall(r"\b(?:fiscal(?:\s+year)?|fy)\s*\(?f?y?\)?\s*'?(\d{4}|\d{2})\b", q):
         ends.append(_fy(int(y)))
-    # durations run from the first fiscal year the statement prices; with
-    # several ("takes effect eight months after ... in effect for 36
-    # months") the longest is the program's run
-    if first_fy is not None:
+    # durations run from the program's start. Two cases (blind audit 5/6, Sep
+    # 28 2026):
+    #  - the quote itself states an explicit start date ("takes effect July 1,
+    #    2014 ... two years thereafter", matter 1709673): the start is known
+    #    precisely, so the run covers whole fiscal years from the FY that date
+    #    begins (July 1 itself starts the FY after it, the ordinary
+    #    fiscal-year-containing rule, NOT the expiry house rule above) through
+    #    N years later, i.e. start_fy + years - 1 = FY16 here.
+    #  - no explicit date, only a bare duration relative to first_fy (the
+    #    table's own first column, e.g. "remain in effect for 36 months" with
+    #    no stated start): the effective date essentially never falls exactly
+    #    on July 1, so a program running N whole years from a date inside
+    #    first_fy is still active N years later, partway into fiscal year
+    #    first_fy+N, not first_fy+N-1 (matters 1681072, 3521908; also matches
+    #    the "ten years from FY19 -> FY29" case below, no stated start date).
+    if dates_found:
+        mo0, dd0, yy0 = dates_found[0]
+        start_fy = _fy(yy0 + (1 if (mo0, dd0) >= (7, 1) else 0))
+    if first_fy is not None or dates_found:
         for num, unit in re.findall(r"\b(\d+|one|two|three|four|five|six|seven|eight|nine|ten)"
                                     r"[\s-]+(year|month|day)s?\b", q):
             n = int(num) if num.isdigit() else _NUM_WORDS[num]
-            years = n if unit == "year" else n / 12 if unit == "month" else n / 365
-            ends.append(first_fy + int(max(1, -(-years // 1))) - 1)
+            years = int(max(1, -(-(n if unit == "year" else n / 12 if unit == "month" else n / 365) // 1)))
+            if dates_found:
+                ends.append(start_fy + years - 1)
+            elif first_fy is not None:
+                ends.append(first_fy + years)
     # with several dates or durations (effective date + repeal) the latest
     # is the end
     return max(ends) if ends else None
@@ -1231,6 +1362,12 @@ def main() -> int:
         help="Comma-separated matter ids (or @file.json with a list). With --reextract: limit the re-extraction to these table records. Without: process exactly these matters from laws.json (skip list ignored), e.g. to re-check skip-listed laws.",
     )
     parser.add_argument(
+        "--resume-only", action="store_true",
+        help="Do only the cheap batch-resume check: exit 0 immediately if no batch is pending "
+             "(fiscal_batch_state.json absent); otherwise poll it and, if ended, finish and save. "
+             "No Legistar search, no re-download. For the daily resume schedule.",
+    )
+    parser.add_argument(
         "--reextract", choices=["superseded", "all"], default=None,
         help="Re-process records already in the table and replace them in place: "
              "'superseded' only where the page now carries a newer Council statement "
@@ -1277,7 +1414,9 @@ def main() -> int:
 
     index_by_id = {str(r["matter_id"]): i for i, r in enumerate(records)}
     replaced = removed = unchanged = 0
-    if args.reextract:
+    if args.resume_only:
+        log.info("--resume-only: skipping the Legistar search entirely")
+    elif args.reextract:
         only = None
         if args.matters:
             only = set(json.loads(Path(args.matters[1:]).read_text()) if args.matters.startswith("@")
@@ -1308,7 +1447,7 @@ def main() -> int:
 
     # Optional historical search using the advanced form, which has a working
     # lstYearsAdvanced filter. Run year-by-year for 2014–2023 (or custom range).
-    if args.historical:
+    if args.historical and not args.resume_only:
         try:
             start_str, end_str = args.historical_years.split("-")
             hist_years = [str(y) for y in range(int(start_str), int(end_str) + 1)]
@@ -1323,7 +1462,7 @@ def main() -> int:
             log.info(f"  Year {year}: {added} new unique matters (running total: {len(matters)})")
             time.sleep(3)  # be polite between year searches
 
-    if args.seed_laws:
+    if args.seed_laws and not args.resume_only:
         seed = load_law_seed(args.seed_laws)
         added = _add_matters(seed)
         log.info(f"Law seed ({args.seed_laws}): {len(seed)} enacted laws, {added} new unique matters (running total: {len(matters)})")
@@ -1337,53 +1476,102 @@ def main() -> int:
             removed += 1
             log.info(f"  Re-extract: enacted statement has no storable impact; record removed")
 
-    for matter_id, guid in matters:
-        if args.incremental and matter_id in existing_ids and not args.reextract:
-            log.info(f"  Skipping already-processed matter {matter_id}")
-            continue
+    # Phase 1: fetch and pre-check every matter, deferring the actual
+    # extraction call so batch mode can build every request before submitting
+    # any of them (CLAUDE_BATCH=1: one Message Batch instead of N synchronous
+    # calls). `pending` and `pending_ctx` are parallel to each other.
+    #
+    # --resume-only (the cheap daily schedule, days 2-7 of the month): skip
+    # phase 1 entirely and reload `pending`/`pending_ctx` from PENDING_PATH,
+    # written just before the batch was submitted, so resuming never repeats
+    # the Legistar search or re-downloads statements.
+    pending: list[tuple[str, str]] = []
+    pending_ctx: dict[str, dict] = {}
 
-        log.info(f"Processing matter {matter_id} ...")
+    if args.resume_only:
+        if not BATCH_STATE_PATH.exists():
+            log.info("--resume-only: no pending batch (fiscal_batch_state.json absent) — nothing to do")
+            return 0
+        if not PENDING_PATH.exists():
+            log.error(f"--resume-only: {BATCH_STATE_PATH.name} exists but {PENDING_PATH.name} is missing — cannot resume")
+            return 1
+        saved = json.loads(PENDING_PATH.read_text())
+        for matter_id, d in saved.items():
+            pending.append((matter_id, d["text"]))
+            pending_ctx[matter_id] = {"guid": d["guid"], "att_id": d["att_id"]}
+        log.info(f"--resume-only: resuming {len(pending)} pending extraction(s)")
+    else:
+        for matter_id, guid in matters:
+            if args.incremental and matter_id in existing_ids and not args.reextract:
+                log.info(f"  Skipping already-processed matter {matter_id}")
+                continue
 
+            log.info(f"Processing matter {matter_id} ...")
+
+            try:
+                att_id, att_guid = get_fiscal_attachment(session, matter_id, guid)
+                time.sleep(0.5)
+                if (args.reextract == "superseded" and matter_id in index_by_id
+                        and str(records[index_by_id[matter_id]].get("attachment_id")) == str(att_id)):
+                    unchanged += 1
+                    continue
+
+                if not att_id:
+                    log.info(f"  No fiscal impact attachment found — skipping")
+                    mark_skip(matter_id, "no_attachment")
+                    continue
+
+                docx_path = download_docx(session, att_id, att_guid)
+                time.sleep(0.5)
+
+                if not docx_path:
+                    continue
+
+                text = extract_docx_text(docx_path)
+                if not text.strip():
+                    # Usually a PDF or legacy .doc served under a "fiscal" filename;
+                    # python-docx reports "Package not found". Not retried monthly.
+                    log.warning(f"  Empty text from {docx_path} — skipping")
+                    mark_skip(matter_id, "unreadable_attachment")
+                    continue
+
+                # Fast pre-check: skip obvious zero-impact bills before calling Claude.
+                # If every dollar figure in the text is $0 and there's no "See below",
+                # there's nothing worth storing.
+                # the pre-check counts only $-prefixed figures, and statement tables
+                # often print bare numbers; on a re-extraction let the model read it
+                if not args.reextract and text_is_zero_impact(text):
+                    log.info(f"  Pre-check: all-zero fiscal impact — skipping Claude call")
+                    mark_skip(matter_id, "zero_precheck")
+                    _drop_if_reextracting(matter_id)
+                    continue
+
+                pending.append((matter_id, text))
+                pending_ctx[matter_id] = {"guid": guid, "att_id": att_id}
+
+            except Exception as e:
+                log.error(f"  Error on matter {matter_id}: {e}", exc_info=True)
+
+            time.sleep(1)  # be polite to Legistar
+
+    # Phase 2: extract (batch or synchronous; see extract_many's docstring).
+    if os.environ.get("CLAUDE_BATCH") == "1" and pending and not BATCH_STATE_PATH.exists():
+        PENDING_PATH.write_text(json.dumps(
+            {mid: {"text": text, **pending_ctx[mid]} for mid, text in pending}, indent=1, ensure_ascii=False))
+    log.info(f"Extracting {len(pending)} statement(s) "
+             f"({'batch' if os.environ.get('CLAUDE_BATCH') == '1' else 'synchronous'}) ...")
+    used_batch = os.environ.get("CLAUDE_BATCH") == "1" and bool(pending)
+    extracted = extract_many(pending, client, max_wait_s=MAX_WAIT_S)
+    if extracted is None:
+        log.info("Batch still running; nothing else written this run.")
+        log.info(USAGE.line())
+        return 0
+
+    # Phase 3: the same post-extraction handling for every result, batch or not.
+    for matter_id, text in pending:
+        guid, att_id = pending_ctx[matter_id]["guid"], pending_ctx[matter_id]["att_id"]
         try:
-            att_id, att_guid = get_fiscal_attachment(session, matter_id, guid)
-            time.sleep(0.5)
-            if (args.reextract == "superseded" and matter_id in index_by_id
-                    and str(records[index_by_id[matter_id]].get("attachment_id")) == str(att_id)):
-                unchanged += 1
-                continue
-
-            if not att_id:
-                log.info(f"  No fiscal impact attachment found — skipping")
-                mark_skip(matter_id, "no_attachment")
-                continue
-
-            docx_path = download_docx(session, att_id, att_guid)
-            time.sleep(0.5)
-
-            if not docx_path:
-                continue
-
-            text = extract_docx_text(docx_path)
-            if not text.strip():
-                # Usually a PDF or legacy .doc served under a "fiscal" filename;
-                # python-docx reports "Package not found". Not retried monthly.
-                log.warning(f"  Empty text from {docx_path} — skipping")
-                mark_skip(matter_id, "unreadable_attachment")
-                continue
-
-            # Fast pre-check: skip obvious zero-impact bills before calling Claude.
-            # If every dollar figure in the text is $0 and there's no "See below",
-            # there's nothing worth storing.
-            # the pre-check counts only $-prefixed figures, and statement tables
-            # often print bare numbers; on a re-extraction let the model read it
-            if not args.reextract and text_is_zero_impact(text):
-                log.info(f"  Pre-check: all-zero fiscal impact — skipping Claude call")
-                mark_skip(matter_id, "zero_precheck")
-                _drop_if_reextracting(matter_id)
-                continue
-
-            log.info("  Calling Claude for extraction ...")
-            fiscal = extract_fiscal_data(text, client)
+            fiscal = extracted[matter_id]
             if "extraction_error" in fiscal:
                 # a failed call is not evidence of zero impact: never skip-list
                 # it, and in --reextract mode keep the existing record
@@ -1457,16 +1645,22 @@ def main() -> int:
         except Exception as e:
             log.error(f"  Error on matter {matter_id}: {e}", exc_info=True)
 
-        time.sleep(1)  # be polite to Legistar
-
     records[:] = [r for r in records if r is not None]
     if args.reextract:
         log.info(f"Re-extract: {replaced} replaced, {removed} removed, {unchanged} already current")
     log.info(f"Processed {total_new} new matters (total in file: {len(records)})")
+    log.info(USAGE.line())
 
     if not args.dry_run:
         save_output(OUTPUT_PATH, records)
         save_skip_list(SKIP_PATH, skips)
+        # Only now, with fiscal_impacts.json safely written, is it safe to
+        # forget the batch: a crash between extract_many and here must still
+        # find the batch id next run rather than resubmitting it (review, Sep
+        # 28 2026). The workflow must stage this deletion at commit time.
+        if used_batch:
+            clear_state(BATCH_STATE_PATH)
+            PENDING_PATH.unlink(missing_ok=True)
     else:
         log.info("--dry-run: not writing output file")
 
