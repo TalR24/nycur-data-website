@@ -8,6 +8,10 @@
  */
 (function () {
   var BASE = '/civic_reference/';
+  // <script ... data-studio-only>: the Legislation Trackers hub loads this file
+  // for the Studio card alone, without the tracker switch bar
+  var SELF = document.currentScript;
+  var STUDIO_ONLY = !!(SELF && SELF.hasAttribute('data-studio-only'));
   var TRACKERS = [
     { key: 'fiscal', label: 'Fiscal Impacts', note: 'what it costs',
       href: BASE + 'nyc_council_fiscal_impacts_tracker/overview/', ink: '--b-topic-budget-ink' },
@@ -78,7 +82,19 @@
   }
 
   // NYCuriosity Studio callout above the footer of every tracker page (Tal, Sep 24 2026)
+  // Studio card only on each tracker's overview, the methodology pages and the
+  // Legislation Trackers hub (Tal, Sep 28 2026), not on every subpage
+  function studioPage() {
+    var p = location.pathname.replace(/index\.html$/, '');
+    return /\/methodology\/$/.test(p)
+      || /\/nyc_council_fiscal_impacts_tracker\/overview\/$/.test(p)
+      || /\/legislation_implementation_tracker\/$/.test(p)
+      || /\/legislation_implementation_tracker\/powers\/$/.test(p)
+      || /\/nyc_council_legislation_trackers\/$/.test(p);
+  }
+
   function studioCallout() {
+    if (!studioPage()) return;
     if (document.querySelector('.trk-studio')) return;
     var foot = document.querySelector('body > footer');
     if (!foot) return;
@@ -111,6 +127,7 @@
     document.head.appendChild(s);
   }
 
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', build);
-  else build();
+  var start = STUDIO_ONLY ? studioCallout : build;
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
+  else start();
 })();
