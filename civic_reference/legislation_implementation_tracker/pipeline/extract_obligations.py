@@ -937,6 +937,22 @@ def _find_candidates(records: list[dict], prefix: str, agency: str | None) -> li
     return hits
 
 
+def _deadline_fields(fields: dict, target: dict) -> dict:
+    """Reconciliation verdicts name the deadline kind `deadline_type`; records
+    call it `deadline_kind` (Sep 28 2026: 27 kind corrections landed in an
+    unused field and 169 date corrections left the kind at none, putting 90
+    dates on records with no deadline). Map the name, and give a date that an
+    override sets a kind when the record would otherwise have none."""
+    if "deadline_type" in fields:
+        fields["deadline_kind"] = fields.pop("deadline_type")
+    date = fields.get("deadline_date")
+    kind = fields.get("deadline_kind", target.get("deadline_kind"))
+    if date and kind in (None, "none"):
+        fields["deadline_kind"] = ("on_effective_date"
+                                   if date == target.get("effective_date") else "fixed_date")
+    return fields
+
+
 def apply_record_overrides(records: list[dict], matter_id: str,
                            overrides: dict | None = None
                            ) -> tuple[list[dict], list[dict]]:
@@ -973,7 +989,7 @@ def apply_record_overrides(records: list[dict], matter_id: str,
                           **entry})
             continue
         target = cands[0]
-        fields = entry.get("fields", {})
+        fields = _deadline_fields(dict(entry.get("fields", {})), target)
         if "kind" in fields:
             target["kind_override"] = fields["kind"]
         target.update(fields)
@@ -994,7 +1010,7 @@ def apply_record_overrides(records: list[dict], matter_id: str,
             continue
         records.remove(cands[0])
     for entry in ov.get("add", []):
-        fields = {k: v for k, v in entry.items() if k not in ("why", "source")}
+        fields = _deadline_fields({k: v for k, v in entry.items() if k not in ("why", "source")}, {})
         prefix = normalize_quote(fields.get("quote", ""))[:80]
         agency = fields.get("agency")
         already = any(
@@ -2616,6 +2632,13 @@ def main() -> None:
         law_powers = [o for o in combined + added if o["kind"] == "power"]
         for o in law_powers:
             o["deadline_kind"], o["deadline_date"] = "none", None
+        # a duty with no deadline kind keeps no date: the effective date left
+        # on such records is an extraction artefact (audit 7, Sep 28 2026:
+        # 2858175 R1, 5641331 R2, 5983600 R10/R12 and others)
+        for o in law_flat:
+            if (o.get("deadline_kind") in (None, "none") and o.get("deadline_date")
+                    and o["deadline_date"] == o.get("effective_date")):
+                o["deadline_date"] = None
         overrides_applied += sum(len(RECORD_OVERRIDES.get(str(res["matter_id"]), {}).get(k, []))
                                  for k in ("set", "remove", "add")) if RECORD_OVERRIDES.get(str(res["matter_id"])) else 0
         merged_away += merge_split_list_duplicates(law_flat)

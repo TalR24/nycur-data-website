@@ -529,6 +529,11 @@ def main() -> None:
                             f"{a['obligation_id']} ~ {b['obligation_id']} "
                             f"({laws[mid]['law_number_display']})")
 
+    # --- SOFT: a date on a record with no deadline kind (Sep 28 2026) --------
+    for o in obs:
+        if o.get("deadline_kind") in (None, "none") and o.get("deadline_date"):
+            soft["deadline_date_without_kind"].append(f"{o['obligation_id']}: {o['deadline_date']}")
+
     # --- SOFT: discretion ("may") typed as a duty (item 3d) ------------------
     # Reuses the same MANDATORY_WORD/MODAL/PROHIBITION vocabulary the kind
     # rule itself is built from, so this flags only a quote with "may" and no

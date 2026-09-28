@@ -53,7 +53,7 @@ _JOINED_KEYS = {"file_number", "law_number_display", "law_title", "committee",
                 "legistar_url", "law_sunset_date", "quotes_restated_text", "filing"}
 
 FIELDS_TO_DIFF = ["kind", "agency", "agency_unit", "deadline_date",
-                  "deadline_type", "recurrence", "existing_code", "restated"]
+                  "deadline_kind", "recurrence", "existing_code", "restated"]  # records' own name (was deadline_type)
 
 
 def protected_matters() -> dict:
