@@ -1006,20 +1006,25 @@ def apply_record_overrides(records: list[dict], matter_id: str,
             report.append({"matter_id": matter_id, "action": "set",
                           "status": "stale", **entry})
             continue
-        if len(cands) > 1:
+        if len(cands) > 1 and "agency" in entry.get("fields", {}):
+            # an agency change on a quote shared by several records cannot
+            # pick its record: report it
             report.append({"matter_id": matter_id, "action": "set",
                           "status": "ambiguous",
                           "candidates": [c.get("obligation_id") for c in cands],
                           **entry})
             continue
-        target = cands[0]
-        fields = _deadline_fields(dict(entry.get("fields", {})), target)
-        if "kind" in fields:
-            target["kind_override"] = fields["kind"]
-        target.update(fields)
-        if "agency" in fields:
-            target["agency_source"] = "record_override"
-            _resolve_override_agency(target)
+        # any other correction (deadline, recurrence, kind, reprint flag) holds
+        # for every record sharing the quote: a joint duty is stored once per
+        # agency (Sep 28 2026: ~46 verdicts were skipped as ambiguous)
+        for target in cands:
+            fields = _deadline_fields(dict(entry.get("fields", {})), target)
+            if "kind" in fields:
+                target["kind_override"] = fields["kind"]
+            target.update(fields)
+            if "agency" in fields:
+                target["agency_source"] = "record_override"
+                _resolve_override_agency(target)
     for entry in ov.get("remove", []):
         prefix = entry.get("quote_prefix", "")
         cands = _find_candidates(records, prefix, entry.get("agency"))
