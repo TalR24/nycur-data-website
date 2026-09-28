@@ -1,17 +1,24 @@
 name: Refresh NYC Council Fiscal Impacts
 
-# BILLING: calls the Anthropic API (Sonnet), billed per token outside Claude Max.
-# It runs unattended, so no session can do it; keep it to new or changed documents
-# (legislation-trackers skill, "Billing", lists the cost levers).
+# FALLBACK (Tal, Sep 28 2026): a Claude Code cloud routine (Max plan, no API
+# key) is now the primary path — it runs on the 1st at 12:17 UTC, fetches new
+# documents with these same scripts (no model calls), extracts them itself
+# via --emit-packets/--ingest, and commits pipeline/max_refresh.json marking
+# which ids are done for the month. This workflow runs later so the routine
+# has a head start; MAX_REFRESH_GATE=1 on the extraction step makes it read
+# that marker and skip every id already done (normally all of them, so zero
+# API calls this billing cycle). If the routine didn't run or didn't finish
+# an id, this is what extracts it, still calling the Anthropic API (Sonnet),
+# billed per token outside Claude Max (legislation-trackers skill, "Billing").
 on:
   schedule:
-    # 1st of each month, 11:23 UTC (early morning ET). The old 7:00 UTC slot
-    # hit legistar.council.nyc.gov's unresponsive early-morning window and the
-    # search request timed out on both Jul and Aug 2026 scheduled runs. Moved
-    # from 15:23 to 11:23 UTC (Sep 26 2026): this run must finish 3h+ before
-    # the implementation refresh (14:40 UTC) so alerts, the Ask index and
-    # member/agency profiles read that same month's fiscal data.
-    - cron: "23 11 1 * *"
+    # 1st of each month, 18:23 UTC — after the Max routine's 12:17 UTC run
+    # (6h head start). The old 7:00/11:23 UTC slots hit legistar.council.nyc.gov's
+    # unresponsive early-morning window and the search request timed out on
+    # both Jul and Aug 2026 scheduled runs; this run must still finish 3h+
+    # before the implementation refresh (21:40 UTC per orders_routine.md) so alerts, the Ask index
+    # and member/agency profiles read that same month's fiscal data.
+    - cron: "23 18 1 * *"
     # Cheap resume-only check, days 2-7 of the month: a batch submitted on the
     # 1st is usually done within an hour but can take up to 24; this exits
     # immediately (no API call at all) when no batch is pending, and only
@@ -95,6 +102,7 @@ jobs:
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           CLAUDE_BATCH: "1"   # must match the mode the batch was submitted under
+          MAX_REFRESH_GATE: "1"
         run: python pipeline/fetch_fiscal_impacts.py --resume-only
 
       # BILLING: batch mode (CLAUDE_BATCH=1) is half price on every token and
@@ -102,11 +110,15 @@ jobs:
       # (claude_batch.cached_content, always on) reads the fixed instructions
       # at ~0.1x price on every call after the first. On for the scheduled
       # monthly run; `sync: true` on a manual dispatch turns batch off.
+      # MAX_REFRESH_GATE=1: skip every id the Max-plan routine already
+      # extracted this month (pipeline/max_refresh.json) — normally all of
+      # them, so this step makes zero API calls.
       - name: Run fiscal impacts pipeline
         if: ${{ github.event.schedule != '0 12 2-7 * *' }}
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           CLAUDE_BATCH: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.sync == 'true') && '0' || '1' }}
+          MAX_REFRESH_GATE: "1"
         run: |
           INCREMENTAL="${{ github.event.inputs.incremental || 'true' }}"
           # Legistar's attachment search surfaces only ~300 matters, so every
@@ -171,7 +183,7 @@ jobs:
           # alone never stages a deletion, so check either a tracked path
           # (deleted from disk: stage removal) or a path that now exists
           # (new/updated: stage it) and use `-A` either way.
-          for f in pipeline/fiscal_batch_state.json pipeline/fiscal_batch_pending.json; do
+          for f in pipeline/fiscal_batch_state.json pipeline/fiscal_batch_pending.json pipeline/max_refresh.json; do
             if git ls-files --error-unmatch "$f" >/dev/null 2>&1 || [ -f "$f" ]; then
               git add -A -- "$f"
             fi

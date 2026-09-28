@@ -1,17 +1,23 @@
 name: Refresh Legislation Implementation Data
 
-# BILLING: calls the Anthropic API (Sonnet), billed per token outside Claude Max.
-# It runs unattended, so no session can do it; keep it to new or changed documents
-# (legislation-trackers skill, "Billing", lists the cost levers).
+# BILLING (Sep 28 2026): a Claude Code cloud routine on the Max plan (no API
+# key) is now PRIMARY: it runs on the 1st at 12:17 UTC, fetches new documents
+# with the existing scripts, extracts them itself (packet mode, --emit-
+# packets/--ingest), validates, and commits, writing pipeline/max_refresh.json
+# {"month", "obligations": {"done": [...], "left": [...]}}. This workflow is
+# the FALLBACK, moved to 21:40 UTC (well after the routine): every API
+# extraction step here first reads that marker (MAX_REFRESH_GATE=1) and
+# extracts only ids NOT already "done" this month — normally none, so zero
+# Anthropic billing. If the routine failed or partially finished, this still
+# calls the API (batch mode, cached instructions) for whatever is left.
 on:
   schedule:
-    # 1st of each month, 14:40 UTC (late morning ET). Moved off the 7:30 UTC
-    # slot Aug 2026: legistar.council.nyc.gov is unresponsive early morning and
-    # timed out the fiscal tracker's Jul and Aug scheduled runs from 7:00 UTC.
-    # Kept 3h+ behind the fiscal refresh (11:23 UTC, Sep 26 2026) so alerts,
-    # the Ask index and member/agency profiles read that same month's fiscal
-    # data instead of lagging a month.
-    - cron: "40 14 1 * *"
+    # 1st of each month, 21:40 UTC: after the Max-plan routine (12:17 UTC)
+    # and its own retry window, so the marker gate has a real chance to skip
+    # everything. Still 3h+ behind the fiscal refresh's fallback (its own
+    # header has that timing) so alerts/Ask index/profiles read the same
+    # month's fiscal data instead of lagging.
+    - cron: "40 21 1 * *"
     # Cheap resume-only run, days 2-7: exits immediately when no batch is
     # pending (batch_state_new.json and batch_state_reextract.json absent). Makes no other API call. Covers a
     # batch that was still processing when the monthly run's job cap hit.
@@ -67,10 +73,11 @@ jobs:
         working-directory: civic_reference/legislation_implementation_tracker
         run: python3 pipeline/fetch_enacted_laws.py --incremental
 
-      # BILLING: batch mode (default here) is half price on every token and
-      # caches the fixed instructions (~0.1x price on every request after the
-      # first); a manual "sync" dispatch input can force the old synchronous
-      # path (still cached, just not batched) for a same-day result.
+      # BILLING: the marker gate (MAX_REFRESH_GATE=1) skips any id the Max
+      # routine already did this month - normally ALL of them, so this call
+      # makes zero requests. Whatever is left falls back to batch mode (half
+      # price, cached instructions); a manual "sync" dispatch input can force
+      # the old synchronous path (still cached, just not batched) instead.
       - name: Re-extract queued laws
         working-directory: civic_reference/legislation_implementation_tracker
         continue-on-error: true
@@ -79,6 +86,7 @@ jobs:
           REEXTRACT_LIMIT: "200"
           REEXTRACT_WORKERS: "4"
           CLAUDE_BATCH: ${{ github.event.inputs.sync == 'true' && '0' || '1' }}
+          MAX_REFRESH_GATE: "1"
         run: python3 pipeline/reextract_queued.py
 
       - name: Refresh DORIS report filing status
@@ -86,12 +94,13 @@ jobs:
         continue-on-error: true
         run: python3 pipeline/build_report_filings.py
 
-      # BILLING: same batch + caching as above.
+      # BILLING: same marker gate + batch + caching as above.
       - name: Extract obligations for new laws
         working-directory: civic_reference/legislation_implementation_tracker
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           CLAUDE_BATCH: ${{ github.event.inputs.sync == 'true' && '0' || '1' }}
+          MAX_REFRESH_GATE: "1"
         run: python3 pipeline/extract_obligations.py --incremental
 
       - name: Rebuild council member stats
@@ -164,7 +173,8 @@ jobs:
           # path is a no-op, so a completed batch's deletion never committed
           # without this (Sep 28 2026 review).
           for f in civic_reference/legislation_implementation_tracker/pipeline/batch_state_new.json \
-                  civic_reference/legislation_implementation_tracker/pipeline/batch_state_reextract.json; do
+                  civic_reference/legislation_implementation_tracker/pipeline/batch_state_reextract.json \
+                  pipeline/max_refresh.json; do
             if git ls-files --error-unmatch "$f" >/dev/null 2>&1 || [ -f "$f" ]; then
               git add -A -- "$f"
             fi
@@ -303,7 +313,8 @@ jobs:
           # -A so a completed batch's state-file DELETION (clear_state) is
           # staged too, not just a creation or a content change.
           for f in civic_reference/legislation_implementation_tracker/pipeline/batch_state_new.json \
-                  civic_reference/legislation_implementation_tracker/pipeline/batch_state_reextract.json; do
+                  civic_reference/legislation_implementation_tracker/pipeline/batch_state_reextract.json \
+                  pipeline/max_refresh.json; do
             if git ls-files --error-unmatch "$f" >/dev/null 2>&1 || [ -f "$f" ]; then
               git add -A -- "$f"
             fi

@@ -151,6 +151,17 @@ def load_exclusions() -> dict:
 
 
 def main() -> None:
+    import argparse
+    ap = argparse.ArgumentParser()
+    # Max-plan routine (Sep 28 2026): packet mode for QUEUED laws too, same
+    # shape as extract_obligations.py's (eo.emit_packets/eo.ingest_packets),
+    # so one routine script can run both.
+    ap.add_argument("--emit-packets", metavar="DIR", default=None)
+    ap.add_argument("--ingest", metavar="DIR", default=None)
+    ap.add_argument("--model", default=eo.DEFAULT_MODEL)
+    args = ap.parse_args()
+    packet_mode = args.emit_packets or args.ingest
+
     if not QUEUE.exists():
         print("no queue file; nothing to do")
         return
@@ -159,10 +170,12 @@ def main() -> None:
     if not matters:
         print("queue empty; nothing to do")
         return
-    if not os.environ.get("ANTHROPIC_API_KEY"):
-        sys.exit("ANTHROPIC_API_KEY not set")
-    import anthropic
-    client = anthropic.Anthropic(max_retries=8)   # rate-limit retries with parallel workers
+    client = None
+    if not packet_mode:
+        if not os.environ.get("ANTHROPIC_API_KEY"):
+            sys.exit("ANTHROPIC_API_KEY not set")
+        import anthropic
+        client = anthropic.Anthropic(max_retries=8)   # rate-limit retries with parallel workers
 
     laws = {l["matter_id"]: l
             for l in json.loads(eo.LAWS_JSON.read_text())["laws"]}
@@ -171,6 +184,13 @@ def main() -> None:
     agencies_by_canon = {a["canonical"]: a for a in cw["agencies"]}
     TEXT_CACHE.mkdir(parents=True, exist_ok=True)
     EXTRACT_CACHE.mkdir(parents=True, exist_ok=True)
+
+    if not packet_mode and os.environ.get("MAX_REFRESH_GATE") == "1":
+        done_ids = eo.gate_done_ids(eo.load_max_refresh(), "obligations")
+        if done_ids:
+            before = len(matters)
+            matters = {m: r for m, r in matters.items() if m not in done_ids}
+            print(f"MAX_REFRESH_GATE=1: skipped {before - len(matters)} ids done on Max this month")
 
     limit = int(os.environ.get("REEXTRACT_LIMIT", "200"))
     todo = dict(list(matters.items())[:limit])
@@ -252,6 +272,39 @@ def main() -> None:
             skipped[mid] = f"{r} [protected: {exclusions[mid]}]"
         elif mid not in laws:
             failed[mid] = r + " [matter not in laws.json]"
+
+    if packet_mode:
+        d = Path(args.emit_packets or args.ingest)
+        (d / "results").mkdir(parents=True, exist_ok=True)
+        fetched: dict[str, tuple[dict, str]] = {}
+        if args.emit_packets:
+            # fetch (no API call) only on emit; --ingest reads the SAME text
+            # cache/text/<id>.txt emit already wrote, no Legistar re-fetch
+            # (should-fix, Sep 28 2026).
+            for mid, reason in todo_matters.items():
+                text, _truncated, fail = fetch_text(mid, laws[mid], reason)
+                if fail:
+                    print(f"{mid}: FAILED {fail}")
+                    failed[mid] = fail
+                    continue
+                fetched[mid] = (laws[mid], text)
+            eo.emit_packets(d, list(fetched.values()))
+            return
+        for mid in todo_matters:
+            tp = TEXT_CACHE / f"{mid}.txt"
+            if mid in laws and tp.exists():
+                fetched[mid] = (laws[mid], tp.read_text())
+        todo_pairs = list(fetched.values())
+        # writer=write_result: a packet-ingested RE-extraction goes through
+        # the SAME guard_reextraction (keep prior on failure) the sync/batch
+        # re-extraction path uses, not a bare cache write (review, Sep 28
+        # 2026). No truncation info from a packet result, so truncated=False.
+        done, left = eo.ingest_packets(d, todo_pairs, lookup, agencies_by_canon, args.model,
+                                       writer=lambda mid, res: write_result(mid, res, False))
+        eo.update_max_refresh("obligations", done, left)
+        print(f"ingested {len(done)} laws, {len(left)} left (invalid or missing result); "
+              f"wrote {eo.MAX_REFRESH_PATH}")
+        return
 
     if os.environ.get("CLAUDE_BATCH") == "1":
         # Fetch every law's text first (no API call), THEN batch the model

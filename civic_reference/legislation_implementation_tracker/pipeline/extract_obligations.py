@@ -54,7 +54,9 @@ OUT_JSON = DATA / "obligations.json"
 POWERS_JSON = DATA / "powers.json"
 BATCH_STATE_NEW = HERE / "batch_state_new.json"          # extract_obligations.py (new laws)
 BATCH_STATE_REEXTRACT = HERE / "batch_state_reextract.json"  # reextract_queued.py
-MAX_REFRESH_PATH = HERE / "max_refresh.json"
+# Repo-root pipeline/, shared with the fiscal tracker's own routine (keys
+# per tracker: "fiscal", "obligations"), not LIT/pipeline/ (Sep 28 2026).
+MAX_REFRESH_PATH = HERE.parent.parent.parent / "pipeline" / "max_refresh.json"
 
 
 def load_max_refresh() -> dict:
@@ -131,12 +133,24 @@ def emit_packets(d: Path, todo: list[tuple[dict, str]]) -> None:
              f"prompt files) to {d}")
 
 
+def _default_packet_writer(mid: str, res: dict) -> None:
+    EXTRACT_CACHE.mkdir(parents=True, exist_ok=True)
+    (EXTRACT_CACHE / f"{mid}.json").write_text(json.dumps(res, indent=1))
+
+
 def ingest_packets(d: Path, todo: list[tuple[dict, str]], lookup: dict,
-                   agencies_by_canon: dict, model: str) -> tuple[list[str], list[str]]:
+                   agencies_by_canon: dict, model: str,
+                   writer=None) -> tuple[list[str], list[str]]:
     """Validates and finalizes each law's packet result(s) the SAME way a
     synchronous or batch call is finalized (finalize_extraction /
-    merge_window_finalized; no second copy), writing cache/extracted/<id>.json
-    exactly as a normal run does. Returns (done, left) matter ids."""
+    merge_window_finalized; no second copy). By default writes
+    cache/extracted/<id>.json exactly as extract_obligations.py's own run
+    does; reextract_queued.py passes `writer=write_result` instead, so a
+    packet-ingested RE-extraction goes through the SAME guard_reextraction +
+    truncated-flag handling the sync/batch re-extraction path uses (review,
+    Sep 28 2026: this used to write the cache file directly, skipping both).
+    Returns (done, left) matter ids."""
+    writer = writer or _default_packet_writer
     manifest = json.loads((d / "manifest.json").read_text())
     by_mid = {law["matter_id"]: (law, text) for law, text in todo}
     done, left = [], []
@@ -161,6 +175,14 @@ def ingest_packets(d: Path, todo: list[tuple[dict, str]], lookup: dict,
             if not validate_against_schema(raw, OBLIGATIONS_SCHEMA):
                 ok = False
                 break
+            # Same conversion _parse_obligations_message() runs on a sync or
+            # batch response: {"amount", "unit"} -> "offset_days", in place,
+            # BEFORE finalize_extraction (which reads offset_days, not the
+            # raw offset). Skipping this left a stray "offset" key and no
+            # date on every ingested deadline (review, Sep 28 2026).
+            _offset_to_days(raw.get("effective_clause"))
+            for o in raw.get("obligations", []):
+                _offset_to_days(o.get("deadline"))
             window_text = windows[wi - 1]
             subs.append(finalize_extraction(raw, law, window_text, operative_text(window_text),
                                             lookup, agencies_by_canon, model))
@@ -168,8 +190,7 @@ def ingest_packets(d: Path, todo: list[tuple[dict, str]], lookup: dict,
             left.append(mid)
             continue
         res = subs[0] if n == 1 else merge_window_finalized(law, text, subs)
-        EXTRACT_CACHE.mkdir(parents=True, exist_ok=True)
-        (EXTRACT_CACHE / f"{mid}.json").write_text(json.dumps(res, indent=1))
+        writer(mid, res)
         done.append(mid)
     return done, left
 
@@ -2285,15 +2306,19 @@ def main() -> None:
         laws = laws[:args.limit]
 
     # Marker gate (Sep 28 2026): the Max-plan routine already extracted these
-    # ids this month; skip them here so the API fallback makes zero calls in
-    # the normal case. Never applied in packet mode (that IS the routine).
+    # ids this month, so the API fallback must not call the model for them
+    # again. It must NOT drop them from `laws`: that would drop their
+    # records from obligations.json/powers.json/law summaries too (review,
+    # Sep 28 2026). The gate only narrows select_todo()'s extraction
+    # candidates below; the main per-law loop still processes every law,
+    # falling back to cache/prior for a gated id exactly as it would for any
+    # other already-extracted law.
+    gate_ids: set[str] = set()
     if not packet_mode and os.environ.get("MAX_REFRESH_GATE") == "1":
-        done_ids = gate_done_ids(load_max_refresh(), "obligations")
-        if done_ids:
-            before = len(laws)
-            laws = [l for l in laws if l["matter_id"] not in done_ids]
-            log.info(f"MAX_REFRESH_GATE=1: skipped {before - len(laws)} ids "
-                     f"done on Max this month")
+        gate_ids = gate_done_ids(load_max_refresh(), "obligations")
+        if gate_ids:
+            log.info(f"MAX_REFRESH_GATE=1: {len(gate_ids)} ids done on Max "
+                     f"this month will be excluded from extraction only")
 
     # Prior results let --incremental work in CI, where cache/ doesn't exist:
     # reconstruct per-law results from the committed obligations.json
@@ -2328,14 +2353,20 @@ def main() -> None:
         conditions the main per-law loop below uses. Shared by packet mode
         and batch mode so there is exactly one selection rule."""
         out = []
+        skipped_gated = 0
         for law in laws:
             cache_file = EXTRACT_CACHE / f"{law['matter_id']}.json"
             if args.incremental and (cache_file.exists() or law["matter_id"] in prior):
+                continue
+            if law["matter_id"] in gate_ids:
+                skipped_gated += 1
                 continue
             text_file = TEXT_CACHE / f"{law['matter_id']}.txt"
             if not text_file.exists():
                 continue
             out.append((law, text_file.read_text()))
+        if skipped_gated:
+            log.info(f"MAX_REFRESH_GATE=1: skipped {skipped_gated} ids done on Max this month")
         return out
 
     if packet_mode:

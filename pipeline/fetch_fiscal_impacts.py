@@ -40,6 +40,7 @@ import logging
 import argparse
 from datetime import datetime
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Optional
 
 import requests
@@ -742,6 +743,136 @@ def extract_fiscal_data(
     return {"extraction_error": "Failed after 3 attempts"}
 
 
+# ── Max-plan packet mode (Tal, Sep 28 2026) ──────────────────────────────────
+# The routine (Claude Code on the Max plan, no API key) does the extraction
+# itself: --emit-packets writes one prompt per statement (the same fixed+
+# variable text the API path sends) for a subagent to answer; --ingest reads
+# each subagent's JSON answer, validates it against FISCAL_SCHEMA, and runs
+# it through the SAME _finish_extraction() the sync and batch paths use, so
+# there is exactly one place that turns a model answer into a stored record.
+MAX_REFRESH_PATH = REPO_ROOT / "pipeline" / "max_refresh.json"
+
+
+def load_max_refresh() -> dict:
+    if MAX_REFRESH_PATH.exists():
+        return json.loads(MAX_REFRESH_PATH.read_text())
+    return {}
+
+
+def save_max_refresh(data: dict) -> None:
+    MAX_REFRESH_PATH.write_text(json.dumps(data, indent=1, ensure_ascii=False) + "\n")
+
+
+def _current_month() -> str:
+    return datetime.utcnow().strftime("%Y-%m")
+
+
+def gated_done_ids() -> set[str]:
+    """Matter ids the Max routine already extracted this month, when the
+    calling workflow sets MAX_REFRESH_GATE=1."""
+    if os.environ.get("MAX_REFRESH_GATE") != "1":
+        return set()
+    marker = load_max_refresh()
+    if marker.get("month") != _current_month():
+        return set()
+    return set(marker.get("fiscal", {}).get("done", []))
+
+
+def merge_max_refresh(month: str, done: list[str], left: list[str]) -> None:
+    marker = load_max_refresh()
+    if marker.get("month") != month:
+        marker = {"month": month}
+    fiscal = marker.get("fiscal", {"done": [], "left": []})
+    fiscal["done"] = sorted(set(fiscal.get("done", [])) | set(done))
+    fiscal["left"] = sorted((set(fiscal.get("left", [])) | set(left)) - set(done))
+    marker["fiscal"] = fiscal
+    save_max_refresh(marker)
+
+
+def _validate_schema(data, schema, path: str = "") -> list[str]:
+    """Minimal validator for the subset of JSON Schema FISCAL_SCHEMA uses:
+    object/array/string/number/boolean, required, enum, additionalProperties,
+    and anyOf (for the schema's nullable fields). Used only when the
+    `jsonschema` package isn't installed (it isn't, per requirements.txt)."""
+    errors: list[str] = []
+    if "anyOf" in schema:
+        if not any(not _validate_schema(data, s, path) for s in schema["anyOf"]):
+            errors.append(f"{path or '<root>'}: matches none of {schema['anyOf']}")
+        return errors
+    t = schema.get("type")
+    pytypes = {"object": dict, "array": list, "string": str, "number": (int, float),
+               "boolean": bool, "null": type(None)}
+    if t and not isinstance(data, pytypes.get(t, object)):
+        return [f"{path or '<root>'}: expected {t}, got {type(data).__name__}"]
+    if "enum" in schema and data not in schema["enum"]:
+        errors.append(f"{path or '<root>'}: {data!r} not in {schema['enum']}")
+    if t == "object":
+        for key in schema.get("required", []):
+            if key not in data:
+                errors.append(f"{path}.{key}: missing required field")
+        if not schema.get("additionalProperties", True):
+            extra = set(data) - set(schema.get("properties", {}))
+            if extra:
+                errors.append(f"{path or '<root>'}: unexpected fields {sorted(extra)}")
+        for key, subschema in schema.get("properties", {}).items():
+            if key in data:
+                errors.extend(_validate_schema(data[key], subschema, f"{path}.{key}"))
+    elif t == "array" and "items" in schema:
+        for i, item in enumerate(data):
+            errors.extend(_validate_schema(item, schema["items"], f"{path}[{i}]"))
+    return errors
+
+
+def emit_packets(pending: list[tuple[str, str]], out_dir: Path) -> None:
+    out_dir.mkdir(parents=True, exist_ok=True)
+    (out_dir / "results").mkdir(exist_ok=True)
+    manifest = {"month": _current_month(), "ids": [mid for mid, _ in pending]}
+    for mid, text in pending:
+        prompt = EXTRACTION_PROMPT_FIXED + text[:FIS_TEXT_CAP] + EXTRACTION_PROMPT_SUFFIX
+        (out_dir / f"{mid}.txt").write_text(
+            prompt + f"\n\nANSWER FORMAT: write ONLY a JSON object matching this schema to "
+            f"results/{mid}.json:\n" + json.dumps(FISCAL_SCHEMA))
+    (out_dir / "manifest.json").write_text(json.dumps(manifest, indent=1, ensure_ascii=False))
+    log.info(f"wrote {len(pending)} packets to {out_dir}")
+
+
+def ingest_packets(pending: list[tuple[str, str]], in_dir: Path) -> dict[str, dict]:
+    """Validate and finish every subagent result found in in_dir/results/.
+    An id with no result file, an unparseable one, or one that fails schema
+    validation is left out of the return value (and recorded in "left")."""
+    by_id = dict(pending)
+    out: dict[str, dict] = {}
+    done, left = [], []
+    for mid, text in pending:
+        f = in_dir / "results" / f"{mid}.json"
+        if not f.exists():
+            left.append(mid)
+            continue
+        try:
+            data = json.loads(f.read_text())
+        except json.JSONDecodeError as e:
+            log.warning(f"  {mid}: invalid JSON in {f}: {e}")
+            left.append(mid)
+            continue
+        errors = _validate_schema(data, FISCAL_SCHEMA)
+        if errors:
+            log.warning(f"  {mid}: schema validation failed: {errors[:3]}")
+            left.append(mid)
+            continue
+        fake_msg = SimpleNamespace(
+            stop_reason="end_turn",
+            content=[SimpleNamespace(type="text", text=json.dumps(data))])
+        try:
+            out[mid] = _finish_extraction(fake_msg, by_id[mid])
+            done.append(mid)
+        except Exception as e:  # noqa: BLE001
+            log.warning(f"  {mid}: post-processing failed: {e}")
+            left.append(mid)
+    merge_max_refresh(_current_month(), done, left)
+    log.info(f"ingested {len(done)} of {len(pending)} packets ({len(left)} left)")
+    return out
+
+
 def extract_many(pending: list[tuple[str, str]], client: anthropic.Anthropic,
                   max_wait_s: int | None = None) -> dict[str, dict] | None:
     """Extract fiscal data for every (matter_id, text) in `pending`. Batch
@@ -1375,14 +1506,26 @@ def main() -> int:
              "the Legistar search. A record whose enacted statement shows no storable "
              "impact is removed and added to the skip list; an error keeps the old record.",
     )
+    parser.add_argument(
+        "--emit-packets", metavar="DIR", default=None,
+        help="Max-plan routine: write one extraction packet per pending statement to DIR "
+             "(no API call), for a subagent to answer into DIR/results/<id>.json.",
+    )
+    parser.add_argument(
+        "--ingest", metavar="DIR", default=None,
+        help="Max-plan routine: validate and finish every DIR/results/<id>.json (same "
+             "post-processing the API path uses), save, and update pipeline/max_refresh.json.",
+    )
     args = parser.parse_args()
 
-    api_key = os.environ.get("ANTHROPIC_API_KEY")
-    if not api_key:
-        log.error("ANTHROPIC_API_KEY environment variable is not set. See README.")
-        return 1
-
-    client  = anthropic.Anthropic(api_key=api_key)
+    # --emit-packets / --ingest: the Max-plan routine, no API key, no billing.
+    client = None
+    if not (args.emit_packets or args.ingest):
+        api_key = os.environ.get("ANTHROPIC_API_KEY")
+        if not api_key:
+            log.error("ANTHROPIC_API_KEY environment variable is not set. See README.")
+            return 1
+        client = anthropic.Anthropic(api_key=api_key)
     session = create_session()
 
     existing     = load_existing(OUTPUT_PATH)
@@ -1501,9 +1644,15 @@ def main() -> int:
             pending_ctx[matter_id] = {"guid": d["guid"], "att_id": d["att_id"]}
         log.info(f"--resume-only: resuming {len(pending)} pending extraction(s)")
     else:
+        gate_done = gated_done_ids()
+        if gate_done:
+            log.info(f"MAX_REFRESH_GATE=1: skipped {len(gate_done & {m for m, _ in matters})} ids "
+                     f"done on Max this month")
         for matter_id, guid in matters:
             if args.incremental and matter_id in existing_ids and not args.reextract:
                 log.info(f"  Skipping already-processed matter {matter_id}")
+                continue
+            if matter_id in gate_done:
                 continue
 
             log.info(f"Processing matter {matter_id} ...")
@@ -1554,23 +1703,36 @@ def main() -> int:
 
             time.sleep(1)  # be polite to Legistar
 
-    # Phase 2: extract (batch or synchronous; see extract_many's docstring).
-    if os.environ.get("CLAUDE_BATCH") == "1" and pending and not BATCH_STATE_PATH.exists():
-        PENDING_PATH.write_text(json.dumps(
-            {mid: {"text": text, **pending_ctx[mid]} for mid, text in pending}, indent=1, ensure_ascii=False))
-    log.info(f"Extracting {len(pending)} statement(s) "
-             f"({'batch' if os.environ.get('CLAUDE_BATCH') == '1' else 'synchronous'}) ...")
-    used_batch = os.environ.get("CLAUDE_BATCH") == "1" and bool(pending)
-    extracted = extract_many(pending, client, max_wait_s=MAX_WAIT_S)
-    if extracted is None:
-        log.info("Batch still running; nothing else written this run.")
-        log.info(USAGE.line())
+    # Phase 2: extract (Max-plan packets, batch, or synchronous).
+    used_batch = False
+    if args.emit_packets:
+        emit_packets(pending, Path(args.emit_packets))
         return 0
+    elif args.ingest:
+        extracted = ingest_packets(pending, Path(args.ingest))
+    else:
+        if os.environ.get("CLAUDE_BATCH") == "1" and pending and not BATCH_STATE_PATH.exists():
+            PENDING_PATH.write_text(json.dumps(
+                {mid: {"text": text, **pending_ctx[mid]} for mid, text in pending}, indent=1, ensure_ascii=False))
+        log.info(f"Extracting {len(pending)} statement(s) "
+                 f"({'batch' if os.environ.get('CLAUDE_BATCH') == '1' else 'synchronous'}) ...")
+        used_batch = os.environ.get("CLAUDE_BATCH") == "1" and bool(pending)
+        extracted = extract_many(pending, client, max_wait_s=MAX_WAIT_S)
+        if extracted is None:
+            log.info("Batch still running; nothing else written this run.")
+            log.info(USAGE.line())
+            return 0
 
     # Phase 3: the same post-extraction handling for every result, batch or not.
     for matter_id, text in pending:
         guid, att_id = pending_ctx[matter_id]["guid"], pending_ctx[matter_id]["att_id"]
         try:
+            if matter_id not in extracted:
+                # --ingest: no result file, invalid JSON, or schema failure;
+                # already recorded in max_refresh.json's "left" — try again
+                # next run (the Actions fallback, or the routine next month).
+                log.warning(f"  {matter_id}: no valid packet result, leaving for next run")
+                continue
             fiscal = extracted[matter_id]
             if "extraction_error" in fiscal:
                 # a failed call is not evidence of zero impact: never skip-list
