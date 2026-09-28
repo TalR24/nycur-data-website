@@ -21,6 +21,11 @@ on:
         required: true
         type: choice
         options: ["canary", "label_kinds", "reextract_obligations", "pilot_obligations", "verify_fiscal", "verify_obligations"]
+      batch:
+        description: "reextract_obligations: submit one Message Batch (half price) instead of synchronous calls"
+        required: false
+        default: true
+        type: boolean
       include_protected:
         description: "reextract_obligations: also re-extract laws in reextract_exclusions.json"
         required: false
@@ -77,10 +82,13 @@ jobs:
         working-directory: civic_reference/legislation_implementation_tracker
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          REEXTRACT_LIMIT: "200"   # ~50 min per run (4 workers)
+          REEXTRACT_LIMIT: "250"   # sync: ~60 min at 4 workers; batch: one submission
           PYTHONUNBUFFERED: "1"   # progress lines reach the log as they happen
           REEXTRACT_WORKERS: "4"
           REEXTRACT_INCLUDE_PROTECTED: ${{ inputs.include_protected && '1' || '' }}
+          # BILLING: batch mode is half price; waits up to 120 min, then leaves
+          # batch_state_reextract.json committed for the monthly resume job
+          CLAUDE_BATCH: ${{ inputs.batch && '1' || '' }}
         run: |
           python3 pipeline/reextract_queued.py
           python3 pipeline/extract_obligations.py --incremental
@@ -172,6 +180,9 @@ jobs:
                    civic_reference/nyc_council_legislation_trackers/quality/fiscal_verification_*.json; do
             if [ -f "$f" ]; then git add "$f"; fi
           done
+          # batch state: stage additions AND deletions (a finished batch clears it)
+          f=$L/pipeline/batch_state_reextract.json
+          if git ls-files --error-unmatch "$f" >/dev/null 2>&1 || [ -f "$f" ]; then git add -A -- "$f"; fi
           if git diff --cached --quiet; then echo "Nothing to commit"; exit 0; fi
           git commit -m "Claude backfill: ${{ inputs.task }} [$(date -u '+%Y-%m-%d')]"
           # autostash: any file the rebuild changed but this step does not
