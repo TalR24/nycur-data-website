@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Blind adjudication of protected-law re-extraction disagreements.
+"""BILLING: the default path calls the Anthropic API (billed per token, not
+covered by Claude Max). Prefer --emit-packets / --ingest, judged by Claude Code
+subagents on the Max plan; use the API path only for an unattended run Tal has
+approved (see the tracker-billing section of the legislation-trackers skill).
+
+Blind adjudication of protected-law re-extraction disagreements.
 
 For every law reconcile_protected.py diff found a disagreement in, asks
 claude-opus-5 ONE question per law: given the law's own definitions and the
@@ -258,7 +263,12 @@ def call_law(client, matter_id: str, text: str, items: list[dict],
             delay *= 2
     if result is None:
         return {"matter_id": matter_id, "error": str(last_err), "items": []}
+    return decode_result(matter_id, items, label_key, result)
 
+
+def decode_result(matter_id: str, items: list[dict], label_key: dict, result: dict) -> dict:
+    """Map a model's RESULT_SCHEMA answer back to snapshot/current sides with
+    the local label key. Shared by the API path and --ingest (subagent path)."""
     by_id = {it["item_id"]: it for it in items}
     out_items = []
     for r in result.get("results", []):
@@ -286,6 +296,11 @@ def main() -> None:
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--concurrency", type=int, default=4)
     ap.add_argument("--matters", nargs="+", default=None)
+    # Max-plan path (Tal, Sep 27 2026): no API billing. --emit-packets writes one
+    # prompt per law for Claude Code subagents to judge; each subagent writes
+    # DIR/results/<matter_id>.json in RESULT_SCHEMA shape; --ingest decodes them.
+    ap.add_argument("--emit-packets", metavar="DIR", default=None)
+    ap.add_argument("--ingest", metavar="DIR", default=None)
     args = ap.parse_args()
 
     if not DIFF_PATH.exists():
@@ -301,6 +316,37 @@ def main() -> None:
         items = build_law_items(mid, law_diff)
         if items:
             todo[mid] = items
+
+    if args.emit_packets or args.ingest:
+        d = Path(args.emit_packets or args.ingest)
+        (d / "results").mkdir(parents=True, exist_ok=True)
+        keys_path = d / "label_keys.json"
+        if args.emit_packets:
+            keys = {}
+            for mid, items in todo.items():
+                prompt, label_key = build_prompt(mid, get_law_text(mid, laws_by_id.get(mid)), items)
+                (d / f"{mid}.txt").write_text(
+                    prompt + "\n\nANSWER FORMAT: write ONLY a JSON object matching this schema to "
+                    f"results/{mid}.json:\n" + json.dumps(RESULT_SCHEMA))
+                keys[mid] = label_key
+            keys_path.write_text(json.dumps(keys))
+            (d / "schema.json").write_text(json.dumps(RESULT_SCHEMA, indent=1))
+            print(f"wrote {len(todo)} packets to {d} (label keys kept in {keys_path.name}; never give it to a judge)")
+            return
+        keys = json.loads(keys_path.read_text())
+        decisions = json.loads(DECISIONS_PATH.read_text()) if DECISIONS_PATH.exists() else {}
+        done = missing = 0
+        for mid, items in todo.items():
+            rp = d / "results" / f"{mid}.json"
+            if not rp.exists():
+                missing += 1
+                continue
+            res = decode_result(mid, items, keys[mid], json.loads(rp.read_text()))
+            decisions[mid] = {"items": res["items"]}
+            done += 1
+        DECISIONS_PATH.write_text(json.dumps(decisions, indent=1))
+        print(f"wrote {DECISIONS_PATH}: {done} laws ingested, {missing} without a result")
+        return
 
     if args.dry_run:
         total_tokens = 0

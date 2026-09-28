@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""
+"""BILLING: the default path calls the Anthropic API (Opus, billed per token,
+not covered by Claude Max). Prefer --emit-packets / --ingest, judged by Claude
+Code subagents on the Max plan; the API path needs Tal's approval first.
+
+
 Independent LLM verification of every record in fiscal_impacts.json against
 the statement actually used, judged by the fiscal rules in
 civic_reference/nyc_council_legislation_trackers/quality/criteria.md.
@@ -274,6 +278,11 @@ def main() -> int:
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--fetch-in-dry-run", action="store_true", help="with --dry-run, still fetch statements to size the real token estimate")
     ap.add_argument("--force", action="store_true", help="ignore the resumable cache and re-verify")
+    # Max-plan path (Tal, Sep 27 2026): no API billing. --emit-packets writes one
+    # prompt per bill for Claude Code subagents; each writes DIR/results/<id>.json
+    # ({verdict, errors}); --ingest DIR folds them into the day's report.
+    ap.add_argument("--emit-packets", metavar="DIR", default=None)
+    ap.add_argument("--ingest", metavar="DIR", default=None)
     args = ap.parse_args()
 
     matters = None
@@ -281,6 +290,37 @@ def main() -> int:
         matters = {m for token in args.matters for m in token.split(",") if m}
     records = load_records(matters, args.limit)
     rules = CRITERIA.read_text() if CRITERIA.exists() else ""
+
+    if args.emit_packets:
+        d = Path(args.emit_packets); (d / "results").mkdir(parents=True, exist_ok=True)
+        session = create_session(); n = 0
+        for r in records:
+            text, note = fetch_statement(session, r)
+            if not text:
+                print(f"  {r['matter_id']}: no statement ({note})"); continue
+            (d / f"{r['matter_id']}.txt").write_text(
+                build_prompt(text, r, rules) + "\n\nANSWER FORMAT: write ONLY a JSON object matching this "
+                f"schema to results/{r['matter_id']}.json:\n" + json.dumps(VERIFY_SCHEMA))
+            n += 1
+        print(f"wrote {n} packets to {d}")
+        return 0
+    if args.ingest:
+        d = Path(args.ingest); results = {}
+        for f in sorted((d / "results").glob("*.json")):
+            v = json.loads(f.read_text())
+            results[f.stem] = {"matter_id": f.stem, "verdict": v.get("verdict"), "errors": v.get("errors", []),
+                               "judge": "subagent"}
+        out_path = OUT_DIR / f"fiscal_verification_{date.today().isoformat()}.json"
+        prior = json.loads(out_path.read_text()).get("results", {}) if out_path.exists() else {}
+        merged = {**prior, **results}
+        checked = [r for r in merged.values() if "verdict" in r and r["verdict"]]
+        out_path.write_text(json.dumps({
+            "generated": date.today().isoformat(), "checked": len(checked),
+            "correct": sum(r["verdict"] == "correct" for r in checked),
+            "wrong": sum(r["verdict"] == "wrong" for r in checked),
+            "errored": len(merged) - len(checked), "results": merged}, indent=1, ensure_ascii=False))
+        print(f"ingested {len(results)} subagent verdicts into {out_path}")
+        return 0
 
     if args.dry_run:
         session = create_session() if args.fetch_in_dry_run else None
