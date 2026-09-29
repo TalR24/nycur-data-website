@@ -35,6 +35,9 @@ MONTHS = r"(january|february|march|april|may|june|july|august|september|october|
 RECURRING_DATE = re.compile(r"\b" + MONTHS + r"\s+\d{1,2}(st|nd|rd|th)?,?\s+(of\s+)?(each|every)\b|\b(annually|each year|every year)\b[^.]{0,60}\b" + MONTHS, re.I)
 DATE_WORDS = re.compile(r"\b" + MONTHS + r"\b|\bno later than\b|\bnot later than\b|\bwithin\b|\bdays?\b|\bmonths?\b|\byears?\b|\beffective\b|\bby\b", re.I)
 DURATION = re.compile(r"\bfor (a period of )?\d+ (days|months|years)\b|\bfor (one|two|three|five|ten) (years|months)\b", re.I)
+TRIGGERED = re.compile(r"\bupon (the )?(request|receipt|application|complaint|notice|referral|written request)\b|"
+                       r"\bwithin \d+ (business )?(days|hours) (of|after|following) (the )?(receipt|request|submission|filing|notice)\b|"
+                       r"\bwhenever\b|\bin the event\b|\beach time\b|\bon request\b", re.I)
 EVERY_AGENCY = re.compile(r"\b(each|every|all|any|no)\s+(city\s+)?(agency|agencies)\b|\bcity agencies\b", re.I)
 ESTABLISH = re.compile(r"\bhereby (established|created)\b|\bthere shall be (established|created)\b", re.I)
 
@@ -57,11 +60,11 @@ CLASSES = {
     # audit 10 (Sep 28 2026)
     "recurring_date_kind_none": lambda o, kind: kind == "duty" and o.get("deadline_kind") in (None, "none")
                                                 and RECURRING_DATE.search(o.get("quote", "")),
-    # a one-time setup duty is due on the effective date by convention; the
-    # defect is that date on a recurring/ongoing duty, or a fixed date the
-    # quote never states
+    # Tal (Sep 29 2026, option a): a duty that begins when the law takes effect
+    # keeps the effective date, ongoing or not; the defect is that date on a
+    # request- or event-triggered duty, or a fixed date the quote never states
     "dated_kind_no_stated_deadline": lambda o, kind: (
-        (o.get("deadline_kind") == "on_effective_date" and o.get("recurrence") not in (None, "one-time"))
+        (o.get("deadline_kind") == "on_effective_date" and TRIGGERED.search(o.get("quote", "")))
         or (o.get("deadline_kind") == "fixed_date" and not DATE_WORDS.search(o.get("quote", "")))),
     "duration_as_deadline": lambda o, kind: o.get("deadline_date") and DURATION.search(o.get("quote", "")),
     "reprint_with_deadline": lambda o, kind: o.get("restated") and o.get("deadline_date"),
