@@ -102,6 +102,10 @@ FISCAL_SCHEMA = _obj({
     # a genuine reduction in city spending (net positive), not a cost, per the
     # savings rule in totals_from_columns(); null/false for an ordinary cost.
     "expenditure_is_savings": _BOOL_OR_NULL,
+    # the recurring annual cost when the statement separates it from one-time
+    # start-up costs that sit in the Full Fiscal Impact column (audit 10
+    # corpus sweep, Sep 28 2026: 9 of 104 checked bills overstated)
+    "recurring_annual_expenditure": _NUM_OR_NULL,
     "total_revenue": _NUM_OR_NULL, "total_expenditure": _NUM_OR_NULL,
     "total_capital": _NUM_OR_NULL, "net_fiscal_impact": _NUM_OR_NULL,
     # which categories' table cells read "(See Below)"/were blank for every
@@ -160,6 +164,7 @@ Return a JSON object with exactly these fields (an empty string for missing text
   "time_limited_program": false,
   "sunset_quote": "",
   "expenditure_is_savings": false,
+  "recurring_annual_expenditure": null,
 
   "total_revenue": 0,
   "total_expenditure": 0,
@@ -214,6 +219,7 @@ RULES:
 - A figure in the table or the narrative is a fiscal impact. "See below" pointing to a figure, a $0 Full Fiscal Impact column beside non-zero year columns, or an unknown revenue next to a known cost is NOT zero impact and NOT unestimable.
 - Every amount is in whole dollars: "$435 million" is 435000000 and "$2.3 million" is 2300000, never 435 or 2.3, including when a table is labelled "($000)" or "in millions" (multiply out).
 - A table cell that says "See below" points to the narrative: leave that cell null, and take the figure the Impact on Revenues or Impact on Expenditures paragraph gives (for example "a one-time capital cost of $1.8 million") as the document's stated total. Set cost_estimable to false only when the narrative itself says the cost cannot be estimated and gives no figure. In see_below_categories, list "revenue"/"expenditure"/"capital" for each category where the figure came from the narrative rather than the table — every column read "See below", was blank, or printed $0 with no capital/expenditure/revenue row while the narrative states a figure for it (e.g. a one-time capital cost mentioned only in prose) — even if you also wrote that figure into the Full Fiscal Impact column, so the pipeline can label its source correctly.
+- recurring_annual_expenditure: only when the statement separates one-time or start-up costs (equipment, IT builds, launch campaigns, first-year purchases) from the ongoing yearly cost AND the Full Fiscal Impact column includes those one-time costs, give the ongoing yearly cost as a positive number (for example "a one-time $250,000 technology upgrade ... $687,000 annually thereafter" gives 687000); otherwise null.
 - expenditure_is_savings: true only when the statement itself describes the expenditure figure as savings or a reduction in city spending (a net positive to the city), not a cost — for example "annual expenditure savings of approximately $790,000". Leave the number itself positive (its magnitude); the pipeline applies the sign.
 - fiscal_table_columns must preserve the exact column structure from the document (there may be 2–6 columns).
 - agencies_abbrev: list only agencies that are directly responsible for implementing the legislation — i.e. agencies that have at least one line item in program_breakdowns. Do NOT list agencies that only appear in passing in narrative text (e.g. OMB as reviewer, IBO as analyst, NYC Council as introducer).
@@ -1401,6 +1407,13 @@ def totals_from_columns(fiscal: dict) -> dict:
     # saving instead of forcing every expenditure figure positive
     if fiscal.get("expenditure_is_savings") and exp > 0:
         exp = -exp
+    # a Full column that carries one-time start-up costs is not the annual
+    # cost at full implementation; the statement's recurring figure is
+    rec = fiscal.get("recurring_annual_expenditure")
+    if isinstance(rec, (int, float)) and 0 < rec < exp and not fiscal.get("expenditure_is_savings"):
+        exp = rec
+        bases.discard("full_impact_column")
+        bases.add("document_stated")
     fiscal["total_revenue"] = rev
     fiscal["total_expenditure"] = exp
     fiscal["total_capital"] = cap or None

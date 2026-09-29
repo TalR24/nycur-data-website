@@ -368,6 +368,25 @@ if OVERRIDES_PATH.exists():
 else:
     print("  SKIP  apply_overrides consistency test: fiscal_overrides.json not found")
 
+# ── recurring cost below a Full column that carries one-time costs ──────────
+# Source: matter 5534240 (audit 10 corpus sweep, Sep 28 2026): "a one-time
+# $250,000 technology upgrade" in the first year, 687,000 per year from FY24.
+_r = totals_from_columns({
+    "cost_estimable": True, "total_revenue": 0, "total_expenditure": 937000, "total_capital": None,
+    "fiscal_table_columns": [
+        {"label": "Effective FY23", "revenue": 0, "expenditure": 937000, "capital": None},
+        {"label": "FY Succeeding Effective FY24", "revenue": 0, "expenditure": 687000, "capital": None},
+        {"label": "Full Fiscal Impact FY23", "revenue": 0, "expenditure": 937000, "capital": None}],
+    "recurring_annual_expenditure": 687000})
+check("recurring_annual_expenditure replaces a first-year Full column (matter 5534240, audit 10 sweep)",
+      _r["total_expenditure"] == 687000 and _r["net_fiscal_impact"] == -687000 and _r["totals_basis"] == "document_stated",
+      f"got {_r.get('total_expenditure')} {_r.get('totals_basis')}")
+_r = totals_from_columns({
+    "cost_estimable": True, "total_revenue": 0, "total_expenditure": 500000, "total_capital": None,
+    "fiscal_table_columns": [{"label": "Full Fiscal Impact FY27", "revenue": 0, "expenditure": 500000, "capital": None}],
+    "recurring_annual_expenditure": None})
+check("no recurring figure leaves the Full column in place", _r["total_expenditure"] == 500000, f"got {_r}")
+
 print(f"\n{PASSED} passed, {FAILED} failed")
 if FAILED:
     sys.exit(1)
