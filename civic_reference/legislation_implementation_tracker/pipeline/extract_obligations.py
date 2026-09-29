@@ -969,6 +969,10 @@ def _deadline_fields(fields: dict, target: dict) -> dict:
         fields["restated"] = bool(fields["existing_code"])
     if fields.get("restated") is not None:
         fields["restated_source"] = "verdict"   # reattribute_reprints keeps it
+    # a verdict that clears the date without naming a kind means no deadline
+    # (Sep 28 2026 sweep 3: ~50 reprinted or ongoing duties lost their date)
+    if "deadline_date" in fields and fields["deadline_date"] is None and "deadline_kind" not in fields:
+        fields["deadline_kind"] = "none"
     date = fields.get("deadline_date")
     kind = fields.get("deadline_kind", target.get("deadline_kind"))
     if date and kind in (None, "none"):
