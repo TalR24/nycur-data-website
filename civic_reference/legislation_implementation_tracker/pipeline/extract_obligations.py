@@ -1449,6 +1449,15 @@ def match_agency(actor: str, lookup: dict[str, str],
     if not actor:
         return None, None
     raw_actor = actor
+    # an exact canonical code or crosswalk name wins before any stripping:
+    # "Citywide (all agencies)" is itself a canonical code, and removing its
+    # parenthetical left 149 records with a valid code marked unmatched
+    # (profiles audit A1, Sep 30 2026)
+    if actor in agencies_by_canon:
+        return actor, agencies_by_canon[actor].get("full_name") or actor
+    exact = lookup.get(actor.strip().lower())
+    if exact:
+        return exact, agencies_by_canon.get(exact, {}).get("full_name") or exact
     # drop parenthetical asides the model sometimes appends
     actor = re.sub(r"\s*\([^)]*\)", "", actor).strip()
     if not actor:
