@@ -11,7 +11,7 @@ repo, drops anything skipped, done, won, declined, or requiring full-time
 leave, re-checks each remaining item's official page for date or deadline
 changes, scores what is left against `opportunities/profile.md`, and builds
 an HTML plus plain-text digest: pursuing, closing in 45 days, new this week,
-windows opening soon, pages that changed, rolling and open (first week of
+windows opening soon, deadlines announced or changed since the last run, pages that changed, rolling and open (first week of
 the month only), and past deadline items to clean up.
 
 ## Where state lives
@@ -20,6 +20,12 @@ All state is in the private premium repo, never in this public one:
 
 - `opportunities/state/pages.json`: per-item hash and extracted date lines,
   used to detect page changes between runs.
+- `opportunities/state/deadlines.json`: per-item deadline, deadline kind and
+  expected month from the last real run. The next run lists items whose
+  deadline was announced, moved, or went from expected/open/rolling to set
+  under "Deadlines announced or changed" (priority items included). The
+  first run only records a baseline; new watch list items are not reported
+  there. Written only on runs that fetch, never on `--no-fetch`.
 - `opportunities/state/digests/YYYY-MM-DD.{html,txt}`: the digest that ran
   that day.
 - `opportunities/state/last_run.json`: date, per-section counts, fetch

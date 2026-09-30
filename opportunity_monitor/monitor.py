@@ -64,6 +64,7 @@ MONTH_NAMES = [
 
 SECTION_TITLES = [
     ("priorities", "Your priorities"),
+    ("deadline_changes", "Deadlines announced or changed"),
     ("pursuing", "Pursuing"),
     ("closing45", "Closing in the next 45 days"),
     ("new_week", "New this week"),
@@ -276,9 +277,49 @@ def check_pages(items, state, today, no_fetch, fetch_fn=None):
     return changes, failures, state
 
 
+# ------------------------------------------------------- deadline snapshot
+
+def deadline_snapshot(items):
+    """The per-item deadline facts worth comparing week to week, JSON-safe."""
+    snap = {}
+    for i in items:
+        m = i.get("expected_month")
+        snap[i["id"]] = {
+            "deadline": i["deadline"].isoformat() if i.get("deadline") else None,
+            "deadline_kind": i.get("deadline_kind"),
+            "expected_month": m if _valid_month(m) else None,
+        }
+    return snap
+
+
+def compute_deadline_changes(items, prev_snapshot):
+    """Items whose deadline was announced, moved, or whose kind went from
+    expected/open/rolling to set since the previous snapshot. Items absent
+    from the previous snapshot are new to the list and not reported here.
+    No previous snapshot (first run) means baseline only. Returns a list of
+    (item, note)."""
+    if not prev_snapshot:
+        return []
+    out = []
+    for i in items:
+        prev = prev_snapshot.get(i["id"])
+        if prev is None:
+            continue
+        now = i["deadline"].isoformat() if i.get("deadline") else None
+        old = prev.get("deadline")
+        if now and not old:
+            out.append((i, "announced"))
+        elif now and old and now != old:
+            out.append((i, f"moved from {old}"))
+        elif (i.get("deadline_kind") == "set"
+              and prev.get("deadline_kind") in {"expected", "open", "rolling"}):
+            out.append((i, "now set"))
+    return out
+
+
 # --------------------------------------------------------------- sections
 
-def build_sections(items, today, page_changes):
+def build_sections(items, today, page_changes, deadline_changes=None):
     by_id_changed = {c["id"]: c for c in page_changes}
 
     pursuing = [i for i in items if i.get("status") in PURSUING_STATUSES]
@@ -342,6 +383,7 @@ def build_sections(items, today, page_changes):
 
     sections = {
         "priorities": priorities,
+        "deadline_changes": [dict(i, _deadline_note=n) for i, n in (deadline_changes or [])],
         "pursuing": s(pursuing),
         "closing45": s(closing45),
         "new_week": s(new_week),
@@ -397,6 +439,8 @@ def format_item_text(item, today):
     payoffs = p["payoffs"] or "none"
     line = (f"- {p['name']} ({p['url']}): {p['deadline']}{days}, {p['category']}, "
             f"projects: {p['projects']}, payoffs: {payoffs}, format: {p['format']}.")
+    if item.get("_deadline_note"):
+        line += f" Deadline {item['_deadline_note']}."
     if p["notes"]:
         line += f" {p['notes']}"
     return line
@@ -471,6 +515,8 @@ def format_item_html(item, today):
     days = f", {_esc(p['days_left'])}" if p["days_left"] else ""
     payoffs = _esc(p["payoffs"]) or "none"
     meta = f"{_esc(p['deadline'])}{days} &middot; {_esc(p['category'])}"
+    if item.get("_deadline_note"):
+        meta += f" &middot; <b>deadline {_esc(item['_deadline_note'])}</b>"
     detail = (f"projects: {_esc(p['projects'])} &middot; payoffs: {payoffs} &middot; "
               f"format: {_esc(p['format'])}")
     notes = (f'<p style="color:#444;font-size:13px;margin:4px 0;">{_esc(p["notes"])}</p>'
@@ -538,7 +584,10 @@ def build_subject(sections):
         return "Opportunities radar: quiet week"
     n_closing = len(sections.get("closing45") or [])
     m_new = len(sections.get("new_week") or [])
-    return f"Opportunities radar: {n_closing} closing soon, {m_new} new"
+    n_dl = len(sections.get("deadline_changes") or [])
+    prefix = (f"{n_dl} deadline{'s' if n_dl != 1 else ''} announced or changed, "
+              if n_dl else "")
+    return f"Opportunities radar: {prefix}{n_closing} closing soon, {m_new} new"
 
 
 # ------------------------------------------------------------------- email
@@ -600,7 +649,15 @@ def main(argv=None):
     if not args.no_fetch:
         pages_path.write_text(json.dumps(state, indent=2, sort_keys=True))
 
-    sections, by_id_changed = build_sections(items, today, changes)
+    # Deadline snapshot: read always, written only on real (fetching) runs,
+    # so dry runs never mutate state. No snapshot yet = baseline, no report.
+    dl_path = state_dir / "deadlines.json"
+    prev_dl = json.loads(dl_path.read_text()) if dl_path.exists() else None
+    dl_changes = compute_deadline_changes(items, prev_dl)
+    if not args.no_fetch:
+        dl_path.write_text(json.dumps(deadline_snapshot(items), indent=2, sort_keys=True))
+
+    sections, by_id_changed = build_sections(items, today, changes, dl_changes)
 
     tracker_url = os.environ.get("OPPS_TRACKER_URL")
     text_body = build_digest_text(sections, by_id_changed, today, tracker_url, failures)

@@ -519,5 +519,81 @@ class PrioritySectionTests(unittest.TestCase):
         self.assertLess(text.index("Your priorities"), text.index("Closing in the next 45 days"))
 
 
+class DeadlineChangeTests(unittest.TestCase):
+    def _prev(self, **over):
+        base = {"deadline": None, "deadline_kind": "expected", "expected_month": 11}
+        base.update(over)
+        return {"x": base}
+
+    def test_announced(self):
+        item = make_item(id="x", deadline=date(2026, 11, 1), deadline_kind="set")
+        out = monitor.compute_deadline_changes([item], self._prev())
+        self.assertEqual([(i["id"], n) for i, n in out], [("x", "announced")])
+
+    def test_moved(self):
+        item = make_item(id="x", deadline=date(2026, 11, 15), deadline_kind="set")
+        out = monitor.compute_deadline_changes(
+            [item], self._prev(deadline="2026-11-01", deadline_kind="set"))
+        self.assertEqual(out[0][1], "moved from 2026-11-01")
+
+    def test_kind_expected_to_set(self):
+        item = make_item(id="x", deadline=None, deadline_kind="set")
+        out = monitor.compute_deadline_changes([item], self._prev())
+        self.assertEqual(len(out), 1)
+
+    def test_unchanged_not_reported(self):
+        item = make_item(id="x", deadline=date(2026, 11, 1), deadline_kind="set")
+        out = monitor.compute_deadline_changes(
+            [item], self._prev(deadline="2026-11-01", deadline_kind="set"))
+        self.assertEqual(out, [])
+
+    def test_new_item_not_reported(self):
+        item = make_item(id="brand-new", deadline=date(2026, 11, 1), deadline_kind="set")
+        self.assertEqual(monitor.compute_deadline_changes([item], self._prev()), [])
+
+    def test_first_run_baseline(self):
+        item = make_item(id="x", deadline=date(2026, 11, 1), deadline_kind="set")
+        self.assertEqual(monitor.compute_deadline_changes([item], None), [])
+        self.assertEqual(monitor.compute_deadline_changes([item], {}), [])
+
+    def test_priority_item_appears_and_renders(self):
+        item = make_item(id="x", priority=True, deadline=date(2026, 11, 1), deadline_kind="set")
+        changes = monitor.compute_deadline_changes([item], self._prev())
+        sections, by_id = monitor.build_sections([item], TODAY, [], changes)
+        self.assertEqual([i["id"] for i in sections["deadline_changes"]], ["x"])
+        self.assertEqual([i["id"] for i in sections["priorities"]], ["x"])
+        text = monitor.build_digest_text(sections, by_id, TODAY, None, [])
+        self.assertLess(text.index("Your priorities"), text.index("Deadlines announced or changed"))
+        self.assertIn("Deadline announced.", text)
+        self.assertIn("deadline announced", monitor.build_digest_html(sections, by_id, TODAY, None, []))
+
+    def test_subject_prefix(self):
+        item = make_item(id="x", deadline=date(2026, 11, 1), deadline_kind="set")
+        changes = monitor.compute_deadline_changes([item], self._prev())
+        sections, _ = monitor.build_sections([item], TODAY, [], changes)
+        self.assertEqual(monitor.build_subject(sections),
+                         "Opportunities radar: 1 deadline announced or changed, 1 closing soon, 0 new")
+        sections, _ = monitor.build_sections([item], TODAY, [])
+        self.assertNotIn("announced", monitor.build_subject(sections))
+
+    def _run_main(self, extra):
+        import json, tempfile
+        d = Path(tempfile.mkdtemp())
+        wl = d / "wl.yaml"
+        wl.write_text("items:\n  - {id: x, name: X, url: 'https://e.org', fit: 2, "
+                      "status: watch, deadline_kind: set, deadline: '2026-11-01'}\n")
+        sd = d / "state"
+        import io
+        from contextlib import redirect_stdout
+        with redirect_stdout(io.StringIO()):
+            monitor.main(["--watchlist", str(wl), "--state-dir", str(sd),
+                          "--today", "2026-10-03"] + extra)
+        return sd
+
+    def test_dry_run_writes_no_deadlines_json(self):
+        sd = self._run_main(["--no-fetch"])
+        self.assertFalse((sd / "deadlines.json").exists())
+
+
 if __name__ == "__main__":
     unittest.main()
