@@ -417,6 +417,15 @@
   function latestAdopted(a) { var b = latestBudget(a); return b ? b.adopted : 0; }
   function dutiesOf(a) { return (a.trackers && a.trackers.duties) || 0; }
   function powersOf(a) { return (a.trackers && a.trackers.powers) || 0; }
+  /* Open vs passed deadlines are counted here, at view time, from the
+     deadline dates in the data, so they never freeze at the build date. */
+  function deadlineCounts(t) {
+    var today = new Date().toISOString().slice(0, 10), open = 0, passed = 0;
+    (t.deadline_dates || []).forEach(function (d) { if (d >= today) open++; else passed++; });
+    return { open: open, passed: passed };
+  }
+  var MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  function fmtPub(p) { p = String(p || ''); return p.length === 8 ? MONTH_NAMES[parseInt(p.slice(4, 6), 10) - 1] + ' ' + p.slice(0, 4) : ''; }
   function yearOf(iso) { return iso ? String(iso).slice(0, 4) : '?'; }
 
   /* ── Directory view ──────────────────────────────────── */
@@ -442,6 +451,10 @@
       + '<div class="stat-pill"><span class="sp-num">' + totalPowers.toLocaleString() + '</span><span class="sp-label">Powers</span></div>'
       + '<div class="stat-pill"><span class="sp-num">' + fmtMoney(totalBudget) + '</span><span class="sp-label">Combined adopted budget, latest fiscal year</span></div>'
       + '</div>'
+      + '<p class="section-note">' + (DATA.coverage && DATA.coverage.obligations_no_agency != null
+          ? DATA.coverage.obligations_no_agency + ' of ' + (DATA.coverage.obligation_total || 0).toLocaleString() + ' duties and '
+            + DATA.coverage.powers_no_agency + ' of ' + (DATA.coverage.power_total || 0).toLocaleString() + ' powers in the trackers name no identifiable agency and are not counted here.'
+          : '') + '</p>'
       + '<div class="controls">'
       + '<input type="search" id="fSearch" placeholder="Search agencies by name…" aria-label="Search agencies">'
       + '<select id="fSector" aria-label="Filter by sector"><option value="">All sectors</option>'
@@ -689,6 +702,12 @@
   function findAgency(id) {
     var found = null;
     DATA.agencies.forEach(function (x) { if (x.id === id) found = x; });
+    // a body folded into a parent (HRA into DSS, Youth Board into DYCD) keeps working links
+    var to = DATA.redirects && DATA.redirects[id];
+    if (!found && to) {
+      DATA.agencies.forEach(function (x) { if (x.id === to) found = x; });
+      if (found && history.replaceState) history.replaceState(null, '', '?agency=' + encodeURIComponent(to));
+    }
     return found;
   }
 
@@ -728,11 +747,11 @@
 
     var html = '<div class="profile-stats">'
       + '<div class="stat-pill"><span class="sp-num">' + (t.duties || 0) + '</span><span class="sp-label">Duties</span></div>'
-      + '<div class="stat-pill"><span class="sp-num">' + (t.open_deadlines || 0) + '</span><span class="sp-label">Open deadlines</span></div>'
+      + '<div class="stat-pill"><span class="sp-num">' + deadlineCounts(t).open + '</span><span class="sp-label">Open deadlines</span></div>'
       + '<div class="stat-pill"><span class="sp-num">' + (t.powers || 0) + '</span><span class="sp-label">Powers</span></div>'
       + '<div class="stat-pill"><span class="sp-num">' + (t.fiscal_bills || 0) + '</span><span class="sp-label">Bills with fiscal estimates</span></div>'
-      + '<div class="stat-pill"><span class="sp-num">' + (b ? fmtMoney(b.adopted) : '—') + '</span><span class="sp-label">' + (b ? 'Adopted operating budget, FY' + b.fy + ' (all funds)' : 'Adopted operating budget') + '</span></div>'
-      + '<div class="stat-pill"><span class="sp-num">' + (hc ? fmtNum(hc.total) : '—') + '</span><span class="sp-label">' + (hc ? 'Budgeted positions, FY' + hc.fy + ' (full-time and FTE, OMB plan)' : 'Budgeted positions') + '</span></div>'
+      + '<div class="stat-pill"><span class="sp-num">' + (b ? fmtMoney(b.adopted) : '—') + '</span><span class="sp-label">' + (b ? 'Adopted operating budget, FY' + b.fy + ' (all funds, adopted ' + fmtPub(b.pub) + ')' : 'Adopted operating budget') + '</span></div>'
+      + '<div class="stat-pill"><span class="sp-num">' + (hc ? fmtNum(hc.total) : '—') + '</span><span class="sp-label">' + (hc ? 'Budgeted positions, FY' + hc.fy + ' (full-time and FTE, OMB ' + (hc.release ? hc.release.toLowerCase() + ' plan, ' + fmtPub(hc.pub) : 'plan') + ')' : 'Budgeted positions') + '</span></div>'
       + '</div>';
 
     html += section1Duties(t);
@@ -772,6 +791,7 @@
       html += '<p class="section-note">No duties recorded for this agency.</p>';
       return html;
     }
+    var dc = deadlineCounts(t);
     var rf = t.report_filing || {};
     var statuses = Object.keys(rf);
     var max = Math.max.apply(null, statuses.map(function (k) { return rf[k]; }).concat([1]));
@@ -784,8 +804,8 @@
     }).join('');
     html += '<p class="section-sub">' + t.duties + ' dut' + (t.duties === 1 ? 'y' : 'ies') + ' from ' + (t.laws_with_duties || 0)
       + ' law' + (t.laws_with_duties === 1 ? '' : 's') + ', with '
-      + (t.open_deadlines || 0) + ' open deadline' + (t.open_deadlines === 1 ? '' : 's') + ' and '
-      + (t.passed_deadlines || 0) + ' passed.</p>';
+      + dc.open + ' open deadline' + (dc.open === 1 ? '' : 's') + ' and '
+      + dc.passed + ' passed.</p>';
     if (statuses.length) {
       html += '<div class="c-bars">' + bars + '</div>';
     }

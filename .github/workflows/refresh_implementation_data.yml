@@ -103,30 +103,14 @@ jobs:
           MAX_REFRESH_GATE: "1"
         run: python3 pipeline/extract_obligations.py --incremental
 
-      - name: Rebuild council member stats
-        working-directory: civic_reference/nyc_council_legislation_trackers
-        run: python3 pipeline/build_member_stats.py
-
-      - name: Rebuild agency profiles
-        working-directory: civic_reference/nyc_council_legislation_trackers
-        continue-on-error: true  # a city Open Data outage should never block the monthly refresh
-        run: python3 pipeline/build_agency_profiles.py
-
-      - name: Clone Council archive
-        continue-on-error: true  # a GitHub outage should never block the monthly refresh
-        run: |
-          git clone --depth 1 --filter=blob:none --sparse https://github.com/jehiah/nyc_legislation "$RUNNER_TEMP/nyc_legislation"
-          git -C "$RUNNER_TEMP/nyc_legislation" sparse-checkout set people events introduction
-
-      - name: Rebuild member votes
+      # every Agencies and Council Members file, one script for every path
+      # (profiles audit, Sep 30 2026): runs all builders, names each failure,
+      # and the last step of the job turns the run red after the commit
+      - name: Rebuild agency and council member profiles
+        id: profiles
         working-directory: civic_reference/nyc_council_legislation_trackers
         continue-on-error: true
-        run: python3 pipeline/build_member_votes.py --archive "$RUNNER_TEMP/nyc_legislation"
-
-      - name: Rebuild member context
-        working-directory: civic_reference/nyc_council_legislation_trackers
-        continue-on-error: true  # a city Open Data or GitHub outage should never block the monthly refresh
-        run: python3 pipeline/build_member_context.py --archive "$RUNNER_TEMP/nyc_legislation"
+        run: bash pipeline/rebuild_profiles.sh
 
       # a failed push must never lose a batch again (Sep 26 2026, copied from
       # claude_backfill.yml): the rebuilt data survives 30 days as an artifact
@@ -149,6 +133,7 @@ jobs:
             civic_reference/nyc_council_legislation_trackers/data/agencies.json
             civic_reference/nyc_council_legislation_trackers/data/member_votes.json
             civic_reference/nyc_council_legislation_trackers/data/member_context.json
+            civic_reference/nyc_council_legislation_trackers/data/council_members.json
           retention-days: 30
 
       - name: Commit and push if data changed
@@ -165,7 +150,8 @@ jobs:
                   civic_reference/nyc_council_legislation_trackers/data/members.json \
                   civic_reference/nyc_council_legislation_trackers/data/agencies.json \
                   civic_reference/nyc_council_legislation_trackers/data/member_votes.json \
-                  civic_reference/nyc_council_legislation_trackers/data/member_context.json
+                  civic_reference/nyc_council_legislation_trackers/data/member_context.json \
+                  civic_reference/nyc_council_legislation_trackers/data/council_members.json
           # batch_state_new.json / batch_state_reextract.json exist only
           # while their batch is pending: `-A` stages the file whether this
           # run created it, changed it, or (clear_state, batch done) deleted
@@ -239,6 +225,12 @@ jobs:
             git push
           fi
 
+      - name: Fail the run if a profile rebuild failed
+        if: ${{ always() && steps.profiles.outcome == 'failure' }}
+        run: |
+          echo "::error::A profile rebuild step failed (see the 'Rebuild agency and council member profiles' log). Tracker data was committed; the named profile files kept last month's values."
+          exit 1
+
   # Cheap daily check, days 2-7 of the month: resumes a batch left pending by
   # the monthly run (its 360-min cap can be hit by a batch still processing).
   # Exits immediately, no other API call, when neither state file exists.
@@ -289,16 +281,15 @@ jobs:
           fi
           echo "RESUME_RAN=1" >> "$GITHUB_ENV"
 
-      - name: Rebuild council member stats
-        if: env.RESUME_RAN == '1'
-        working-directory: civic_reference/nyc_council_legislation_trackers
-        run: python3 pipeline/build_member_stats.py
-
-      - name: Rebuild agency profiles
-        if: env.RESUME_RAN == '1'
+      # every Agencies and Council Members file, one script for every path
+      # (profiles audit, Sep 30 2026): runs all builders, names each failure,
+      # and the last step of the job turns the run red after the commit
+      - name: Rebuild agency and council member profiles
+        id: profiles
         working-directory: civic_reference/nyc_council_legislation_trackers
         continue-on-error: true
-        run: python3 pipeline/build_agency_profiles.py
+        if: env.RESUME_RAN == '1'
+        run: bash pipeline/rebuild_profiles.sh
 
       - name: Commit and push if resume produced data
         run: |
@@ -309,7 +300,10 @@ jobs:
                   civic_reference/legislation_implementation_tracker/data/summary.json \
                   civic_reference/legislation_implementation_tracker/pipeline/reextract_queue.json \
                   civic_reference/nyc_council_legislation_trackers/data/members.json \
-                  civic_reference/nyc_council_legislation_trackers/data/agencies.json
+                  civic_reference/nyc_council_legislation_trackers/data/agencies.json \
+                  civic_reference/nyc_council_legislation_trackers/data/member_votes.json \
+                  civic_reference/nyc_council_legislation_trackers/data/member_context.json \
+                  civic_reference/nyc_council_legislation_trackers/data/council_members.json
           # -A so a completed batch's state-file DELETION (clear_state) is
           # staged too, not just a creation or a content change.
           for f in civic_reference/legislation_implementation_tracker/pipeline/batch_state_new.json \
@@ -325,3 +319,9 @@ jobs:
           fi
           git commit -m "Resume pending legislation implementation batch"
           git -c rebase.autoStash=true pull --rebase origin main && git push
+
+      - name: Fail the run if a profile rebuild failed
+        if: ${{ always() && steps.profiles.outcome == 'failure' }}
+        run: |
+          echo "::error::A profile rebuild step failed (see the 'Rebuild agency and council member profiles' log). Tracker data was committed; the named profile files kept last month's values."
+          exit 1

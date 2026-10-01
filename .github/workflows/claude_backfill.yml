@@ -99,8 +99,9 @@ jobs:
           python3 pipeline/reextract_queued.py
           python3 pipeline/extract_obligations.py --incremental
           cd ../nyc_council_legislation_trackers
-          python3 pipeline/build_member_stats.py
-          python3 pipeline/build_agency_profiles.py
+          # all profile files (Sep 30 2026); a failure is named in the log
+          # and turns the run red after the commit, never blocks it
+          bash pipeline/rebuild_profiles.sh || echo "PROFILES_FAILED=1" >> "$GITHUB_ENV"
 
       - name: Verify every fiscal record against its statement
         if: ${{ inputs.task == 'verify_fiscal' }}
@@ -170,6 +171,9 @@ jobs:
             civic_reference/legislation_implementation_tracker/pipeline/cache/extracted/
             civic_reference/nyc_council_legislation_trackers/data/members.json
             civic_reference/nyc_council_legislation_trackers/data/agencies.json
+            civic_reference/nyc_council_legislation_trackers/data/member_votes.json
+            civic_reference/nyc_council_legislation_trackers/data/member_context.json
+            civic_reference/nyc_council_legislation_trackers/data/council_members.json
           retention-days: 30
 
       - name: Commit results
@@ -182,6 +186,9 @@ jobs:
                    $L/data/laws.json $L/data/restated_links.json $L/data/summary.json $L/pipeline/reextract_queue.json \
                    civic_reference/nyc_council_legislation_trackers/data/members.json \
                    civic_reference/nyc_council_legislation_trackers/data/agencies.json \
+                   civic_reference/nyc_council_legislation_trackers/data/member_votes.json \
+                   civic_reference/nyc_council_legislation_trackers/data/member_context.json \
+                   civic_reference/nyc_council_legislation_trackers/data/council_members.json \
                    $L/pipeline/reconcile_protected.json $L/pipeline/reconcile_decisions.json \
                    civic_reference/nyc_council_legislation_trackers/quality/fiscal_verification_*.json; do
             if [ -f "$f" ]; then git add "$f"; fi
@@ -200,3 +207,9 @@ jobs:
             sleep $((attempt * 30))
           done
           if [ "$pushed" != 1 ]; then echo "::error::push failed after 5 attempts"; exit 1; fi
+
+      - name: Fail the run if a profile rebuild failed
+        if: ${{ always() && env.PROFILES_FAILED == '1' }}
+        run: |
+          echo "::error::A profile rebuild step failed (see the re-extraction log). Tracker data was committed."
+          exit 1

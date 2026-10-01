@@ -474,14 +474,18 @@
     document.getElementById('mapWrap').classList.toggle('active', mode === 'map');
   }
 
+  function plain(t) {
+    return String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  }
+
   function filteredMembers() {
-    var q = document.getElementById('fSearch').value.toLowerCase().trim();
+    var q = plain(document.getElementById('fSearch').value).trim();
     var session = document.getElementById('fSession').value;
     var party = document.getElementById('fParty').value;
     var borough = document.getElementById('fBorough').value;
     var district = document.getElementById('fDistrict').value;
     return DATA.members.filter(function (m) {
-      if (q && m.full_name.toLowerCase().indexOf(q) === -1) return false;
+      if (q && plain(m.full_name).indexOf(q) === -1) return false;
       if (session && (m.sessions || []).indexOf(session) === -1) return false;
       if (party && m.party !== party) return false;
       if (borough && m.borough !== borough) return false;

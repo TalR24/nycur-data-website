@@ -203,6 +203,10 @@ def build_committees(office_records: list[dict]) -> dict | None:
         rec_term = term_of(start)
 
         if rec_term == target:
+            # current term: a membership that ended before today (renamed or
+            # dissolved body, stepped-down chair) is no longer held
+            if target[0] <= TODAY <= target[1] and end is not None and end < TODAY:
+                continue
             if is_caucus(body):
                 prev = caucus_map.get(body)
                 if not prev or start >= prev[0]:
@@ -581,7 +585,12 @@ def main() -> int:
     citywide_311 = {}
     districts_311 = {}
     window_start = window_end = None
-    if not args.skip_311:
+    # a 311 outage or a skipped fetch keeps the last good 311 sections instead
+    # of writing empty ones (profiles audit, Sep 30 2026: a hung fetch left
+    # every district page without 311 data unless copied back by hand)
+    try:
+        if args.skip_311:
+            raise RuntimeError("--skip-311")
         today = TODAY
         # last 12 full months: from the 1st of (today - 12 months) to the 1st of this month
         end_month_first = today.replace(day=1)
@@ -619,6 +628,15 @@ def main() -> int:
         # the monthly (district) counts come from a separate query, so the
         # per-district assertion above is the independent check on the totals
         print(f"Sum of district totals: {sum(v['total'] for v in districts_311.values()):,}")
+
+    except Exception as exc:  # noqa: BLE001
+        prev = json.loads(OUT_PATH.read_text()) if OUT_PATH.exists() else {}
+        citywide_311 = prev.get("citywide_311") or {}
+        districts_311 = prev.get("districts_311") or {}
+        window_start = (prev.get("window_311") or {}).get("start")
+        window_end = (prev.get("window_311") or {}).get("end")
+        print(f"::warning::311 not refreshed ({exc}); kept the previous 311 window "
+              f"{window_start} to {window_end} for {len(districts_311)} districts")
 
     out = {
         "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),

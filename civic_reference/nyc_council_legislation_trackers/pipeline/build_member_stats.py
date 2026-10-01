@@ -37,6 +37,9 @@ DATA = BASE / "data"
 ROSTER = DATA / "council_members.json"
 FISCAL = BASE.parent / "nyc_council_fiscal_impacts_tracker" / "data" / "fiscal_impacts.json"
 IMPL = BASE.parent / "legislation_implementation_tracker" / "data" / "obligations.json"
+# Every enacted law (sponsorship source). obligations.json lags it by a build,
+# so it only supplies the per-law obligation count.
+LAWS = BASE.parent / "legislation_implementation_tracker" / "data" / "laws.json"
 OUT = DATA / "members.json"
 
 # last-name (as it appears in fiscal data) + bill year -> roster full_name,
@@ -55,13 +58,26 @@ TYPO_ALIASES = {
     "samuel": "ampry-samuel",
     "ferreras": "ferreras-copeland",
     "richardson": "richardson jordan",
+    "shulman": "schulman",
+    "borrelli": "borelli",
 }
+
+# Label under which Public Advocate sponsors are counted in unmatched_sponsors.
+# The Public Advocate may sponsor bills but holds no Council seat, so these
+# are never credited to a member.
+PA_LABEL = "Public Advocate (not a Council member)"
+PA_RE = re.compile(r"^\s*(the\s+)?public\s+advocate\b", re.I)
 
 # Non-council sponsors that appear in fiscal records: the Public Advocate
 # (who may sponsor legislation but holds no council seat). "Williams" in
 # 2020-2021 is PA Jumaane Williams, handled by the service-year filter
 # refusing to guess.
 SKIP_SPONSORS = {"james", "the speaker", "public advocate"}
+
+# A bare surname shared by a Council member and a Public Advocate in the same
+# years cannot be resolved by name alone; it is checked against the bill's
+# Legistar sponsor list (laws.json, or the archive with --archive).
+PA_SURNAMES = {"williams"}
 
 
 def strip_accents(s: str) -> str:
@@ -109,9 +125,31 @@ def merge_suffix_fragments(sponsors: list[str]) -> list[str]:
 
 
 def year_served(m: dict, year: int) -> bool:
+    terms = m.get("terms")
+    if terms:  # stints from build_council_roster.py; honours gaps in service
+        return any(int(s[:4]) <= year <= (int(e[:4]) if e else 9999)
+                   for s, e in terms)
     start = m.get("start_year") or 1900
     end = m.get("end_year") or 9999
     return start <= year <= end
+
+
+# Full names that differ from the roster's first name by nickname:
+# (archive first, last token) -> roster first token.
+NICKNAMES = {
+    ("deborah", "rose"): "debi",
+    ("james", "bramer"): "jimmy",
+    ("joseph", "borelli"): "joe",
+}
+
+
+def first_compatible(a: str, b: str) -> bool:
+    """First names that can be the same person: equal, one a prefix of the
+    other ("Deb"/"Deborah"), or an initial ("P."/"Pierina"). "Peter" and
+    "Paul" are not."""
+    if not a or not b:
+        return True
+    return a == b or a.startswith(b) or b.startswith(a)
 
 
 def slugify(name: str) -> str:
@@ -137,12 +175,22 @@ class Matcher:
         self.unmatched: dict[str, int] = {}
 
     def match_full(self, name: str, year: int | None) -> dict | None:
+        if PA_RE.match(name or ""):
+            self.unmatched[PA_LABEL] = self.unmatched.get(PA_LABEL, 0) + 1
+            return None
         first, last = name_tokens(clean_sponsor(name))
         if not last:
             return None
+        first = NICKNAMES.get((first, last), first)
         cands = self.by_first_last.get((first, last), [])
         if len(cands) == 1:
-            return cands[0]
+            m = cands[0]
+            # enacted in the year or the year after the term ended (a law can
+            # be signed in January for a bill passed in December)
+            if year and not (year_served(m, year) or year_served(m, year - 1)):
+                self._miss(name, year)
+                return None
+            return m
         # multiword surnames: try last two tokens as surname
         toks = norm_name(clean_sponsor(name)).split()
         if len(toks) >= 3:
@@ -150,12 +198,24 @@ class Matcher:
             cands = self.by_last.get(two, [])
             if len(cands) == 1 and cands[0]["_first"] == toks[0]:
                 return cands[0]
-        return self.match_last(last, year, raw=name)
+        # last-name fallback only for a first name that can be the same
+        # person (a nickname), never for a namesake such as Peter Vallone Jr.
+        return self.match_last(last, year, raw=name, first=first)
 
-    def match_last(self, last: str, year: int | None, raw: str = "") -> dict | None:
+    def _miss(self, raw: str, year: int | None) -> None:
+        key = raw + (f" [{year}]" if year else " [year unknown]")
+        self.unmatched[key] = self.unmatched.get(key, 0) + 1
+
+    def match_last(self, last: str, year: int | None, raw: str = "",
+                   first: str | None = None, alt_year: int | None = None) -> dict | None:
+        if PA_RE.match(last or ""):
+            self.unmatched[PA_LABEL] = self.unmatched.get(PA_LABEL, 0) + 1
+            return None
         cleaned = clean_sponsor(last)
         last_n = norm_name(cleaned)
         if last_n in SKIP_SPONSORS:
+            if last_n == "james":
+                self.unmatched[PA_LABEL] = self.unmatched.get(PA_LABEL, 0) + 1
             return None
         last_n = TYPO_ALIASES.get(last_n, last_n)
         key = (clean_sponsor(raw or last), year or 0)
@@ -174,11 +234,12 @@ class Matcher:
                  norm_name(m.get("last_name") or "") == last_n]
         if initial:
             cands = [m for m in cands if m["_first"].startswith(initial)]
+        if first:
+            cands = [m for m in cands if first_compatible(first, m["_first"])]
         if year:
-            in_year = [m for m in cands if year_served(m, year)]
-            if len(cands) > 1 or in_year:
-                # refuse to guess when the year rules out every candidate
-                cands = in_year
+            # refuse to guess when the year rules out every candidate
+            cands = [m for m in cands if year_served(m, year) or
+                     (alt_year and year_served(m, alt_year))]
         uniq = list({id(m): m for m in cands}.values())
         if len(uniq) == 1:
             return uniq[0]
@@ -190,6 +251,10 @@ class Matcher:
 
 def fiscal_year_of(rec: dict) -> int | None:
     m = re.search(r"\b(20\d\d)\b", rec.get("date_prepared") or "")
+    if m:
+        return int(m.group(1))
+    # the Legistar file number ("Int 0839-2026") carries the session year
+    m = re.search(r"-(20\d\d)\b", rec.get("legistar_file") or "")
     if m:
         return int(m.group(1))
     # file numbers look like "Int 0620-2014": the year follows the hyphen —
@@ -205,11 +270,35 @@ def is_state_legislation(rec: dict) -> bool:
     return bool(re.match(r"^\s*[SA]\.", rec.get("file_number") or ""))
 
 
+def archive_sponsors(archive: Path | None, rec: dict, year: int | None) -> list[str] | None:
+    """Full sponsor names of a fiscal record's bill from the archive
+    (introduction/<year>/<number>.json), or None if it cannot be found."""
+    if not archive:
+        return None
+    mm = re.match(r"^\s*\w+\s+0*(\d+)-(20\d\d)", rec.get("legistar_file") or "")
+    if not mm:
+        return None
+    path = archive / "introduction" / mm.group(2) / f"{int(mm.group(1)):04d}.json"
+    if not path.exists():
+        return None
+    return [s.get("FullName") or "" for s in json.loads(path.read_text()).get("Sponsors") or []]
+
+
 def main() -> None:
+    import argparse
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[1])
+    ap.add_argument("--archive", help="jehiah/nyc_legislation checkout; resolves bare "
+                    "surnames shared with the Public Advocate from the bill's sponsor list")
+    args = ap.parse_args()
+    archive = Path(args.archive) if args.archive else None
     roster = json.loads(ROSTER.read_text())["members"]
     fiscal = json.loads(FISCAL.read_text())["records"]
     impl = json.loads(IMPL.read_text())
-    impl_laws = impl["laws"]
+    oblig_by_matter = {l["matter_id"]: l.get("obligation_count") for l in impl["laws"]}
+    impl_laws = json.loads(LAWS.read_text())["laws"]
+    laws_by_matter = {l["matter_id"]: l for l in impl_laws}
+    print(f"laws.json: {len(impl_laws)} laws; obligations.json: {len(oblig_by_matter)} "
+          f"({len(set(laws_by_matter) - set(oblig_by_matter))} awaiting extraction)")
 
     for m in roster:
         m["id"] = slugify(m["full_name"])
@@ -222,14 +311,40 @@ def main() -> None:
         if is_state_legislation(rec):
             continue
         year = fiscal_year_of(rec)
+        # A member counts as in office if they served in the year the fiscal
+        # note was prepared OR the session in the Legistar file number
+        # ("Int 0799-2015"): sponsors attach at introduction or join later, and
+        # a note is prepared after an amendment (Dickens 2015 vs 2017)
+        mfy = re.search(r"-(20\d\d)\b", rec.get("legistar_file") or "")
+        alt_year = int(mfy.group(1)) if mfy else None
+        match_year = year if year is not None else alt_year
         prime_raw = clean_sponsor(rec.get("prime_sponsor") or "")
         for sp in merge_suffix_fragments(rec.get("sponsors") or []):
+            if re.search(r"\(\s*public advocate", sp, re.I):
+                # "Williams (Public Advocate)": clean_sponsor would drop the
+                # marker and leave a bare surname that matches a member
+                matcher.unmatched[PA_LABEL] = matcher.unmatched.get(PA_LABEL, 0) + 1
+                continue
             sp_clean = clean_sponsor(sp)
             if not sp_clean or norm_name(sp_clean) in SKIP_SPONSORS:
                 continue
-            m = matcher.match_last(sp_clean, year, raw=sp_clean)
+            if match_year is None:
+                # no year means no service check; never guess
+                matcher._miss(sp_clean, None)
+                continue
+            m = matcher.match_last(sp_clean, match_year, raw=sp_clean, alt_year=alt_year)
             if m is None:
                 continue
+            if norm_name(sp_clean) in PA_SURNAMES and match_year >= 2019:
+                # Public Advocate Jumaane Williams shares the surname
+                law = laws_by_matter.get(str(rec.get("matter_id")))
+                names = ([law_sp for law_sp in (law.get("sponsors") or [])] if law
+                         else archive_sponsors(archive, rec, match_year))
+                if names is not None and not any(
+                        name_tokens(n) == (m["_first"], m["_last"]) for n in names
+                        if not PA_RE.match(n)):
+                    matcher._miss(sp_clean + " (PA, not on sponsor list)", year)
+                    continue
             m["legislation"].append({
                 "tracker": "fiscal",
                 "matter_id": rec.get("matter_id"),
@@ -256,7 +371,7 @@ def main() -> None:
                 "title": law.get("title"),
                 "year": year,
                 "prime": norm_name(clean_sponsor(sp)) == prime_n,
-                "obligation_count": law.get("obligation_count", 0),
+                "obligation_count": oblig_by_matter.get(law["matter_id"]) or 0,
                 "legistar_url": law.get("legistar_url"),
             })
 
