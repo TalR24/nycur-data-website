@@ -64,6 +64,7 @@ HOST_LABELS = {
     "talroded.nycuriosity.com": "Personal site",
     "statecapacityecosystem.com": "State Capacity Ecosystem",
     "www.statecapacityecosystem.com": "State Capacity Ecosystem",
+    "substack.statecapacityecosystem.com": "SCE Substack",
 }
 
 
@@ -190,8 +191,8 @@ def fmt_row(r, label_key="keys"):
     return f"{r['clicks']:>6} clicks  {r['impressions']:>8} imp  {r['ctr']*100:5.1f}% CTR  pos {r['position']:5.1f}  {key}"
 
 
-def render(period, prev_period, sections, plan_md=""):
-    out = [f"# NYCuriosity search report, {period[0]} to {period[1]}",
+def render(period, prev_period, sections, plan_md="", title="NYCuriosity search report"):
+    out = [f"# {title}, {period[0]} to {period[1]}",
            f"Compared with {prev_period[0]} to {prev_period[1]}. Source: Google Search Console.", ""]
     if plan_md:
         out += [plan_md, "# Reference numbers", ""]
@@ -238,30 +239,12 @@ def render(period, prev_period, sections, plan_md=""):
     return "\n".join(out) + "\n"
 
 
-def main():
-    import requests
-    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--days", type=int, default=28)
-    ap.add_argument("--properties", nargs="*", default=PROPERTIES)
-    ap.add_argument("--key", help="service account JSON path (default ~/.config/gsc/service_account.json)")
-    ap.add_argument("--out", help="folder for the report files (default: nycur-data-premium/seo_reports/ "
-                                  "if present, else ./seo_reports/)")
-    ap.add_argument("--email", action="store_true")
-    ap.add_argument("--end", help="period end date YYYY-MM-DD (default: today minus data lag)")
-    ap.add_argument("--changes", help="seo_reports/changes.md to judge earlier changes against "
-                                      "(default: the premium repo copy if present)")
-    args = ap.parse_args()
-
-    end = date.fromisoformat(args.end) if args.end else date.today() - timedelta(days=DATA_LAG_DAYS)
-    start = end - timedelta(days=args.days - 1)
-    prev_end = start - timedelta(days=1)
-    prev_start = prev_end - timedelta(days=args.days - 1)
-
-    creds = credentials(args.key)
-    session = requests.Session()
+def collect(session, creds, properties, start, end, prev_start, prev_end):
+    """Per-host sections (what report_email.build and render take) and the
+    JSON snapshot, for the given Search Console properties and periods."""
     sections, snapshot = [], {"period": [start.isoformat(), end.isoformat()],
                               "previous": [prev_start.isoformat(), prev_end.isoformat()], "hosts": {}}
-    for prop in args.properties:
+    for prop in properties:
         cur_pages = query(session, creds.token, prop, start, end, ["page"])
         prev_pages = query(session, creds.token, prop, prev_start, prev_end, ["page"])
         cur_queries = query(session, creds.token, prop, start, end, ["page", "query"])
@@ -299,6 +282,31 @@ def main():
             sections.append(section)
             snapshot["hosts"][host] = {"pages": rows, "prev_pages": prev_rows, "queries": qrows,
                                        "page_queries": {k: v[:10] for k, v in section["page_queries"].items()}}
+    return sections, snapshot
+
+
+def main():
+    import requests
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--days", type=int, default=28)
+    ap.add_argument("--properties", nargs="*", default=PROPERTIES)
+    ap.add_argument("--key", help="service account JSON path (default ~/.config/gsc/service_account.json)")
+    ap.add_argument("--out", help="folder for the report files (default: nycur-data-premium/seo_reports/ "
+                                  "if present, else ./seo_reports/)")
+    ap.add_argument("--email", action="store_true")
+    ap.add_argument("--end", help="period end date YYYY-MM-DD (default: today minus data lag)")
+    ap.add_argument("--changes", help="seo_reports/changes.md to judge earlier changes against "
+                                      "(default: the premium repo copy if present)")
+    args = ap.parse_args()
+
+    end = date.fromisoformat(args.end) if args.end else date.today() - timedelta(days=DATA_LAG_DAYS)
+    start = end - timedelta(days=args.days - 1)
+    prev_end = start - timedelta(days=1)
+    prev_start = prev_end - timedelta(days=args.days - 1)
+
+    creds = credentials(args.key)
+    session = requests.Session()
+    sections, snapshot = collect(session, creds, args.properties, start, end, prev_start, prev_end)
 
     changes = args.changes or WORKSPACE / report_email.CHANGES_REL
     plan = report_email.build(sections, (start, end), session, changes)

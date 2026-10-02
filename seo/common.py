@@ -338,8 +338,9 @@ def send_email(subject, body, to=ALERT_TO, html=None):
         msg = MIMEText(body, "plain", "utf-8")
     msg["Subject"] = subject
     msg["From"] = user
-    msg["To"] = to
+    to = [to] if isinstance(to, str) else list(to)
+    msg["To"] = ", ".join(to)
     with smtplib.SMTP_SSL("smtp.gmail.com", 465) as s:
         s.login(user, pw)
-        s.sendmail(user, [to], msg.as_string())
+        s.sendmail(user, to, msg.as_string())
     return True

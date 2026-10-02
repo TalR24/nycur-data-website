@@ -1,0 +1,78 @@
+name: SCE monthly report
+
+# One email for State Capacity Ecosystem (statecapacityecosystem.com and its
+# Substack) to Tal and statecapacityecosystem@gmail.com: site health, the
+# review routine's PR and findings, and search recommendations, each as a
+# to-do card with a Claude Code prompt (seo/sce_monthly.py).
+#
+# Runs after the SCE repo's site_health.yml (13:00 UTC, opens the issue) and
+# the "SCE site health review" routine (14:05 UTC, PR + issue comment). Lives
+# here because this repo already holds the Search Console key and the premium
+# push token; the SCE repo is public, so search numbers never go there.
+#
+# Secrets: GSC_SERVICE_ACCOUNT_JSON, GMAIL_USER, GMAIL_APP_PASSWORD,
+# PREMIUM_PUSH_TOKEN.
+
+on:
+  schedule:
+    - cron: "30 15 1 * *"   # 1st of each month, 15:30 UTC (11:30am ET)
+  workflow_dispatch:
+    inputs:
+      preview:
+        description: "Send to Tal only (not the SCE inbox)"
+        type: boolean
+        default: true
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Clone the SCE site and the premium repo
+        env:
+          PREMIUM_PUSH_TOKEN: ${{ secrets.PREMIUM_PUSH_TOKEN }}
+        run: |
+          # Sibling of this checkout, where seo/common.py looks for the SCE repo
+          git clone https://github.com/TalR24/statecapacityecosystem.git "$GITHUB_WORKSPACE/../statecapacityecosystem"
+          git clone --depth 1 "https://TalR24:${PREMIUM_PUSH_TOKEN}@github.com/TalR24/nycur-data-premium.git" /tmp/premium
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install google-auth requests
+
+      - name: Build and email the SCE report
+        env:
+          GSC_SERVICE_ACCOUNT_JSON: ${{ secrets.GSC_SERVICE_ACCOUNT_JSON }}
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python3 seo/sce_monthly.py --sce-repo "$GITHUB_WORKSPACE/../statecapacityecosystem" \
+            --out /tmp/sce_reports --changes /tmp/premium/seo_reports/changes.md --email \
+            ${{ github.event.inputs.preview == 'true' && '--preview' || '' }}
+
+      - name: File the snapshot in the premium repo
+        run: |
+          mkdir -p /tmp/premium/seo_reports
+          cp /tmp/sce_reports/* /tmp/premium/seo_reports/
+          cd /tmp/premium
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add seo_reports
+          if git diff --cached --quiet; then
+            echo "Report unchanged."
+          else
+            git commit -m "Monthly SCE report snapshot"
+            git push
+          fi
