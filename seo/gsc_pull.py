@@ -17,7 +17,9 @@ env var (the JSON text, used by the GitHub Action) or as a file at
 Properties (domain properties cover every subdomain, so nycuriosity.com covers
 the Substack site, data.nycuriosity.com and talroded.nycuriosity.com):
     sc-domain:nycuriosity.com
-    sc-domain:statecapacityecosystem.com
+State Capacity Ecosystem (statecapacityecosystem.com and its Substack) is left
+out by default since Oct 2 2026: it is monitored by its own routine. Pass
+--properties sc-domain:statecapacityecosystem.com for an ad hoc pull.
 
 Requires: pip3 install --user google-auth requests
 
@@ -45,7 +47,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from common import SITES, WORKSPACE, send_email, sitemap_entries  # noqa: E402
 import report_email  # noqa: E402
 
-PROPERTIES = ["sc-domain:nycuriosity.com", "sc-domain:statecapacityecosystem.com"]
+PROPERTIES = ["sc-domain:nycuriosity.com"]  # SCE has its own routine (Tal, Oct 2 2026)
 SCOPE = "https://www.googleapis.com/auth/webmasters.readonly"
 API = "https://www.googleapis.com/webmasters/v3/sites/{prop}/searchAnalytics/query"
 DATA_LAG_DAYS = 3  # Search Console finalizes data about three days late
