@@ -33,6 +33,10 @@ CHANGES_REL = "nycur-data-premium/seo_reports/changes.md"
 
 # Standing decision (Tal, Aug 24 2026): no search work on these until the post is out.
 HOLD_PREFIXES = ("https://data.nycuriosity.com/nycuriosity_substack_posts/medicaid_provider_spending/",)
+# Pages Tal reviewed and chose to leave as they are: no rewrite or query cards.
+DECLINED = {
+    "https://www.nycuriosity.com/p/west-4th-street-station": "keep current SEO title and description (Tal, Oct 2 2026)",
+}
 BRANDED = ("nycuriosity", "tal roded", "roded", "curiosity")
 UNSEEN_SKIP = ("/privacy/", "/terms/")
 NEW_PAGE_DAYS = 42      # sitemap lastmod newer than this: may simply be new, not a problem
@@ -296,7 +300,7 @@ def build(sections, period, session, changes_path=None):
     for s in sections:
         pq = s["page_queries"]
         for r in s["rewrite"]:
-            if not held(r["keys"][0]):
+            if not held(r["keys"][0]) and norm(r["keys"][0]) not in DECLINED:
                 rewrites.append((r, s, pq.get(r["keys"][0], [])))
     rewrites.sort(key=lambda x: -x[0]["missed_clicks"])
     prior = {norm(j["url"]): j for j in judged}
@@ -348,7 +352,7 @@ def build(sections, period, session, changes_path=None):
     near = []
     for s in sections:
         for page, qs in s["page_queries"].items():
-            if held(page) or page in rewrite_urls:
+            if held(page) or page in rewrite_urls or norm(page) in DECLINED:
                 continue
             for q in qs:
                 if (q["impressions"] >= 20 and 4.5 <= q["position"] <= 20
