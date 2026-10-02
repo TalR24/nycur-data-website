@@ -28,6 +28,9 @@ Report sections, per host:
       position, i.e. the title/description are not earning the click
   DROPS: pages whose clicks fell by half or more
   NOT SEEN: sitemap URLs with zero impressions (indexing or discovery problem)
+
+On top of those numbers, report_email.py builds the month's to-do list (each
+action with steps and a Claude Code prompt to paste) and the HTML email.
 """
 
 import argparse
@@ -39,7 +42,8 @@ from pathlib import Path
 from urllib.parse import quote, urlsplit
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from common import SITES, WORKSPACE, send_email, sitemap_locs  # noqa: E402
+from common import SITES, WORKSPACE, send_email, sitemap_entries  # noqa: E402
+import report_email  # noqa: E402
 
 PROPERTIES = ["sc-domain:nycuriosity.com", "sc-domain:statecapacityecosystem.com"]
 SCOPE = "https://www.googleapis.com/auth/webmasters.readonly"
@@ -66,6 +70,8 @@ def substack_host(host):
 
 
 def host_label(host):
+    if host == "nycuriosity.com":
+        return "Substack (bare nycuriosity.com)"
     if substack_host(host):
         return "Substack (nycuriosity.com)"
     return HOST_LABELS.get(host, host)
@@ -172,7 +178,7 @@ def unseen_sitemap_urls(session, base, page_rows):
     except Exception as e:  # noqa: BLE001
         return None, f"sitemap fetch failed: {e}"
     seen = {r_["keys"][0].rstrip("/") for r_ in page_rows}
-    return [u for u in sitemap_locs(r.text) if u.rstrip("/") not in seen], None
+    return [(u, lm) for u, lm in sitemap_entries(r.text) if u.rstrip("/") not in seen], None
 
 
 # --------------------------------------------------------------- report ---
@@ -182,9 +188,11 @@ def fmt_row(r, label_key="keys"):
     return f"{r['clicks']:>6} clicks  {r['impressions']:>8} imp  {r['ctr']*100:5.1f}% CTR  pos {r['position']:5.1f}  {key}"
 
 
-def render(period, prev_period, sections):
+def render(period, prev_period, sections, plan_md=""):
     out = [f"# NYCuriosity search report, {period[0]} to {period[1]}",
            f"Compared with {prev_period[0]} to {prev_period[1]}. Source: Google Search Console.", ""]
+    if plan_md:
+        out += [plan_md, "# Reference numbers", ""]
     for s in sections:
         t, p = s["totals"], s["prev_totals"]
         out.append(f"## {s['label']}")
@@ -218,7 +226,7 @@ def render(period, prev_period, sections):
         out.append("")
         if s.get("unseen") is not None:
             out.append(f"NOT SEEN: {len(s['unseen'])} sitemap URLs with zero impressions")
-            out.extend("  " + u for u in s["unseen"][:40])
+            out.extend("  " + u for u, _ in s["unseen"][:40])
             if len(s["unseen"]) > 40:
                 out.append(f"  ... and {len(s['unseen']) - 40} more")
             out.append("")
@@ -238,6 +246,8 @@ def main():
                                   "if present, else ./seo_reports/)")
     ap.add_argument("--email", action="store_true")
     ap.add_argument("--end", help="period end date YYYY-MM-DD (default: today minus data lag)")
+    ap.add_argument("--changes", help="seo_reports/changes.md to judge earlier changes against "
+                                      "(default: the premium repo copy if present)")
     args = ap.parse_args()
 
     end = date.fromisoformat(args.end) if args.end else date.today() - timedelta(days=DATA_LAG_DAYS)
@@ -254,6 +264,9 @@ def main():
         prev_pages = query(session, creds.token, prop, prev_start, prev_end, ["page"])
         cur_queries = query(session, creds.token, prop, start, end, ["page", "query"])
         hosts_cur, hosts_prev, hosts_q = by_host(cur_pages), by_host(prev_pages), by_host(cur_queries)
+        for rows_ in hosts_q.values():
+            for r in rows_:
+                r["ctr"] = r["clicks"] / r["impressions"] if r["impressions"] else 0
         for host in sorted(set(hosts_cur) | set(hosts_prev), key=lambda h: -totals(hosts_cur.get(h, []))["clicks"]):
             rows, prev_rows = hosts_cur.get(host, []), hosts_prev.get(host, [])
             queries = {}
@@ -268,7 +281,9 @@ def main():
                 q["position"] = q.pop("pos_w") / q["impressions"] if q["impressions"] else 0
                 qrows.append(q)
             section = {
-                "host": host, "label": host_label(host),
+                "host": host, "label": host_label(host), "prop": prop,
+                "rows": rows, "prev_rows": prev_rows,
+                "page_queries": report_email.page_query_index(hosts_q.get(host, [])),
                 "totals": totals(rows), "prev_totals": totals(prev_rows),
                 "top_pages": sorted(rows, key=lambda r: -r["clicks"])[:15],
                 "top_queries": sorted(qrows, key=lambda r: -r["clicks"])[:15],
@@ -280,9 +295,13 @@ def main():
                 unseen, err = unseen_sitemap_urls(session, base, rows)
                 section["unseen"], section["unseen_error"] = unseen, err
             sections.append(section)
-            snapshot["hosts"][host] = {"pages": rows, "prev_pages": prev_rows, "queries": qrows}
+            snapshot["hosts"][host] = {"pages": rows, "prev_pages": prev_rows, "queries": qrows,
+                                       "page_queries": {k: v[:10] for k, v in section["page_queries"].items()}}
 
-    report = render((start, end), (prev_start, prev_end), sections)
+    changes = args.changes or WORKSPACE / report_email.CHANGES_REL
+    plan = report_email.build(sections, (start, end), session, changes)
+    snapshot["actions"] = plan["actions"]
+    report = render((start, end), (prev_start, prev_end), sections, report_email.render_markdown(plan, sections))
     sys.stdout.write(report)
 
     out_dir = Path(args.out) if args.out else (
@@ -291,11 +310,15 @@ def main():
     out_dir.mkdir(parents=True, exist_ok=True)
     stem = out_dir / end.strftime("%Y-%m")
     stem.with_suffix(".md").write_text(report, encoding="utf-8")
-    stem.with_suffix(".json").write_text(json.dumps(snapshot, indent=1), encoding="utf-8")
-    print(f"\nwrote {stem}.md and {stem}.json", file=sys.stderr)
+    stem.with_suffix(".json").write_text(json.dumps(snapshot, indent=1, default=str), encoding="utf-8")
+    page = report_email.render_html(plan, sections, stem.name + ".md")
+    stem.with_suffix(".html").write_text(page, encoding="utf-8")
+    print(f"\nwrote {stem}.md, {stem}.json and {stem}.html", file=sys.stderr)
 
     if args.email:
-        send_email(f"NYCuriosity SEO report, {end.strftime('%B %Y')}", report)
+        n = len(plan["actions"])
+        send_email(f"NYCuriosity SEO report, {end.strftime('%B %Y')}: {n} action{'s' if n != 1 else ''}",
+                   report, html=page)
 
 
 if __name__ == "__main__":

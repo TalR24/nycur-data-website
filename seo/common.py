@@ -28,6 +28,7 @@ import os
 import re
 import smtplib
 import subprocess
+from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from html.parser import HTMLParser
 from pathlib import Path
@@ -302,17 +303,39 @@ def sitemap_locs(text):
     return [loc.strip() for loc in LOC_RE.findall(text)]
 
 
+URL_RE = re.compile(r"<url>(.*?)</url>", re.S)
+LASTMOD_RE = re.compile(r"<lastmod>\s*(\d{4}-\d{2}-\d{2})")
+
+
+def sitemap_entries(text):
+    """[(loc, lastmod date or None)] in sitemap order."""
+    from datetime import date
+    out = []
+    for block in URL_RE.findall(text):
+        loc = LOC_RE.search(block)
+        if loc:
+            lm = LASTMOD_RE.search(block)
+            out.append((loc.group(1).strip(), date.fromisoformat(lm.group(1)) if lm else None))
+    return out
+
+
 # ---------------------------------------------------------------- email ----
 
-def send_email(subject, body, to=ALERT_TO):
-    """Gmail SMTP, same secrets as site_health/check_site.py. Returns True when
-    sent, False (with a note on stderr) when credentials are absent."""
+def send_email(subject, body, to=ALERT_TO, html=None):
+    """Gmail SMTP, same secrets as site_health/check_site.py. `body` is the
+    plain-text part; pass `html` to send multipart/alternative. Returns True
+    when sent, False (with a note on stderr) when credentials are absent."""
     user = os.environ.get("GMAIL_USER")
     pw = os.environ.get("GMAIL_APP_PASSWORD")
     if not (user and pw):
         print("EMAIL NOT SENT: GMAIL_USER / GMAIL_APP_PASSWORD not set", flush=True)
         return False
-    msg = MIMEText(body, "plain", "utf-8")
+    if html:
+        msg = MIMEMultipart("alternative")
+        msg.attach(MIMEText(body, "plain", "utf-8"))
+        msg.attach(MIMEText(html, "html", "utf-8"))
+    else:
+        msg = MIMEText(body, "plain", "utf-8")
     msg["Subject"] = subject
     msg["From"] = user
     msg["To"] = to
