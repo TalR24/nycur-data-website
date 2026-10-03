@@ -168,12 +168,17 @@ jobs:
         continue-on-error: true
         run: python pipeline/validate_fiscal_impacts.py
 
+      - name: Pre-render static snapshots (overview + hub, readable without JS)
+        run: python pipeline/build_fiscal_static_snapshots.py
+
       - name: Commit and push updated data
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add civic_reference/nyc_council_fiscal_impacts_tracker/data/fiscal_impacts.json \
                   civic_reference/nyc_council_fiscal_impacts_tracker/agency-fiscal-impact/data.json \
+                  civic_reference/nyc_council_fiscal_impacts_tracker/overview/index.html \
+                  civic_reference/nyc_council_fiscal_impacts_tracker/index.html \
                   pipeline/no_impact_matters.json
           # fiscal_batch_state.json / fiscal_batch_pending.json: a batch still
           # pending leaves them present (stage the addition/update); a batch
