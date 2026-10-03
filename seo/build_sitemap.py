@@ -12,7 +12,8 @@ redirect stub (noindex / http-equiv refresh), and not an empty file.
 ignores both and they only invited hand-editing.
 
 Run this whenever a page is added, removed, or renamed (the seo_check.py
-"sitemap" check fails until you do).
+"sitemap" check fails until you do). It also regenerates the site's llms.txt
+(build_llms_txt.py) from the same pages, and --check reports drift in both.
 """
 
 import argparse
@@ -21,6 +22,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from common import git_lastmod, load_pages, repo_path, site_config, sitemap_locs  # noqa: E402
+import build_llms_txt  # noqa: E402
 
 
 def expected_entries(key, repo=None):
@@ -80,7 +82,12 @@ def main():
         for u in stale:
             print(f"STALE in sitemap:    {u}")
         print(f"{cfg['base']}: {len(entries)} expected, {len(missing)} missing, {len(stale)} stale")
-        sys.exit(1 if (missing or stale) else 0)
+        llms = repo_path(args.site, args.repo) / "llms.txt"
+        llms_stale = (not llms.exists()
+                      or llms.read_text(encoding="utf-8") != build_llms_txt.build(args.site, args.repo))
+        if llms_stale:
+            print(f"STALE llms.txt: run python3 seo/build_llms_txt.py --site {args.site}")
+        sys.exit(1 if (missing or stale or llms_stale) else 0)
 
     xml = render(entries)
     if args.print:
@@ -89,6 +96,8 @@ def main():
     out = repo_path(args.site, args.repo) / "sitemap.xml"
     out.write_text(xml, encoding="utf-8")
     print(f"wrote {out} ({len(entries)} URLs; +{len(missing)} added, -{len(stale)} removed)")
+    path, changed = build_llms_txt.write(args.site, args.repo)
+    print(f"{'wrote' if changed else 'unchanged'} {path}")
 
 
 if __name__ == "__main__":
