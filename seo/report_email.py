@@ -4,7 +4,7 @@ Turns the Search Console numbers gathered by gsc_pull.py into a to-do list:
 each action names the page, the number behind it, the steps, and the exact
 prompt to paste into Claude Code (run from ~/nycur). Rendered twice, as a
 branded HTML email and as Markdown (the archived report and the email's
-plain-text part, which the "Monthly SEO review memo" routine reads).
+plain-text part).
 
 Rules are deterministic on purpose: no model calls, nothing billed. The
 judgment (the actual rewrites) happens when Tal pastes a prompt into a session.
@@ -112,7 +112,9 @@ def nycuriosity_theme():
                  "Quick win": (T["b-marigold"], T["b-ink"]), "Opportunity": (T["b-lightblue"], T["b-ink"]),
                  "Check": (T["b-line"], T["b-ink"]), "Review": (T["b-lightblue"], T["b-ink"])},
         "sans": T["b-sans"], "display": T["b-display"], "mono": T["b-mono"],
-        "memo_note": "The drafted-rewrite memo arrives tomorrow; it proposes exact titles for the Quick win items.",
+        # The drafting memo routine was retired Oct 3 2026: this email is the one
+        # monthly SEO email; pasting a Quick win prompt makes Claude draft the rewrite.
+        "memo_note": None,
         "footer": "Sent by the seo_monthly Action in TalR24/nycur-data-website (data_website/seo/gsc_pull.py). "
                   "How these rules work: the seo skill.",
     }
