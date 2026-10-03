@@ -1,272 +1,89 @@
 # Mention Monitor
 
-Monitor for outside citations of Tal Roded, NYCuriosity, and the trackers
-(fiscal impacts, legislation implementation / obligations) in news articles
-and newsletters, not his own publishing.
+Last refreshed: Oct 3 2026.
 
-It polls Google News RSS for the name/brand/tracker queries, and scans a
-fixed list of outlet RSS feeds (full text) for the harder-to-search figure
-queries (`2,231`, `8,300`, `$7.5 billion`, `5,000`) and for any link back
-to nycuriosity.com. Weekly (on `--digest` and `--backfill` runs) it also
-runs a WordPress REST search (`wp_search`) across outlets with no full-text
-feed, an OpenAlex lookup (`openalex`) for citations of Tal's academic work,
-and, daily, a Ghost sitemap scan (`sitemap_scan`) and any configured Google
-Alerts RSS feeds (`alert_feeds`). It dedupes against `seen.db` (SQLite),
-queues newly-flagged items as pending, and on Sundays (or `--digest`)
-builds `digests/YYYY-MM-DD.md` from everything pending, prints it, marks
-those items digested, emails it (as a multipart text/HTML message) if
-`--email`, and self-updates: a "Suggested removals" section flags
-long-silent sources, and a discovery pass probes new candidate domains
-seen via Google News / alerts / OpenAlex and appends any that pass a feed,
-`wp_search`, or sitemap probe to `discovered_sources.json`. Real citations
-of Tal's academic work get their own "Research citations" section; new
-works of his own get "New research listings"; his own bylines that ran in
-an outside outlet get "My own pieces". A "Suggested website updates"
-section gives a ready-to-run Claude Code prompt for adding each new
-outside citation to the personal site / tracker pages.
+Finds outside citations of Tal Roded, NYCuriosity and the trackers (fiscal impacts, legislation implementation / obligations) in news articles and newsletters. It does not track his own publishing, except to route it into its own digest section.
+
+## Sources
+
+Every run (daily):
+- **`google_news`**: Google News RSS for the name, brand and tracker queries.
+- **`outlets`**: 12 outlet RSS feeds scanned in full text (The City Reporter, City Limits, Streetsblog NYC, City & State NY, Reinvent Albany, Vital City, Gothamist, amNY, Brooklyn Paper, QNS, The Lo-Down, W42ST). They serve the figure queries (`2,231`, `8,300`, `$7.5 billion`, `5,000`) and flag any article that links to nycuriosity.com or nycuriosity.substack.com.
+- **`sitemap_scan`**: Ghost `sitemap-posts.xml` for Vital City and Hell Gate.
+- **`alert_feeds`**: Google Alerts Atom feeds, read from the `GOOGLE_ALERT_FEEDS` secret.
+- **`cloudflare_referrers`**: Cloudflare Web Analytics referrer hosts (see below).
+
+Weekly only (`--digest` and `--backfill` runs):
+- **`wp_search`**: WordPress REST search (`/wp-json/wp/v2/search?search=nycuriosity`) on the 10 sites in `wp_search_sites`, paged until an empty page or HTTP 400. A hit is fetched and flagged like an outlet article; a hit that does not flag is still recorded as scanned.
+- **`openalex`**: Tal's own works and the works citing them, by `openalex_author_ids`. No key needed.
+
+## How a run works
+
+1. Collect from the sources above, dedupe against `seen.db` (SQLite), and queue newly flagged items as pending. Google News links are opaque redirects, so each item is keyed on both its normalized URL and an outlet-domain plus title fingerprint. Everything fetched, including excluded items, is marked seen.
+2. On Sundays (or with `--digest`), build `digests/YYYY-MM-DD.md` from all pending items, mark them digested, and with `--email` send it as a multipart text and HTML message.
+3. Digest sections: outside citations (ordered news, newsletter, social), Research citations (OpenAlex and `research_domains`), New research listings, My own pieces, Sites sending visitors this week, Suggested website updates, Suggested removals, Candidates needing manual review, Scan progress, Source errors.
+
+A collect-only run never writes a digest. A run skipped for several days is not lost: the next digest covers every pending row.
 
 ## How it runs
 
-`.github/workflows/mention_monitor.yml` runs daily at 11:30 UTC. Every day
-it collects and queues pending items; on Sundays it also builds and emails
-the digest via the existing `GMAIL_USER` / `GMAIL_APP_PASSWORD` secrets.
-Optional secret `MENTION_DIGEST_TO` overrides the recipient (defaults to
-`GMAIL_USER`).
+`.github/workflows/mention_monitor.yml` runs daily at 11:30 UTC. Every day it collects and queues; on Sundays it also builds and emails the digest. It runs the offline tests first (`MENTION_MONITOR_SKIP_LIVE_TESTS=1`). `workflow_dispatch` inputs: `backfill`, `digest`, `send_email` (implies digest), `referrers_only`, `referrers_window_hours`. A failed run emails "Mention monitor run failed", because a failure otherwise looks like a quiet week.
 
-State (`seen.db`, the digests, `discovered_sources.json`) lives in the
-private premium repo under `mention_monitor_state/`, not in this public
-repo: the workflow passes `--db`, `--outdir`, and `--discovered-path`
-pointing there, and commits state back to that repo, not this one.
+State (`seen.db`, `digests/`, `discovered_sources.json`) lives in the private premium repo under `mention_monitor_state/`, never in this public repo. The workflow clones it with `PREMIUM_PUSH_TOKEN`, passes `--db`, `--outdir` and `--discovered-path`, and commits the state back there. `mention_monitor/check_freshness.py` (run by `site_health.yml`) emails if that folder has had no commit for 3 days.
 
-**First run:** trigger the workflow manually with `backfill: true` (or run
-`python3 monitor.py --backfill` locally and commit `seen.db`). That seeds the
-dedup db from roughly the last 90 days so the first real digest isn't a
-flood of old links; backfill never queues a pending item.
+Secrets: `GMAIL_USER`, `GMAIL_APP_PASSWORD`, `MENTION_DIGEST_TO` (recipient, defaults to `GMAIL_USER`), `PREMIUM_PUSH_TOKEN`, `CF_ANALYTICS_TOKEN`, `CF_ACCOUNT_ID`, `CF_ZONE_ID`, `GOOGLE_ALERT_FEEDS`.
 
-Local / cron alternative:
+Local use:
 
 ```
-pip install -r mention_monitor/requirements.txt
-python3 mention_monitor/monitor.py --backfill        # once
-# crontab: daily, Sunday sends the digest
-0 7 * * *  cd /path/to/nycur-data-website && python3 mention_monitor/monitor.py $([ "$(date +%u)" = "7" ] && echo "--digest --email")
+pip install -r mention_monitor/requirements.txt          # requests, feedparser
+python3 mention_monitor/monitor.py --backfill            # seed the db from about 90 days back
+python3 mention_monitor/monitor.py                       # collect only
+python3 mention_monitor/monitor.py --digest --email      # build and send the digest
+python3 -m unittest discover -s mention_monitor -p "test_monitor.py" -v
 ```
 
-Flags: `--backfill` (seed db, no pending items, no digest, no email),
-`--digest` (collect, then build+write the digest from all pending items and
-mark them digested), `--email` (send the digest when `--digest` produces
-one; silently skips if Gmail env vars are missing), `--referrers-only` (run
-only the Cloudflare referrer source and print its rows or error; no other
-source, no db writes), `--config`, `--db`, `--outdir`. With no flags, a run
-only collects and queues pending items. The workflow's `send_email` dispatch
-input implies `--digest` even if `digest` wasn't also checked.
+Flags: `--backfill` (seed the db; queues nothing, no digest, no email), `--digest`, `--email` (needs the Gmail env vars; silently skipped without them), `--referrers-only` with `--referrers-window-hours N` (runs only the Cloudflare source and prints rows or the error; no db writes), `--config`, `--db`, `--outdir`, `--discovered-path`. Local runs default the db to `mention_monitor/seen.db` and digests to `mention_monitor/digests/`, both gitignored.
 
-## Config schema (`config.json`)
+## Config (`config.json`)
 
 Edit the config, not the code.
 
-- `outlets`: feeds scanned in full text on every run: `name`, `feed` (RSS
-  URL), `tier` (`news` or `newsletter`, drives digest ordering), and
-  `fetch_article` (fetch the article page when the feed entry has no usable
-  full text, capped by `max_article_fetches`).
-- `own_link_domains`: a link to any of these hosts (or a subdomain) in an
-  outlet's article HTML flags it as an outside citation on its own, no
-  query match needed (this is how the digest catches an article that links
-  to nycuriosity.com/nycuriosity.substack.com without quoting a figure).
-- `queries`: run separately, never combined. Each has:
-  - `id`: short label shown in the digest
-  - `q`: the search string sent to google_news (quote exact phrases)
-  - `match_terms`: phrases that must appear in the outlet full text (or the
-    google_news title/text) for a match
-  - `require_terms` (optional): at least one must also appear, so a figure
-    like `2,231` doesn't fire on every unrelated use of the number
-  - `exclude_terms` (optional): none of these may appear (keeps the
-    `2,231` query off UN Resolution 2231 / Iran coverage)
-  - `sources`: per-query source list. Name/brand/tracker-name queries use
-    `google_news` and `outlets`; figure queries use only `outlets`, since
-    Google News RSS strips punctuation and returns unrelated noise for
-    numbers.
-- `exclude_domains`: own properties, matched including subdomains
-  (`nycuriosity.com` covers `data.nycuriosity.com`)
-- `exclude_url_prefixes`: path-level own properties
-  (`substack.com/@nycuriosity`, the LinkedIn/Instagram/Facebook profiles)
-- `own_columns`: Citizens Union Searchlight (matched by domain or the
-  keyword "searchlight" in outlet/title).
-- `own_byline_page`: Tal's live Publications page. On digest and backfill
-  runs the monitor reads it and treats every entry outside its "In the
-  press" section as his own writing, so a piece he publishes elsewhere is
-  never reported as outside coverage just because the config list wasn't
-  updated. A failed fetch leaves the configured lists in place.
-- `own_author_names` / `own_byline_urls` / `own_byline_titles`: Tal's own
-  writing that runs in an outside outlet (a Streetsblog op-ed, a Vital City
-  guest post). Matched by feed/article author metadata, an explicit seeded
-  URL, or a normalized title match (needed for Google News items, which
-  carry no author and only an opaque `news.google.com` redirect URL).
-  Merged with `own_columns` into one "My own pieces" digest section instead
-  of being dropped as if it were noise, or mistaken for an outside citation.
-- `research_domains`: third-party citations of Tal's academic work (NBER,
-  Cato, Fed research banks, etc.) go to a separate "Research citations"
-  section rather than being dropped as a name collision or mixed into news
-  outside-citations. A Google News item matched only by name with the name
-  string absent from the visible title/snippet is kept and labeled
-  "(name match from Google News, not verified in text)".
-- `newsletter_domains`, `tier_overrides`: control the digest's
-  news / newsletter / social ordering. Override a domain's tier with e.g.
-  `"tier_overrides": {"somesite.org": "news"}`. Each outlet's own `tier`
-  is applied automatically at load time.
-- `referrer_ignore_hosts`: hosts excluded from the Cloudflare referrer
-  report (search engines, social share links, substack.com itself). An
-  entry ending in `.` (e.g. `google.`) matches that label anywhere in the
-  host (`www.google.com`, `google.co.uk`); other entries match as a full
-  host or parent domain.
-- `user_agent`, `request_delay_seconds`, `max_article_fetches`: politeness
-  settings.
+- `outlets`: `name`, `feed`, `tier` (`news` or `newsletter`), `fetch_article` (fetch the page when the feed entry has no usable full text, capped by `max_article_fetches`).
+- `queries`: run separately, never combined. Fields: `id`, `q` (the Google News string), `match_terms` (must appear in the full text or the Google News title), optional `require_terms` (at least one must also appear) and `exclude_terms` (none may appear; keeps the `2,231` query off UN Resolution 2231 coverage), and `sources`. Name, brand and tracker queries use `google_news` and `outlets`; figure queries use only `outlets`, since Google News RSS strips punctuation and returns noise for numbers. Current ids: `name`, `brand`, `fiscal-tracker`, `obligations-tracker`, `implementation-tracker`, `fig-7.5b-mandates`, `fig-2231-reports`, `fig-8300-obligations`, `fig-5000-standing`.
+- `own_link_domains`: a link to these hosts in an outlet article flags it as a citation with no query match.
+- `exclude_domains`, `exclude_url_prefixes`: own properties, matched including subdomains and path prefixes.
+- `own_byline_page`: Tal's live Publications page. On digest and backfill runs every entry outside its "In the press" section counts as his own writing. A failed fetch leaves the configured lists in place.
+- `own_author_names`, `own_byline_urls`, `own_byline_titles`, `own_columns`: his writing in outside outlets, matched by author metadata, seeded URL, or normalized title (Google News items carry no author). They merge into "My own pieces".
+- `research_domains`: citations of his academic work (NBER, Cato, Fed research banks and similar) go to "Research citations". A Google News item matched only by name, with the name absent from the visible title and snippet, is kept and labeled "(name match from Google News, not verified in text)".
+- `newsletter_domains`, `tier_overrides`: digest ordering.
+- `roundup_title_patterns`: titles of link roundups ("Headlines", "Roundup").
+- `referrer_ignore_hosts`: hosts left out of the referrer report. An entry ending in `.` (`google.`) matches that label anywhere in the host; other entries match a full host or parent domain.
+- `discovery_ignore_domains`, `prune_exempt`, `auto_add_discovered`, `prune_after_weeks` (8), `prune_error_weeks` (3), `new_probe_cap` (10): self-updating behavior, below.
+- `user_agent`, `mailto`, `request_delay_seconds` (2.0).
+- Budgets: `max_article_fetches` 150, `outlet_time_budget_seconds` 300, `run_time_budget_seconds` 1500. A normal run takes about 4 minutes against the workflow's 45-minute timeout. `sitemap_scan` splits what is left of `max_article_fetches` into an equal share per sitemap, recomputed from the remainder.
 
-## New sources (round 3)
+### Sitemap scan window
+The window is 90 days on an outlet's first run (or a backfill), otherwise since the outlet's last fully successful scan minus a 2-day overlap. The stored watermark means "this run scanned every in-window entry", so a run that hits the cap or budget never advances it. The per-URL `scanned` table, not the window, stops refetching. A paywalled page with no usable article text (Hell Gate) is recorded as scanned with a note.
 
-- **`wp_search`**: WordPress REST search (`/wp-json/wp/v2/search?search=nycuriosity`)
-  against `wp_search_sites`, weekly only (digest/backfill runs), paging
-  with `page=` until an empty page or HTTP 400. A hit is fetched and run
-  through the same link/term flagging as `outlets`; a hit that doesn't
-  flag is still recorded `scanned` so it's never re-fetched.
-- **`sitemap_scan`**: Ghost `sitemap-posts.xml` outlets (`sitemap_scan`
-  config: `sitemap`, `name`, `tier`). Runs every collect. The window is a
-  90-day lookback on an outlet's first run (or a backfill), or since the
-  outlet's last fully-successful scan minus a 2-day overlap otherwise; the
-  stored watermark is a "this run finished scanning every in-window entry"
-  timestamp, not a `lastmod` cutoff, so a run that hits the cap or budget
-  never advances it and every entry it didn't reach is still a candidate
-  next run (nothing is skipped just because it's older than the newest
-  entry). The per-URL `scanned` table, not the window, is what stops an
-  already-fetched entry from being refetched. Hitting the cap/budget
-  records a backlog notice naming how many entries remain (see "Scan
-  progress" below), not a source error. A paywalled page with no usable
-  article-body text (Hell Gate) is recorded scanned with a note, not an
-  error.
-- **`openalex`**: weekly (digest/backfill), no key. Fetches
-  `openalex_author_ids`' own works, then works citing any of them
-  (`filter=cites:...`). New citing works go to "Research citations"; new
-  works of Tal's own go to "New research listings".
-- **`alert_feeds`**: Google Alerts Atom feeds. Config `alert_feeds` stays
-  empty (see setup below); real feed URLs come from env
-  `GOOGLE_ALERT_FEEDS` only. Each entry's `google.com/url?...&url=` link
-  is unwrapped and `<b>` highlight tags stripped; no term match is
-  required (Google already matched). Never logs a full feed URL, only its
-  own `<title>`.
-- **Self-updating (items 6-7)**: `source_yield` records one row per run
-  per unit (outlet, wp_search site, sitemap outlet, google_news query).
-  Multiple rows in the same ISO week count as one week, not one row: a unit
-  with zero flagged items across `prune_after_weeks` (default 8) consecutive
-  weeks that each had a successful run, or a week streak of `prune_error_weeks`
-  (default 3) where every run in the week errored, gets a "Suggested
-  removals" line naming the exact spot to edit (`config.json → outlets[name="..."]`,
-  a `queries[id="..."].sources` entry, or a `discovered_sources.json` domain);
-  suggestions only, config.json is never edited by code. A discovery pass
-  extracts candidate domains from google_news/alert_feeds/openalex items and
-  Cloudflare referrer hosts, skips anything already covered (by a full-host
-  parent/child match) or listed in `research_domains` /
-  `discovery_ignore_domains`, probes each remaining candidate (feed, then
-  `wp_search`, then sitemap, rejecting a sitemap index unless it can follow
-  one level to a posts `<urlset>`) at most once per 30 days, and appends a
-  passing probe (with the URL that triggered discovery as `first_item_url`)
-  to `discovered_sources.json` when `auto_add_discovered` (default true);
-  it's scanned like a hand-configured source from the next run, capped at
-  `discovered_max_fetches` (default 10) article fetches per run so one
-  high-volume discovered outlet can't consume the whole run's budget.
-  Failed probes and `auto_add_discovered: false` candidates land in
-  "Candidates needing manual review" instead; results from a backfill run
-  are held and shown in the next digest that runs, not lost.
+### Self-updating
+`source_yield` records one row per run per unit (outlet, `wp_search` site, sitemap outlet, Google News query). A unit with zero flagged items across `prune_after_weeks` consecutive weeks that each had a successful run, or with `prune_error_weeks` consecutive weeks of all-error runs, gets a "Suggested removals" line naming the exact spot to edit. It never edits `config.json`. A discovery pass takes candidate domains from Google News, alerts, OpenAlex and referrer hosts, skips covered or ignored ones, probes each remaining candidate at most once per 30 days (feed, then `wp_search`, then sitemap), and appends a passing one to `discovered_sources.json`. It is scanned from the next run, capped at `discovered_max_fetches` (default 10) article fetches per run. Failed probes and candidates held back by `auto_add_discovered: false` appear under "Candidates needing manual review". Discovery results from a backfill are held for the next digest.
 
-## Google Alerts setup
+### Scan progress
+When an outlet, `wp_search` site, sitemap outlet or the shared Google News budget runs out before every candidate is scanned, the carry-over goes to a small "Scan progress" section, not to "Source errors". Backlog alone never triggers an email, and the subject line's error count excludes it. HTTP, TLS, parse and GraphQL failures still count as errors.
 
-Alert RSS URLs go in the `GOOGLE_ALERT_FEEDS` repo secret, one per line,
-never in config.json (they embed a Google account id and this repo is
-public).
+### Suggested website updates
+Each new news or newsletter citation and each own byline gets a ready-to-run Claude Code prompt in the digest (inside a `<pre>` block in the email), naming the personal site and tracker files to update per `site_update_rules`. URLs in `never_feature_urls` and titles in `never_feature_titles` are skipped. A citation already live on a page listed in `site_pages` is marked "already listed".
 
-## Suggested website updates
+### Google Alerts
+Alert RSS URLs go in the `GOOGLE_ALERT_FEEDS` secret, one per line, never in `config.json` (they embed a Google account id and this repo is public). `alert_feeds` in the config stays empty. Each entry's `google.com/url?...&url=` link is unwrapped and highlight tags are stripped; no term match is required. The log shows only a feed's `<title>`, never its URL.
 
-Each new outside citation (news/newsletter tier) or own byline gets a
-ready-to-run Claude Code prompt in the digest (and the HTML email, inside
-a `<pre>` block) naming the personal site and tracker files to update,
-per `site_update_rules` in config.json. URLs in `never_feature_urls` are
-always skipped; a citation already live on the relevant page (checked via
-`site_pages`) is marked "already listed" instead of getting a prompt.
+## Cloudflare referrer report
 
-## Scan progress (backlog, not errors)
-
-Cap/budget carry-over, when an outlet, `wp_search` site, `sitemap_scan`
-outlet, or the shared `google_news` query budget runs out before every
-candidate is scanned, is routine backlog, not a failure: it lands in its
-own "Scan progress" section at the end of the digest (small, muted text in
-the HTML email), one line per unit naming how many are left, instead of
-"Source errors". Real failures (HTTP errors, TLS errors, parse errors,
-GraphQL errors) still go to "Source errors". Backlog-only content never
-triggers an email by itself, and the subject line's error count excludes
-it.
-
-## Budgets (round 6)
-
-Raised so a normal run (about 3.5 to 4 minutes against a 30-minute job
-timeout) has real headroom before hitting a cap: `max_article_fetches`
-150 (was 60), `outlet_time_budget_seconds` 300 (was 90),
-`run_time_budget_seconds` 1500 (was 900). `sitemap_scan` still splits
-whatever is left of `max_article_fetches` into an equal share per
-sitemap, recomputed from the remainder so an early large backlog can't
-starve the sitemaps after it.
-
-## Cloudflare Web Analytics referrer report (dormant)
-
-**On** (`cloudflare_referrers_enabled: true`). `clientRefererHost` is not
-available to this zone's plan in `httpRequestsAdaptiveGroups`, so the source
-queries Cloudflare Web Analytics (RUM) instead, account-scoped. It needs
-`CF_ANALYTICS_TOKEN` with Account Analytics Read plus `CF_ACCOUNT_ID`, and
-Web Analytics enabled on the hostnames (data.nycuriosity.com and
-talroded.nycuriosity.com carry the beacon snippet in every page head;
-automatic edge injection covers only one hostname per zone, already used by
-nycuriosity.com). Verified Sep 16 2026: 6 rows over 30 days. Counts are
-RUM-sampled, so they arrive in multiples of the sample rate. Error text has
-hex ids redacted. `--referrers-only --referrers-window-hours N` prints the
-rows or the error for any window.
-
-
-When enabled and both `CF_ANALYTICS_TOKEN` and `CF_ACCOUNT_ID` secrets are
-set, every run queries the Cloudflare GraphQL Analytics API
-(`rumPageloadEventsAdaptiveGroups`) for the last 24 hours of `refererHost`
-traffic, filters out nycuriosity.com hosts and `referrer_ignore_hosts`, and
-stores daily rows in `seen.db`. The Sunday digest aggregates the last 7
-days into a "Sites sending visitors this week" section: hosts by request
-count, with their top landing paths. Without both secrets, or with
-`cloudflare_referrers_enabled` still false, this source is silently
-skipped (one info line, not an error). The exact field names and what's
-available on Cloudflare's plan are **unverified**, since no Web Analytics
-data exists yet to test against; any GraphQL error is recorded as a source
-error, message text only, with hex ids redacted, rather than failing the
-run.
-
-## Dedup
-
-Google News RSS links are opaque redirects that can't be decoded offline,
-so each item is keyed on **both** its normalized URL (tracking params
-stripped) and an outlet-domain + title fingerprint. An item is new only if
-no key has been seen. Everything fetched, including excluded and filtered
-items, is marked seen so nothing resurfaces on a later run.
-
-## Pending / digest flow
-
-Newly-flagged items go into a `pending` table (not yet shown to anyone).
-`--digest` loads every pending row, builds the digest from all of them
-(which may span several days' collect runs if a run was skipped), writes
-it, and marks those rows digested. A collect-only run never touches the
-digest file.
+`cloudflare_referrers_enabled` is `true`. With `CF_ANALYTICS_TOKEN` (Account Analytics Read) and `CF_ACCOUNT_ID` set, every run queries the Cloudflare GraphQL Analytics API (`rumPageloadEventsAdaptiveGroups`) for the last 24 hours of `refererHost` traffic, drops nycuriosity.com hosts and `referrer_ignore_hosts`, and stores daily rows in `seen.db`. Sunday's digest aggregates 7 days into "Sites sending visitors this week", with each host's top landing paths. Web Analytics must be enabled on the hostnames: data.nycuriosity.com and talroded.nycuriosity.com carry the beacon snippet in every page head, and automatic edge injection covers nycuriosity.com. Counts are RUM-sampled, so they arrive in multiples of the sample rate. `CF_WA_SITE_TAG` optionally scopes the query to one site. Without both secrets the source is skipped with one info line. A GraphQL error is recorded as a source error (message only, hex ids redacted) and does not fail the run.
 
 ## Known limits
 
-- **Article full-text scraping is unstructured.** `fetch_article` outlets
-  get the whole page's text (nav, ads, boilerplate included), which can
-  occasionally produce a false match on generic context terms. Reviewed by
-  a human before publishing anything from the digest.
-- **Backfill depth varies by source.** Google honors `after:`; outlet
-  feeds only return what they currently publish, so a 90-day outlet
-  backfill is best-effort.
-- **Not covered at all:** Substack Notes (no public search API) and
-  paywalled newsletters aren't covered; worth a manual check monthly.
+- `fetch_article` outlets return the whole page's text (navigation and boilerplate included), which can occasionally match on generic context terms. A human reviews the digest before anything is published from it.
+- Google honors `after:` on backfill; outlet feeds return only what they currently publish, so the 90-day outlet backfill is best-effort.
+- Not covered: Substack Notes (no public search API) and paywalled newsletters. Check those by hand monthly.
