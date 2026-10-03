@@ -1,0 +1,47 @@
+name: Daily static snapshots
+
+# The tracker pages carry pre-rendered copies of their JS-built content so
+# crawlers that do not run JavaScript (most AI crawlers) read real numbers
+# (seo/static_snapshot.py). The data refreshes monthly, but the deadline
+# timeline and the obligations table's overdue/upcoming marks depend on
+# today's date, so this reruns the snapshot script daily and commits only when
+# a block changed. No API calls.
+
+on:
+  schedule:
+    - cron: "15 10 * * *"   # daily, 10:15 UTC
+  workflow_dispatch:
+
+concurrency:
+  group: static-snapshots
+  cancel-in-progress: false
+
+jobs:
+  snapshots:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Rebuild date-dependent snapshots
+        run: python3 civic_reference/legislation_implementation_tracker/pipeline/build_static_snapshots.py
+
+      - name: Commit and push if a snapshot changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add -u -- 'civic_reference/legislation_implementation_tracker/*index.html' \
+                        'civic_reference/nyc_council_legislation_trackers/*index.html'
+          if git diff --cached --quiet; then
+            echo "Snapshots unchanged."
+            exit 0
+          fi
+          git commit -m "Daily static snapshot refresh (date-dependent tracker blocks)"
+          git pull --rebase --autostash
+          git push

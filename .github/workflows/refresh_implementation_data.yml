@@ -112,6 +112,13 @@ jobs:
         continue-on-error: true
         run: bash pipeline/rebuild_profiles.sh
 
+      - name: Pre-render static snapshots (tracker pages readable without JS)
+        continue-on-error: true
+        run: |
+          python3 civic_reference/legislation_implementation_tracker/pipeline/build_static_snapshots.py
+          git add -u -- 'civic_reference/legislation_implementation_tracker/*index.html' \
+                        'civic_reference/nyc_council_legislation_trackers/*index.html'
+
       # a failed push must never lose a batch again (Sep 26 2026, copied from
       # claude_backfill.yml): the rebuilt data survives 30 days as an artifact
       - name: Upload refresh output
@@ -290,6 +297,14 @@ jobs:
         continue-on-error: true
         if: env.RESUME_RAN == '1'
         run: bash pipeline/rebuild_profiles.sh
+
+      - name: Pre-render static snapshots (tracker pages readable without JS)
+        continue-on-error: true
+        if: env.RESUME_RAN == '1'
+        run: |
+          python3 civic_reference/legislation_implementation_tracker/pipeline/build_static_snapshots.py
+          git add -u -- 'civic_reference/legislation_implementation_tracker/*index.html' \
+                        'civic_reference/nyc_council_legislation_trackers/*index.html'
 
       - name: Commit and push if resume produced data
         run: |

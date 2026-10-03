@@ -169,7 +169,10 @@ jobs:
         run: python pipeline/validate_fiscal_impacts.py
 
       - name: Pre-render static snapshots (overview + hub, readable without JS)
-        run: python pipeline/build_fiscal_static_snapshots.py
+        run: |
+          python pipeline/build_fiscal_static_snapshots.py
+          # the umbrella hub's fiscal stat pills read fiscal_impacts.json too
+          python civic_reference/legislation_implementation_tracker/pipeline/build_static_snapshots.py
 
       - name: Commit and push updated data
         run: |
@@ -179,6 +182,7 @@ jobs:
                   civic_reference/nyc_council_fiscal_impacts_tracker/agency-fiscal-impact/data.json \
                   civic_reference/nyc_council_fiscal_impacts_tracker/overview/index.html \
                   civic_reference/nyc_council_fiscal_impacts_tracker/index.html \
+                  civic_reference/nyc_council_legislation_trackers/index.html \
                   pipeline/no_impact_matters.json
           # fiscal_batch_state.json / fiscal_batch_pending.json: a batch still
           # pending leaves them present (stage the addition/update); a batch
