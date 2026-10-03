@@ -23,6 +23,8 @@ Exit 1 when any ERROR-level finding exists (WARN-only runs exit 0).
 """
 
 import argparse
+import json
+import re
 import sys
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -86,6 +88,23 @@ def check_head(head, url, cfg, f, page_label):
         f.warn(page_label, "no <h1>")
 
 
+LDJSON_RE = re.compile(r'<script type="application/ld\+json">(.*?)</script>', re.S)
+
+
+def check_jsonld(html, url, f, page_label):
+    """JSON-LD written by build_jsonld.py must parse, and its url must be this
+    page's (a page copied from another one carries the old page's block until
+    build_sitemap.py / build_jsonld.py --apply rewrites it)."""
+    for m in LDJSON_RE.finditer(html):
+        try:
+            data = json.loads(m.group(1))
+        except ValueError as e:
+            f.error(page_label, f"JSON-LD does not parse: {e}")
+            continue
+        if isinstance(data, dict) and data.get("url") and data["url"] != url:
+            f.warn(page_label, f"JSON-LD url is {data['url']}, expected {url}; run seo/build_jsonld.py --apply")
+
+
 def check_file(path, f):
     """Hook mode: one file, contract only. Returns False if the file is not a
     site page (excluded path, stub, unknown repo)."""
@@ -106,6 +125,7 @@ def check_file(path, f):
     if kind == "stub":
         return False
     check_head(head, cfg["base"] + url_path_for(rel), cfg, f, rel)
+    check_jsonld(html, cfg["base"] + url_path_for(rel), f, rel)
     return True
 
 
@@ -121,6 +141,7 @@ def check_site_local(key, repo=None, f=None):
             f.error(p["rel"], "empty file: this serves as a blank page (make it a redirect stub or delete it)")
     for p in live:
         check_head(p["head"], p["abs"], cfg, f, p["rel"])
+        check_jsonld(p["html"], p["abs"], f, p["rel"])
 
     # uniqueness
     for field, getter in (("title", lambda p: p["head"].title),
@@ -162,9 +183,12 @@ def check_site_local(key, repo=None, f=None):
 
 # ------------------------------------------------------------- live mode ---
 
-def fetch(session, url):
+AI_CRAWLERS = ("GPTBot/1.2", "ClaudeBot/1.0", "PerplexityBot/1.0")
+
+
+def fetch(session, url, ua="nycuriosity-seo-check/1.0"):
     try:
-        r = session.get(url, timeout=25, headers={"User-Agent": "nycuriosity-seo-check/1.0"})
+        r = session.get(url, timeout=25, headers={"User-Agent": ua})
         return r.status_code, r.text
     except Exception as e:  # noqa: BLE001
         return None, str(e)
@@ -176,6 +200,17 @@ def check_site_live(key, repo=None, f=None):
     cfg = site_config(key)
     base = cfg["base"]
     session = requests.Session()
+
+    # AI crawlers (allowed by Tal, Oct 2 2026): the homepage must serve them and
+    # /llms.txt must exist. A spoofed user agent cannot see IP-verified bot
+    # blocking at Cloudflare; this catches user-agent rules and robots drift.
+    for ua in AI_CRAWLERS:
+        st, _ = fetch(session, base + "/", ua=f"Mozilla/5.0 (compatible; {ua}; +https://example.com/bot)")
+        if st != 200:
+            f.error("/", f"homepage returned {st} to {ua.split('/')[0]}")
+    st, _ = fetch(session, base + "/llms.txt")
+    if st != 200:
+        f.warn("/llms.txt", f"returned {st}")
 
     status, robots = fetch(session, base + "/robots.txt")
     if status != 200:
@@ -220,6 +255,7 @@ def check_site_live(key, repo=None, f=None):
             continue
         head = parse_head(html)
         check_head(head, url, cfg, f, label)
+        check_jsonld(html, url, f, label)
         lp = local.get(url)
         if lp:
             for field, live_v, src_v in (

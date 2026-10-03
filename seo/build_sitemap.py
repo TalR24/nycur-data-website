@@ -13,7 +13,8 @@ ignores both and they only invited hand-editing.
 
 Run this whenever a page is added, removed, or renamed (the seo_check.py
 "sitemap" check fails until you do). It also regenerates the site's llms.txt
-(build_llms_txt.py) from the same pages, and --check reports drift in both.
+(build_llms_txt.py) and the pages' JSON-LD (build_jsonld.py) from the same
+pages; --check reports sitemap and llms.txt drift.
 """
 
 import argparse
@@ -22,6 +23,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from common import git_lastmod, load_pages, repo_path, site_config, sitemap_locs  # noqa: E402
+import build_jsonld  # noqa: E402
 import build_llms_txt  # noqa: E402
 
 
@@ -98,6 +100,8 @@ def main():
     print(f"wrote {out} ({len(entries)} URLs; +{len(missing)} added, -{len(stale)} removed)")
     path, changed = build_llms_txt.write(args.site, args.repo)
     print(f"{'wrote' if changed else 'unchanged'} {path}")
+    ld = build_jsonld.run(args.site, apply=True, repo=args.repo)
+    print(f"JSON-LD: {len(ld)} page(s) updated" + "".join(f"\n  {t} {r}" for r, t in ld))
 
 
 if __name__ == "__main__":
