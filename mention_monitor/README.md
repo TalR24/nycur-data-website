@@ -54,7 +54,7 @@ Edit the config, not the code.
 - `own_link_domains`: a link to these hosts in an outlet article flags it as a citation with no query match.
 - `exclude_domains`, `exclude_url_prefixes`: own properties, matched including subdomains and path prefixes.
 - `own_byline_page`: Tal's live Publications page. On digest and backfill runs every entry outside its "In the press" section counts as his own writing. A failed fetch leaves the configured lists in place.
-- `own_author_names`, `own_byline_urls`, `own_byline_titles`, `own_columns`: his writing in outside outlets, matched by author metadata, seeded URL, or normalized title (Google News items carry no author). They merge into "My own pieces".
+- `own_author_names`, `own_byline_urls`, `own_byline_titles`, `own_columns`: his writing in outside outlets, matched by author metadata, seeded URL, or normalized title (Google News items carry no author). A title match must be a prefix, never a substring, and once the real outlet URL is known it counts only on an outlet that hosts one of his bylines, so coverage of his piece (EV Grieve on the Clinton Street op-ed, Oct 2026) lands in outside mentions. They merge into "My own pieces".
 - `research_domains`: citations of his academic work (NBER, Cato, Fed research banks and similar) go to "Research citations". A Google News item matched only by name, with the name absent from the visible title and snippet, is kept and labeled "(name match from Google News, not verified in text)".
 - `newsletter_domains`, `tier_overrides`: digest ordering.
 - `roundup_title_patterns`: titles of link roundups ("Headlines", "Roundup").

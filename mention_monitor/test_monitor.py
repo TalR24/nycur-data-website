@@ -207,6 +207,37 @@ class OfflineOwnBylineTitleTests(unittest.TestCase):
         }
         self.assertFalse(monitor.is_own_byline(item, self.cfg))
 
+    # Oct 4 2026 digest: EV Grieve's coverage of the Clinton Street op-ed
+    # was filed under "My own pieces" because its headline contains the
+    # seed title "Clinton Street Has a Traffic Problem".
+    EVG_TITLE = "Never mind the bollards: Clinton Street has a traffic problem"
+    EVG_URL = "https://evgrieve.com/2026/08/never-mind-bollards-clinton-street-has.html"
+
+    def test_coverage_title_containing_seed_unresolved_is_not_own(self):
+        item = {"url": "https://news.google.com/rss/articles/opaque-redirect-4",
+                "author": "", "title": self.EVG_TITLE}
+        self.assertFalse(monitor.is_own_byline(item, self.cfg))
+
+    def test_coverage_title_on_non_byline_outlet_is_outside(self):
+        item = monitor.make_item(
+            "google_news", "name", "EV Grieve", "evgrieve.com", self.EVG_TITLE,
+            "https://news.google.com/rss/articles/opaque-redirect-5",
+            datetime.now(timezone.utc), "snippet")
+        item["resolved_url"] = self.EVG_URL
+        self.assertFalse(monitor.is_own_byline(item, self.cfg))
+        self.assertEqual(monitor.classify_pending_kind(item, self.cfg), "outside")
+
+    def test_seed_title_on_non_byline_outlet_is_not_own(self):
+        item = {"url": self.EVG_URL, "resolved_url": self.EVG_URL,
+                "author": "", "title": "Clinton Street Has a Traffic Problem"}
+        self.assertFalse(monitor.is_own_byline(item, self.cfg))
+
+    def test_title_prefix_on_byline_outlet_still_own(self):
+        item = {"url": "https://nyc.streetsblog.org/2026/07/02/clinton-street-reprint",
+                "author": "",
+                "title": "Clinton Street Has a Traffic Problem - Streetsblog New York City"}
+        self.assertTrue(monitor.is_own_byline(item, self.cfg))
+
 
 class OfflineResearchCitationTests(unittest.TestCase):
     def setUp(self):

@@ -1155,18 +1155,34 @@ def is_own_byline(item, cfg):
     (Streetsblog op-eds, Vital City guest posts, etc.): matched by author
     name, by an explicit seeded URL, or by normalized title, since author
     metadata isn't present on a Google News item (no author field, and its
-    URL is an opaque news.google.com redirect that can't be matched)."""
+    URL is an opaque news.google.com redirect that can't be matched).
+
+    A title match must be a prefix in either direction (outlet suffixes and
+    Google News truncation), never a substring anywhere: EV Grieve's "Never
+    mind the bollards: Clinton Street has a traffic problem" (Aug 2026)
+    contained the seed "Clinton Street Has a Traffic Problem" and was filed
+    as Tal's own piece. And when the item's real outlet is known, a title
+    match only counts on an outlet that hosts one of his bylines, so
+    coverage of a piece elsewhere is never mistaken for the piece itself."""
     names = {n.strip().lower() for n in cfg.get("own_author_names", [])}
     if (item.get("author") or "").strip().lower() in names:
         return True
-    urls = {normalize_url(u) for u in cfg.get("own_byline_urls", [])}
+    byline_urls = cfg.get("own_byline_urls", [])
+    urls = {normalize_url(u) for u in byline_urls}
     if normalize_url(effective_url(item)) in urls:
         return True
     seed_titles = [normalize_title(t) for t in cfg.get("own_byline_titles", [])]
     item_title = normalize_title(item.get("title"))
-    if item_title and seed_titles:
-        return any(item_title in s or s in item_title for s in seed_titles if s)
-    return False
+    if not (item_title and seed_titles):
+        return False
+    host = norm_domain(urlparse(effective_url(item)).netloc)
+    if host and not domain_matches(host, "news.google.com"):
+        byline_hosts = {norm_domain(urlparse(u).netloc) for u in byline_urls}
+        if not any(domain_matches(host, h) or domain_matches(h, host)
+                   for h in byline_hosts if h):
+            return False
+    return any(item_title.startswith(s) or s.startswith(item_title)
+               for s in seed_titles if s)
 
 
 def is_research_citation(item, cfg):
