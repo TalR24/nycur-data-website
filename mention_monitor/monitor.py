@@ -2,7 +2,7 @@
 """Mention monitor for Tal Roded / NYCuriosity.
 
 Daily: fetches Google News RSS for the name/brand/tracker queries, scans a
-fixed list of outlet RSS feeds (full text) for the figure queries and for
+fixed list of outlet RSS feeds (full text) for the same queries and for
 any link back to nycuriosity.com, dedupes against a local SQLite db, and
 queues newly-flagged items as "pending". Sunday (or --digest): builds a
 digest from everything pending, writes it to digests/YYYY-MM-DD.md, marks
@@ -1227,10 +1227,10 @@ def matched_terms_str(item, queries_by_id):
 
 
 def is_term_only_match(item, cfg):
-    """True when an item was matched only by a tracker/figure term (e.g.
-    "$7.5 billion") with no own-property link and no name/brand match
+    """True when an item was matched only by a tracker term (e.g.
+    "Fiscal Impacts Tracker") with no own-property link and no name/brand match
     (Tal Roded / NYCuriosity). These are not confident citations of Tal's
-    own work, just a shared number or phrase, so they must never get a
+    own work, just a shared phrase, so they must never get a
     "Featured in" / "In the press" prompt, only a manual-verify note."""
     if item.get("own_link_url") or "own-link" in item["queries"]:
         return False

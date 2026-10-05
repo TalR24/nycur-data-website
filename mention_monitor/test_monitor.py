@@ -40,10 +40,6 @@ STREETSBLOG_SIDEBAR_URL = (
     "cm-marte-pedestrianizing-lower-manhattan-is-a-fitting-memorial-to-sept-11"
 )
 
-IRAN_TEXT = ("Iran rejects report on Resolution 2231 at the Security Council, "
-             "2,231 days after the deal was signed.")
-CITATION_TEXT = ("According to a recent analysis, the City's own records list "
-                  "2,231 reporting requirements spread across 183 agencies.")
 
 
 def load_config():
@@ -177,17 +173,6 @@ class LiveKnownCitationTests(unittest.TestCase):
                 self.assertEqual(kind, "outside", item["url"])
                 self.assertTrue(monitor.is_roundup(item, self.cfg), item["url"])
 
-
-class OfflineQueryMatchTests(unittest.TestCase):
-    def setUp(self):
-        self.cfg = load_config()
-        self.fig_query = next(q for q in self.cfg["queries"] if q["id"] == "fig-2231-reports")
-
-    def test_iran_resolution_does_not_flag(self):
-        self.assertFalse(monitor.query_matches_text(self.fig_query, IRAN_TEXT.lower()))
-
-    def test_real_citation_flags(self):
-        self.assertTrue(monitor.query_matches_text(self.fig_query, CITATION_TEXT.lower()))
 
 
 class OfflineOwnBylineTitleTests(unittest.TestCase):
@@ -370,7 +355,7 @@ class OfflineDigestFailureLeavesPendingTests(unittest.TestCase):
 
     def test_build_digest_exception_leaves_pending_rows_untouched(self):
         item = monitor.make_item(
-            "outlets", "fig-2231-reports", "Test Outlet", "example.com",
+            "outlets", "obligations-tracker", "Test Outlet", "example.com",
             "Test headline", "https://example.com/a", datetime.now(timezone.utc),
             "test text",
         )
@@ -404,7 +389,7 @@ class OfflinePendingDigestFlowTests(unittest.TestCase):
         self.conn.close()
         self.tmp.cleanup()
 
-    def _sample_item(self, key="u:testkey", query_id="fig-2231-reports"):
+    def _sample_item(self, key="u:testkey", query_id="obligations-tracker"):
         item = monitor.make_item(
             "outlets", query_id, "Test Outlet", "example.com",
             "Test headline", "https://example.com/a", datetime.now(timezone.utc),
@@ -1540,7 +1525,7 @@ class OfflineEmailTests(unittest.TestCase):
 
     def test_html_digest_escapes_script_title(self):
         cfg = load_config()
-        item = monitor.make_item("outlets", "fig-2231-reports", "Test Outlet", "example.com",
+        item = monitor.make_item("outlets", "obligations-tracker", "Test Outlet", "example.com",
                                   "<script>alert(1)</script>", "https://example.com/a",
                                   datetime.now(timezone.utc), "text")
         html = monitor.build_digest_html([item], [], [], None, [], cfg, "2026-09-15")
@@ -1639,7 +1624,7 @@ class OfflineSiteUpdateTests(unittest.TestCase):
         self.assertIn(self.cfg["site_update_rules"]["implementation_tracker_file"], files)
 
     def test_targets_by_query_id(self):
-        item = self._item(queries={"fig-7.5b-mandates"})
+        item = self._item(queries={"fiscal-tracker"})
         targets = monitor.site_update_targets(item, self.cfg)
         files = {f for f, _ in targets}
         self.assertIn(self.cfg["site_update_rules"]["fiscal_tracker_file"], files)
@@ -1685,16 +1670,16 @@ class OfflineSiteUpdateTests(unittest.TestCase):
         self.assertIsNone(entries[0][2])
 
     def test_term_only_match_is_possible_uncredited_citation(self):
-        """Should-fix 5: a figure-only match (no own link, no name/brand
+        """Should-fix 5: a tracker-term-only match (no own link, no name/brand
         term) must not get a Featured-in/In-the-press prompt."""
-        item = self._item(queries={"fig-7.5b-mandates"})
+        item = self._item(queries={"fiscal-tracker"})
         item["own_link_url"] = ""
         entries = monitor.site_update_entries(
             [item], [], [], self.cfg, {q["id"]: q for q in self.cfg["queries"]})
         self.assertEqual(len(entries), 1)
         self.assertIsNone(entries[0][2])
         self.assertIn("Possible uncredited citation, verify manually", entries[0][1])
-        self.assertIn("$7.5 billion", entries[0][1])
+        self.assertIn("Fiscal Impacts Tracker", entries[0][1])
 
     def test_name_match_still_gets_a_prompt(self):
         """A "name" match (Tal Roded) is a confident citation, not term-only."""

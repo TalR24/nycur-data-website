@@ -8,7 +8,7 @@ Finds outside citations of Tal Roded, NYCuriosity and the trackers (fiscal impac
 
 Every run (daily):
 - **`google_news`**: Google News RSS for the name, brand and tracker queries.
-- **`outlets`**: 12 outlet RSS feeds scanned in full text (The City Reporter, City Limits, Streetsblog NYC, City & State NY, Reinvent Albany, Vital City, Gothamist, amNY, Brooklyn Paper, QNS, The Lo-Down, W42ST). They serve the figure queries (`2,231`, `8,300`, `$7.5 billion`, `5,000`) and flag any article that links to nycuriosity.com or nycuriosity.substack.com.
+- **`outlets`**: 12 outlet RSS feeds scanned in full text (The City Reporter, City Limits, Streetsblog NYC, City & State NY, Reinvent Albany, Vital City, Gothamist, amNY, Brooklyn Paper, QNS, The Lo-Down, W42ST). They are scanned for the name, brand and tracker queries and flag any article that links to nycuriosity.com or nycuriosity.substack.com.
 - **`sitemap_scan`**: Ghost `sitemap-posts.xml` for Vital City and Hell Gate.
 - **`alert_feeds`**: Google Alerts Atom feeds, read from the `GOOGLE_ALERT_FEEDS` secret.
 - **`cloudflare_referrers`**: Cloudflare Web Analytics referrer hosts (see below).
@@ -50,7 +50,7 @@ Flags: `--backfill` (seed the db; queues nothing, no digest, no email), `--diges
 Edit the config, not the code.
 
 - `outlets`: `name`, `feed`, `tier` (`news` or `newsletter`), `fetch_article` (fetch the page when the feed entry has no usable full text, capped by `max_article_fetches`).
-- `queries`: run separately, never combined. Fields: `id`, `q` (the Google News string), `match_terms` (must appear in the full text or the Google News title), optional `require_terms` (at least one must also appear) and `exclude_terms` (none may appear; keeps the `2,231` query off UN Resolution 2231 coverage), and `sources`. Name, brand and tracker queries use `google_news` and `outlets`; figure queries use only `outlets`, since Google News RSS strips punctuation and returns noise for numbers. Current ids: `name`, `brand`, `fiscal-tracker`, `obligations-tracker`, `implementation-tracker`, `fig-7.5b-mandates`, `fig-2231-reports`, `fig-8300-obligations`, `fig-5000-standing`.
+- `queries`: run separately, never combined. Fields: `id`, `q` (the Google News string), `match_terms` (must appear in the full text or the Google News title), optional `require_terms` (at least one must also appear) and `exclude_terms` (none may appear), and `sources`. All queries use `google_news` and `outlets`. Current ids: `name`, `brand`, `fiscal-tracker`, `obligations-tracker`, `implementation-tracker`. No figure queries (a bare number such as `2,231`): Tal dropped them on Oct 5 2026 after `2231` matched a Cloudflare ray ID in Gothamist page scripts and flagged two unrelated articles.
 - `own_link_domains`: a link to these hosts in an outlet article flags it as a citation with no query match.
 - `exclude_domains`, `exclude_url_prefixes`: own properties, matched including subdomains and path prefixes.
 - `own_byline_page`: Tal's live Publications page. On digest and backfill runs every entry outside its "In the press" section counts as his own writing. A failed fetch leaves the configured lists in place.
