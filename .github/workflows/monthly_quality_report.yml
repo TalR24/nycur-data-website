@@ -37,9 +37,15 @@ jobs:
           python-version: "3.11"
 
       - name: Install requirements
-        run: pip install requests
+        # both validators import the pipelines (python-docx, pypdf...): installing
+        # only requests crashed them on Oct 3 2026 and the report still said clean
+        run: |
+          pip install -r pipeline/requirements.txt
+          pip install -r civic_reference/legislation_implementation_tracker/pipeline/requirements.txt
 
       - name: Run quality report
+        id: report
+        continue-on-error: true   # commit the report, then fail the run below
         working-directory: civic_reference/legislation_implementation_tracker
         run: python3 pipeline/monthly_quality_report.py
 
@@ -62,3 +68,9 @@ jobs:
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
         run: python3 civic_reference/legislation_implementation_tracker/pipeline/email_quality_summary.py
+
+      - name: Fail the run if a validator crashed
+        if: ${{ always() && steps.report.outcome == 'failure' }}
+        run: |
+          echo "::error::A validator crashed; the committed report says so. See the 'Run quality report' log."
+          exit 1

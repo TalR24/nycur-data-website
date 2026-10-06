@@ -99,6 +99,32 @@ def main() -> None:
         if m and len(m.group(1)) < 6:
             hard["legistar_url_uses_rest_id"].append(label(r))
 
+    # --- HARD: one statement counted twice (fiscal audit, Oct 6 2026) ----------
+    # the same statement under a REST id and a web id (4 pairs), or one
+    # package statement carrying full figures on several bills (CityFHEPS,
+    # $3.3B four times): same totals and the same expenditure narrative
+    sig: dict = defaultdict(list)
+    for r in records:
+        narr = re.sub(r"\s+", " ", (r.get("impact_narrative_expenditure") or "")).strip().lower()
+        tot = tuple(r.get(k) for k in ("total_revenue", "total_expenditure", "total_capital"))
+        if len(narr) > 80 and any(tot) and not r.get("package_note"):
+            sig[(narr, tot)].append(label(r))
+    # parallel bills can share a narrative word for word (Int 1085/1086-2016,
+    # each with its own $10,000 statement), so only two shapes are errors: a
+    # copy with no Legistar link (a REST-id duplicate) or a package statement
+    by_label = {label(r): r for r in records}
+    for (narr, _tot), group in sig.items():
+        if len(group) < 2:
+            continue
+        rest_copy = any(not by_label[g].get("legistar_url") for g in group)
+        package = re.search(r"\bpackage\b|assessed collectively|costed together", narr)
+        if rest_copy or package:
+            hard["same_statement_counted_twice"].append(" = ".join(group))
+    enacted = {str(l.get("matter_id")) for l in laws}
+    for mid, why in skips.items():
+        if why == "proposed" and str(mid) in enacted:
+            hard["enacted_law_skipped_as_proposed"].append(str(mid))
+
     # --- HARD: the pipeline's own filters -----------------------------------
     for r in records:
         rev, exp, cap, net = (r.get(k) for k in ("total_revenue", "total_expenditure", "total_capital", "net_fiscal_impact"))

@@ -387,6 +387,17 @@ _r = totals_from_columns({
     "recurring_annual_expenditure": None})
 check("no recurring figure leaves the Full column in place", _r["total_expenditure"] == 500000, f"got {_r}")
 
+# fiscal audit, Oct 6 2026
+from fetch_fiscal_impacts import normalize_fiscal_years  # noqa: E402
+_n = normalize_fiscal_years([{"fy_first_effective": "FY26", "fy_full_impact": "FY2028",
+                              "fiscal_table_columns": [{"label": "Effective FY25"}]}])[0]
+check("fiscal years read the Effective column and normalise to FYnn (Int 0991-2024)",
+      _n["fy_first_effective"] == "FY25" and _n["fy_full_impact"] == "FY28", f"got {_n}")
+_n = normalize_fiscal_years([{"fy_first_effective": "FY26",
+                              "fiscal_table_columns": [{"label": "FY Succeeding Effective FY27"}]}])[0]
+check("a 'FY Succeeding Effective' first column does not move fy_first_effective",
+      _n["fy_first_effective"] == "FY26", f"got {_n}")
+
 print(f"\n{PASSED} passed, {FAILED} failed")
 if FAILED:
     sys.exit(1)

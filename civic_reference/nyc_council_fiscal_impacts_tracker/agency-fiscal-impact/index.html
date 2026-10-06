@@ -325,7 +325,7 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:18px
     </div>
     <div class="hero-tag">Bar Chart</div>
     <h1>Which agencies bear the cost of <span>Council legislation?</span></h1>
-    <p>Total fiscal impact of NYC Council legislation (2014–2026), grouped by the city agencies responsible for implementation. Each bill may affect multiple agencies. Filter by committee, sponsor, bill year, or projected fiscal year.</p>
+    <p>Total fiscal impact of NYC Council legislation, grouped by the city agencies responsible for implementation. Each bill may affect multiple agencies. Filter by committee, sponsor, bill year, or projected fiscal year.</p>
   </div>
 </div>
 
@@ -407,10 +407,10 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:18px
       </div>
       <figcaption class="c-foot">
         <div class="c-foot-text">
-          <span>Net fiscal impact of NYC Council legislation (2014–2026) grouped by implementing agency. Negative values indicate net costs to the city; positive values indicate net revenue gains.
+          <span>Net fiscal impact of NYC Council legislation grouped by implementing agency. Negative values indicate net costs to the city; positive values indicate net revenue gains.
         Source: NYC Council Legistar fiscal impact statements, processed by NYCuriosity.</span>
           <span>Created by Tal Roded · NYCuriosity</span>
-          <span id="record-count-note" style="font-family:'JetBrains Mono', ui-monospace, monospace;font-size:0.65rem;color:var(--text-faint);">308 total records · 2014–2026</span>
+          <span id="record-count-note" style="font-family:'JetBrains Mono', ui-monospace, monospace;font-size:0.65rem;color:var(--text-faint);"></span>
         </div>
       </figcaption>
     </figure>
@@ -612,6 +612,10 @@ function updateStats(records) {
 }
 
 // ── RENDER CHART ──────────────────────────────────────────────────────────────
+  // year span of the bills shown, from the data (Oct 6 2026: a hard-coded
+  // 2014–2026 was already wrong for Int 0172-2010 and would go stale in 2027)
+  function yrSpan(rs) { var ys = rs.map(function (r) { return r.intro_year; }).filter(Boolean);
+    return ys.length ? Math.min.apply(null, ys) + '–' + Math.max.apply(null, ys) : ''; }
 function render() {
   const filtered = getFiltered();
   updateStats(filtered);
@@ -620,7 +624,7 @@ function render() {
   document.getElementById('chart-title').textContent = cfg.label + ' by Agency';
   document.getElementById('chart-sub').textContent   = cfg.sub;
   document.getElementById('record-count-note').textContent =
-    `${filtered.length} bills shown · 2014–2026`;
+    `${filtered.length} bills shown · ${yrSpan(filtered)}`;
 
   const pairs = aggregateByAgency(filtered, cfg.key);
   const empty = document.getElementById('empty-state');

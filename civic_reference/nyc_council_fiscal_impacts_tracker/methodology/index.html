@@ -520,10 +520,10 @@
       <h3>Bill numbers</h3>
       <p>The bill number shown in the table is Legistar's own file number (for example <code>Int 1002-2026</code>), read from the bill's Legistar page. The number printed inside the fiscal impact statement itself is kept in the data but not displayed, because the Finance Division writes it inconsistently and it is often blank when the statement was drafted before the bill was numbered.</p>
       <h3>Data checks</h3>
-      <p>A validation script runs against the data on every refresh and in a monthly quality report. It checks internal consistency (net impact equals revenue minus expenditure minus capital, no duplicate records, no dead Legistar links) and compares the table against the enacted-law list so a coverage gap like the missing 2024 laws would show up as a count, not go unnoticed.</p>
+      <p>A validation script runs against the data on every refresh and in a monthly quality report. It checks internal consistency (net impact equals revenue minus expenditure minus capital, no duplicate records, every Legistar link carrying the bill's own ID) and compares the table against the enacted-law list so a coverage gap like the missing 2024 laws would show up as a count, not go unnoticed.</p>
 
       <h3>Finding the right attachment</h3>
-      <p>A single bill may have many attachments, committee reports, hearing transcripts, legal memos, and more. The tracker identifies the fiscal impact statement specifically by checking the filename of each attachment for the words "fiscal" or "impact." Only that attachment is downloaded; all others are ignored.</p>
+      <p>A single bill may have many attachments, committee reports, hearing transcripts, legal memos, and more. The tracker picks the attachment Legistar labels as the Council's fiscal impact statement. An amended bill carries one statement per version, so the tracker takes the newest, which is the statement for the version that passed. OMB's separate statement is not read.</p>
     </div>
 
     <!-- 4. EXTRACTION -->
@@ -532,7 +532,7 @@
         <span class="section-num">04</span>
         <span class="section-title">How figures are extracted</span>
       </div>
-      <p>Once a fiscal impact statement is identified, the tracker downloads the <code>.docx</code> file and extracts its full text, including all table cells. That text is passed to a large language model, <strong>Claude Sonnet</strong> (Anthropic), with a structured prompt that instructs it to return a JSON object containing all key fields: fiscal totals by year, agency breakdown, narratives, sponsor names, and administrative metadata.</p>
+      <p>Once a fiscal impact statement is identified, the tracker downloads the file and extracts its full text, including all table cells. Statements come as Word files (<code>.docx</code>), older Word files (<code>.doc</code>) and PDFs; all three are read. That text is passed to a large language model, <strong>Claude Sonnet</strong> (Anthropic), with a structured prompt that instructs it to return a JSON object containing all key fields: fiscal totals by year, agency breakdown, narratives, sponsor names, and administrative metadata.</p>
 
       <h3>Why AI extraction?</h3>
       <p>Fiscal impact statements don't follow a perfectly uniform format. While newer documents (post-2020) use a consistent three-column table, older bills used varied column structures, different terminology, or described costs entirely in prose paragraphs. A rule-based parser would break on edge cases. Claude reads the document's actual content and synthesizes the values regardless of layout.</p>
@@ -678,7 +678,7 @@
       <p>For pre-2019 legislation, fiscal impacts were often written as prose rather than structured tables. Synthesizing totals from narrative text introduces more uncertainty than reading from a table. Treat older figures as rough approximations.</p>
 
       <h3>Coverage depends on Legistar attachments</h3>
-      <p>The tracker only includes bills where a fiscal impact statement was attached to the Legistar record as a <code>.docx</code> file. Some older bills may have statements in PDF format or attached under different filenames that the tracker doesn't recognize. Coverage of pre-2020 legislation may therefore be incomplete.</p>
+      <p>The tracker only includes bills with a fiscal impact statement attached to their Legistar record. Until October 2026 it read Word <code>.docx</code> files only, and 202 statements filed as PDFs or older <code>.doc</code> files were skipped; they were read on October 6, 2026, which added 38 bills with a cost or revenue.</p>
 
       <h3>Source data</h3>
       <p>All original fiscal impact statement documents are publicly available on <a href="https://legistar.council.nyc.gov" target="_blank" rel="noopener" style="color:var(--blue)">NYC Legistar</a>. Each bill in the tracker includes a direct link to its Legistar record where the source document can be downloaded.</p>

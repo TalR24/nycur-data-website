@@ -167,9 +167,15 @@ jobs:
       - name: Regenerate agency chart data
         run: python pipeline/regenerate_agency_data.py
 
-      - name: Data validator (never blocks the commit; read it in the run log)
-        continue-on-error: true
-        run: python pipeline/validate_fiscal_impacts.py
+      # fiscal audit (Oct 6 2026): the validator ran without --strict under
+      # continue-on-error, so a hard failure could never stop a commit, and
+      # the 25 rule tests ran nowhere. Both now block the push; the data
+      # still survives as the fiscal-data artifact below (if: always()).
+      - name: Fiscal rule tests
+        run: python pipeline/tests/test_fiscal_rules.py
+
+      - name: Data validator (a hard failure blocks the commit)
+        run: python pipeline/validate_fiscal_impacts.py --strict
 
       - name: Pre-render static snapshots (overview + hub, readable without JS)
         run: |

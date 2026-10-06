@@ -14,7 +14,8 @@ Steps
    - `python3 pipeline/fetch_fiscal_impacts.py --incremental --seed-laws auto --emit-packets /tmp/fis` (fetches this month's statements from Legistar; no model call).
    - Answer every packet in /tmp/fis into /tmp/fis/results/.
    - `python3 pipeline/fetch_fiscal_impacts.py --incremental --seed-laws auto --ingest /tmp/fis` (the same flags as the emit step: ingest re-runs the selection)
-   - `python3 pipeline/validate_fiscal_impacts.py` must print 0 hard failures. If not, do not commit fiscal files; say so in the report.
+   - `python3 pipeline/regenerate_agency_data.py`, then `python3 pipeline/build_fiscal_static_snapshots.py` and `python3 civic_reference/legislation_implementation_tracker/pipeline/build_static_snapshots.py` (the agency chart and the pre-rendered pages read the new records).
+   - `python3 pipeline/tests/test_fiscal_rules.py` must end `0 failed`, and `python3 pipeline/validate_fiscal_impacts.py` must print 0 hard failures. If not, do not commit fiscal files; say so in the report.
 
 2. Obligations and powers (in civic_reference/legislation_implementation_tracker):
    - `python3 pipeline/fetch_enacted_laws.py --incremental`
@@ -25,7 +26,7 @@ Steps
 3. Gold check (repo root): `python3 civic_reference/nyc_council_legislation_trackers/quality/score_gold.py` and note the regressions count. Do not commit gold files.
 
 4. Commit and push to main. Stage explicit paths only, never `git add .` or `-A` on a directory:
-   - civic_reference/nyc_council_fiscal_impacts_tracker/data/fiscal_impacts.json, civic_reference/nyc_council_fiscal_impacts_tracker/agency-fiscal-impact/data.json, pipeline/no_impact_matters.json
+   - civic_reference/nyc_council_fiscal_impacts_tracker/data/fiscal_impacts.json, civic_reference/nyc_council_fiscal_impacts_tracker/agency-fiscal-impact/data.json, civic_reference/nyc_council_fiscal_impacts_tracker/overview/index.html, civic_reference/nyc_council_fiscal_impacts_tracker/index.html, civic_reference/nyc_council_legislation_trackers/index.html, pipeline/no_impact_matters.json
    - civic_reference/legislation_implementation_tracker/data/{laws,obligations,powers,restated_links,summary,report_filings}.json, civic_reference/legislation_implementation_tracker/pipeline/reextract_queue.json
    - pipeline/max_refresh.json (stage it with `git add -A -- pipeline/max_refresh.json`)
    Commit message: "Monthly refresh on Max: N fiscal, M laws done, K left for the Actions fallback". Then `git -c rebase.autoStash=true pull --rebase origin main && git push`, retrying up to 3 times with a 30-second pause.

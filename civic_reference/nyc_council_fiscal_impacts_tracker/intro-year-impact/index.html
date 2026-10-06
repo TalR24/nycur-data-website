@@ -8,12 +8,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#170C03">
   <title>Fiscal Impact by Year Legislated — NYC Council Fiscal Impacts Tracker — NYCuriosity</title>
-  <meta name="description" content="Total fiscal impact of NYC Council legislation grouped by the year the fiscal impact statement was prepared, filterable by agency, committee, and expense type.">
+  <meta name="description" content="Total fiscal impact of NYC Council legislation grouped by the year each bill was introduced, filterable by agency, committee, and expense type.">
   <link rel="canonical" href="https://data.nycuriosity.com/civic_reference/nyc_council_fiscal_impacts_tracker/intro-year-impact/">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://data.nycuriosity.com/civic_reference/nyc_council_fiscal_impacts_tracker/intro-year-impact/">
   <meta property="og:title" content="Fiscal Impact by Year Legislated — NYC Council Fiscal Impacts Tracker — NYCuriosity">
-  <meta property="og:description" content="Total fiscal impact of NYC Council legislation grouped by the year the fiscal impact statement was prepared, filterable by agency, committee, and expense type.">
+  <meta property="og:description" content="Total fiscal impact of NYC Council legislation grouped by the year each bill was introduced, filterable by agency, committee, and expense type.">
   <meta property="og:image" content="https://data.nycuriosity.com/website_logo.png">
   <meta name="twitter:card" content="summary_large_image">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -237,7 +237,7 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:18px
     </div>
     <div class="hero-tag">Bar Chart</div>
     <h1>Which legislative years produced the most <span>fiscally significant bills?</span></h1>
-    <p>Total fiscal impact of NYC Council legislation (2014–2026), grouped by the year each bill's fiscal impact statement was prepared. Each bar sums all estimated costs and revenues across bills legislated that year.</p>
+    <p>Total fiscal impact of NYC Council legislation, grouped by the year each bill was introduced. Each bar sums all estimated costs and revenues across bills legislated that year.</p>
   </div>
 </div>
 
@@ -305,7 +305,7 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:18px
     <figure class="chart-card" id="chart-box" data-slug="fiscal-impact-by-intro-year">
       <div class="c-head">
         <h2 class="c-title" id="chart-title">Net Fiscal Impact by Year Legislated</h2>
-        <p class="c-deck" id="chart-sub">Total net fiscal impact across all filtered legislation, grouped by the year each bill's fiscal impact statement was prepared. Bars sorted chronologically.</p>
+        <p class="c-deck" id="chart-sub">Total net fiscal impact across all filtered legislation, grouped by the year each bill was introduced. Bars sorted chronologically.</p>
       </div>
       <div class="c-plot">
         <div class="chart-area">
@@ -318,10 +318,10 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:18px
       </div>
       <figcaption class="c-foot">
         <div class="c-foot-text">
-          <span>Net fiscal impact of NYC Council legislation grouped by the year each bill's fiscal impact statement was prepared. Negative values indicate net costs to the city; positive values indicate net revenue gains.
+          <span>Net fiscal impact of NYC Council legislation grouped by the year each bill was introduced. Negative values indicate net costs to the city; positive values indicate net revenue gains.
         Source: NYC Council Legistar fiscal impact statements, processed by NYCuriosity.</span>
           <span>Created by Tal Roded · NYCuriosity</span>
-          <span id="record-count-note" style="font-family:'JetBrains Mono', ui-monospace, monospace;font-size:0.65rem;color:var(--text-faint);">219 total records · 2014–2026</span>
+          <span id="record-count-note" style="font-family:'JetBrains Mono', ui-monospace, monospace;font-size:0.65rem;color:var(--text-faint);"></span>
         </div>
       </figcaption>
     </figure>
@@ -330,10 +330,10 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:18px
     <div class="footnotes">
       <h3>Methodology</h3>
       <ul>
-        <li>Each bill is attributed to the year its fiscal impact statement was prepared, as recorded in the <strong>Date Prepared</strong> field. For most bills this closely matches the year it was voted on. Where date prepared is unavailable, the year is extracted from the bill's file number (e.g., "Int 0360-2014" → 2014).</li>
+        <li>Each bill is attributed to the year it was introduced: the year in its Legistar file number ("Int 0360-2014" is 2014). A bill with no file number takes the year its fiscal impact statement was prepared. A bill introduced in one year and passed the next counts in the year it was introduced.</li>
         <li><strong>Net fiscal impact</strong> = total revenue − total operational expense − total capital expense. Negative = net cost to the city.</li>
         <li>Only bills with at least one non-zero, estimable fiscal figure are included. Bills where costs could not be estimated are excluded.</li>
-        <li>Source: <a href="https://legistar.council.nyc.gov" target="_blank">NYC Council Legistar</a> fiscal impact statement documents, extracted and structured by NYCuriosity using the Legistar REST API and Claude AI.</li>
+        <li>Source: <a href="https://legistar.council.nyc.gov" target="_blank">NYC Council Legistar</a> fiscal impact statement documents, extracted and structured by NYCuriosity from Legistar's public pages with Claude.</li>
       </ul>
     </div>
 
@@ -500,6 +500,10 @@ function updateStats(records) {
 }
 
 // ── RENDER CHART ──────────────────────────────────────────────────────────────
+  // year span of the bills shown, from the data (Oct 6 2026: a hard-coded
+  // 2014–2026 was already wrong for Int 0172-2010 and would go stale in 2027)
+  function yrSpan(rs) { var ys = rs.map(function (r) { return r.intro_year; }).filter(Boolean);
+    return ys.length ? Math.min.apply(null, ys) + '–' + Math.max.apply(null, ys) : ''; }
 function render() {
   const filtered = getFiltered();
   updateStats(filtered);
@@ -508,7 +512,7 @@ function render() {
   document.getElementById('chart-title').textContent = cfg.label + ' by Year Legislated';
   document.getElementById('chart-sub').textContent   = cfg.sub;
   document.getElementById('record-count-note').textContent =
-    `${filtered.length} bills shown · 2014–2026`;
+    `${filtered.length} bills shown · ${yrSpan(filtered)}`;
 
   const pairs   = aggregateByIntroYear(filtered, cfg.key);
   const empty   = document.getElementById('empty-state');

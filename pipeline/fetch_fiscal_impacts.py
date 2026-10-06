@@ -927,6 +927,9 @@ def extract_many(pending: list[tuple[str, str]], client: anthropic.Anthropic,
         for mid, text in pending:
             status, payload = results.get(mid, ("missing", None))
             if status == "succeeded":
+                # batch messages count in the run's usage line too (Oct 6
+                # 2026: an Oct 1 batch of 10 Sonnet calls printed "0 calls")
+                USAGE.add(payload)
                 try:
                     out[mid] = _finish_extraction(payload, text)
                 except json.JSONDecodeError as e:
@@ -1016,6 +1019,14 @@ def apply_overrides(records: list) -> list:
             removed.append(r["matter_id"])
             continue
         r.update(e.get("set") or {})
+        # a package member (Finance costed several intros as one package):
+        # its figures sit on one bill and this one shows "see package"
+        # (CityFHEPS Int 229/878/893/894, Oct 6 2026: $3.3B counted four times)
+        if r.get("package_note") and all(r.get(k) is None for k in ("total_revenue", "total_expenditure", "total_capital")):
+            r["net_fiscal_impact"] = None
+            r["audited"] = e.get("audit")
+            out.append(r)
+            continue
         # An override that pins outlasts_statement true is saying the pilot
         # outlasts its statement's columns, so the figure is the annual
         # full-impact amount, never a program-life sum (matter 3597643, Sep
@@ -1039,6 +1050,24 @@ def apply_overrides(records: list) -> list:
     return out
 
 
+def normalize_fiscal_years(records: list) -> list:
+    """fy_first_effective / fy_full_impact as "FYnn" (fiscal audit, Oct 6 2026:
+    27 values were "FY2020"-style, splitting the filters), and fy_first_effective
+    taken from the statement's own first column when it is labelled
+    "Effective FYnn" (11 records disagreed with it, e.g. Int 0991-2024)."""
+    for r in records:
+        for k in ("fy_first_effective", "fy_full_impact"):
+            m = re.fullmatch(r"\s*FY\s?'?(?:20)?(\d{2})\s*", str(r.get(k) or ""), re.I)
+            if m:
+                r[k] = "FY" + m.group(1)
+        cols = r.get("fiscal_table_columns") or []
+        lab = (cols[0].get("label") or "") if cols else ""
+        m = re.match(r"\s*Effective\s+FY\s?'?(?:20)?(\d{2})\b", lab, re.I)
+        if m:
+            r["fy_first_effective"] = "FY" + m.group(1)
+    return records
+
+
 def fill_blank_titles(records: list) -> list:
     """A statement parsed without a title shows as a blank row: take the
     enacted law's title from laws.json, else the bill's own file number."""
@@ -1053,7 +1082,7 @@ def fill_blank_titles(records: list) -> list:
 
 def save_output(path: Path, records: list) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    records = fill_blank_titles(apply_overrides(records))
+    records = normalize_fiscal_years(fill_blank_titles(apply_overrides(records)))
     data = {
         "metadata": {
             "last_updated": datetime.utcnow().isoformat() + "Z",
@@ -1612,7 +1641,13 @@ def main() -> int:
         # re-check): take their GUIDs from laws.json and ignore the skip list
         only = set(json.loads(Path(args.matters[1:]).read_text()) if args.matters.startswith("@")
                    else args.matters.split(","))
+        # "id:GUID" names a bill that is not an enacted law (a pending bill
+        # wrongly skip-listed, fiscal audit Oct 6 2026); a bare id takes its
+        # GUID from laws.json
+        given = dict(t.split(":", 1) for t in only if ":" in t)
+        only = {t.split(":", 1)[0] for t in only}
         laws = json.loads(LAWS_PATH.read_text())["laws"]
+        _add_matters([(m, g) for m, g in given.items()])
         _add_matters([(str(l["matter_id"]), l["legistar_guid"]) for l in laws
                       if str(l["matter_id"]) in only and l.get("legistar_guid")])
         for m in only:
@@ -1683,6 +1718,17 @@ def main() -> int:
             pending_ctx[matter_id] = {"guid": d["guid"], "att_id": d["att_id"]}
         log.info(f"--resume-only: resuming {len(pending)} pending extraction(s)")
     else:
+        # skips that can go stale are re-checked whenever the matter is in this
+        # run's selection (fiscal audit, Oct 6 2026): a statement is often
+        # attached after a first check (7 of 68 sampled "no_attachment" skips
+        # had one), and a "proposed" skip on a bill since enacted hid 63
+        # enacted laws after the Sep 24 is_proposed_bill fix
+        enacted = {str(l["matter_id"]) for l in json.loads(LAWS_PATH.read_text())["laws"]} if LAWS_PATH.exists() else set()
+        recheck = {m for m, _ in matters
+                   if skips.get(m) == "no_attachment" or (skips.get(m) == "proposed" and m in enacted)}
+        if recheck and args.incremental and not args.reextract:
+            existing_ids -= recheck
+            log.info(f"Re-checking {len(recheck)} skips that can go stale (no_attachment, proposed-but-enacted)")
         gate_done = gated_done_ids()
         if gate_done:
             log.info(f"MAX_REFRESH_GATE=1: skipped {len(gate_done & {m for m, _ in matters})} ids "

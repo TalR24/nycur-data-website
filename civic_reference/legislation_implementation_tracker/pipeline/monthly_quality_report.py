@@ -76,6 +76,12 @@ def main() -> int:
 
     absorb(vjson, "")
     absorb(fjson, "fiscal_")
+    # a validator that crashed writes no JSON: never read that as "clean" or
+    # "improved" (Oct 3 2026: both crashed on a missing python-docx and the
+    # report said "Hard failures: 0 (clean)", every fiscal count "improved")
+    crashed = [name for name, path in (("validate_obligations.py", vjson),
+                                       ("validate_fiscal_impacts.py", fjson)) if not path.exists()]
+    metrics["_crashed"] = crashed
 
     # Month-over-month diff vs the newest earlier metrics JSON.
     prev_name, prev = None, {}
@@ -86,6 +92,9 @@ def main() -> int:
     delta = []
     for k in sorted(set(metrics) | set(prev)):
         if k.startswith("_"):
+            continue
+        if (k.startswith("fiscal_") and "validate_fiscal_impacts.py" in crashed) or \
+           (not k.startswith("fiscal_") and "validate_obligations.py" in crashed):
             continue
         now_v, then_v = metrics.get(k, 0), prev.get(k, 0)
         if now_v != then_v:
@@ -100,8 +109,9 @@ def main() -> int:
     lines = [
         f"# Legislation trackers quality report — {tag}",
         "",
-        f"Hard failures: **{hard_total}**"
-        + (" — RUN A QUALITY LOOP" if hard_total else " (clean)"),
+        (f"**VALIDATOR CRASHED: {', '.join(crashed)}. No result for it this month; see its output below.**"
+         if crashed else
+         f"Hard failures: **{hard_total}**" + (" — RUN A QUALITY LOOP" if hard_total else " (clean)")),
         "",
     ]
     if prev:
@@ -118,6 +128,9 @@ def main() -> int:
     fjson.unlink(missing_ok=True)
     print("\n".join(lines[:14]))
     print(f"\nwrote {OUT_DIR / (tag + '.md')}")
+    if crashed:
+        print(f"::error::validator crashed: {', '.join(crashed)}")
+        return 1
     return 0
 
 

@@ -242,7 +242,7 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:18px
     </div>
     <div class="hero-tag">Diverging Bar Chart</div>
     <h1>Which bills cost the city the most — and which <span class="green">generate revenue?</span></h1>
-    <p>201 of 219 bills impose a net cost on the city. Only 16 generate net revenue, most of them tax extensions or fine amnesty programs. This chart puts both sides side by side.</p>
+    <p id="intro-counts">Most bills cost the city money; a few bring in net revenue. This chart puts both sides next to each other.</p>
   </div>
 </div>
 
@@ -326,10 +326,10 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:18px
       </div>
       <figcaption class="c-foot">
         <div class="c-foot-text">
-          <span>Net fiscal impact of NYC Council legislation (2014–2026). Net = total revenue − operational expense − capital expense. Negative values are net costs; positive values are net revenue gains.
+          <span>Net fiscal impact of NYC Council legislation. Net = total revenue − operational expense − capital expense. Negative values are net costs; positive values are net revenue gains.
         Source: NYC Council Legistar fiscal impact statements, processed by NYCuriosity.</span>
           <span>Created by Tal Roded · NYCuriosity</span>
-          <span id="record-count-note" style="font-family:'JetBrains Mono', ui-monospace, monospace;font-size:0.65rem;color:var(--text-faint);">219 total records · 2014–2026</span>
+          <span id="record-count-note" style="font-family:'JetBrains Mono', ui-monospace, monospace;font-size:0.65rem;color:var(--text-faint);"></span>
         </div>
       </figcaption>
     </figure>
@@ -389,6 +389,12 @@ document.addEventListener('DOMContentLoaded', () => {
     .then(data => {
       ALL_RECORDS = data.records;
       FILTER_OPTIONS = data.filter_options;
+      // counted from the data on load (a hard-coded "201 of 219" sat stale for months)
+      var priced = ALL_RECORDS.filter(function (r) { return r.net_fiscal_impact !== null && r.net_fiscal_impact !== undefined; });
+      var cost = priced.filter(function (r) { return r.net_fiscal_impact < 0; }).length;
+      var gain = priced.filter(function (r) { return r.net_fiscal_impact > 0; }).length;
+      document.getElementById('intro-counts').textContent = cost.toLocaleString() + ' of ' + priced.length.toLocaleString()
+        + ' bills cost the city money; ' + gain.toLocaleString() + ' bring in net revenue. This chart puts both sides next to each other.';
       populateFilters();
       render();
     });
@@ -488,12 +494,16 @@ function updateStats(filtered) {
 }
 
 // ── RENDER ────────────────────────────────────────────────────────────────────
+  // year span of the bills shown, from the data (Oct 6 2026: a hard-coded
+  // 2014–2026 was already wrong for Int 0172-2010 and would go stale in 2027)
+  function yrSpan(rs) { var ys = rs.map(function (r) { return r.intro_year; }).filter(Boolean);
+    return ys.length ? Math.min.apply(null, ys) + '–' + Math.max.apply(null, ys) : ''; }
 function render() {
   const filtered = getFiltered();
   updateStats(filtered);
 
   document.getElementById('record-count-note').textContent =
-    `${filtered.length} bills in filtered set · 2014–2026`;
+    `${filtered.length} bills in filtered set · ${yrSpan(filtered)}`;
 
   const bills   = selectBills(filtered, topN);
   const empty   = document.getElementById('empty-state');
