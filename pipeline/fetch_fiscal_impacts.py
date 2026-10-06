@@ -35,6 +35,7 @@ import os
 import re
 import sys
 import json
+import subprocess
 import time
 import logging
 import argparse
@@ -644,7 +645,32 @@ def download_docx(
 
 
 def extract_docx_text(docx_path: Path) -> str:
-    """Extract text from a .docx, including table cell content."""
+    """Extract text from a fiscal statement, including table cell content.
+
+    The cache names every attachment .docx, but Legistar serves older
+    statements as PDFs and legacy Word .doc files under the same "fiscal"
+    filename. They are told apart by their first bytes (Oct 6 2026: 82 PDFs
+    and 120 .doc statements had been skipped forever as unreadable, e.g.
+    Int 0694-2024, the citywide bathroom strategy)."""
+    head = docx_path.read_bytes()[:8]
+    if head.startswith(b"%PDF"):
+        try:
+            from pypdf import PdfReader
+            return "\n".join((pg.extract_text() or "").strip() for pg in PdfReader(str(docx_path)).pages).strip()
+        except Exception as e:  # noqa: BLE001
+            log.warning(f"  Could not read PDF {docx_path}: {e}")
+            return ""
+    if head.startswith(b"\xd0\xcf\x11\xe0"):          # OLE2: legacy Word .doc
+        for cmd in (["antiword", "-w", "0", str(docx_path)],                 # Linux (Actions: apt antiword)
+                    ["textutil", "-convert", "txt", "-stdout", str(docx_path)]):  # macOS
+            try:
+                out = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+            except (FileNotFoundError, subprocess.TimeoutExpired):
+                continue
+            if out.returncode == 0 and out.stdout.strip():
+                return out.stdout.strip()
+        log.warning(f"  No .doc reader for {docx_path} (install antiword)")
+        return ""
     try:
         doc = Document(str(docx_path))
     except Exception as e:
@@ -1691,10 +1717,10 @@ def main() -> int:
 
                 text = extract_docx_text(docx_path)
                 if not text.strip():
-                    # Usually a PDF or legacy .doc served under a "fiscal" filename;
-                    # python-docx reports "Package not found". Not retried monthly.
-                    log.warning(f"  Empty text from {docx_path} — skipping")
-                    mark_skip(matter_id, "unreadable_attachment")
+                    # never a permanent skip (Oct 6 2026): a failed download or a
+                    # missing .doc reader marked 226 real statements unreadable
+                    # forever; an empty read is retried on the next run instead
+                    log.warning(f"  Empty text from {docx_path} — retried next run")
                     continue
 
                 # Fast pre-check: skip obvious zero-impact bills before calling Claude.

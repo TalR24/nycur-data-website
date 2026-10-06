@@ -580,8 +580,8 @@ def main() -> int:
 
                 text = extract_docx_text(docx_path)
                 if not text.strip():
-                    cp["processed_ids"].append(matter_id)
-                    mark_skip(matter_id, file_num, "unreadable_attachment")
+                    # retried next run, never a permanent skip (Oct 6 2026)
+                    log.warning(f"    Empty text from {docx_path} — retried next run")
                     continue
 
                 if text_is_zero_impact(text):

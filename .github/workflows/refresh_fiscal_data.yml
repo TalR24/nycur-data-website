@@ -92,7 +92,10 @@ jobs:
           cache-dependency-path: pipeline/requirements.txt
 
       - name: Install Python dependencies
-        run: pip install -r pipeline/requirements.txt
+        # antiword reads the legacy .doc statements (Oct 6 2026); pypdf the PDFs
+        run: |
+          sudo apt-get update -q && sudo apt-get install -y -q antiword
+          pip install -r pipeline/requirements.txt
 
       # Resume-only path (the cheap daily cron, days 2-7): exits immediately
       # if no batch is pending, otherwise polls/finishes it. Never runs on

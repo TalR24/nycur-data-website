@@ -93,9 +93,10 @@ def main() -> None:
         m = re.search(r"[?&]ID=(\d+)", url)
         if url and (not m or m.group(1) != str(r.get("matter_id"))):
             hard["legistar_url_id_differs_from_matter_id"].append(label(r))
-        # REST MatterIds are 5-digit; every web ID Legistar has issued for NYC
-        # is 7 digits. A 5-digit ID in a web URL is the exact Aug 2026 defect.
-        if m and len(m.group(1)) < 7:
+        # REST MatterIds are 5-digit; web IDs are 7 digits from about 2011 and
+        # 6 digits before (Int 0172-2010 is ID=657987, Oct 6 2026). A 5-digit
+        # ID in a web URL is the exact Aug 2026 defect.
+        if m and len(m.group(1)) < 6:
             hard["legistar_url_uses_rest_id"].append(label(r))
 
     # --- HARD: the pipeline's own filters -----------------------------------

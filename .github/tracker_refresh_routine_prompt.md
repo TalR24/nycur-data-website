@@ -8,7 +8,7 @@ Rules for every answer you write
 - For more than 10 packets, use subagents (model sonnet), about 8 packets each, and give each the rules above verbatim.
 
 Steps
-0. Setup: `pip install -r pipeline/requirements.txt -r civic_reference/legislation_implementation_tracker/pipeline/requirements.txt`. Confirm `echo ${ANTHROPIC_API_KEY:-unset}` prints unset.
+0. Setup: `sudo apt-get install -y antiword || apt-get install -y antiword` (reads legacy .doc fiscal statements; skip it if neither works), then `pip install -r pipeline/requirements.txt -r civic_reference/legislation_implementation_tracker/pipeline/requirements.txt`. Confirm `echo ${ANTHROPIC_API_KEY:-unset}` prints unset.
 
 1. Fiscal (repo root):
    - `python3 pipeline/fetch_fiscal_impacts.py --incremental --seed-laws auto --emit-packets /tmp/fis` (fetches this month's statements from Legistar; no model call).
