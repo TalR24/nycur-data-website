@@ -187,7 +187,13 @@ jobs:
           done
           if [ "$pushed" != 1 ]; then echo "::error::push failed after 5 attempts"; exit 1; fi
 
+      - name: Lint the alert scripts
+        run: |
+          pip install --quiet pyflakes
+          python3 -m pyflakes civic_reference/nyc_council_legislation_trackers/pipeline/send_alerts.py cb-tools/member-tracker/pipeline/send_cb_alerts.py
+
       - name: Send member alerts
+        id: alerts
         continue-on-error: true  # an alert failure should never block the Ask index rebuild
         env:
           PREMIUM_PUSH_TOKEN: ${{ secrets.PREMIUM_PUSH_TOKEN }}
@@ -217,6 +223,10 @@ jobs:
             done
             if [ "$pushed" != 1 ]; then echo "::error::premium push failed after 5 attempts"; exit 1; fi
           fi
+
+      - name: Flag a failed alerts run
+        if: steps.alerts.outcome == 'failure'
+        run: echo "::warning::Member alerts failed this month; alert state was not committed. Check the Send member alerts step."
 
       - name: Rebuild Ask index
         env:

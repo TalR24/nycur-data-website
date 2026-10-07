@@ -646,6 +646,9 @@
     });
     var fiscal = resolved.filter(function (l) { return l.tracker === 'fiscal'; });
     var impl = resolved.filter(function (l) { return l.tracker === 'impl'; });
+    // newest year first, then by law number as a number ("Local Law 11" before "Local Law 103")
+    var lawKey = function (l) { var m = /(\d+) of (\d{4})/.exec(l.label || ''); return m ? [+m[2], +m[1]] : [0, 0]; };
+    impl.sort(function (a, b) { var ka = lawKey(a), kb = lawKey(b); return (kb[0] - ka[0]) || (ka[1] - kb[1]); });
 
     if (impl.length) {
       html += '<div class="section-head">Enacted laws in the Obligations Tracker (' + impl.length + ')</div>';

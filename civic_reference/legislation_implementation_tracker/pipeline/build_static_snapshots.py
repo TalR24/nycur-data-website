@@ -489,7 +489,7 @@ def build_hub_agencies():
          '<div class="stat-pill"><span class="sp-num">%d</span><span class="sp-label">Agencies and public bodies</span></div>'
          '<div class="stat-pill"><span class="sp-num">%s</span><span class="sp-label">Duties across them</span></div>'
          '<div class="stat-pill"><span class="sp-num">%s</span><span class="sp-label">Powers</span></div>'
-         '<div class="stat-pill"><span class="sp-num">%s</span><span class="sp-label">Combined adopted budget, latest fiscal year</span></div></div>'
+         '<div class="stat-pill"><span class="sp-num">%s</span><span class="sp-label">Combined adopted budget of these agencies, latest fiscal year</span></div></div>'
          '<p class="section-note">%s</p>' % (len(ags), num(total_d), num(total_p), fmt_money(total_b), esc(note)))
     h += '<p class="result-count" id="resultCount">Showing <strong>%d</strong> of %d agencies</p>' % (TOP_N, len(ags))
     h += '<div class="agency-grid" id="agencyGrid">%s</div>' % "".join(

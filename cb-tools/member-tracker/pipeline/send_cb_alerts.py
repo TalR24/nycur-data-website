@@ -237,9 +237,15 @@ def main() -> None:
             msg["Subject"] = subject
             msg["From"] = os.environ["GMAIL_USER"]
             msg["To"] = email
-            with smtplib.SMTP_SSL("smtp.gmail.com", 465) as s:
-                s.login(os.environ["GMAIL_USER"], os.environ["GMAIL_APP_PASSWORD"])
-                s.send_message(msg)
+            # Never let an address reach the log: on failure print only the
+            # error type, keep going, and still write state below.
+            try:
+                with smtplib.SMTP_SSL("smtp.gmail.com", 465) as s:
+                    s.login(os.environ["GMAIL_USER"], os.environ["GMAIL_APP_PASSWORD"])
+                    s.send_message(msg)
+            except Exception as e:  # noqa: BLE001
+                print(f"Send failed for subscriber {sub_no}/{len(subscribers)}: {type(e).__name__}")
+                continue
             print(f"Sent alert {sub_no}/{len(subscribers)}: {n} matches")
         sent += 1
 
