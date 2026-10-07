@@ -534,8 +534,8 @@ def build_request(law, text, ttl=None):
     mode = os.environ.get("NYS_THINKING", "default")
     if mode == "off":
         params["thinking"] = {"type": "disabled"}
-    elif mode == "low":
-        params["output_config"]["effort"] = "low"
+    elif mode in ("low", "medium", "high"):
+        params["output_config"]["effort"] = mode
     return law["key"], params
 
 
