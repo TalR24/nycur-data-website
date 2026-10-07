@@ -46,14 +46,14 @@ check("both ingested", sorted(done) == ["2013-S4552", "2019-S3360"] and not left
 duties, powers, excluded = ed.build_records(list(laws.values()))
 check("one power", len(powers) == 1 and powers[0]["agency"] == "Towns" and powers[0]["agency_unit"] == "Town of Hempstead")
 check("local jurisdiction", powers[0]["jurisdiction"] == "local" and powers[0]["agency_group"] == "Towns")
-check("duties 2 (one unverified kept)", len(duties) == 2)
-d0 = [d for d in duties if d["quote_verified"]][0]
+check("fabricated quote is dropped by the unverified-quote gate", len(duties) == 1 and [d["rule"] for d in ed.DROPPED] == ["unverified_quote"])
+d0 = duties[0]
 check("state agency matched", d0["agency"] == "DOS" and d0["jurisdiction"] == "state" and d0["agency_matched"])
 check("deadline is the parsed effective date plus 30 days", d0["effective_date"] == "2020-03-19" and d0["deadline_date"] == "2020-04-18")
 check("private excluded", excluded == 1)
 (tmp / "d.json").write_text(json.dumps({"obligations": duties})); (tmp / "p.json").write_text(json.dumps({"powers": powers}))
 out = subprocess.run([sys.executable, str(HERE / "validate_duties.py"), "--duties", str(tmp / "d.json"), "--powers", str(tmp / "p.json")], capture_output=True, text=True).stdout
-check("validator flags the fabricated quote only if marked verified", "quote_not_in_law_text" in out)
+check("nothing unverifiable reaches the data", "quote_not_in_law_text" not in out)
 check("validator prints HARD FAILURES", "HARD FAILURES:" in out)
 # phase 2d rules
 check("grant-only: authorized and empowered", ed.grant_only("the city of New Rochelle is hereby further authorized and empowered to adopt and amend local laws"))

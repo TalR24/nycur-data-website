@@ -366,6 +366,7 @@ GRANT_PHRASE = re.compile(r"\b(?:shall be|is|are) (?:hereby )?(?:further )?(?:au
 def grant_only(quote):
     """A grant with no 'shall' aimed at the actor ('is hereby further authorized and empowered to ...', 'may ...')."""
     q = GRANT_PHRASE.sub(" ", quote or "")
+    q = re.sub(r"\b(?:which|that|who|whom|whose)\s+(?:\w+\s+){0,3}?(?:shall|must)\b", " ", q)
     return bool(GRANT_WORD.search(quote or "")) and not MANDATORY.search(q)
 
 
@@ -416,6 +417,177 @@ def relocated(quote, text):
     return all(any(frac(w, d) >= 0.8 for d in dels if len(d) >= 4) for w in blocks)
 
 
+# ── Phase 3b: hard ingest gates (apply to every model and every run; each drop is counted and listed) ─────────────────
+DROPPED = []
+
+
+def drop(o, rule, reason, law_key=None):
+    DROPPED.append({"obligation_id": o.get("obligation_id"), "matter_id": o.get("matter_id"), "rule": rule, "reason": reason,
+                    "agency": o.get("agency"), "kind_model": o.get("kind_model"), "quote": (o.get("quote") or "")[:240]})
+    bump("drop_" + rule)
+
+
+def locate_span(quote, text):
+    """(start, end) offsets of the quote in `text` (markers, punctuation, case and [deleted] matter ignored), else None."""
+    masked = _mask_deleted(text)
+    flat, offs = [], []
+    for m in re.finditer(r"[A-Za-z0-9]", masked):
+        flat.append(m.group(0).lower()); offs.append(m.start())
+    q = eo.alnum(quote)
+    if len(q) < 8:
+        return None
+    i = "".join(flat).find(q)
+    if i < 0:
+        return None
+    return offs[i], offs[i + len(q) - 1] + 1
+
+
+def braced_intervals(text):
+    return [(m.start(), m.end()) for m in re.finditer(r"\{\{.*?\}\}", text, re.S)]
+
+
+def in_braces(a, b, text):
+    """Does the text between offsets a and b overlap a {{ }} new-matter span?"""
+    return any(x < b and y > a for x, y in braced_intervals(text))
+
+
+BOUNDARY = r"(?<!\bSt)(?<!\bNo)(?<!\bCo)(?<!\bInc)(?<!\bMr)(?<!\bMrs)(?<!\bDr)(?<!\bJr)(?<!\bSr)(?<!\bAve)(?<!\bU\.S)[.;]\s+(?=[A-Z{(\d\[])|\n\n"
+
+
+def context_sentence(span, text):
+    """The sentence (or list item) around a span: from the previous '. ' / '; ' / paragraph break to the next one."""
+    start, end = span
+    left = max((m.end() for m in re.finditer(BOUNDARY, text[:start])), default=0)
+    m = re.search(BOUNDARY, text[end:])
+    right = end + m.start() + 1 if m else len(text)
+    return text[left:right], (left, right)
+
+
+HDR = re.compile(r"(?m)^(?:§|Section)\s*(\d+)\.")
+AMENDED = re.compile(r"\b(?:is|are) (?:hereby )?amended\b|\bamended by (?:adding|inserting|striking)", re.I)
+
+
+def section_of_span(span, text):
+    """(header paragraph, section text) of the act section the span sits in, else (None, None)."""
+    hs = list(HDR.finditer(text))
+    cur = None
+    for k, m in enumerate(hs):
+        if m.start() <= span[0]:
+            cur = k
+    if cur is None:
+        return None, None
+    a = hs[cur].start()
+    b = hs[cur + 1].start() if cur + 1 < len(hs) else len(text)
+    sec = text[a:b]
+    return sec.split("\n\n", 1)[0], sec
+
+
+EXEMPT_RE = re.compile(
+    r"\b(?:shall not|does not|do not|will not) apply\b|\bshall not be applicable\b|\bnot apply to\b"
+    r"|\bshall not (?:prevent|prohibit|preclude)\b[^.;]{0,100}\bfrom (?:holding|serving|being|acting)\b"
+    r"|\bexempt(?:ed)? from\b|\bnotwithstanding\b[^.;]{0,160}\bresiden"
+    r"|\brequiring (?:a|an|any|the) [\w ]{0,30}to be (?:a )?residents?\b|\bresidency requirements?\b", re.I)
+VERBISH = re.compile(r"\b(shall|must|may|required|authorized|empowered|directed|power|duty|responsible|is to|are to|shall be)\b", re.I)
+RELATIVE = re.compile(r"\b(?:which|that|who|whom|whose)\s+(?:\w+\s+){0,3}?(?:shall|must)\b", re.I)
+STOP_KEYWORDS = {"department", "commissioner", "effective", "provisions", "section", "subdivision", "program", "agency", "authority", "service", "services"}
+
+
+def _wset(s):
+    return set(re.findall(r"[a-z0-9]+", (s or "").lower()))
+
+
+def _tail(q):
+    m = re.search(r"\b(?:shall|must|may|is authorized|are authorized)\b", q or "", re.I)
+    return (q or "")[m.end():] if m else None
+
+
+def _head(q):
+    m = re.search(r"\b(?:shall|must|may|is authorized|are authorized)\b", q or "", re.I)
+    return (q or "")[:m.start()] if m else None
+
+
+def same_provision(a, b):
+    """70%+ overlap of the whole quote AND of what follows the modal verb (the action), so two provisions built on one template
+    ('Upon application ... the department shall search' / 'Upon acceptance ... the department shall ...') stay separate."""
+    if overlap(a, b) < 0.7:
+        return False
+    ta, tb = _tail(a), _tail(b)
+    if ta is not None and tb is not None and overlap(ta, tb) < 0.7:
+        return False
+    ha, hb = _head(a), _head(b)           # the trigger before the modal: different triggers are different provisions
+    if ha and hb and len(ha.split()) >= 5 and len(hb.split()) >= 5 and overlap(ha, hb) < 0.6:
+        return False
+    return True
+
+
+def overlap(a, b):
+    import difflib
+    wa, wb = re.findall(r"[a-z0-9]+", (a or "").lower()), re.findall(r"[a-z0-9]+", (b or "").lower())
+    if not wa or not wb:
+        return 0.0
+    sm = difflib.SequenceMatcher(None, wa, wb, autojunk=False)
+    return sum(x.size for x in sm.get_matching_blocks() if x.size >= 4) / min(len(wa), len(wb))      # runs of 4+ shared words
+
+
+DEADLINE_ONLY = re.compile(r"\b(?:shall|must)\s+(?:begin|commence|start|launch|be (?:established|implemented|completed|launched|operational|available|in place))\b[^.;]{0,60}\b(?:no later than|not later than|within|by|on or before)\b", re.I)
+
+
+def gate_record(o, text, has_markers):
+    """Returns (rule, reason) when the record must be dropped, else None. Rules 1-3 of phase 3b."""
+    if not o.get("quote_verified"):
+        return "unverified_quote", "quote not found in the law text"
+    q = o.get("quote") or ""
+    span = locate_span(q, text)
+    # 3. no-record classes
+    if EXEMPT_RE.search(q) and not MANDATORY.search(EXEMPT_RE.sub(" ", q)):
+        return "exemption_or_applicability", "exemption or applicability clause, binds no government actor"
+    if span:
+        hdr, sec = section_of_span(span, text)
+        if sec and re.search(r"\b11\.00\b[^.]{0,80}local finance law|local finance law[^.]{0,80}\b11\.00\b", hdr + " " + sec[:400], re.I):
+            return "local_finance_useful_life", "Local Finance Law section 11.00 period of probable usefulness"
+        sent, (sl, sr) = context_sentence(span, text)
+        if not VERBISH.search(q) and not VERBISH.search(sent):
+            return "designation_no_actor", "a designation or list entry with no lead-in duty or power"
+        # 2. new matter
+        if has_markers and hdr and AMENDED.search(hdr) and not in_braces(sl, sr, text) and not re.search(r"\[[^\[\]]{2,}\]", sent):
+            return "reprinted_existing_text", "amended section, no new matter in the quote's sentence"
+    return None
+
+
+def dedupe_law(lst):
+    """Rule 4: same actor, quotes overlapping 70%+: keep the one with a stated deadline, else the longer quote. A deadline
+    clause split off as its own duty ('The campaign shall begin no later than 90 days ...') merges into the main duty."""
+    out = list(lst)
+    for a in list(out):
+        if a not in out:
+            continue
+        for b in list(out):
+            if b is a or b not in out or a not in out:
+                continue
+            same_actor = (a.get("agency"), a.get("agency_unit")) == (b.get("agency"), b.get("agency_unit"))
+            if not same_actor:
+                continue
+            if same_provision(a.get("quote"), b.get("quote")) and a.get("kind") == b.get("kind"):
+                has_a, has_b = a.get("deadline_kind") not in (None, "none"), b.get("deadline_kind") not in (None, "none")
+                keep, lose = (a, b) if (has_a and not has_b) or (has_a == has_b and len(a["quote"]) >= len(b["quote"])) else (b, a)
+                out.remove(lose); drop(lose, "duplicate_provision", "overlaps %s by 70%%+" % keep["obligation_id"])
+                if lose is a:
+                    break
+    for b in list(out):             # a deadline clause split off as its own duty
+        if b not in out or not DEADLINE_ONLY.search(b.get("quote") or "") or b.get("deadline_kind") in (None, "none"):
+            continue
+        keys = {w for w in _wset(b["quote"]) if len(w) >= 6} - STOP_KEYWORDS - {"effective", "january", "february", "december"}
+        for a in out:
+            if a is b or (a.get("agency"), a.get("agency_unit")) != (b.get("agency"), b.get("agency_unit")) or a.get("kind") != b.get("kind"):
+                continue
+            if keys & _wset(a.get("quote")) and a.get("deadline_kind") in (None, "none", "on_effective_date"):
+                for k in ("deadline_kind", "deadline_date", "deadline_text"):
+                    a[k] = b.get(k)
+                out.remove(b); drop(b, "deadline_split", "deadline clause merged into %s" % a["obligation_id"])
+                break
+    return out
+
+
 # ── Ingest ──────────────────────────────────────────────────────────────────────────────────────────────────────
 def write_cache(mid, res):
     EXTRACTED.mkdir(parents=True, exist_ok=True)
@@ -428,6 +600,7 @@ def write_cache(mid, res):
 def build_records(laws):
     by_key = {l["key"]: l for l in laws}
     STATS.clear()
+    DROPPED.clear()
     duties, powers, excluded = [], [], 0
     for f in sorted(EXTRACTED.glob("*.json")):
         res = json.loads(f.read_text())
@@ -452,6 +625,7 @@ def build_records(laws):
                 excluded += 1
                 continue
             o["actor_resolved_model"] = res.get("actor_model", {}).get(o["obligation_id"])
+            o["matter_id"] = law["key"]
             attach_jurisdiction(o)
             # 5. DTF only when the quote or actor names the State; a locality's tax office is the locality
             if o.get("agency") == "DTF" and not STATE_MARK.search((o.get("quote") or "") + " " + (o.get("actor_raw") or "")):
@@ -460,11 +634,17 @@ def build_records(laws):
                     o.update(agency=ll[0], agency_full=ll[0], agency_matched=True, jurisdiction="local", agency_org_type="local government group", agency_group=ll[0], agency_unit=ll[1])
                     bump("dtf_to_locality")
             quote = o.get("quote") or ""
+            g = gate_record(o, text, "{{" in text)
+            if g:
+                drop(o, g[0], g[1])
+                continue
             o["extends_existing"] = bool(res.get("extends_model", {}).get(o["obligation_id"])) or extends_by_text(quote, text)
             if not o["extends_existing"] and relocated(quote, text):          # D4
                 o["extends_existing"] = True; bump("d4_relocated")
             # 3. a grant with no mandatory verb is a power
-            if kind == "duty" and grant_only(quote) and not CAP_RE.search(quote):
+            sp = locate_span(quote, text)
+            ctx = context_sentence(sp, text)[0] if sp else ""
+            if kind == "duty" and (grant_only(quote) or (ctx and grant_only(RELATIVE.sub(" ", ctx)))) and not CAP_RE.search(quote):
                 kind = "power"; o["kind_adjusted"] = "grant_only"; bump("grant_only_to_power")
             # 4. D3: bond caps and issuance cutoffs are duties (a prohibition on the actor) with no deadline
             if CAP_RE.search(quote) and kind in ("duty", "power"):
@@ -500,6 +680,8 @@ def build_records(laws):
                    "effective_date": sec_date, "effective_rule": eff["rule"] if sec_src == "law" else "section_" + sec_src, "law_expires_date": eff["expires_date"],
                    "openleg_url": law["openleg_url"], "extraction_model": res.get("model")}
             (law_p if kind == "power" else law_d).append(rec)
+        law_d = dedupe_law(law_d)
+        law_p = dedupe_law(law_p)
         for lst in (law_d, law_p):       # never merge across jurisdictions or named localities
             keep = []
             for jur in {(o.get("jurisdiction"), o.get("agency_unit")) for o in lst}:
@@ -735,6 +917,7 @@ def main():
         else:
             json.dump({"generated_at": stamp, "obligations": duties}, open(DATA / "duties.json", "w"), indent=1, ensure_ascii=False)
             json.dump({"generated_at": stamp, "powers": powers}, open(DATA / "powers.json", "w"), indent=1, ensure_ascii=False)
+        json.dump({"generated_at": stamp, "dropped": DROPPED}, open(DATA / "dropped_records.json", "w"), indent=1, ensure_ascii=False)
         print("ingested %d laws, %d left (missing or invalid result); duties %d, powers %d, excluded (private or neither) %d" % (len(done), len(left), len(duties), len(powers), excluded))
         print("rules applied:", json.dumps(STATS, sort_keys=True))
 

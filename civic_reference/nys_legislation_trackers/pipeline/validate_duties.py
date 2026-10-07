@@ -105,6 +105,16 @@ def main():
         kinds = {x.get("deadline_kind") for x in g if x.get("deadline_kind") in ("on_effective_date", "none")}
         if len(kinds) == 2:
             soft["setup_deadline_inconsistent"].append("%s: %s" % (mid, ", ".join("%s=%s" % (x["obligation_id"].rsplit("-", 1)[1], x["deadline_kind"]) for x in g)))
+    # soft: a law whose only new matter is digits, dates, amounts or a place name, yet no record is an extension
+    import extract_duties as ed
+    byl = defaultdict(list)
+    for o, _ in allrec:
+        byl[o["matter_id"]].append(o)
+    for mid, g in byl.items():
+        t = text_of(g[0])
+        blocks = [m.group(1) for m in re.finditer(r"\{\{(.*?)\}\}", t, re.S)]
+        if blocks and all(ed._only_extension(b) for b in blocks) and not any(o.get("extends_existing") for o in g):
+            soft["numbers_only_law_without_extends_record"].append(mid)
     ext = [o["obligation_id"] for o, _ in allrec if o.get("extends_existing")]
     n = len(allrec)
     matched = sum(1 for o, _ in allrec if o.get("agency_matched"))
