@@ -526,8 +526,17 @@ def build_request(law, text, ttl=None):
     """(custom_id, params): fixed instructions as the cached first block, the law text last. ttl '1h' inside batches."""
     import claude_batch
     content = claude_batch.cached_content(FIXED_PROMPT, render_variable_prompt(law, text), ttl=ttl)
-    return law["key"], {"model": MODEL, "max_tokens": MAX_TOKENS, "messages": [{"role": "user", "content": content}],
-                        "output_config": {"format": {"type": "json_schema", "schema": SCHEMA}}}
+    params = {"model": MODEL, "max_tokens": MAX_TOKENS, "messages": [{"role": "user", "content": content}],
+              "output_config": {"format": {"type": "json_schema", "schema": SCHEMA}}}
+    # NYS_THINKING (Oct 7 2026): Sonnet 5 runs adaptive thinking when the param is omitted; the first canary averaged
+    # 5,490 output tokens a law (3 of 20 hit the cap) against ~550 for the answer itself. "off" disables thinking,
+    # "low" keeps it at low effort; "default" leaves the model's adaptive default.
+    mode = os.environ.get("NYS_THINKING", "default")
+    if mode == "off":
+        params["thinking"] = {"type": "disabled"}
+    elif mode == "low":
+        params["output_config"]["effort"] = "low"
+    return law["key"], params
 
 
 def project_cost(n_laws, avg_uncached_in, avg_out, fixed_tokens, batch=True, cached=True):
@@ -673,11 +682,19 @@ def main():
     ap.add_argument("--canary", type=int, metavar="N", help="with --api: N real laws synchronously, usage and cost projection")
     ap.add_argument("--session", type=int, action="append", help="restrict to a session (repeatable); default all nine")
     ap.add_argument("--limit", type=int)
+    ap.add_argument("--pilot-only", action="store_true", help="restrict to the 52 audited pilot laws (data/bills.json signed)")
     ap.add_argument("--per-session", action="store_true", help="write data/duties/{Y}.json, data/powers/{Y}.json instead of single files")
     a = ap.parse_args()
     full = bool(a.api or a.per_session or a.session)
     sessions = (a.session or PILOT_SESSIONS) if full else None
     todo, deferred = load_todo(sessions)
+    if a.pilot_only:
+        pb = json.load(open(DATA / "bills.json"))
+        pb = pb.get("bills", pb) if isinstance(pb, dict) else pb
+        keys = {"%d-%s" % (b["session"], b["print_no"]) for b in pb if b.get("signed")}
+        keys |= {"%d-%s" % (b["session"], b.get("base_print_no") or b["print_no"]) for b in pb if b.get("signed")}
+        todo = [(l, t) for l, t in todo if l["key"] in keys]
+        print("pilot-only: %d of the audited pilot laws have text" % len(todo))
     if a.limit:
         todo = todo[:a.limit]
     laws = [l for l, _ in todo] + [l for l in signed_laws(sessions) if l["key"] in {d["key"] for d in deferred}]

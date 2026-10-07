@@ -28,6 +28,17 @@ on:
         required: false
         default: ""
         type: string
+      thinking:
+        description: "Model thinking: default (adaptive), off, or low effort (canary, extract, resume)"
+        required: false
+        default: "off"
+        type: choice
+        options: ["off", "low", "default"]
+      pilot_only:
+        description: "Canary only: run on the 52 audited pilot laws (for scoring against the blind audit)"
+        required: false
+        default: false
+        type: boolean
 
 concurrency:
   group: nys-extract
@@ -258,10 +269,12 @@ jobs:
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           PYTHONUNBUFFERED: "1"
+          NYS_THINKING: ${{ inputs.thinking }}
         run: |
           N="${LIMIT:-12}"
           SARGS=""
           if [ -n "$SESSION" ]; then SARGS="--session $SESSION"; fi
+          if [ "${{ inputs.pilot_only }}" = "true" ]; then SARGS="$SARGS --pilot-only"; fi
           set -o pipefail
           python3 extract_duties.py --api --canary "$N" $SARGS | tee canary_output.txt
           if grep -q "^laws with text: 0 " canary_output.txt; then echo "::error::no law texts restored: nothing was sent"; exit 1; fi
@@ -273,6 +286,7 @@ jobs:
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           PYTHONUNBUFFERED: "1"
+          NYS_THINKING: ${{ inputs.thinking }}
         run: |
           SARGS=""
           if [ -n "$SESSION" ]; then SARGS="--session $SESSION"; fi
