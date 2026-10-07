@@ -293,8 +293,8 @@
 81
 <!-- static:hub-fiscal-agencies:end --></span><span class="tracker-stat-label">Agencies with estimated costs</span></div>
           <div class="tracker-stat"><span class="tracker-stat-num" id="fiscalStatSponsors"><!-- static:hub-fiscal-sponsors:start -->
-105
-<!-- static:hub-fiscal-sponsors:end --></span><span class="tracker-stat-label">Sponsoring council members</span></div>
+95
+<!-- static:hub-fiscal-sponsors:end --></span><span class="tracker-stat-label">Council members prime-sponsored a priced bill</span></div>
         </div>
         <ul class="tracker-links">
           <li><a href="../nyc_council_fiscal_impacts_tracker/overview/">Fiscal Impacts overview</a></li>
@@ -453,6 +453,11 @@
     .then(function (d) {
       var n = (d.members || []).length;
       document.getElementById('spMembers').textContent = n.toLocaleString();
+      // council members (matched as on the Council Members page) who prime-sponsored a priced bill
+      var primes = (d.members || []).filter(function (m) {
+        return (m.legislation || []).some(function (e) { return e.prime && String(e.k).indexOf('fiscal:') === 0; });
+      }).length;
+      document.getElementById('fiscalStatSponsors').textContent = primes.toLocaleString();
     }).catch(function () {});
   fetch('data/agencies.json').then(function (r) { return r.json(); }).then(function (d) {
     var el = document.getElementById('spAgencies');
@@ -465,13 +470,11 @@
       var records = d.records || [];
       var n = (d.metadata && d.metadata.total_records) || records.length;
       if (n) document.getElementById('fiscalStatBills').textContent = n.toLocaleString();
-      var agencySet = {}; var sponsorSet = {};
+      var agencySet = {};
       records.forEach(function (r) {
         (r.agencies_abbrev || []).forEach(function (a) { agencySet[a] = 1; });
-        if (r.prime_sponsor) sponsorSet[r.prime_sponsor] = 1;
       });
       document.getElementById('fiscalStatAgencies').textContent = Object.keys(agencySet).length.toLocaleString();
-      document.getElementById('fiscalStatSponsors').textContent = Object.keys(sponsorSet).length.toLocaleString();
     })
     .catch(function () {});
 })();

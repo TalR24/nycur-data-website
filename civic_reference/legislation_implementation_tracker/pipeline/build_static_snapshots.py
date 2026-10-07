@@ -191,12 +191,13 @@ def build_timeline(obl):
     upcoming, overdue, recurring = [], [], []
     for o in obs:
         if o.get("recurrence") != "one-time":
-            recurring.append(o)
+            if o.get("recurrence") != "as-needed":  # same rule as the obligations table and agency workload
+                recurring.append(o)
         elif o.get("deadline_date"):
             (overdue if o["deadline_date"] < today else upcoming).append(o)
-    put(p, "dt-cnt-upcoming", "(%d)" % len(upcoming))
-    put(p, "dt-cnt-overdue", "(%d)" % len(overdue))
-    put(p, "dt-cnt-recurring", "(%d)" % len(recurring))
+    put(p, "dt-cnt-upcoming", "({:,})".format(len(upcoming)))
+    put(p, "dt-cnt-overdue", "({:,})".format(len(overdue)))
+    put(p, "dt-cnt-recurring", "({:,})".format(len(recurring)))
     upcoming.sort(key=lambda o: o["deadline_date"])
     h, last = '<div class="timeline">', None
     for o in upcoming[:TOP_N]:
@@ -407,7 +408,11 @@ def build_hub_home(obl, pw):
     n = (fis.get("metadata") or {}).get("total_records") or len(recs)
     put(p, "hub-fiscal-bills", num(n))
     put(p, "hub-fiscal-agencies", num(len({a for r in recs for a in (r.get("agencies_abbrev") or [])})))
-    put(p, "hub-fiscal-sponsors", num(len({r["prime_sponsor"] for r in recs if r.get("prime_sponsor")})))
+    # distinct council members, matched as on the Council Members page, with a prime-sponsored priced bill
+    mem = load(HUB / "data" / "members.json").get("members", [])
+    put(p, "hub-fiscal-sponsors", num(sum(
+        1 for m in mem if any(e.get("prime") and str(e.get("k", "")).startswith("fiscal:")
+                              for e in m.get("legislation", [])))))
 
 
 # ------------------------------------------------------------ hub: agencies

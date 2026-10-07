@@ -3,7 +3,7 @@
 Pre-render the Fiscal Impacts Tracker's JS-built content as static HTML, so
 crawlers that do not run JavaScript (most AI crawlers) read real numbers:
 
-  overview/  stat pills, the four chart titles, the four bar/column charts
+  overview/  stat pills, the four chart titles and the net-sign deck, the four bar/column charts
   hub        the "Showing N of N bills" line and the 10 most recent bills
 
 Each block mirrors the page's own JS (same markup, labels and title templates,
@@ -117,16 +117,19 @@ def overview(records):
     blocks = {"sp-bills": f"{total:,}", "sp-cost": fmt(total_cost), "sp-revenue": fmt(total_rev),
               "sp-rev-bills": f"{rev_bills:,}"}
 
-    by_agency, full = {}, {}
+    by_agency, votes = {}, {}
     for r in records:
-        for i, a in enumerate(r.get("agencies_abbrev") or []):
+        abbrevs = r.get("agencies_abbrev") or []
+        fulls = r.get("agencies_full") or []
+        for i, a in enumerate(abbrevs):
             if not a:
                 continue
             by_agency[a] = by_agency.get(a, 0) + cost(r)
-            fulls = r.get("agencies_full") or []
-            f = fulls[i] if i < len(fulls) else None
-            if f and a not in full:
-                full[a] = f
+            f = fulls[i] if len(fulls) == len(abbrevs) else None
+            if f and f != a:
+                votes.setdefault(a, {})
+                votes[a][f] = votes[a].get(f, 0) + 1
+    full = {a: max(v, key=v.get) for a, v in votes.items()}
     agency = sorted(([k, v, full.get(k, k)] for k, v in by_agency.items()), key=lambda p: -p[1])
     # The live chart shows 12 agencies plus "All other agencies"; the static copy stops at 10.
     blocks["chart-agency"] = hbars(agency[:10], True)
@@ -160,7 +163,10 @@ def overview(records):
     zero_b = sum(1 for r in with_net if r["net_fiscal_impact"] == 0)
     pairs = [["Cost the city", cost_b], ["Raise revenue", rev_b]] + ([["Net zero", zero_b]] if zero_b else [])
     blocks["chart-cost-rev"] = hbars(pairs, False)
-    blocks["title-cost-rev"] = esc(f"{cost_b:,} of {len(with_net):,} bills cost the city money; {rev_b:,} raise revenue")
+    pkg = len(records) - len(with_net)
+    blocks["deck-cost-rev"] = esc(f"Bills by the sign of their net fiscal impact. {pkg:,} bills share a package "
+                                  f"statement counted once on another bill and carry no figure of their own.")
+    blocks["title-cost-rev"] = esc(f"{cost_b:,} of {len(records):,} bills cost the city money; {rev_b:,} raise revenue")
 
     changed = [bid for bid, html in blocks.items() if inject(page, bid, html)]
     return page, changed

@@ -8,12 +8,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#170C03">
   <title>Costs vs. Revenue — NYC Council Fiscal Impacts Tracker — NYCuriosity</title>
-  <meta name="description" content="Which NYC Council bills impose the largest costs on the city — and which generate revenue? A diverging bar chart comparing the top cost and revenue bills.">
+  <meta name="description" content="The NYC Council bills with the largest annual costs, next to the bills that raise revenue, from the Finance Division's fiscal impact statements.">
   <link rel="canonical" href="https://data.nycuriosity.com/civic_reference/nyc_council_fiscal_impacts_tracker/cost-revenue-breakdown/">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://data.nycuriosity.com/civic_reference/nyc_council_fiscal_impacts_tracker/cost-revenue-breakdown/">
   <meta property="og:title" content="Costs vs. Revenue — NYC Council Fiscal Impacts Tracker — NYCuriosity">
-  <meta property="og:description" content="Which NYC Council bills impose the largest costs on the city — and which generate revenue? A diverging bar chart comparing the top cost and revenue bills.">
+  <meta property="og:description" content="The NYC Council bills with the largest annual costs, next to the bills that raise revenue, from the Finance Division's fiscal impact statements.">
   <meta property="og:image" content="https://data.nycuriosity.com/website_logo.png">
   <meta name="twitter:card" content="summary_large_image">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -241,7 +241,7 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:18px
       <span>Costs vs. Revenue</span>
     </div>
     <div class="hero-tag">Diverging Bar Chart</div>
-    <h1>Which bills cost the city the most — and which <span class="green">generate revenue?</span></h1>
+    <h1>The bills that cost the city the most, next to the few that <span class="green">raise revenue</span></h1>
     <p id="intro-counts">Most bills cost the city money; a few bring in net revenue. This chart puts both sides next to each other.</p>
   </div>
 </div>
@@ -309,7 +309,7 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:18px
     <figure class="chart-card" id="chart-box" data-slug="fiscal-costs-vs-revenue">
       <div class="c-head">
         <h2 class="c-title">Net Fiscal Impact: Biggest Costs vs. Revenue Generators</h2>
-        <p class="c-deck">Bars extending left = net cost to the city. Bars extending right = net revenue gain. Only the top N bills per side are shown; use filters to narrow the dataset.</p>
+        <p class="c-deck">Bars extending left = net cost to the city. Bars extending right = net revenue gain. <span id="topn-note">Only the top 5 bills per side are shown; use filters to narrow the dataset.</span></p>
       </div>
       <div class="c-plot">
         <div class="chart-legend">
@@ -339,9 +339,9 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:18px
       <h3>Methodology</h3>
       <ul>
         <li><strong>Net fiscal impact</strong> = total revenue − total operational expense − total capital expense. Negative = net cost to the city. Positive = net revenue gain.</li>
-        <li>Only the top N bills by absolute net impact are shown per side. Use the "Top 5 / 10 / 15" selector to adjust. The stat pills above always reflect the full filtered dataset.</li>
-        <li>Revenue-generating bills in this database are predominantly tax extensions (e.g., hotel occupancy tax, property assessment extensions) and fine amnesty programs, one-time or existing revenue streams, not new structural revenue sources.</li>
-        <li>Bills assessed as part of a legislative package (e.g., the 2023 DSS rental assistance package) are shown with the cost attributed to the primary bill only, to avoid double-counting. See <a href="/civic_reference/nyc_council_fiscal_impacts_tracker/">bill table</a> for package details.</li>
+        <li>Only the top bills by absolute net impact are shown per side. Use the "Top 5 / 10 / 15" selector to adjust. The stat pills above always reflect the full filtered dataset.</li>
+        <li>The revenue bills include tax amnesties and extensions, a wireless surcharge and a cut to a tax credit.</li>
+        <li>Bills assessed as part of a legislative package (e.g., the 2022 and 2023 DSS rental assistance package) are shown with the cost attributed to the primary bill only, to avoid double-counting. See <a href="/civic_reference/nyc_council_fiscal_impacts_tracker/">bill table</a> for package details.</li>
         <li>Source: <a href="https://legistar.council.nyc.gov" target="_blank">NYC Council Legistar</a> fiscal impact statement documents, extracted and structured by NYCuriosity using the Legistar REST API and Claude AI.</li>
       </ul>
     </div>
@@ -393,8 +393,9 @@ document.addEventListener('DOMContentLoaded', () => {
       var priced = ALL_RECORDS.filter(function (r) { return r.net_fiscal_impact !== null && r.net_fiscal_impact !== undefined; });
       var cost = priced.filter(function (r) { return r.net_fiscal_impact < 0; }).length;
       var gain = priced.filter(function (r) { return r.net_fiscal_impact > 0; }).length;
-      document.getElementById('intro-counts').textContent = cost.toLocaleString() + ' of ' + priced.length.toLocaleString()
-        + ' bills cost the city money; ' + gain.toLocaleString() + ' bring in net revenue. This chart puts both sides next to each other.';
+      document.getElementById('intro-counts').textContent = cost.toLocaleString() + ' of ' + ALL_RECORDS.length.toLocaleString()
+        + ' bills cost the city money; ' + gain.toLocaleString() + ' bring in net revenue. '
+        + (ALL_RECORDS.length - priced.length).toLocaleString() + ' more share a package statement counted on another bill. This chart puts both sides next to each other.';
       populateFilters();
       render();
     });
@@ -505,6 +506,8 @@ function render() {
   document.getElementById('record-count-note').textContent =
     `${filtered.length} bills in filtered set · ${yrSpan(filtered)}`;
 
+  document.getElementById('topn-note').textContent =
+    'Only the top ' + topN + ' bills per side are shown; use filters to narrow the dataset.';
   const bills   = selectBills(filtered, topN);
   const empty   = document.getElementById('empty-state');
   const canvas  = document.getElementById('myChart');

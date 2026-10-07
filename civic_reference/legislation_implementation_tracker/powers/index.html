@@ -609,7 +609,15 @@ Pierina Ana Sanchez wrote the laws behind 118 powers, more than any other counci
 
     // Card stats
     document.getElementById('cardStatTable').textContent = total.toLocaleString() + ' powers';
-    document.getElementById('cardStatLaw').textContent = lawCount.toLocaleString() + ' laws';
+    // Law Explorer lists every law (the summary count); only lawCount of them grant powers.
+    fetch('../data/summary.json').then(function (r) { return r.ok ? r.json() : null; }).then(function (sm) {
+      var all = sm && sm.laws;
+      document.getElementById('cardStatLaw').textContent = all
+        ? all.toLocaleString() + ' laws \u00b7 ' + lawCount.toLocaleString() + ' grant powers'
+        : lawCount.toLocaleString() + ' laws grant powers';
+    }).catch(function () {
+      document.getElementById('cardStatLaw').textContent = lawCount.toLocaleString() + ' laws grant powers';
+    });
 
     if (data.generated_at) {
       var gen = new Date(data.generated_at);

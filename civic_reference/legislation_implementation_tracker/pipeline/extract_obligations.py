@@ -2800,7 +2800,10 @@ def main() -> None:
     OUT_JSON.write_text(json.dumps(out, separators=(",", ":")))
     # small summary for pages that show headline counts (the methodology page
     # reads it instead of downloading the full obligations file)
-    _filings_doc = json.loads(_FILINGS_PATH.read_text()) if _FILINGS_PATH.exists() else {}
+    # DORIS counts come from the obligation records that carry a filing, the
+    # same records the obligations table counts, not from report_filings.json
+    # (which also lists ids that no longer exist in obligations.json).
+    _filing_status = _Counter(o["filing"].get("status") for o in flat if o.get("filing"))
     (DATA / "summary.json").write_text(json.dumps({
         "generated_at": out.get("generated_at"),
         "laws": len(law_summaries),
@@ -2811,8 +2814,8 @@ def main() -> None:
         "records_total": len(flat) + len(powers),
         "records_agency_matched": sum(1 for o in flat + powers if o.get("agency_matched")),
         "model_counts": out.get("model_counts"),
-        "doris_matched": _filings_doc.get("matched"),
-        "doris_status_counts": _filings_doc.get("status_counts"),
+        "doris_matched": sum(_filing_status.values()),
+        "doris_status_counts": dict(sorted(_filing_status.items(), key=lambda x: -x[1])),
     }, indent=1) + "\n")
     POWERS_JSON.write_text(json.dumps({
         "generated_at": out["generated_at"],
