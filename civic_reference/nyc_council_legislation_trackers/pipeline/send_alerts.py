@@ -545,7 +545,7 @@ def main() -> None:
             "--",
             "You receive these alerts as an NYCuriosity member.",
             f"Update your preferences: {ALERTS_URL}",
-            "To stop receiving alerts, reply to this email.",
+            "To change or stop these alerts, visit https://premium.nycuriosity.com/civic_reference/legislation_implementation_tracker/alerts/ or reply to this email.",
         ]
         body = "\n".join(lines)
 

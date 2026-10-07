@@ -208,7 +208,14 @@ jobs:
             echo "Alert state unchanged."
           else
             git commit -m "Monthly refresh: alert state"
-            git push
+            # the premium Worker can commit a member's alert save between the
+            # clone and this push, so rebase and retry like the data push above
+            pushed=0
+            for attempt in 1 2 3 4 5; do
+              if git pull --rebase origin main && git push; then pushed=1; break; fi
+              sleep $((attempt * 10))
+            done
+            if [ "$pushed" != 1 ]; then echo "::error::premium push failed after 5 attempts"; exit 1; fi
           fi
 
       - name: Rebuild Ask index
@@ -229,7 +236,14 @@ jobs:
             echo "Ask index unchanged."
           else
             git commit -m "Monthly refresh: Ask index"
-            git push
+            # the premium Worker can commit a member's alert save between the
+            # clone and this push, so rebase and retry like the data push above
+            pushed=0
+            for attempt in 1 2 3 4 5; do
+              if git pull --rebase origin main && git push; then pushed=1; break; fi
+              sleep $((attempt * 10))
+            done
+            if [ "$pushed" != 1 ]; then echo "::error::premium push failed after 5 attempts"; exit 1; fi
           fi
 
       - name: Fail the run if a profile rebuild failed
