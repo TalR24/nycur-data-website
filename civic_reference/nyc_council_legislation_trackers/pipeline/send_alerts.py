@@ -94,6 +94,7 @@ MEMBER_CONTEXT_JSON = BASE / "data" / "member_context.json"
 
 TRACKER_URL = "https://data.nycuriosity.com/civic_reference/legislation_implementation_tracker"
 FISCAL_URL = "https://data.nycuriosity.com/civic_reference/nyc_council_fiscal_impacts_tracker/"
+BACKFILL_DAYS = 120
 ALERTS_URL = "https://premium.nycuriosity.com/civic_reference/legislation_implementation_tracker/alerts/"
 MEMBER_PROFILE_URL = "https://data.nycuriosity.com/civic_reference/nyc_council_legislation_trackers/council-members/?member="
 DISTRICT_BRIEF_URL = "https://premium.nycuriosity.com/civic_reference/nyc_council_legislation_trackers/district-briefs/?district="
@@ -224,6 +225,23 @@ def main() -> None:
     known_fiscal = set(state.get("announced_fiscal_ids", []))
     new_laws = [l for l in laws if l["matter_id"] not in known_impl]
     new_fiscal = [r for r in fiscal if r["matter_id"] not in known_fiscal]
+
+    # Backfills (an audit or re-extraction adding old laws or statements) must
+    # never reach members as news: an unannounced record whose own date is more
+    # than BACKFILL_DAYS old is recorded as announced without being emailed.
+    # A record with no date counts as old. The state update below records them.
+    stale_before = (date.today() - timedelta(days=BACKFILL_DAYS)).isoformat()
+    def recent(*vals):
+        d = max((v or "")[:10] for v in vals)
+        return bool(d) and d >= stale_before
+    backfill_laws = [l for l in new_laws if not recent(l.get("enactment_date"))]
+    backfill_fiscal = [r for r in new_fiscal
+                       if not recent(r.get("date_prepared"), r.get("hearing_date"))]
+    if backfill_laws or backfill_fiscal:
+        print(f"Backfill, recorded without alerting: {len(backfill_laws)} laws, "
+              f"{len(backfill_fiscal)} fiscal records older than {BACKFILL_DAYS} days.")
+    new_laws = [l for l in new_laws if l not in backfill_laws]
+    new_fiscal = [r for r in new_fiscal if r not in backfill_fiscal]
     print(f"{len(new_laws)} new laws (implementation), "
           f"{len(new_fiscal)} new bills (fiscal).")
 
