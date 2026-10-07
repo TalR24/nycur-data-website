@@ -61,7 +61,7 @@ def main():
         if o.get("quote_has_deleted_text"):
             soft["quote_had_deleted_text_stripped"].append(oid)
         dd, ed = o.get("deadline_date"), o.get("enactment_date")
-        if dd and ed and dd < ed:
+        if dd and ed and dd < ed and o.get("deadline_kind") != "on_effective_date":
             hard["deadline_precedes_enactment"].append("%s %s < %s" % (oid, dd, ed))
         if dd and ed and int(dd[:4]) - int(ed[:4]) > 40:
             hard["deadline_absurdly_distant"].append("%s %s" % (oid, dd))
@@ -77,11 +77,28 @@ def main():
             hard["passive_subject_actor_unmatched"].append("%s: %s" % (oid, (o.get("actor_raw") or "")[:60]))
         if PASSIVE_SUBJECT.match((o.get("actor_raw") or "").strip()):
             soft["passive_subject_actor"].append("%s: %s" % (oid, (o.get("actor_raw") or "")[:60]))
+        q = o.get("quote") or ""
+        if filekind == "duty" and re.search(r"\b(authorized|empowered|may)\b", q, re.I) and not re.search(r"\bshall\b", q, re.I) and not re.search(r"\bmay not\b", q, re.I):
+            soft["grant_wording_but_duty"].append("%s: %s" % (oid, q[:70]))
+        if o.get("deadline_kind") == "on_effective_date" and not o.get("deadline_date"):
+            soft["on_effective_date_null_date"].append(oid)
+        if o.get("agency") == "DTF" and not re.search(r"\b(state|department of taxation and finance|commissioner of taxation|tax commission)\b", q + " " + (o.get("actor_raw") or ""), re.I):
+            soft["dtf_without_state_marker"].append(oid)
+        if not GOV_NOUN.search(o.get("actor_raw") or ""):
+            soft["actor_raw_no_government_noun"].append("%s: %s" % (oid, (o.get("actor_raw") or "")[:50]))
         ag = o.get("agency") or ""
         if not o.get("agency_matched") and ag not in ("Unspecified", "All agencies"):
             soft["agency_unmatched"].append("%s: %s" % (oid, ag[:60]))
         if ag and ag not in ("Unspecified", "All agencies") and eo.is_vague_actor(ag):
             soft["agency_tag_vague"].append("%s: %s" % (oid, ag[:60]))
+    bylaw = defaultdict(list)
+    for o, fk in allrec:
+        if fk == "duty" and o.get("recurrence") == "one-time" and o.get("deliverable_type") in ("rulemaking", "plan or strategy", "program or service", "designation or staffing", "database or data publication", "notice or posting", "training", "outreach or education"):
+            bylaw[o["matter_id"]].append(o)
+    for mid, g in bylaw.items():
+        kinds = {x.get("deadline_kind") for x in g if x.get("deadline_kind") in ("on_effective_date", "none")}
+        if len(kinds) == 2:
+            soft["setup_deadline_inconsistent"].append("%s: %s" % (mid, ", ".join("%s=%s" % (x["obligation_id"].rsplit("-", 1)[1], x["deadline_kind"]) for x in g)))
     ext = [o["obligation_id"] for o, _ in allrec if o.get("extends_existing")]
     n = len(allrec)
     matched = sum(1 for o, _ in allrec if o.get("agency_matched"))

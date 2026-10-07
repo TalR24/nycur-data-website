@@ -52,6 +52,34 @@ check("private excluded", excluded == 1)
 out = subprocess.run([sys.executable, str(HERE / "validate_duties.py"), "--duties", str(tmp / "d.json"), "--powers", str(tmp / "p.json")], capture_output=True, text=True).stdout
 check("validator flags the fabricated quote only if marked verified", "quote_not_in_law_text" in out)
 check("validator prints HARD FAILURES", "HARD FAILURES:" in out)
+# phase 2d rules
+check("grant-only: authorized and empowered", ed.grant_only("the city of New Rochelle is hereby further authorized and empowered to adopt and amend local laws"))
+check("grant-only: shall have power is still a grant", ed.grant_only("the commissioner shall have the power to inspect"))
+check("grant-only: shall is a duty", not ed.grant_only("the commissioner shall inspect and may impose a fee"))
+check("grant-only: past participle is not a grant", not ed.grant_only("the types and amounts of services plans have authorized;"))
+check("cap pattern", bool(ed.CAP_RE.search("The agency shall not issue bonds in an aggregate principal amount exceeding fifteen billion dollars")))
+check("cutoff pattern", bool(ed.CAP_RE.search("No such bond or note shall be issued by the agency on or after July 23, 2013")))
+check("not a cap", not ed.CAP_RE.search("The department shall issue a report on or before June 1."))
+eff = {"effective_date": "2023-03-03", "section_dates": [
+    {"applies_to": "section one of this act", "effective_date": "2023-02-28", "rule": "same_as_chapter"},
+    {"applies_to": "paragraph d of subdivision 5 of section 167 of the labor law, as added by section one of this act,", "effective_date": "2023-03-30", "rule": "nth_day_after_chapter"}]}
+txt = "Section 1. Labor law is amended.\n\n{{(c) The department shall establish an enforcement officer.}}\n\n{{(d) The department shall post a notice.}}\n\n§ 2. Other.\n\n§ 3. This act shall take effect immediately; provided that section one of this act shall take effect later."
+d1, src1 = ed.section_effective({"citation": "Labor Law § 167(5)(c)", "quote": "The department shall establish an enforcement officer."}, txt, eff)
+d2, src2 = ed.section_effective({"citation": "Labor Law § 167(5)(d)", "quote": "The department shall post a notice."}, txt, eff)
+d3, src3 = ed.section_effective({"citation": "x", "quote": "Other."}, txt, eff)
+check("record in act section one gets the section date", (d1, src1) == ("2023-02-28", "section"))
+check("paragraph citation gets the paragraph date", (d2, src2) == ("2023-03-30", "paragraph"))
+check("other sections keep the law's date", (d3, src3) == ("2023-03-03", "law"))
+rel = "Section 1. [(d) No person shall knowingly transport move buy sell possess barter offer for sale deliver any species of bees which have been determined by the department.] \n\n§ 2. {{(d) No person shall knowingly transport, move, buy, sell, possess, barter, offer for sale, deliver, any species of bees which have been determined by the commissioner.}}"
+check("D4 relocated text is an extension", ed.relocated("No person shall knowingly transport, move, buy, sell, possess, barter, offer for sale, deliver, any species of bees", rel))
+check("D4 genuinely new text is not", not ed.relocated("The commissioner shall create a brand new registry of apiaries within the state", "Section 1. [old words about something else entirely here and there] \n\n§ 2. {{The commissioner shall create a brand new registry of apiaries within the state.}}"))
+ll = ed.law_locality((ed.TEXT_MARKED / "2023-S9106.txt").read_text(), "")
+check("DTF fallback: the act's single locality", ll == ("Towns", "Town of Smithtown"))
+import text_markup
+mk = text_markup.from_plain_old("DO ENACT AS FOLLOWS:\n  Section 1. Until [June 30, 2011] JULY 23, 2013 at which time it shall end.\n  S 2. This act shall take effect immediately.\n")
+check("markup: digits continue a braced month", "{{July 23, 2013}}" in mk)
+mk = text_markup.from_plain_old("DO ENACT AS FOLLOWS:\n  Section 1. Title 2 is REPEALED.\n  S 2. This act shall take effect immediately.\n")
+check("markup: status word not braced", "{{" not in mk)
 print(out.strip().splitlines()[-1])
 print("%d passed, %d failed" % (passed, failed))
 sys.exit(1 if failed else 0)

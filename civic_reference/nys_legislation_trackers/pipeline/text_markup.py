@@ -130,6 +130,8 @@ def _vocab(raw):
         v.setdefault(m.group(1).lower(), m.group(1))
     for w in ("new", "york", "state", "the", "of", "and", "an", "act"):
         v.pop(w, None)
+    for mth in ("January", "February", "March", "April", "June", "July", "August", "September", "October", "November", "December"):
+        v.setdefault(mth.lower(), mth)
     return v
 
 
@@ -182,6 +184,12 @@ def from_plain_old(t):
         for i, x in enumerate(toks):                     # digits that directly follow a [deleted] span are the new matter
             if i and re.search(r"\][.,;:)]*$", toks[i - 1]) and re.fullmatch(r"\d[\d,]*[.,;:)]*", x) and not mark[i]:
                 mark[i] = True; RULE_STATS["digits_after_deleted"] += 1
+        MONTH_TOK = {"january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"}
+        for i, x in enumerate(toks):                     # "{{July}} 23, 2013": digits that continue a braced month or number join the run
+            if i and not mark[i] and mark[i - 1] and re.fullmatch(r"\d{1,4},?", x):
+                prev = re.sub(r"\W", "", toks[i - 1]).lower()
+                if prev in MONTH_TOK or (re.fullmatch(r"\d{1,2}", prev) and toks[i - 1].endswith(",")) or re.fullmatch(r"\d{1,2},", toks[i - 1]):
+                    mark[i] = True; RULE_STATS["digits_continue_run"] = RULE_STATS.get("digits_continue_run", 0) + 1
         res, i = [], 0
         while i < len(toks):
             if mark[i]:
@@ -231,7 +239,7 @@ def main():
     os.makedirs(os.path.join(HERE, "cache", "text_marked"), exist_ok=True)
     stats = {"html": [0, 0], "uppercase": [0, 0]}
     HYPH_STATS.update(rejoined=0, kept=0)
-    for k in RULE_STATS: RULE_STATS[k] = 0
+    for k in list(RULE_STATS): RULE_STATS[k] = 0
     for b in bills:
         key = "%s-%s" % (b["session"], b["base_print_no"])
         txt, src = convert(key, HERE)

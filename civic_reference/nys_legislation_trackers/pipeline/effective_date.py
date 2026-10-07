@@ -216,7 +216,9 @@ def parse_effective(text, signed_date, resolver=None):
     for ap, d in retros:
         if ap:
             sections.append({"applies_to": ap, "effective_date": None, "rule": "retroactive", "retroactive_to": d.isoformat()})
-    retro = min((d for _, d in retros), default=None)
+    # top level only for a statement about the act as a whole (main clause, or a proviso conditioned on the act's own signing
+    # date); one that names a section ("section 191 ... deemed in full force") stays in section_dates
+    retro = min({d for ap, d in retros if not ap}, default=None)
     out = {"effective_date": eff.isoformat() if eff else None, "rule": rule,
            "expires_date": expires.isoformat() if expires else None,
            "retroactive_to": retro.isoformat() if retro else None,

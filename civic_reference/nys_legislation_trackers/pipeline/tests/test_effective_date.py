@@ -75,7 +75,7 @@ r = parse_effective("§ 3. This act shall take effect immediately; provided that
 ok = r["retroactive_to"] is None and r["effective_date"] == "2015-03-13"
 passed, failed = (passed + 1, failed) if ok else (passed, failed + 1)
 r = parse_effective("§ 193. This act shall take effect on the sixtieth day after it shall have become a law; provided, however, that section one hundred ninety-one of this act shall be deemed to have been in full force and effect on and after January 1, 2002.", "2012-08-16")
-ok = r["retroactive_to"] == "2002-01-01" and r["effective_date"] == "2012-10-15" and r["section_dates"][0]["applies_to"].startswith("section one hundred ninety-one")
+ok = r["retroactive_to"] is None and r["section_dates"][0]["retroactive_to"] == "2002-01-01" and r["effective_date"] == "2012-10-15" and r["section_dates"][0]["applies_to"].startswith("section one hundred ninety-one")
 passed, failed = (passed + 1, failed) if ok else (passed, failed + 1)
 if not ok: print("FAIL A8823", r)
 r = parse_effective("Section 1. Something is added.\n\n104. {{Payments}}\n\n§ 2. This act shall take effect immediately.", "2009-07-11")
@@ -83,6 +83,14 @@ ok = r["effective_date"] == "2009-07-11"
 passed, failed = (passed + 1, failed) if ok else (passed, failed + 1)
 r = parse_effective("This act shall take effect immediately.", "2009-07-11")      # the clause alone, no section sign
 ok = r["effective_date"] == "2009-07-11"
+passed, failed = (passed + 1, failed) if ok else (passed, failed + 1)
+
+# phase 2d: top-level retroactive only from the MAIN clause
+r = parse_effective("§ 15. This act shall take effect immediately and shall be deemed to have been in full force and effect on and after April 1, 2026; provided, however, that section three shall take effect July 1, 2026.", "2026-05-20")
+ok = r["retroactive_to"] == "2026-04-01"
+passed, failed = (passed + 1, failed) if ok else (passed, failed + 1)
+r = parse_effective("§ 193. This act shall take effect on the sixtieth day after it shall have become a law; provided, however, that section one hundred ninety-one of this act shall be deemed to have been in full force and effect on and after January 1, 2002.", "2012-08-16")
+ok = r["retroactive_to"] is None and any(x.get("retroactive_to") == "2002-01-01" for x in r["section_dates"])
 passed, failed = (passed + 1, failed) if ok else (passed, failed + 1)
 print("%d passed, %d failed" % (passed, failed))
 sys.exit(1 if failed else 0)

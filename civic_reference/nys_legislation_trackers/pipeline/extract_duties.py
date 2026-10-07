@@ -63,6 +63,8 @@ def build_prompt():
     p = _sub(p, 'Use kind=days_after_other with no offset, even when the clause says "within 60 days".', 'Use kind none, even when the clause says "within 60 days"; never use days_after_other without a stated period.')
     rules = [
         "- When the only new matter extends or changes an existing duty or power (a new expiry date, a changed amount or limit, an added place, district or class of things), still record it and set extends_existing true; otherwise false.",
+        "- A deletion that widens an existing duty or power (striking '[born and]' or '[under the jurisdiction of the department]') is a record: set extends_existing true.",
+        "- A bond cap or issuance cutoff ('shall not issue ... exceeding X', 'no bonds on or after DATE') is a duty with deadline kind none: a cutoff date is not a deadline.",
         "- actor_resolved is always the government body that holds the duty or power. In a passive sentence ('moneys may be withdrawn', 'the application shall be reviewed'), name the body that acts, usually the one the section empowers or the named locality; never the grammatical subject.",
         "- A named locality is written exactly as the law names it ('town of cornwall', 'copenhagen central school district'), without 'in the county of X'; its assessor, tax department, chief fiscal officer or governing body is that locality, never a State agency.",
         "- A duty that begins when the law takes effect (a setup duty with no stated deadline) uses deadline kind on_effective_date; a duty triggered by a request, event, precondition or 'promptly' uses kind none.",
@@ -274,6 +276,134 @@ def extends_by_text(quote, text):
     return bool(spans) and all(_only_extension(sp) for sp in spans)
 
 
+# ── Phase 2d mechanical rules ───────────────────────────────────────────────────────────────────────────────────────
+STATS = {}
+
+
+def bump(k, n=1):
+    STATS[k] = STATS.get(k, 0) + n
+
+
+def _mask_deleted(text):
+    prev = None
+    while prev != text:
+        prev = text
+        text = re.sub(r"\[[^\[\]]{0,4000}?\]", lambda m: " " * len(m.group(0)), text)
+    return text
+
+
+def locate(quote, text):
+    """Offset in `text` where the quote starts (ignoring markers, punctuation, case and [deleted] matter), else None."""
+    masked = _mask_deleted(text)
+    flat, offs = [], []
+    for m in re.finditer(r"[A-Za-z0-9]", masked):
+        flat.append(m.group(0).lower()); offs.append(m.start())
+    q = eo.alnum(quote)
+    if len(q) < 8:
+        return None
+    i = "".join(flat).find(q)
+    return offs[i] if i >= 0 else None
+
+
+def act_section_of(quote, text):
+    pos = locate(quote, text)
+    if pos is None:
+        return None
+    last = None
+    for m in re.finditer(r"(?m)^(?:§|Section)\s*(\d+)\.", text):
+        if m.start() <= pos:
+            last = int(m.group(1))
+    return last
+
+
+def _section_set(applies_to):
+    m = re.match(r"\s*sections?\s+(.*?)\s+of this act", applies_to, re.I)
+    if not m:
+        return set()
+    out = set()
+    from effective_date import words_to_int
+    for part in re.split(r",|\band\b", m.group(1)):
+        n = words_to_int(part.strip()) if part.strip() else None
+        if n:
+            out.add(n)
+    return out
+
+
+def section_effective(o, text, eff):
+    """The effective date that governs this record: a paragraph-level entry matching its citation, else the entry for the act
+    section its quote sits in, else the law's own date (D1 in effective_date.py decides the values)."""
+    cit = re.search(r"§\s*([\w.-]+)\s*\((\w+)\)\s*\((\w)\)", o.get("citation") or "")
+    secno = act_section_of(o.get("quote") or "", text)
+    for e in eff.get("section_dates") or []:
+        if not e.get("effective_date"):
+            continue
+        pm = re.search(r"paragraph (\w+) of subdivision (\w+) of section ([\w-]+)", e["applies_to"], re.I)
+        if pm and cit and (cit.group(1).lower(), cit.group(2).lower(), cit.group(3).lower()) == (pm.group(3).lower(), pm.group(2).lower(), pm.group(1).lower()):
+            return e["effective_date"], "paragraph"
+    for e in eff.get("section_dates") or []:
+        if e.get("effective_date") and secno and secno in _section_set(e["applies_to"]):
+            return e["effective_date"], "section"
+    return eff["effective_date"], "law"
+
+
+GRANT_WORD = re.compile(r"\b(?:is|are|hereby|further)\s+(?:hereby\s+)?(?:further\s+)?(?:authorized|empowered)\b|\bmay\b(?!\s+not)|\b(?:has|have) the power\b|\b(?:is|are) permitted\b", re.I)
+MANDATORY = re.compile(r"\b(shall|must|is required|are required|required to|is directed|are directed)\b", re.I)
+GRANT_PHRASE = re.compile(r"\b(?:shall be|is|are) (?:hereby )?(?:further )?(?:authorized|empowered)(?: and (?:authorized|empowered))?\b|\bshall have (?:the )?(?:power|authority)\b", re.I)
+
+
+def grant_only(quote):
+    """A grant with no 'shall' aimed at the actor ('is hereby further authorized and empowered to ...', 'may ...')."""
+    q = GRANT_PHRASE.sub(" ", quote or "")
+    return bool(GRANT_WORD.search(quote or "")) and not MANDATORY.search(q)
+
+
+CAP_RE = re.compile(r"\b(?:shall not|may not|must not)\b[^.;]{0,100}\b(?:issue|exceed)\b|\baggregate principal amount exceeding\b|\bno\b[^.;]{0,60}\b(?:bonds?|notes?|obligations?)\b[^.;]{0,120}\b(?:on or after|after)\b", re.I)
+STATE_MARK = re.compile(r"\b(state|department of taxation and finance|commissioner of taxation|tax commission)\b", re.I)
+TRIGGER = re.compile(r"\b(upon|whenever|when|promptly|as soon as|as needed|until|if|unless|in response to)\b|\breceipt of\b|\breceives?\b|\bat the request\b", re.I)
+PROHIBITION = re.compile(r"\b(?:shall not|may not|must not)\b|^\s*no\b", re.I)
+SETUP_TYPES = {"rulemaking", "plan or strategy", "program or service", "designation or staffing", "database or data publication", "notice or posting", "training", "outreach or education"}
+
+
+def law_locality(text, title):
+    """The single named locality of a local act (title and text), else None."""
+    units = set()
+    for t in (title or "", _mask_deleted(text)):
+        for m in LOCALITY[0][0].finditer(re.sub(r"\([^)]*\)", "", t)):
+            kind = m.group(1).lower()
+            name = re.sub(r"\s+", " ", m.group(2)).strip(" .")
+            name = re.sub(r"(?:\s+(?:assessors?|board|clerk|treasurer|supervisor|tax|department|office|shall|may|is|has|will))+$", "", name, flags=re.I)
+            if name and not GENERIC_LEAD.match(name.split()[0]):
+                units.add((LOCAL_GROUPS[kind], _title("%s of %s" % (kind, name))))
+    if len(units) > 1:
+        units = {u for u in units if u[0] != "Counties"} or units
+    return units.pop() if len(units) == 1 else None
+
+
+def _words(s):
+    return re.findall(r"[a-z0-9]+", (s or "").lower())
+
+
+def relocated(quote, text):
+    """D4: True when every braced block of the quote (6+ words) matches 80%+ of its words, in order, a [deleted] span of the act."""
+    pos = locate(quote, text)
+    if pos is None:
+        return False
+    end = pos + int(len(quote) * 1.3) + 20
+    blocks = []
+    for m in re.finditer(r"\{\{(.*?)\}\}", text, re.S):
+        w = _words(m.group(1))
+        if len(w) >= 6 and m.start() <= end and m.end() >= pos:
+            blocks.append(w)
+    if not blocks:
+        return False
+    dels = [_words(m.group(1)) for m in re.finditer(r"\[([^\[\]]{20,40000}?)\]", text, re.S)]
+    import difflib
+    def frac(a, b):
+        sm = difflib.SequenceMatcher(None, a, b, autojunk=False)
+        return sum(x.size for x in sm.get_matching_blocks()) / len(a)
+    return all(any(frac(w, d) >= 0.8 for d in dels if len(d) >= 4) for w in blocks)
+
+
 # ── Ingest ──────────────────────────────────────────────────────────────────────────────────────────────────────
 def write_cache(mid, res):
     EXTRACTED.mkdir(parents=True, exist_ok=True)
@@ -285,6 +415,7 @@ def write_cache(mid, res):
 
 def build_records(laws):
     by_key = {l["key"]: l for l in laws}
+    STATS.clear()
     duties, powers, excluded = [], [], 0
     for f in sorted(EXTRACTED.glob("*.json")):
         res = json.loads(f.read_text())
@@ -310,15 +441,51 @@ def build_records(laws):
                 continue
             o["actor_resolved_model"] = res.get("actor_model", {}).get(o["obligation_id"])
             attach_jurisdiction(o)
-            o["extends_existing"] = bool(res.get("extends_model", {}).get(o["obligation_id"])) or extends_by_text(o.get("quote") or "", text)
+            # 5. DTF only when the quote or actor names the State; a locality's tax office is the locality
+            if o.get("agency") == "DTF" and not STATE_MARK.search((o.get("quote") or "") + " " + (o.get("actor_raw") or "")):
+                ll = law_locality(text, law["title"])
+                if ll:
+                    o.update(agency=ll[0], agency_full=ll[0], agency_matched=True, jurisdiction="local", agency_org_type="local government group", agency_group=ll[0], agency_unit=ll[1])
+                    bump("dtf_to_locality")
+            quote = o.get("quote") or ""
+            o["extends_existing"] = bool(res.get("extends_model", {}).get(o["obligation_id"])) or extends_by_text(quote, text)
+            if not o["extends_existing"] and relocated(quote, text):          # D4
+                o["extends_existing"] = True; bump("d4_relocated")
+            # 3. a grant with no mandatory verb is a power
+            if kind == "duty" and grant_only(quote) and not CAP_RE.search(quote):
+                kind = "power"; o["kind_adjusted"] = "grant_only"; bump("grant_only_to_power")
+            # 4. D3: bond caps and issuance cutoffs are duties (a prohibition on the actor) with no deadline
+            if CAP_RE.search(quote) and kind in ("duty", "power"):
+                if kind != "duty":
+                    o["kind_adjusted"] = "cap_cutoff"; bump("cap_to_duty")
+                kind = "duty"
+                if o.get("deadline_kind") != "none" or o.get("deadline_date"):
+                    bump("cap_deadline_cleared")
+                o["deadline_kind"], o["deadline_date"] = "none", None
+                bump("cap_cutoff_records")
             if kind == "power":
                 o["deadline_kind"], o["deadline_date"] = "none", None
-            if o.get("deadline_kind") in (None, "none") and o.get("deadline_date") and o["deadline_date"] == res.get("effective_date"):
+            # 6. setup / triggered consistency
+            if kind == "duty" and o.get("deadline_kind") == "on_effective_date" and TRIGGER.search(quote) and not CAP_RE.search(quote):
+                o["deadline_kind"], o["deadline_date"] = "none", None; bump("setup_to_triggered")
+            elif (kind == "duty" and o.get("deadline_kind") == "none" and o.get("recurrence") == "one-time"
+                  and o.get("deliverable_type") in SETUP_TYPES and not TRIGGER.search(quote) and not CAP_RE.search(quote)
+                  and not PROHIBITION.search(quote)):
+                o["deadline_kind"] = "on_effective_date"; bump("triggered_to_setup")
+            # 1. record dates per section; on_effective_date never null when the date is known
+            sec_date, sec_src = section_effective(o, text, eff)
+            if sec_src != "law":
+                bump("section_dates_applied")
+            if kind == "duty" and o.get("deadline_kind") == "on_effective_date":
+                if o.get("deadline_date") != sec_date:
+                    bump("on_effective_date_filled")
+                o["deadline_date"] = sec_date
+            elif o.get("deadline_kind") in (None, "none") and o.get("deadline_date") and o["deadline_date"] == res.get("effective_date"):
                 o["deadline_date"] = None
             rec = {**o, "kind": kind, "chapter": law["chapter_number"], "chapter_year": law["chapter_year"],
                    "session": law["session"], "print_no": law["print_no"], "law_number_display": law["law_number_display"],
                    "law_title": law["title"], "prime_sponsor": law["sponsor"], "enactment_date": law["enactment_date"],
-                   "effective_date": eff["effective_date"], "effective_rule": eff["rule"], "law_expires_date": eff["expires_date"],
+                   "effective_date": sec_date, "effective_rule": eff["rule"] if sec_src == "law" else "section_" + sec_src, "law_expires_date": eff["expires_date"],
                    "openleg_url": law["openleg_url"], "extraction_model": res.get("model")}
             (law_p if kind == "power" else law_d).append(rec)
         for lst in (law_d, law_p):       # never merge across jurisdictions or named localities
@@ -359,6 +526,7 @@ def main():
         json.dump({"generated_at": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"), "obligations": duties}, open(DATA / "duties.json", "w"), indent=1, ensure_ascii=False)
         json.dump({"generated_at": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"), "powers": powers}, open(DATA / "powers.json", "w"), indent=1, ensure_ascii=False)
         print("ingested %d laws, %d left (missing or invalid result); duties %d, powers %d, excluded (private or neither) %d" % (len(done), len(left), len(duties), len(powers), excluded))
+        print("rules applied:", json.dumps(STATS, sort_keys=True))
 
 
 if __name__ == "__main__":
