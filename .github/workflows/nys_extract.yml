@@ -262,6 +262,7 @@ jobs:
           N="${LIMIT:-12}"
           SARGS=""
           if [ -n "$SESSION" ]; then SARGS="--session $SESSION"; fi
+          set -o pipefail
           python3 extract_duties.py --api --canary "$N" $SARGS | tee canary_output.txt
           if grep -q "^laws with text: 0 " canary_output.txt; then echo "::error::no law texts restored: nothing was sent"; exit 1; fi
 

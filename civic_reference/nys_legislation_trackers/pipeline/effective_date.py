@@ -114,7 +114,11 @@ def _single(clause, signed, ref=None):
     sent = re.split(r";|\.\s+(?=[A-Z])", c)[0]
     low = sent.lower()
     if re.search(r"same date and in the same manner|same date and same manner|same manner and on the same date", low):
-        return (ref["effective_date"] and _d(ref["effective_date"])), "same_as_chapter", ref
+        # the referenced chapter could not be found (not signed yet, or outside the
+        # sessions the API serves): leave the date open rather than crash the run
+        if not ref or not ref.get("effective_date"):
+            return None, "same_as_chapter_unresolved", ref
+        return _d(ref["effective_date"]), "same_as_chapter", ref
     m = re.search(r"take effect (?:on )?(?:the )?first of (" + MONTH_RE + r") next succeeding", low)
     if m:
         return next_succeeding(MONTHS[m.group(1)], 1, signed), "first_of_month_next_succeeding", None
