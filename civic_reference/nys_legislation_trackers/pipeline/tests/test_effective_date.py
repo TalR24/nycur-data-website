@@ -50,5 +50,39 @@ for w, n in [("sixtieth", 60), ("one hundred eightieth", 180), ("ninetieth", 90)
         passed += 1
     else:
         failed += 1; print("FAIL words", w, words_to_int(w))
+
+# phase 2c: references to other chapters, per-section dates, conditional retroactivity, empty act clause (stub resolver, no API)
+def stub(bills=None, chapter=None, year=None):
+    if (bills and ("A", 286) in bills) or chapter == 815:
+        return {"bill": "2021-A286", "chapter": 815, "year": 2022, "signed_date": "2022-12-30", "effective_date": "2023-06-28", "rule": "nth_day_after_law"}
+    if bills and ("S", 7114) in bills:
+        return {"bill": "2023-S7114", "chapter": 553, "year": 2024, "signed_date": "2024-12-12", "effective_date": "2026-01-01", "rule": "fixed_date"}
+    return None
+A970 = ("§ 3. This act shall take effect immediately; provided however, that section one of this act shall take effect on the same date and same manner as a chapter of the laws of 2022 amending the labor law relating to the restrictions on consecutive hours of work for nurses, as proposed in legislative bills numbers S. 1997-A and A. 286-A, takes effect; provided further, that paragraph d of subdivision 5 of section 167 of the labor law, as added by section one of this act, shall take effect on the ninetieth day after the enactment of such chapter of the laws of 2022.")
+r = parse_effective(A970, "2023-03-03", resolver=stub)
+sd = {x["applies_to"][:11]: x["effective_date"] for x in r["section_dates"]}
+for name, ok in [("A970 act date", r["effective_date"] == "2023-03-03"), ("A970 section one = chapter's date", sd.get("section one") == "2023-06-28"),
+                 ("A970 paragraph d = 90th day after enactment", sd.get("paragraph d") == "2023-03-30")]:
+    passed, failed = (passed + 1, failed) if ok else (passed, failed + 1)
+    if not ok: print("FAIL", name, r["section_dates"])
+r = parse_effective("§ 4. This act shall take effect on the same date and in the same manner as a chapter of the laws of 2024 amending the insurance law relating to epinephrine, as proposed in legislative bills numbers S. 7114-A and A. 6425-A, takes effect.", "2025-02-14", resolver=stub)
+ok = r["effective_date"] == "2026-01-01" and r["rule"] == "same_as_chapter" and r["reference"]["chapter"] == 553
+passed, failed = (passed + 1, failed) if ok else (passed, failed + 1)
+r = parse_effective("§ 2. This act shall take effect on the same date and in the same manner as chapter 815 of the laws of 2022, takes effect.", "2023-01-01", resolver=stub)
+ok = r["effective_date"] == "2023-06-28"
+passed, failed = (passed + 1, failed) if ok else (passed, failed + 1)
+r = parse_effective("§ 3. This act shall take effect immediately; provided that if this act shall not have become a law on or before March 27, 2015, this act shall be deemed to have been in full force and effect on and after March 27, 2015.", "2015-03-13")
+ok = r["retroactive_to"] is None and r["effective_date"] == "2015-03-13"
+passed, failed = (passed + 1, failed) if ok else (passed, failed + 1)
+r = parse_effective("§ 193. This act shall take effect on the sixtieth day after it shall have become a law; provided, however, that section one hundred ninety-one of this act shall be deemed to have been in full force and effect on and after January 1, 2002.", "2012-08-16")
+ok = r["retroactive_to"] == "2002-01-01" and r["effective_date"] == "2012-10-15" and r["section_dates"][0]["applies_to"].startswith("section one hundred ninety-one")
+passed, failed = (passed + 1, failed) if ok else (passed, failed + 1)
+if not ok: print("FAIL A8823", r)
+r = parse_effective("Section 1. Something is added.\n\n104. {{Payments}}\n\n§ 2. This act shall take effect immediately.", "2009-07-11")
+ok = r["effective_date"] == "2009-07-11"
+passed, failed = (passed + 1, failed) if ok else (passed, failed + 1)
+r = parse_effective("This act shall take effect immediately.", "2009-07-11")      # the clause alone, no section sign
+ok = r["effective_date"] == "2009-07-11"
+passed, failed = (passed + 1, failed) if ok else (passed, failed + 1)
 print("%d passed, %d failed" % (passed, failed))
 sys.exit(1 if failed else 0)

@@ -23,6 +23,7 @@ sys.path.insert(0, str(HERE))
 import extract_obligations as eo  # noqa: E402
 import law_definitions  # noqa: E402
 from effective_date import parse_effective  # noqa: E402
+import chapter_lookup  # noqa: E402
 
 MAX_CHARS = 120_000
 TEXT_MARKED = HERE / "cache" / "text_marked"
@@ -59,7 +60,16 @@ def build_prompt():
     p = _sub(p, "In NYC Council drafting, text enclosed", "In New York State bill drafting, text enclosed")
     p = _sub(p, "(in Legistar's published text, the underlined portions)", "(the braced, underlined portions)")
     p = _sub(p, 'which Council drafting calls "biannual"', 'which State drafting calls "biannual"')
-    p = _sub(p, '- Do not invent obligations', '- When the only new matter extends an existing duty or power (a new expiry date, a changed amount or limit, an added place or district), still record it and set extends_existing true; otherwise false.\n- Do not invent obligations')
+    p = _sub(p, 'Use kind=days_after_other with no offset, even when the clause says "within 60 days".', 'Use kind none, even when the clause says "within 60 days"; never use days_after_other without a stated period.')
+    rules = [
+        "- When the only new matter extends or changes an existing duty or power (a new expiry date, a changed amount or limit, an added place, district or class of things), still record it and set extends_existing true; otherwise false.",
+        "- actor_resolved is always the government body that holds the duty or power. In a passive sentence ('moneys may be withdrawn', 'the application shall be reviewed'), name the body that acts, usually the one the section empowers or the named locality; never the grammatical subject.",
+        "- A named locality is written exactly as the law names it ('town of cornwall', 'copenhagen central school district'), without 'in the county of X'; its assessor, tax department, chief fiscal officer or governing body is that locality, never a State agency.",
+        "- A duty that begins when the law takes effect (a setup duty with no stated deadline) uses deadline kind on_effective_date; a duty triggered by a request, event, precondition or 'promptly' uses kind none.",
+        "- The act clause's early-rulemaking boilerplate ('rules and regulations necessary for the implementation of this act on its effective date are authorized to be made ... on or before such date') produces NO record.",
+        "- Do NOT record: an exemption from a cap or residency rule that imposes nothing on a government actor, Local Finance Law useful-life entries, program goals or findings, or appropriation amount changes.",
+    ]
+    p = _sub(p, '- Do not invent obligations', "\n".join(rules) + '\n- Do not invent obligations')
     p = _sub(p, '- Do not invent obligations', '- A deadline counted from "the date this act shall have become a law" or from signing is days_after_enactment; one counted from "the effective date of this act" is days_after_effective.\n- Do not invent obligations')
     p = (p.replace("{deliverable_types}", json.dumps(eo.DELIVERABLE_TYPES))
           .replace("{recurrences}", json.dumps(eo.RECURRENCES))
@@ -119,12 +129,13 @@ def effective_table(laws):
     tab = {}
     for law in laws:
         text = (TEXT_MARKED / (law["key"] + ".txt")).read_text()
-        tab[law["key"]] = parse_effective(text, law["signed_date"])
+        tab[law["key"]] = parse_effective(text, law["signed_date"], resolver=chapter_lookup.resolve)
     return tab
 
 
 def prepare(law, raw):
     """Replace the model's effective clause with the deterministic parse (the model still answers the schema field)."""
+    ACTOR_MODEL[law["key"]] = {"%s-%02d" % (law["key"], i): o.get("actor_resolved") for i, o in enumerate(raw.get("obligations", []), 1)}
     EXT_MODEL[law["key"]] = {"%s-%02d" % (law["key"], i): bool(o.get("extends_existing")) for i, o in enumerate(raw.get("obligations", []), 1)}
     e = EFFECTIVE[law["key"]]
     if e["rule"] == "immediately":
@@ -144,6 +155,7 @@ NYC_LOOKUP = _NYC["lookup"]
 NYC_BY = {a["canonical"]: a for a in _NYC["agencies"]}
 EFFECTIVE = {}
 EXT_MODEL = {}
+ACTOR_MODEL = {}
 
 
 def _title(s):
@@ -151,35 +163,72 @@ def _title(s):
     return " ".join(w if (i and w in small) else w[:1].upper() + w[1:] for i, w in enumerate(s.split()))
 
 
-def attach_jurisdiction(o):
-    """Set jurisdiction / org_type / agency_group, and rescue unmatched local and NYC actors. Mutates the record."""
+LOCALITY = [
+    (re.compile(r"\b(town|village|city|county)\s+of\s+(?!the\b|new york\b)([a-z][a-z .'-]*?)(?=\s*(?:,|;|\(|\bin\s+the\b|\bwithin\b|\bwhich\b|\bthat\b|\bto\b|\band\b|\bor\b|$))", re.I), None),
+    (re.compile(r"\b([A-Za-z][A-Za-z.'-]*(?:\s+[A-Za-z][A-Za-z.'-]*){0,3}?)\s+((?:central |union free |city |common )?school district)\b", re.I), "School districts"),
+    (re.compile(r"\b([A-Za-z][A-Za-z.'-]*(?:\s+[A-Za-z][A-Za-z.'-]*){0,2}?)\s+(fire district)\b", re.I), "Fire districts"),
+    (re.compile(r"\b([A-Z][A-Za-z.'-]*(?:\s+[A-Z][A-Za-z.'-]*){0,2})\s+(county)\b|\b([a-z]+)\s+(county)\b", re.I), "Counties"),
+]
+GENERIC_LEAD = re.compile(r"^(?:the|such|said|each|any|every|a|an|that|this|of|in|for|by|and|or|to|local|governing|county|city|town|village)$", re.I)
+LOCAL_OFFICERS = re.compile(r"assessor|tax (?:office|department|receiver|collector)|governing body|board of (?:trustees|education|assessors)|town board|village board|city council|common council|county legislature|board of supervisors|mayor|supervisor|clerk|treasurer|comptroller of the (?:town|village|city|county)", re.I)
+
+
+def named_locality(*texts):
+    """(group, normalised unit name) for the first named locality in the texts, else None.
+    'the town board of the town of cornwall, in the county of orange' -> ('Towns', 'Town of Cornwall')."""
+    for t in texts:
+        if not t or NYC_MARKERS.search(t):
+            continue
+        t = re.sub(r"\([^)]*\)", "", t)
+        m = LOCALITY[0][0].search(t)
+        if m:
+            kind = m.group(1).lower()
+            name = re.sub(r"\s+", " ", m.group(2)).strip(" .")
+            name = re.sub(r"(?:\s+(?:assessors?|board|clerk|treasurer|supervisor|tax|department|office|shall|may|is|has|will))+$", "", name, flags=re.I)
+            if name and not GENERIC_LEAD.match(name.split()[0]):
+                return LOCAL_GROUPS[kind], _title("%s of %s" % (kind, name))
+        for rx, group in LOCALITY[1:3]:
+            m = rx.search(t)
+            if m:
+                lead = m.group(1).strip()
+                words = [w for w in lead.split() if not GENERIC_LEAD.match(w)]
+                if words and not GENERIC_LEAD.match(lead.split()[-1]):
+                    return group, _title(" ".join(words) + " " + m.group(2).lower())
+        m = re.search(r"\b((?:[A-Z][A-Za-z.'-]*\s+){1,2})County\b", t) or re.search(r"\b([a-z]+(?:\s+[a-z]+)?)\s+county\b", t)
+        if m:
+            words = [w for w in m.group(1).split() if not GENERIC_LEAD.match(w)]
+            if words and len(words) <= 2:
+                return "Counties", _title(" ".join(words) + " county")
+    return None
+
+
+def attach_jurisdiction(o, quote_context=""):
+    """Set agency (group, for filtering), agency_unit (the named locality), jurisdiction, org_type. Order: NYC markers,
+    then a named locality, then the State crosswalk. Mutates the record."""
+    names = [x for x in (o.get("actor_raw"), o.get("agency")) if x]
+    o.setdefault("agency_unit", None)
+    # 1. NYC first: "the New York city department of transportation" is the NYC agency, not NYSDOT
+    for n in names:
+        if NYC_MARKERS.search(n):
+            canon, full = eo.match_agency(n, NYC_LOOKUP, NYC_BY)
+            if canon:
+                o.update(agency=canon, agency_full=full, agency_matched=True, jurisdiction="nyc", agency_org_type=NYC_BY[canon].get("org_type"), agency_group=None, agency_unit=None)
+                return
+    # 2. a named locality (or its assessor, tax office, governing body) resolves to the locality, never to a State agency
+    state_hit = o.get("agency_matched") and o["agency"] in BY_CANON and BY_CANON[o["agency"]]["jurisdiction"] == "state"
+    actor_text = [x for x in (o.get("actor_raw"), o.get("actor_resolved_model")) if x]
+    loc = named_locality(*actor_text)
+    if not loc and (not o.get("agency_matched") or (state_hit and any(LOCAL_OFFICERS.search(x) for x in actor_text))):
+        loc = named_locality(o.get("quote") or "", o.get("action_summary") or "") if any(LOCAL_OFFICERS.search(x) for x in actor_text) or not o.get("agency_matched") else None
+    if loc and (not state_hit or any(LOCAL_OFFICERS.search(x) for x in actor_text) or o["agency"] in ("DTF",)):
+        group, unit = loc
+        o.update(agency=group, agency_full=group, agency_matched=True, jurisdiction="local", agency_org_type="local government group", agency_group=group, agency_unit=unit)
+        return
     if o.get("agency_matched") and o["agency"] in BY_CANON:
         a = BY_CANON[o["agency"]]
         o["jurisdiction"], o["agency_org_type"] = a["jurisdiction"], a["org_type"]
         o["agency_group"] = o["agency"] if a["org_type"] == "local government group" else None
         return
-    names = [x for x in (o.get("actor_raw"), o.get("agency")) if x]
-    for n in names:
-        n2 = re.sub(r"^(?:the |such |said )", "", re.sub(r"\([^)]*\)", "", n.strip()), flags=re.I).strip()
-        m = re.search(r"(?:^|\bof the |\bof )(town|village|city|county)\s+of\s+(?!the\b)(.+?)$", n2, re.I)
-        if m and not NYC_MARKERS.search(n2):
-            kind = m.group(1).lower()
-            o.update(agency=_title("%s of %s" % (kind, m.group(2))), agency_full=_title("%s of %s" % (kind, m.group(2))), agency_matched=True,
-                     jurisdiction="local", agency_org_type="local government", agency_group=LOCAL_GROUPS[kind])
-            return
-        m = re.match(r"^(.+?)\s+county$", n2, re.I)
-        if m and len(n2.split()) <= 4 and not re.match(r"(?i)^(each|any|every|a|such|that|the same)\b", m.group(1)):
-            o.update(agency=_title(n2), agency_full=_title(n2), agency_matched=True, jurisdiction="local", agency_org_type="local government", agency_group="Counties")
-            return
-        if re.search(r"(?i)\bschool district$", n2) and len(n2.split()) <= 6 and not re.match(r"(?i)^(each|any|every|a|such|the)\b", n2):
-            o.update(agency=_title(n2), agency_full=_title(n2), agency_matched=True, jurisdiction="local", agency_org_type="local government", agency_group="School districts")
-            return
-    for n in names:
-        if NYC_MARKERS.search(n):
-            canon, full = eo.match_agency(n, NYC_LOOKUP, NYC_BY)
-            if canon:
-                o.update(agency=canon, agency_full=full, agency_matched=True, jurisdiction="nyc", agency_org_type=NYC_BY[canon].get("org_type"), agency_group=None)
-                return
     o["jurisdiction"], o["agency_org_type"], o["agency_group"] = None, None, None
 
 
@@ -203,6 +252,7 @@ def extends_by_text(quote, text):
     q = eo.alnum(quote)
     if len(q) < 10:
         return False
+    text = eo.operative_text(text)           # the quote omits [deleted] matter, so the search text must too
     chars, flags, depth = [], [], 0
     for m in re.finditer(r"\{\{|\}\}|[A-Za-z0-9]", text):
         g = m.group(0)
@@ -229,6 +279,7 @@ def write_cache(mid, res):
     EXTRACTED.mkdir(parents=True, exist_ok=True)
     if mid in EXT_MODEL:
         res["extends_model"] = EXT_MODEL[mid]
+        res["actor_model"] = ACTOR_MODEL[mid]
     (EXTRACTED / (mid + ".json")).write_text(json.dumps(res, indent=1, ensure_ascii=False))
 
 
@@ -257,6 +308,7 @@ def build_records(laws):
             if kind == "neither":
                 excluded += 1
                 continue
+            o["actor_resolved_model"] = res.get("actor_model", {}).get(o["obligation_id"])
             attach_jurisdiction(o)
             o["extends_existing"] = bool(res.get("extends_model", {}).get(o["obligation_id"])) or extends_by_text(o.get("quote") or "", text)
             if kind == "power":
@@ -269,8 +321,13 @@ def build_records(laws):
                    "effective_date": eff["effective_date"], "effective_rule": eff["rule"], "law_expires_date": eff["expires_date"],
                    "openleg_url": law["openleg_url"], "extraction_model": res.get("model")}
             (law_p if kind == "power" else law_d).append(rec)
-        eo.merge_split_list_duplicates(law_d)
-        eo.merge_split_list_duplicates(law_p)
+        for lst in (law_d, law_p):       # never merge across jurisdictions or named localities
+            keep = []
+            for jur in {(o.get("jurisdiction"), o.get("agency_unit")) for o in lst}:
+                grp = [o for o in lst if (o.get("jurisdiction"), o.get("agency_unit")) == jur]
+                eo.merge_split_list_duplicates(grp)
+                keep += grp
+            lst[:] = sorted(keep, key=lambda o: o["obligation_id"])
         duties += law_d
         powers += law_p
     return duties, powers, excluded

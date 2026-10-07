@@ -89,20 +89,44 @@ def final_clause(text):
     return p.strip()
 
 
-def _single(clause, signed):
-    """(effective_date, rule, retroactive_to) for the first 'shall take effect' statement of the clause."""
+BILL_REF = re.compile(r"\b([SA])\.?\s?(\d+)(?:-[A-Za-z])?", re.I)
+CHAP_REF = re.compile(r"chapter\s+(\d+)\s+of\s+the\s+laws\s+of\s+(\d{4})", re.I)
+YEAR_REF = re.compile(r"laws\s+of\s+(\d{4})", re.I)
+
+
+def find_reference(clause):
+    """What 'same date and manner as a chapter ...' points at: {'bills': [(S,1997),(A,286)], 'chapter': n, 'year': y}."""
+    m = CHAP_REF.search(clause)
+    if m:
+        return {"chapter": int(m.group(1)), "year": int(m.group(2)), "bills": []}
+    y = YEAR_REF.search(clause)
+    pm = re.search(r"as proposed in legislative bills? numbers?([^;]*?)(?:,? takes? effect|;|$)", clause, re.I)
+    if y and pm:
+        bills = [(b.group(1).upper(), int(b.group(2))) for b in BILL_REF.finditer(pm.group(1))]
+        if bills:
+            return {"bills": bills, "chapter": None, "year": int(y.group(1))}
+    return None
+
+
+def _single(clause, signed, ref=None):
+    """(effective_date, rule, reference_info) for the first 'shall take effect' statement of the clause."""
     c = re.sub(r"^\s*(?:§|Section|S)\s*\d+\.\s*", "", clause)
     sent = re.split(r";|\.\s+(?=[A-Z])", c)[0]
     low = sent.lower()
     if re.search(r"same date and in the same manner|same date and same manner|same manner and on the same date", low):
-        return None, "same_as_chapter", None
+        return (ref["effective_date"] and _d(ref["effective_date"])), "same_as_chapter", ref
     m = re.search(r"take effect (?:on )?(?:the )?first of (" + MONTH_RE + r") next succeeding", low)
     if m:
         return next_succeeding(MONTHS[m.group(1)], 1, signed), "first_of_month_next_succeeding", None
-    m = re.search(r"(?:take|takes) effect (?:on )?(?:the )?(" + ORD_WORD + r"|\d+(?:st|nd|rd|th)?) day (?:next )?(?:after|following)", low)
+    m = re.search(r"(?:take|takes) effect (?:on )?(?:the )?(" + ORD_WORD + r"|\d+(?:st|nd|rd|th)?) day (?:next )?(?:after|following)(?: the (enactment|effective date) of such chapter)?", low)
     if m:
         n = words_to_int(m.group(1)) if not m.group(1)[0].isdigit() else int(re.sub(r"\D", "", m.group(1)))
         if n is not None:
+            if "of such chapter" in m.group(0):
+                if not ref or not ref.get("signed_date"):
+                    return None, "after_chapter_unresolved", ref
+                base = _d(ref["signed_date"] if m.group(2) == "enactment" else (ref["effective_date"] or ref["signed_date"]))
+                return base + timedelta(days=n), "nth_day_after_chapter", ref
             return signed + timedelta(days=n), "nth_day_after_law", None
     m = re.search(r"(?:take|takes) effect (?:on )?(?:the )?(" + NUM_WORDS + r"|\d+)\s+(day|days|month|months)\s+(?:next\s+)?(?:after|following)", low)
     if m and m.group(1).strip():
@@ -114,12 +138,33 @@ def _single(clause, signed):
     m = re.search(r"(?:take|takes) effect (?:on )?(" + MONTH_RE + r")\s+(\d{1,2}),?\s+(\d{4})", low)
     if m:
         return date(int(m.group(3)), MONTHS[m.group(1)], int(m.group(2))), "fixed_date", None
-    m = re.search(r"take effect immediately", low)
-    if m:
-        retro = re.search(r"in full force and effect on and after (" + MONTH_RE + r")\s+(\d{1,2}),?\s+(\d{4})", c.lower())
-        r = date(int(retro.group(3)), MONTHS[retro.group(1)], int(retro.group(2))) if retro else None
-        return signed, "immediately", r
+    if re.search(r"take effect immediately", low):
+        return signed, "immediately", None
     return None, "unparsed", None
+
+
+RETRO = re.compile(r"(?:shall be |is |are )?deemed to have been in full force and effect on and after (" + MONTH_RE + r")\s+(\d{1,2}),?\s+(\d{4})", re.I)
+COND = re.compile(r"if (?:this act|it) shall (not )?have become (?:a )?law (on or before|after) (" + MONTH_RE + r")\s+(\d{1,2}),?\s+(\d{4})", re.I)
+
+
+def _retro(clause, signed):
+    """[(applies_to or None, ISO date)] for 'deemed to have been in full force and effect on and after D' statements that
+    apply: a proviso conditioned on a date the act beat at signing ('if not law on or before March 27') does not."""
+    out = []
+    for m in RETRO.finditer(clause):
+        d = date(int(m.group(4)), MONTHS[m.group(2).lower()], int(m.group(3))) if False else date(int(m.group(3)), MONTHS[m.group(1).lower()], int(m.group(2)))
+        before = clause[max(0, m.start() - 220):m.start()]
+        cs = list(COND.finditer(before))
+        if cs:
+            c = cs[-1]
+            cd = date(int(c.group(5)), MONTHS[c.group(3).lower()], int(c.group(4)))
+            holds = signed > cd          # "not law on or before D" and "law after D" both hold only if signed after D
+            if not holds:
+                continue
+        sect = re.search(r"(sections?\s+[a-z0-9 -]+?)\s+of this act\s+(?:shall be|is|are)\s*$", before.strip(), re.I) or \
+            re.search(r"(sections?\s+[a-z0-9 -]+?)\s+of this act[^;]{0,40}$", before, re.I)
+        out.append((sect.group(1).strip() if sect else None, d))
+    return out
 
 
 def _expiry(clause, effective, signed):
@@ -137,20 +182,45 @@ def _expiry(clause, effective, signed):
     return None
 
 
-def parse_effective(text, signed_date):
-    """text: the full act text (marked or plain) or just the clause. signed_date: ISO string of the governor's signature."""
+def parse_effective(text, signed_date, resolver=None):
+    """text: the full act text (marked or plain) or just the clause. signed_date: ISO string of the governor's signature.
+    resolver(bills=..., chapter=..., year=...) -> {signed_date, effective_date, chapter, ...} resolves 'same as chapter X'."""
     signed = _d(signed_date)
-    clause = final_clause(text) or re.sub(r"\s+", " ", text or "").strip()
-    eff, rule, retro = _single(clause, signed)
+    clause = final_clause(text)
+    if not clause:                       # no section says it: take the last section of the text (an empty act clause)
+        paras = [re.sub(r"\s+", " ", p).strip() for p in re.split(r"\n\s*\n", (text or "")) if p.strip()]
+        clause = paras[-1] if paras else ""
+    refinfo = None
+    if re.search(r"same date and|same manner|chapter\s+\d+\s+of the laws", clause, re.I):
+        r = find_reference(clause)
+        if r and resolver:
+            refinfo = resolver(bills=r["bills"], chapter=r["chapter"], year=r["year"])
+        if refinfo is None and r:
+            refinfo = {"unresolved": True, **{k: r[k] for k in ("bills", "chapter", "year")}}
+        if refinfo and refinfo.get("unresolved"):
+            refinfo = {"effective_date": None, "signed_date": None, **refinfo}
+    eff, rule, ref_used = _single(clause, signed, refinfo)
+    retros = _retro(clause, signed)
     expires = _expiry(clause, eff, signed)
-    others = []
-    for m in re.finditer(r";\s*provided(?:,? however,?| further,?)?,?\s+that\s+(.*?)(?=;\s*provided|$)", clause, re.I):
+    sections = []
+    for m in re.finditer(r";\s*provided(?:,? however,?| further,?)?,?\s+(?:that\s+)?(.*?)(?=;\s*provided|$)", clause, re.I):
         part = m.group(1)
-        if re.search(r"shall take effect|takes effect", part, re.I):
-            sect = re.search(r"((?:sections?|paragraph|subdivision)[^,]*?(?:of this act|made by section [\w\s-]+ of this act))", part, re.I)
-            e2, r2, _ = _single("This act " + part[part.lower().find("shall take effect"):], signed) if "shall take effect" in part.lower() else (None, "unparsed", None)
-            others.append({"applies_to": (sect.group(1) if sect else part[:80]).strip(), "effective_date": e2.isoformat() if e2 else None, "rule": r2})
-    return {"effective_date": eff.isoformat() if eff else None, "rule": rule,
-            "expires_date": expires.isoformat() if expires else None,
-            "retroactive_to": retro.isoformat() if retro else None,
-            "other_dates": others, "raw_clause": clause}
+        if not re.search(r"shall take effect|takes effect", part, re.I):
+            continue
+        sect = re.search(r"^(.*?)\s+(?:shall take effect|takes effect)", part, re.I)
+        if re.match(r"\s*(?:that\s+)?(?:if|effective)\b|this act\b", part, re.I):   # a condition on the act itself, not a section
+            continue
+        sub = "This act " + part[part.lower().find("shall take effect"):]
+        e2, r2, _ = _single(sub, signed, refinfo)
+        sections.append({"applies_to": re.sub(r"^that\s+", "", (sect.group(1) if sect else part[:80]).strip()), "effective_date": e2.isoformat() if e2 else None, "rule": r2})
+    for ap, d in retros:
+        if ap:
+            sections.append({"applies_to": ap, "effective_date": None, "rule": "retroactive", "retroactive_to": d.isoformat()})
+    retro = min((d for _, d in retros), default=None)
+    out = {"effective_date": eff.isoformat() if eff else None, "rule": rule,
+           "expires_date": expires.isoformat() if expires else None,
+           "retroactive_to": retro.isoformat() if retro else None,
+           "other_dates": [x for x in sections if x["rule"] != "retroactive"], "section_dates": sections, "raw_clause": clause}
+    if ref_used:
+        out["reference"] = {k: ref_used.get(k) for k in ("bill", "chapter", "year", "signed_date", "effective_date", "rule") if k in ref_used}
+    return out

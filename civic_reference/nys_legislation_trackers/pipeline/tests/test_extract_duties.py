@@ -41,7 +41,7 @@ res2 = {"effective_clause": eff, "obligations": [
 done, left = eo.ingest_packets(pk, todo, ed.LOOKUP, ed.BY_CANON, "test", writer=ed.write_cache, prepare=ed.prepare)
 check("both ingested", sorted(done) == ["2013-S4552", "2019-S3360"] and not left)
 duties, powers, excluded = ed.build_records(list(laws.values()))
-check("one power", len(powers) == 1 and powers[0]["agency"] == "Town of Hempstead")
+check("one power", len(powers) == 1 and powers[0]["agency"] == "Towns" and powers[0]["agency_unit"] == "Town of Hempstead")
 check("local jurisdiction", powers[0]["jurisdiction"] == "local" and powers[0]["agency_group"] == "Towns")
 check("duties 2 (one unverified kept)", len(duties) == 2)
 d0 = [d for d in duties if d["quote_verified"]][0]

@@ -48,6 +48,13 @@ def _refs(block):
     return [{"print_no": r.get("printNo"), "session": r.get("session")} for r in ((block or {}).get("items") or [])]
 
 
+def _rules_sponsor(sponsor):
+    """Rules Committee bills carry no member: sponsor.rules is true (2009-A42007)."""
+    if sponsor.get("rules"):
+        return {"member_id": None, "full_name": "Rules Committee", "short_name": "RULES", "district": None, "chamber": None, "rules": True}
+    return None
+
+
 def normalize(r):
     av = r.get("activeVersion") or ""
     amend = (r.get("amendments") or {}).get("items", {}).get(av) or {}
@@ -70,7 +77,7 @@ def normalize(r):
         "chamber": (bt.get("chamber") or "").title() or chamber_from_print_no(r.get("basePrintNo")),
         "is_resolution": bool(bt.get("resolution")),
         "title": r.get("title"), "summary": r.get("summary"),
-        "sponsor": _member(sponsor.get("member")),
+        "sponsor": _member(sponsor.get("member")) or _rules_sponsor(sponsor),
         "cosponsors": _members(amend.get("coSponsors")), "multisponsors": _members(amend.get("multiSponsors")),
         "committee": st.get("committeeName"),
         "status": {"type": st.get("statusType"), "desc": st.get("statusDesc"), "date": st.get("actionDate"),

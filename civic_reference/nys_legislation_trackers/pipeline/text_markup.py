@@ -105,50 +105,116 @@ def from_html(h):
     body = re.sub(OPEN + r"[ \t]+", " " + OPEN, body)
     body = re.sub(r"[ \t]+" + CLOSE, CLOSE + " ", body)
     body = body.replace(OPEN, "{{").replace(CLOSE, "}}")
-    return fix_hyphens(body)
+    return trim_after_effective(fix_hyphens(body))
 
 
-def _cap_sentences(s):
-    s = s.lower()
-    return re.sub(r"(^|[.;:]\s+|\(\w\)\s+)([a-z])", lambda m: m.group(1) + m.group(2).upper(), s)
+RULE_STATS = {"digits_after_deleted": 0, "bridged_tokens": 0, "status_or_citation_unbraced": 0, "case_restored_from_law": 0,
+              "appended_text_stripped": 0}
+STATUS_WORDS = {"REPEALED", "REPEALED.", "REPEALED;", "REPEALED,"}
+CITATION = re.compile(r"^[SA]\.?\s?\d+(?:-[A-Za-z]+)?[.,;]?$")
+SENT_END = re.compile(r"[.:;]$")
 
 
 def _is_upper_tok(t):
+    if t in STATUS_WORDS:
+        RULE_STATS["status_or_citation_unbraced"] += 1
+        return False
     core = re.sub(r"[^A-Za-z]", "", t)
     return len(core) >= 2 and core.isupper() or (len(core) == 1 and core.isupper() and t.startswith("("))
 
 
+def _vocab(raw):
+    """lower -> Capitalised form, from words the law itself prints capitalised mid-sentence (names, places)."""
+    v = {}
+    for m in re.finditer(r"(?<![.:;]\s)(?<!^)\b([A-Z][a-z]{2,})\b", re.sub(r"\s+", " ", raw)):
+        v.setdefault(m.group(1).lower(), m.group(1))
+    for w in ("new", "york", "state", "the", "of", "and", "an", "act"):
+        v.pop(w, None)
+    return v
+
+
+def _fmt_run(toks, cap_first, vocab):
+    out, cap = [], cap_first
+    for k, t in enumerate(toks):
+        w = t.lower()
+        core = re.sub(r"^\W+|\W+$", "", w)
+        if core in vocab and not cap:
+            w = w.replace(core, vocab[core]); RULE_STATS["case_restored_from_law"] += 1
+        if cap:
+            w = re.sub(r"[a-z]", lambda m: m.group(0).upper(), w, count=1)
+            cap = False
+        if SENT_END.search(t) or (re.fullmatch(r"\(\w\)", t) and k == 0 and cap_first):
+            cap = True
+        out.append(w)
+    return " ".join(out)
+
+
 def from_plain_old(t):
-    """Plain text (2009-2016) -> marked text via the uppercase convention."""
+    """Plain text (2009-2016) -> marked text via the uppercase convention (new matter is printed in capitals)."""
+    vocab = _vocab(t)
     lines = [ln for ln in t.split("\n") if not PAGE_HDR.match(ln) and not FOOTER_LINE.match(ln)
              and not re.match(r"^\s*(S|A)\.\s*\d+(--[A-Z])?\s+\d+\s*$", ln)]
-    # body starts at the enacting clause
     txt = "\n".join(lines)
     m = re.search(r"(?is)DO\s+ENACT\s+AS\s+FOLLOWS:\s*\n", txt)
     txt = txt[m.end():] if m else txt
+    f = re.search(r"(?m)^\s*FISCAL\s+NOTE", txt)          # appended fiscal notes are not part of the act
+    if f:
+        txt = txt[:f.start()]; RULE_STATS["appended_text_stripped"] += 1
     paras = _paragraphs(txt.split("\n"), lambda ln: re.match(r"^ {2}\S", ln) is not None)
     out = []
     for p in paras:
         p = re.sub(r"^S\s+(\d)", r"§ \1", p)
-        toks = [x.lower() if re.fullmatch(r"\d[\w-]*[A-Z][\w-]*\.?", x) else x for x in p.split(" ")]   # "1662-E." -> "1662-e."
+        toks = [x.lower() if re.fullmatch(r"\d[\w-]*[A-Z][\w-]*\.?", x) else x for x in p.split(" ") if x != ""]
         up = [_is_upper_tok(x) for x in toks]
+        cite = [bool(CITATION.match(x)) for x in toks]
         mark = list(up)
-        for i, x in enumerate(toks):          # a bare "A"/"I", a number or a lone symbol inside an uppercase run is part of it
-            if not up[i] and (x in ("A", "I") or re.fullmatch(r"[\d.,;:()\-]+", x)):
-                if 0 < i < len(toks) - 1 and up[i - 1] and up[i + 1]:
-                    mark[i] = True
+        for i, x in enumerate(toks):
+            if cite[i]:
+                mark[i] = False
+                continue
+            single = bool(re.fullmatch(r"[A-Z]\.?", x)) and x not in ("§",)
+            small = bool(re.fullmatch(r"[\d.,;:()\-]+", x))
+            if not up[i] and (single or small):         # a lone initial, class letter, "A" or number inside or at the start of a run
+                left = i > 0 and up[i - 1]
+                right = i + 1 < len(toks) and up[i + 1]
+                if (left and right and i < len(toks) - 1) or (i == 0 and single and right):
+                    mark[i] = True; RULE_STATS["bridged_tokens"] += 1
+        for i, x in enumerate(toks):                     # digits that directly follow a [deleted] span are the new matter
+            if i and re.search(r"\][.,;:)]*$", toks[i - 1]) and re.fullmatch(r"\d[\d,]*[.,;:)]*", x) and not mark[i]:
+                mark[i] = True; RULE_STATS["digits_after_deleted"] += 1
         res, i = [], 0
         while i < len(toks):
             if mark[i]:
                 j = i
                 while j < len(toks) and mark[j]:
                     j += 1
-                res.append("{{" + _cap_sentences(" ".join(toks[i:j])) + "}}")
+                run = toks[i:j]
+                tail = ""
+                mt = re.search(r"([.,;:)]+)$", run[-1])
+                if mt and re.fullmatch(r"\d[\d,]*[.,;:)]*", run[-1]):   # keep punctuation after a bare number outside the braces
+                    tail = mt.group(1); run[-1] = run[-1][:-len(tail)]
+                cap_first = i == 0 or bool(SENT_END.search(toks[i - 1])) or toks[i - 1] == "§"
+                res.append("{{" + _fmt_run(run, cap_first, vocab) + "}}" + tail)
                 i = j
             else:
                 res.append(toks[i]); i += 1
         out.append(" ".join(res))
-    return fix_hyphens("\n\n".join(out))
+    return trim_after_effective(fix_hyphens("\n\n".join(out)))
+
+
+def trim_after_effective(body):
+    """Drop anything after the act's final effective-date section that is not another numbered section (appended notes)."""
+    paras = body.split("\n\n")
+    last = max((i for i, p in enumerate(paras) if re.search(r"\b(?:shall take effect|takes? effect)\b", p)), default=None)
+    if last is None:
+        return body
+    keep = paras[:last + 1]
+    for p in paras[last + 1:]:
+        if re.match(r"^\s*(§|Section)\s*\d", p):
+            keep.append(p)
+        else:
+            RULE_STATS["appended_text_stripped"] += 1
+    return "\n\n".join(keep)
 
 
 def convert(key, base):
@@ -165,13 +231,14 @@ def main():
     os.makedirs(os.path.join(HERE, "cache", "text_marked"), exist_ok=True)
     stats = {"html": [0, 0], "uppercase": [0, 0]}
     HYPH_STATS.update(rejoined=0, kept=0)
+    for k in RULE_STATS: RULE_STATS[k] = 0
     for b in bills:
         key = "%s-%s" % (b["session"], b["base_print_no"])
         txt, src = convert(key, HERE)
         open(os.path.join(HERE, "cache", "text_marked", key + ".txt"), "w").write(txt)
         stats[src][0] += 1
         stats[src][1] += 1 if "{{" in txt else 0
-    print("converted", len(bills), {k: "%d laws, %d with markers" % tuple(v) for k, v in stats.items()}, "hyphens", HYPH_STATS)
+    print("converted", len(bills), {k: "%d laws, %d with markers" % tuple(v) for k, v in stats.items()}, "hyphens", HYPH_STATS, "rules", RULE_STATS)
 
 
 if __name__ == "__main__":
