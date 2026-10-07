@@ -223,6 +223,7 @@ def build_methodology():
         "quote-pct": "%.1f%%" % (100 * d["duty_quotes_verified"] / d["duties"]),
         "as-of": "%s %d, %d" % (MONTHS[when.month - 1], when.day, when.year),
         "agency-pct": "%.1f%%" % (100 * d["records_agency_matched"] / d["records_total"]),
+        "reprinted": num(d["reprinted_existing_code"]),
         "matched": num(d["doris_matched"]), "never": num(st.get("never filed", 0)),
         "overdue": num(st.get("overdue", 0)), "current": num(st.get("current", 0)),
         "unknown": num(st.get("unknown", 0)),
