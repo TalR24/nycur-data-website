@@ -110,21 +110,27 @@ def validate_against_schema(value, schema: dict) -> bool:
     return True  # no "type" declared: permissive
 
 
-def emit_packets(d: Path, todo: list[tuple[dict, str]]) -> None:
+def emit_packets(d: Path, todo: list[tuple[dict, str]],
+                 fixed_prompt: str | None = None, render=None) -> None:
     """One prompt file per law (one per WINDOW for a long law), for the
     Max-plan routine to run itself: no Anthropic key, no call. Shared by
     extract_obligations.py's own laws and reextract_queued.py's queued laws,
-    so both write the SAME packet/manifest shape --ingest reads."""
+    so both write the SAME packet/manifest shape --ingest reads.
+    `fixed_prompt` and `render` default to the Council wording; the NYS
+    tracker (nys_legislation_trackers/pipeline/extract_duties.py) passes its
+    own instead of forking this function (Oct 7 2026)."""
+    fixed_prompt = _FIXED_PROMPT if fixed_prompt is None else fixed_prompt
+    render = render or render_variable_prompt
     manifest = {}
     for law, text in todo:
         mid = law["matter_id"]
         windows = split_for_extraction(text)
         manifest[mid] = {"windows": len(windows)}
         for wi, window in enumerate(windows, 1):
-            variable_prompt = render_variable_prompt(law, window)
+            variable_prompt = render(law, window)
             name = f"{mid}__w{wi}" if len(windows) > 1 else mid
             (d / f"{name}.txt").write_text(
-                _FIXED_PROMPT + variable_prompt +
+                fixed_prompt + variable_prompt +
                 f"\n\nANSWER FORMAT: write ONLY a JSON object matching this "
                 f"schema to results/{name}.json:\n" + json.dumps(OBLIGATIONS_SCHEMA))
     (d / "manifest.json").write_text(json.dumps(manifest, indent=1))
@@ -140,7 +146,7 @@ def _default_packet_writer(mid: str, res: dict) -> None:
 
 def ingest_packets(d: Path, todo: list[tuple[dict, str]], lookup: dict,
                    agencies_by_canon: dict, model: str,
-                   writer=None) -> tuple[list[str], list[str]]:
+                   writer=None, prepare=None) -> tuple[list[str], list[str]]:
     """Validates and finalizes each law's packet result(s) the SAME way a
     synchronous or batch call is finalized (finalize_extraction /
     merge_window_finalized; no second copy). By default writes
@@ -149,7 +155,10 @@ def ingest_packets(d: Path, todo: list[tuple[dict, str]], lookup: dict,
     packet-ingested RE-extraction goes through the SAME guard_reextraction +
     truncated-flag handling the sync/batch re-extraction path uses (review,
     Sep 28 2026: this used to write the cache file directly, skipping both).
-    Returns (done, left) matter ids."""
+    `prepare(law, raw)`, when given, edits a validated raw result in place
+    after the offset conversion (the NYS tracker replaces the model's
+    effective clause with its deterministic parse). Returns (done, left)
+    matter ids."""
     writer = writer or _default_packet_writer
     manifest = json.loads((d / "manifest.json").read_text())
     by_mid = {law["matter_id"]: (law, text) for law, text in todo}
@@ -183,6 +192,8 @@ def ingest_packets(d: Path, todo: list[tuple[dict, str]], lookup: dict,
             _offset_to_days(raw.get("effective_clause"))
             for o in raw.get("obligations", []):
                 _offset_to_days(o.get("deadline"))
+            if prepare:
+                prepare(law, raw)
             window_text = windows[wi - 1]
             subs.append(finalize_extraction(raw, law, window_text, operative_text(window_text),
                                             lookup, agencies_by_canon, model))
