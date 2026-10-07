@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#170C03">
+  <title>NYS Legislation Trackers — NYCuriosity</title>
+  <meta name="description" content="Every New York State bill since the 2009 legislative session, with sponsor, committee, status and chapter number for the laws that were signed.">
+  <link rel="canonical" href="https://data.nycuriosity.com/civic_reference/nys_legislation_trackers/">
+  <meta property="og:image" content="https://data.nycuriosity.com/website_logo.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta property="og:type"        content="website">
+  <meta property="og:url"         content="https://data.nycuriosity.com/civic_reference/nys_legislation_trackers/">
+  <meta property="og:title"       content="NYS Legislation Trackers — NYCuriosity">
+  <meta property="og:description" content="Every New York State bill since the 2009 legislative session, with sponsor, committee, status and chapter number for the laws that were signed.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/brand.css">
+  <link rel="stylesheet" href="/assets/chart.css?v=20260927">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --blue: #C84609; --blue-hover: #A44D00; --blue-light: #FAF6F1; --blue-mid: #EDC3A5;
+      --text: #1A1208; --text-mid: #4A3B2C; --text-muted: #6B5B4A; --text-faint: #9A8B7A;
+      --bg: #FAF6F1; --surface: #ffffff; --border: #E7DDCE;
+      --shadow-sm: 0 1px 3px rgba(26,18,8,0.08); --shadow-md: 0 4px 20px rgba(207,75,12,0.13);
+      --radius: 10px;
+    }
+    body { font-family: 'Helvetica Neue', Helvetica, Arial, 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
+
+    header { background: #170C03; border-bottom: 1px solid #2E1C0C; padding: 0 clamp(20px, 5vw, 48px); }
+    .header-inner { max-width: 1100px; margin: 0 auto; height: 56px; display: flex; align-items: center; gap: 16px; }
+    .back-link { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.75rem; font-weight: 600; color: #9A8B7A; text-decoration: none; display: flex; align-items: center; gap: 5px; padding: 4px 8px 4px 4px; border-radius: 5px; transition: color 0.15s, background 0.15s; white-space: nowrap; }
+    .back-link:hover { color: #FFD23F; background: rgba(255,210,63,0.1); }
+    .header-divider { width: 1px; height: 20px; background: #4A3B2C; flex-shrink: 0; }
+    header h1 { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.95rem; font-weight: 700; color: #E7DDCE; letter-spacing: -0.02em; }
+    .header-actions { display: flex; align-items: center; gap: 14px; margin-left: auto; }
+    .header-link { display: inline-flex; align-items: center; gap: 5px; font-size: 0.8rem; font-weight: 500; color: #9A8B7A; text-decoration: none; padding: 5px 11px; border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; transition: color .15s, border-color .15s, background .15s; }
+    .header-link:hover { color: #fff; border-color: rgba(255,255,255,0.35); background: rgba(255,255,255,0.08); }
+    .support-link { display: inline-flex; align-items: center; gap: 5px; font-size: 0.8rem; font-weight: 500; color: #FFD23F; text-decoration: none; padding: 5px 11px; border: 1px solid rgba(207,75,12,0.45); border-radius: 6px; transition: color .15s, border-color .15s, background .15s; }
+    .support-link:hover { color: #fff; background: #C84609; border-color: #C84609; }
+
+    .hero { background: var(--surface); border-bottom: 1px solid var(--border); padding: clamp(32px, 5vw, 52px) clamp(20px, 5vw, 48px); }
+    .hero-inner { max-width: 1100px; margin: 0 auto; }
+    .breadcrumb { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.72rem; color: var(--text-faint); margin-bottom: 14px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .breadcrumb a { color: var(--blue); text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+    .breadcrumb span:last-child { color: #A44D00; }
+    .hero-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .hero-tag { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--blue); background: #FAF6F1; border: 1px solid #E7DDCE; border-radius: 4px; padding: 3px 8px; }
+    .hero-updated { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.72rem; color: var(--text-faint); }
+    .hero h1 { font-family: 'Playfair Display', Georgia, serif; font-size: clamp(1.5rem, 3.5vw, 2rem); font-weight: 700; letter-spacing: -0.012em; line-height: 1.2; margin-bottom: 10px; }
+    .hero h1 span { color: var(--blue); }
+    .hero p { font-size: 0.975rem; color: var(--text-muted); max-width: 720px; line-height: 1.7; }
+    .hero-actions { margin-top: 18px; display: flex; gap: 10px; flex-wrap: wrap; }
+    .hero-press { margin-top: 16px; font-size: 0.78rem; color: var(--text-faint); }
+    .hero-press a { color: var(--text-muted); text-decoration: none; border-bottom: 1px solid var(--border); }
+    .hero-press a:hover { color: var(--blue); border-color: var(--blue); }
+    .btn { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.78rem; font-weight: 600; padding: 8px 14px; border-radius: 7px; text-decoration: none; display: inline-flex; align-items: center; gap: 7px; cursor: pointer; border: 1.5px solid var(--blue); }
+    .btn-outline { color: var(--blue); background: var(--surface); }
+    .btn-outline:hover { background: var(--blue-light); }
+
+    .stat-row { background: var(--surface); border-bottom: 1px solid var(--border); padding: clamp(16px, 3vw, 24px) clamp(20px, 5vw, 48px); }
+    .stat-row-inner { max-width: 1100px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 12px; }
+    .stat-pill { display: flex; flex-direction: column; gap: 2px; padding: 12px 18px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); flex: 1; min-width: 150px; }
+    .stat-pill .sp-num { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 1.3rem; font-weight: 700; color: var(--text); letter-spacing: -0.03em; line-height: 1; }
+    .stat-pill .sp-num.blue { color: var(--blue); }
+    .stat-pill .sp-label { font-size: 0.75rem; color: var(--text-muted); line-height: 1.3; }
+
+    .charts-section { flex: 1; padding: clamp(32px, 5vw, 56px) clamp(20px, 5vw, 48px); }
+    .charts-inner { max-width: 1100px; margin: 0 auto; }
+    .section-label { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-faint); margin-bottom: 20px; }
+    .charts-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+
+    .hub-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); text-decoration: none; color: inherit; display: flex; flex-direction: column; overflow: hidden; transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s; }
+    .hub-card:hover { border-color: var(--blue); box-shadow: var(--shadow-md); transform: translateY(-3px); }
+    .hub-card-icon { height: 100px; background: var(--text); display: flex; align-items: center; justify-content: center; gap: 10px; padding: 0 24px; flex-shrink: 0; }
+    .icon-money { display: flex; align-items: flex-end; gap: 5px; height: 52px; }
+    .icon-money .bar { width: 13px; border-radius: 3px 3px 0 0; background: #C84609; }
+    .icon-money .bar.neg { background: #A44D00; }
+    .icon-checklist { display: flex; flex-direction: column; gap: 7px; width: 110px; }
+    .icon-checklist .row { display: flex; align-items: center; gap: 7px; }
+    .icon-checklist .box { width: 11px; height: 11px; border-radius: 3px; border: 2px solid #C84609; flex-shrink: 0; }
+    .icon-checklist .box.done { background: #C84609; }
+    .icon-checklist .line { height: 7px; border-radius: 2px; background: rgba(255,255,255,0.22); flex: 1; }
+    .icon-people { display: flex; gap: 8px; align-items: center; }
+    .icon-person { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+    .icon-person .head { width: 13px; height: 13px; border-radius: 50%; background: #C84609; }
+    .icon-person .body { width: 24px; height: 14px; border-radius: 7px 7px 0 0; background: rgba(255,255,255,0.25); }
+    .icon-person.hl .head { background: #C84609; }
+    .icon-person.dim .head { background: rgba(255,255,255,0.35); }
+
+    .hub-card-body { padding: 20px 24px 24px; flex: 1; display: flex; flex-direction: column; }
+    .hub-card-label { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--blue); margin-bottom: 8px; }
+    .hub-card-title { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 1.05rem; font-weight: 700; color: var(--text); letter-spacing: -0.02em; line-height: 1.25; margin-bottom: 10px; }
+    .hub-card-desc { font-size: 0.875rem; color: var(--text-muted); line-height: 1.6; flex: 1; margin-bottom: 20px; }
+    .hub-card-meta { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .hub-card-stat { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.72rem; color: var(--text-faint); }
+    .hub-card-cta { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.78rem; font-weight: 700; color: var(--blue); display: flex; align-items: center; gap: 5px; transition: gap 0.15s; }
+    .hub-card:hover .hub-card-cta { gap: 9px; }
+
+    /* ── TRACKER PANELS ────────────────────────────────────
+       Three large panels, one per tracker. Accent set per-panel via
+       data-accent so colour encodes which tracker (topic tokens, not
+       new hexes). No horizontal scroll at 360px: single column below
+       the site's tablet breakpoint. */
+    .tracker-panels { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+    @media (max-width: 900px) { .tracker-panels { grid-template-columns: 1fr; } }
+    .tracker-panel { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 24px; display: flex; flex-direction: column; }
+    .tracker-panel[data-accent="budget"] .tracker-eyebrow,
+    .tracker-panel[data-accent="budget"] .tracker-stat-num { color: var(--b-topic-budget-ink); }
+    .tracker-panel[data-accent="transit"] .tracker-eyebrow,
+    .tracker-panel[data-accent="transit"] .tracker-stat-num { color: var(--b-topic-transit-ink); }
+    .tracker-panel[data-accent="cb"] .tracker-eyebrow,
+    .tracker-panel[data-accent="cb"] .tracker-stat-num { color: var(--b-topic-cb-ink); }
+    .tracker-eyebrow { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+    .tracker-title { align-self: flex-start; display: inline-block; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 1.1rem; font-weight: 700; color: var(--text); letter-spacing: -0.02em; line-height: 1.25; margin-bottom: 10px; text-decoration: none; border-bottom: 2px solid transparent; }
+    .tracker-title .tt-arrow { color: var(--accent); transition: margin-left 0.15s; }
+    .tracker-title:hover { color: var(--accent); border-bottom-color: var(--accent); }
+    .tracker-title:hover .tt-arrow { margin-left: 4px; }
+    .tracker-panel[data-accent="budget"]  { --accent: var(--b-topic-budget-ink); }
+    .tracker-panel[data-accent="transit"] { --accent: var(--b-topic-transit-ink); }
+    .tracker-panel[data-accent="cb"]      { --accent: var(--b-topic-cb-ink); }
+    .tracker-facet { font-size: 0.875rem; color: var(--text-muted); line-height: 1.6; margin-bottom: 18px; }
+    .tracker-stats { display: flex; gap: 14px; margin-bottom: 18px; padding-bottom: 18px; border-bottom: 1px solid var(--border); }
+    .tracker-stat { flex: 1; min-width: 0; }
+    .tracker-stat-num { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 1.15rem; font-weight: 700; color: var(--text); letter-spacing: -0.03em; line-height: 1; display: block; margin-bottom: 3px; }
+    .tracker-stat-label { font-size: 0.68rem; color: var(--text-muted); line-height: 1.3; }
+    .tracker-links { list-style: none; margin-bottom: 18px; flex: 1; }
+    .tracker-links li { margin-bottom: 7px; }
+    .tracker-links a { font-size: 0.82rem; color: var(--text-mid); text-decoration: none; border-bottom: 1px solid var(--border); }
+    .tracker-links a:hover { color: var(--blue); border-color: var(--blue); }
+    .tracker-alerts { display: inline-flex; align-items: center; gap: 7px; align-self: flex-start; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.76rem; font-weight: 700; color: var(--accent); text-decoration: none; margin-bottom: 14px; padding: 6px 12px; border: 1.5px solid var(--accent); border-radius: 8px; background: color-mix(in srgb, var(--accent) 8%, transparent); transition: background 0.15s, color 0.15s; }
+    .tracker-alerts:hover { background: var(--accent); color: #fff; }
+    .tracker-cta { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.85rem; font-weight: 700; color: var(--blue); text-decoration: none; display: flex; align-items: center; gap: 5px; transition: gap 0.15s; }
+    .tracker-cta:hover { gap: 9px; }
+
+    /* ── MEMBERS BAND ──────────────────────────────────────── */
+    .members-band { background: var(--text); border-radius: var(--radius); padding: clamp(24px, 4vw, 36px); margin-top: 24px; color: #fff; display: flex; flex-wrap: wrap; align-items: center; gap: 24px; justify-content: space-between; }
+    .members-band-text { flex: 1; min-width: 240px; }
+    .members-band h2 { font-family: 'Playfair Display', Georgia, serif; font-size: 1.4rem; font-weight: 700; margin-bottom: 8px; }
+    .members-band p { font-size: 0.9rem; color: rgba(255,255,255,0.75); line-height: 1.6; max-width: 560px; }
+    .members-band-side { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; flex: 0 0 260px; }  /* fixed width so both bands' stats line up */
+    .members-band-num { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 2rem; font-weight: 700; color: #FFD23F; line-height: 1; }
+    .members-band-label { font-size: 0.78rem; color: rgba(255,255,255,0.65); margin-bottom: 4px; }
+    a.members-band { text-decoration: none; transition: transform 0.15s, box-shadow 0.15s; }
+    a.members-band:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.18); }
+    a.members-band:focus-visible { outline: 3px solid var(--b-marigold); outline-offset: 3px; }
+    .members-band-cta { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.85rem; font-weight: 700; color: var(--b-marigold); }
+    a.members-band:hover .members-band-cta { text-decoration: underline; }
+
+    footer { background: var(--surface); border-top: 1px solid var(--border); padding: 20px clamp(20px, 5vw, 48px); }
+    .footer-inner { max-width: 1100px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+    .footer-copy { font-size: 0.8rem; color: var(--text-faint); }
+    .footer-links { display: flex; gap: 20px; align-items: center; }
+    .footer-links a { font-size: 0.8rem; color: var(--text-muted); text-decoration: none; transition: color 0.15s; }
+    .footer-links a:hover { color: var(--blue); }
+    .footer-support { display: inline-flex; align-items: center; gap: 5px; font-size: 0.8rem; font-weight: 500; color: #C84609; text-decoration: none; padding: 5px 11px; border: 1px solid rgba(207,75,12,0.45); border-radius: 6px; transition: color .15s, border-color .15s, background .15s; vertical-align: middle; }
+    .footer-support:hover { color: #fff; background: #C84609; border-color: #C84609; }
+
+    @media (max-width: 640px) { .header-actions { display: none; } }
+  
+    /* ── TOPIC COLOUR (2026 rebrand) ──────────────────────
+       Colour encodes what KIND of thing something is. The bright fills are
+       decorative only; the -ink twins are the only variants safe for text
+       (each is tuned to 4.5:1 on Canvas Cream). Tokens: assets/brand.css */
+    .card[data-topics~="transit"] .card-category { color: var(--b-topic-transit-ink); }
+    .card[data-topics~="cb"]      .card-category { color: var(--b-topic-cb-ink); }
+    .card[data-topics~="budget"]  .card-category { color: var(--b-topic-budget-ink); }
+    .card[data-topics~="govtech"] .card-category { color: var(--b-topic-govtech-ink); }
+    .tf-pill[data-topic="transit"]:hover  { border-color: var(--b-topic-transit-ink); color: var(--b-topic-transit-ink); }
+    .tf-pill[data-topic="cb"]:hover       { border-color: var(--b-topic-cb-ink); color: var(--b-topic-cb-ink); }
+    .tf-pill[data-topic="budget"]:hover   { border-color: var(--b-topic-budget-ink); color: var(--b-topic-budget-ink); }
+    .tf-pill[data-topic="govtech"]:hover  { border-color: var(--b-topic-govtech-ink); color: var(--b-topic-govtech-ink); }
+    .tf-pill[data-topic="transit"].active { background: var(--b-topic-transit-ink); border-color: var(--b-topic-transit-ink); color: #fff; }
+    .tf-pill[data-topic="cb"].active      { background: var(--b-topic-cb-ink); border-color: var(--b-topic-cb-ink); color: #fff; }
+    .tf-pill[data-topic="budget"].active  { background: var(--b-topic-budget-ink); border-color: var(--b-topic-budget-ink); color: #fff; }
+    .tf-pill[data-topic="govtech"].active { background: var(--b-topic-govtech-ink); border-color: var(--b-topic-govtech-ink); color: #fff; }
+    /* A row of figures should not read as one colour. */
+    .stat-pill:nth-child(4n+1) .sp-num { color: var(--b-topic-budget-ink); }
+    .stat-pill:nth-child(4n+2) .sp-num { color: var(--b-topic-transit-ink); }
+    .stat-pill:nth-child(4n+3) .sp-num { color: var(--b-topic-cb-ink); }
+    .stat-pill:nth-child(4n+4) .sp-num { color: var(--b-brown); }
+  
+    /* The subpage header carries a mark, a back-link, a page title AND the
+       action buttons, so shed the optional links before the row can overflow.
+       These MUST live in the last style block on the page: several pages carry
+       a second <style id="support-btn-css"> that re-declares .header-actions
+       and would otherwise override the media query. */
+    header .header-inner { min-width: 0; }
+    header h1 { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    @media (max-width: 900px) { .header-actions .header-link { display: none; } }
+    @media (max-width: 560px) { .header-actions { display: none; } }
+    @media (max-width: 560px) { header h1 { white-space: normal; } }
+    @media (max-width: 520px) { header h1 { display: none; } }
+    .member-tools-card { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 18px 28px; margin-top: 24px; padding: clamp(22px, 3.5vw, 32px); background: var(--surface); border: 1.5px solid var(--border); border-left: 5px solid var(--b-marigold); border-radius: var(--radius); text-decoration: none; color: inherit; transition: transform 0.15s, box-shadow 0.15s; }
+    .member-tools-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,0.08); }
+    .member-tools-card:focus-visible { outline: 3px solid var(--b-marigold); outline-offset: 3px; }
+    .member-tools-card .mt-text { flex: 1; min-width: 260px; max-width: 760px; }
+    .member-tools-card .mt-k { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--b-brown); margin-bottom: 6px; }
+    .member-tools-card h2 { font-family: 'Playfair Display', Georgia, serif; font-size: 1.35rem; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+    .member-tools-card p:not(.mt-k) { font-size: 0.92rem; color: var(--text-muted); line-height: 1.6; }
+    .member-tools-card .mt-cta { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.85rem; font-weight: 700; color: var(--b-surface); background: var(--b-brown); padding: 11px 18px; border-radius: 8px; white-space: nowrap; }
+    .stat-pill .sp-num { white-space: nowrap; }
+    .tracker-panel[hidden] { display: none; }
+    .tracker-panel[data-accent="legis"] { --accent: var(--b-topic-govtech-ink); }
+    .tracker-panel[data-accent="legis"] .tracker-eyebrow { color: var(--b-topic-govtech-ink); }
+  </style>
+  <script defer src="/assets/chart.js?v=20260927"></script>
+  <script defer src="/assets/site.js?v=20260927"></script>
+<!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d0dce16d32c14809bc15038314fb9a13"}'></script><!-- End Cloudflare Web Analytics -->
+<!-- jsonld:start -->
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@type": "Dataset",
+ "name": "NYS Legislation Trackers",
+ "description": "Every New York State bill since the 2009 legislative session, with sponsor, committee, status and chapter number for the laws that were signed.",
+ "url": "https://data.nycuriosity.com/civic_reference/nys_legislation_trackers/",
+ "creator": {
+  "@type": "Person",
+  "name": "Tal Roded",
+  "url": "https://talroded.nycuriosity.com/"
+ },
+ "isAccessibleForFree": true,
+ "inLanguage": "en-US",
+ "spatialCoverage": {
+  "@type": "Place",
+  "name": "New York City"
+ }
+}
+</script>
+<!-- jsonld:end -->
+</head>
+
+<header>
+  <div class="header-inner">
+    <a href="/" class="header-mark" aria-label="NYCuriosity Data home"><img src="/assets/brand/Talbot.svg" alt="" style="height:32px;width:auto;display:block"></a>
+    <a href="/" class="back-link">← nycuriosity/data</a>
+    <div class="header-divider"></div>
+    <h1>NYS Legislation Trackers</h1>
+    <div class="header-actions">
+      <a href="https://talroded.nycuriosity.com" class="header-link" target="_blank" rel="noopener"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>About</a>
+      <a href="https://buymeacoffee.com/nycuriosity" class="support-link" target="_blank" rel="noopener" aria-label="Support my work on Buy Me a Coffee"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>Support my work</a>
+    </div>
+  </div>
+</header>
+
+<div class="hero">
+  <div class="hero-inner">
+    <div class="breadcrumb">
+      <a href="/">data.nycuriosity.com</a>
+      <span>›</span>
+      <span>NYS Legislation Trackers</span>
+    </div>
+    <div class="hero-meta">
+      <span class="hero-tag">Civic Reference</span>
+      <span class="hero-updated" id="heroUpdated">Source: NY Senate Open Legislation</span>
+    </div>
+    <h1>Of 175,961 state bills since 2009, <span>10,736 became law</span></h1>
+    <p>
+      Every bill and resolution in the New York State Legislature from the 2009&ndash;10 session to today, from the NY Senate&rsquo;s Open Legislation data. Governors signed 6.1% of the bills into law and vetoed 1,784.
+    </p>
+  </div>
+</div>
+
+<div class="stat-row">
+  <div class="stat-row-inner">
+    <div class="stat-pill"><span class="sp-num" id="spBills">…</span><span class="sp-label">Bills and resolutions in the archive</span></div>
+    <div class="stat-pill"><span class="sp-num" id="spSessions">…</span><span class="sp-label">Two-year sessions covered</span></div>
+    <div class="stat-pill"><span class="sp-num" id="spSigned">…</span><span class="sp-label">Laws signed</span></div>
+  </div>
+</div>
+
+<section class="charts-section">
+  <div class="charts-inner">
+    <p class="section-label">Trackers</p>
+    <div class="tracker-panels">
+
+      <div class="tracker-panel" data-accent="budget">
+        <div class="tracker-eyebrow">Bills</div>
+        <a class="tracker-title" href="bills/">Bill Explorer <span class="tt-arrow">→</span></a>
+        <p class="tracker-facet">Find any bill since 2009 by session, chamber, committee, sponsor or outcome, and see the stage where it stopped.</p>
+        <div class="tracker-stats">
+          <div class="tracker-stat"><span class="tracker-stat-num" id="beBills">…</span><span class="tracker-stat-label">Bills and resolutions</span></div>
+          <div class="tracker-stat"><span class="tracker-stat-num" id="beSigned">…</span><span class="tracker-stat-label">Signed into law</span></div>
+          <div class="tracker-stat"><span class="tracker-stat-num" id="beVetoed">…</span><span class="tracker-stat-label">Vetoed</span></div>
+        </div>
+        <a class="tracker-cta" href="bills/">Open tracker →</a>
+      </div>
+
+      <!-- Placeholders for later phases: unhide when the page exists -->
+      <div class="tracker-panel" data-accent="transit" hidden>
+        <div class="tracker-eyebrow">Duties</div><!-- COPY: eyebrow -->
+        <span class="tracker-title">Duties Tracker</span>
+        <p class="tracker-facet"><!-- COPY: Duties description --></p>
+        <a class="tracker-cta" href="duties/">Open tracker →</a>
+      </div>
+      <div class="tracker-panel" data-accent="cb" hidden>
+        <div class="tracker-eyebrow">Powers</div><!-- COPY: eyebrow -->
+        <span class="tracker-title">Powers Tracker</span>
+        <p class="tracker-facet"><!-- COPY: Powers description --></p>
+        <a class="tracker-cta" href="powers/">Open tracker →</a>
+      </div>
+      <div class="tracker-panel" data-accent="budget" hidden>
+        <div class="tracker-eyebrow">Agencies</div><!-- COPY: eyebrow -->
+        <span class="tracker-title">Agencies</span>
+        <p class="tracker-facet"><!-- COPY: Agencies description --></p>
+        <a class="tracker-cta" href="agencies/">Browse agencies →</a>
+      </div>
+      <div class="tracker-panel" data-accent="legis" hidden>
+        <div class="tracker-eyebrow">Legislators</div><!-- COPY: eyebrow -->
+        <span class="tracker-title">Legislators</span>
+        <p class="tracker-facet"><!-- COPY: Legislators description --></p>
+        <a class="tracker-cta" href="legislators/">Browse legislators →</a>
+      </div>
+      <div class="tracker-panel" data-accent="transit" hidden>
+        <div class="tracker-eyebrow">Alerts</div><!-- COPY: eyebrow -->
+        <span class="tracker-title">Alerts</span>
+        <p class="tracker-facet"><!-- COPY: Alerts description --></p>
+        <a class="tracker-cta" href="alerts/">See alerts →</a>
+      </div>
+
+    </div>
+  </div>
+</section>
+<footer>
+  <div class="footer-inner">
+    <span class="footer-copy">© NYCuriosity · Tal Roded</span>
+    <nav class="footer-links" style="flex-wrap:wrap">
+      <a href="https://buymeacoffee.com/nycuriosity" class="footer-support" target="_blank" rel="noopener" aria-label="Support my work on Buy Me a Coffee"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>Support my work</a>
+      <a href="https://talroded.nycuriosity.com" target="_blank" rel="noopener">About</a>
+      <a href="https://www.nycuriosity.com" target="_blank" rel="noopener" aria-label="NYCuriosity on Substack" title="Substack" style="display:inline-flex;align-items:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M22.539 8.242H1.46V5.406h21.08v2.836zM1.46 10.812V24L12 18.11 22.54 24V10.812H1.46zM22.54 0H1.46v2.836h21.08V0z"/></svg></a>
+      <a href="https://www.linkedin.com/in/tal-roded" target="_blank" rel="noopener" aria-label="Tal Roded on LinkedIn" title="LinkedIn" style="display:inline-flex;align-items:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.225 0z"/></svg></a>
+      <a href="https://x.com/TalR24" target="_blank" rel="noopener" aria-label="NYCuriosity on X" title="X" style="display:inline-flex;align-items:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z"/></svg></a>
+      <a href="https://www.instagram.com/talroded" target="_blank" rel="noopener" aria-label="Tal Roded on Instagram" title="Instagram" style="display:inline-flex;align-items:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg></a>
+      <a href="https://www.tiktok.com/@tal_nycuriosity" target="_blank" rel="noopener" aria-label="NYCuriosity on TikTok" title="TikTok" style="display:inline-flex;align-items:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/></svg></a>
+      <a href="https://www.youtube.com/@nycuriosity-yt" target="_blank" rel="noopener" aria-label="NYCuriosity on YouTube" title="YouTube" style="display:inline-flex;align-items:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814z M9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg></a>
+      <a href="https://github.com/TalR24/nycur-data-website" target="_blank" rel="noopener" aria-label="TalR24 on GitHub" title="GitHub" style="display:inline-flex;align-items:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg></a>
+    </nav>
+  </div>
+</footer>
+<script>
+(function () {
+  function n(v) { return Number(v).toLocaleString('en-US'); }
+  fetch('data/hub_stats.json')
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      var ss = d.sessions || [], bills = 0, signed = 0, vetoed = 0;
+      ss.forEach(function (s) { bills += s.bills; signed += s.signed; vetoed += s.vetoed; });
+      var set = function (id, v) { var e = document.getElementById(id); if (e) e.textContent = v; };
+      set('spBills', n(bills)); set('spSessions', n(ss.length)); set('spSigned', n(signed));
+      set('beBills', n(bills)); set('beSigned', n(signed)); set('beVetoed', n(vetoed));
+    })
+    .catch(function () {});
+})();
+</script>
+
+</body>
+</html>
