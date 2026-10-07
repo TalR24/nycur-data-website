@@ -175,6 +175,34 @@ def parse_ymd(s: str | None) -> date | None:
         return None
 
 
+def parse_any_date(s: str | None) -> date | None:
+    """YYYY-MM-DD (optionally followed by a time) or 'May 19, 2026'; None
+    when the value is empty or unparseable."""
+    s = (s or "").strip()
+    if not s:
+        return None
+    d = parse_ymd(s[:10])
+    if d:
+        return d
+    for fmt in ("%B %d, %Y", "%b %d, %Y"):
+        try:
+            return datetime.strptime(s, fmt).date()
+        except ValueError:
+            continue
+    return None
+
+
+def crosswalk_slug_names() -> dict[str, str]:
+    """slug(canonical) -> canonical, from the crosswalk the alerts page reads:
+    the page saves agency slugs, and a slug like 'nyc-aging' only resolves to
+    its agency code (DFTA) through the crosswalk name."""
+    path = IMPL_DATA / "agency_crosswalk.json"
+    if not path.exists():
+        return {}
+    rows = json.loads(path.read_text()).get("agencies", [])
+    return {slug(a["canonical"]): a["canonical"] for a in rows if a.get("canonical")}
+
+
 def fmt_date(d: date) -> str:
     return f"{d:%b} {d.day}, {d.year}"
 
@@ -230,10 +258,10 @@ def main() -> None:
     # never reach members as news: an unannounced record whose own date is more
     # than BACKFILL_DAYS old is recorded as announced without being emailed.
     # A record with no date counts as old. The state update below records them.
-    stale_before = (date.today() - timedelta(days=BACKFILL_DAYS)).isoformat()
+    stale_date = date.today() - timedelta(days=BACKFILL_DAYS)
     def recent(*vals):
-        d = max((v or "")[:10] for v in vals)
-        return bool(d) and d >= stale_before
+        ds = [d for d in (parse_any_date(v) for v in vals) if d]
+        return bool(ds) and max(ds) >= stale_date
     backfill_laws = [l for l in new_laws if not recent(l.get("enactment_date"))]
     backfill_fiscal = [r for r in new_fiscal
                        if not recent(r.get("date_prepared"), r.get("hearing_date"))]
@@ -267,6 +295,11 @@ def main() -> None:
     deadline_seeded = bool(state.get("deadline_state_seeded"))
     known_upcoming = set(state.get("announced_upcoming_ids", []))
     known_overdue = set(state.get("announced_overdue_ids", []))
+    # Duties of a backfilled law are recorded as announced, never emailed,
+    # same as the law itself.
+    backfill_ids = {l["matter_id"] for l in backfill_laws}
+    known_upcoming |= {o["obligation_id"] for o in upcoming_all if o["matter_id"] in backfill_ids}
+    known_overdue |= {o["obligation_id"] for o in overdue_all if o["matter_id"] in backfill_ids}
     if not deadline_seeded:
         known_upcoming = {o["obligation_id"] for o in upcoming_all}
         known_overdue = {o["obligation_id"] for o in overdue_all}
@@ -415,8 +448,9 @@ def main() -> None:
                            if (r.get("email") or "").strip()]
     print(f"{len(subscribers)} subscribers.")
 
+    slug_names = crosswalk_slug_names()
     sent = 0
-    for sub in subscribers:
+    for sub_no, sub in enumerate(subscribers, 1):
         email = sub["email"].strip()
 
         def splitfield(name):
@@ -427,6 +461,10 @@ def main() -> None:
         want_ag = splitfield("agencies")
         want_ag_slugs = {slug(a) for a in want_ag}
         want_ag_canon = {c for c in (canonicalize(a)[0] for a in want_ag) if c}
+        # a saved slug that is not a canonical code ("nyc-aging") resolves
+        # through the crosswalk name it was made from
+        want_ag_canon |= {c for c in (canonicalize(slug_names[slug(a)])[0]
+                                      for a in want_ag if slug(a) in slug_names) if c}
         want_mem = splitfield("members")
         want_laws = splitfield("laws")
         want_kw = {k.lower() for k in splitfield("keywords")}
@@ -587,7 +625,7 @@ def main() -> None:
             subject = "NYCuriosity alert: your monthly legislation update"
 
         if dry:
-            print(f"\n=== DRY RUN to {email}: {subject}\n{body}\n")
+            print(f"\n=== DRY RUN to subscriber {sub_no}: {subject}\n{body}\n")
         else:
             msg = MIMEText(body)
             msg["Subject"] = subject
@@ -596,7 +634,7 @@ def main() -> None:
             with smtplib.SMTP_SSL("smtp.gmail.com", 465) as s:
                 s.login(os.environ["GMAIL_USER"], os.environ["GMAIL_APP_PASSWORD"])
                 s.send_message(msg)
-            print(f"Sent to {email}: {total} matches")
+            print(f"Sent alert {sub_no}/{len(subscribers)}: {total} matches")
         sent += 1
 
     if not dry:

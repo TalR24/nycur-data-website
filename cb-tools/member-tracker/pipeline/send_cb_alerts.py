@@ -189,7 +189,7 @@ def main() -> None:
     print(f"{len(subscribers)} subscribers.")
 
     sent = 0
-    for sub in subscribers:
+    for sub_no, sub in enumerate(subscribers, 1):
         email = sub["email"].strip()
 
         def splitfield(name):
@@ -231,7 +231,7 @@ def main() -> None:
                    f"{'s' if n != 1 else ''} on your watchlist")
 
         if dry:
-            print(f"\n=== DRY RUN to {email}: {subject}\n{body}\n")
+            print(f"\n=== DRY RUN to subscriber {sub_no}: {subject}\n{body}\n")
         else:
             msg = MIMEText(body)
             msg["Subject"] = subject
@@ -240,7 +240,7 @@ def main() -> None:
             with smtplib.SMTP_SSL("smtp.gmail.com", 465) as s:
                 s.login(os.environ["GMAIL_USER"], os.environ["GMAIL_APP_PASSWORD"])
                 s.send_message(msg)
-            print(f"Sent to {email}: {n} matches")
+            print(f"Sent alert {sub_no}/{len(subscribers)}: {n} matches")
         sent += 1
 
     if not dry:
