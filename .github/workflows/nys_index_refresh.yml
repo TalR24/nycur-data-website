@@ -1,0 +1,53 @@
+name: NYS bill index refresh (daily)
+
+# Applies the day's changed bills from the Open Legislation feed to data/bills/{session}.json and rebuilds hub_stats.json,
+# so the Bill Explorer and the hub pills stay current between full fetches. Public data only; no model calls.
+# Rows are written one per line so each day is a small diff. The first run rewrites the files in that layout (one-time).
+# Gap: newly signed laws still need fetch_bills.py / fetch_signed_texts.py for their text and duty extraction.
+on:
+  schedule:
+    - cron: "43 9 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: nys-index-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: write
+    env:
+      TZ: America/New_York
+      NYS_OPENLEG_KEY: ${{ secrets.NYS_OPENLEG_KEY }}
+      NYS: civic_reference/nys_legislation_trackers
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Apply the day's changes
+        run: python3 "$NYS"/pipeline/apply_updates.py
+
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add "$NYS"/data/bills "$NYS"/data/hub_stats.json "$NYS"/data/index_state.json
+          if git diff --cached --quiet; then
+            echo "Nothing changed."
+          else
+            git commit -m "NYS bill index: daily refresh from the change feed"
+            pushed=0
+            for attempt in 1 2 3 4 5; do
+              if git -c rebase.autoStash=true pull --rebase origin main && git push; then pushed=1; break; fi
+              sleep $((attempt * 10))
+            done
+            if [ "$pushed" != 1 ]; then echo "::error::push failed after 5 attempts"; exit 1; fi
+          fi

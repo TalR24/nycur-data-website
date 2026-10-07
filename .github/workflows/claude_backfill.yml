@@ -65,7 +65,9 @@ jobs:
           python-version: "3.11"
       - name: Install dependencies
         run: |
-          sudo apt-get update -q && sudo apt-get install -y -q antiword   # legacy .doc fiscal statements
+          # bounded and non-fatal (Oct 7 2026: an apt hang stalled the daily run for two hours);
+          # only legacy .doc statements need antiword, and an empty read is retried next run
+          timeout 300 bash -c 'sudo apt-get update -q && sudo apt-get install -y -q --no-install-recommends antiword' || echo "::warning::antiword not installed; .doc statements retried next run"
           pip install -r pipeline/requirements.txt
           pip install -r civic_reference/legislation_implementation_tracker/pipeline/requirements.txt
 

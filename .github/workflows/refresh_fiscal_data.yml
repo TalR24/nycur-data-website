@@ -94,7 +94,9 @@ jobs:
       - name: Install Python dependencies
         # antiword reads the legacy .doc statements (Oct 6 2026); pypdf the PDFs
         run: |
-          sudo apt-get update -q && sudo apt-get install -y -q antiword
+          # bounded and non-fatal (Oct 7 2026: an apt hang stalled the daily run for two hours);
+          # only legacy .doc statements need antiword, and an empty read is retried next run
+          timeout 300 bash -c 'sudo apt-get update -q && sudo apt-get install -y -q --no-install-recommends antiword' || echo "::warning::antiword not installed; .doc statements retried next run"
           pip install -r pipeline/requirements.txt
 
       # before any paid call (round 2): a broken rule fails here, not after the extraction

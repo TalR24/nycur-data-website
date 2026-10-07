@@ -1,0 +1,100 @@
+name: NYS bill alerts (hourly)
+
+# Per-bill alerts for members. Reads the Open Legislation change feed since data/updates_state.json, emails each member who
+# follows a changed bill ONE message per run, records what was sent in the PRIVATE premium repo, then advances the cursor.
+# No model calls and no Anthropic key. Follows and sent-event state live in nycur-data-premium (emails are PII).
+# Failure policy: no continue-on-error on the send step. If any send or fetch fails the run turns red, the sends that
+# worked are still recorded (so a retry repeats nothing), and the cursor stays put so the next hour retries the rest.
+on:
+  schedule:
+    - cron: "17 * * * *"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run: print the emails, send nothing, write nothing"
+        required: false
+        default: false
+        type: boolean
+
+concurrency:
+  group: nys-bill-alerts
+  cancel-in-progress: false
+
+jobs:
+  alerts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    env:
+      TZ: America/New_York          # the feed's timestamps and the cursor are naive Eastern time
+      NYS_OPENLEG_KEY: ${{ secrets.NYS_OPENLEG_KEY }}
+      NYS: civic_reference/nys_legislation_trackers
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Lint and test
+        run: |
+          pip install --quiet pyflakes
+          python3 -m pyflakes "$NYS"/pipeline/send_bill_alerts.py "$NYS"/pipeline/apply_updates.py
+          python3 "$NYS"/pipeline/tests/test_bill_alerts.py
+
+      - name: Clone the premium repo (follows and sent state)
+        id: clone
+        env:
+          PREMIUM_PUSH_TOKEN: ${{ secrets.PREMIUM_PUSH_TOKEN }}
+        run: git clone --depth 1 "https://TalR24:${PREMIUM_PUSH_TOKEN}@github.com/TalR24/nycur-data-premium.git" /tmp/premium
+
+      - name: Send bill alerts
+        id: send
+        env:
+          PREMIUM_DIR: /tmp/premium
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          DRY_RUN: ${{ inputs.dry_run && '1' || '0' }}
+        run: python3 "$NYS"/pipeline/send_bill_alerts.py
+
+      # runs even when a send failed, so the sends that worked are never repeated
+      - name: Commit the sent-event state (premium)
+        if: ${{ always() && steps.clone.outcome == 'success' && !inputs.dry_run }}
+        working-directory: /tmp/premium
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add civic_reference/nys_legislation_trackers/data/nys_bill_alerts_state.json
+          if git diff --cached --quiet; then
+            echo "Sent-event state unchanged."
+          else
+            git commit -m "NYS bill alerts: sent-event state"
+            # the premium Worker can commit a member's follow between the clone and this push
+            pushed=0
+            for attempt in 1 2 3 4 5; do
+              if git pull --rebase origin main && git push; then pushed=1; break; fi
+              sleep $((attempt * 10))
+            done
+            if [ "$pushed" != 1 ]; then echo "::error::premium push failed after 5 attempts"; exit 1; fi
+          fi
+
+      - name: Commit the cursor (public repo)
+        if: ${{ success() && !inputs.dry_run }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add "$NYS"/data/updates_state.json
+          if git diff --cached --quiet; then
+            echo "Cursor unchanged."
+          else
+            git commit -m "NYS bill alerts: cursor"
+            pushed=0
+            for attempt in 1 2 3 4 5; do
+              if git -c rebase.autoStash=true pull --rebase origin main && git push; then pushed=1; break; fi
+              sleep $((attempt * 10))
+            done
+            if [ "$pushed" != 1 ]; then echo "::error::push failed after 5 attempts"; exit 1; fi
+          fi

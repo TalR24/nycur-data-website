@@ -231,6 +231,8 @@
     .print-cell { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.78rem; font-weight: 700; white-space: nowrap; }
     .print-cell a { color: var(--blue); text-decoration: none; border-bottom: 1px solid var(--blue-mid); }
     .print-cell a:hover { border-bottom-color: var(--blue); }
+    .print-cell a.follow-link { display: inline-block; margin-top: 3px; font-weight: 600; font-size: 0.66rem; border-bottom: 0; color: var(--blue); }
+    .print-cell a.follow-link:hover { text-decoration: underline; }
     .print-cell .kind { display: block; font-weight: 400; font-size: 0.66rem; color: var(--text-faint); margin-top: 2px; }
     .title-cell { min-width: 300px; max-width: 460px; }
     .status-cell { white-space: nowrap; font-size: 0.78rem; }
@@ -342,6 +344,7 @@
     <nav id="pager" class="pager" aria-label="Table pages"></nav>
 
     <div class="footnotes">
+      <p><strong>Follow a bill.</strong> Members get one email per hour at most when a bill they follow moves in committee, passes a house, is amended, reaches the governor, is signed or is vetoed. Press Follow beside a bill and sign in with your membership email, or <a href="https://buymeacoffee.com/nycuriosity" target="_blank" rel="noopener">become a member</a>. <a href="https://premium.nycuriosity.com/civic_reference/nys_legislation_trackers/following/">Manage the bills you follow</a>.</p>
       <p>Bills and resolutions come from the NY Senate&rsquo;s Open Legislation data, which covers every session since 2009&ndash;10. Resolutions honor, commemorate or state a position and never become law; the Type filter separates them.</p>
       <p>Status is the latest stage Open Legislation records for the bill. Each chamber prints its own copy of most bills, so when one chamber&rsquo;s copy passes and is substituted, its twin in the other chamber usually stops in committee or on the floor. The 79.9% committee share counts both copies.</p>
       <p>Sponsor is the prime sponsor on the bill. Committee is the committee the bill sits in or last sat in; bills the source lists with no committee show as &ldquo;No committee&rdquo;. Chapter is the chapter number the law received when the governor signed it.</p>
@@ -552,13 +555,19 @@
     return 'https://www.nysenate.gov/legislation/' + (r[ix.is_resolution] ? 'resolutions' : 'bills') + '/' + r[ix.session] + '/' + encodeURIComponent(r[ix.print_no]);
   }
 
+  // Members follow a bill on the member site (sign-in with the membership email); everyone else lands on the sign-in or membership prompt.
+  function followUrl(r, ix) {
+    return 'https://premium.nycuriosity.com/civic_reference/nys_legislation_trackers/following/?session=' + r[ix.session] + '&bill=' + encodeURIComponent(r[ix.base_print_no]);
+  }
+
   function rowHtml(r, ix) {
     var st = r[ix.status];
     var cls = st === 'SIGNED_BY_GOV' ? ' signed' : (st === 'VETOED' ? ' vetoed' : '');
     var chap = r[ix.chapter] != null ? 'Chapter ' + r[ix.chapter] + (r[ix.chapter_year] ? ' of ' + r[ix.chapter_year] : '') : '';
     return '<tr class="data-row">'
       + '<td class="print-cell"><a href="' + esc(billUrl(r, ix)) + '" target="_blank" rel="noopener">' + esc(r[ix.print_no]) + '</a>'
-      +   '<span class="kind">' + esc(r[ix.chamber]) + (r[ix.is_resolution] ? ' resolution' : '') + '</span></td>'
+      +   '<span class="kind">' + esc(r[ix.chamber]) + (r[ix.is_resolution] ? ' resolution' : '') + '</span>'
+      +   '<a class="follow-link" href="' + esc(followUrl(r, ix)) + '" title="Members get an email when ' + esc(r[ix.base_print_no]) + ' moves" aria-label="Follow ' + esc(r[ix.base_print_no]) + '">Follow</a></td>'
       + '<td class="title-cell">' + esc(r[ix.title]) + '</td>'
       + '<td class="meta-cell" title="' + esc(sponsorName(r, ix)) + '">' + esc(sponsorName(r, ix)) + '</td>'
       + '<td class="meta-cell" title="' + esc(r[ix.committee] || '') + '">' + esc(r[ix.committee] || '') + '</td>'
