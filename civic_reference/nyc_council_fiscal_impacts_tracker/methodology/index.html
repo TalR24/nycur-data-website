@@ -474,8 +474,8 @@
         <span class="section-title">Data source</span>
       </div>
       <p>All fiscal data in this tracker comes from <strong>NYC Legistar</strong>, the New York City Council's official legislative management system at <a href="https://legistar.council.nyc.gov" target="_blank" rel="noopener" style="color:var(--blue)">legistar.council.nyc.gov</a>. Legistar is the public record of all legislation introduced in the Council, including attached documents.</p>
-      <p>For any bill that moves toward a vote, the Council's Finance Division prepares a <strong>Fiscal Impact Statement</strong>, a standardized document estimating the bill's effect on city revenues, operational expenditures, and capital costs. These statements are attached as <code>.docx</code> files to each bill's Legistar record and are publicly accessible.</p>
-      <p>This tracker reads those documents directly. No data is sourced from any secondary database or government API, every figure comes from the text of the Finance Division's own analysis.</p>
+      <p>For any bill that moves toward a vote, the Council's Finance Division prepares a <strong>Fiscal Impact Statement</strong>, a standardized document estimating the bill's effect on city revenues, operational expenditures, and capital costs. These statements are attached to each bill's Legistar record as Word or PDF files and are publicly accessible.</p>
+      <p>This tracker reads those documents directly. Every figure comes from the text of the Finance Division's own analysis.</p>
     </div>
 
     <!-- 2. COVERAGE -->
@@ -484,7 +484,7 @@
         <span class="section-num">02</span>
         <span class="section-title">What's covered</span>
       </div>
-      <p>The tracker covers <strong>Introductions</strong> (proposed local laws) and <strong>Resolutions</strong> that have a fiscal impact statement attachment on Legistar, where the Finance Division estimated a <strong>non-zero fiscal impact</strong>. Coverage spans 2014 through the present.</p>
+      <p>The tracker covers <strong>Introductions</strong> (proposed local laws) and <strong>Resolutions</strong> that have a fiscal impact statement attachment on Legistar, where the Finance Division estimated a <strong>non-zero fiscal impact</strong>. Coverage spans statements prepared from 2014 to the present.</p>
 
       <h3>Included legislation types</h3>
       <ul>
@@ -497,7 +497,7 @@
       <ul>
         <li><strong>Bills with zero fiscal impact.</strong> Many bills are analyzed and found to have no net cost, these are excluded. Only bills where at least one of total expenditure, capital, revenue, or net impact is non-zero are tracked.</li>
         <li><strong>Bills where costs can't be estimated.</strong> When the Finance Division determines that costs cannot be reasonably quantified (e.g. "depends on how many complaints are filed"), the statement says so and these bills are excluded.</li>
-        <li><strong>Proposed bills.</strong> Bills labeled "Proposed Int." or "Proposed Res." on Legistar are draft versions that have not yet been formally introduced. Only final, formally introduced bills are included.</li>
+        <li><strong>Proposed bills.</strong> Bills labeled "Proposed Int." or "Proposed Res." on Legistar are draft versions that have not yet been formally introduced, and they are left out. The exception is a bill Legistar shows was enacted as a local law, which is kept under its "Proposed" label.</li>
         <li><strong>Budget modification resolutions (MN-#).</strong> These are administrative approvals of mayoral budget modifications under City Charter §107(e). They pass as a matter of course and do not represent independent legislative fiscal decisions.</li>
       </ul>
     </div>
@@ -512,15 +512,15 @@
 
       <h3>Two sources, checked monthly</h3>
       <p>The tracker searches Legistar's web interface using the attachment text search, retrieving every bill that has a matching attachment. That index is shallow: it returns roughly 300 matters in total, almost all from the current Council session, so the monthly job also walks the full list of enacted local laws maintained by the <a href="/civic_reference/legislation_implementation_tracker/" style="color:var(--blue)">Obligations Tracker</a> and checks each one for a fiscal impact statement. Bills already checked and found to have no quantified impact are recorded in a skip list so they are not downloaded again.</p>
-      <p>Every local law enacted from 2014 onward is checked. Only about one enacted law in twenty carries a non-zero fiscal impact statement; the rest are costed at $0 by the Finance Division and are not in the table.</p>
+      <p>Every local law enacted from 2014 onward is checked. About one enacted law in five (400 of 2,158) carries a non-zero fiscal impact statement; the rest are costed at $0 by the Finance Division and are not in the table.</p>
       <div class="callout note"><strong>Note on Legistar's year filter:</strong> Legistar's built-in year filter is non-functional for attachment searches, it returns the same set of results regardless of what year is selected. The tracker works around this by searching "All Years" and handling deduplication itself.</div>
 
       <h3>Historical bills (2014–2023)</h3>
-      <p>Records for older bills come from the Legistar REST API (<code>webapi.legistar.com/v1/nyc</code>), which enumerates every NYC Council matter and its attachment URLs. The API uses its own record numbers, distinct from the ones in Legistar's web links, so those records are matched to their web pages through the enacted-law list; a few dozen state bills and pre-considered introductions from 2014 to 2019 cannot be matched and are shown without a Legistar link.</p>
+      <p>Records for older bills come from the Legistar REST API (<code>webapi.legistar.com/v1/nyc</code>), which enumerates every NYC Council matter and its attachment URLs. The API uses its own record numbers, distinct from the ones in Legistar's web links, so those records are matched to their web pages through the enacted-law list; 17 state bills and pre-considered introductions from 2014 to 2019 cannot be matched and are shown without a Legistar link.</p>
       <h3>Bill numbers</h3>
       <p>The bill number shown in the table is Legistar's own file number (for example <code>Int 1002-2026</code>), read from the bill's Legistar page. The number printed inside the fiscal impact statement itself is kept in the data but not displayed, because the Finance Division writes it inconsistently and it is often blank when the statement was drafted before the bill was numbered.</p>
       <h3>Data checks</h3>
-      <p>A validation script runs against the data on every refresh and in a monthly quality report. It checks internal consistency (net impact equals revenue minus expenditure minus capital, no duplicate records, every Legistar link carrying the bill's own ID) and compares the table against the enacted-law list so a coverage gap like the missing 2024 laws would show up as a count, not go unnoticed.</p>
+      <p>A validation script runs against the data on every refresh and in a monthly quality report. It checks internal consistency (net impact equals revenue minus expenditure minus capital, no duplicate records, every Legistar link carrying the bill's own ID) and compares the table against the enacted-law list so a coverage gap shows up as a count.</p>
 
       <h3>Finding the right attachment</h3>
       <p>A single bill may have many attachments, committee reports, hearing transcripts, legal memos, and more. The tracker picks the attachment Legistar labels as the Council's fiscal impact statement. An amended bill carries one statement per version, so the tracker takes the newest, which is the statement for the version that passed. OMB's separate statement is not read.</p>
@@ -611,7 +611,7 @@
         </li>
         <li>
           <span class="tag exclude">EXCLUDED</span>
-          <strong>Proposed (not yet introduced) bills.</strong> Bills labeled "Proposed Int." or "Proposed Res." on Legistar are draft versions circulating before formal introduction. They may never be introduced, and the bill number may change. Only formally introduced legislation is tracked.
+          <strong>Proposed (not yet introduced) bills.</strong> Bills labeled "Proposed Int." or "Proposed Res." on Legistar are draft versions circulating before formal introduction. They may never be introduced, and the bill number may change, so they are left out unless Legistar shows the bill was enacted.
         </li>
         <li>
           <span class="tag exclude">EXCLUDED</span>
