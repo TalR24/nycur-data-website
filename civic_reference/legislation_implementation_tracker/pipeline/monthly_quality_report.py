@@ -87,7 +87,12 @@ def main() -> int:
     prev_name, prev = None, {}
     for older in sorted(OUT_DIR.glob("quality_report_*.json"), reverse=True):
         if older.stem != tag and not older.name.endswith((".validator.json", ".fiscal.json")):
-            prev_name, prev = older.stem, json.loads(older.read_text())
+            cand = json.loads(older.read_text())
+            # a crashed run has no counts: never use it as the baseline (round 2:
+            # the Oct 3 crash would have made every count a false REGRESSION)
+            if cand.get("_crashed") or not any(":" in k for k in cand):
+                continue
+            prev_name, prev = older.stem, cand
             break
     delta = []
     for k in sorted(set(metrics) | set(prev)):
@@ -109,7 +114,8 @@ def main() -> int:
     lines = [
         f"# Legislation trackers quality report — {tag}",
         "",
-        (f"**VALIDATOR CRASHED: {', '.join(crashed)}. No result for it this month; see its output below.**"
+        (f"**VALIDATOR CRASHED: {', '.join(crashed)}. No result for it this month; see its output below.** "
+         f"Hard failures in the validator that ran: **{hard_total}**"
          if crashed else
          f"Hard failures: **{hard_total}**" + (" — RUN A QUALITY LOOP" if hard_total else " (clean)")),
         "",

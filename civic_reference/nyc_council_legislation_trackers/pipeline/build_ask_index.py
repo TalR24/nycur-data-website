@@ -390,6 +390,11 @@ def main() -> int:
             f"{net_phrase(r.get('net_fiscal_impact'))}, counting all of these. "
             f"Prepared {r.get('date_prepared') or 'unknown date'}.{in_plan}"
         )
+        if r.get("package_note"):
+            # costed as one package with other bills: the figures sit on one of
+            # them; say so instead of "not stated" (fiscal audit round 2)
+            x = (f"Fiscal estimate for {bill}: {title}. {r['package_note']} "
+                 f"Prepared {r.get('date_prepared') or 'unknown date'}.")
         u = r.get("legistar_url") or LAW_LINK_BASE + r.get("matter_id", "")
         tokens = (
             tokenize(x)

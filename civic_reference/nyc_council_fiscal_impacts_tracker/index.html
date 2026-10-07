@@ -1151,11 +1151,14 @@ function updateResultsBar() {
   const totNet = filtered.reduce((s, r) => s + (r.net_fiscal_impact ?? 0), 0);
 
   const netCls = totNet < 0 ? "red" : totNet > 0 ? "green" : "";
-  const netTxt = totNet < 0 ? "−" + fmtCurr(Math.abs(totNet)) : totNet > 0 ? "+" + fmtCurr(totNet) : "$0";
+  // a package member's figures sit on another bill: a view of only such
+  // bills says so instead of "$0" (fiscal audit round 2, ?intro=894)
+  const onlyPackage = filtered.length > 0 && filtered.every(r => r.package_note && r.net_fiscal_impact == null);
+  const netTxt = onlyPackage ? "see package" : totNet < 0 ? "−" + fmtCurr(Math.abs(totNet)) : totNet > 0 ? "+" + fmtCurr(totNet) : "$0";
 
   document.getElementById("results-totals").innerHTML = `
     <div class="total-item"><span class="total-label">Net impact</span><span class="total-val ${netCls}">${netTxt}</span></div>
-    <div class="total-item"><span class="total-label">Expense</span><span class="total-val blue">${fmtCurr(totExp)}</span></div>
+    <div class="total-item"><span class="total-label">Expense</span><span class="total-val blue">${onlyPackage ? "see package" : fmtCurr(totExp)}</span></div>
     <div class="total-item"><span class="total-label">Capital</span><span class="total-val blue">${fmtCurr(totCap)}</span></div>
     <div class="total-item"><span class="total-label">Revenue</span><span class="total-val green">${fmtCurr(totRev)}</span></div>
   `;

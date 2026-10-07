@@ -1,0 +1,26 @@
+name: Fiscal rule tests
+
+# the fiscal pipeline's rule tests on every push that touches it (fiscal audit
+# round 2, Oct 6 2026: they ran only inside the monthly refresh)
+on:
+  push:
+    paths:
+      - "pipeline/fetch_fiscal_impacts.py"
+      - "pipeline/validate_fiscal_impacts.py"
+      - "pipeline/tests/**"
+      - "pipeline/fiscal_overrides.json"
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r pipeline/requirements.txt
+      - run: python pipeline/tests/test_fiscal_rules.py
+      - name: Validator (offline, strict)
+        run: python pipeline/validate_fiscal_impacts.py --strict

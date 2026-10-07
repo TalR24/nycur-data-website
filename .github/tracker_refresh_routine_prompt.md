@@ -14,7 +14,7 @@ Steps
    - `python3 pipeline/fetch_fiscal_impacts.py --incremental --seed-laws auto --emit-packets /tmp/fis` (fetches this month's statements from Legistar; no model call).
    - Answer every packet in /tmp/fis into /tmp/fis/results/.
    - `python3 pipeline/fetch_fiscal_impacts.py --incremental --seed-laws auto --ingest /tmp/fis` (the same flags as the emit step: ingest re-runs the selection)
-   - `python3 pipeline/regenerate_agency_data.py`, then `python3 pipeline/build_fiscal_static_snapshots.py` and `python3 civic_reference/legislation_implementation_tracker/pipeline/build_static_snapshots.py` (the agency chart and the pre-rendered pages read the new records).
+   - `python3 pipeline/regenerate_agency_data.py`, then `python3 pipeline/build_fiscal_static_snapshots.py` (the agency chart and the pre-rendered fiscal pages read the new records).
    - `python3 pipeline/tests/test_fiscal_rules.py` must end `0 failed`, and `python3 pipeline/validate_fiscal_impacts.py` must print 0 hard failures. If not, do not commit fiscal files; say so in the report.
 
 2. Obligations and powers (in civic_reference/legislation_implementation_tracker):
@@ -22,12 +22,14 @@ Steps
    - Queued re-extractions: `python3 pipeline/reextract_queued.py --emit-packets /tmp/rq`, answer into /tmp/rq/results/, then `python3 pipeline/reextract_queued.py --ingest /tmp/rq`.
    - New laws: `python3 pipeline/extract_obligations.py --emit-packets /tmp/new --incremental`, answer into /tmp/new/results/, then `python3 pipeline/extract_obligations.py --ingest /tmp/new --incremental`.
    - Rebuild: `ANTHROPIC_API_KEY=dummy-no-calls python3 pipeline/extract_obligations.py --incremental` (the placeholder only gets past the key check; laws with no answer fail their placeholder call, are skipped, and the Actions fallback extracts them), then `python3 pipeline/validate_obligations.py` must print `HARD FAILURES: 0`. If not, do not commit obligations files; say so in the report.
+   - Pre-rendered pages, after BOTH trackers are rebuilt: `python3 civic_reference/legislation_implementation_tracker/pipeline/build_static_snapshots.py` (rewrites the obligations and powers pages and the umbrella hub; staged in step 4).
 
 3. Gold check (repo root): `python3 civic_reference/nyc_council_legislation_trackers/quality/score_gold.py` and note the regressions count. Do not commit gold files.
 
 4. Commit and push to main. Stage explicit paths only, never `git add .` or `-A` on a directory:
-   - civic_reference/nyc_council_fiscal_impacts_tracker/data/fiscal_impacts.json, civic_reference/nyc_council_fiscal_impacts_tracker/agency-fiscal-impact/data.json, civic_reference/nyc_council_fiscal_impacts_tracker/overview/index.html, civic_reference/nyc_council_fiscal_impacts_tracker/index.html, civic_reference/nyc_council_legislation_trackers/index.html, pipeline/no_impact_matters.json
+   - civic_reference/nyc_council_fiscal_impacts_tracker/data/fiscal_impacts.json, civic_reference/nyc_council_fiscal_impacts_tracker/agency-fiscal-impact/data.json, civic_reference/nyc_council_fiscal_impacts_tracker/overview/index.html, civic_reference/nyc_council_fiscal_impacts_tracker/index.html, civic_reference/nyc_council_legislation_trackers/index.html, pipeline/no_impact_matters.json, pipeline/skip_attachments.json (stage it with `git add -A --`, it may be new)
    - civic_reference/legislation_implementation_tracker/data/{laws,obligations,powers,restated_links,summary,report_filings}.json, civic_reference/legislation_implementation_tracker/pipeline/reextract_queue.json
+   - the pre-rendered pages: civic_reference/legislation_implementation_tracker/index.html, civic_reference/legislation_implementation_tracker/agency-workload/index.html, civic_reference/legislation_implementation_tracker/deadline-timeline/index.html, civic_reference/legislation_implementation_tracker/methodology/index.html, civic_reference/legislation_implementation_tracker/obligations-table/index.html, civic_reference/legislation_implementation_tracker/powers-table/index.html, civic_reference/legislation_implementation_tracker/powers/index.html, civic_reference/legislation_implementation_tracker/powers/agency-powers/index.html, civic_reference/nyc_council_legislation_trackers/agencies/index.html, civic_reference/nyc_council_legislation_trackers/council-members/index.html (the hub, civic_reference/nyc_council_legislation_trackers/index.html, is in the fiscal line above)
    - pipeline/max_refresh.json (stage it with `git add -A -- pipeline/max_refresh.json`)
    Commit message: "Monthly refresh on Max: N fiscal, M laws done, K left for the Actions fallback". Then `git -c rebase.autoStash=true pull --rebase origin main && git push`, retrying up to 3 times with a 30-second pause.
    The Actions run later today rebuilds member and agency profiles, alerts and the Ask index from what you commit; do not run those.

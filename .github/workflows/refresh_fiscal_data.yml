@@ -97,6 +97,10 @@ jobs:
           sudo apt-get update -q && sudo apt-get install -y -q antiword
           pip install -r pipeline/requirements.txt
 
+      # before any paid call (round 2): a broken rule fails here, not after the extraction
+      - name: Fiscal rule tests
+        run: python pipeline/tests/test_fiscal_rules.py
+
       # Resume-only path (the cheap daily cron, days 2-7): exits immediately
       # if no batch is pending, otherwise polls/finishes it. Never runs on
       # the monthly cron or a manual dispatch.
@@ -171,9 +175,6 @@ jobs:
       # continue-on-error, so a hard failure could never stop a commit, and
       # the 25 rule tests ran nowhere. Both now block the push; the data
       # still survives as the fiscal-data artifact below (if: always()).
-      - name: Fiscal rule tests
-        run: python pipeline/tests/test_fiscal_rules.py
-
       - name: Data validator (a hard failure blocks the commit)
         run: python pipeline/validate_fiscal_impacts.py --strict
 
@@ -192,7 +193,8 @@ jobs:
                   civic_reference/nyc_council_fiscal_impacts_tracker/overview/index.html \
                   civic_reference/nyc_council_fiscal_impacts_tracker/index.html \
                   civic_reference/nyc_council_legislation_trackers/index.html \
-                  pipeline/no_impact_matters.json
+                  pipeline/no_impact_matters.json \
+                  pipeline/skip_attachments.json
           # fiscal_batch_state.json / fiscal_batch_pending.json: a batch still
           # pending leaves them present (stage the addition/update); a batch
           # that finished and saved this run deletes both (stage the deletion
@@ -238,4 +240,9 @@ jobs:
             civic_reference/nyc_council_fiscal_impacts_tracker/data/fiscal_impacts.json
             civic_reference/nyc_council_fiscal_impacts_tracker/agency-fiscal-impact/data.json
             pipeline/no_impact_matters.json
+            pipeline/skip_attachments.json
+            pipeline/fiscal_batch_state.json
+            pipeline/fiscal_batch_pending.json
+            pipeline/max_refresh.json
+          if-no-files-found: warn
           retention-days: 30

@@ -39,7 +39,8 @@ def main() -> int:
     subject = (
         "Legislation trackers quality report "
         + report.stem.replace("quality_report_", "") + ": "
-        + ("HARD FAILURES" if hard_dirty
+        + ("VALIDATOR CRASHED" if "VALIDATOR CRASHED" in head
+           else "HARD FAILURES" if hard_dirty
            else f"{regressions} regression(s)" if regressions
            else "quiet month")
     )

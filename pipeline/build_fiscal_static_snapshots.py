@@ -160,7 +160,7 @@ def overview(records):
     zero_b = sum(1 for r in with_net if r["net_fiscal_impact"] == 0)
     pairs = [["Cost the city", cost_b], ["Raise revenue", rev_b]] + ([["Net zero", zero_b]] if zero_b else [])
     blocks["chart-cost-rev"] = hbars(pairs, False)
-    blocks["title-cost-rev"] = esc(f"{cost_b:,} of {total:,} bills cost the city money; {rev_b:,} raise revenue")
+    blocks["title-cost-rev"] = esc(f"{cost_b:,} of {len(with_net):,} bills cost the city money; {rev_b:,} raise revenue")
 
     changed = [bid for bid, html in blocks.items() if inject(page, bid, html)]
     return page, changed

@@ -66,6 +66,7 @@ BASE_URL     = "https://legistar.council.nyc.gov"
 # (all-zero, unestimable, budget modification, proposed). Committed by the
 # monthly Action so they are not re-downloaded and re-extracted every run.
 SKIP_PATH    = SCRIPT_DIR / "no_impact_matters.json"
+SKIP_ATT_PATH = SCRIPT_DIR / "skip_attachments.json"   # matter_id -> attachment the skip was judged on
 # Enacted-law universe from the implementation tracker (web matter_id + GUID).
 LAWS_PATH    = REPO_ROOT / "civic_reference" / "legislation_implementation_tracker" / "data" / "laws.json"
 # Sonnet 5 since Sep 24 2026: Haiku 4.5 misapplied the judgment rules (lowest
@@ -960,6 +961,15 @@ def load_skip_list(path: Path) -> dict[str, str]:
 
 
 def save_skip_list(path: Path, skips: dict[str, str]) -> None:
+    # apply_overrides (inside save_output) writes override removals to this
+    # file first; keep them rather than overwrite them with the copy loaded at
+    # the start of the run (fiscal audit round 2, Oct 6 2026: all 5 round-1
+    # removals vanished from both the table and the skip list)
+    if path.exists():
+        on_disk = json.loads(path.read_text())
+        for m, why in on_disk.items():
+            if why == "audited_no_new_cost" and m not in skips:
+                skips[m] = why
     with open(path, "w", encoding="utf-8") as f:
         json.dump(dict(sorted(skips.items())), f, indent=1)
     log.info(f"Saved {len(skips)} no-impact matter IDs -> {path}")
@@ -1019,11 +1029,26 @@ def apply_overrides(records: list) -> list:
             removed.append(r["matter_id"])
             continue
         r.update(e.get("set") or {})
+        # a lone "Total" column built from a narrative statement must agree
+        # with an audited total (round 2: SLR 0015-2026 showed total $121,000
+        # beside a "Total $25,000" column); a statement's own year columns
+        # stay as printed, since the audited total is the annual figure
+        st = e.get("set") or {}
+        cols = r.get("fiscal_table_columns") or []
+        if ("fiscal_table_columns" not in st and len(cols) == 1 and (cols[0].get("label") or "").strip().lower() == "total"
+                and any(k in st for k in ("total_revenue", "total_expenditure", "total_capital"))):
+            c = dict(cols[0])
+            c["revenue"] = r.get("total_revenue") or 0
+            c["expenditure"] = r.get("total_expenditure") or 0
+            c["capital"] = r.get("total_capital")
+            c["net"] = (c["revenue"] or 0) - (c["expenditure"] or 0) - (c["capital"] or 0)
+            r["fiscal_table_columns"] = [c]
         # a package member (Finance costed several intros as one package):
         # its figures sit on one bill and this one shows "see package"
         # (CityFHEPS Int 229/878/893/894, Oct 6 2026: $3.3B counted four times)
         if r.get("package_note") and all(r.get(k) is None for k in ("total_revenue", "total_expenditure", "total_capital")):
             r["net_fiscal_impact"] = None
+            r["totals_basis"] = "package"
             r["audited"] = e.get("audit")
             out.append(r)
             continue
@@ -1604,7 +1629,16 @@ def main() -> int:
         existing_ids |= set(skips)
         log.info(f"Incremental: {len(records)} records + {len(skips)} known no-impact matters will be skipped")
 
+    # the statement each skip was judged on (pipeline/skip_attachments.json),
+    # so a pending bill skipped as zero is re-read only when Legistar shows a
+    # newer statement (fiscal audit round 2: amended -A statements added costs
+    # to 4 bills skipped as zero on their first statement)
+    skip_att = json.loads(SKIP_ATT_PATH.read_text()) if SKIP_ATT_PATH.exists() else {}
+    current_att: dict[str, str] = {}
+
     def mark_skip(matter_id: str, reason: str) -> None:
+        if current_att.get(matter_id):
+            skip_att[matter_id] = current_att[matter_id]
         existing_ids.add(matter_id)  # so a later duplicate hit in this run is skipped
         skips[matter_id] = reason
 
@@ -1724,8 +1758,10 @@ def main() -> int:
         # had one), and a "proposed" skip on a bill since enacted hid 63
         # enacted laws after the Sep 24 is_proposed_bill fix
         enacted = {str(l["matter_id"]) for l in json.loads(LAWS_PATH.read_text())["laws"]} if LAWS_PATH.exists() else set()
+        zero_reasons = ("zero_precheck", "zero_or_unestimable")
         recheck = {m for m, _ in matters
-                   if skips.get(m) == "no_attachment" or (skips.get(m) == "proposed" and m in enacted)}
+                   if skips.get(m) == "no_attachment" or (skips.get(m) == "proposed" and m in enacted)
+                   or (skips.get(m) in zero_reasons and m not in enacted)}
         if recheck and args.incremental and not args.reextract:
             existing_ids -= recheck
             log.info(f"Re-checking {len(recheck)} skips that can go stale (no_attachment, proposed-but-enacted)")
@@ -1745,6 +1781,16 @@ def main() -> int:
             try:
                 att_id, att_guid = get_fiscal_attachment(session, matter_id, guid)
                 time.sleep(0.5)
+                if att_id:
+                    current_att[matter_id] = str(att_id)
+                # a pending bill skipped as zero: re-read only a newer statement;
+                # a skip recorded before skip_attachments.json existed takes
+                # today's statement as its baseline (no model call)
+                if args.incremental and not args.reextract and skips.get(matter_id) in ("zero_precheck", "zero_or_unestimable"):
+                    if att_id and skip_att.get(matter_id) in (None, str(att_id)):
+                        skip_att[matter_id] = str(att_id)
+                        existing_ids.add(matter_id)
+                        continue
                 if (args.reextract == "superseded" and matter_id in index_by_id
                         and str(records[index_by_id[matter_id]].get("attachment_id")) == str(att_id)):
                     unchanged += 1
@@ -1901,6 +1947,7 @@ def main() -> int:
     if not args.dry_run:
         save_output(OUTPUT_PATH, records)
         save_skip_list(SKIP_PATH, skips)
+        SKIP_ATT_PATH.write_text(json.dumps(dict(sorted(skip_att.items())), indent=1) + "\n")
         # Only now, with fiscal_impacts.json safely written, is it safe to
         # forget the batch: a crash between extract_many and here must still
         # find the batch id next run rather than resubmitting it (review, Sep

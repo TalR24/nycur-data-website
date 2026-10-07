@@ -117,7 +117,7 @@ def main() -> None:
         if len(group) < 2:
             continue
         rest_copy = any(not by_label[g].get("legistar_url") for g in group)
-        package = re.search(r"\bpackage\b|assessed collectively|costed together", narr)
+        package = re.search(r"\bpackage\b|assessed collectively|costed together|would also be used to comply|same resources", narr)
         if rest_copy or package:
             hard["same_statement_counted_twice"].append(" = ".join(group))
     enacted = {str(l.get("matter_id")) for l in laws}

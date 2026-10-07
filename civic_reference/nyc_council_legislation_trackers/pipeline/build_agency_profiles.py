@@ -740,6 +740,7 @@ def build_trackers_profile(canon: str, full_name: str, tr: dict) -> dict:
             "bill": rec.get("legistar_file") or rec.get("file_number"),
             "title": rec.get("title"),
             "net": net,
+            "package": bool(rec.get("package_note")),   # figures sit on another bill of its package
             "fy_full_impact": rec.get("fy_full_impact"),
         })
     fiscal_list.sort(key=lambda x: ((x["net"] if x["net"] is not None else 0), x["matter_id"]))
