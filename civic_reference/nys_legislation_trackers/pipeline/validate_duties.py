@@ -17,6 +17,8 @@ sys.path.insert(0, str(COUNCIL))
 import extract_obligations as eo  # noqa: E402
 
 TEXT = HERE / "cache" / "text_marked"
+# actor_raw that is the grammatical subject of a passive or a thing, not a body: "moneys shall be paid", "no money may be"
+PASSIVE_SUBJECT = re.compile(r"^(?:the |such |said |any |all |each )?(moneys?|monies|funds?|all revenues|revenues?|the application|applications?|withdrawals?|no\b|the addition|additions?|payments?|appropriations?|sums?|amounts?|notices?|reports?|licenses?|permits?|requests?|claims?|petitions?|bonds?|notes?|assessments?|exemptions?|taxes?)\b", re.I)
 JURISDICTIONS = {"state", "local", "nyc", None}
 
 
@@ -47,7 +49,7 @@ def main():
         oid, t = o["obligation_id"], text_of(o)
         if o.get("kind") != filekind:
             hard["kind_in_wrong_file"].append("%s kind=%s in %s file" % (oid, o.get("kind"), filekind))
-        if len(t) < 400:
+        if not t.strip():            # missing or empty file only: a short special act (a few hundred characters) is a real law
             hard["law_text_missing"].append(oid)
         elif not (o.get("quote") or "").strip():
             hard["quote_empty"].append(oid)
@@ -70,20 +72,24 @@ def main():
             hard["schema_placeholder_left"].append(oid)
         if o.get("effective_date") and not re.match(r"^\d{4}-\d{2}-\d{2}$", o["effective_date"]):
             hard["bad_effective_date"].append(oid)
+        if PASSIVE_SUBJECT.match((o.get("actor_raw") or "").strip()):
+            soft["passive_subject_actor"].append("%s: %s" % (oid, (o.get("actor_raw") or "")[:60]))
         ag = o.get("agency") or ""
         if not o.get("agency_matched") and ag not in ("Unspecified", "All agencies"):
             soft["agency_unmatched"].append("%s: %s" % (oid, ag[:60]))
         if ag and ag not in ("Unspecified", "All agencies") and eo.is_vague_actor(ag):
             soft["agency_tag_vague"].append("%s: %s" % (oid, ag[:60]))
+    ext = [o["obligation_id"] for o, _ in allrec if o.get("extends_existing")]
     n = len(allrec)
     matched = sum(1 for o, _ in allrec if o.get("agency_matched"))
     print("records: %d duties, %d powers" % (len(duties), len(powers)))
     if n:
         print("agency matched: %d of %d (%.1f%%)" % (matched, n, 100.0 * matched / n))
+        print("extends_existing: %d of %d" % (len(ext), n))
         print("jurisdiction:", dict(Counter(o.get("jurisdiction") for o, _ in allrec)))
     for title, d in (("HARD", hard), ("SOFT", soft)):
         for k, v in sorted(d.items()):
-            print("%5d  %s: %s" % (len(v), k, "; ".join(v[:3])))
+            print("%5d  %s: %s" % (len(v), k, "; ".join(v[:3] if k != "passive_subject_actor" else v)))
     n_hard = sum(len(v) for v in hard.values())
     print("HARD FAILURES: %d" % n_hard)
     sys.exit(1 if (a.strict and n_hard) else 0)

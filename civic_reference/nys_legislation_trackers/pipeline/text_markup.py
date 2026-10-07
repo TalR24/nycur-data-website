@@ -19,15 +19,41 @@ NO_JOIN_PREFIX = {"non", "self", "ex", "semi", "anti", "vice", "cross", "half", 
 
 
 def _dehyphenate(s):
-    """Join words broken across a line or span edge: 'elec- tric' -> 'electric'; keep digit and compound hyphens."""
+    """Line-end hyphens become '- ' here; fix_hyphens() decides join or keep once the whole text is assembled."""
+    return re.sub(r"([A-Za-z0-9])-[ \t]*\n[ \t]*(?=[A-Za-z0-9])", r"\1- ", s)
+
+
+TENS_W = {"twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"}
+UNITS_W = {"one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "first", "second", "third", "fourth",
+           "fifth", "sixth", "seventh", "eighth", "ninth"}
+VOWEL_KEEP = {"re", "pre", "co", "de", "un", "in", "anti", "multi", "semi", "inter", "intra", "non", "sub", "pro", "post", "mid"}
+ALWAYS_KEEP = {"non", "self", "ex", "vice", "cross", "half", "quasi", "all", "well", "full", "part", "high", "low", "long", "short",
+               "state", "city", "county", "town", "year", "day", "month", "per", "cost", "third", "first", "second"}
+HYPH_STATS = {"rejoined": 0, "kept": 0}
+
+
+def fix_hyphens(body):
+    """Resolve 'left- right' (a line-end hyphen) in either era.
+    Keep the hyphen when: the hyphenated form appears mid-line elsewhere in the same text; the left part is a tens word and
+    the right a units word (seventy-three); the left part is an always-hyphenated prefix (non, self, ...); or the left part is
+    a vowel-sensitive prefix (re, pre, co, ...) and the right starts with a vowel (re-enact). Otherwise join (proc- ess ->
+    process). 'pre- and post-' style pairs (right part and/or/to) and digit pairs are left alone or hyphenated."""
+    seen = {m.group(0).lower() for m in re.finditer(r"\b[A-Za-z]+-[A-Za-z]+\b", body)}
     def rep(m):
-        a, b = m.group(1), m.group(2)
-        if a.isdigit() or b[0].isdigit():
-            return a + "-" + b
-        if a.lower() in NO_JOIN_PREFIX:
-            return a + "-" + b
-        return a + b
-    return re.sub(r"([A-Za-z0-9]+)-\n([A-Za-z0-9][^\s]*)", rep, s)
+        left, right = m.group(1), m.group(2)
+        l, r = left.lower(), right.lower()
+        if r in ("and", "or", "to"):
+            return m.group(0)
+        if r in ("of", "in", "on", "by") and body[m.end():m.end() + 1] == "-":   # out- of-pocket
+            HYPH_STATS["kept"] += 1
+            return left + "-" + right
+        if (l + "-" + r) in seen or (l in TENS_W and r in UNITS_W) or l in ALWAYS_KEEP or (l in VOWEL_KEEP and r[0] in "aeiou"):
+            HYPH_STATS["kept"] += 1
+            return left + "-" + right
+        HYPH_STATS["rejoined"] += 1
+        return left + right
+    body = re.sub(r"(?<![\w])([A-Za-z]{2,})- ([a-z]+)(?!\w)", rep, body)
+    return re.sub(r"(\d)- (\d)", r"\1-\2", body)
 
 
 def _paragraphs(lines, indent_fn):
@@ -79,7 +105,7 @@ def from_html(h):
     body = re.sub(OPEN + r"[ \t]+", " " + OPEN, body)
     body = re.sub(r"[ \t]+" + CLOSE, CLOSE + " ", body)
     body = body.replace(OPEN, "{{").replace(CLOSE, "}}")
-    return body
+    return fix_hyphens(body)
 
 
 def _cap_sentences(s):
@@ -122,7 +148,7 @@ def from_plain_old(t):
             else:
                 res.append(toks[i]); i += 1
         out.append(" ".join(res))
-    return "\n\n".join(out)
+    return fix_hyphens("\n\n".join(out))
 
 
 def convert(key, base):
@@ -138,13 +164,14 @@ def main():
     bills = [b for b in json.load(open(os.path.join(HERE, "..", "data", "bills.json"))) if b.get("chapter")]
     os.makedirs(os.path.join(HERE, "cache", "text_marked"), exist_ok=True)
     stats = {"html": [0, 0], "uppercase": [0, 0]}
+    HYPH_STATS.update(rejoined=0, kept=0)
     for b in bills:
         key = "%s-%s" % (b["session"], b["base_print_no"])
         txt, src = convert(key, HERE)
         open(os.path.join(HERE, "cache", "text_marked", key + ".txt"), "w").write(txt)
         stats[src][0] += 1
         stats[src][1] += 1 if "{{" in txt else 0
-    print("converted", len(bills), {k: "%d laws, %d with markers" % tuple(v) for k, v in stats.items()})
+    print("converted", len(bills), {k: "%d laws, %d with markers" % tuple(v) for k, v in stats.items()}, "hyphens", HYPH_STATS)
 
 
 if __name__ == "__main__":

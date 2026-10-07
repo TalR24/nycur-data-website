@@ -59,6 +59,7 @@ def build_prompt():
     p = _sub(p, "In NYC Council drafting, text enclosed", "In New York State bill drafting, text enclosed")
     p = _sub(p, "(in Legistar's published text, the underlined portions)", "(the braced, underlined portions)")
     p = _sub(p, 'which Council drafting calls "biannual"', 'which State drafting calls "biannual"')
+    p = _sub(p, '- Do not invent obligations', '- When the only new matter extends an existing duty or power (a new expiry date, a changed amount or limit, an added place or district), still record it and set extends_existing true; otherwise false.\n- Do not invent obligations')
     p = _sub(p, '- Do not invent obligations', '- A deadline counted from "the date this act shall have become a law" or from signing is days_after_enactment; one counted from "the effective date of this act" is days_after_effective.\n- Do not invent obligations')
     p = (p.replace("{deliverable_types}", json.dumps(eo.DELIVERABLE_TYPES))
           .replace("{recurrences}", json.dumps(eo.RECURRENCES))
@@ -75,6 +76,9 @@ def build_prompt():
 
 
 FIXED_PROMPT, VARIABLE_TEMPLATE = build_prompt()
+import copy  # noqa: E402
+SCHEMA = copy.deepcopy(eo.OBLIGATIONS_SCHEMA)       # Council schema plus one optional boolean (not required: older answers lack it)
+SCHEMA["properties"]["obligations"]["items"]["properties"]["extends_existing"] = {"type": "boolean"}
 
 
 def render_variable_prompt(law, text):
@@ -121,6 +125,7 @@ def effective_table(laws):
 
 def prepare(law, raw):
     """Replace the model's effective clause with the deterministic parse (the model still answers the schema field)."""
+    EXT_MODEL[law["key"]] = {"%s-%02d" % (law["key"], i): bool(o.get("extends_existing")) for i, o in enumerate(raw.get("obligations", []), 1)}
     e = EFFECTIVE[law["key"]]
     if e["rule"] == "immediately":
         raw["effective_clause"] = {"kind": "immediate", "offset_days": None, "fixed_date": None, "text": e["raw_clause"]}
@@ -138,6 +143,7 @@ _NYC = json.loads((COUNCIL / "data" / "agency_crosswalk.json").read_text())
 NYC_LOOKUP = _NYC["lookup"]
 NYC_BY = {a["canonical"]: a for a in _NYC["agencies"]}
 EFFECTIVE = {}
+EXT_MODEL = {}
 
 
 def _title(s):
@@ -177,9 +183,52 @@ def attach_jurisdiction(o):
     o["jurisdiction"], o["agency_org_type"], o["agency_group"] = None, None, None
 
 
+# ── extends_existing: the quote's braced new matter is only numbers, dates, number words or a place name ─────────────
+_NUMW = set("zero one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty thirty forty fifty sixty seventy eighty ninety hundred thousand million billion first second third fourth fifth sixth seventh eighth ninth tenth eleventh twelfth twentieth thirtieth sixtieth ninetieth".split())
+_DATEW = set("january february march april may june july august september october november december dollars dollar percent year years day days and".split())
+
+
+def _only_extension(span):
+    toks = re.findall(r"[A-Za-z0-9$%.,]+", span)
+    toks = [t.strip(".,") for t in toks if t.strip(".,")]
+    if not toks:
+        return False
+    if all(re.fullmatch(r"[$]?[\d,.]+%?", t) or t.lower() in _NUMW or t.lower() in _DATEW for t in toks) and any(not t.lower() == "and" for t in toks):
+        return True
+    return all(t[:1].isupper() and t.lower() not in ("the", "section", "act") for t in toks)        # a place name (HTML era keeps capitals)
+
+
+def extends_by_text(quote, text):
+    """True when the quote has braced new matter and ALL of it is numbers, dates, number words or a place name."""
+    q = eo.alnum(quote)
+    if len(q) < 10:
+        return False
+    chars, flags, depth = [], [], 0
+    for m in re.finditer(r"\{\{|\}\}|[A-Za-z0-9]", text):
+        g = m.group(0)
+        if g == "{{": depth = 1
+        elif g == "}}": depth = 0
+        else:
+            chars.append(g.lower()); flags.append(m.start() if depth else -1)
+    flat = "".join(chars)
+    i = flat.find(q)
+    if i < 0:
+        return False
+    pos = [f for f in flags[i:i + len(q)] if f >= 0]
+    if not pos:
+        return False
+    spans = []
+    for m in re.finditer(r"\{\{(.*?)\}\}", text, re.S):
+        if any(m.start() <= f < m.end() for f in pos):
+            spans.append(m.group(1))
+    return bool(spans) and all(_only_extension(sp) for sp in spans)
+
+
 # ── Ingest ──────────────────────────────────────────────────────────────────────────────────────────────────────
 def write_cache(mid, res):
     EXTRACTED.mkdir(parents=True, exist_ok=True)
+    if mid in EXT_MODEL:
+        res["extends_model"] = EXT_MODEL[mid]
     (EXTRACTED / (mid + ".json")).write_text(json.dumps(res, indent=1, ensure_ascii=False))
 
 
@@ -209,6 +258,7 @@ def build_records(laws):
                 excluded += 1
                 continue
             attach_jurisdiction(o)
+            o["extends_existing"] = bool(res.get("extends_model", {}).get(o["obligation_id"])) or extends_by_text(o.get("quote") or "", text)
             if kind == "power":
                 o["deadline_kind"], o["deadline_date"] = "none", None
             if o.get("deadline_kind") in (None, "none") and o.get("deadline_date") and o["deadline_date"] == res.get("effective_date"):
@@ -241,13 +291,13 @@ def main():
     if a.emit_packets:
         d = Path(a.emit_packets)
         (d / "results").mkdir(parents=True, exist_ok=True)
-        eo.emit_packets(d, todo, fixed_prompt=FIXED_PROMPT, render=render_variable_prompt)
+        eo.emit_packets(d, todo, fixed_prompt=FIXED_PROMPT, render=render_variable_prompt, schema=SCHEMA)
         sizes = sorted(os.path.getsize(d / (l["key"] + ".txt")) for l, _ in todo)
         print("packets %d (signed laws %d, deferred long %d); bytes min %d median %d max %d" % (len(todo), len(laws), len(deferred), sizes[0], sizes[len(sizes) // 2], sizes[-1]))
         return
     if a.ingest:
         d = Path(a.ingest)
-        done, left = eo.ingest_packets(d, todo, LOOKUP, BY_CANON, "max-subagent", writer=write_cache, prepare=prepare)
+        done, left = eo.ingest_packets(d, todo, LOOKUP, BY_CANON, "max-subagent", writer=write_cache, prepare=prepare, schema=SCHEMA)
         duties, powers, excluded = build_records(laws)
         json.dump({"generated_at": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"), "obligations": duties}, open(DATA / "duties.json", "w"), indent=1, ensure_ascii=False)
         json.dump({"generated_at": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"), "powers": powers}, open(DATA / "powers.json", "w"), indent=1, ensure_ascii=False)

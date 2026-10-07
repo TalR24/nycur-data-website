@@ -111,7 +111,8 @@ def validate_against_schema(value, schema: dict) -> bool:
 
 
 def emit_packets(d: Path, todo: list[tuple[dict, str]],
-                 fixed_prompt: str | None = None, render=None) -> None:
+                 fixed_prompt: str | None = None, render=None,
+                 schema: dict | None = None) -> None:
     """One prompt file per law (one per WINDOW for a long law), for the
     Max-plan routine to run itself: no Anthropic key, no call. Shared by
     extract_obligations.py's own laws and reextract_queued.py's queued laws,
@@ -121,6 +122,7 @@ def emit_packets(d: Path, todo: list[tuple[dict, str]],
     own instead of forking this function (Oct 7 2026)."""
     fixed_prompt = _FIXED_PROMPT if fixed_prompt is None else fixed_prompt
     render = render or render_variable_prompt
+    schema = schema or OBLIGATIONS_SCHEMA
     manifest = {}
     for law, text in todo:
         mid = law["matter_id"]
@@ -132,9 +134,9 @@ def emit_packets(d: Path, todo: list[tuple[dict, str]],
             (d / f"{name}.txt").write_text(
                 fixed_prompt + variable_prompt +
                 f"\n\nANSWER FORMAT: write ONLY a JSON object matching this "
-                f"schema to results/{name}.json:\n" + json.dumps(OBLIGATIONS_SCHEMA))
+                f"schema to results/{name}.json:\n" + json.dumps(schema))
     (d / "manifest.json").write_text(json.dumps(manifest, indent=1))
-    (d / "schema.json").write_text(json.dumps(OBLIGATIONS_SCHEMA, indent=1))
+    (d / "schema.json").write_text(json.dumps(schema, indent=1))
     log.info(f"wrote {len(todo)} packets ({sum(m['windows'] for m in manifest.values())} "
              f"prompt files) to {d}")
 
@@ -146,7 +148,7 @@ def _default_packet_writer(mid: str, res: dict) -> None:
 
 def ingest_packets(d: Path, todo: list[tuple[dict, str]], lookup: dict,
                    agencies_by_canon: dict, model: str,
-                   writer=None, prepare=None) -> tuple[list[str], list[str]]:
+                   writer=None, prepare=None, schema: dict | None = None) -> tuple[list[str], list[str]]:
     """Validates and finalizes each law's packet result(s) the SAME way a
     synchronous or batch call is finalized (finalize_extraction /
     merge_window_finalized; no second copy). By default writes
@@ -181,7 +183,7 @@ def ingest_packets(d: Path, todo: list[tuple[dict, str]], lookup: dict,
             except json.JSONDecodeError:
                 ok = False
                 break
-            if not validate_against_schema(raw, OBLIGATIONS_SCHEMA):
+            if not validate_against_schema(raw, schema or OBLIGATIONS_SCHEMA):
                 ok = False
                 break
             # Same conversion _parse_obligations_message() runs on a sync or
