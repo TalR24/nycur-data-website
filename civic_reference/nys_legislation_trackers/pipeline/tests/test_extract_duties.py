@@ -6,6 +6,9 @@ sys.path.insert(0, str(HERE))
 import extract_duties as ed
 import extract_obligations as eo
 
+if not (ed.TEXT_MARKED / "2013-S4552.txt").exists():      # CI has no cached pilot texts (they are not committed)
+    print("0 passed, 0 failed (skipped: pilot texts are not cached here)")
+    sys.exit(0)
 passed = failed = 0
 def check(name, cond):
     global passed, failed

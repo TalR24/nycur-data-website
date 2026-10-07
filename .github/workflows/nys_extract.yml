@@ -1,0 +1,293 @@
+name: NYS legislation trackers (fetch and API extraction)
+
+# Manual only. BILLING: the canary, extract and resume tasks call the Anthropic API (billed per token outside Claude Max).
+# Tal approved ONE Sonnet 5 Message Batch run for all signed laws (Oct 7 2026, about $60, ceiling $90) after a measured
+# canary. Dispatch order:
+#   1. fetch_bills  (one dispatch per session, 9 times; commits data/bills/{session}.json and data/signed/{session}.json;
+#                    the listing already carries every signed law's text, which is cached for fetch_texts)
+#   2. fetch_texts  (one dispatch per session; converts the cached texts, one request only for a law whose text is missing)
+#   3. canary       (limit = number of laws, default 12; prints usage and the projected full-run cost; no commit)
+#   4. extract      (submits Message Batches for every unanswered law, waits up to 5 hours, ingests, validates, commits)
+#   5. resume       (collects batches a previous extract left pending, then ingests, validates, commits)
+# fetch_bills commits per session so the job limit is never hit.
+on:
+  workflow_dispatch:
+    inputs:
+      task:
+        description: "Task to run"
+        required: true
+        type: choice
+        options: ["fetch_bills", "fetch_texts", "canary", "extract", "resume"]
+      session:
+        description: "Session start year (2009, 2011, ... 2025). Required for fetch_bills and fetch_texts; optional filter for the others"
+        required: false
+        default: ""
+        type: string
+      limit:
+        description: "Optional: stop after this many bills (fetch_bills) or laws (extract); number of laws for canary (default 12)"
+        required: false
+        default: ""
+        type: string
+
+concurrency:
+  group: nys-extract
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    permissions:
+      contents: write
+    env:
+      NYS_OPENLEG_KEY: ${{ secrets.NYS_OPENLEG_KEY }}
+      TASK: ${{ inputs.task }}
+      SESSION: ${{ inputs.session }}
+      LIMIT: ${{ inputs.limit }}
+      NYS: civic_reference/nys_legislation_trackers
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r civic_reference/legislation_implementation_tracker/pipeline/requirements.txt
+
+      # the fixed tests run first: a broken rule fails here, before any paid call
+      - name: Tests
+        run: |
+          for t in "$NYS"/pipeline/tests/*.py; do
+            echo "== $t"
+            python3 "$t" || exit 1
+          done
+
+      - name: Check inputs
+        run: |
+          if { [ "$TASK" = fetch_bills ] || [ "$TASK" = fetch_texts ]; } && [ -z "$SESSION" ]; then
+            echo "::error::task $TASK needs a session (2009, 2011, ... 2025): dispatch it once per session"; exit 1
+          fi
+          if [ -n "$SESSION" ] && ! echo "$SESSION" | grep -Eq '^(2009|2011|2013|2015|2017|2019|2021|2023|2025)$'; then
+            echo "::error::session must be one of 2009 2011 2013 2015 2017 2019 2021 2023 2025"; exit 1
+          fi
+
+      # --- law texts cache: one cache per session (converted texts are not committed) ---
+      - name: Restore this session's texts (fetch_bills, fetch_texts)
+        if: ${{ inputs.task == 'fetch_texts' || inputs.task == 'fetch_bills' }}
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            civic_reference/nys_legislation_trackers/pipeline/cache/html/${{ inputs.session }}-*.html
+            civic_reference/nys_legislation_trackers/pipeline/cache/text/${{ inputs.session }}-*.txt
+            civic_reference/nys_legislation_trackers/pipeline/cache/memo/${{ inputs.session }}-*.txt
+            civic_reference/nys_legislation_trackers/pipeline/cache/text_marked/${{ inputs.session }}-*.txt
+          key: nys-texts-${{ inputs.session }}-restore
+          restore-keys: nys-texts-${{ inputs.session }}-
+
+      # canary, extract and resume read the converted texts that fetch_texts saved, one cache per session
+      - name: Restore 2009 marked texts
+        if: ${{ inputs.task == 'canary' || inputs.task == 'extract' || inputs.task == 'resume' }}
+        uses: actions/cache/restore@v4
+        with:
+          path: civic_reference/nys_legislation_trackers/pipeline/cache/text_marked/2009-*.txt
+          key: nys-texts-2009-restore
+          restore-keys: nys-texts-2009-
+
+      - name: Restore 2011 marked texts
+        if: ${{ inputs.task == 'canary' || inputs.task == 'extract' || inputs.task == 'resume' }}
+        uses: actions/cache/restore@v4
+        with:
+          path: civic_reference/nys_legislation_trackers/pipeline/cache/text_marked/2011-*.txt
+          key: nys-texts-2011-restore
+          restore-keys: nys-texts-2011-
+
+      - name: Restore 2013 marked texts
+        if: ${{ inputs.task == 'canary' || inputs.task == 'extract' || inputs.task == 'resume' }}
+        uses: actions/cache/restore@v4
+        with:
+          path: civic_reference/nys_legislation_trackers/pipeline/cache/text_marked/2013-*.txt
+          key: nys-texts-2013-restore
+          restore-keys: nys-texts-2013-
+
+      - name: Restore 2015 marked texts
+        if: ${{ inputs.task == 'canary' || inputs.task == 'extract' || inputs.task == 'resume' }}
+        uses: actions/cache/restore@v4
+        with:
+          path: civic_reference/nys_legislation_trackers/pipeline/cache/text_marked/2015-*.txt
+          key: nys-texts-2015-restore
+          restore-keys: nys-texts-2015-
+
+      - name: Restore 2017 marked texts
+        if: ${{ inputs.task == 'canary' || inputs.task == 'extract' || inputs.task == 'resume' }}
+        uses: actions/cache/restore@v4
+        with:
+          path: civic_reference/nys_legislation_trackers/pipeline/cache/text_marked/2017-*.txt
+          key: nys-texts-2017-restore
+          restore-keys: nys-texts-2017-
+
+      - name: Restore 2019 marked texts
+        if: ${{ inputs.task == 'canary' || inputs.task == 'extract' || inputs.task == 'resume' }}
+        uses: actions/cache/restore@v4
+        with:
+          path: civic_reference/nys_legislation_trackers/pipeline/cache/text_marked/2019-*.txt
+          key: nys-texts-2019-restore
+          restore-keys: nys-texts-2019-
+
+      - name: Restore 2021 marked texts
+        if: ${{ inputs.task == 'canary' || inputs.task == 'extract' || inputs.task == 'resume' }}
+        uses: actions/cache/restore@v4
+        with:
+          path: civic_reference/nys_legislation_trackers/pipeline/cache/text_marked/2021-*.txt
+          key: nys-texts-2021-restore
+          restore-keys: nys-texts-2021-
+
+      - name: Restore 2023 marked texts
+        if: ${{ inputs.task == 'canary' || inputs.task == 'extract' || inputs.task == 'resume' }}
+        uses: actions/cache/restore@v4
+        with:
+          path: civic_reference/nys_legislation_trackers/pipeline/cache/text_marked/2023-*.txt
+          key: nys-texts-2023-restore
+          restore-keys: nys-texts-2023-
+
+      - name: Restore 2025 marked texts
+        if: ${{ inputs.task == 'canary' || inputs.task == 'extract' || inputs.task == 'resume' }}
+        uses: actions/cache/restore@v4
+        with:
+          path: civic_reference/nys_legislation_trackers/pipeline/cache/text_marked/2025-*.txt
+          key: nys-texts-2025-restore
+          restore-keys: nys-texts-2025-
+
+      - name: Restore answers already collected (extract, resume)
+        if: ${{ inputs.task == 'extract' || inputs.task == 'resume' }}
+        uses: actions/cache/restore@v4
+        with:
+          path: civic_reference/nys_legislation_trackers/pipeline/cache/api
+          key: nys-api-restore
+          restore-keys: nys-api-
+
+      # --- fetch_bills: committed per session ---
+      - name: Fetch the bill universe for one session
+        if: ${{ inputs.task == 'fetch_bills' }}
+        working-directory: civic_reference/nys_legislation_trackers/pipeline
+        run: |
+          ARGS="--session $SESSION --resume"
+          if [ -n "$LIMIT" ]; then ARGS="$ARGS --limit $LIMIT"; fi
+          python3 fetch_bills.py $ARGS
+
+      # --- fetch_texts ---
+      - name: Fetch and convert the signed-law texts for one session
+        if: ${{ inputs.task == 'fetch_texts' }}
+        working-directory: civic_reference/nys_legislation_trackers/pipeline
+        run: |
+          ARGS="--session $SESSION"
+          if [ -n "$LIMIT" ]; then ARGS="$ARGS --limit $LIMIT"; fi
+          python3 fetch_signed_texts.py $ARGS
+
+      - name: Save this session's texts
+        if: ${{ (inputs.task == 'fetch_texts' || inputs.task == 'fetch_bills') && success() }}
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            civic_reference/nys_legislation_trackers/pipeline/cache/html/${{ inputs.session }}-*.html
+            civic_reference/nys_legislation_trackers/pipeline/cache/text/${{ inputs.session }}-*.txt
+            civic_reference/nys_legislation_trackers/pipeline/cache/memo/${{ inputs.session }}-*.txt
+            civic_reference/nys_legislation_trackers/pipeline/cache/text_marked/${{ inputs.session }}-*.txt
+          key: nys-texts-${{ inputs.session }}-${{ github.run_id }}
+
+      # --- canary: N real laws, synchronously; usage and the projected cost; nothing committed ---
+      - name: Canary
+        if: ${{ inputs.task == 'canary' }}
+        working-directory: civic_reference/nys_legislation_trackers/pipeline
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          PYTHONUNBUFFERED: "1"
+        run: |
+          N="${LIMIT:-12}"
+          SARGS=""
+          if [ -n "$SESSION" ]; then SARGS="--session $SESSION"; fi
+          python3 extract_duties.py --api --canary "$N" $SARGS | tee canary_output.txt
+
+      # --- extract / resume ---
+      - name: Submit and collect Message Batches
+        if: ${{ inputs.task == 'extract' || inputs.task == 'resume' }}
+        working-directory: civic_reference/nys_legislation_trackers/pipeline
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          PYTHONUNBUFFERED: "1"
+        run: |
+          SARGS=""
+          if [ -n "$SESSION" ]; then SARGS="--session $SESSION"; fi
+          if [ -n "$LIMIT" ]; then SARGS="$SARGS --limit $LIMIT"; fi
+          if [ "$TASK" = resume ]; then python3 extract_duties.py --api --resume $SARGS
+          else python3 extract_duties.py --api --batch $SARGS; fi
+
+      # collected answers survive a failed or timed-out job (a batch is paid once)
+      - name: Save collected answers
+        if: ${{ always() && (inputs.task == 'extract' || inputs.task == 'resume') }}
+        uses: actions/cache/save@v4
+        with:
+          path: civic_reference/nys_legislation_trackers/pipeline/cache/api
+          key: nys-api-${{ github.run_id }}
+
+      - name: Ingest the answers
+        if: ${{ inputs.task == 'extract' || inputs.task == 'resume' }}
+        working-directory: civic_reference/nys_legislation_trackers/pipeline
+        run: |
+          SARGS=""
+          if [ -n "$SESSION" ]; then SARGS="--session $SESSION"; fi
+          python3 extract_duties.py --ingest cache/api --per-session $SARGS
+
+      # a hard failure blocks the commit; the data still survives as the artifact below
+      - name: Validate (a hard failure blocks the commit)
+        if: ${{ inputs.task == 'extract' || inputs.task == 'resume' }}
+        working-directory: civic_reference/nys_legislation_trackers/pipeline
+        run: python3 validate_duties.py --per-session --strict
+
+      - name: Commit and push data
+        if: ${{ inputs.task == 'fetch_bills' || inputs.task == 'extract' || inputs.task == 'resume' }}
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if [ "$TASK" = fetch_bills ]; then
+            git add "$NYS/data/bills/$SESSION.json" "$NYS/data/signed/$SESSION.json"
+            MSG="data: NYS bill index, session $SESSION"
+          else
+            git add "$NYS/data/duties" "$NYS/data/powers" "$NYS/data/effective_dates" "$NYS/data/deferred_long.json" "$NYS/data/chapter_index.json"
+            # batch state files: a pending batch leaves them present (stage them); a collected one deletes them (stage the deletion)
+            for f in "$NYS"/pipeline/batch_state*.json; do
+              if git ls-files --error-unmatch "$f" >/dev/null 2>&1 || [ -f "$f" ]; then git add -A -- "$f"; fi
+            done
+            MSG="data: NYS duties and powers from signed laws"
+          fi
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "$MSG [$(date -u '+%Y-%m-%d')]"
+            for attempt in 1 2 3 4 5 6; do
+              git -c rebase.autoStash=true pull --rebase origin main
+              if git push; then echo "pushed on attempt $attempt"; break; fi
+              if [ "$attempt" = 6 ]; then echo "push failed 6 times"; exit 1; fi
+              sleep $((attempt * 45))
+            done
+          fi
+
+      - name: Upload outputs as an artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nys-extract-output
+          path: |
+            civic_reference/nys_legislation_trackers/data/bills/
+            civic_reference/nys_legislation_trackers/data/signed/
+            civic_reference/nys_legislation_trackers/data/duties/
+            civic_reference/nys_legislation_trackers/data/powers/
+            civic_reference/nys_legislation_trackers/data/effective_dates/
+            civic_reference/nys_legislation_trackers/data/deferred_long.json
+            civic_reference/nys_legislation_trackers/pipeline/batch_state*.json
+            civic_reference/nys_legislation_trackers/pipeline/canary_output.txt
+            civic_reference/nys_legislation_trackers/pipeline/cache/api/
+          if-no-files-found: ignore
+          retention-days: 30

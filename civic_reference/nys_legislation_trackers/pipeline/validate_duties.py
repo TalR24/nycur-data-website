@@ -29,9 +29,15 @@ def main():
     ap.add_argument("--powers", default=str(DATA / "powers.json"))
     ap.add_argument("--text", default=str(TEXT))
     ap.add_argument("--strict", action="store_true")
+    ap.add_argument("--per-session", action="store_true", help="also read data/duties/*.json and data/powers/*.json")
     a = ap.parse_args()
     duties = json.loads(Path(a.duties).read_text())["obligations"] if Path(a.duties).exists() else []
     powers = json.loads(Path(a.powers).read_text())["powers"] if Path(a.powers).exists() else []
+    if a.per_session:       # data/duties/{session}.json, data/powers/{session}.json (the full-scale run)
+        for f in sorted((DATA / "duties").glob("*.json")):
+            duties += json.loads(f.read_text())["obligations"]
+        for f in sorted((DATA / "powers").glob("*.json")):
+            powers += json.loads(f.read_text())["powers"]
     allrec = [(o, "duty") for o in duties] + [(o, "power") for o in powers]
     texts = {}
     hard, soft = defaultdict(list), defaultdict(list)

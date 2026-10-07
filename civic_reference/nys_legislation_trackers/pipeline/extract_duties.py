@@ -11,7 +11,7 @@ Reuses the Council extractor (civic_reference/legislation_implementation_tracker
 schema, duty/power/neither definitions, quote checks, deadline arithmetic, packet emit/ingest and agency matcher. Only the
 prompt wording (state and local government instead of NYC agencies) and the agency crosswalk are NYS-specific.
 """
-import argparse, json, os, re, sys
+import argparse, json, os, re, sys, time
 from datetime import datetime
 from pathlib import Path
 
@@ -101,25 +101,37 @@ def render_variable_prompt(law, text):
 
 
 # ── Laws ────────────────────────────────────────────────────────────────────────────────────────────────────────
-def signed_laws():
+PILOT_SESSIONS = list(range(2009, 2026, 2))
+
+
+def signed_laws(sessions=None):
+    """Signed laws of the given sessions (default: the pilot's bills.json). Full sessions come from data/signed/{Y}.json."""
+    import fetch_bills
     out = []
-    for b in json.load(open(DATA / "bills.json")):
-        if not b.get("chapter"):
-            continue
-        key = "%s-%s" % (b["session"], b["base_print_no"])
-        out.append({"matter_id": key, "key": key, "session": b["session"], "print_no": b["base_print_no"],
-                    "chapter_number": b["chapter"]["number"], "chapter_year": b["chapter"]["year"],
-                    "signed_date": b["chapter"]["signed_date"], "enactment_date": b["chapter"]["signed_date"],
-                    "title": b["title"], "act_clause": b.get("act_clause"), "law_section": b.get("law_section"),
-                    "sponsor": (b.get("sponsor") or {}).get("full_name"), "openleg_url": b.get("openleg_url"),
-                    "law_number_display": "Chapter %d of %d" % (b["chapter"]["number"], b["chapter"]["year"])})
+    if sessions is None:
+        for b in json.load(open(DATA / "bills.json")):
+            if b.get("chapter"):
+                out.append(fetch_bills.law_record(b))
+        return out
+    pilot = None
+    for y in sessions:
+        sg = DATA / "signed" / ("%d.json" % y)
+        if sg.exists():
+            out += json.loads(sg.read_text())
+        else:
+            if pilot is None:
+                pilot = signed_laws()
+            out += [l for l in pilot if l["session"] == y]
     return out
 
 
-def load_todo(emit=False):
+def load_todo(sessions=None):
     todo, deferred = [], []
-    for law in signed_laws():
-        text = (TEXT_MARKED / (law["key"] + ".txt")).read_text()
+    for law in signed_laws(sessions):
+        tp = TEXT_MARKED / (law["key"] + ".txt")
+        if not tp.exists():
+            continue
+        text = tp.read_text()
         if len(text) > MAX_CHARS:
             deferred.append({"key": law["key"], "chapter": law["chapter_number"], "year": law["chapter_year"], "chars": len(text), "title": law["title"]})
         else:
@@ -500,18 +512,192 @@ def build_records(laws):
     return duties, powers, excluded
 
 
+# ── API mode (phase 3a): Message Batches or a synchronous canary, same prompt, schema and ingest as the packets ─────
+MODEL = eo.DEFAULT_MODEL                 # claude-sonnet-5, the Council default
+MAX_TOKENS = 18000                       # largest pilot answer 15,930 bytes (about 4,500 tokens); about 4x
+API_DIR = HERE / "cache" / "api"         # packet-shaped: manifest.json + results/<key>.json, so --ingest reads it unchanged
+BATCH_STATE = HERE / "batch_state.json"  # manifest of submitted chunks; each chunk has its own claude_batch state file
+BATCH_MAX_REQUESTS = 2500                # chunk limits stay well under the Batches API caps (100,000 requests, 256 MB)
+BATCH_MAX_BYTES = 150_000_000
+PRICE = {"input": 2.0, "output": 10.0, "cache_read": 0.20, "cache_write_mult": 1.25}   # $ per MTok (Tal, Oct 7 2026)
+
+
+def build_request(law, text, ttl=None):
+    """(custom_id, params): fixed instructions as the cached first block, the law text last. ttl '1h' inside batches."""
+    import claude_batch
+    content = claude_batch.cached_content(FIXED_PROMPT, render_variable_prompt(law, text), ttl=ttl)
+    return law["key"], {"model": MODEL, "max_tokens": MAX_TOKENS, "messages": [{"role": "user", "content": content}],
+                        "output_config": {"format": {"type": "json_schema", "schema": SCHEMA}}}
+
+
+def project_cost(n_laws, avg_uncached_in, avg_out, fixed_tokens, batch=True, cached=True):
+    """Projected dollars for n_laws from per-law averages. fixed_tokens is the cached instruction prefix: written once, then
+    read per law (or billed as plain input when cached=False). Batch pricing is half of every token."""
+    pi, po, pr = PRICE["input"], PRICE["output"], PRICE["cache_read"]
+    per_law_in = avg_uncached_in * pi + (fixed_tokens * pr if cached else fixed_tokens * pi)
+    total = n_laws * (per_law_in + avg_out * po) + (fixed_tokens * pi * PRICE["cache_write_mult"] if cached else 0)
+    total /= 1e6
+    return total / 2 if batch else total
+
+
+def _client():
+    import anthropic
+    if not os.environ.get("ANTHROPIC_API_KEY"):
+        sys.exit("ANTHROPIC_API_KEY not set")
+    return anthropic.Anthropic()
+
+
+def _save_answer(key, msg):
+    """Write one answer in the packet results format; returns True when it parsed and matches the schema."""
+    (API_DIR / "results").mkdir(parents=True, exist_ok=True)
+    if getattr(msg, "stop_reason", None) == "max_tokens":
+        return False
+    try:
+        raw = json.loads(next(b.text for b in msg.content if b.type == "text"))
+    except Exception:  # noqa: BLE001
+        return False
+    if not eo.validate_against_schema(raw, SCHEMA):
+        return False
+    (API_DIR / "results" / (key + ".json")).write_text(json.dumps(raw))
+    return True
+
+
+def write_manifest(todo):
+    m = {}
+    if (API_DIR / "manifest.json").exists():
+        m = json.loads((API_DIR / "manifest.json").read_text())
+    m.update({law["key"]: {"windows": 1} for law, _ in todo})
+    (API_DIR / "manifest.json").write_text(json.dumps(m, indent=1))
+
+
+def pending(todo):
+    return [(l, t) for l, t in todo if not (API_DIR / "results" / (l["key"] + ".json")).exists()]
+
+
+def run_canary(todo, n):
+    """n real laws, synchronously (cache ttl 5 min), usage and a projected full-run cost."""
+    import claude_batch
+    client = _client()
+    step = max(1, len(todo) // n)
+    pick = todo[::step][:n]
+    usage = claude_batch.Usage()
+    ok = 0
+    for law, text in pick:
+        key, params = build_request(law, text)
+        with client.messages.stream(**params) as st:
+            msg = st.get_final_message()
+        usage.add(msg)
+        good = _save_answer(key, msg)
+        ok += good
+        print("  %s: %s, %d output tokens" % (key, "ok" if good else "REJECTED (%s)" % msg.stop_reason, msg.usage.output_tokens))
+    write_manifest(pick)
+    print(usage.line())
+    c = max(usage.calls, 1)
+    fixed = usage.cache_write if usage.cache_write else (usage.cache_read // max(c - 1, 1))
+    avg_in = usage.input / c
+    avg_out = usage.output / c
+    # the full run has every law's text as uncached input; the canary's laws are a spread sample of the same population
+    full = len(todo)
+    print("canary: %d of %d answers valid; per law avg %.0f uncached input + %.0f output tokens; cached prefix %d tokens" % (ok, c, avg_in, avg_out, fixed))
+    for label, batch, cached in (("batch + caching", True, True), ("batch, caching not honoured", True, False)):
+        print("projected %d laws, %s: $%.2f" % (full, label, project_cost(full, avg_in, avg_out, fixed, batch, cached)))
+    print("projected %d laws, synchronous + caching: $%.2f" % (full, project_cost(full, avg_in, avg_out, fixed, False, True)))
+
+
+def chunks_of(requests):
+    """Split [(id, params)] into chunks under the request and size caps."""
+    out, cur, size = [], [], 0
+    for cid, params in requests:
+        b = len(json.dumps(params))
+        if cur and (len(cur) >= BATCH_MAX_REQUESTS or size + b > BATCH_MAX_BYTES):
+            out.append(cur); cur, size = [], 0
+        cur.append((cid, params)); size += b
+    if cur:
+        out.append(cur)
+    return out
+
+
+def run_batches(todo, resume_only=False, max_wait_s=300 * 60):
+    """Submit every unanswered law as Message Batches (chunked), then collect. A later call resumes pending chunks."""
+    import claude_batch
+    client = _client()
+    state = json.loads(BATCH_STATE.read_text()) if BATCH_STATE.exists() else {"chunks": []}
+    if not resume_only:
+        in_flight = {k for c in state["chunks"] for k in c["keys"]}
+        todo_new = [(l, t) for l, t in pending(todo) if l["key"] not in in_flight]
+        reqs = [build_request(l, t, ttl="1h") for l, t in todo_new]
+        for cs in chunks_of(reqs):
+            n = len(state["chunks"]) + 1
+            sp = HERE / ("batch_state_%03d.json" % n)
+            claude_batch.run_batch(client, cs, sp, max_wait_s=0)           # submit and return at once
+            state["chunks"].append({"state": sp.name, "keys": [c for c, _ in cs]})
+            BATCH_STATE.write_text(json.dumps(state, indent=1))
+        write_manifest(todo_new)
+    usage = claude_batch.Usage()
+    start = time.time()
+    left_chunks = []
+    for c in state["chunks"]:
+        sp = HERE / c["state"]
+        if not sp.exists():
+            continue
+        out = claude_batch.run_batch(client, [], sp, max_wait_s=max(0, max_wait_s - int(time.time() - start)))
+        if out is None:
+            left_chunks.append(c); continue
+        bad = 0
+        for key, (status, payload) in out.items():
+            if status == "succeeded":
+                usage.add(payload)
+                if not _save_answer(key, payload):
+                    bad += 1
+            else:
+                bad += 1
+        print("chunk %s: %d results, %d unusable (they stay unanswered; run resume)" % (c["state"], len(out), bad))
+        claude_batch.clear_state(sp)
+    state["chunks"] = left_chunks
+    if left_chunks:
+        BATCH_STATE.write_text(json.dumps(state, indent=1))
+    else:
+        BATCH_STATE.unlink(missing_ok=True)
+    print(usage.line())
+    print("answered %d of %d laws; %d batch chunks still pending" % (len(todo) - len(pending(todo)), len(todo), len(left_chunks)))
+
+
 def main():
     global EFFECTIVE
     ap = argparse.ArgumentParser()
     ap.add_argument("--emit-packets", metavar="DIR")
     ap.add_argument("--ingest", metavar="DIR")
+    ap.add_argument("--api", action="store_true", help="call the Anthropic API (billed): needs --canary N, --batch or --resume")
+    ap.add_argument("--batch", action="store_true", help="with --api: submit the unanswered laws as Message Batches")
+    ap.add_argument("--resume", action="store_true", help="with --api: collect pending batches only")
+    ap.add_argument("--canary", type=int, metavar="N", help="with --api: N real laws synchronously, usage and cost projection")
+    ap.add_argument("--session", type=int, action="append", help="restrict to a session (repeatable); default all nine")
+    ap.add_argument("--limit", type=int)
+    ap.add_argument("--per-session", action="store_true", help="write data/duties/{Y}.json, data/powers/{Y}.json instead of single files")
     a = ap.parse_args()
-    laws = signed_laws()
-    EFFECTIVE = effective_table(laws)
-    json.dump(EFFECTIVE, open(DATA / "effective_dates.json", "w"), indent=1)
-    todo, deferred = load_todo()
+    full = bool(a.api or a.per_session or a.session)
+    sessions = (a.session or PILOT_SESSIONS) if full else None
+    todo, deferred = load_todo(sessions)
+    if a.limit:
+        todo = todo[:a.limit]
+    laws = [l for l, _ in todo] + [l for l in signed_laws(sessions) if l["key"] in {d["key"] for d in deferred}]
+    EFFECTIVE = effective_table([l for l, _ in todo])
+    if full:
+        (DATA / "effective_dates").mkdir(exist_ok=True)
+        for y in sorted({l["session"] for l, _ in todo}):
+            json.dump({k: v for k, v in EFFECTIVE.items() if k.startswith("%d-" % y)}, open(DATA / "effective_dates" / ("%d.json" % y), "w"), separators=(",", ":"))
+    else:
+        json.dump(EFFECTIVE, open(DATA / "effective_dates.json", "w"), indent=1)
     json.dump({"rule": "signed laws whose marked text exceeds %d characters (budget bills, recodifications) wait for a later phase" % MAX_CHARS,
                "laws": deferred}, open(DATA / "deferred_long.json", "w"), indent=1)
+    if a.api:
+        API_DIR.mkdir(parents=True, exist_ok=True)
+        print("laws with text: %d (deferred long %d)" % (len(todo), len(deferred)))
+        if a.canary:
+            return run_canary(pending(todo) or todo, a.canary)
+        if a.batch or a.resume:
+            return run_batches(todo, resume_only=a.resume and not a.batch)
+        sys.exit("--api needs --canary N, --batch or --resume")
     if a.emit_packets:
         d = Path(a.emit_packets)
         (d / "results").mkdir(parents=True, exist_ok=True)
@@ -521,10 +707,17 @@ def main():
         return
     if a.ingest:
         d = Path(a.ingest)
-        done, left = eo.ingest_packets(d, todo, LOOKUP, BY_CANON, "max-subagent", writer=write_cache, prepare=prepare, schema=SCHEMA)
-        duties, powers, excluded = build_records(laws)
-        json.dump({"generated_at": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"), "obligations": duties}, open(DATA / "duties.json", "w"), indent=1, ensure_ascii=False)
-        json.dump({"generated_at": datetime.now().strftime("%Y-%m-%dT%H:%M:%S"), "powers": powers}, open(DATA / "powers.json", "w"), indent=1, ensure_ascii=False)
+        done, left = eo.ingest_packets(d, todo, LOOKUP, BY_CANON, "claude-sonnet-5" if full else "max-subagent", writer=write_cache, prepare=prepare, schema=SCHEMA)
+        duties, powers, excluded = build_records([l for l, _ in todo])
+        stamp = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+        if full:     # one file would pass ~25 MB: per-session files
+            (DATA / "duties").mkdir(exist_ok=True); (DATA / "powers").mkdir(exist_ok=True)
+            for y in sorted({l["session"] for l, _ in todo}):
+                json.dump({"generated_at": stamp, "obligations": [o for o in duties if o["session"] == y]}, open(DATA / "duties" / ("%d.json" % y), "w"), separators=(",", ":"), ensure_ascii=False)
+                json.dump({"generated_at": stamp, "powers": [o for o in powers if o["session"] == y]}, open(DATA / "powers" / ("%d.json" % y), "w"), separators=(",", ":"), ensure_ascii=False)
+        else:
+            json.dump({"generated_at": stamp, "obligations": duties}, open(DATA / "duties.json", "w"), indent=1, ensure_ascii=False)
+            json.dump({"generated_at": stamp, "powers": powers}, open(DATA / "powers.json", "w"), indent=1, ensure_ascii=False)
         print("ingested %d laws, %d left (missing or invalid result); duties %d, powers %d, excluded (private or neither) %d" % (len(done), len(left), len(duties), len(powers), excluded))
         print("rules applied:", json.dumps(STATS, sort_keys=True))
 

@@ -126,11 +126,122 @@ def fetch_one(session, print_no, signed_hint=False):
     return rec
 
 
+# ── Full-session mode (phase 3a) ────────────────────────────────────────────────────────────────────────────────────
+# The listing endpoint with full=true returns every field the tracker needs for 1,000 bills per request (about 36 KB a bill
+# with both text formats, 7 s a page); per-bill calls would be one request per bill at 3.7 requests a second.
+COLS = ["session", "print_no", "base_print_no", "chamber", "is_resolution", "title", "sponsor_id", "sponsor", "cosponsors",
+        "committee", "status", "status_date", "signed", "chapter", "chapter_year", "vetoed", "same_as", "law_section", "published"]
+PAGE = 1000
+FULL = os.path.join(CACHE, "bills_full")
+INDEX_DIR = os.path.join(DATA, "bills")
+
+
+def index_row(rec):
+    """One compact index row (list, in COLS order) from a normalized bill record."""
+    sp = rec.get("sponsor") or {}
+    ch = rec.get("chapter") or {}
+    st = rec.get("status") or {}
+    return [rec["session"], rec["print_no"], rec["base_print_no"], rec["chamber"], bool(rec["is_resolution"]),
+            (rec.get("title") or "")[:300], sp.get("member_id"), sp.get("short_name"),
+            len(rec.get("cosponsors") or []), rec.get("committee"), st.get("type"), st.get("date"), bool(rec.get("signed")),
+            ch.get("number"), ch.get("year"), bool(rec.get("vetoed")),
+            ",".join(r["print_no"] for r in (rec.get("same_as") or []) if r.get("print_no")),
+            rec.get("law_section"), (rec.get("published_at") or "")[:10]]
+
+
+def cache_signed_text(item, rec):
+    """Signed bills: keep the active version's text (HTML where the API has it, plain otherwise) and the Senate memo."""
+    if not rec["signed"]:
+        return False
+    av = item.get("activeVersion") or ""
+    a = (item.get("amendments") or {}).get("items", {}).get(av) or {}
+    key = "%s-%s" % (rec["session"], rec["base_print_no"])
+    got = False
+    if a.get("fullTextHtml"):
+        _write(os.path.join(CACHE, "html", key + ".html"), a["fullTextHtml"]); got = True
+    if a.get("fullText"):
+        _write(os.path.join(CACHE, "text", key + ".txt"), a["fullText"]); got = True
+    if rec["chamber"] == "Senate" and a.get("memo"):
+        _write(os.path.join(CACHE, "memo", key + ".txt"), a["memo"])
+    return got
+
+
+def law_record(b):
+    """The per-law dict the extractor needs (chapter, signing date, act clause, law section) from a normalized signed bill."""
+    key = "%s-%s" % (b["session"], b["base_print_no"])
+    return {"matter_id": key, "key": key, "session": b["session"], "print_no": b["base_print_no"],
+            "chapter_number": b["chapter"]["number"], "chapter_year": b["chapter"]["year"],
+            "signed_date": b["chapter"]["signed_date"], "enactment_date": b["chapter"]["signed_date"],
+            "title": b["title"], "act_clause": b.get("act_clause"), "law_section": b.get("law_section"),
+            "sponsor": (b.get("sponsor") or {}).get("full_name"), "openleg_url": b.get("openleg_url"),
+            "law_number_display": "Chapter %d of %d" % (b["chapter"]["number"], b["chapter"]["year"])}
+
+
+def run_session(session, resume=False, limit=None):
+    os.makedirs(FULL, exist_ok=True)
+    os.makedirs(INDEX_DIR, exist_ok=True)
+    part = os.path.join(FULL, "%d.jsonl" % session)
+    done = 0
+    if resume and os.path.exists(part):
+        with open(part) as f:
+            done = sum(1 for _ in f)
+    elif os.path.exists(part):
+        os.remove(part)
+    t0, nbytes, calls = time.time(), 0, 0
+    total = None
+    while True:
+        want = PAGE if limit is None else min(PAGE, limit - done)
+        if want <= 0:
+            break
+        raw = openleg.get("/api/3/bills/%d" % session, {"limit": want, "offset": done + 1, "full": "true",
+                                                         "fullTextFormat": ["HTML", "PLAIN"]}, raw=True)
+        calls += 1
+        nbytes += len(raw)
+        d = json.loads(raw)
+        total = d.get("total", total)
+        items = ((d.get("result") or {}).get("items")) or []
+        if not items:
+            break
+        lines = []
+        for it in items:
+            item = it.get("result", it)
+            rec = normalize(item)
+            rec["text_cached"] = cache_signed_text(item, rec)
+            lines.append(json.dumps(rec, separators=(",", ":")))
+        with open(part, "a") as f:                      # the checkpoint: one append per page of 1,000 bills
+            f.write("\n".join(lines) + "\n")
+        done += len(items)
+        print("session %d: %d of %s bills, %d requests, %.0f s, %.1f MB" % (session, done, total, calls, time.time() - t0, nbytes / 1e6), flush=True)
+        if total is not None and done >= total:
+            break
+    rows, laws = [], []
+    with open(part) as f:
+        for ln in f:
+            rec = json.loads(ln)
+            rows.append(index_row(rec))
+            if rec.get("chapter") and rec["status"]["type"] == "SIGNED_BY_GOV":
+                laws.append(law_record(rec))
+    os.makedirs(os.path.join(DATA, "signed"), exist_ok=True)
+    json.dump(laws, open(os.path.join(DATA, "signed", "%d.json" % session), "w"), separators=(",", ":"), ensure_ascii=False)
+    out = os.path.join(INDEX_DIR, "%d.json" % session)
+    json.dump({"session": session, "generated": time.strftime("%Y-%m-%d", time.gmtime()), "total_in_api": total, "cols": COLS, "rows": rows},
+              open(out, "w"), separators=(",", ":"), ensure_ascii=False)
+    size = os.path.getsize(out)
+    print("index %s: %d rows, %.2f MB; %d requests (+%d retries), %.0f s, %.1f MB downloaded" % (out, len(rows), size / 1e6, calls, openleg.STATS["retries"], time.time() - t0, nbytes / 1e6))
+    return {"rows": len(rows), "bytes": size, "requests": calls, "seconds": time.time() - t0, "download_bytes": nbytes}
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--ids", help="pilot.json")
+    ap.add_argument("--session", type=int, help="fetch a whole session through the listing endpoint")
+    ap.add_argument("--resume", action="store_true", help="continue from the cached checkpoint")
+    ap.add_argument("--limit", type=int, help="stop after this many bills")
     ap.add_argument("--out", default=os.path.join(DATA, "bills.json"))
     a = ap.parse_args()
+    if a.session:
+        run_session(a.session, a.resume, a.limit)
+        return
     ids = json.load(open(a.ids))["bills"]
     t0 = time.time()
     recs, missing = [], []
