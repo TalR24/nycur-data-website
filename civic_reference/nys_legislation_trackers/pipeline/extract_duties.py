@@ -12,6 +12,7 @@ schema, duty/power/neither definitions, quote checks, deadline arithmetic, packe
 prompt wording (state and local government instead of NYC agencies) and the agency crosswalk are NYS-specific.
 """
 import argparse, json, os, re, sys, time
+from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
 
@@ -199,6 +200,7 @@ def named_locality(*texts):
             kind = m.group(1).lower()
             name = re.sub(r"\s+", " ", m.group(2)).strip(" .")
             name = re.sub(r"(?:\s+(?:assessors?|board|clerk|treasurer|supervisor|tax|department|office|shall|may|is|has|will))+$", "", name, flags=re.I)
+            name = re.sub(r"\s+" + kind + r"$", "", name, flags=re.I)        # "Town of Brookhaven Town"
             if name and not GENERIC_LEAD.match(name.split()[0]):
                 return LOCAL_GROUPS[kind], _title("%s of %s" % (kind, name))
         for rx, group in LOCALITY[1:3]:
@@ -385,6 +387,7 @@ def law_locality(text, title):
             kind = m.group(1).lower()
             name = re.sub(r"\s+", " ", m.group(2)).strip(" .")
             name = re.sub(r"(?:\s+(?:assessors?|board|clerk|treasurer|supervisor|tax|department|office|shall|may|is|has|will))+$", "", name, flags=re.I)
+            name = re.sub(r"\s+" + kind + r"$", "", name, flags=re.I)        # "Town of Brookhaven Town"
             if name and not GENERIC_LEAD.match(name.split()[0]):
                 units.add((LOCAL_GROUPS[kind], _title("%s of %s" % (kind, name))))
     if len(units) > 1:
@@ -451,7 +454,7 @@ def in_braces(a, b, text):
     return any(x < b and y > a for x, y in braced_intervals(text))
 
 
-BOUNDARY = r"(?<!\bSt)(?<!\bNo)(?<!\bCo)(?<!\bInc)(?<!\bMr)(?<!\bMrs)(?<!\bDr)(?<!\bJr)(?<!\bSr)(?<!\bAve)(?<!\bU\.S)[.;]\s+(?=[A-Z{(\d\[])|\n\n"
+BOUNDARY = r"(?<!\bSt)(?<!\bNo)(?<!\bCo)(?<!\bInc)(?<!\bMr)(?<!\bMrs)(?<!\bDr)(?<!\bJr)(?<!\bSr)(?<!\bAve)(?<!\bU\.S)[.;](?:\}\})?\s+(?=[A-Z{(\d\[])|\n\n"
 
 
 def context_sentence(span, text):
@@ -487,6 +490,12 @@ EXEMPT_RE = re.compile(
     r"|\bshall not (?:prevent|prohibit|preclude)\b[^.;]{0,100}\bfrom (?:holding|serving|being|acting)\b"
     r"|\bexempt(?:ed)? from\b|\bnotwithstanding\b[^.;]{0,160}\bresiden"
     r"|\brequiring (?:a|an|any|the) [\w ]{0,30}to be (?:a )?residents?\b|\bresidency requirements?\b", re.I)
+STRONG_EXEMPT_RE = re.compile(
+    r"\bshall not (?:prevent|prohibit|preclude)\b[^.;]{0,100}\bfrom (?:holding|serving|being|acting)\b"
+    r"|\bnotwithstanding\b[^.;]{0,160}\bresiden|\brequiring (?:a|an|any|the) [\w ]{0,30}to be (?:a )?residents?\b|\bresidency requirements?\b"
+    r"|\bdetermination denying (?:such |the )?refund\b|\bapplication for (?:the )?refund\b[^.]{0,250}\bdenying\b", re.I)
+CONDITION_RE = re.compile(r"^\W*(?:no\b[^.;]{0,160}\bunless\b|subject to\b|provided,? (?:that|however)\b|except (?:as|that)\b)|\bshall be subject to\b", re.I)
+ITEM_LABEL = re.compile(r"^\W*(?:\{\{)?\(?[A-Za-z0-9]{1,3}[.)]\s")
 VERBISH = re.compile(r"\b(shall|must|may|required|authorized|empowered|directed|power|duty|responsible|is to|are to|shall be)\b", re.I)
 RELATIVE = re.compile(r"\b(?:which|that|who|whom|whose)\s+(?:\w+\s+){0,3}?(?:shall|must)\b", re.I)
 STOP_KEYWORDS = {"department", "commissioner", "effective", "provisions", "section", "subdivision", "program", "agency", "authority", "service", "services"}
@@ -532,6 +541,21 @@ def overlap(a, b):
 DEADLINE_ONLY = re.compile(r"\b(?:shall|must)\s+(?:begin|commence|start|launch|be (?:established|implemented|completed|launched|operational|available|in place))\b[^.;]{0,60}\b(?:no later than|not later than|within|by|on or before)\b", re.I)
 
 
+def list_lead_in(span, text):
+    """For a lettered or numbered list entry: the lead-in paragraph above the list (ends with ':' or 'following'), else None."""
+    paras = [(m.start(), m.end()) for m in re.finditer(r"[^\n]+", text)]
+    idx = next((i for i, (a, b) in enumerate(paras) if a <= span[0] < b), None)
+    if idx is None or not ITEM_LABEL.match(text[paras[idx][0]:paras[idx][1]]):
+        return None
+    j = idx - 1
+    while j >= 0 and (ITEM_LABEL.match(text[paras[j][0]:paras[j][1]]) or not text[paras[j][0]:paras[j][1]].strip()):
+        j -= 1
+    if j < 0:
+        return None
+    para = text[paras[j][0]:paras[j][1]]
+    return para if re.search(r"(?:[:;]|\bfollowing|\bensuring|\bthat)\s*(?:\}\})?\s*$", para) else None
+
+
 def gate_record(o, text, has_markers):
     """Returns (rule, reason) when the record must be dropped, else None. Rules 1-3 of phase 3b."""
     if not o.get("quote_verified"):
@@ -539,19 +563,63 @@ def gate_record(o, text, has_markers):
     q = o.get("quote") or ""
     span = locate_span(q, text)
     # 3. no-record classes
-    if EXEMPT_RE.search(q) and not MANDATORY.search(EXEMPT_RE.sub(" ", q)):
-        return "exemption_or_applicability", "exemption or applicability clause, binds no government actor"
+    if STRONG_EXEMPT_RE.search(q) or (EXEMPT_RE.search(q) and not MANDATORY.search(EXEMPT_RE.sub(" ", q))):
+        return "exemption_or_applicability", "exemption, residency or refund-review applicability clause, binds no government actor"
     if span:
         hdr, sec = section_of_span(span, text)
         if sec and re.search(r"\b11\.00\b[^.]{0,80}local finance law|local finance law[^.]{0,80}\b11\.00\b", hdr + " " + sec[:400], re.I):
             return "local_finance_useful_life", "Local Finance Law section 11.00 period of probable usefulness"
         sent, (sl, sr) = context_sentence(span, text)
         if not VERBISH.search(q) and not VERBISH.search(sent):
-            return "designation_no_actor", "a designation or list entry with no lead-in duty or power"
+            lead = list_lead_in(span, text)
+            if lead and VERBISH.search(lead):          # a list entry: the duty is in the lead-in sentence
+                o["lead_in"] = re.sub(r"\s+", " ", re.sub(r"\{\{|\}\}", "", lead)).strip()[:400]
+                o["kind_from_lead_in"] = "duty" if MANDATORY.search(lead) else "power"
+                bump("list_entry_attached_to_lead_in")
+            else:
+                return "designation_no_actor", "a designation or list entry with no lead-in duty or power"
         # 2. new matter
         if has_markers and hdr and AMENDED.search(hdr) and not in_braces(sl, sr, text) and not re.search(r"\[[^\[\]]{2,}\]", sent):
             return "reprinted_existing_text", "amended section, no new matter in the quote's sentence"
     return None
+
+
+def _stems(s):
+    skip = {"depart", "commis", "provis", "subdiv", "sectio", "effect", "applic", "author", "agency", "board", "within", "which", "shall"}
+    return {w[:6] for w in re.findall(r"[a-z]{5,}", (s or "").lower())} - skip
+
+
+def drop_conditions(lst):
+    """A 'no ... unless' / 'subject to' / 'provided that' clause is a condition on another record of the same actor, not a duty
+    or power of its own: dropped when it shares a content stem with that record."""
+    out = list(lst)
+    for r in list(out):
+        if r not in out or not CONDITION_RE.search(r.get("quote") or ""):
+            continue
+        q = r.get("quote") or ""
+        ms = MODAL_SENT.search(q)
+        if re.match(r"^\W*provided", q, re.I) and ms and GOV_ACTOR.search(q[max(0, ms.start() - 140):ms.start()]):
+            continue            # a proviso with its own grant or mandate aimed at the actor is a separate provision
+        for o in out:
+            if o is r or (o.get("agency"), o.get("agency_unit")) != (r.get("agency"), r.get("agency_unit")):
+                continue
+            if _stems(r["quote"]) & _stems(o["quote"]) and not CONDITION_RE.search(o["quote"]):
+                out.remove(r); drop(r, "condition_of_other_record", "a condition on %s, same actor and object" % o["obligation_id"])
+                break
+    return out
+
+
+def wholly_new(span, text):
+    """True when the sentence around the span has no existing text outside {{ }} (apart from a subdivision label such as '2.'):
+    a wholly new provision, not an extension."""
+    _, (sl, sr) = context_sentence(span, text)
+    iv = braced_intervals(text)
+    if not any(x < sr and y > sl for x, y in iv):
+        return False
+    deleted = [(m.start(), m.end()) for m in re.finditer(r"\[[^\[\]]*\]", text[:sr + 1])]
+    outside = [c for k, c in enumerate(text[sl:sr], start=sl)
+               if c.isalpha() and not any(x <= k < y for x, y in iv) and not any(x <= k < y for x, y in deleted)]
+    return len(outside) <= 3
 
 
 def dedupe_law(lst):
@@ -586,6 +654,143 @@ def dedupe_law(lst):
                 out.remove(b); drop(b, "deadline_split", "deadline clause merged into %s" % a["obligation_id"])
                 break
     return out
+
+
+# ── Phase 3c: recall checks and the re-ask list ─────────────────────────────────────────────────────────────────────
+MODAL_SENT = re.compile(r"\b(?:shall|must|may|is authorized|are authorized|is hereby authorized|empowered|is required|are required)\b", re.I)
+GOV_ACTOR = re.compile(r"\b(department|commissioner|office|officer|board|commission|authority|agency|agencies|governor|comptroller|attorney general|court|judge|council|legislature|director|superintendent|secretary|division|bureau|trustees?|assessor|clerk|treasurer|mayor|supervisor|corporation|university|state|town|village|city|county|municipalit\w*|district|chair\w*|president|inspector|administrator|RJSCB|panel)\b", re.I)
+DEFINITIONAL = re.compile(r"^\W*(?:the term|as used in|for (?:the )?purposes of)\b", re.I)
+SKIP_SENT = re.compile(r"\btake effect\b|\bshall have become a law\b|\bis hereby repealed\b", re.I)
+
+
+def sentences_with_offsets(text):
+    """[(start, end, sentence)] over the whole marked text, split at sentence ends, paragraph breaks and list items."""
+    out, pos = [], 0
+    for m in list(re.finditer(BOUNDARY, text)) + [None]:
+        end = (m.start() + 1) if m else len(text)
+        seg = text[pos:end]
+        if seg.strip():
+            out.append((pos, end, seg.strip()))
+        pos = m.end() if m else len(text)
+    return out
+
+
+def _covered(sent_span, spans):
+    return any(a < sent_span[1] and b > sent_span[0] for a, b in spans)
+
+
+def recall_flags(key, text, records, dropped):
+    """The reasons this law should be re-asked (empty list: none). Checks a, b, c of phase 3c."""
+    spans = []
+    for q in [r.get("quote") or "" for r in records] + [d.get("quote") or "" for d in dropped]:
+        sp = locate_span(q, text)
+        if sp:
+            spans.append(sp)
+    iv = braced_intervals(text)
+    sents = sentences_with_offsets(text)
+    flags = []
+    # a. new matter that is only digits, dates and amounts: fewer extends_existing records than amended clauses
+    blocks = [m.group(1) for m in re.finditer(r"\{\{(.*?)\}\}", text, re.S)]
+    if blocks and all(_only_extension(b) for b in blocks):
+        clauses = [(a, b, t) for a, b, t in sents if any(x < b and y > a for x, y in iv)]
+        n_ext = sum(1 for r in records if r.get("extends_existing"))
+        if n_ext < len(clauses) <= 30:
+            miss = [t for a, b, t in clauses if not _covered((a, b), spans)]
+            flags.append({"check": "a_numbers_only_fewer_extends", "detail": "%d amended clauses, %d extends_existing records" % (len(clauses), n_ext), "sentences": miss[:12]})
+    # b. modal sentences inside new matter versus records
+    modal = []
+    for a, b, t in sents:
+        hdr_sec = section_of_span((a, b), text)[0]
+        new = any(x < b and y > a for x, y in iv) or (hdr_sec is not None and not AMENDED.search(hdr_sec))
+        ms = MODAL_SENT.search(t)
+        if (new and ms and not SKIP_SENT.search(t) and not EXEMPT_RE.search(t) and not DEFINITIONAL.search(t) and len(t) > 30
+                and GOV_ACTOR.search(t[max(0, ms.start() - 140):ms.start()] or t[:ms.start()])):
+            modal.append((a, b, t))
+    if 2 <= len(modal) <= 40:           # a law with hundreds of sentences (a repeal act, an appropriation) is not re-asked
+        unc = [t for a, b, t in modal if not _covered((a, b), spans)]
+        cov = 1 - len(unc) / len(modal)
+        if cov < 0.8:
+            flags.append({"check": "b_modal_sentence_coverage", "detail": "%d of %d new-matter shall/may sentences covered (%.0f%%)" % (len(modal) - len(unc), len(modal), 100 * cov), "sentences": unc[:12]})
+    # c. a list lead-in with items but fewer records than items
+    paras = [(m.start(), m.end()) for m in re.finditer(r"[^\n]+", text)]
+    k = 0
+    while k < len(paras):
+        a, b = paras[k]
+        para = text[a:b]
+        if re.search(r":\s*(?:\}\})?\s*$", para) and MODAL_SENT.search(para) and GOV_ACTOR.search(para):
+            items = []
+            j = k + 1
+            while j < len(paras) and ITEM_LABEL.match(text[paras[j][0]:paras[j][1]]):
+                items.append(paras[j]); j += 1
+            if len(items) >= 2 and sum(len(text[x:y].split()) for x, y in items) / len(items) >= 7:     # sentences, not a list of names
+                missing = [text[x:y] for x, y in items if not _covered((x, y), spans)]
+                if missing:
+                    flags.append({"check": "c_list_items_fewer_records", "detail": "%d items, %d without a record" % (len(items), len(missing)),
+                                  "lead_in": re.sub(r"\s+", " ", para)[:300], "sentences": missing[:12]})
+            k = j
+        else:
+            k += 1
+    return flags
+
+
+def build_reask(todo, duties, powers):
+    """data/reask.json content: {key: {reasons: [...]}} for the laws whose recall checks flag."""
+    by_law = defaultdict(list)
+    for o in duties + powers:
+        by_law[o["matter_id"]].append(o)
+    drops = defaultdict(list)
+    for d in DROPPED:
+        drops[d["matter_id"]].append(d)
+    out = {}
+    for law, text in todo:
+        fl = recall_flags(law["key"], text, by_law.get(law["key"], []), drops.get(law["key"], []))
+        if fl:
+            out[law["key"]] = {"reasons": fl}
+    return out
+
+
+def reask_instruction(entry):
+    sents = []
+    for r in entry["reasons"]:
+        for t in r["sentences"]:
+            t = re.sub(r"\{\{|\}\}", "", re.sub(r"\s+", " ", t)).strip()[:300]
+            if t not in sents:
+                sents.append(t)
+    lead = [r.get("lead_in") for r in entry["reasons"] if r.get("lead_in")]
+    return ("ADDITIONAL INSTRUCTION. A first pass over this law missed some provisions. The law's new matter also contains these sentences:\n"
+            + "\n".join("%d. %s" % (i, t) for i, t in enumerate(sents[:15], 1))
+            + ("\n(List entries above belong to the lead-in: " + lead[0] + ")" if lead else "")
+            + "\nRecord each of them that is a duty or power of a government actor, with the same fields and the same rules as above. "
+              "Quote each verbatim from the law text. Record nothing else, and nothing that is only an exemption, a condition or a definition.")
+
+
+def merge_reask(todo, results_dir, model):
+    """Merge results/<key>__reask.json answers into cache/extracted/<key>.json (ids continue; the dedup gate runs at build)."""
+    n = 0
+    for law, text in todo:
+        rp = results_dir / (law["key"] + "__reask.json")
+        cp = EXTRACTED / (law["key"] + ".json")
+        if not rp.exists() or not cp.exists():
+            continue
+        raw = json.loads(rp.read_text())
+        if not eo.validate_against_schema(raw, SCHEMA):
+            continue
+        for o in raw.get("obligations", []):
+            eo._offset_to_days(o.get("deadline"))
+        raw["effective_clause"] = {"kind": "other", "offset_days": None, "fixed_date": None, "text": ""}
+        res2 = eo.finalize_extraction(raw, law, text, eo.operative_text(text), LOOKUP, BY_CANON, model)
+        res = json.loads(cp.read_text())
+        base = len(res["obligations"])
+        for i, (o, ro) in enumerate(zip(res2["obligations"], raw["obligations"]), 1):
+            nid = "%s-%02d" % (law["key"], base + i)
+            o["obligation_id"] = nid
+            o["from_reask"] = True
+            res["obligations"].append(o)
+            res.setdefault("extends_model", {})[nid] = bool(ro.get("extends_existing"))
+            res.setdefault("actor_model", {})[nid] = ro.get("actor_resolved")
+            n += 1
+        cp.write_text(json.dumps(res, indent=1, ensure_ascii=False))
+    return n
 
 
 # ── Ingest ──────────────────────────────────────────────────────────────────────────────────────────────────────
@@ -641,6 +846,11 @@ def build_records(laws):
             o["extends_existing"] = bool(res.get("extends_model", {}).get(o["obligation_id"])) or extends_by_text(quote, text)
             if not o["extends_existing"] and relocated(quote, text):          # D4
                 o["extends_existing"] = True; bump("d4_relocated")
+            sp0 = locate_span(quote, text)
+            if o["extends_existing"] and sp0 and wholly_new(sp0, text):     # an extension has existing text around the new matter
+                o["extends_existing"] = False; bump("extends_cleared_wholly_new")
+            if o.get("kind_from_lead_in"):
+                kind = o["kind_from_lead_in"]
             # 3. a grant with no mandatory verb is a power
             sp = locate_span(quote, text)
             ctx = context_sentence(sp, text)[0] if sp else ""
@@ -680,8 +890,8 @@ def build_records(laws):
                    "effective_date": sec_date, "effective_rule": eff["rule"] if sec_src == "law" else "section_" + sec_src, "law_expires_date": eff["expires_date"],
                    "openleg_url": law["openleg_url"], "extraction_model": res.get("model")}
             (law_p if kind == "power" else law_d).append(rec)
-        law_d = dedupe_law(law_d)
-        law_p = dedupe_law(law_p)
+        law_d = drop_conditions(dedupe_law(law_d))
+        law_p = drop_conditions(dedupe_law(law_p))
         for lst in (law_d, law_p):       # never merge across jurisdictions or named localities
             keep = []
             for jur in {(o.get("jurisdiction"), o.get("agency_unit")) for o in lst}:
@@ -704,10 +914,12 @@ BATCH_MAX_BYTES = 150_000_000
 PRICE = {"input": 2.0, "output": 10.0, "cache_read": 0.20, "cache_write_mult": 1.25}   # $ per MTok (Tal, Oct 7 2026)
 
 
-def build_request(law, text, ttl=None):
+def build_request(law, text, ttl=None, extra=None):
     """(custom_id, params): fixed instructions as the cached first block, the law text last. ttl '1h' inside batches."""
     import claude_batch
     content = claude_batch.cached_content(FIXED_PROMPT, render_variable_prompt(law, text), ttl=ttl)
+    if extra:                                     # the re-ask: a short instruction after the law text
+        content.append({"type": "text", "text": extra})
     params = {"model": MODEL, "max_tokens": MAX_TOKENS, "messages": [{"role": "user", "content": content}],
               "output_config": {"format": {"type": "json_schema", "schema": SCHEMA}}}
     # NYS_THINKING (Oct 7 2026): Sonnet 5 runs adaptive thinking when the param is omitted; the first canary averaged
@@ -718,7 +930,7 @@ def build_request(law, text, ttl=None):
         params["thinking"] = {"type": "disabled"}
     elif mode in ("low", "medium", "high"):
         params["output_config"]["effort"] = mode
-    return law["key"], params
+    return law["key"] + ("__reask" if extra else ""), params
 
 
 def project_cost(n_laws, avg_uncached_in, avg_out, fixed_tokens, batch=True, cached=True):
@@ -808,22 +1020,30 @@ def chunks_of(requests):
     return out
 
 
-def run_batches(todo, resume_only=False, max_wait_s=300 * 60):
+def run_batches(todo, resume_only=False, max_wait_s=300 * 60, reask=None):
     """Submit every unanswered law as Message Batches (chunked), then collect. A later call resumes pending chunks."""
     import claude_batch
     client = _client()
-    state = json.loads(BATCH_STATE.read_text()) if BATCH_STATE.exists() else {"chunks": []}
+    manifest = HERE / ("batch_state_reask.json" if reask is not None else "batch_state.json")
+    prefix = "batch_state_reask_%03d.json" if reask is not None else "batch_state_%03d.json"
+    state = json.loads(manifest.read_text()) if manifest.exists() else {"chunks": []}
     if not resume_only:
         in_flight = {k for c in state["chunks"] for k in c["keys"]}
-        todo_new = [(l, t) for l, t in pending(todo) if l["key"] not in in_flight]
-        reqs = [build_request(l, t, ttl="1h") for l, t in todo_new]
+        if reask is not None:
+            todo_new = [(l, t) for l, t in todo if l["key"] in reask and not (API_DIR / "results" / (l["key"] + "__reask.json")).exists()
+                        and (l["key"] + "__reask") not in in_flight]
+            reqs = [build_request(l, t, ttl="1h", extra=reask_instruction(reask[l["key"]])) for l, t in todo_new]
+        else:
+            todo_new = [(l, t) for l, t in pending(todo) if l["key"] not in in_flight]
+            reqs = [build_request(l, t, ttl="1h") for l, t in todo_new]
         for cs in chunks_of(reqs):
             n = len(state["chunks"]) + 1
-            sp = HERE / ("batch_state_%03d.json" % n)
+            sp = HERE / (prefix % n)
             claude_batch.run_batch(client, cs, sp, max_wait_s=0)           # submit and return at once
             state["chunks"].append({"state": sp.name, "keys": [c for c, _ in cs]})
-            BATCH_STATE.write_text(json.dumps(state, indent=1))
-        write_manifest(todo_new)
+            manifest.write_text(json.dumps(state, indent=1))
+        if reask is None:
+            write_manifest(todo_new)
     usage = claude_batch.Usage()
     start = time.time()
     left_chunks = []
@@ -846,11 +1066,14 @@ def run_batches(todo, resume_only=False, max_wait_s=300 * 60):
         claude_batch.clear_state(sp)
     state["chunks"] = left_chunks
     if left_chunks:
-        BATCH_STATE.write_text(json.dumps(state, indent=1))
+        manifest.write_text(json.dumps(state, indent=1))
     else:
-        BATCH_STATE.unlink(missing_ok=True)
+        manifest.unlink(missing_ok=True)
     print(usage.line())
-    print("answered %d of %d laws; %d batch chunks still pending" % (len(todo) - len(pending(todo)), len(todo), len(left_chunks)))
+    if reask is None:
+        print("answered %d of %d laws; %d batch chunks still pending" % (len(todo) - len(pending(todo)), len(todo), len(left_chunks)))
+    else:
+        print("re-ask: %d laws flagged; %d batch chunks still pending" % (len(reask), len(left_chunks)))
 
 
 def main():
@@ -861,6 +1084,7 @@ def main():
     ap.add_argument("--api", action="store_true", help="call the Anthropic API (billed): needs --canary N, --batch or --resume")
     ap.add_argument("--batch", action="store_true", help="with --api: submit the unanswered laws as Message Batches")
     ap.add_argument("--resume", action="store_true", help="with --api: collect pending batches only")
+    ap.add_argument("--reask", action="store_true", help="with --api: re-send only the laws in data/reask.json with the added instruction")
     ap.add_argument("--canary", type=int, metavar="N", help="with --api: N real laws synchronously, usage and cost projection")
     ap.add_argument("--session", type=int, action="append", help="restrict to a session (repeatable); default all nine")
     ap.add_argument("--limit", type=int)
@@ -894,6 +1118,9 @@ def main():
         print("laws with text: %d (deferred long %d)" % (len(todo), len(deferred)))
         if a.canary:
             return run_canary(pending(todo) or todo, a.canary)
+        if a.reask:
+            flagged = json.loads((DATA / "reask.json").read_text())["laws"]
+            return run_batches(todo, reask=flagged)
         if a.batch or a.resume:
             return run_batches(todo, resume_only=a.resume and not a.batch)
         sys.exit("--api needs --canary N, --batch or --resume")
@@ -907,8 +1134,12 @@ def main():
     if a.ingest:
         d = Path(a.ingest)
         done, left = eo.ingest_packets(d, todo, LOOKUP, BY_CANON, "claude-sonnet-5" if full else "max-subagent", writer=write_cache, prepare=prepare, schema=SCHEMA)
+        merged = merge_reask(todo, d / "results", "claude-sonnet-5" if full else "max-subagent")
         duties, powers, excluded = build_records([l for l, _ in todo])
         stamp = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+        reask = build_reask(todo, duties, powers)
+        json.dump({"generated_at": stamp, "laws": reask}, open(DATA / "reask.json", "w"), indent=1, ensure_ascii=False)
+        print("re-ask merged %d records; recall checks flag %d laws" % (merged, len(reask)))
         if full:     # one file would pass ~25 MB: per-session files
             (DATA / "duties").mkdir(exist_ok=True); (DATA / "powers").mkdir(exist_ok=True)
             for y in sorted({l["session"] for l, _ in todo}):

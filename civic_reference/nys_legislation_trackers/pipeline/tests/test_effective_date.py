@@ -92,5 +92,19 @@ passed, failed = (passed + 1, failed) if ok else (passed, failed + 1)
 r = parse_effective("§ 193. This act shall take effect on the sixtieth day after it shall have become a law; provided, however, that section one hundred ninety-one of this act shall be deemed to have been in full force and effect on and after January 1, 2002.", "2012-08-16")
 ok = r["retroactive_to"] is None and any(x.get("retroactive_to") == "2002-01-01" for x in r["section_dates"])
 passed, failed = (passed + 1, failed) if ok else (passed, failed + 1)
+# phase 3c: an act that also amends the referenced chapter's effective-date section (D1)
+A8826 = ("Section 1. Subdivision 7-a is amended to read as follows:\n\n7-a. {{x}}\n\n§ 2. Section 2 of a chapter of the laws of 2021 amending the public health law relating to exams, as proposed in legislative bills numbers S. 1201-A and A. 4662-A, is amended to read as follows:\n\n"
+         "§ 2. This act shall take effect on the [sixtieth] {{one hundred eightieth}} day after it shall have become a law.\n\n"
+         "§ 3. This act shall take effect immediately; provided, however, that section one of this act shall take effect on the same date and in the same manner as a chapter of the laws of 2021 amending the public health law relating to exams, as proposed in legislative bills numbers S. 1201-A and A. 4662-A, takes effect.")
+def stub8826(bills=None, chapter=None, year=None):
+    return {"bill": "2021-A4662", "chapter": 661, "year": 2021, "signed_date": "2021-12-10", "effective_date": "2022-02-08", "rule": "nth_day_after_law"}
+r = parse_effective(A8826, "2022-02-24", resolver=stub8826)
+ok = r["section_dates"][0]["effective_date"] == "2022-02-08"
+passed, failed = (passed + 1, failed) if ok else (passed, failed + 1)
+if not ok: print("FAIL D1 signed after the original date", r["section_dates"])
+r = parse_effective(A8826, "2022-01-15", resolver=stub8826)
+ok = r["section_dates"][0]["effective_date"] == "2022-06-08"
+passed, failed = (passed + 1, failed) if ok else (passed, failed + 1)
+if not ok: print("FAIL D1 signed before the original date", r["section_dates"])
 print("%d passed, %d failed" % (passed, failed))
 sys.exit(1 if failed else 0)

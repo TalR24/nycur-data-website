@@ -186,6 +186,24 @@ def _expiry(clause, effective, signed):
     return None
 
 
+def _amended_reference(text, ref, signed):
+    """D1. The act may also amend the referenced chapter's own effective-date section ('Section 2 of a chapter of the laws of
+    2021 ... is amended to read as follows: This act shall take effect on the [sixtieth] {{one hundred eightieth}} day ...').
+    Signed BEFORE the chapter's original effective date, the amended date applies; signed on or after it, the original stands
+    (the chapter was already in effect)."""
+    m = re.search(r"(?is)\bof a chapter of the laws of \d{4}[^§]{0,400}?is amended to read as follows:.{0,200}?take effect on the (?:\[[^\]]*\]\s*)?\{\{([^}]+)\}\}\s+day after", text or "")
+    if not m:
+        return ref
+    n = words_to_int(m.group(1).replace("day", "").strip())
+    if not n:
+        return ref
+    original = _d(ref["effective_date"])
+    if signed >= original:
+        return {**ref, "amended_clause_ignored": True}
+    amended = _d(ref["signed_date"]) + timedelta(days=n)
+    return {**ref, "effective_date": amended.isoformat(), "original_effective_date": ref["effective_date"], "amended_clause_applied": True}
+
+
 def parse_effective(text, signed_date, resolver=None):
     """text: the full act text (marked or plain) or just the clause. signed_date: ISO string of the governor's signature.
     resolver(bills=..., chapter=..., year=...) -> {signed_date, effective_date, chapter, ...} resolves 'same as chapter X'."""
@@ -203,6 +221,8 @@ def parse_effective(text, signed_date, resolver=None):
             refinfo = {"unresolved": True, **{k: r[k] for k in ("bills", "chapter", "year")}}
         if refinfo and refinfo.get("unresolved"):
             refinfo = {"effective_date": None, "signed_date": None, **refinfo}
+    if refinfo and refinfo.get("effective_date") and refinfo.get("signed_date"):
+        refinfo = _amended_reference(text, refinfo, signed)
     eff, rule, ref_used = _single(clause, signed, refinfo)
     retros = _retro(clause, signed)
     expires = _expiry(clause, eff, signed)
