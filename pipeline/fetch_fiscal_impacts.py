@@ -598,6 +598,22 @@ def status_group(status: str | None, in_laws_json: bool = False) -> str:
     return "in_progress"
 
 
+STATUS_BUCKETS = ("enacted", "awaiting_mayor", "in_progress", "lapsed", "unknown")
+
+
+def status_bucket(status: str | None, group: str | None) -> str:
+    """Five-way bill status from status_group: enacted (enacted or adopted),
+    awaiting_mayor (passed the Council, "Enacted (Mayor's Desk ...)"), in_progress,
+    lapsed, unknown."""
+    if group == "passed":
+        if (status or "").strip().lower().startswith("enacted (mayor"):
+            return "awaiting_mayor"
+        return "enacted"
+    if group in ("in_progress", "lapsed"):
+        return group
+    return "unknown"
+
+
 _SUMMARY_HEAD = re.compile(r"Summary\s+of\s+Legislation\s*:?", re.I)
 _PAGE_HEADER = re.compile(
     r"^(?:(?:Proposed\s+)?(?:Int(?:ro)?|Res)\.?\s*No\.?\s*[\w-]+\s*)?Page\s+\d+(?:\s+of\s+\d+)?\s*$", re.I)
@@ -1204,7 +1220,7 @@ def enacted_law_numbers() -> dict[str, str | None]:
 
 
 def apply_status_and_summary(records: list) -> list:
-    """Every record carries status, status_group, summary_of_legislation (and
+    """Every record carries status, status_group, status_bucket, summary_of_legislation (and
     enacted_law for enacted bills). Enacted laws (laws.json) need no page read;
     other statuses come from the detail page read this run, else the stored
     value. status_group is recomputed on every save, so a bill that has since
@@ -1222,6 +1238,7 @@ def apply_status_and_summary(records: list) -> list:
             r.setdefault("status", None)
             r.pop("enacted_law", None)
         r["status_group"] = status_group(r.get("status"), in_laws)
+        r["status_bucket"] = status_bucket(r.get("status"), r["status_group"])
         if mid in SUMMARY_BY_MATTER and SUMMARY_BY_MATTER[mid]:
             r["summary_of_legislation"] = SUMMARY_BY_MATTER[mid]
         r.setdefault("summary_of_legislation", None)

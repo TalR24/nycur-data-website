@@ -325,7 +325,7 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:18px
     </div>
     <div class="hero-tag">Bar Chart</div>
     <h1>Which agencies bear the cost of <span>Council legislation?</span></h1>
-    <p>Total fiscal impact of NYC Council legislation, grouped by the city agencies responsible for implementation. Each bill may affect multiple agencies. Filter by committee, sponsor, bill year, or projected fiscal year.</p>
+    <p>Total fiscal impact of NYC Council legislation, grouped by the city agencies responsible for implementation. Each bill may affect multiple agencies. Filter by committee, sponsor, bill year, or projected fiscal year. Charts show enacted laws and adopted resolutions by default; use the Bill status filter to include pending or lapsed bills.</p>
   </div>
 </div>
 
@@ -344,6 +344,7 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:18px
 
       <div class="filter-panel-title" style="margin-top:4px;">Filters</div>
       <div class="filter-row">
+        <div id="ms-status"></div>
         <div id="ms-agency"></div>
         <div id="ms-committee"></div>
         <div id="ms-sponsor"></div>
@@ -491,6 +492,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
       });
       populateFilters();
+      MS.status.set(['enacted']);
       render();
     });
 });
@@ -503,6 +505,10 @@ function populateFilters() {
   const opts = vals => vals.map(v => ({v: v, l: v}));
   const agencies = [...new Set(ALL_RECORDS.flatMap(r => r.agencies_abbrev || []))];
 
+  MS.status = new MSFilter('ms-status', {
+    label: 'Bill status', allLabel: 'All statuses', sort: 'none', onChange: render,
+    options: STATUS_OPTIONS
+  });
   MS.agency = new MSFilter('ms-agency', {
     label: 'Agency', allLabel: 'All agencies', sort: 'alpha', onChange: render,
     options: agencies.map(v => ({v: v, l: SHORT_LABEL[v] || v}))
@@ -533,6 +539,25 @@ function populateFilters() {
   });
 }
 
+// ── BILL STATUS (default: enacted laws and adopted resolutions only) ─────────
+const STATUS_OPTIONS = [
+  {v:'enacted',        l:'Enacted or adopted'},
+  {v:'awaiting_mayor', l:'Passed, awaiting mayor'},
+  {v:'in_progress',    l:'In progress'},
+  {v:'lapsed',         l:'Lapsed or failed'},
+  {v:'unknown',        l:'Status unknown'},
+];
+function statusNote() {
+  const sel = MS.status.selected();
+  if (sel === null) return 'All bill statuses.';
+  if (sel.size === 1 && sel.has('enacted')) return 'Enacted laws and adopted resolutions only.';
+  return 'Bill status: ' + STATUS_OPTIONS.filter(o => sel.has(o.v)).map(o => o.l).join(', ') + '.';
+}
+function statusQs() {
+  const sel = MS.status.selected();
+  return sel ? '&status=' + [...sel].join(',') : '';
+}
+
 // ── FILTER RECORDS ────────────────────────────────────────────────────────────
 function getFiltered() {
   if (!MS.agency) return [];  // data not loaded yet
@@ -540,6 +565,7 @@ function getFiltered() {
   const typeF   = MS.type.selected();
 
   return ALL_RECORDS.filter(r => {
+    if (!MS.status.pass(r.status_bucket || 'unknown')) return false;
     if (agencyF !== null && !(r.agencies_abbrev || []).some(a => agencyF.has(a))) return false;
     if (!MS.committee.pass(r.committee)) return false;
     if (!MS.sponsor.pass(r.prime_sponsor)) return false;
@@ -625,7 +651,7 @@ function render() {
   document.getElementById('chart-title').textContent = cfg.label + ' by Agency';
   document.getElementById('chart-sub').textContent   = cfg.sub;
   document.getElementById('record-count-note').textContent =
-    `${filtered.length} bills shown · ${yrSpan(filtered)}`;
+    `${filtered.length} bills shown · ${yrSpan(filtered)} · ${statusNote()}`;
 
   const pairs = aggregateByAgency(filtered, cfg.key);
   const empty = document.getElementById('empty-state');
@@ -672,7 +698,7 @@ function render() {
       onClick: (evt, els) => {
         if (!els.length) return;
         const key = keys[els[0].index];
-        location.href = '../?agency=' + encodeURIComponent(key) + sliceQs;
+        location.href = '../?agency=' + encodeURIComponent(key) + sliceQs + statusQs();
       },
       onHover: (evt, els) => { evt.native.target.style.cursor = els.length ? 'pointer' : 'default'; },
       responsive: true,
@@ -766,6 +792,7 @@ chartCanvas.addEventListener('mouseleave', () => {
 
 document.getElementById('reset-btn').addEventListener('click', () => {
   Object.values(MS).forEach(ms => ms.reset());
+  MS.status.set(['enacted']);
   render();
 });
 

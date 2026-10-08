@@ -174,6 +174,12 @@ def main() -> None:
         sg = r.get("status_group")
         if sg not in ("passed", "in_progress", "lapsed", "unknown"):
             hard["status_group_missing_or_invalid"].append(f"{label(r)}: {sg!r}")
+        sb = r.get("status_bucket")
+        want = ({"passed": ("enacted", "awaiting_mayor")}.get(sg) or (sg,))
+        if sb not in ("enacted", "awaiting_mayor", "in_progress", "lapsed", "unknown"):
+            hard["status_bucket_missing_or_invalid"].append(f"{label(r)}: {sb!r}")
+        elif sb not in want:
+            hard["status_bucket_inconsistent_with_group"].append(f"{label(r)}: {sb!r} vs {sg!r}")
         if str(r.get("matter_id")) in law_ids and sg != "passed":
             hard["enacted_law_not_passed"].append(f"{label(r)}: {sg!r}")
         if not r.get("status"):

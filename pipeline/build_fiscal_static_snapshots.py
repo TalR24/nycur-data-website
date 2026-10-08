@@ -78,7 +78,7 @@ def cost(r):
     return (r.get("total_expenditure") or 0) + (r.get("total_capital") or 0)
 
 
-def hbars(pairs, money, link=None):
+def hbars(pairs, money, link=None, tail=""):
     if not pairs:
         return '<p class="loading-note">No data.</p>'
     mx = max(abs(p[1]) for p in pairs) or 0
@@ -87,7 +87,7 @@ def hbars(pairs, money, link=None):
         w = abs(p[1]) / mx * 100 if mx else 0
         label = p[2] if len(p) > 2 and p[2] else p[0]
         val = fmt(p[1]) if money else f"{p[1]:,}"
-        name = (f'<a href="../?{link}={quote(str(p[0]), safe="")}">{esc(p[0])}</a>' if link else esc(p[0]))
+        name = (f'<a href="../?{link}={quote(str(p[0]), safe="")}{tail}">{esc(p[0])}</a>' if link else esc(p[0]))
         out.append(f'<div class="c-bar-row"><span class="c-bar-label" title="{esc(label)}">{name}</span>'
                    f'<div class="c-bar-track"><div class="c-bar-fill" data-w="{w:g}" style="width:{w:.1f}%"></div></div>'
                    f'<span class="c-bar-value">{val}</span></div>')
@@ -110,8 +110,10 @@ def columns(pairs, raw):
     return "".join(out)
 
 
-def overview(records):
+def overview(all_records):
     page = TRACKER / "overview" / "index.html"
+    # Default view: enacted laws and adopted resolutions only (the page's "Enacted only" button).
+    records = [r for r in all_records if r.get("status_bucket") == "enacted"]
     total = len(records)
     total_cost = sum(cost(r) for r in records)
     total_rev = sum(r.get("total_revenue") or 0 for r in records)
@@ -119,16 +121,14 @@ def overview(records):
     blocks = {"sp-bills": f"{total:,}", "sp-cost": fmt(total_cost), "sp-revenue": fmt(total_rev),
               "sp-rev-bills": f"{rev_bills:,}"}
 
-    sc = {"passed": 0, "in_progress": 0, "lapsed": 0, "unknown": 0}
-    awaiting = 0
-    for r in records:
-        sc[r.get("status_group") if r.get("status_group") in sc else "unknown"] += 1
-        if (r.get("status") or "").lower().startswith("enacted (mayor"):
-            awaiting += 1
+    sc = {"enacted": 0, "awaiting_mayor": 0, "in_progress": 0, "lapsed": 0, "unknown": 0}
+    for r in all_records:
+        sc[r.get("status_bucket") if r.get("status_bucket") in sc else "unknown"] += 1
     link = lambda k: f'<a href="../?status={k}">{sc[k]:,}</a>'  # noqa: E731
-    blocks["sp-status"] = (f"Of these bills, {link('passed')} passed the Council or were adopted"
-                           + (f" ({awaiting:,} of them await the mayor's signature)" if awaiting else "")
-                           + f", {link('in_progress')} are still moving through the Council, "
+    blocks["sp-status"] = (f"The figures above cover the {sc['enacted']:,} enacted laws and adopted resolutions. "
+                           f"Across all {len(all_records):,} bills with a statement, {link('enacted')} are enacted or adopted, "
+                           f"{link('awaiting_mayor')} passed the Council and await the mayor's signature, "
+                           f"{link('in_progress')} are still moving through the Council, "
                            f"{'and ' if not sc['unknown'] else ''}{link('lapsed')} lapsed or failed"
                            + (f", and {sc['unknown']:,} older records have no matched Legistar page" if sc["unknown"] else "") + ".")
 
@@ -147,7 +147,7 @@ def overview(records):
     full = {a: max(v, key=v.get) for a, v in votes.items()}
     agency = sorted(([k, v, full.get(k, k)] for k, v in by_agency.items()), key=lambda p: -p[1])
     # The live chart shows 12 agencies plus "All other agencies"; the static copy stops at 10.
-    blocks["chart-agency"] = hbars(agency[:10], True, "agency")
+    blocks["chart-agency"] = hbars(agency[:10], True, "agency", "&status=enacted")
     if agency:
         blocks["title-agency"] = esc(f"{agency[0][2]} is attached to {fmt(agency[0][1])} in annual costs, "
                                      f"more than any other agency")
@@ -157,7 +157,7 @@ def overview(records):
         if r.get("prime_sponsor"):
             by_sponsor[r["prime_sponsor"]] = by_sponsor.get(r["prime_sponsor"], 0) + cost(r)
     sponsor = sorted(([k, v] for k, v in by_sponsor.items()), key=lambda p: -p[1])[:10]
-    blocks["chart-sponsor"] = hbars(sponsor, True, "sponsor")
+    blocks["chart-sponsor"] = hbars(sponsor, True, "sponsor", "&status=enacted")
     if sponsor:
         blocks["title-sponsor"] = esc(f"{sponsor[0][0]} sponsored bills with the largest combined annual cost: "
                                       f"{fmt(sponsor[0][1])}")
@@ -215,17 +215,17 @@ def net_label(r):
 
 
 def status_pill(r):
-    g = r.get("status_group")
-    if g not in ("passed", "in_progress", "lapsed"):
+    g = r.get("status_bucket")
+    if g not in ("enacted", "awaiting_mayor", "in_progress", "lapsed"):
         return ""
     if g == "in_progress":
         txt = "In progress"
     elif g == "lapsed":
         txt = "Lapsed"
-    elif (r.get("status") or "").lower().startswith("enacted (mayor"):
+    elif g == "awaiting_mayor":
         txt = "Passed, awaiting mayor"
     else:
-        txt = "Enacted" if "Introduction" in (r.get("legislation_type") or "") else (r.get("status") or "Passed")
+        txt = "Enacted" if "Introduction" in (r.get("legislation_type") or "") else (r.get("status") or "Enacted")
     return f'<div><span class="status-pill status-{g}" title="{esc(r.get("status") or "")}">{esc(txt)}</span></div>'
 
 

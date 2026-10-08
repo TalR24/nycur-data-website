@@ -742,6 +742,7 @@ def build_trackers_profile(canon: str, full_name: str, tr: dict) -> dict:
             "net": net,
             "package": bool(rec.get("package_note")),   # figures sit on another bill of its package
             "fy_full_impact": rec.get("fy_full_impact"),
+            "status_bucket": rec.get("status_bucket"),
         })
     fiscal_list.sort(key=lambda x: ((x["net"] if x["net"] is not None else 0), x["matter_id"]))
 
@@ -777,6 +778,11 @@ def build_trackers_profile(canon: str, full_name: str, tr: dict) -> dict:
         "laws_with_powers": laws_with_powers,
         "fiscal_bills": len(fiscal),
         "fiscal_net_total": round(fiscal_net_total, 2) if has_fiscal_value else None,
+        "fiscal_bills_enacted": sum(1 for rec in fiscal if rec.get("status_bucket") == "enacted"),
+        "fiscal_net_total_enacted": (round(sum(rec.get("net_fiscal_impact") or 0 for rec in fiscal
+                                               if rec.get("status_bucket") == "enacted"), 2)
+                                     if any(rec.get("status_bucket") == "enacted" and rec.get("net_fiscal_impact") is not None
+                                            for rec in fiscal) else None),
         "top_sponsors": top_sponsors,
         "laws": laws_list,
         "fiscal": fiscal_list,

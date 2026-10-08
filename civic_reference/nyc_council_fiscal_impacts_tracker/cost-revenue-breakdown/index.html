@@ -242,7 +242,7 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:18px
     </div>
     <div class="hero-tag">Diverging Bar Chart</div>
     <h1>The bills that cost the city the most, next to the few that <span class="green">raise revenue</span></h1>
-    <p id="intro-counts">Most bills cost the city money; a few bring in net revenue. This chart puts both sides next to each other.</p>
+    <p id="intro-counts">Most bills cost the city money; a few bring in net revenue. This chart puts both sides next to each other. Charts show enacted laws and adopted resolutions by default; use the Bill status filter to include pending or lapsed bills.</p>
   </div>
 </div>
 
@@ -260,6 +260,7 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:18px
 
       <div class="filter-panel-title" style="margin-top:4px;">Filters</div>
       <div class="filter-row">
+        <div id="ms-status"></div>
         <div id="ms-agency"></div>
         <div id="ms-committee"></div>
         <div id="ms-sponsor"></div>
@@ -390,14 +391,8 @@ document.addEventListener('DOMContentLoaded', () => {
     .then(data => {
       ALL_RECORDS = data.records;
       FILTER_OPTIONS = data.filter_options;
-      // counted from the data on load (a hard-coded "201 of 219" sat stale for months)
-      var priced = ALL_RECORDS.filter(function (r) { return r.net_fiscal_impact !== null && r.net_fiscal_impact !== undefined; });
-      var cost = priced.filter(function (r) { return r.net_fiscal_impact < 0; }).length;
-      var gain = priced.filter(function (r) { return r.net_fiscal_impact > 0; }).length;
-      document.getElementById('intro-counts').textContent = cost.toLocaleString() + ' of ' + ALL_RECORDS.length.toLocaleString()
-        + ' bills cost the city money; ' + gain.toLocaleString() + ' bring in net revenue. '
-        + (ALL_RECORDS.length - priced.length).toLocaleString() + ' more share a package statement counted on another bill. This chart puts both sides next to each other.';
       populateFilters();
+      MS.status.set(['enacted']);
       render();
     });
 });
@@ -410,6 +405,10 @@ function populateFilters() {
   const opts = vals => vals.map(v => ({v: v, l: v}));
   const agencies = [...new Set(ALL_RECORDS.flatMap(r => r.agencies_abbrev || []))];
 
+  MS.status = new MSFilter('ms-status', {
+    label: 'Bill status', allLabel: 'All statuses', sort: 'none', onChange: render,
+    options: STATUS_OPTIONS
+  });
   MS.agency = new MSFilter('ms-agency', {
     label: 'Agency', allLabel: 'All agencies', sort: 'alpha', onChange: render,
     options: opts(agencies)
@@ -432,12 +431,32 @@ function populateFilters() {
   });
 }
 
+// ── BILL STATUS (default: enacted laws and adopted resolutions only) ─────────
+const STATUS_OPTIONS = [
+  {v:'enacted',        l:'Enacted or adopted'},
+  {v:'awaiting_mayor', l:'Passed, awaiting mayor'},
+  {v:'in_progress',    l:'In progress'},
+  {v:'lapsed',         l:'Lapsed or failed'},
+  {v:'unknown',        l:'Status unknown'},
+];
+function statusNote() {
+  const sel = MS.status.selected();
+  if (sel === null) return 'All bill statuses.';
+  if (sel.size === 1 && sel.has('enacted')) return 'Enacted laws and adopted resolutions only.';
+  return 'Bill status: ' + STATUS_OPTIONS.filter(o => sel.has(o.v)).map(o => o.l).join(', ') + '.';
+}
+function statusQs() {
+  const sel = MS.status.selected();
+  return sel ? '&status=' + [...sel].join(',') : '';
+}
+
 // ── FILTER RECORDS ────────────────────────────────────────────────────────────
 function getFiltered() {
   if (!MS.agency) return [];  // data not loaded yet
   const agencyF = MS.agency.selected();
 
   return ALL_RECORDS.filter(r => {
+    if (!MS.status.pass(r.status_bucket || 'unknown')) return false;
     if (r.net_fiscal_impact == null) return false;   // exclude package-nulled bills
     if (agencyF !== null && !(r.agencies_abbrev || []).some(a => agencyF.has(a))) return false;
     if (!MS.committee.pass(r.committee)) return false;
@@ -500,12 +519,27 @@ function updateStats(filtered) {
   // 2014–2026 was already wrong for Int 0172-2010 and would go stale in 2027)
   function yrSpan(rs) { var ys = rs.map(function (r) { return r.intro_year; }).filter(Boolean);
     return ys.length ? Math.min.apply(null, ys) + '–' + Math.max.apply(null, ys) : ''; }
+// The intro counts follow the Bill status filter (Tal, Oct 9 2026): a claim
+// about how many bills cost money must describe the same slice as the chart.
+function updateIntro() {
+  var scope = ALL_RECORDS.filter(function (r) { return MS.status.pass(r.status_bucket || 'unknown'); });
+  var priced = scope.filter(function (r) { return r.net_fiscal_impact !== null && r.net_fiscal_impact !== undefined; });
+  var cost = priced.filter(function (r) { return r.net_fiscal_impact < 0; }).length;
+  var gain = priced.filter(function (r) { return r.net_fiscal_impact > 0; }).length;
+  var sel = MS.status.selected();
+  var noun = (sel && sel.size === 1 && sel.has('enacted')) ? ' enacted laws and adopted resolutions' : ' bills with a fiscal impact statement';
+  document.getElementById('intro-counts').textContent = cost.toLocaleString() + ' of ' + scope.length.toLocaleString()
+    + noun + ' cost the city money; ' + gain.toLocaleString() + ' bring in net revenue. '
+    + (scope.length - priced.length).toLocaleString() + ' more share a package statement counted on another bill. This chart puts both sides next to each other. Charts show enacted laws and adopted resolutions by default; use the Bill status filter to include pending or lapsed bills.';
+}
+
 function render() {
   const filtered = getFiltered();
   updateStats(filtered);
+  updateIntro();
 
   document.getElementById('record-count-note').textContent =
-    `${filtered.length} bills in filtered set · ${yrSpan(filtered)}`;
+    `${filtered.length} bills in filtered set · ${yrSpan(filtered)} · ${statusNote()}`;
 
   document.getElementById('topn-note').textContent =
     'Only the top ' + topN + ' bills per side are shown; use filters to narrow the dataset.';
@@ -630,6 +664,7 @@ document.getElementById('topn-row').addEventListener('click', e => {
 // ── RESET ─────────────────────────────────────────────────────────────────────
 document.getElementById('reset-btn').addEventListener('click', () => {
   Object.values(MS).forEach(ms => ms.reset());
+  MS.status.set(['enacted']);
   render();
 });
 

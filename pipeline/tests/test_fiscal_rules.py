@@ -399,7 +399,7 @@ check("a 'FY Succeeding Effective' first column does not move fy_first_effective
       _n["fy_first_effective"] == "FY26", f"got {_n}")
 
 # bill status and summary of legislation, Oct 8 2026
-from fetch_fiscal_impacts import status_group, extract_summary_of_legislation, parse_legistar_status  # noqa: E402
+from fetch_fiscal_impacts import status_group, status_bucket, extract_summary_of_legislation, parse_legistar_status  # noqa: E402
 check("Enacted -> passed", status_group("Enacted") == "passed")
 check("Enacted (Mayor's Desk variant) -> passed", status_group("Enacted (Mayor's Desk for Signature)") == "passed")
 check("Adopted resolution -> passed", status_group("Adopted") == "passed")
@@ -413,6 +413,14 @@ check("None -> unknown", status_group(None) == "unknown")
 check("empty -> unknown", status_group("  ") == "unknown")
 check("laws.json membership overrides a stale status", status_group("Laid Over in Committee", True) == "passed")
 check("laws.json membership overrides a missing status", status_group(None, True) == "passed")
+check("bucket: Enacted -> enacted", status_bucket("Enacted", "passed") == "enacted")
+check("bucket: Adopted -> enacted", status_bucket("Adopted", "passed") == "enacted")
+check("bucket: Mayor's Desk -> awaiting_mayor", status_bucket("Enacted (Mayor's Desk for Signature)", "passed") == "awaiting_mayor")
+check("bucket: mayor's desk is case-insensitive", status_bucket("ENACTED (MAYOR'S DESK)", "passed") == "awaiting_mayor")
+check("bucket: in_progress", status_bucket("Laid Over in Committee", "in_progress") == "in_progress")
+check("bucket: lapsed", status_bucket("Filed", "lapsed") == "lapsed")
+check("bucket: unknown", status_bucket(None, "unknown") == "unknown")
+check("bucket: a mayor's-desk status outside passed stays in its group", status_bucket("Enacted (Mayor's Desk)", "in_progress") == "in_progress")
 check("status parsed off the detail page",
       parse_legistar_status('<span id="ctl00_ContentPlaceHolder1_lblStatus2" class="x">Laid Over in Committee</span>')
       == "Laid Over in Committee")

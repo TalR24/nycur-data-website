@@ -353,6 +353,7 @@ def main() -> None:
                 "year": year,
                 "prime": sp_clean == prime_raw,
                 "net_fiscal_impact": rec.get("net_fiscal_impact"),
+                "status_bucket": rec.get("status_bucket"),
                 "legistar_url": rec.get("legistar_url"),
             })
 
