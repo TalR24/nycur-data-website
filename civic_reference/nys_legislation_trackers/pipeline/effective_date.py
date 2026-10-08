@@ -237,6 +237,10 @@ def parse_effective(text, signed_date, resolver=None):
         sub = "This act " + part[part.lower().find("shall take effect"):]
         e2, r2, _ = _single(sub, signed, refinfo)
         sections.append({"applies_to": re.sub(r"^that\s+", "", (sect.group(1) if sect else part[:80]).strip()), "effective_date": e2.isoformat() if e2 else None, "rule": r2})
+    for m in re.finditer(r"(sections?\s+[\w,\s-]+?\s+of this act)\s+shall take effect\s+(?:on|upon)\s+the\s+(?:expiration|repeal|termination)\s+of\s+([^;.]*)", clause, re.I):
+        # keyed to another law's expiration (Oct 8 2026, audit B): the date is open until that law expires, never the act's own date
+        sections.append({"applies_to": re.sub(r"\s+", " ", m.group(1)).strip(), "effective_date": None, "rule": "on_expiration_of_other_law", "open_date": True,
+                         "depends_on": re.sub(r"\s+", " ", m.group(2)).strip()})
     for ap, d in retros:
         if ap:
             sections.append({"applies_to": ap, "effective_date": None, "rule": "retroactive", "retroactive_to": d.isoformat()})

@@ -25,15 +25,16 @@ JURISDICTIONS = {"state", "local", "nyc", None}
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--duties", default=str(DATA / "duties.json"))
-    ap.add_argument("--powers", default=str(DATA / "powers.json"))
+    ap.add_argument("--duties", default=None, help="a single duties file (tests); default: the per-session store data/duties/*.json")
+    ap.add_argument("--powers", default=None, help="a single powers file (tests); default: data/powers/*.json")
     ap.add_argument("--text", default=str(TEXT))
     ap.add_argument("--strict", action="store_true")
-    ap.add_argument("--per-session", action="store_true", help="also read data/duties/*.json and data/powers/*.json")
+    ap.add_argument("--per-session", action="store_true", help="(default when no --duties/--powers) read data/duties/*.json and data/powers/*.json, the single store")
     a = ap.parse_args()
-    duties = json.loads(Path(a.duties).read_text())["obligations"] if Path(a.duties).exists() else []
-    powers = json.loads(Path(a.powers).read_text())["powers"] if Path(a.powers).exists() else []
-    if a.per_session:       # data/duties/{session}.json, data/powers/{session}.json (the full-scale run)
+    single = a.duties is not None or a.powers is not None
+    duties = json.loads(Path(a.duties).read_text())["obligations"] if a.duties and Path(a.duties).exists() else []
+    powers = json.loads(Path(a.powers).read_text())["powers"] if a.powers and Path(a.powers).exists() else []
+    if a.per_session or not single:       # data/duties/{session}.json, data/powers/{session}.json (the full-scale run)
         for f in sorted((DATA / "duties").glob("*.json")):
             duties += json.loads(f.read_text())["obligations"]
         for f in sorted((DATA / "powers").glob("*.json")):
@@ -49,6 +50,13 @@ def main():
             texts[k] = p.read_text() if p.exists() else ""
         return texts[k]
 
+    if not single:      # the per-session stores must cover the same sessions (an ingest of one session must not drop another's)
+        sets = {d: {f.stem for f in (DATA / d).glob("*.json")} for d in ("duties", "powers", "reask", "dropped")}
+        for d, st in sets.items():
+            if st != sets["duties"]:
+                hard["per_session_files_mismatch"].append("data/%s has %s, data/duties has %s" % (d, sorted(st), sorted(sets["duties"])))
+        if (DATA / "duties.json").exists() or (DATA / "powers.json").exists():
+            hard["legacy_pilot_file_present"].append("data/duties.json or powers.json (the per-session files are the single store)")
     for oid, n in Counter(o["obligation_id"] for o, _ in allrec).items():
         if n > 1:
             hard["duplicate_obligation_id"].append(oid)
@@ -80,7 +88,10 @@ def main():
         if o.get("effective_date") and not re.match(r"^\d{4}-\d{2}-\d{2}$", o["effective_date"]):
             hard["bad_effective_date"].append(oid)
         if not o.get("agency_matched") and not GOV_NOUN.search(o.get("actor_raw") or ""):
-            hard["passive_subject_actor_unmatched"].append("%s: %s" % (oid, (o.get("actor_raw") or "")[:60]))
+            if o.get("actor_unresolved") and o.get("agency") == "Unspecified":      # kept as Unspecified and sent to re-ask
+                soft["actor_unresolved_reasked"].append("%s: %s" % (oid, (o.get("actor_raw") or "")[:50]))
+            else:
+                hard["passive_subject_actor_unmatched"].append("%s: %s" % (oid, (o.get("actor_raw") or "")[:60]))
         if PASSIVE_SUBJECT.match((o.get("actor_raw") or "").strip()):
             soft["passive_subject_actor"].append("%s: %s" % (oid, (o.get("actor_raw") or "")[:60]))
         q = o.get("quote") or ""
