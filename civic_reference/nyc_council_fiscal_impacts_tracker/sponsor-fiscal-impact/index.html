@@ -20,7 +20,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/assets/brand.css">
-  <link rel="stylesheet" href="/assets/chart.css?v=20260927">
+  <link rel="stylesheet" href="/assets/chart.css?v=20261008">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
   <script defer src="/assets/chart.js?v=20260927"></script>
@@ -115,7 +115,7 @@
     }
     .metric-btn:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
     .metric-btn.active { background: var(--blue); color: #fff; border-color: var(--blue); }
-    .metric-btn.active.negative { background: var(--red); border-color: var(--red); }
+    .metric-btn.active.negative { background: var(--c-fiscal-cost); border-color: var(--c-fiscal-cost); }
 
     /* Filter dropdowns */
     .filter-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
@@ -164,8 +164,8 @@
       min-width: 140px;
     }
     .stat-pill .sp-num { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 1.25rem; font-weight: 700; line-height: 1; color: var(--blue); }
-    .stat-pill .sp-num.red { color: var(--red); }
-    .stat-pill .sp-num.green { color: var(--green); }
+    .stat-pill .sp-num.red { color: var(--c-fiscal-cost); }
+    .stat-pill .sp-num.green { color: var(--c-fiscal-gain); }
     .stat-pill .sp-label { font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; }
 
     /* ── CHART AREA ── */
@@ -413,6 +413,7 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:18px
         </div>
       </figcaption>
     </figure>
+    <p class="c-deck" style="margin:10px 0 0">Click a bar to open those bills in the Bill Table.</p>
 
     <!-- FOOTNOTES -->
     <div class="footnotes">
@@ -452,7 +453,7 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:18px
   </div>
 </div>
 
-<script src="../../nyc_council_legislation_trackers/assets/multiselect.js?v=2"></script>
+<script src="../../nyc_council_legislation_trackers/assets/multiselect.js?v=3"></script>
 <script>
 // ── DATA LOADING ──────────────────────────────────────────────────────────────
 let ALL_RECORDS = [];
@@ -621,13 +622,15 @@ function render() {
   const values   = pairs.map(([, d]) => d.total);
   const spData   = Object.fromEntries(pairs);
 
-  const colors = values.map(v =>
-    v < 0 ? 'rgba(220,38,38,0.85)' : 'rgba(207,75,12,0.85)'
-  );
-  const hoverColors = values.map(v =>
-    v < 0 ? 'rgba(220,38,38,1)' : 'rgba(207,75,12,1)'
-  );
+  const cs = getComputedStyle(document.documentElement);
+  const cCost = cs.getPropertyValue('--c-fiscal-cost').trim(), cCostS = cs.getPropertyValue('--c-fiscal-cost-strong').trim();
+  const cGain = cs.getPropertyValue('--c-fiscal-gain').trim(), cGainS = cs.getPropertyValue('--c-fiscal-gain-strong').trim();
+  const colors = values.map(v => v < 0 ? cCost : cGain);
+  const hoverColors = values.map(v => v < 0 ? cCostS : cGainS);
 
+  // Slice the reader already chose here (committee, sponsor) travels with the click
+  const sliceQs = ['committee', 'sponsor'].map(k => MS[k] && MS[k].selected()
+    ? '&' + k + '=' + [...MS[k].selected()].map(encodeURIComponent).join(',') : '').join('');
   if (chart) chart.destroy();
   chart = new Chart(canvas, {
     type: 'bar',
@@ -642,6 +645,12 @@ function render() {
       }]
     },
     options: {
+      onClick: (evt, els) => {
+        if (!els.length) return;
+        const key = labels[els[0].index];
+        location.href = '../?sponsor=' + encodeURIComponent(key) + sliceQs;
+      },
+      onHover: (evt, els) => { evt.native.target.style.cursor = els.length ? 'pointer' : 'default'; },
       responsive: true,
       maintainAspectRatio: false,
       plugins: {

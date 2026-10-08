@@ -106,7 +106,7 @@ BUCKETS = [  # mirror of BUCKETS in agency-workload/index.html
     ("rule", "Rulemaking", "#89C4E1", ["rulemaking"]),
     ("program", "Programs & services", "#226287", ["program or service"]),
     ("outreach", "Outreach & education", "#6B5B4A", ["outreach or education"]),
-    ("other", "Everything else", "#EDC3A5", None),
+    ("other", "Everything else", "var(--b-ink-4)", None),
 ]
 
 
@@ -354,10 +354,10 @@ POWER_TYPES = [  # mirror of TYPES in powers/agency-powers/index.html
     ("monitoring or testing", "Monitoring or testing", "var(--b-ink-3)"),
     ("notice or posting", "Notice or posting", "var(--b-tangerine)"),
     ("database or data publication", "Database or data publication", "var(--b-ink-2)"),
-    ("outreach or education", "Outreach or education", "var(--b-ink-4)"),
+    ("outreach or education", "Outreach or education", "var(--b-brown)"),
     ("report", "Report", "var(--b-tangerine-deep)"),
     ("study or audit", "Study or audit", "var(--b-fuchsia)"),
-    ("other", "Everything else", "var(--blue-mid)"),
+    ("other", "Everything else", "var(--b-ink-4)"),
 ]
 
 

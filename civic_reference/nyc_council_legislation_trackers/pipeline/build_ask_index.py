@@ -383,8 +383,11 @@ def main() -> int:
             in_plan += f" Time-limited program{end}; the figures cover its whole run."
         capital = (f", capital {money(r['total_capital'])} (sum of the fiscal years shown)"
                    if r.get("total_capital") else "")
+        status_txt = f" Status: {r.get('status') or 'unknown'}." if r.get("status") or r.get("status_group") else ""
+        if r.get("summary_of_legislation"):
+            status_txt += f" Summary: {clip(r['summary_of_legislation'], 500)}"
         x = (
-            f"Fiscal estimate for {bill}: {title}. Agencies: {agencies}. "
+            f"Fiscal estimate for {bill}: {title}.{status_txt} Agencies: {agencies}. "
             f"Expenditure {money(r.get('total_expenditure'))} and revenue "
             f"{money(r.get('total_revenue'))} (each the {label}){capital}; "
             f"{net_phrase(r.get('net_fiscal_impact'))}, counting all of these. "
@@ -393,7 +396,7 @@ def main() -> int:
         if r.get("package_note"):
             # costed as one package with other bills: the figures sit on one of
             # them; say so instead of "not stated" (fiscal audit round 2)
-            x = (f"Fiscal estimate for {bill}: {title}. {r['package_note']} "
+            x = (f"Fiscal estimate for {bill}: {title}.{status_txt} {r['package_note']} "
                  f"Prepared {r.get('date_prepared') or 'unknown date'}.")
         u = r.get("legistar_url") or LAW_LINK_BASE + r.get("matter_id", "")
         tokens = (

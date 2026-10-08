@@ -836,7 +836,9 @@
       return html;
     }
     var rows = fiscal.map(function (f) {
-      return '<tr><td><a href="../../nyc_council_fiscal_impacts_tracker/">' + esc(f.bill) + '</a></td>'
+      var d = /\d+/.exec(f.bill || '');
+      var href = '../../nyc_council_fiscal_impacts_tracker/' + (f.matter_id ? '?bill=' + encodeURIComponent(f.matter_id) : (d ? '?intro=' + d[0] : ''));
+      return '<tr><td><a href="' + href + '" title="Open this bill in the Fiscal Impacts bill table">' + esc(f.bill) + '</a></td>'
         + '<td>' + esc(f.title) + '</td>'
         + '<td class="num' + (f.net < 0 ? ' neg' : '') + '">' + (f.package && f.net == null ? 'see package' : fmtMoney(f.net)) + '</td></tr>';
     }).join('');

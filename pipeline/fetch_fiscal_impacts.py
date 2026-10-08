@@ -565,9 +565,91 @@ def fetch_legistar_file(
     return parse_legistar_page(r.text)
 
 
+def parse_legistar_status(html: str) -> str | None:
+    """Legistar's own Status string off a LegislationDetail page
+    ("Enacted", "Laid Over in Committee", ...); None on an "Invalid parameters!" stub."""
+    m = re.search(r'id="ctl00_ContentPlaceHolder1_lblStatus2"[^>]*>(.*?)</span>', html, re.S)
+    if not m:
+        return None
+    return re.sub(r"<[^>]+>", "", m.group(1)).strip() or None
+
+
+_LAPSED_STATUSES = ("filed", "withdrawn", "vetoed", "disapproved by mayor", "failed", "defeated")
+_PASSED_EXACT = ("adopted", "approved")
+_SEEN_UNMAPPED: set[str] = set()
+
+
+def status_group(status: str | None, in_laws_json: bool = False) -> str:
+    """passed / in_progress / lapsed / unknown, from Legistar's status string.
+    A matter in laws.json (enacted local law) is passed whatever its status says."""
+    if in_laws_json:
+        return "passed"
+    st = (status or "").strip()
+    if not st:
+        return "unknown"
+    low = st.lower()
+    if low.startswith("enacted") or low in _PASSED_EXACT:
+        return "passed"
+    if any(low.startswith(p) for p in _LAPSED_STATUSES):
+        return "lapsed"
+    if st not in _SEEN_UNMAPPED:
+        _SEEN_UNMAPPED.add(st)
+        log.info(f"  status not in the passed/lapsed lists, mapped to in_progress: {st!r}")
+    return "in_progress"
+
+
+_SUMMARY_HEAD = re.compile(r"Summary\s+of\s+Legislation\s*:?", re.I)
+_PAGE_HEADER = re.compile(
+    r"^(?:(?:Proposed\s+)?(?:Int(?:ro)?|Res)\.?\s*No\.?\s*[\w-]+\s*)?Page\s+\d+(?:\s+of\s+\d+)?\s*$", re.I)
+_DOC_ARTEFACT = re.compile(r"^\W*Body\W*$", re.I)   # a .docx section marker some statements leak
+_SENTENCE_END = re.compile(r"[.!?:;][\"\u201d\u2019')\]]*$")
+_SUMMARY_STOP = re.compile(
+    r"(?im)^[ \t]*(?:Effective\s+Date|Fiscal\s+Year\s+In\s+Which\s+Full\s+Fiscal\s+Impact"
+    r"|Fiscal\s+Impact\s+Statement|Impact\s+on\s+Revenues)")
+
+
+def extract_summary_of_legislation(text: str) -> str | None:
+    """The statement's own "Summary of Legislation" section, verbatim: the text
+    after that heading up to the next heading (Effective Date, Fiscal Year In
+    Which Full Fiscal Impact, Fiscal Impact Statement, Impact on Revenues).
+    Whitespace inside a paragraph collapses; paragraph breaks stay as a blank
+    line. None when there is no heading or the section is under 20 characters."""
+    m = _SUMMARY_HEAD.search(text or "")
+    if not m:
+        return None
+    rest = text[m.end():]
+    stop = _SUMMARY_STOP.search(rest)
+    if stop:
+        rest = rest[:stop.start()]
+    # Paragraphs: a blank line always breaks; a single newline breaks only when
+    # the line before ends a sentence (statements read from PDFs are hard-wrapped
+    # mid-sentence). Page headers ("Proposed Intro. No. 1017-C Page 2") are dropped.
+    lines = [ln.strip() for ln in rest.split("\n")]
+    lines = [ln for ln in lines if not _PAGE_HEADER.match(ln) and not _DOC_ARTEFACT.match(ln)]
+    paras, cur = [], ""
+    for ln in lines:
+        if not ln:
+            if cur:
+                paras.append(cur)
+            cur = ""
+            continue
+        if cur and _SENTENCE_END.search(cur) and (ln[0].isupper() or ln[0].isdigit() or ln[0] in "(\u201c\""):
+            paras.append(cur)
+            cur = ln
+        else:
+            cur = (cur + " " + ln).strip() if cur else ln
+    if cur:
+        paras.append(cur)
+    paras = [re.sub(r"\s+", " ", p).strip() for p in paras]
+    out = "\n\n".join(p for p in paras if p)
+    return out if len(out) >= 20 else None
+
+
 # Filled by get_fiscal_attachment as a side effect (it already has the detail
 # page in hand); read by main() when building the record.
 LEGISTAR_FILE_BY_MATTER: dict[str, str | None] = {}
+STATUS_BY_MATTER: dict[str, str | None] = {}
+SUMMARY_BY_MATTER: dict[str, str | None] = {}
 
 
 def get_fiscal_attachment(
@@ -585,6 +667,7 @@ def get_fiscal_attachment(
     r = session.get(url, timeout=20)
     r.raise_for_status()
     LEGISTAR_FILE_BY_MATTER[matter_id] = parse_legistar_page(r.text)[0]
+    STATUS_BY_MATTER[matter_id] = parse_legistar_status(r.text)
 
     # An amended bill carries one statement per version ("Fiscal Impact
     # Statement - City Council", later "Int. No. 1208-A - Fiscal Impact
@@ -1105,9 +1188,49 @@ def fill_blank_titles(records: list) -> list:
     return records
 
 
+_LAW_NUMBERS: dict[str, str | None] | None = None
+
+
+def enacted_law_numbers() -> dict[str, str | None]:
+    """Web matter id -> display law number ("LL 12/2026") for every enacted law."""
+    global _LAW_NUMBERS
+    if _LAW_NUMBERS is None:
+        try:
+            _LAW_NUMBERS = {str(l["matter_id"]): l.get("law_number_display")
+                            for l in json.loads(LAWS_PATH.read_text())["laws"]}
+        except (OSError, ValueError, KeyError):
+            _LAW_NUMBERS = {}
+    return _LAW_NUMBERS
+
+
+def apply_status_and_summary(records: list) -> list:
+    """Every record carries status, status_group, summary_of_legislation (and
+    enacted_law for enacted bills). Enacted laws (laws.json) need no page read;
+    other statuses come from the detail page read this run, else the stored
+    value. status_group is recomputed on every save, so a bill that has since
+    been enacted moves to passed even if its page was not re-read."""
+    laws = enacted_law_numbers()
+    for r in records:
+        mid = str(r.get("matter_id"))
+        in_laws = mid in laws
+        if in_laws:
+            r["status"] = "Enacted"
+            r["enacted_law"] = laws[mid]
+        else:
+            if STATUS_BY_MATTER.get(mid):
+                r["status"] = STATUS_BY_MATTER[mid]
+            r.setdefault("status", None)
+            r.pop("enacted_law", None)
+        r["status_group"] = status_group(r.get("status"), in_laws)
+        if mid in SUMMARY_BY_MATTER and SUMMARY_BY_MATTER[mid]:
+            r["summary_of_legislation"] = SUMMARY_BY_MATTER[mid]
+        r.setdefault("summary_of_legislation", None)
+    return records
+
+
 def save_output(path: Path, records: list) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    records = normalize_fiscal_years(fill_blank_titles(apply_overrides(records)))
+    records = apply_status_and_summary(normalize_fiscal_years(fill_blank_titles(apply_overrides(records))))
     data = {
         "metadata": {
             "last_updated": datetime.utcnow().isoformat() + "Z",
@@ -1554,6 +1677,76 @@ def reconcile_totals(fiscal: dict) -> dict:
     return fiscal
 
 
+# ── Status refresh and summary backfill (no model calls) ─────────────────────
+
+def refresh_status(session: requests.Session, records: list) -> tuple[int, int]:
+    """Re-read Legistar's status for every non-enacted record with a web page.
+    Returns (read, failed). No Claude call."""
+    laws = enacted_matter_ids()
+    read = failed = 0
+    for r in records:
+        mid, guid = str(r.get("matter_id")), r.get("legistar_guid")
+        if mid in laws or not (r.get("legistar_url") and guid):
+            continue
+        try:
+            resp = session.get(f"{BASE_URL}/LegislationDetail.aspx?ID={mid}&GUID={guid}", timeout=60)
+            resp.raise_for_status()
+            STATUS_BY_MATTER[mid] = parse_legistar_status(resp.text)
+            read += 1
+        except Exception as e:  # noqa: BLE001
+            failed += 1
+            log.warning(f"  {mid}: status page not read ({e}); keeping the stored status")
+        time.sleep(0.3)
+    return read, failed
+
+
+def backfill_summary(session: requests.Session, records: list, force: bool = False) -> dict:
+    """Fill summary_of_legislation from the cached (or freshly downloaded)
+    statement for every record without one (every record with --force). No Claude call."""
+    import tempfile
+    stats = {"filled": 0, "no_heading": 0, "unreadable": 0}
+    for r in records:
+        if r.get("summary_of_legislation") and not force:
+            continue
+        mid, att_id = str(r["matter_id"]), str(r.get("attachment_id") or "")
+        path = None
+        try:
+            if att_id.startswith("http"):           # REST-path record: a direct URL, no cache file
+                resp = session.get(att_id, timeout=60)
+                resp.raise_for_status()
+                path = Path(tempfile.mkdtemp(prefix="fiscal_summary_")) / "statement.docx"
+                path.write_bytes(resp.content)
+                time.sleep(0.3)
+            else:
+                path = CACHE_DIR / f"{att_id}.docx"
+                if not path.exists():
+                    guid = r.get("legistar_guid")
+                    if not (r.get("legistar_url") and guid):
+                        raise RuntimeError("no cached file and no Legistar page")
+                    got_id, got_guid = get_fiscal_attachment(session, mid, guid)
+                    time.sleep(0.3)
+                    if str(got_id) != att_id:
+                        raise RuntimeError(f"page now lists statement {got_id}, not {att_id}")
+                    path = download_docx(session, got_id, got_guid)
+                    time.sleep(0.3)
+            text = extract_docx_text(path) if path else ""
+        except Exception as e:  # noqa: BLE001
+            stats["unreadable"] += 1
+            log.warning(f"  {mid}: statement not read ({e})")
+            continue
+        if not text.strip():
+            stats["unreadable"] += 1
+            continue
+        summary = extract_summary_of_legislation(text)
+        if summary:
+            SUMMARY_BY_MATTER[mid] = summary
+            stats["filled"] += 1
+        else:
+            stats["no_heading"] += 1
+            log.info(f"  {mid}: statement has no usable Summary of Legislation section")
+    return stats
+
+
 # ── Main ──────────────────────────────────────────────────────────────────────
 
 def main() -> int:
@@ -1609,7 +1802,36 @@ def main() -> int:
         help="Max-plan routine: validate and finish every DIR/results/<id>.json (same "
              "post-processing the API path uses), save, and update pipeline/max_refresh.json.",
     )
+    parser.add_argument(
+        "--refresh-status", action="store_true",
+        help="Re-read Legistar's status for every non-enacted record with a page (~0.3 s each), "
+             "update status/status_group, save. No Claude call, skip list untouched.",
+    )
+    parser.add_argument(
+        "--backfill-summary", action="store_true",
+        help="Fill summary_of_legislation from the cached statement (downloading it if absent) "
+             "for every record without one, save. No Claude call.",
+    )
+    parser.add_argument(
+        "--force", action="store_true",
+        help="With --backfill-summary: re-extract the summary for every record, not only the empty ones.",
+    )
     args = parser.parse_args()
+
+    if args.refresh_status or args.backfill_summary:
+        # no model: the Anthropic client is never created on this path
+        session = create_session()
+        records = list(load_existing(OUTPUT_PATH).get("records", []))
+        if args.refresh_status:
+            read, failed = refresh_status(session, records)
+            log.info(f"--refresh-status: {read} pages read, {failed} failed")
+        if args.backfill_summary:
+            st = backfill_summary(session, records, force=args.force)
+            log.info(f"--backfill-summary: {st['filled']} filled, {st['no_heading']} statements "
+                     f"without the heading, {st['unreadable']} could not be read")
+        save_output(OUTPUT_PATH, records)
+        log.info("Model calls this run: 0")
+        return 0
 
     # --emit-packets / --ingest: the Max-plan routine, no API key, no billing.
     client = None
@@ -1808,6 +2030,7 @@ def main() -> int:
                     continue
 
                 text = extract_docx_text(docx_path)
+                SUMMARY_BY_MATTER[matter_id] = extract_summary_of_legislation(text)
                 if not text.strip():
                     # never a permanent skip (Oct 6 2026): a failed download or a
                     # missing .doc reader marked 226 real statements unreadable

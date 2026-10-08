@@ -168,6 +168,23 @@ def main() -> None:
         if (rev or exp or cap) and not r.get("agencies_abbrev") and not r.get("package_note"):
             soft["nonzero_totals_no_agencies"].append(label(r))
 
+    # --- status and summary (Oct 8 2026) ---------------------------------------
+    law_ids = {str(l.get("matter_id")) for l in laws}
+    for r in records:
+        sg = r.get("status_group")
+        if sg not in ("passed", "in_progress", "lapsed", "unknown"):
+            hard["status_group_missing_or_invalid"].append(f"{label(r)}: {sg!r}")
+        if str(r.get("matter_id")) in law_ids and sg != "passed":
+            hard["enacted_law_not_passed"].append(f"{label(r)}: {sg!r}")
+        if not r.get("status"):
+            soft["missing_status"].append(label(r))
+        if not r.get("summary_of_legislation"):
+            soft["missing_summary"].append(label(r))
+        if sg == "lapsed":
+            soft["status_lapsed"].append(label(r))
+        elif sg == "in_progress":
+            soft["status_in_progress"].append(label(r))
+
     # --- SOFT: fields the page depends on -----------------------------------
     for r in records:
         if not r.get("legistar_file"):

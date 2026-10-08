@@ -398,6 +398,48 @@ _n = normalize_fiscal_years([{"fy_first_effective": "FY26",
 check("a 'FY Succeeding Effective' first column does not move fy_first_effective",
       _n["fy_first_effective"] == "FY26", f"got {_n}")
 
+# bill status and summary of legislation, Oct 8 2026
+from fetch_fiscal_impacts import status_group, extract_summary_of_legislation, parse_legistar_status  # noqa: E402
+check("Enacted -> passed", status_group("Enacted") == "passed")
+check("Enacted (Mayor's Desk variant) -> passed", status_group("Enacted (Mayor's Desk for Signature)") == "passed")
+check("Adopted resolution -> passed", status_group("Adopted") == "passed")
+check("Approved resolution -> passed", status_group("Approved") == "passed")
+check("Laid Over in Committee -> in_progress", status_group("Laid Over in Committee") == "in_progress")
+check("Approved by Committee stays in_progress", status_group("Approved by Committee") == "in_progress")
+for _s in ("Filed (End of Session)", "filed (end of session)", "Withdrawn", "Vetoed", "Disapproved by Mayor",
+           "Failed", "Defeated", "Filed"):
+    check(f"{_s} -> lapsed", status_group(_s) == "lapsed")
+check("None -> unknown", status_group(None) == "unknown")
+check("empty -> unknown", status_group("  ") == "unknown")
+check("laws.json membership overrides a stale status", status_group("Laid Over in Committee", True) == "passed")
+check("laws.json membership overrides a missing status", status_group(None, True) == "passed")
+check("status parsed off the detail page",
+      parse_legistar_status('<span id="ctl00_ContentPlaceHolder1_lblStatus2" class="x">Laid Over in Committee</span>')
+      == "Laid Over in Committee")
+check("status absent on a stub page", parse_legistar_status("<html>Invalid parameters!</html>") is None)
+
+_t = ("FISCAL IMPACT STATEMENT\nPROPONENT: X\nSummary of Legislation: This bill would require the Department "
+      "of Parks   to inspect\nplaygrounds.\nIt would also set penalties.\nEffective Date: July 1, 2027\n"
+      "Fiscal Year In Which Full Fiscal Impact Anticipated: FY27\n")
+_got = extract_summary_of_legislation(_t)
+check("summary stops at Effective Date, collapses spaces, joins a hard-wrapped line, breaks after a sentence",
+      _got == "This bill would require the Department of Parks to inspect playgrounds.\n\nIt would also set penalties.",
+      f"got {_got!r}")
+_t2 = ("Summary of Legislation: The bill would set rules.\nProposed Intro. No. 1017-C Page 2\n"
+       "It would also\nrequire a report.\n\n..Body\nEffective Date: immediately\n")
+_got2 = extract_summary_of_legislation(_t2)
+check("summary drops page headers and the Body artefact, keeps a blank-line break",
+      _got2 == "The bill would set rules.\n\nIt would also require a report.", f"got {_got2!r}")
+check("heading on its own line, body on the next",
+      extract_summary_of_legislation("Summary of Legislation:\nThis bill would ban idling near schools.\nEffective Date: now")
+      == "This bill would ban idling near schools.")
+check("no heading -> None", extract_summary_of_legislation("Effective Date: July 1\nImpact on Revenues: none") is None)
+check("Effective Date right after the heading -> None",
+      extract_summary_of_legislation("Summary of Legislation:\nEffective Date: July 1, 2027\nmore text here that is long") is None)
+check("stops at Impact on Revenues when it comes first",
+      extract_summary_of_legislation("Summary of Legislation: This bill would fund twelve new inspectors.\n"
+                                     "Impact on Revenues: none\nEffective Date: later") == "This bill would fund twelve new inspectors.")
+
 print(f"\n{PASSED} passed, {FAILED} failed")
 if FAILED:
     sys.exit(1)

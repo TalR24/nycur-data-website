@@ -170,6 +170,16 @@ jobs:
           python pipeline/fetch_fiscal_impacts_historical.py --years "${{ github.event.inputs.rest_years }}" --phase 2
           python pipeline/backfill_legistar_file.py
 
+      # Bill status and Summary of Legislation (Oct 8 2026): no model call and
+      # no API key. Re-reads Legistar's status for every non-enacted record,
+      # then fills any missing summary from the cached or downloaded statement.
+      - name: Refresh bill status and fill summaries (no model calls)
+        if: ${{ github.event.schedule != '0 12 2-7 * *' }}
+        continue-on-error: false
+        run: |
+          python pipeline/fetch_fiscal_impacts.py --refresh-status
+          python pipeline/fetch_fiscal_impacts.py --backfill-summary
+
       - name: Regenerate agency chart data
         run: python pipeline/regenerate_agency_data.py
 

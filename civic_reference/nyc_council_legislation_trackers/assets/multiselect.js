@@ -13,6 +13,10 @@
  *   f.selected()  -> null when every box is checked (no filtering),
  *                    otherwise a Set of checked values (possibly empty).
  *   f.reset()     -> re-check everything (no filtering) without firing onChange.
+ *   f.set(values) -> check exactly the given values (array or Set) that exist
+ *                    among the options and uncheck the rest, without firing
+ *                    onChange (the caller re-applies filters). Unknown values
+ *                    are ignored; an empty list behaves like reset().
  *
  * All boxes start checked. Each panel has Select all / Select none links.
  * Injects its own CSS once. No dependencies.
@@ -143,6 +147,15 @@
     var self = this;
     this.options.forEach(function (o) { self.checked[o.v] = true; });
     this.mount.querySelectorAll('.msf-list input').forEach(function (i) { i.checked = true; });
+    this.updateBtn();
+  };
+
+  MSFilter.prototype.set = function (values) {
+    var want = new Set(Array.from(values || [], String)), self = this, any = false;
+    this.options.forEach(function (o) { if (want.has(String(o.v))) any = true; });
+    if (!any) { this.reset(); return; }
+    this.options.forEach(function (o) { self.checked[o.v] = want.has(String(o.v)); });
+    this.mount.querySelectorAll('.msf-list input').forEach(function (i) { i.checked = !!self.checked[i.value]; });
     this.updateBtn();
   };
 

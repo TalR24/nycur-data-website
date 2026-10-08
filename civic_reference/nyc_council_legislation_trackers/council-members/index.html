@@ -665,7 +665,8 @@
       html += '<div class="section-head">Bills in the Fiscal Impacts Tracker (' + fiscal.length + ')</div>';
       fiscal.forEach(function (l) {
         var net = l.net_fiscal_impact;
-        html += '<a class="leg-item" href="' + esc(l.legistar_url) + '" target="_blank" rel="noopener">'
+        var d = /\d+/.exec(l.label || '');
+        html += '<a class="leg-item" href="../../nyc_council_fiscal_impacts_tracker/' + (l.matter_id ? '?bill=' + encodeURIComponent(l.matter_id) : (d ? '?intro=' + d[0] : '')) + '" title="Open this bill in the Fiscal Impacts bill table">'
           + '<div class="leg-top"><span class="leg-label">' + esc(l.label) + '</span>'
           + (l.prime ? '<span class="prime-badge">Prime</span>' : '')
           + '<span class="leg-num' + (net < 0 ? ' neg' : '') + '">' + fmtMoney(net) + ' net</span></div>'
