@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>From posting to policy — Maximum New York talk — NYCuriosity Data</title>
+  <meta name="description" content="Tal Roded's talk to Maximum New York's Foundations of New York City class on the posting-to-policy pipeline: writing about NYC in public, building open civic tools, and what that opened up.">
+  <meta name="robots" content="noindex">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="canonical" href="https://data.nycuriosity.com/cb-tools/mny-2026/">
+  <meta property="og:title" content="From posting to policy">
+  <meta property="og:description" content="Tal Roded's talk to Maximum New York on writing about NYC in public and what it opened up.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://data.nycuriosity.com/cb-tools/mny-2026/">
+  <link rel="stylesheet" href="/assets/brand.css">
+  <style>
+    html, body { margin: 0; height: 100%; background: var(--b-surface-dark); color: var(--b-ink-2); font-family: var(--b-sans); }
+    a { color: var(--b-link); }
+
+    /* ── TOP BAR ─────────────────────────────────────────── */
+    .topbar {
+      position: fixed; top: 0; left: 0; right: 0; height: 48px; z-index: 50;
+      display: flex; align-items: center; gap: 14px; padding: 0 16px;
+      background: var(--b-surface-dark); color: var(--b-on-dark-quiet);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .topbar .back { color: var(--b-on-dark); text-decoration: none; font-size: 13px; }
+    .topbar .bar-title { flex: 1; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .topbar .ctrl { font: inherit; font-size: 12px; color: var(--b-on-dark-quiet); background: none;
+      border: 1px solid rgba(255,255,255,0.18); border-radius: 5px; padding: 4px 10px; cursor: pointer; white-space: nowrap; }
+    .topbar .ctrl:hover { color: #fff; border-color: rgba(255,255,255,0.4); }
+    .topbar .ctrl.on { color: var(--b-surface-dark); background: var(--b-on-dark); border-color: var(--b-on-dark); }
+    .topbar .counter { font-family: var(--b-mono); font-size: 12px; white-space: nowrap; }
+
+    /* ── STAGE + SLIDE ───────────────────────────────────── */
+    .stage { position: fixed; inset: 48px 0 0 0; display: flex; align-items: center; justify-content: center; padding: 18px; }
+    .slide {
+      display: none; position: relative; width: min(1200px, 100%); aspect-ratio: 16 / 9;
+      max-height: calc(100vh - 96px); border-radius: 8px; overflow: hidden; container-type: size;
+      background: var(--b-cream); color: var(--b-ink-2); box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+    }
+    @media (min-aspect-ratio: 16/9) { .slide { width: auto; height: min(675px, calc(100vh - 96px)); } }
+    .slide.active { display: block; }
+    .notes { display: none; }
+
+    /* slide internals: all sizes in cqw so the deck scales */
+    .pad { position: absolute; inset: 0; padding: 4.6cqw 6cqw 6.2cqw; display: flex; flex-direction: column; }
+    .kicker { font-family: var(--b-mono); font-size: 1.35cqw; letter-spacing: .08em; text-transform: uppercase; color: var(--b-tangerine-deep); margin: 0 0 1.2cqw; }
+    h1, h2 { font-family: var(--b-sans); color: var(--b-ink); line-height: 1.12; margin: 0; letter-spacing: -0.01em; }
+    h1 { font-size: 5.2cqw; font-weight: 700; }
+    h2 { font-size: 3.5cqw; font-weight: 700; max-width: 88cqw; }
+    .lede { font-size: 2cqw; line-height: 1.45; color: var(--b-ink-2); margin: 1.6cqw 0 0; max-width: 80cqw; }
+    .foot { position: absolute; left: 6cqw; right: 6cqw; bottom: 2.2cqw; display: flex; align-items: center; justify-content: space-between;
+      font-family: var(--b-mono); font-size: 1.15cqw; color: var(--b-ink-3); }
+    .foot img { height: 2.4cqw; opacity: .9; }
+    .cols { display: grid; gap: 3cqw; margin-top: 2.6cqw; flex: 1; align-content: start; }
+    .cols.two { grid-template-columns: 1.15fr 1fr; }
+    .cols.three { grid-template-columns: repeat(3, 1fr); }
+    .cols.four { grid-template-columns: repeat(4, 1fr); }
+    .cols.tight .card p { font-size: 1.45cqw; } .cols.tight .card h3 { font-size: 1.85cqw; }
+    .card { background: var(--b-surface); border: 1px solid var(--b-line); border-radius: var(--b-radius); padding: 1.8cqw 2cqw; box-shadow: var(--b-shadow); }
+    .card .tag { display: inline-block; font-family: var(--b-mono); font-size: 1.1cqw; letter-spacing: .06em; text-transform: uppercase; padding: .3cqw .8cqw; border-radius: 999px; margin-bottom: 1cqw; }
+    .card h3 { font-size: 2cqw; color: var(--b-ink); margin: 0 0 .8cqw; line-height: 1.2; }
+    .card p, .card li { font-size: 1.55cqw; line-height: 1.42; margin: 0; }
+    .card ul { margin: 0; padding-left: 1.6cqw; }
+    .card li + li { margin-top: .55cqw; }
+    .big { font-size: 4cqw; font-weight: 700; color: var(--b-ink); line-height: 1; letter-spacing: -0.02em; }
+    .big small { display: block; font-size: 1.45cqw; font-weight: 400; color: var(--b-ink-3); margin-top: .6cqw; letter-spacing: 0; }
+    .stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.4cqw 2.4cqw; margin-top: 1.4cqw; }
+    ul.plain { font-size: 1.75cqw; line-height: 1.45; padding-left: 2cqw; margin: 2cqw 0 0; max-width: 84cqw; }
+    ul.plain li + li { margin-top: 1cqw; }
+    ul.plain b { color: var(--b-ink); }
+    .date { font-family: var(--b-mono); font-size: 1.25cqw; color: var(--b-tangerine-deep); margin-right: .8cqw; }
+
+    /* pipeline */
+    .pipe { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.6cqw; margin-top: 3cqw; align-items: stretch; }
+    .pipe .step { position: relative; background: var(--b-surface); border: 1px solid var(--b-line); border-radius: var(--b-radius); padding: 1.6cqw 1.7cqw 1.7cqw; box-shadow: var(--b-shadow); }
+    .pipe .step::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: .7cqw; border-radius: var(--b-radius) var(--b-radius) 0 0; background: var(--c); }
+    .pipe .step .n { font-family: var(--b-mono); font-size: 1.1cqw; color: var(--b-ink-3); letter-spacing: .08em; }
+    .pipe .step h3 { font-size: 2.2cqw; margin: .5cqw 0 .8cqw; color: var(--b-ink); }
+    .pipe .step p { font-size: 1.45cqw; line-height: 1.4; margin: 0; }
+    .pipe .step .eg { margin-top: 1cqw; font-size: 1.3cqw; color: var(--b-ink-3); line-height: 1.35; }
+    .pipe .step:not(:last-child)::after { content: "→"; position: absolute; right: -1.55cqw; top: 45%; font-size: 2.2cqw; color: var(--b-ink-4); }
+
+    /* timeline */
+    .tl { position: relative; margin-top: 3.2cqw; height: 30cqw; }
+    .tl .axis { position: absolute; left: 0; right: 0; top: 50%; height: .35cqw; background: var(--b-line-strong); border-radius: 2px; }
+    .tl .pt { position: absolute; top: 50%; width: 1.5cqw; height: 1.5cqw; margin: -.75cqw 0 0 -.75cqw; border-radius: 50%; background: var(--c, var(--b-tangerine)); border: .3cqw solid var(--b-cream); box-shadow: 0 0 0 .18cqw var(--c, var(--b-tangerine)); }
+    .tl .lb { position: absolute; width: 11cqw; margin-left: -5.5cqw; text-align: center; font-size: 1.2cqw; line-height: 1.3; color: var(--b-ink-2); }
+    .tl .lb b { display: block; font-family: var(--b-mono); font-size: 1.05cqw; color: var(--b-ink-3); font-weight: 400; margin-bottom: .25cqw; }
+    .tl .lb.up { bottom: 56%; } .tl .lb.dn { top: 56%; }
+    .tl .lb.up::after, .tl .lb.dn::before { content: ""; display: block; width: .18cqw; height: 2.2cqw; background: var(--b-line-strong); margin: .4cqw auto 0; }
+    .tl .lb.dn::before { margin: 0 auto .4cqw; }
+    .legend { display: flex; gap: 2.2cqw; margin-top: 1.2cqw; font-family: var(--b-mono); font-size: 1.1cqw; color: var(--b-ink-3); }
+    .legend i { display: inline-block; width: 1cqw; height: 1cqw; border-radius: 50%; margin-right: .5cqw; vertical-align: middle; }
+
+    /* dark title slide */
+    .slide.dark { background: var(--b-surface-dark); color: var(--b-on-dark-quiet); }
+    .slide.dark h1 { color: #fff; }
+    .slide.dark .kicker { color: var(--b-on-dark); }
+    .slide.dark .lede { color: var(--b-on-dark-quiet); }
+    .slide.dark .foot { color: var(--b-on-dark-quiet); }
+
+    /* ── NOTES PANEL / PROGRESS ──────────────────────────── */
+    .notes-panel { position: fixed; left: 0; right: 0; bottom: 0; max-height: 26vh; overflow-y: auto; background: #241608; color: var(--b-on-dark-quiet);
+      border-top: 2px solid var(--b-on-dark); padding: 14px 20px 18px; font-size: 14px; line-height: 1.6; display: none; z-index: 25; }
+    .notes-panel .np-label { font-family: var(--b-mono); font-size: 10.5px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--b-on-dark); margin-bottom: 6px; }
+    body.notes-on .notes-panel { display: block; }
+    body.notes-on .stage { inset: 48px 0 26vh 0; }
+    .progress-track { position: fixed; left: 0; right: 0; bottom: 0; height: 3px; background: rgba(255,255,255,0.08); z-index: 40; }
+    .progress-track .fill { height: 100%; width: 0; background: var(--b-on-dark); transition: width .2s; }
+    .navhint { position: fixed; bottom: 10px; right: 14px; z-index: 30; font-family: var(--b-mono); font-size: 11px; color: var(--b-on-dark-quiet); }
+    @media (max-width: 700px) { .navhint { display: none; } .topbar .bar-title { display: none; } }
+    @media print {
+      .topbar, .notes-panel, .progress-track, .navhint { display: none !important; }
+      html, body { background: #fff; }
+      .stage { position: static; display: block; padding: 0; }
+      .slide { display: block !important; width: 100%; height: auto; aspect-ratio: 16/9; box-shadow: none; border-radius: 0; page-break-after: always; margin: 0; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="topbar">
+  <a class="back" href="/cb-tools/">← cb-tools</a>
+  <div class="bar-title">From posting to policy — Maximum New York, Foundations of New York City, October 2026</div>
+  <span class="counter" id="counter">1 / 11</span>
+  <button class="ctrl" id="notesBtn" onclick="toggleNotes()" title="Toggle speaker notes (N)">N notes</button>
+  <button class="ctrl" onclick="toggleFs()" title="Fullscreen (F)">F full</button>
+</div>
+
+<div class="stage" id="stage">
+
+<!-- 1 TITLE -->
+<section class="slide dark" data-s="1">
+  <div class="pad" style="justify-content:center">
+    <p class="kicker">Maximum New York · Foundations of New York City</p>
+    <h1>From posting to policy</h1>
+    <p class="lede">Eighteen months of writing about how New York governs itself, in public, and what it opened up.</p>
+    <p class="lede" style="margin-top:3cqw;font-size:1.7cqw">Tal Roded · NYCuriosity · Manhattan Community Board 3</p>
+  </div>
+  <div class="foot"><img src="/assets/brand/LogoFull_W.svg" alt="NYCuriosity"><span>October 2026</span></div>
+  <div class="notes"><p>Thank Daniel. One sentence on who I am: data scientist by day, I write NYCuriosity, I sit on Manhattan CB3. Today is the story of how the writing led to everything else, and what you can take from it.</p></div>
+</section>
+
+<!-- 2 START -->
+<section class="slide" data-s="2">
+  <div class="pad">
+    <p class="kicker">March 2025</p>
+    <h2>I started with a data job, a few questions about my own neighborhood, and no one in city government to ask.</h2>
+    <div class="cols two">
+      <div>
+        <ul class="plain">
+          <li>The questions were ordinary: were the new trash bins working, what does Manhattan give away by not charging for parking, why do the Council's laws cost what they cost.</li>
+          <li>The data to answer them was public. Nobody had done the work.</li>
+          <li>So I did it on nights and weekends and published everything: the chart, the dataset behind it, the code.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <span class="tag" style="background:var(--b-topic-budget);color:#fff">The setup</span>
+        <div class="stats">
+          <div class="big">0<small>readers, subscribers or sources</small></div>
+          <div class="big">1<small>data job, unrelated to policy</small></div>
+          <div class="big">74<small>posts since April 2025</small></div>
+          <div class="big">18<small>months</small></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>nycuriosity.com</span><img src="/assets/brand/Logomark_C.svg" alt=""></div>
+  <div class="notes"><p>Be honest about the starting point: no policy degree then, no network, a Substack nobody read. The only asset was the ability to pull public data and explain it. [TAL: confirm the zero-subscriber start and which early posts to name.]</p></div>
+</section>
+
+<!-- 3 PIPELINE -->
+<section class="slide" data-s="3">
+  <div class="pad">
+    <p class="kicker">The pipeline</p>
+    <h2>It runs in one direction: post, build, get pulled in, then do the work from the inside.</h2>
+    <div class="pipe">
+      <div class="step" style="--c:var(--b-topic-budget)"><div class="n">01</div><h3>Post</h3><p>Answer one public question with public data. Show every chart and the dataset behind it.</p><div class="eg">Trash bins · parking · what every Council law costs</div></div>
+      <div class="step" style="--c:var(--b-topic-govtech)"><div class="n">02</div><h3>Build</h3><p>The dataset behind the post is worth more than the post. Publish it as a tool anyone can use.</p><div class="eg">Legislation Trackers · Block Party · CB member tracker</div></div>
+      <div class="step" style="--c:var(--b-topic-transit)"><div class="n">03</div><h3>Get pulled in</h3><p>Readers inside government, the press and civic groups reach out. Talks, bylines, collaborations.</p><div class="eg">Vital City · Harvard · State of GovTech · NYC DOT</div></div>
+      <div class="step" style="--c:var(--b-topic-cb)"><div class="n">04</div><h3>Work from inside</h3><p>A board seat, hackathons with agencies, policy fellowships. The inside work feeds the next post.</p><div class="eg">Manhattan CB3 · State Capacity Ecosystem</div></div>
+    </div>
+  </div>
+  <div class="foot"><span>The posting-to-policy pipeline</span><img src="/assets/brand/Logomark_C.svg" alt=""></div>
+  <div class="notes"><p>This is the whole talk on one slide. The next four slides walk each stage with what actually happened and when. The arrow at the end loops back: everything I learn inside becomes the next post.</p></div>
+</section>
+
+<!-- 4 POST -->
+<section class="slide" data-s="4">
+  <div class="pad">
+    <p class="kicker">01 · Post</p>
+    <h2>Posting works when the question has a knowable answer and the work is shown.</h2>
+    <div class="cols two">
+      <ul class="plain">
+        <li><span class="date">Jun 2025</span><b>The trash bin program.</b> A year of 311 data on whether the bins changed anything on the block.</li>
+        <li><span class="date">May 2026</span><b>"NYC Keeps Passing Laws It Can't Afford."</b> Every fiscal impact statement the Council has filed since 2014, in one dataset. The post the Wagner dean forwarded to NYC DOT.</li>
+        <li><span class="date">Jul 2026</span><b>"Fourteen Ways to Make NYC Community Boards Work Better."</b> Written from inside a board, with the Civic Engagement Commission's data.</li>
+        <li><span class="date">Sep 2026</span><b>The charter commission post.</b> What the ballot questions change, agency by agency.</li>
+      </ul>
+      <div class="card">
+        <span class="tag" style="background:var(--b-topic-budget);color:#fff">What travels</span>
+        <ul>
+          <li>Specific beats broad. One law, one station, one board. A finding with a number gets forwarded; a take does not.</li>
+          <li>Every post carries its data. Readers in agencies check the numbers before they reply, and they reply because they can.</li>
+          <li>Covered by The City Reporter, Vital City and EV Grieve; reprinted or cited by the Manhattan Institute, Streetsblog and Searchlight.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>nycuriosity.com · 74 posts</span><img src="/assets/brand/Logomark_C.svg" alt=""></div>
+  <div class="notes"><p>Pick two of the four to tell as stories; the unfunded mandates post is the one that proves the pipeline, because a dean read it and forwarded it to DOT leadership within four days. Method, if asked: AI pulls and parses the data, I check its work, it never writes my conclusions.</p></div>
+</section>
+
+<!-- 5 BUILD -->
+<section class="slide" data-s="5">
+  <div class="pad">
+    <p class="kicker">02 · Build</p>
+    <h2>The dataset behind a post is worth more than the post, so I publish it as a tool.</h2>
+    <div class="cols two" style="grid-template-columns:1fr 1fr">
+      <div class="card">
+        <span class="tag" style="background:var(--b-topic-govtech);color:var(--b-ink)">NYC Council Legislation Trackers</span>
+        <div class="stats">
+          <div class="big">2,158<small>local laws since 2014</small></div>
+          <div class="big">8,200+<small>duties handed to agencies</small></div>
+          <div class="big">1,700+<small>powers granted</small></div>
+          <div class="big">474<small>fiscal impact statements</small></div>
+        </div>
+        <p style="margin-top:1cqw">Every number audited before it ships. A profile for every agency and council member, and an assistant that answers with the source law attached.</p>
+      </div>
+      <div class="card">
+        <span class="tag" style="background:var(--b-topic-cb);color:#fff">Block Party</span>
+        <div class="stats">
+          <div class="big">27<small>community boards</small></div>
+          <div class="big">40,000+<small>resolutions back to 2002</small></div>
+          <div class="big">12,000<small>meeting transcripts</small></div>
+          <div class="big">28<small>topic labels on every row</small></div>
+        </div>
+        <p style="margin-top:1cqw">Built with Block Party's founder after she read the Substack. Refreshed every Sunday. The board's memory survives the 2027 term limits.</p>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>data.nycuriosity.com · blockparty.studio</span><img src="/assets/brand/Logomark_C.svg" alt=""></div>
+  <div class="notes"><p>Say it out loud: AI collapsed the build time. One person can now ship what used to take a team a year. The hard parts are the ones government still has: procurement, security review, maintenance. If there is time, pull up one tracker page live. The tool is the business card: agency staff share a tool with colleagues in a way they never share an op-ed.</p></div>
+</section>
+
+<!-- 6 PULLED IN -->
+<section class="slide" data-s="6">
+  <div class="pad">
+    <p class="kicker">03 · Get pulled in</p>
+    <h2>Readers inside government, the press and civic groups started reaching out.</h2>
+    <ul class="plain" style="margin-top:2.2cqw">
+      <li><span class="date">Jan 2026</span>Block Party's founder read the Substack and emailed. By March we were presenting together at NYC School of Data; by July at the NYC OMB Institute.</li>
+      <li><span class="date">May 2026</span>The Wagner dean read the unfunded mandates post and introduced me to NYC DOT's First Deputy Commissioner.</li>
+      <li><span class="date">Jun–Aug 2026</span>Bylines in Vital City, Streetsblog, Reboot Democracy, Searchlight and the Manhattan Institute. Searchlight's editor wrote first.</li>
+      <li><span class="date">Sep 2026</span>Main stage at CivStart's State of GovTech in Washington, then Harvard Kennedy School's Responsive Cities sprint, invited by its organizer.</li>
+      <li><span class="date">2026</span>New York State's Office of Performance Management and Innovation circulated the tracker internally. Commissions through NYCuriosity Studio.</li>
+    </ul>
+  </div>
+  <div class="foot"><span>Everything on this slide started with someone reading a post</span><img src="/assets/brand/Logomark_C.svg" alt=""></div>
+  <div class="notes"><p>The point for the class: none of these were applications. The posts did the applying. [TAL: confirm each chain is inbound as stated, and whether to name people. Studio line: keep only if there is a commission to point to.]</p></div>
+</section>
+
+<!-- 7 INSIDE -->
+<section class="slide" data-s="7">
+  <div class="pad">
+    <p class="kicker">04 · Work from inside</p>
+    <h2>Inside and outside at once: the board gives me questions, the posts give the board data.</h2>
+    <div class="cols three tight">
+      <div class="card">
+        <span class="tag" style="background:var(--b-topic-cb);color:#fff">Manhattan CB3</span>
+        <h3>Appointed May 2025, Parks Committee</h3>
+        <p>Monthly reports from inside the board. An AI procedure review of a full board meeting. A citywide scorecard of meeting lengths from 2,409 recordings.</p>
+      </div>
+      <div class="card">
+        <span class="tag" style="background:var(--b-topic-govtech);color:var(--b-ink)">State Capacity Ecosystem</span>
+        <h3>Co-organized with people I met through the work</h3>
+        <p>A directory of 334 organizations working on government effectiveness, and two hackathons in 2026: prototypes for three mayoral priorities in June, and a public engagement hackathon at CUNY in September.</p>
+      </div>
+      <div class="card">
+        <span class="tag" style="background:var(--b-topic-transit);color:#fff">The loop</span>
+        <h3>By the time you read about a policy, it's late</h3>
+        <p>Daniel's point. The board is where you see the liquor license, the street redesign and the budget request months before the article. Being there makes the next post early instead of reactive.</p>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>Manhattan CB3 · statecapacityecosystem.com</span><img src="/assets/brand/Logomark_C.svg" alt=""></div>
+  <div class="notes"><p>Tie to Daniel's thesis explicitly. The board seat is unpaid and the work is unglamorous, and it is the single best source of questions I have. [TAL: did posting lead to the CB3 appointment, or did you apply before the first post? The deck currently does not claim either.]</p></div>
+</section>
+
+<!-- 8 TIMELINE -->
+<section class="slide" data-s="8">
+  <div class="pad">
+    <p class="kicker">Eighteen months, in order</p>
+    <h2>Each stage made the next one possible.</h2>
+    <div class="tl">
+      <div class="axis"></div>
+      <!-- positions: months since Mar 2025, over a 19-month span -->
+      <div class="pt" style="left:2%;--c:var(--b-topic-budget)"></div><div class="lb up" style="left:2%"><b>Mar 2025</b>NYCuriosity launches</div>
+      <div class="pt" style="left:12%;--c:var(--b-topic-cb)"></div><div class="lb dn" style="left:12%"><b>May 2025</b>Appointed to Manhattan CB3</div>
+      <div class="pt" style="left:21%;--c:var(--b-topic-budget)"></div><div class="lb up" style="left:21%"><b>Jun 2025</b>Trash bin post, first press coverage</div>
+      <div class="pt" style="left:33%;--c:var(--b-topic-cb)"></div><div class="lb dn" style="left:33%"><b>Sep 2025</b>NYU Wagner MPA begins</div>
+      <div class="pt" style="left:50%;--c:var(--b-topic-govtech)"></div><div class="lb up" style="left:50%"><b>Jan 2026</b>Block Party's founder reaches out</div>
+      <div class="pt" style="left:59%;--c:var(--b-topic-transit)"></div><div class="lb dn" style="left:59%"><b>Mar 2026</b>NYC School of Data talk</div>
+      <div class="pt" style="left:68%;--c:var(--b-topic-budget)"></div><div class="lb up" style="left:68%"><b>May 2026</b>Unfunded mandates post → NYC DOT</div>
+      <div class="pt" style="left:76%;--c:var(--b-topic-transit)"></div><div class="lb dn" style="left:76%"><b>Jun 2026</b>Vital City byline · first SCE hackathon</div>
+      <div class="pt" style="left:84%;--c:var(--b-topic-govtech)"></div><div class="lb up" style="left:84%"><b>Aug 2026</b>Obligations Tracker launches</div>
+      <div class="pt" style="left:92%;--c:var(--b-topic-transit)"></div><div class="lb dn" style="left:92%"><b>Sep 2026</b>State of GovTech main stage · Harvard</div>
+      <div class="pt" style="left:98.5%;--c:var(--b-topic-cb)"></div><div class="lb up" style="left:98.5%"><b>Oct 2026</b>This class</div>
+    </div>
+    <div class="legend"><span><i style="background:var(--b-topic-budget)"></i>Post</span><span><i style="background:var(--b-topic-govtech)"></i>Build</span><span><i style="background:var(--b-topic-transit)"></i>Pulled in</span><span><i style="background:var(--b-topic-cb)"></i>Inside</span></div>
+  </div>
+  <div class="foot"><span>Mar 2025 to Oct 2026</span><img src="/assets/brand/Logomark_C.svg" alt=""></div>
+  <div class="notes"><p>Walk it fast, left to right. The gap between the first post and the first inbound was nine months. The gap between the first inbound and the Harvard talk was eight. The compounding is in the archive.</p></div>
+</section>
+
+<!-- 9 LESSONS -->
+<section class="slide" data-s="9">
+  <div class="pad">
+    <p class="kicker">What I'd tell you to do</p>
+    <h2>Seven things that turned posting into policy work.</h2>
+    <div class="cols two" style="grid-template-columns:1fr 1fr;gap:2cqw">
+      <ul class="plain" style="margin-top:1cqw">
+        <li><b>Pick a question with a knowable answer, then answer it completely.</b> The data is public. The work is what's missing.</li>
+        <li><b>Show the work.</b> Open charts and datasets are why agency staff trust an outsider.</li>
+        <li><b>Go specific.</b> One law, one station, one board. Broad takes have no audience; specific findings get forwarded.</li>
+        <li><b>Build the thing you wish existed.</b> With today's AI tools a one-person shop can ship a real tool in weeks.</li>
+      </ul>
+      <ul class="plain" style="margin-top:1cqw">
+        <li><b>Join an institution while you post.</b> A community board, a student group, a hackathon. Inside gives you questions and standing; outside gives you reach.</li>
+        <li><b>Answer every email.</b> The pipeline is inbound. Each reply is the next collaboration.</li>
+        <li><b>Keep the cadence.</b> 74 posts in 18 months. People find the archive when they search, and the archive is what makes them write.</li>
+      </ul>
+    </div>
+  </div>
+  <div class="foot"><span>Lessons</span><img src="/assets/brand/Logomark_C.svg" alt=""></div>
+  <div class="notes"><p>Say which two of these you'd have skipped and regretted. [TAL: these are my draft of your lessons; edit freely, the deck should carry only the ones you'd say unprompted.]</p></div>
+</section>
+
+<!-- 10 START THIS WEEK -->
+<section class="slide" data-s="10">
+  <div class="pad">
+    <p class="kicker">Where to start this week</p>
+    <h2>Four things you can do before the next class.</h2>
+    <div class="cols four" style="margin-top:3cqw">
+      <div class="card"><span class="tag" style="background:var(--b-topic-cb);color:#fff">Join</span><h3>Apply to your community board</h3><p>Borough presidents take applications early each year. Term limits start turning boards over in 2027, so seats open. Until then, go to a committee meeting; they are public.</p></div>
+      <div class="card"><span class="tag" style="background:var(--b-topic-budget);color:#fff">Post</span><h3>Answer one question with one dataset</h3><p>NYC Open Data, the Council's Legistar, the City budget. Pick a question your neighbors actually ask and publish the answer with the data attached.</p></div>
+      <div class="card"><span class="tag" style="background:var(--b-topic-govtech);color:var(--b-ink)">Read</span><h3>Look up your board's record</h3><p>Block Party has every resolution your board has passed since 2002. Read the last year before you show up with an opinion.</p></div>
+      <div class="card"><span class="tag" style="background:var(--b-topic-transit);color:#fff">Show up</span><h3>Come to a hackathon</h3><p>The State Capacity Ecosystem runs them in New York with agency staff in the room. You do not need to code to be useful; you need to know a problem.</p></div>
+    </div>
+  </div>
+  <div class="foot"><span>blockparty.studio · statecapacityecosystem.com · data.cityofnewyork.us</span><img src="/assets/brand/Logomark_C.svg" alt=""></div>
+  <div class="notes"><p>End on the ask: pick one of the four and tell Daniel which one next week.</p></div>
+</section>
+
+<!-- 11 LINKS -->
+<section class="slide dark" data-s="11">
+  <div class="pad" style="justify-content:center">
+    <p class="kicker">Thank you</p>
+    <h1 style="font-size:4.2cqw">Come find the work, and write to me.</h1>
+    <ul class="plain" style="margin-top:2.4cqw;font-size:2cqw;list-style:none;padding:0;color:var(--b-on-dark-quiet)">
+      <li>Writing: <b style="color:#fff">nycuriosity.com</b></li>
+      <li>Tools and data: <b style="color:#fff">data.nycuriosity.com</b></li>
+      <li>Community board records: <b style="color:#fff">blockparty.studio</b></li>
+      <li>State Capacity Ecosystem: <b style="color:#fff">statecapacityecosystem.com</b></li>
+      <li>Email: <b style="color:#fff">tal@nycuriosity.com</b></li>
+    </ul>
+  </div>
+  <div class="foot"><img src="/assets/brand/LogoFull_W.svg" alt="NYCuriosity"><span>Tal Roded · October 2026</span></div>
+  <div class="notes"><p>Leave this up during questions.</p></div>
+</section>
+
+</div>
+
+<div class="notes-panel"><div class="np-label">Speaker notes</div><div id="notesContent"></div></div>
+<div class="progress-track"><div class="fill" id="fill"></div></div>
+<div class="navhint">← → · N notes · F full</div>
+
+<script>
+  const slides = Array.from(document.querySelectorAll('.slide'));
+  const total = slides.length;
+  let i = 0;
+  function render() {
+    slides.forEach((s, k) => s.classList.toggle('active', k === i));
+    document.getElementById('counter').textContent = (i + 1) + ' / ' + total;
+    document.getElementById('fill').style.width = ((i + 1) / total * 100) + '%';
+    const note = slides[i].querySelector('.notes');
+    document.getElementById('notesContent').innerHTML = note ? note.innerHTML : '<p>No notes for this slide.</p>';
+    if (location.hash !== '#' + (i + 1)) history.replaceState(null, '', '#' + (i + 1));
+  }
+  function show(n) { i = Math.max(0, Math.min(total - 1, n)); render(); }
+  function go(d)   { show(i + d); }
+  function toggleNotes() {
+    document.body.classList.toggle('notes-on');
+    document.getElementById('notesBtn').classList.toggle('on', document.body.classList.contains('notes-on'));
+  }
+  function toggleFs() {
+    if (!document.fullscreenElement) { document.documentElement.requestFullscreen?.(); } else { document.exitFullscreen?.(); }
+  }
+  document.addEventListener('keydown', (e) => {
+    const k = e.key;
+    if (k === 'ArrowRight' || k === 'PageDown' || k === ' ') { e.preventDefault(); go(1); }
+    else if (k === 'ArrowLeft' || k === 'PageUp') { e.preventDefault(); go(-1); }
+    else if (k === 'Home') { e.preventDefault(); show(0); }
+    else if (k === 'End')  { e.preventDefault(); show(total - 1); }
+    else if (k === 'n' || k === 'N') { toggleNotes(); }
+    else if (k === 'f' || k === 'F') { toggleFs(); }
+  });
+  document.getElementById('stage').addEventListener('click', (e) => {
+    if (e.target.closest('a, button')) return;
+    const r = document.querySelector('.slide.active').getBoundingClientRect();
+    if (e.clientX < r.left + r.width * 0.32) go(-1);
+    else if (e.clientX > r.left + r.width * 0.68) go(1);
+  });
+  let tx = null;
+  document.addEventListener('touchstart', e => tx = e.changedTouches[0].clientX, { passive: true });
+  document.addEventListener('touchend', e => { if (tx === null) return; const dx = e.changedTouches[0].clientX - tx; if (Math.abs(dx) > 50) go(dx < 0 ? 1 : -1); tx = null; }, { passive: true });
+  const start = parseInt((location.hash || '').slice(1), 10);
+  if (!isNaN(start) && start >= 1 && start <= total) i = start - 1;
+  render();
+</script>
+</body>
+</html>
