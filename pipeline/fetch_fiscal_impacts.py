@@ -968,7 +968,7 @@ def emit_packets(pending: list[tuple[str, str]], out_dir: Path) -> None:
     log.info(f"wrote {len(pending)} packets to {out_dir}")
 
 
-def ingest_packets(pending: list[tuple[str, str]], in_dir: Path) -> dict[str, dict]:
+def ingest_packets(pending: list[tuple[str, str]], in_dir: Path, track: bool = True) -> dict[str, dict]:
     """Validate and finish every subagent result found in in_dir/results/.
     An id with no result file, an unparseable one, or one that fails schema
     validation is left out of the return value (and recorded in "left")."""
@@ -1000,7 +1000,8 @@ def ingest_packets(pending: list[tuple[str, str]], in_dir: Path) -> dict[str, di
         except Exception as e:  # noqa: BLE001
             log.warning(f"  {mid}: post-processing failed: {e}")
             left.append(mid)
-    merge_max_refresh(_current_month(), done, left)
+    if track:  # the REST/historical path keeps its own checkpoint, not the monthly marker
+        merge_max_refresh(_current_month(), done, left)
     log.info(f"ingested {len(done)} of {len(pending)} packets ({len(left)} left)")
     return out
 

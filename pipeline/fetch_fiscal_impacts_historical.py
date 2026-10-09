@@ -19,6 +19,12 @@ Usage:
     python pipeline/fetch_fiscal_impacts_historical.py --merge-only    # merge checkpoint only
     python pipeline/fetch_fiscal_impacts_historical.py --reset         # start fresh
 
+Max-plan packet mode (no Anthropic API, no client built):
+    python pipeline/fetch_fiscal_impacts_historical.py --emit-packets DIR [--years A-B] [--limit N]
+    ...subagents answer each DIR/<rest_id>.txt into DIR/results/<rest_id>.json...
+    python pipeline/fetch_fiscal_impacts_historical.py --ingest DIR
+    python pipeline/fetch_fiscal_impacts_historical.py --seed-attachments-from-log LOG  # one-off
+
 Checkpoint: pipeline/cache/historical_checkpoint.json — auto-resumes on restart.
 """
 from __future__ import annotations
@@ -33,6 +39,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+import hashlib
 import requests
 import anthropic
 
@@ -53,6 +60,12 @@ from fetch_fiscal_impacts import (
     is_proposed_bill,
     normalize_agency_attribution,
     text_is_zero_impact,
+    emit_packets,
+    ingest_packets,
+    status_group,
+    status_bucket,
+    extract_summary_of_legislation,
+    CACHE_DIR,
     save_output,
     load_existing,
     BASE_URL,
@@ -86,6 +99,7 @@ def load_checkpoint() -> dict:
         "matters": {},        # matter_id -> {"guid": ..., "file_number": ...}
         "processed_ids": [],  # matter_ids already checked in phase 2
         "records": [],        # extracted records with non-zero fiscal impact
+        "attachments": {},    # rest_id -> {"url"|"att_id"/"att_guid", "file_number", "guid"} for matters with a statement
         "stats": {"total_enumerated": 0, "with_attachment": 0, "claude_calls": 0, "records_saved": 0},
     }
 
@@ -354,15 +368,23 @@ def find_fiscal_attachment_api(
 
 
 def download_docx_url(session: requests.Session, url: str) -> Path | None:
-    """Download a .docx file from a direct URL and return the local path."""
+    """Download a .docx file from a direct URL into the shared docx cache and
+    return the local path. The cache name is stable across processes (the
+    attachment ID in the URL, else a SHA-1 of it) so --ingest can re-read the
+    text --emit-packets used."""
     try:
+        m = re.search(r"[?&]ID=(\d+)", url)
+        name = f"{m.group(1)}.docx" if m else f"url_{hashlib.sha1(url.encode()).hexdigest()[:16]}.docx"
+        CACHE_DIR.mkdir(parents=True, exist_ok=True)
+        local = CACHE_DIR / name
+        if local.exists():
+            return local
         r = session.get(url, timeout=30)
         r.raise_for_status()
         if r.content[:4] != b"PK\x03\x04":
             return None  # not a valid docx/zip
-        tmp = Path("/tmp") / f"fiscal_{abs(hash(url))}.docx"
-        tmp.write_bytes(r.content)
-        return tmp
+        local.write_bytes(r.content)
+        return local
     except Exception as e:
         log.warning(f"    Download failed ({url[:60]}): {e}")
         return None
@@ -410,17 +432,233 @@ def merge_into_main(records: list[dict]) -> int:
     """Merge records into fiscal_impacts.json. Returns count actually added."""
     existing = load_existing(OUTPUT_PATH)
     existing_ids = {str(r["matter_id"]) for r in existing.get("records", [])}
+    existing_ids |= {str(r["rest_matter_id"]) for r in existing.get("records", []) if r.get("rest_matter_id")}
+    existing_files = {r["legistar_file"] for r in existing.get("records", []) if r.get("legistar_file")}
     all_records = list(existing.get("records", []))
 
     added = 0
     for rec in records:
-        if str(rec["matter_id"]) not in existing_ids:
-            all_records.append(rec)
-            existing_ids.add(str(rec["matter_id"]))
-            added += 1
+        keys = {str(rec["matter_id"])} | ({str(rec["rest_matter_id"])} if rec.get("rest_matter_id") else set())
+        if keys & existing_ids or (rec.get("legistar_file") and rec["legistar_file"] in existing_files):
+            continue
+        all_records.append(rec)
+        existing_ids |= keys
+        if rec.get("legistar_file"):
+            existing_files.add(rec["legistar_file"])
+        added += 1
 
-    save_output(OUTPUT_PATH, all_records)
+    if added or not records:
+        save_output(OUTPUT_PATH, all_records)
     return added
+
+
+# ── Max-plan packet mode (REST path) ──────────────────────────────────────────
+
+REST_API = "https://webapi.legistar.com/v1/nyc"
+REST_META_FIELDS = ("MatterStatusName", "MatterFile", "MatterTypeName",
+                    "MatterPassedDate", "MatterEnactmentDate", "MatterGuid")
+_LOG_LINE = re.compile(r"\]\s+(.+?)\s+\((\d+)\)\s+\S+\s+fiscal attachment found")
+
+
+def parse_attachment_log(text: str) -> dict[str, str]:
+    """Phase 2 log lines "[i/N] <File> (<rest_id>) — fiscal attachment found"
+    -> {rest_id: file_number}."""
+    out: dict[str, str] = {}
+    for line in text.splitlines():
+        m = _LOG_LINE.search(line)
+        if m:
+            out[m.group(2)] = m.group(1).strip()
+    return out
+
+
+def seed_attachments_from_log(cp: dict, log_path: Path) -> int:
+    """One-off: remember the matters a dry run found statements for, so the
+    two-hour attachment check is not repeated. url is resolved at emit time."""
+    found = parse_attachment_log(log_path.read_text(encoding="utf-8", errors="replace"))
+    atts = cp.setdefault("attachments", {})
+    for rid, fn in found.items():
+        atts.setdefault(rid, {"url": None, "file_number": fn,
+                              "guid": cp["matters"].get(rid, {}).get("guid")})
+    save_checkpoint(cp)
+    return len(found)
+
+
+def fetch_rest_meta(rest_id: str, token: str) -> dict:
+    r = requests.get(f"{REST_API}/Matters/{rest_id}", params={"token": token},
+                     headers={"User-Agent": "Mozilla/5.0"}, timeout=20)
+    r.raise_for_status()
+    j = r.json()
+    return {k: j.get(k) for k in REST_META_FIELDS}
+
+
+def status_fields(status: str | None, in_laws_json: bool = False) -> dict:
+    """status / status_group / status_bucket exactly as save_output derives them."""
+    grp = status_group(status, in_laws_json)
+    return {"status": status, "status_group": grp, "status_bucket": status_bucket(status, grp)}
+
+
+def _load_dedup() -> tuple[set, set, dict, dict]:
+    existing = load_existing(OUTPUT_PATH).get("records", [])
+    ids = {str(r["matter_id"]) for r in existing}
+    ids |= {str(r["rest_matter_id"]) for r in existing if r.get("rest_matter_id")}
+    files = {r["legistar_file"] for r in existing if r.get("legistar_file")}
+    skips = load_skip_list(SKIP_PATH)
+    ids |= set(skips)
+    laws: dict[str, dict] = {}
+    if LAWS_PATH.exists():
+        for law in json.load(open(LAWS_PATH, encoding="utf-8"))["laws"]:
+            if law.get("file_number") and law.get("matter_id"):
+                laws[law["file_number"]] = law
+    return ids, files, skips, laws
+
+
+def _pending_attachments(cp: dict) -> list[str]:
+    ids, files, _skips, laws = _load_dedup()
+    done_rec = {str(r.get("rest_matter_id") or r["matter_id"]) for r in cp["records"]}
+    out = []
+    for rid, att in cp.get("attachments", {}).items():
+        fn = att.get("file_number") or cp["matters"].get(rid, {}).get("file_number", "")
+        web = str(laws.get(fn, {}).get("matter_id"))
+        if rid in ids or rid in done_rec or fn in files or web in ids:
+            continue
+        out.append(rid)
+    return out
+
+
+def emit_rest_packets(cp: dict, token: str, out_dir: Path, years: tuple[int, int] | None,
+                      limit: int | None) -> None:
+    session = create_session()
+    pending_ids = _pending_attachments(cp)
+    if years:
+        pending_ids = [r for r in pending_ids
+                       if (y := extract_year(cp["attachments"][r].get("file_number") or "")) and years[0] <= y <= years[1]]
+    if limit is not None:
+        pending_ids = pending_ids[:limit]
+    log.info(f"Emit: {len(pending_ids)} matters to prepare")
+    packets: list[tuple[str, str]] = []
+    zero: list[str] = cp.setdefault("zero_precheck", [])
+    zero_now = 0
+    failed: list[str] = []
+    meta = cp.setdefault("rest_meta", {})
+    for rid in pending_ids:
+        att = cp["attachments"][rid]
+        try:
+            if not att.get("url"):
+                att["url"] = find_fiscal_attachment_api(rid, token)
+                time.sleep(0.3)
+            if not att["url"]:
+                failed.append(rid)
+                continue
+            docx_path = download_docx_url(session, att["url"])
+            time.sleep(0.3)
+            text = extract_docx_text(docx_path) if docx_path else ""
+            if not text.strip():
+                failed.append(rid)
+                continue
+            att["docx"] = docx_path.name
+            if rid not in meta:
+                meta[rid] = fetch_rest_meta(rid, token)
+                time.sleep(0.3)
+        except Exception as e:  # noqa: BLE001
+            log.warning(f"  {rid}: {e}")
+            failed.append(rid)
+            continue
+        if text_is_zero_impact(text):
+            zero_now += 1
+            if rid not in zero:
+                zero.append(rid)
+            continue
+        packets.append((rid, text))
+    save_checkpoint(cp)
+    emit_packets(packets, out_dir)
+    (out_dir / "README.txt").write_text(
+        f"{len(packets)} fiscal impact statements to extract.\n"
+        "Subagent instruction: for each packet file <id>.txt in this folder, read it, answer exactly as its "
+        "ANSWER FORMAT footer says, and write ONLY the JSON object to results/<id>.json. One packet per file, "
+        "nothing else: no commentary, no other files, no edits outside results/.\n"
+        "Then run: python3 pipeline/fetch_fiscal_impacts_historical.py --ingest " + str(out_dir) + "\n")
+    log.info(f"Emit summary: {len(packets)} packets written, {zero_now} zero pre-check skips "
+             f"(held in the checkpoint until --ingest), {len(failed)} downloads failed (rerun)")
+
+
+def ingest_rest_packets(cp: dict, in_dir: Path) -> None:
+    manifest = json.loads((in_dir / "manifest.json").read_text())
+    ids, files, skips, laws = _load_dedup()
+    done_rec = {str(r.get("rest_matter_id") or r["matter_id"]) for r in cp["records"]}
+    stats = {"ingested": 0, "skipped": 0, "left": 0, "merged": 0}
+    # zero pre-check skips found at emit time are written now, never during emit
+    for rid in cp.get("zero_precheck", []):
+        fn = cp["matters"].get(rid, {}).get("file_number", "")
+        skips[rid] = "zero_precheck"
+        if fn in laws:
+            skips[str(laws[fn]["matter_id"])] = "zero_precheck"
+        if rid not in cp["processed_ids"]:
+            cp["processed_ids"].append(rid)
+    cp["zero_precheck"] = []
+
+    pending = []
+    for rid in manifest["ids"]:
+        if rid in skips or rid in done_rec or rid in ids:
+            continue  # already ingested or skipped on an earlier pass
+        att = cp.get("attachments", {}).get(rid) or {}
+        if not att.get("docx"):
+            raise SystemExit(f"checkpoint has no cached statement for {rid}: it was reset between "
+                             f"--emit-packets and --ingest; re-run --emit-packets {in_dir} first")
+        docx = CACHE_DIR / att["docx"]
+        pending.append((rid, extract_docx_text(docx)))
+    results = ingest_packets(pending, in_dir, track=False)
+    stats["left"] = len(pending) - len(results)
+
+    def mark_skip(rid: str, fn: str, reason: str) -> None:
+        skips[rid] = reason
+        if fn in laws:
+            skips[str(laws[fn]["matter_id"])] = reason
+        if rid not in cp["processed_ids"]:
+            cp["processed_ids"].append(rid)
+        stats["skipped"] += 1
+
+    new_records = []
+    for rid, fiscal in results.items():
+        meta = cp.get("rest_meta", {}).get(rid, {})
+        fn = meta.get("MatterFile") or cp["matters"][rid].get("file_number", "")
+        guid = cp["matters"][rid]["guid"]
+        if not record_has_fiscal_impact(fiscal):
+            mark_skip(rid, fn, "zero_or_unestimable"); continue
+        if is_budget_modification(fiscal):
+            mark_skip(rid, fn, "budget_modification"); continue
+        law = laws.get(fn)
+        if is_proposed_bill(fiscal, str(law["matter_id"]) if law else None):
+            mark_skip(rid, fn, "proposed"); continue
+        fiscal = reconcile_totals(normalize_agency_attribution(fiscal))
+        if law:
+            ident = {"matter_id": str(law["matter_id"]), "legistar_guid": law["legistar_guid"],
+                     "legistar_url": (f"https://legistar.council.nyc.gov/LegislationDetail.aspx"
+                                      f"?ID={law['matter_id']}&GUID={law['legistar_guid']}"),
+                     "rest_matter_id": rid}
+        else:
+            # No web-search-by-File# helper exists in the repo (backfill_legistar_file.py
+            # only maps enacted laws through laws.json), so the link stays null.
+            ident = {"matter_id": rid, "legistar_guid": guid, "legistar_url": None,
+                     "rest_matter_id": rid}
+        record = {**ident,
+                  "attachment_id": cp["attachments"][rid].get("url"),
+                  "processed_at": datetime.utcnow().isoformat() + "Z",
+                  "legistar_file": fn or None,
+                  **fiscal,
+                  **status_fields(meta.get("MatterStatusName"), bool(law)),
+                  "summary_of_legislation": extract_summary_of_legislation(dict(pending)[rid])}
+        new_records.append(record)
+        cp["records"].append(record)
+        if rid not in cp["processed_ids"]:
+            cp["processed_ids"].append(rid)
+        stats["ingested"] += 1
+    cp["stats"]["records_saved"] = len(cp["records"])
+    save_checkpoint(cp)
+    if skips != load_skip_list(SKIP_PATH):
+        save_skip_list(SKIP_PATH, skips)
+    stats["merged"] = merge_into_main(new_records) if new_records else 0
+    log.info(f"Ingest summary: ingested {stats['ingested']}, skipped (zero/unestimable/budget mod/proposed) "
+             f"{stats['skipped']}, left (no or invalid result) {stats['left']}, merged {stats['merged']}")
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────
@@ -437,8 +675,16 @@ def _token_from_file() -> str | None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="NYC Council Historical Fiscal Impacts Scraper")
-    parser.add_argument("--years",       default="2014-2023", metavar="START-END",
-                        help="Year range to search (default: 2014-2023)")
+    parser.add_argument("--years",       default=None, metavar="START-END",
+                        help="Year range to search (default: 2014-2023); with --emit-packets, "
+                             "an optional filter on the File # year")
+    parser.add_argument("--emit-packets", metavar="DIR", type=Path,
+                        help="Max-plan mode: write one extraction prompt per remembered statement to DIR")
+    parser.add_argument("--ingest",      metavar="DIR", type=Path,
+                        help="Max-plan mode: read DIR/results/*.json and merge the finished records")
+    parser.add_argument("--limit",       type=int, help="With --emit-packets: prepare at most N matters")
+    parser.add_argument("--seed-attachments-from-log", metavar="LOG", type=Path,
+                        help="One-off: fill the checkpoint's attachments map from a dry-run log")
     parser.add_argument("--phase",       type=int, choices=[1, 2],
                         help="Run only phase 1 (enumerate) or phase 2 (process)")
     parser.add_argument("--merge-only",  action="store_true",
@@ -453,14 +699,15 @@ def main() -> int:
                              "to web-scraping, which is capped at ~164 recent bills.")
     args = parser.parse_args()
 
+    packet_mode = bool(args.emit_packets or args.ingest or args.seed_attachments_from_log)
     api_key = os.environ.get("ANTHROPIC_API_KEY")
-    needs_claude = not args.dry_run and not args.merge_only and args.phase != 1
+    needs_claude = not args.dry_run and not args.merge_only and args.phase != 1 and not packet_mode
     if not api_key and needs_claude:
         log.error("ANTHROPIC_API_KEY is not set")
         return 1
 
     try:
-        start_year, end_year = [int(y) for y in args.years.split("-")]
+        start_year, end_year = [int(y) for y in (args.years or "2014-2023").split("-")]
     except ValueError:
         log.error(f"Invalid --years value: {args.years!r} (expected e.g. 2014-2023)")
         return 1
@@ -470,8 +717,24 @@ def main() -> int:
         log.info("Checkpoint deleted")
 
     cp      = load_checkpoint()
-    client  = None if args.dry_run else anthropic.Anthropic(api_key=api_key)
+    # packet modes never build the Anthropic client (Max plan, no API calls)
+    client  = None if (args.dry_run or packet_mode) else anthropic.Anthropic(api_key=api_key)
     session = create_session()
+
+    if args.seed_attachments_from_log:
+        n = seed_attachments_from_log(cp, args.seed_attachments_from_log)
+        log.info(f"Seeded {n} attachments from log; checkpoint now holds {len(cp['attachments'])}")
+        return 0
+    if args.emit_packets:
+        if not args.token:
+            log.error("--emit-packets needs the Legistar token")
+            return 1
+        emit_rest_packets(cp, args.token, args.emit_packets,
+                          tuple(int(y) for y in args.years.split("-")) if args.years else None, args.limit)
+        return 0
+    if args.ingest:
+        ingest_rest_packets(cp, args.ingest)
+        return 0
 
     # ── Merge-only mode ───────────────────────────────────────────────────────
     if args.merge_only:
@@ -562,6 +825,9 @@ def main() -> int:
                     continue
 
                 cp["stats"]["with_attachment"] = cp["stats"].get("with_attachment", 0) + 1
+                cp.setdefault("attachments", {})[matter_id] = (
+                    {"url": att_url, "file_number": file_num, "guid": guid} if args.token
+                    else {"att_id": att_id, "att_guid": att_guid, "file_number": file_num, "guid": guid})
                 log.info(f"  [{i}/{len(pending)}] {file_num} ({matter_id}) — fiscal attachment found")
 
                 if args.dry_run:

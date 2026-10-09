@@ -448,6 +448,22 @@ check("stops at Impact on Revenues when it comes first",
       extract_summary_of_legislation("Summary of Legislation: This bill would fund twelve new inspectors.\n"
                                      "Impact on Revenues: none\nEffective Date: later") == "This bill would fund twelve new inspectors.")
 
+# ── REST packet mode (historical script, Oct 2026) ──────────────────────────
+from fetch_fiscal_impacts_historical import parse_attachment_log, status_fields  # noqa: E402
+
+_log = ("12:41:02 INFO   [3/6588] Int 1025-2023 (6105123) \u2014 fiscal attachment found\n"
+        "12:41:09 INFO   [4/6588] Res 1196-2025 (7213456) \u2014 fiscal attachment found\n"
+        "12:41:10 INFO   [9/6588] T2024-0123 (6999999) \u2014 fiscal attachment found\n"
+        "12:41:11 INFO     Calling Claude ...\n")
+check("attachment log parser: ids and file numbers",
+      parse_attachment_log(_log) == {"6105123": "Int 1025-2023", "7213456": "Res 1196-2025", "6999999": "T2024-0123"},
+      str(parse_attachment_log(_log)))
+_sf = status_fields("Filed (End of Session)")
+check("Filed (End of Session) -> lapsed group and bucket",
+      _sf["status_group"] == "lapsed" and _sf["status_bucket"] == "lapsed", str(_sf))
+_sf = status_fields("Adopted")
+check("Adopted -> enacted bucket", _sf["status_group"] == "passed" and _sf["status_bucket"] == "enacted", str(_sf))
+
 print(f"\n{PASSED} passed, {FAILED} failed")
 if FAILED:
     sys.exit(1)
