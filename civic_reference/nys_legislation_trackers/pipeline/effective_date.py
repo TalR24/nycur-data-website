@@ -84,7 +84,18 @@ def final_clause(text):
     hit = [p for p in paras if re.search(r"\b(shall take effect|takes effect|take effect)\b", p, re.I)]
     if not hit:
         return ""
-    p = hit[-1]
+    # Oct 9 2026 (F1): an act that reads "This act shall take effect <date> provided, however, that: (a) ..." lists provisos in later
+    # paragraphs that also say "shall take effect"; the act's own sentence is the one that starts with "This act shall take effect"
+    own = [i for i, p in enumerate(paras) if re.match(r"^(?:(?:§|Section)\s*\d+\.\s*)?This act shall take effect", p, re.I)]
+    if own:
+        i = own[-1]
+        p = paras[i]
+        if re.search(r":\s*$", p):          # the provisos that follow belong to the same clause
+            j = i + 1
+            while j < len(paras) and not re.match(r"^(?:§|Section)\s*\d+\.", paras[j]) and not re.match(r"^Fiscal\s+NOTE", paras[j], re.I):
+                p += " " + paras[j]; j += 1
+    else:
+        p = hit[-1]
     p = re.split(r"\s*Fiscal\s+NOTE", p, flags=re.I)[0]
     return p.strip()
 

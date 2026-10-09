@@ -1,0 +1,320 @@
+{
+ "_scoring": {
+  "auditor": "B",
+  "night": "20261009",
+  "laws": 11,
+  "stored_records": 18,
+  "correct": 15,
+  "wrong_fields": 2,
+  "not_real": 1,
+  "missed": 1,
+  "precision_strict": "15/18 = 83.3% (Wilson 95% 60.8-94.2%)",
+  "precision_real": "17/18 = 94.4% (Wilson 95% 74.2-99.0%)",
+  "recall": "17/18 = 94.4% (Wilson 95% 74.2-99.0%)",
+  "effective_dates": "11/11 correct"
+ },
+ "_classes": [
+  {
+   "name": "Local boards of elections stored as the State Board of Elections",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2015-S1848-01",
+    "2015-S1848-02"
+   ],
+   "rule": "agency == 'Board of Elections' (agency_full 'State Board of Elections', jurisdiction state) and 'state' not in actor_raw.lower() and 'state' not in actor_resolved_model.lower()  (model itself said 'boards of elections' / 'county boards of elections'; should be agency 'Boards of elections', jurisdiction local)",
+   "db_matches": 55,
+   "db_examples": [
+    "2009-A1308-01",
+    "2013-S3536-09",
+    "2009-S1554-01"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "Pre-2017 record built on reprinted text whose only braced token is a single capitalized word or acronym (ufsd, shall, tlc, mayor)",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2013-S3070-02"
+   ],
+   "rule": "session < 2017; locate quote in packet LAW TEXT with [deleted] removed; braced chars inside the quote span form exactly one alphabetic word of 2-6 letters that is not a number/ordinal/roman numeral word. Candidate filter only: some hits are genuine one-word amendments, so each needs a read",
+   "db_matches": 63,
+   "db_examples": [
+    "2011-A8691-10",
+    "2009-A40008-06",
+    "2011-A7259-02"
+   ],
+   "needs_judgment": true
+  },
+  {
+   "name": "actor_raw annotated or invented instead of the law's own words (passive subject plus parenthetical actor)",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2015-S1848-02"
+   ],
+   "rule": "'(' in actor_raw and actor_raw.lower() not a substring of the packet LAW TEXT (braces/brackets stripped, lowercased)",
+   "db_matches": 73,
+   "db_examples": [
+    "2009-A1003-01",
+    "2009-A10241-01",
+    "2009-A7246-02"
+   ],
+   "needs_judgment": false
+  }
+ ],
+ "2013-S3070": {
+  "records": {
+   "2013-S3070-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-S3070-02": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "note": "Operative 'the assessor, upon approval by the Town of Pelham, Village of Pelham Manor and Pelham {{ufsd}} Board, may make appropriate correction to the subject roll' is reprinted text; the only brace is 'ufsd', an uppercase acronym braced by the pre-2017 rule, and at most renames a body in the approval condition. action_summary's '(ufsd board added)' rests on that artefact."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2013-10-21",
+   "computed": "2013-10-21",
+   "verdict": "correct",
+   "note": "'shall take effect immediately' = signing date 2013-10-21"
+  }
+ },
+ "2015-A10071": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2016-09-29",
+   "computed": "2016-09-29",
+   "verdict": "correct",
+   "note": "'shall take effect immediately' = signing date 2016-09-29"
+  }
+ },
+ "2011-S5672": {
+  "records": {
+   "2011-S5672-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S5672-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S5672-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S5672-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2012-03-21",
+   "computed": "2012-03-21",
+   "verdict": "correct",
+   "note": "'on the one hundred eightieth day after it shall have become a law', signed 2011-09-23 + 180 days"
+  }
+ },
+ "2015-S1848": {
+  "records": {
+   "2015-S1848-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Boards of elections",
+     "agency_full": "Boards of elections",
+     "jurisdiction": "local",
+     "agency_org_type": "local government group"
+    },
+    "note": "'The board of Elections may authorize election officials to affix a paster or sticker upon unvoted ballots' (Election Law 7-126) is the county/NYC board that runs the poll site; the model resolved 'boards of elections' but the store mapped it to State Board of Elections. (Definition of 'board of elections' as the county/city board is Election Law 1-104, outside the packet text.)"
+   },
+   "2015-S1848-02": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "actor_raw": "(passive; actor implied) board of elections",
+     "agency": "Boards of elections",
+     "agency_full": "Boards of elections",
+     "jurisdiction": "local",
+     "agency_org_type": "local government group"
+    },
+    "note": "'All of the voted ballots for which the use of a paster or sticker shall have been authorized shall be manually canvassed' is canvassed by the local board; stored as State Board, and actor_raw 'voted ballots (board of elections)' is not the law's wording."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2015-10-26",
+   "computed": "2015-10-26",
+   "verdict": "correct",
+   "note": "'shall take effect immediately' = signing date 2015-10-26"
+  }
+ },
+ "2015-A10369": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2016-08-19",
+   "computed": "2016-08-19",
+   "verdict": "correct",
+   "note": "'shall take effect immediately' = signing date 2016-08-19"
+  }
+ },
+ "2009-S7075": {
+  "records": {
+   "2009-S7075-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S7075-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S7075-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S7075-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S7075-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S7075-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   }
+  },
+  "missed": [
+   {
+    "blind": "b3",
+    "quote": "At any time after two months have elapsed since the final date for filing applications for a competitive examination for original appointment, the eligible list resulting from such examination may be established",
+    "kind": "power",
+    "agency": "DCS and municipal civil service commissions (Local agencies and authorities)",
+    "dropped_by": null,
+    "note": "Authority to establish the eligible list notwithstanding a pending credit claim; borderline (could be read as a condition of the two-month duty). Not in dropped/2009.json."
+   }
+  ],
+  "effective_date": {
+   "stored": "2010-10-20",
+   "computed": "2010-10-20",
+   "verdict": "correct",
+   "note": "'shall take effect immediately' = signing date 2010-10-20"
+  }
+ },
+ "2009-A7310": {
+  "records": {
+   "2009-A7310-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2009-07-11",
+   "computed": "2009-07-11",
+   "verdict": "correct",
+   "note": "'shall take effect immediately' = signing date 2009-07-11"
+  }
+ },
+ "2011-S5704": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2011-07-20",
+   "computed": "2011-07-20",
+   "verdict": "correct",
+   "note": "'shall take effect immediately' = signing date 2011-07-20"
+  }
+ },
+ "2013-S3933": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2013-07-12",
+   "computed": "2013-07-12",
+   "verdict": "correct",
+   "note": "'shall take effect immediately' = signing date 2013-07-12"
+  }
+ },
+ "2015-A1034": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2016-11-01",
+   "computed": "2016-11-01",
+   "verdict": "correct",
+   "note": "'first of November next succeeding' signing 2015-11-20 -> 2016-11-01"
+  }
+ },
+ "2013-S3054": {
+  "records": {
+   "2013-S3054-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-S3054-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-S3054-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2014-08-07",
+   "computed": "2014-08-07",
+   "verdict": "correct",
+   "note": "'shall take effect immediately' = signing date 2014-08-07"
+  }
+ }
+}

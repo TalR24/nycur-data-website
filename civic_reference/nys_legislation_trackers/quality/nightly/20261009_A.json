@@ -1,0 +1,387 @@
+{
+ "_scoring": {
+  "auditor": "A",
+  "night": "20261009",
+  "laws": 11,
+  "stored_records": 13,
+  "correct": 9,
+  "wrong_fields": 3,
+  "not_real": 1,
+  "missed": 4,
+  "precision_strict": "9/13 = 69.2% (Wilson 95% 42.4-87.3)",
+  "precision_real": "12/13 = 92.3% (Wilson 95% 66.7-98.6)",
+  "recall": "11/15 = 73.3% (Wilson 95% 48.0-89.1)",
+  "effective_dates": "10/11 correct",
+  "note": "Blind list had 18 items; 3 withdrawn before scoring as rule-excluded (2011-A7511 b1/b4: 'an applicant ... shall be eligible for an abatement' is a private party's right; 2013-A9744 b2: RPTL 467-c(1)(m) is a definition). Recall denominator 15."
+ },
+ "_classes": [
+  {
+   "name": "actor_raw stored as the passive sentence subject (costs, application) instead of the acting body",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2011-S5687-02"
+   ],
+   "rule": "re.match(r'(?i)^(the )?(costs?|expenses|application|moneys|funds|such costs|any (application|costs))\\b', actor_raw)",
+   "db_matches": 31,
+   "db_examples": [
+    "2009-A6473-02",
+    "2009-A8339-02",
+    "2009-A9748-02"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "effective date unparsed because raw_clause captured a proviso or schedule instead of the 'shall take effect' sentence",
+   "criteria": [
+    "8"
+   ],
+   "instances": [
+    "2013-A9744"
+   ],
+   "rule": "effective_dates[law].effective_date is None and 'take effect' not in raw_clause (laws); records with effective_date None",
+   "db_matches": 25,
+   "db_examples": [
+    "2009-A152",
+    "2009-S6602",
+    "2009-A9708"
+   ],
+   "needs_judgment": false,
+   "note": "262 laws and 270 records have effective_date null overall; 25 laws match the narrower rule"
+  },
+  {
+   "name": "NYC Administrative Code duty resolved to bare 'New York City' instead of the administering NYC agency",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2011-A7511-01"
+   ],
+   "rule": "agency == 'New York City' and 'Administrative Code' in citation (broader: agency == 'New York City', 143)",
+   "db_matches": 22,
+   "db_examples": [
+    "2009-A10241-01",
+    "2009-A7383-01",
+    "2009-A8933-01"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "extends_existing false on a 'Provided, further' proviso that widens an existing authority",
+   "criteria": [
+    "7"
+   ],
+   "instances": [
+    "2013-A2327-01"
+   ],
+   "rule": "extends_existing is False and re.match(r'(?i)^provided,? (further|however)', quote)",
+   "db_matches": 20,
+   "db_examples": [
+    "2009-A11311-01",
+    "2009-A8729-02",
+    "2009-A9465-02"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "joint grant to a locality and a named district/body stored as one record (second holder missing)",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2011-S5687-03"
+   ],
+   "rule": "re.search(r'(?i)\\b(town|city|village|county)\\b.* and the .*\\b(district|authority|agency|corporation)\\b', actor_raw) and only one record in the law with that quote",
+   "db_matches": 3,
+   "db_examples": [
+    "2009-A10000-01",
+    "2011-S5687-03",
+    "2011-S5688-03"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "record created from new matter that only adds a condition (an extra approver) to an unchanged power",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2013-S3070-02"
+   ],
+   "rule": "proxy: extends_existing and re.search(r'(?i)upon (the )?approval (by|of)', quote); confirm by hand",
+   "db_matches": 3,
+   "db_examples": [
+    "2009-A4218-03",
+    "2011-S331-01",
+    "2013-S3070-02"
+   ],
+   "needs_judgment": true
+  },
+  {
+   "name": "sunset/application-window extension and mirrored RPTL provision missed",
+   "criteria": [
+    "1",
+    "7"
+   ],
+   "instances": [
+    "2011-A7511 b2",
+    "2011-A7511 b3",
+    "2011-A7511 b5"
+   ],
+   "rule": "packet LAW TEXT matches r'(?:two thousand|nineteen hundred)\\s*\\[[a-z\\- ]+\\]\\s*\\{\\{[a-z\\- ]+' (year word replaced) and the law has zero extends_existing records; heuristic, overcounts laws where the year change is not an authority",
+   "db_matches": 541,
+   "db_examples": [
+    "2009-A10096",
+    "2009-A4905",
+    "2009-A8048"
+   ],
+   "needs_judgment": true
+  }
+ ],
+ "2013-S3070": {
+  "records": {
+   "2013-S3070-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "New matter is the roll year '[2012-2013] 2011-2012' (digits left unbraced by the pre-2017 rule); quote reads post-amendment; extends_existing true correct."
+   },
+   "2013-S3070-02": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "note": "Only new matter is '{{ufsd}}' in 'upon approval by the Town of Pelham, Village of Pelham Manor and Pelham {{ufsd}} Board, may make appropriate correction'; the correction power is reprinted unchanged and the added approver is a condition, not a widening."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2013-10-21",
+   "computed": "2013-10-21",
+   "verdict": "correct",
+   "note": "immediately; signed 2013-10-21"
+  }
+ },
+ "2015-A10071": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2016-09-29",
+   "computed": "2016-09-29",
+   "verdict": "correct",
+   "note": "Privilege and immunity for bar-association committees; no government actor."
+  }
+ },
+ "2009-S3911": {
+  "records": {
+   "2009-S3911-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "'The commissioner may waive the requirements of this subdivision due to a shortage of influenza vaccine.' Hospital duties are private-provider duties, correctly not stored."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2009-11-25",
+   "computed": "2009-11-25",
+   "verdict": "correct",
+   "note": "120th day after 2009-07-28"
+  }
+ },
+ "2011-S5687": {
+  "records": {
+   "2011-S5687-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "'shall be authorized and enabled to establish' is a power."
+   },
+   "2011-S5687-02": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "actor_raw": "the town of Thompson (implied; sentence is passive)"
+    },
+    "note": "actor_raw is the passive subject 'The costs and expenses of the operation of the Treasure Lake/Davies dam improvement district'; agency Towns / Town of Thompson is right."
+   },
+   "2011-S5687-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "Town record correct; the district's own grant is missing (see missed b3)."
+   }
+  },
+  "missed": [
+   {
+    "blind": "b3",
+    "quote": "The town of Thompson and the Treasure Lake/Davies dam improvement district are hereby authorized to issue bonds and notes pursuant to the provisions of the local finance law applicable to special improvement districts.",
+    "kind": "power",
+    "agency": "Special districts (agency_unit Treasure Lake/Davies dam improvement district)",
+    "dropped_by": null,
+    "note": "Two named holders; packet rule: one record per named agency. Only the town record exists."
+   }
+  ],
+  "effective_date": {
+   "stored": "2011-08-03",
+   "computed": "2011-08-03",
+   "verdict": "correct",
+   "note": "immediately"
+  }
+ },
+ "2009-A8556": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2010-07-30",
+   "computed": "2010-07-30",
+   "verdict": "correct",
+   "note": "Definition of tax return preparer only; no government actor."
+  }
+ },
+ "2009-A6740": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2009-03-20",
+   "computed": "2009-03-20",
+   "verdict": "correct",
+   "note": "Duties fall on the group health plan administrator (private); no government actor."
+  }
+ },
+ "2009-S3512": {
+  "records": {
+   "2009-S3512-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "'the retirement Board is authorized to mandate the distribution of unclaimed amounts'; named board keeps its own name."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2009-07-14",
+   "computed": "2009-07-14",
+   "verdict": "correct",
+   "note": "immediately"
+  }
+ },
+ "2011-A7511": {
+  "records": {
+   "2011-A7511-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Department of Finance (NYC)",
+     "actor_raw": "the department (benefits are granted 'Upon approval by the department')"
+    },
+    "note": "'no benefits pursuant to this part shall be granted ...' is a passive prohibition; the granting body in Admin Code 11-269/11-272 is 'the department' (NYC Department of Finance), not the City at large."
+   }
+  },
+  "missed": [
+   {
+    "blind": "b2",
+    "quote": "Application for benefits pursuant to this title may be made immediately following the effective date of a local law enacted pursuant to this title and continuing until March first, two thousand fifteen.",
+    "kind": "power",
+    "agency": "Department of Finance (NYC)",
+    "dropped_by": null,
+    "note": "RPTL 489-dddddd(1)(a): window extended '[eleven] {{fifteen.}}'; new sunset date, extends_existing true."
+   },
+   {
+    "blind": "b3",
+    "quote": "No benefits pursuant to this title shall be granted for construction work performed pursuant to a building permit issued after April first, two thousand fifteen.",
+    "kind": "duty",
+    "agency": "Department of Finance (NYC)",
+    "dropped_by": null,
+    "note": "RPTL 489-dddddd(3)(A), the State-law twin of the stored Admin Code 11-271(c) record; cutoff, deadline none."
+   },
+   {
+    "blind": "b5",
+    "quote": "Application for benefits pursuant to this part may be made immediately following the effective date of the local law that added this section and continuing until March first, two thousand fifteen.",
+    "kind": "power",
+    "agency": "Department of Finance (NYC)",
+    "dropped_by": null,
+    "note": "Admin Code 11-271(a)(1): '[eleven] {{fifteen.}}'; extends_existing true."
+   }
+  ],
+  "effective_date": {
+   "stored": "2011-05-18",
+   "computed": "2011-05-18 (retroactive to 2011-03-01)",
+   "verdict": "correct",
+   "note": "'shall take effect immediately and shall be deemed to have been in full force and effect on and after March 1, 2011'; stored retroactive_to 2011-03-01."
+  }
+ },
+ "2013-S267": {
+  "records": {
+   "2013-S267-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "'If the liquor authority shall grant the application, it shall issue a license'; request-triggered, deadline none."
+   },
+   "2013-S267-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "Rulemaking on_effective_date 2014-03-26; consulted DAM correctly not recorded."
+   },
+   "2013-S267-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "Power extended to 76-f licensees. Should-fix: quote is a list fragment ending '...and the sum of thirty thousand dollars as against the holder of a license', which reads as if 76-f sat in the $30,000 tier."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2014-03-26",
+   "computed": "2014-03-26",
+   "verdict": "correct",
+   "note": "180th day after 2013-09-27; section 3 reversion date left unparsed in other_dates"
+  }
+ },
+ "2013-A9744": {
+  "records": {
+   "2013-A9744-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "Prohibition 'no tax abatement shall be granted if ... exceeds fifty thousand dollars' is a duty; extends_existing true. Its effective_date field is null because of the law-level error below."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": null,
+   "computed": "2014-07-01",
+   "verdict": "wrong",
+   "note": "Act clause '§ 4. This act shall take effect July 1, 2014 provided, however, that:'; stored raw_clause is proviso (a) and rule 'unparsed'. Signed 2014-07-22, so the stated date is retroactive: effective on signing, deemed from 2014-07-01."
+  }
+ },
+ "2013-A2327": {
+  "records": {
+   "2013-A2327-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "7"
+    ],
+    "fields": {
+     "extends_existing": true
+    },
+    "note": "'Provided, further that in the case of the Scarsdale union free school district ... may make expenditures ... for the kinds of risks for which insurance is authorized pursuant to paragraph three' widens the existing GML 6-n(2)(a) power, which excluded paragraph three risks."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2014-11-21",
+   "computed": "2014-11-21",
+   "verdict": "correct",
+   "note": "immediately"
+  }
+ }
+}

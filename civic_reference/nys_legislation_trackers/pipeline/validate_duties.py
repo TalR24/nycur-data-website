@@ -18,7 +18,7 @@ import extract_obligations as eo  # noqa: E402
 
 TEXT = HERE / "cache" / "text_marked"
 # actor_raw that is the grammatical subject of a passive or a thing, not a body: "moneys shall be paid", "no money may be"
-PASSIVE_SUBJECT = re.compile(r"^(?:the |such |said |any |all |each )?(moneys?|monies|funds?|all revenues|revenues?|the application|applications?|withdrawals?|no\b|the addition|additions?|payments?|appropriations?|sums?|amounts?|notices?|reports?|licenses?|permits?|requests?|claims?|petitions?|bonds?|notes?|assessments?|exemptions?|taxes?)\b", re.I)
+PASSIVE_SUBJECT = re.compile(r"^(?:the |such |said |any |all |each )?(moneys?|monies|funds?|costs?|expenses?|all revenues|revenues?|the application|applications?|withdrawals?|no\b|the addition|additions?|payments?|appropriations?|sums?|amounts?|notices?|reports?|licenses?|permits?|requests?|claims?|petitions?|bonds?|notes?|assessments?|exemptions?|taxes?)\b", re.I)
 GOV_NOUN = re.compile(r"\b(department|commissioner|office|officer|board|commission|authority|agency|agencies|governor|comptroller|attorney general|court|judge|council|legislature|senate|assembly|district|town|village|city|county|counties|municipalit\w*|director|superintendent|secretary|division|bureau|trustees?|assessors?|clerk|treasurer|mayor|supervisor|corporation|university|college|school|chair\w*|president|inspector|administrator|sheriff|attorney|state|government|governing body|boces|dasny|suny|cuny)\b", re.I)
 JURISDICTIONS = {"state", "local", "nyc", None}
 

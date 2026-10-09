@@ -26,6 +26,7 @@ import law_definitions  # noqa: E402
 from effective_date import parse_effective  # noqa: E402
 import chapter_lookup  # noqa: E402
 import agency_resolve_nys  # noqa: E402
+from validate_duties import PASSIVE_SUBJECT  # noqa: E402  (J1 reuses the validator's detection)
 
 MAX_CHARS = 120_000
 REASK_MANUAL = HERE / "reask_manual.json"
@@ -249,6 +250,56 @@ def attach_jurisdiction(o, quote_context=""):
         o["agency_group"] = o["agency"] if a["org_type"] == "local government group" else None
         return
     o["jurisdiction"], o["agency_org_type"], o["agency_group"] = None, None, None
+
+
+LOCAL_BOE = re.compile(r"\bboards?\s+of\s+elections?\b", re.I)
+
+
+def fix_local_board_of_elections(o):
+    """F2 (Oct 9 2026). Election Law names the State body 'state board of elections'; a 'board of elections' or 'county/local board
+    of elections' without 'state' in the actor text is the local board. Same convention as other local actors: agency = the group
+    ('Boards of elections', or 'Counties' when a county is named), agency_unit = the named county, jurisdiction local."""
+    if o.get("agency") != "Board of Elections":
+        return False
+    names = [x for x in (o.get("actor_raw"), o.get("actor_resolved_model")) if x]
+    joined = " ".join(names)
+    if not LOCAL_BOE.search(joined) or re.search(r"\bstate\b", joined, re.I) or NYC_MARKERS.search(joined):
+        return False
+    loc = named_locality(*names)
+    if loc:
+        group, unit = loc
+        o.update(agency=group, agency_full=group, agency_matched=True, jurisdiction="local", agency_org_type="local government group", agency_group=group, agency_unit=unit)
+    else:
+        o.update(agency="Boards of elections", agency_full="Boards of elections", agency_matched=True, jurisdiction="local", agency_org_type="local government group", agency_group="Boards of elections", agency_unit=None)
+    return True
+
+
+PAREN_TAIL = re.compile(r"^(.*?)\s*\(([^()]+)\)\s*$")
+
+
+def fix_parenthetical_actor(o):
+    """F3 (Oct 9 2026). actor_raw 'voted ballots (board of elections)': the model annotated a passive subject with the acting body. When the
+    text before the parenthesis does not itself resolve (crosswalk, named locality or a government noun) and the parenthetical does, the
+    parenthetical becomes actor_raw (the model's text is kept in actor_raw_model) and the agency is resolved from it."""
+    raw = (o.get("actor_raw") or "").strip()
+    m = PAREN_TAIL.match(raw)
+    if not m:
+        return False
+    pre, paren = m.group(1).strip(), m.group(2).strip()
+    if not pre or not paren or len(paren.split()) > 8 or re.search(r"\d", paren):
+        return False
+    def resolves(x):
+        return bool(eo.match_agency(x, LOOKUP, BY_CANON)[0]) or bool(named_locality(x)) or bool(GOV_ACTOR.search(x))
+    if resolves(pre) or not resolves(paren):
+        return False
+    o["actor_raw_model"] = raw
+    o["actor_raw"] = paren
+    canon, full = eo.match_agency(paren, LOOKUP, BY_CANON)
+    if canon:
+        o.update(agency=canon, agency_full=full, agency_matched=True)
+    else:
+        o.update(agency=paren, agency_full=paren, agency_matched=False)
+    return True
 
 
 # ── extends_existing: the quote's braced new matter is only numbers, dates, number words or a place name ─────────────
@@ -668,6 +719,27 @@ def drop_conditions(lst):
     return out
 
 
+PROVISO_START = re.compile(r"^\W*provided\b", re.I)
+
+
+def proviso_widens_existing(quote, text):
+    """F4 (Oct 9 2026). A quote that opens with 'Provided' / 'Provided, further' / 'Provided, however' and whose words are braced new matter
+    inside an amended section that keeps existing prose widens an existing provision: extends_existing is true even though the proviso
+    sentence stands alone (wholly_new would clear it)."""
+    if not PROVISO_START.match(quote or ""):
+        return False
+    sp = locate_span(quote, text)
+    if not sp or not in_braces(sp[0], sp[0] + 1, text):
+        return False
+    hdr, sec = section_of_span(sp, text)
+    if not hdr or not AMENDED.search(hdr):
+        return False
+    body = sec[len(hdr):]
+    body = re.sub(r"\{\{.*?\}\}", " ", body, flags=re.S)
+    body = re.sub(r"\[[^\[\]]*\]", " ", body)
+    return sum(1 for c in body if c.isalpha()) > 40
+
+
 def wholly_new(span, text):
     """True when the sentence around the span has no existing text outside {{ }} (apart from a subdivision label such as '2.'):
     a wholly new provision, not an extension."""
@@ -842,6 +914,60 @@ def recall_flags(key, text, records, dropped):
             k = j
         else:
             k += 1
+    # e. (J4, Oct 9 2026) an application-window or time-limit change in an amended clause ('until March first, two thousand [eleven] {{fifteen}}')
+    #    and a new-matter 'At any time after ...' power whose subject is not a body: neither is caught by b, so ask for it
+    cand = []
+    for a, b, t in sents:
+        seg = text[a:b]
+        if _covered((a, b), spans):
+            continue
+        if (re.search(r"\[[^\[\]]+\]\s*\{\{[^{}]+\}\}", seg) and re.search(r"\b(?:until|through|prior to|on or before|no later than|not later than)\b[^\[\]{}]{0,60}[\[{]", seg, re.I)
+                and re.search(r"\b(?:may|shall)\b", t) and not SKIP_SENT.search(t)):
+            cand.append(t)
+        elif (any(x < b and y > a for x, y in iv) and re.match(r"^\W*(?:\{\{)?\W*(?:\(\w{1,4}\)\s*)?at any time (?:after|before|prior to|during)\b", t, re.I)
+                and re.search(r"\bmay\b", t) and not SKIP_SENT.search(t)):
+            cand.append(t)
+    if cand:
+        flags.append({"check": "e_window_or_timing_power", "detail": "%d application-window or timing sentences without a record" % len(cand), "sentences": cand[:12]})
+    return flags
+
+
+COMPOUND_LOCAL = re.compile(r"\b(?:town|city|village|county)\b[^;]*?\band\b[^;]*?\b(?:district|authority|agency|corporation)\b", re.I)
+PRE_2017 = range(2009, 2017)
+
+
+def judgment_flags(text, records):
+    """J1-J3 (Oct 9 2026): judgment classes the audits confirmed. Each returns the record's quote so the re-ask packet carries the sentence."""
+    flags = []
+    ps = [r for r in records if PASSIVE_SUBJECT.match((r.get("actor_raw") or "").strip())]
+    if ps:
+        flags.append({"check": "passive_subject_actor", "detail": "%d records whose actor_raw is the passive subject of the sentence, not the acting body" % len(ps),
+                      "sentences": [r["quote"] for r in ps][:12]})
+    only = []
+    for r in records:
+        try:
+            sess = int(r.get("session"))
+        except (TypeError, ValueError):
+            continue
+        if sess not in PRE_2017:
+            continue
+        sp = locate_span(r.get("quote") or "", text)
+        if not sp:
+            continue
+        blocks = [m.group(1) for m in re.finditer(r"\{\{(.*?)\}\}", text, re.S) if m.start() < sp[1] and m.end() > sp[0]]
+        if len(blocks) != 1:
+            continue
+        toks = re.findall(r"[A-Za-z0-9$%]+", blocks[0])
+        if (len(toks) == 1 and toks[0].isalpha() and toks[0].lower() not in _NUMW | _DATEW
+                and not re.fullmatch(r"(?i)[ivxlcdm]{1,4}", toks[0])):
+            only.append(r["quote"])
+    if only:
+        flags.append({"check": "condition_only_new_matter", "detail": "%d records whose only new matter is one word (%s): check the record is a duty and not an existing one" % (len(only), "a changed condition or term"),
+                      "sentences": only[:12]})
+    comp = [r for r in records if COMPOUND_LOCAL.search(r.get("actor_raw") or "")]
+    if comp:
+        flags.append({"check": "compound_local_actor", "detail": "%d records whose actor_raw joins a locality and a named district or authority: one record each" % len(comp),
+                      "sentences": [r["quote"] for r in comp][:12]})
     return flags
 
 
@@ -863,6 +989,7 @@ def build_reask(todo, duties, powers):
         if unres:      # fix 2b: a passive-subject actor no rule could resolve: ask the model who acts
             fl.append({"check": "d_actor_unresolved", "detail": "%d records whose acting body could not be resolved" % len(unres),
                        "sentences": [r["quote"] for r in unres][:12]})
+        fl += judgment_flags(text, by_law.get(law["key"], []))
         if law["key"] in manual:     # fix 11: missed items the audits found
             sents = []
             for frag in manual[law["key"]]:
@@ -964,7 +1091,9 @@ def build_records(laws):
                 continue
             o["actor_resolved_model"] = res.get("actor_model", {}).get(o["obligation_id"])
             o["matter_id"] = law["key"]
+            fix_parenthetical_actor(o) and bump("f3_parenthetical_actor")
             attach_jurisdiction(o)
+            fix_local_board_of_elections(o) and bump("f2_local_board_of_elections")
             # 5. DTF only when the quote or actor names the State; a locality's tax office is the locality. A local act naming
             #    several localities resolves to the locality the sentence names, else to the group of the localities.
             if o.get("agency") == "DTF" and not STATE_MARK.search((o.get("quote") or "") + " " + (o.get("actor_raw") or "")):
@@ -996,6 +1125,8 @@ def build_records(laws):
             sp0 = locate_span(quote, text)
             if o["extends_existing"] and sp0 and wholly_new(sp0, text):     # an extension has existing text around the new matter
                 o["extends_existing"] = False; bump("extends_cleared_wholly_new")
+            if not o["extends_existing"] and proviso_widens_existing(quote, text):          # F4: after the wholly_new clear
+                o["extends_existing"] = True; bump("f4_proviso_extends")
             if o.get("lead_in_existing"):
                 o["extends_existing"] = True; bump("extends_lead_in_existing")
             if o.get("kind_from_lead_in"):
