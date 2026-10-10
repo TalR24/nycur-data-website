@@ -1,0 +1,969 @@
+{
+ "_scoring": {
+  "auditor": "B",
+  "night": "20261010",
+  "laws": 11,
+  "stored_records": 88,
+  "correct": 70,
+  "wrong_fields": 18,
+  "not_real": 0,
+  "missed": 8,
+  "precision_strict": "70/88 = 79.5% (Wilson 95% 70.0-86.7)",
+  "precision_real": "88/88 = 100.0% (Wilson 95% 95.8-100.0)",
+  "recall": "64/72 = 88.9% (Wilson 95% 79.6-94.3)",
+  "effective_dates": "10/11 correct"
+ },
+ "_classes": [
+  {
+   "name": "model actor_unit dropped at ingest (body inside or convened by an agency stored with agency_unit null)",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2013-A8113-05",
+    "2013-A8113-06",
+    "2013-A8113-25",
+    "2013-A8113-26",
+    "2013-A8113-27",
+    "2013-A8113-74",
+    "2013-A8113-75",
+    "2013-A8113-76"
+   ],
+   "rule": "model_unit is non-null and agency_unit is null (subset agency=='Governor': 31)",
+   "db_matches": 437,
+   "db_examples": [
+    "2011-A8957-11",
+    "2015-A9317-04",
+    "2013-A1869-04"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "State actor overridden by a locality found in the text (agency set to a local group though the model resolved a State body)",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2015-S3217-01"
+   ],
+   "rule": "agency_group in {Cities,Towns,Villages,Counties,School districts,Fire districts} and actor_resolved_model matches ^(the )?(state |new york state )?(liquor authority|division of|department of|office of|governor|commissioner|comptroller|state ) and has no town/village/city/county/district word",
+   "db_matches": 30,
+   "db_examples": [
+    "2013-A5503-01",
+    "2009-A8767-01",
+    "2009-A40008-05"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "Quote taken from reprinted unchanged text of an amended section (no overlap with braced new matter)",
+   "criteria": [
+    "2"
+   ],
+   "instances": [
+    "2015-A7631-01"
+   ],
+   "rule": "rebuild post-amendment packet text (drop [..], mark {{..}}), locate quote; flag when quote overlaps no braced char and the enclosing act section header says 'amended' but not 'by adding' (7519 records checkable)",
+   "db_matches": 232,
+   "db_examples": [
+    "2015-A7631-01",
+    "2015-A2469-01",
+    "2015-A222-02"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "Effective clause 'N year(s)/month(s) after it shall have become a law' left unparsed (effective_date null)",
+   "criteria": [
+    "8"
+   ],
+   "instances": [
+    "2015-A5652-01",
+    "2015-A5652-02",
+    "2015-A5652-03"
+   ],
+   "rule": "effective_dates[law].rule=='unparsed' and raw_clause matches '(year|month)s? after it shall have become a law' (74 laws; 199 unparsed laws overall, 146 records with null effective_date); records counted",
+   "db_matches": 40,
+   "db_examples": [
+    "2011-A10039-01",
+    "2011-A10039-02",
+    "2011-A10039-03"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "Part-level effective dates of omnibus laws not applied (records in a later-dated Part inherit the act's general date)",
+   "criteria": [
+    "8"
+   ],
+   "instances": [
+    "2013-A8113-77"
+   ],
+   "rule": "effective_dates raw_clause mentions 'Part(s) X' and section_dates is empty (65 laws); records in those laws = candidate set, needs per-Part check",
+   "db_matches": 559,
+   "db_examples": [
+    "2009-A10468-18",
+    "2009-A10468-19",
+    "2009-A10468-20"
+   ],
+   "needs_judgment": true
+  },
+  {
+   "name": "Precondition-triggered duty given on_effective_date (e.g. a campus 'seeking to sponsor' must submit a plan; notice 'prior to submitting')",
+   "criteria": [
+    "5"
+   ],
+   "instances": [
+    "2013-A8113-18",
+    "2013-A8113-19",
+    "2013-A8113-20",
+    "2013-A8113-21",
+    "2013-A8113-22",
+    "2013-A8113-23"
+   ],
+   "rule": "deadline_kind=='on_effective_date' and quote/action_summary matches (seeking to|prior to submitting|before submitting|must submit|upon (a|the)? (request|receipt|application)|if (a|the|any)) (regex is narrow; judgment needed for recall)",
+   "db_matches": 14,
+   "db_examples": [
+    "2009-A11179-02",
+    "2011-S7531-02",
+    "2013-A7832-13"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "Passive-subject actor_raw (queued class, recurs)",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2015-A6503-01"
+   ],
+   "rule": "actor_raw contains '...' or '(may|shall) be'",
+   "db_matches": 46,
+   "db_examples": [
+    "2009-A2364-01",
+    "2009-A6420-01",
+    "2009-A6472-02"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "designation_no_actor gate drops real provisions whose actor is in the clause ('designated by the board of trustees') or in the list lead-in ('the trustees shall have power: ... to participate')",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2013-A8113-02",
+    "2013-A8113-70"
+   ],
+   "rule": "dropped rule=='designation_no_actor' and (quote contains 'by the ' or starts with 'to ') : 95 of 316 such drops",
+   "db_matches": 95,
+   "db_examples": [
+    "2015-A10258-01",
+    "2015-A10736-26",
+    "2015-A4140-01"
+   ],
+   "needs_judgment": true
+  }
+ ],
+ "2015-A7509": {
+  "records": {
+   "2015-A7509-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-A7509-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-A7509-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2015-11-20",
+   "computed": "2015-11-20",
+   "verdict": "correct",
+   "note": "'This act shall take effect immediately', signed 2015-11-20"
+  }
+ },
+ "2015-A6503": {
+  "records": {
+   "2015-A6503-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "actor_raw": "county (district attorney of the county of prosecution; law names no actor)"
+    },
+    "note": "actor_raw stored as passive phrase 'an organized retail theft crime ... may be prosecuted in any county'; agency Counties and quote are fine"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2016-11-01",
+   "computed": "2016-11-01",
+   "verdict": "correct",
+   "note": "'first of November next succeeding' signing 2016-06-08"
+  }
+ },
+ "2015-A6800": {
+  "records": {
+   "2015-A6800-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "2015-12-31 is the election cutoff, deadline none acceptable"
+   },
+   "2015-A6800-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "amortization power folded into summary"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2015-09-25",
+   "computed": "2015-09-25",
+   "verdict": "correct",
+   "note": "immediately"
+  }
+ },
+ "2015-S3217": {
+  "records": {
+   "2015-S3217-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "3",
+     "7"
+    ],
+    "fields": {
+     "agency": "State Liquor Authority",
+     "agency_unit": null,
+     "jurisdiction": "state",
+     "extends_existing": true
+    },
+    "note": "'the authority may issue a retail license ... within two hundred feet of a building occupied exclusively as a church' is the SLA (model resolved 'state liquor authority'); stored as Cities/City of Kingston. New paragraph (e-7) adds a place exempt from the 200-foot rule of paragraph (a), so it widens an existing authority"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2015-09-25",
+   "computed": "2015-09-25",
+   "verdict": "correct",
+   "note": "immediately"
+  }
+ },
+ "2015-A5652": {
+  "records": {
+   "2015-A5652-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "re-enacted power in new § 70-a"
+   },
+   "2015-A5652-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-A5652-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "conviction-triggered, deadline none correct"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": null,
+   "computed": "2016-08-13",
+   "verdict": "wrong",
+   "note": "'§ 4. This act shall take effect one year after it shall have become a law', signed 2015-08-13; stored rule 'unparsed' and every record carries effective_date null"
+  }
+ },
+ "2015-A564": {
+  "records": {
+   "2015-A564-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2015-08-13",
+   "computed": "2015-08-13",
+   "verdict": "correct",
+   "note": "immediately; note: deletion in GBL 89-sss(4) of '[, upon the recommendation and with the general advice of the board,]' not recorded; judged a procedural removal, not counted as a miss"
+  }
+ },
+ "2015-A7631": {
+  "records": {
+   "2015-A7631-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "2"
+    ],
+    "fields": {
+     "quote": "Section seventeen of this act shall take effect July 1, 2000, and shall expire on June 30, 2020",
+     "action_summary": "Enter into leases with terms greater than ten years under section 17 of chapter 95 of 2000, extended to June 30, 2020."
+    },
+    "note": "Only new matter is '[2015] {{2020}}'; stored quote is the reprinted proviso 'upon the expiration of such section the commissioner of general services shall continue to be empowered to enter into leases having terms not exceeding ten years', which this law does not change"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2015-06-30",
+   "computed": "2015-06-30",
+   "verdict": "correct",
+   "note": "immediately"
+  }
+ },
+ "2015-S4327": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2015-10-26",
+   "computed": "2015-10-26",
+   "verdict": "correct",
+   "note": "immediately; no government duty (owner conditions; '(J) Such other control measures approved by the enforcement agency' is a condition on the owner)"
+  }
+ },
+ "2015-A7862": {
+  "records": {
+   "2015-A7862-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2015-08-13",
+   "computed": "2015-08-13",
+   "verdict": "correct",
+   "note": "immediately"
+  }
+ },
+ "2015-S440": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2015-11-20",
+   "computed": "2015-11-20",
+   "verdict": "correct",
+   "note": "immediately; only a private licensee power"
+  }
+ },
+ "2013-A8113": {
+  "records": {
+   "2013-A8113-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-A8113-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-A8113-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-A8113-05": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Start-up NY Approval Board (or Governor with agency_unit set)",
+     "agency_unit": "start-up ny approval board"
+    },
+    "note": "EDL 431(10): 'a board consisting of three members, one each appointed by the Governor, the speaker of the assembly and the temporary president of the senate'; model_unit 'start-up ny approval board' was dropped, record shows Governor alone"
+   },
+   "2013-A8113-06": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Start-up NY Approval Board (or Governor with agency_unit set)",
+     "agency_unit": "start-up ny approval board"
+    },
+    "note": "EDL 431(10): 'a board consisting of three members, one each appointed by the Governor, the speaker of the assembly and the temporary president of the senate'; model_unit 'start-up ny approval board' was dropped, record shows Governor alone"
+   },
+   "2013-A8113-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-A8113-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-A8113-09": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-A8113-10": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-A8113-11": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-A8113-12": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-A8113-13": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-A8113-14": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-A8113-15": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "'in a manner to be determined by the department of taxation and finance'"
+   },
+   "2013-A8113-16": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-A8113-17": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-A8113-18": {
+    "verdict": "wrong",
+    "criteria": [
+     "5"
+    ],
+    "fields": {
+     "deadline_kind": "none",
+     "deadline_date": null
+    },
+    "note": "triggered by a precondition: 'The president or chief executive officer of Any state university campus ... seeking to sponsor a tax-free ny area ... must submit a plan'"
+   },
+   "2013-A8113-19": {
+    "verdict": "wrong",
+    "criteria": [
+     "5"
+    ],
+    "fields": {
+     "deadline_kind": "none",
+     "deadline_date": null
+    },
+    "note": "triggered by a precondition: 'The president or chief executive officer of Any state university campus ... seeking to sponsor a tax-free ny area ... must submit a plan'"
+   },
+   "2013-A8113-20": {
+    "verdict": "wrong",
+    "criteria": [
+     "5"
+    ],
+    "fields": {
+     "deadline_kind": "none",
+     "deadline_date": null
+    },
+    "note": "triggered by a precondition: 'The president or chief executive officer of Any state university campus ... seeking to sponsor a tax-free ny area ... must submit a plan'"
+   },
+   "2013-A8113-21": {
+    "verdict": "wrong",
+    "criteria": [
+     "5"
+    ],
+    "fields": {
+     "deadline_kind": "none",
+     "deadline_date": null
+    },
+    "note": "event-anchored: 'At least thirty days prior to submitting such plan, the campus or college must provide the municipality ... With a copy of the plan'"
+   },
+   "2013-A8113-22": {
+    "verdict": "wrong",
+    "criteria": [
+     "5"
+    ],
+    "fields": {
+     "deadline_kind": "none",
+     "deadline_date": null
+    },
+    "note": "event-anchored: 'At least thirty days prior to submitting such plan, the campus or college must provide the municipality ... With a copy of the plan'"
+   },
+   "2013-A8113-23": {
+    "verdict": "wrong",
+    "criteria": [
+     "5"
+    ],
+    "fields": {
+     "deadline_kind": "none",
+     "deadline_date": null
+    },
+    "note": "event-anchored: 'At least thirty days prior to submitting such plan, the campus or college must provide the municipality ... With a copy of the plan'"
+   },
+   "2013-A8113-24": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-A8113-25": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Start-up NY Approval Board (or Governor with agency_unit set)",
+     "agency_unit": "start-up ny approval board"
+    },
+    "note": "EDL 431(10): 'a board consisting of three members, one each appointed by the Governor, the speaker of the assembly and the temporary president of the senate'; model_unit 'start-up ny approval board' was dropped, record shows Governor alone"
+   },
+   "2013-A8113-26": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Start-up NY Approval Board (or Governor with agency_unit set)",
+     "agency_unit": "start-up ny approval board"
+    },
+    "note": "EDL 431(10): 'a board consisting of three members, one each appointed by the Governor, the speaker of the assembly and the temporary president of the senate'; model_unit 'start-up ny approval board' was dropped, record shows Governor alone"
+   },
+   "2013-A8113-27": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Start-up NY Approval Board (or Governor with agency_unit set)",
+     "agency_unit": "start-up ny approval board"
+    },
+    "note": "EDL 431(10): 'a board consisting of three members, one each appointed by the Governor, the speaker of the assembly and the temporary president of the senate'; model_unit 'start-up ny approval board' was dropped, record shows Governor alone"
+   },
+   "2013-A8113-28": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-A8113-29": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-A8113-30": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-A8113-31": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-A8113-32": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-A8113-33": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-A8113-34": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-A8113-35": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-A8113-36": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-A8113-37": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-A8113-38": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-A8113-39": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-A8113-40": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-A8113-41": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-A8113-42": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-A8113-43": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-A8113-44": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-A8113-45": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-A8113-46": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-A8113-47": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-A8113-48": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-A8113-49": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-A8113-50": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-A8113-51": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "on_effective_date accepted for participant setup duty (borderline precondition)"
+   },
+   "2013-A8113-52": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-A8113-53": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-A8113-54": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-A8113-55": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-A8113-56": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-A8113-57": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-A8113-58": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-A8113-59": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-A8113-60": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-A8113-61": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-A8113-62": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-A8113-63": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-A8113-64": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-A8113-65": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-A8113-66": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-A8113-67": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-A8113-68": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-A8113-69": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-A8113-71": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-A8113-72": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-A8113-73": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-A8113-74": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency_unit": "mandate and regulatory relief council"
+    },
+    "note": "Exec Law 666(2): 'There is hereby created within the executive department the mandate relief council' (renamed '{{and regulatory}}'); model_unit 'mandate relief council' dropped"
+   },
+   "2013-A8113-75": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency_unit": "mandate and regulatory relief council"
+    },
+    "note": "Exec Law 666(2): 'There is hereby created within the executive department the mandate relief council' (renamed '{{and regulatory}}'); model_unit 'mandate relief council' dropped"
+   },
+   "2013-A8113-76": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency_unit": "mandate and regulatory relief council"
+    },
+    "note": "Exec Law 666(2): 'There is hereby created within the executive department the mandate relief council' (renamed '{{and regulatory}}'); model_unit 'mandate relief council' dropped"
+   },
+   "2013-A8113-77": {
+    "verdict": "wrong",
+    "criteria": [
+     "8"
+    ],
+    "fields": {
+     "effective_date": "2013-08-23"
+    },
+    "note": "EDL 359 amendment is Part C, whose last section says 'This act shall take effect on the sixtieth day after it shall have become a law' (signed 2013-06-24); stored 2013-06-24"
+   }
+  },
+  "missed": [
+   {
+    "blind": "b1",
+    "quote": "A college or university shall work With Local municipalities or Local economic development entities to identify underutilized properties.",
+    "kind": "duty",
+    "agency": "SUNY / CUNY / community colleges",
+    "dropped_by": null,
+    "note": "EDL 431(11), duty sentence inside a definition"
+   },
+   {
+    "blind": "b2",
+    "quote": "a total of five city university campuses, one each in the boroughs of manhattan, brooklyn, bronx, queens and staten island, which will be designated by the board of trustees of the city university of new york.",
+    "kind": "duty",
+    "agency": "CUNY (board of trustees)",
+    "dropped_by": "designation_no_actor",
+    "note": "EDL 432(1)(c)(iii); actor named in the clause, dropped as 2013-A8113-02"
+   },
+   {
+    "blind": "b3",
+    "quote": "meet such other requirements for a high-tech business as the commissioner shall develop.",
+    "kind": "duty",
+    "agency": "ESD (Department of Economic Development)",
+    "dropped_by": null,
+    "note": "EDL 433(2-a)(b); one-time setup, on_effective_date"
+   },
+   {
+    "blind": "b4",
+    "quote": "Before approving or rejecting the plan submitted by a state university campus, community college or city university campus, the commissioner shall consult With the chancellor of the applicable university system or his or her designee.",
+    "kind": "duty",
+    "agency": "ESD (Department of Economic Development)",
+    "dropped_by": null,
+    "note": "EDL 435(1); commissioner's approve/reject of public-campus plans has no record (only the board's for 435(2), record 26)"
+   },
+   {
+    "blind": "b5",
+    "quote": "A campus, university or college may amend its approved plan, provided that the campus, university or college may not violate the terms of Any lease With a business located in the approved tax-free ny area.",
+    "kind": "power",
+    "agency": "SUNY / CUNY / community colleges",
+    "dropped_by": null,
+    "note": "EDL 435(3)"
+   },
+   {
+    "blind": "b6",
+    "quote": "If the board does not disapprove of the lease terms within thirty days, the lease is deemed approved. If the board disapproves the lease terms, the state university campus must submit modified lease terms to the commissioner for review.",
+    "kind": "power",
+    "agency": "Start-up NY Approval Board",
+    "dropped_by": null,
+    "note": "EDL 436(2)(c) board lease review; SUNY resubmission duty also unrecorded"
+   },
+   {
+    "blind": "b7",
+    "quote": "proprietary information or supporting documentation submitted by a business to a sponsoring campus, university or college shall only be utilized for the purpose of evaluating such business's application or compliance With the provisions of this article and shall not be otherwise disclosed.",
+    "kind": "duty",
+    "agency": "SUNY / CUNY / community colleges",
+    "dropped_by": null,
+    "note": "EDL 436(2)(d)"
+   },
+   {
+    "blind": "b8",
+    "quote": "to participate in joint and cooperative arrangements With businesses that have located in a tax-free ny area approved pursuant to article twenty-one of the economic development law provided such arrangements are consistent With the approved plan",
+    "kind": "power",
+    "agency": "SUNY (trustees)",
+    "dropped_by": "designation_no_actor",
+    "note": "Education Law 355(2)(z), a new list item under the trustees' powers in 355(2); dropped as 2013-A8113-70"
+   }
+  ],
+  "effective_date": {
+   "stored": "2013-06-24",
+   "computed": "2013-06-24",
+   "verdict": "correct",
+   "note": "act clause: immediately, Parts by their last section; Parts A and B immediate (2013-06-24), Part C sixtieth day = 2013-08-23 lost (section_dates empty), see record 77"
+  }
+ }
+}

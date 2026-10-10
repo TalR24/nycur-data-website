@@ -36,14 +36,21 @@ def pilot_keys() -> set[str]:
     return keys
 
 
-def unanswered() -> list[Path]:
+def deferred_skipped(path: Path | None = None) -> set[str]:
+    """Keys in data/deferred_skipped.json: laws agents skipped as too long, omnibus or empty; not redrawn each night."""
+    p = path or DATA / "deferred_skipped.json"
+    return {x["key"] for x in json.load(open(p))["laws"]} if p.exists() else set()
+
+
+def unanswered(skip: set[str] | None = None) -> list[Path]:
     pilot = pilot_keys()
+    skip = deferred_skipped() if skip is None else skip
     out = []
     for y in SESSIONS:
         d = PACKETS / str(y)
         for f in sorted(d.glob("*.txt")):
             key = f.stem
-            if re.sub(r"[A-Z]$", "", key) in pilot or (d / "results" / f"{key}.json").exists():
+            if key in skip or re.sub(r"[A-Z]$", "", key) in pilot or (d / "results" / f"{key}.json").exists():
                 continue
             out.append(f)
     return out
@@ -55,7 +62,9 @@ def main() -> None:
     ap.add_argument("--max-bytes", type=int, default=400_000)
     ap.add_argument("--max-laws", type=int, default=30)
     a = ap.parse_args()
-    todo = unanswered()
+    skip = deferred_skipped()
+    todo = unanswered(skip)
+    n_skipped = sum(1 for y in SESSIONS for f in (PACKETS / str(y)).glob("*.txt") if f.stem in skip and not (PACKETS / str(y) / "results" / f"{f.stem}.json").exists())
     chunks, cur, size = [], [], 0
     for f in todo:
         s = f.stat().st_size
@@ -77,7 +86,7 @@ def main() -> None:
         p.write_text("\n".join(str(x) for x in c) + "\n")
         paths.append(str(p))
     laws = sum(len(c) for c in chunks)
-    print(json.dumps({"tag": tag, "chunks": paths, "laws": laws, "left_after": len(todo) - laws}))
+    print(json.dumps({"tag": tag, "chunks": paths, "laws": laws, "left_after": len(todo) - laws, "skipped_deferred": n_skipped}))
 
 
 if __name__ == "__main__":

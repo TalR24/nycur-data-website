@@ -1,0 +1,320 @@
+{
+ "_scoring": {
+  "auditor": "A",
+  "night": "20261010",
+  "laws": 11,
+  "stored_records": 9,
+  "correct": 6,
+  "wrong_fields": 3,
+  "not_real": 0,
+  "missed": 2,
+  "precision_strict": "6/9 = 66.7% (Wilson 95% 35.4-87.9%)",
+  "precision_real": "9/9 = 100.0% (Wilson 95% 70.1-100.0%)",
+  "recall": "9/11 = 81.8% (Wilson 95% 52.3-94.9%)",
+  "effective_dates": "11/11 correct"
+ },
+ "_classes": [
+  {
+   "name": "passive-subject or descriptive actor_raw (queued for re-ask; recurs)",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2015-A6503-01",
+    "2015-S4128-01"
+   ],
+   "rule": "re.search(r'\\.\\.\\.|\\bpassive\\b|\\b(may|shall) be [a-z]+ed\\b', actor_raw, re.I) over duties+powers",
+   "db_matches": 49,
+   "db_examples": [
+    "2009-S1172-02",
+    "2015-A1421-01",
+    "2009-A8905-02"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "actor_raw with a parenthetical (fixed class, recurs)",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2015-S4128-01"
+   ],
+   "rule": "'(' in actor_raw",
+   "db_matches": 70,
+   "db_examples": [
+    "2009-A1003-01",
+    "2009-A10241-01",
+    "2009-A2364-01"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "sunset-extension applicability clause dropped by exemption_or_applicability gate (real extends_existing power lost; mirror clause in same law kept)",
+   "criteria": [
+    "1",
+    "7"
+   ],
+   "instances": [
+    "2015-A7335-01 (dropped)"
+   ],
+   "rule": "dropped rule=='exemption_or_applicability' and re.search(r'shall (not )?(only )?(be applicable|apply)',quote) and re.search(r'period from|commenced|until|on and after',quote)",
+   "db_matches": 1,
+   "db_examples": [
+    "2015-A7335-01"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "State Liquor Authority (named board) stored as agency ABC with agency_unit null",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2015-A7331-01"
+   ],
+   "rule": "agency=='ABC' and not agency_unit and 'liquor authority' in (actor_resolved_model+' '+actor_raw).lower()",
+   "db_matches": 84,
+   "db_examples": [
+    "2009-A8518-11",
+    "2009-S6231-01",
+    "2009-S6231-03"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "'notwithstanding' place/class exception that widens an existing power stored extends_existing false",
+   "criteria": [
+    "7"
+   ],
+   "instances": [
+    "2015-A7331-01"
+   ],
+   "rule": "kind=='power' and re.match(r'\\s*notwithstanding the provisions of (paragraph|subdivision|section)',quote,re.I) and extends_existing is False",
+   "db_matches": 5,
+   "db_examples": [
+    "2011-S6986-01",
+    "2013-A10094-01",
+    "2013-A8277-01"
+   ],
+   "needs_judgment": true
+  },
+  {
+   "name": "sunset extension of a prior chapter with no actor named in the act text produces no record",
+   "criteria": [
+    "1",
+    "7"
+   ],
+   "instances": [
+    "2015-A7640"
+   ],
+   "rule": "no mechanical rule: laws whose only section amends another chapter's expiry and names no actor",
+   "db_matches": null,
+   "db_examples": [],
+   "needs_judgment": true
+  }
+ ],
+ "2015-A7509": {
+  "records": {
+   "2015-A7509-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "SFL 98(3-a) 'no more than five hundred million dollars may be invested in the obligations of any one agency'; power, extends_existing true."
+   },
+   "2015-A7509-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "SFL 98(18), same amount widening."
+   },
+   "2015-A7509-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "SFL 98(19), same amount widening."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2015-11-20",
+   "computed": "2015-11-20",
+   "verdict": "correct",
+   "note": "'take effect immediately', signed 2015-11-20"
+  }
+ },
+ "2015-A6503": {
+  "records": {
+   "2015-A6503-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "actor_raw": "none named in the law; the prosecuting district attorney (store as the acting body, not 'an organized retail theft crime ... may be prosecuted in any county')"
+    },
+    "note": "Passive sentence: 'an organized retail theft crime ... may be prosecuted in any county'; actor_raw stores the grammatical subject. Agency Counties acceptable (DA is a county officer); joinder sentence treated as a condition of this record, not a miss."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2016-11-01",
+   "computed": "2016-11-01",
+   "verdict": "correct",
+   "note": "'first of November next succeeding' signing 2016-06-08"
+  }
+ },
+ "2015-S3419": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2017-01-01",
+   "computed": "2017-01-01",
+   "verdict": "correct",
+   "note": "'take effect on January 1, 2017'; superintendent rulemaking proviso is early-rulemaking boilerplate (no record). All other new matter binds utilization review agents and health plans (private)."
+  }
+ },
+ "2015-S4517": {
+  "records": {
+   "2015-S4517-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "'The commissioner shall include space on the personal income tax return'; DTF; setup duty on_effective_date. Minor: recurrence 'annual' would fit better than 'ongoing'; record carries actor_unresolved true while agency_matched true (flag inconsistency, 51 such records DB-wide)."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2015-11-20",
+   "computed": "2015-11-20",
+   "verdict": "correct",
+   "note": "immediately, signed 2015-11-20"
+  }
+ },
+ "2015-A2558": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2016-11-04",
+   "computed": "2016-11-04",
+   "verdict": "correct",
+   "note": "immediately; law only widens scope of practice, no government actor"
+  }
+ },
+ "2015-S4128": {
+  "records": {
+   "2015-S4128-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "actor_raw": "the conveying body under chapter 759 of 1973 (not named in this act; not verifiable from packet), not the parenthetical 'not named (passive: all such lands shall be ceded)'"
+    },
+    "note": "'All such lands shall be ceded, granted and conveyed to the United States on or before May 1, 2017.' Passive; actor_raw is a parenthetical description. Deadline fixed_date 2017-05-01 and extends_existing true are right."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2015-06-30",
+   "computed": "2015-06-30",
+   "verdict": "correct",
+   "note": "immediately, signed 2015-06-30"
+  }
+ },
+ "2015-A6857": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2016-09-29",
+   "computed": "2016-09-29",
+   "verdict": "correct",
+   "note": "immediately. New matter is a definition of 'for cause' (packet rule: a definition is 'neither'); not counted as a miss, though it widens SLA revocation grounds."
+  }
+ },
+ "2015-A7335": {
+  "records": {
+   "2015-A7335-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "PAL 1265-a(1) 'until June thirtieth, two thousand nineteen'; MTA, extends_existing true."
+   }
+  },
+  "missed": [
+   {
+    "blind": "b1",
+    "quote": "procurements by the authority commenced on and after July first, two thousand nineteen",
+    "kind": "power",
+    "agency": "New York City Transit Authority",
+    "dropped_by": "exemption_or_applicability",
+    "note": "PAL 1209(6) extends the NYCTA procurement provisions (subdivisions seven through thirteen 'shall only apply to procurements by the authority commenced during such periods') from 2015 to 2019. Mirror of the kept MTA record 02. Dropped record also carried wrong agency 'Local agencies and authorities'."
+   }
+  ],
+  "effective_date": {
+   "stored": "2015-06-30",
+   "computed": "2015-06-30",
+   "verdict": "correct",
+   "note": "immediately, signed 2015-06-30"
+  }
+ },
+ "2015-A7640": {
+  "records": {},
+  "missed": [
+   {
+    "blind": "b1",
+    "quote": "This act shall take effect thirty days after it shall have become a law and shall expire and be deemed repealed October 1, 2020.",
+    "kind": "power",
+    "agency": "unspecified (administrator of the underground facilities safety training account; not named in the act text)",
+    "dropped_by": null,
+    "note": "New sunset date extends an existing account (criterion 7 'new sunset date'); comparable extender 2015-A7520 got a record. Actor not verifiable from packet."
+   }
+  ],
+  "effective_date": {
+   "stored": "2015-08-13",
+   "computed": "2015-08-13",
+   "verdict": "correct",
+   "note": "immediately, signed 2015-08-13"
+  }
+ },
+ "2015-A7331": {
+  "records": {
+   "2015-A7331-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "3",
+     "7"
+    ],
+    "fields": {
+     "extends_existing": "true",
+     "agency_unit": "State Liquor Authority"
+    },
+    "note": "'notwithstanding the provisions of paragraph (a) of this subdivision, the authority May issue a retail license ... within two hundred feet of a building occupied as a church' widens the existing licensing power to a new place; the named board should keep its name."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2015-11-20",
+   "computed": "2015-11-20",
+   "verdict": "correct",
+   "note": "immediately, signed 2015-11-20"
+  }
+ },
+ "2015-A7520": {
+  "records": {
+   "2015-A7520-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "'shall expire and be deemed repealed ten years after such effective date'; DTF duty, extends_existing true."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2015-11-20",
+   "computed": "2015-11-20",
+   "verdict": "correct",
+   "note": "immediately, signed 2015-11-20"
+  }
+ }
+}

@@ -192,6 +192,10 @@ GENERIC_LEAD = re.compile(r"^(?:the|such|said|each|any|every|a|an|that|this|of|i
 LOCAL_OFFICERS = re.compile(r"assessor|tax (?:office|department|receiver|collector)|governing body|board of (?:trustees|education|assessors)|town board|village board|city council|common council|county legislature|board of supervisors|mayor|supervisor|clerk|treasurer|comptroller of the (?:town|village|city|county)", re.I)
 
 
+LOCAL_ACTOR_NOUN = re.compile(r"\b(?:town|city|village|county|counties|school district|district|municipalit\w*|local board|mayor|supervisors?|legislature|assessors?|clerk|treasurer)\b", re.I)
+STATE_GENERIC_ACTOR = re.compile(r"^(?:the |such |said |each |any )?(?:authority|department|commissioner|division|office|superintendent)$", re.I)
+
+
 def named_locality(*texts):
     """(group, normalised unit name) for the first named locality in the texts, else None.
     'the town board of the town of cornwall, in the county of orange' -> ('Towns', 'Town of Cornwall')."""
@@ -239,7 +243,14 @@ def attach_jurisdiction(o, quote_context=""):
     actor_text = [x for x in (o.get("actor_raw"), o.get("actor_resolved_model")) if x]
     loc = named_locality(*actor_text)
     if not loc and (not o.get("agency_matched") or (state_hit and any(LOCAL_OFFICERS.search(x) for x in actor_text))):
-        loc = named_locality(o.get("quote") or "", o.get("action_summary") or "") if any(LOCAL_OFFICERS.search(x) for x in actor_text) or not o.get("agency_matched") else None
+        # M2 (Oct 10 2026): the quote's locality fills the actor only when the actor text names a local-government noun, or is unresolved
+        # without a generic State officer noun; "the authority" / "the department" / "the commissioner" never takes a locality from the quote
+        local_noun = any(LOCAL_OFFICERS.search(x) or LOCAL_ACTOR_NOUN.search(x) for x in actor_text)
+        state_generic = bool(STATE_GENERIC_ACTOR.match(re.sub(r"\s+", " ", (o.get("actor_raw") or "").strip())))
+        if local_noun or (not o.get("agency_matched") and not state_generic):
+            loc = named_locality(o.get("quote") or "", o.get("action_summary") or "")
+        elif state_generic:
+            bump("m2_state_actor_keeps_state")
     if loc and (not state_hit or any(LOCAL_OFFICERS.search(x) for x in actor_text) or o["agency"] in ("DTF",)):
         group, unit = loc
         o.update(agency=group, agency_full=group, agency_matched=True, jurisdiction="local", agency_org_type="local government group", agency_group=group, agency_unit=unit)
@@ -435,7 +446,8 @@ DEBT_WORDS = re.compile(r"\b(?:bonds?|notes?|obligations?|indebtedness|debt|borr
 STATE_MARK = re.compile(r"\b(state|department of taxation and finance|commissioner of taxation|tax commission)\b", re.I)
 TRIGGER = re.compile(r"\b(upon|whenever|when|promptly|as soon as|as needed|until|if|unless|in response to)\b|\breceipt of\b|\breceives?\b|\bat the request\b"
                      r"|\bon the (?:written )?requests?\b|\bupon (?:the )?(?:written )?requests?\b|\bat the date of\b|\b(?:at|on|upon) (?:the )?dissolution\b"
-                     r"|\b(?:after|following) (?:the )?(?:receipt|filing|submission)\b|\bin the event\b|\bon the date of (?:its |the )?(?:dissolution|termination)\b", re.I)
+                     r"|\b(?:after|following) (?:the )?(?:receipt|filing|submission)\b|\bin the event\b|\bon the date of (?:its |the )?(?:dissolution|termination)\b"
+                     r"|\b(?:prior to|before) submitting\b|\b(?:wants?|wish(?:es)?|seeks?|elects?|chooses?) to\b|\bthat applies\b|\bprior to (?:the )?(?:filing|approval|issuance)\b", re.I)
 PROHIBITION = re.compile(r"\b(?:shall not|may not|must not)\b|^\s*no\b", re.I)
 SETUP_TYPES = {"rulemaking", "plan or strategy", "program or service", "designation or staffing", "database or data publication", "notice or posting", "training", "outreach or education"}
 
@@ -539,6 +551,51 @@ def context_sentence(span, text):
     m = re.search(BOUNDARY, text[end:])
     right = end + m.start() + 1 if m else len(text)
     return text[left:right], (left, right)
+
+
+PLACE_EXCEPTION = re.compile(r"^(?:\([\w-]{1,6}\)|\d+\.|\W)*notwithstanding the provisions of (?:paragraph|subdivision|section)\b[^,]{0,80},.*\bwithin (?:two hundred|200) feet\b", re.I | re.S)
+STATE_UNIT_EXCLUDED = {"Counties", "Cities", "Towns", "Villages", "School districts", "Boards of elections", "Municipalities", "Municipalities (all)",
+                       "Fire districts", "Library districts", "Public libraries", "Social services districts", "Sheriffs", "BOCES", "Local agencies and authorities"}
+_UNIT_UPPER = {"ny": "NY", "nys": "NYS", "nyc": "NYC", "ii": "II", "iii": "III"}
+
+
+def unit_title(s):
+    """M5: the model's unit name in title case ('start-up ny approval board' -> 'Start-up NY Approval Board'); small words stay lower."""
+    small = {"of", "the", "and", "in", "on", "for", "to", "a"}
+    out = []
+    for i, w in enumerate(re.sub(r"\s+", " ", (s or "").strip(" .,;")).split()):
+        lw = w.lower()
+        out.append(_UNIT_UPPER.get(lw) or (w if (i and lw in small) else w[:1].upper() + w[1:]))
+    return " ".join(out)
+
+
+def post_amendment(seg):
+    """A text segment as the law reads after the amendment: [deleted] matter and {{ }} markers removed, spacing tidied."""
+    seg = re.sub(r"\{\{|\}\}", "", _mask_deleted(seg))
+    seg = re.sub(r"\s+", " ", seg).strip()
+    return re.sub(r"\s+([,;.:])", r"\1", seg)
+
+
+def relocate_quote(quote, text):
+    """M6 (Oct 10 2026). An extension record whose quote sits in reprinted unchanged text: returns the verbatim post-amendment sentence that
+    holds the nearest {{ }} span of the same act section, or None (no marker, quote already overlaps new matter, or no braced span in the section)."""
+    if "{{" not in text:
+        return None
+    sp = locate_span(quote, text)
+    if not sp or in_braces(sp[0], sp[1], text):
+        return None
+    hdr, sec = section_of_span(sp, text)
+    if not sec:
+        return None
+    start = text.find(sec)
+    near = [(min(abs(x - sp[1]), abs(y - sp[0])), x, y) for x, y in braced_intervals(text) if start <= x < start + len(sec)]
+    if not near:
+        return None
+    _, x, y = min(near)
+    sent, (sl, sr) = context_sentence((x, y), text)
+    new = post_amendment(sent)
+    new = re.sub(r"^(?:\d+(?:-\w+)?\.\s+)", "", new)
+    return new if len(new) >= 20 and locate_span(new, text) else None
 
 
 HDR = re.compile(r"(?m)^(?:§|Section)\s*(\d+)\.")
@@ -929,11 +986,32 @@ def recall_flags(key, text, records, dropped):
             cand.append(t)
     if cand:
         flags.append({"check": "e_window_or_timing_power", "detail": "%d application-window or timing sentences without a record" % len(cand), "sentences": cand[:12]})
+    # J5 (Oct 10 2026): a list entry or designation dropped for having no actor, whose own words name a government body or officer
+    des = [d.get("quote") or "" for d in dropped if d.get("rule") == "designation_no_actor"
+           and (DROPPED_GOV_SUBJECT.search(d.get("quote") or "") or re.match(r"\W*to\s", d.get("quote") or "", re.I))]
+    if des:
+        flags.append({"check": "dropped_designation_with_actor", "detail": "%d dropped list entries or designations that name a government body or officer" % len(des), "sentences": des[:12]})
+    # J6: an applicability sentence dropped by the exemption gate whose new matter is a date or number (a sunset extension, not an exemption)
+    ext = []
+    for d in dropped:
+        if d.get("rule") != "exemption_or_applicability":
+            continue
+        sp = locate_span(d.get("quote") or "", text)
+        if not sp:
+            continue
+        sent = context_sentence(sp, text)[0]
+        blocks = [m.group(1) for m in re.finditer(r"\{\{(.*?)\}\}", sent, re.S)]
+        if blocks and APPLIES_RE.search(sent) and all(_only_extension(b) for b in blocks):
+            ext.append(d.get("quote") or "")
+    if ext:
+        flags.append({"check": "exemption_sunset_extension", "detail": "%d dropped applicability sentences whose new matter is only a date or number" % len(ext), "sentences": ext[:12]})
     return flags
 
 
 COMPOUND_LOCAL = re.compile(r"\b(?:town|city|village|county)\b[^;]*?\band\b[^;]*?\b(?:district|authority|agency|corporation)\b", re.I)
 PRE_2017 = range(2009, 2017)
+DROPPED_GOV_SUBJECT = re.compile(r"\b(?:trustees?|board|commissioner|university|department|authority|council|office)\b", re.I)
+APPLIES_RE = re.compile(r"\bshall (?:not )?(?:only )?(?:be applicable|apply)\b|\b(?:does|do) not apply\b", re.I)
 
 
 def judgment_flags(text, records):
@@ -964,6 +1042,16 @@ def judgment_flags(text, records):
     if only:
         flags.append({"check": "condition_only_new_matter", "detail": "%d records whose only new matter is one word (%s): check the record is a duty and not an existing one" % (len(only), "a changed condition or term"),
                       "sentences": only[:12]})
+    if "{{" in text:        # M6: an extension record whose quote could not be moved onto the new matter
+        outside = []
+        for r in records:
+            if r.get("extends_existing") and not r.get("quote_relocated") and not r.get("lead_in_existing") and not r.get("kind_from_lead_in"):
+                sp = locate_span(r.get("quote") or "", text)
+                if sp and not in_braces(sp[0], sp[1], text):
+                    outside.append(r["quote"])
+        if outside:
+            flags.append({"check": "quote_outside_new_matter", "detail": "%d extension records whose quote sits in unchanged text, not in the new matter" % len(outside),
+                          "sentences": outside[:12]})
     comp = [r for r in records if COMPOUND_LOCAL.search(r.get("actor_raw") or "")]
     if comp:
         flags.append({"check": "compound_local_actor", "detail": "%d records whose actor_raw joins a locality and a named district or authority: one record each" % len(comp),
@@ -1096,7 +1184,8 @@ def build_records(laws):
             fix_local_board_of_elections(o) and bump("f2_local_board_of_elections")
             # 5. DTF only when the quote or actor names the State; a locality's tax office is the locality. A local act naming
             #    several localities resolves to the locality the sentence names, else to the group of the localities.
-            if o.get("agency") == "DTF" and not STATE_MARK.search((o.get("quote") or "") + " " + (o.get("actor_raw") or "")):
+            if (o.get("agency") == "DTF" and not STATE_MARK.search((o.get("quote") or "") + " " + (o.get("actor_raw") or ""))
+                    and not (STATE_GENERIC_ACTOR.match(re.sub(r"\s+", " ", (o.get("actor_raw") or "").strip())) and STATE_MARK.search(o.get("actor_resolved_model") or ""))):     # M2: 'the commissioner' the model resolved to the State DTF stays State
                 ll = named_locality(o.get("quote") or "", o.get("action_summary") or "") or law_locality(text, law["title"])
                 units = None
                 if not ll:
@@ -1129,6 +1218,8 @@ def build_records(laws):
                 o["extends_existing"] = True; bump("f4_proviso_extends")
             if o.get("lead_in_existing"):
                 o["extends_existing"] = True; bump("extends_lead_in_existing")
+            if not o["extends_existing"] and (PLACE_EXCEPTION.search(quote) or (sp0 and PLACE_EXCEPTION.search(re.sub(r"\{\{|\}\}", "", context_sentence(sp0, text)[0])))):          # M3: a 200-foot-rule place exception widens an existing authority
+                o["extends_existing"] = True; bump("m3_place_exception_extends")
             if o.get("kind_from_lead_in"):
                 kind = o["kind_from_lead_in"]
             if (kind == "duty" and o.get("kind_model") == "power" and o.get("kind_list_item") and not o.get("kind_from_lead_in")
@@ -1157,6 +1248,17 @@ def build_records(laws):
                   and o.get("deliverable_type") in SETUP_TYPES and not TRIGGER.search(quote) and not CAP_RE.search(quote)
                   and not PROHIBITION.search(quote)):
                 o["deadline_kind"] = "on_effective_date"; bump("triggered_to_setup")
+            if (o.get("model_unit") and not o.get("agency_unit") and o.get("jurisdiction") == "state"
+                    and o.get("agency_org_type") != "local government group" and o.get("agency") not in STATE_UNIT_EXCLUDED):
+                o["agency_unit"] = unit_title(o["model_unit"]); bump("m5_unit_copied")           # M5
+            if (o["extends_existing"] and "{{" in text and not o.get("lead_in_existing") and not o.get("kind_from_lead_in")
+                    and sp0 and not in_braces(sp0[0], sp0[1], text)):                    # M6: the quote is reprinted text next to the new matter
+                nq = relocate_quote(quote, text)
+                if nq:
+                    o["quote_original"], o["quote"], o["quote_relocated"] = quote, nq, True
+                    bump("m6_quote_relocated")
+                else:
+                    bump("m6_quote_outside_unresolved")
             # 1. record dates per section; on_effective_date never null when the date is known
             sec_date, sec_src = section_effective(o, text, eff)
             if sec_src != "law":

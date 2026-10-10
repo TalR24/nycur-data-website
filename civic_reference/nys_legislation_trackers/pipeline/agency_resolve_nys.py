@@ -131,6 +131,8 @@ def resolve_unmatched(o, text, law, deps):
                  agency_group=group, agency_unit=unit, agency_source=rule)
         return rule
 
+    if strip_art(norm(raw)) == "authority" and re.match(r"\s*Alcoholic Beverage Control Law\b", o.get("citation") or "") and "ABC" in BY_CANON:
+        return set_canon("ABC", BY_CANON, BY_CANON["ABC"]["jurisdiction"], "abc_law_authority")        # M2: 'the authority' in the ABC Law is the State Liquor Authority
     for c in cands:                                       # 1. aliases and the two crosswalks
         for v in (c, strip_art(c)):
             if v in ALIASES and ALIASES[v] in BY_CANON:

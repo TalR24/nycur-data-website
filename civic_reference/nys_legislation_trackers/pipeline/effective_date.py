@@ -150,6 +150,12 @@ def _single(clause, signed, ref=None):
             if m.group(2).startswith("month"):
                 return add_months(signed, n), "n_months_after_law", None
             return signed + timedelta(days=n), "n_days_after_law", None
+    # M1 (Oct 10 2026): "one year / two years after it shall have become a law" is the signing date plus the offset
+    m = re.search(r"(?:take|takes) effect (?:on )?(?:the )?(" + NUM_WORDS + r"|\d+)\s+(years?)\s+(?:next\s+)?(?:after|following)\s+(?:it|this act)\s+shall\s+have\s+become\s+(?:a\s+)?law", low)
+    if m and m.group(1).strip():
+        n = words_to_int(m.group(1)) if not m.group(1).isdigit() else int(m.group(1))
+        if n is not None:
+            return add_months(signed, 12 * n), "n_years_after_law", None
     m = re.search(r"(?:take|takes) effect (?:on )?(" + MONTH_RE + r")\s+(\d{1,2}),?\s+(\d{4})", low)
     if m:
         return date(int(m.group(3)), MONTHS[m.group(1)], int(m.group(2))), "fixed_date", None
