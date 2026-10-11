@@ -13,7 +13,7 @@ prompt wording (state and local government instead of NYC agencies) and the agen
 """
 import argparse, json, os, re, sys, time
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -24,12 +24,14 @@ sys.path.insert(0, str(HERE))
 import extract_obligations as eo  # noqa: E402
 import law_definitions  # noqa: E402
 from effective_date import parse_effective  # noqa: E402
+import effective_date as efd  # noqa: E402
 import chapter_lookup  # noqa: E402
 import agency_resolve_nys  # noqa: E402
 from validate_duties import PASSIVE_SUBJECT  # noqa: E402  (J1 reuses the validator's detection)
 
 MAX_CHARS = 120_000
 REASK_MANUAL = HERE / "reask_manual.json"
+REASK_MANUAL_DATA = DATA / "reask_manual.json"      # J7: confirmed audit misses by night, merged into data/reask on every ingest
 TEXT_MARKED = HERE / "cache" / "text_marked"
 EXTRACTED = HERE / "cache" / "extracted"
 LOCAL_GROUPS = {"town": "Towns", "village": "Villages", "city": "Cities", "county": "Counties"}
@@ -710,11 +712,29 @@ def list_lead_in(span, text):
     return para if re.search(r"(?:[:;]|\bfollowing|\bensuring|\bthat)\s*(?:\}\})?\s*$", para) else None
 
 
+BENEFIT_RE = re.compile(r"\b(?:shall|will)\s+(?:also\s+)?(?:receive|be eligible to receive|be eligible for|be entitled to|be exempt(?:ed)?)\b", re.I)
+
+
+def benefit_entitlement(o, q):
+    """M13 (Oct 11 2026). 'Eligible dwelling units ... shall receive a partial abatement', 'such property shall be exempt', 'the owner shall be
+    entitled to': the grammatical subject is the beneficiary. Dropped when no government noun precedes the modal and the record's
+    actor_raw does not appear in the quote."""
+    m = BENEFIT_RE.search(q or "")
+    if not m or GOV_ACTOR.search(q[:m.start()]) or len(re.findall(r"[A-Za-z]+", q[:m.start()])) < 2:      # a quote that starts at the modal names no subject: the record stays
+        return False
+    if GRANT_WORD.search(q[:m.start()]) or re.search(r"\b(?:notice|training|instruction)\b", q[m.end():m.end() + 60], re.I):
+        return False        # an authorization comes first ('is hereby authorized ... any increase shall be exempt'), or receiving notice or training is the government's duty to give
+    actor = re.sub(r"^(?:the|a|an|such|each|any)\s+", "", (o.get("actor_raw") or "").strip().lower())
+    return bool(actor) and actor not in q.lower()
+
+
 def gate_record(o, text, has_markers):
     """Returns (rule, reason) when the record must be dropped, else None. Rules 1-3 of phase 3b."""
     if not o.get("quote_verified"):
         return "unverified_quote", "quote not found in the law text"
     q = o.get("quote") or ""
+    if benefit_entitlement(o, q):
+        return "benefit_entitlement", "the subject is the beneficiary (it receives, is entitled to or is exempt from), not a government actor"
     span = locate_span(q, text)
     # 3. no-record classes
     if STRONG_EXEMPT_RE.search(q) or (EXEMPT_RE.search(q) and not MANDATORY.search(EXEMPT_RE.sub(" ", q))):
@@ -724,7 +744,7 @@ def gate_record(o, text, has_markers):
         if sec and re.search(r"\b11\.00\b[^.]{0,80}local finance law|local finance law[^.]{0,80}\b11\.00\b", hdr + " " + sec[:400], re.I):
             return "local_finance_useful_life", "Local Finance Law section 11.00 period of probable usefulness"
         sent, (sl, sr) = context_sentence(span, text)
-        if not VERBISH.search(q) and not VERBISH.search(sent):
+        if not VERBISH.search(q) and not VERBISH.search(sent) and not (WILL_DUTY.search(q) or WILL_DUTY.search(sent)):      # M11: 'the director will report' is a duty
             lead = list_lead_in(span, text)
             if lead and (VERBISH.search(lead) or TO_VERB.search(lead)):          # a list entry: the duty is in the lead-in sentence
                 o["lead_in"] = re.sub(r"\s+", " ", re.sub(r"\{\{|\}\}", "", lead)).strip()[:400]
@@ -878,6 +898,8 @@ def dedupe_law(lst):
 # ── Phase 3c: recall checks and the re-ask list ─────────────────────────────────────────────────────────────────────
 MODAL_SENT = re.compile(r"\b(?:shall|must|may|is authorized|are authorized|is hereby authorized|empowered|is required|are required)\b", re.I)
 GOV_ACTOR = re.compile(r"\b(department|commissioner|office|officer|board|commission|authority|agency|agencies|governor|comptroller|attorney general|court|judge|council|legislature|director|superintendent|secretary|division|bureau|trustees?|assessor|clerk|treasurer|mayor|supervisor|corporation|university|state|town|village|city|county|municipalit\w*|district|chair\w*|president|inspector|administrator|RJSCB|panel)\b", re.I)
+# M11 (Oct 11 2026): "will" + report/submit/provide/publish/notify/post with a government noun as the subject is a duty modal
+WILL_DUTY = re.compile(r"\b(?:the|a|an|each|such)\s+(?:[\w'-]+\s+){0,3}?(?:" + GOV_ACTOR.pattern[3:-3] + r")(?:\s+of\s+(?:the\s+)?[\w'-]+(?:\s+[\w'-]+){0,3}?)?\s+will\s+(?:also\s+)?(?:report|submit|provide|publish|notify|post)\b", re.I)
 DEFINITIONAL = re.compile(r"^\W*(?:the term|as used in|for (?:the )?purposes of)\b", re.I)
 SKIP_SENT = re.compile(r"\btake effect\b|\bshall have become a law\b|\bis hereby repealed\b", re.I)
 
@@ -1069,6 +1091,7 @@ def build_reask(todo, duties, powers):
         drops[d["matter_id"]].append(d)
     out = {}
     manual = json.loads(REASK_MANUAL.read_text()) if REASK_MANUAL.exists() else {}
+    manual_confirmed = json.loads(REASK_MANUAL_DATA.read_text())["laws"] if REASK_MANUAL_DATA.exists() else {}
     for law, text in todo:
         if not (EXTRACTED / (law["key"] + ".json")).exists():
             continue                     # no answer yet: nothing to re-ask (it is still unanswered, not under-covered)
@@ -1084,6 +1107,13 @@ def build_reask(todo, duties, powers):
                 sp = locate_span(frag.split("...")[0], text)
                 sents.append(re.sub(r"\s+", " ", context_sentence(sp, text)[0]).strip() if sp else frag)
             fl.append({"check": "audit_missed", "detail": "provisions the blind audits found missing", "sentences": sents})
+        if law["key"] in manual_confirmed:     # J7: data/reask_manual.json, merged on every ingest
+            sents = []
+            for it in manual_confirmed[law["key"]]:
+                if it["sentence"] not in sents:
+                    sents.append(it["sentence"])
+            fl.insert(0, {"check": "audit_confirmed_miss", "detail": "%d provisions the nightly audits confirmed missing (%s)" % (len(sents), ", ".join(sorted({it["night"] for it in manual_confirmed[law["key"]]}))),
+                       "sentences": sents})
         if fl:
             out[law["key"]] = {"reasons": fl}
     return out
@@ -1150,6 +1180,32 @@ def write_cache(mid, res):
     (EXTRACTED / (mid + ".json")).write_text(json.dumps(res, indent=1, ensure_ascii=False))
 
 
+DL_OFFSET = re.compile(r"\b(" + efd.NUM_WORDS + r"|\d+)[\s-]+(months?|years?)\b", re.I)
+
+
+def calendar_deadline(o, bases):
+    """M7 (Oct 11 2026). The Council extractor stores 'N months' as 30 N days and 'N years' as 365 N days. A month or year offset in the
+    deadline text is calendar arithmetic from the same base (same day-of-month, clamped to month end). Only a stored date that equals the
+    30/365-day figure from a base is replaced; returns the new ISO date or None."""
+    if o.get("deadline_kind") not in ("days_after_effective", "days_after_enactment") or not o.get("deadline_date"):
+        return None
+    ms = [m for m in DL_OFFSET.findall(o.get("deadline_text") or "") if m[0].strip()]
+    if len(ms) != 1 or re.search(r"\bdays?\b", o.get("deadline_text") or "", re.I):
+        return None
+    n = efd.words_to_int(ms[0][0]) if not ms[0][0].isdigit() else int(ms[0][0])
+    if not n:
+        return None
+    months, per = (n, 30) if ms[0][1].lower().startswith("month") else (12 * n, 365)
+    for base in bases:
+        if not base:
+            continue
+        b = datetime.strptime(base, "%Y-%m-%d").date()
+        old = (b + timedelta(days=n * per)).isoformat()
+        if o["deadline_date"] == old:
+            return efd.add_months(b, months).isoformat()
+    return None
+
+
 def build_records(laws):
     by_key = {l["key"]: l for l in laws}
     STATS.clear()
@@ -1165,6 +1221,9 @@ def build_records(laws):
         law_d, law_p = [], []
         for o in res["obligations"]:
             o["deadline_date"] = eo.sanitize_deadline(o.get("deadline_date"), law["enactment_date"])
+            cal = calendar_deadline(o, [res.get("effective_date"), eff.get("effective_date"), law["enactment_date"]])
+            if cal:
+                o["deadline_date"] = cal; bump("m7_calendar_month_deadline")
             if "{{" in (o.get("quote") or "") or re.search(r"\[[a-z]", o.get("quote") or ""):
                 cleaned, has_deleted = eo.clean_stored_quote(o.get("quote"), text)
                 o["quote"] = cleaned
@@ -1177,6 +1236,8 @@ def build_records(laws):
             if kind == "neither":
                 excluded += 1
                 continue
+            if kind == "power" and o.get("kind_model") == "duty" and WILL_DUTY.search(o.get("quote") or "") and not GRANT_WORD.search(o.get("quote") or ""):
+                kind = "duty"; o["kind_adjusted"] = "will_duty"; bump("m11_will_duty")        # M11: the quote has no 'shall', so the quote rule said power
             o["actor_resolved_model"] = res.get("actor_model", {}).get(o["obligation_id"])
             o["matter_id"] = law["key"]
             fix_parenthetical_actor(o) and bump("f3_parenthetical_actor")
@@ -1203,6 +1264,10 @@ def build_records(laws):
                     bump("dtf_to_unspecified")
             if not o.get("agency_matched") and o.get("agency") != "All agencies":      # fix 2b, 3: second-pass resolver
                 bump("agency_" + agency_resolve_nys.resolve_unmatched(o, text, law, {**RESOLVE_DEPS, "named_locality": named_locality}))
+            if agency_resolve_nys.fix_generic_role(o):          # M8
+                bump("m8_generic_role_to_state_agencies")
+            elif agency_resolve_nys.fix_boces(o):               # M12
+                bump("m12_boces")
             quote = o.get("quote") or ""
             g = gate_record(o, text, "{{" in text)
             if g:

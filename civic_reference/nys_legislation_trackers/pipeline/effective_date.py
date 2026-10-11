@@ -107,15 +107,17 @@ YEAR_REF = re.compile(r"laws\s+of\s+(\d{4})", re.I)
 
 def find_reference(clause):
     """What 'same date and manner as a chapter ...' points at: {'bills': [(S,1997),(A,286)], 'chapter': n, 'year': y}."""
-    m = CHAP_REF.search(clause)
-    if m:
-        return {"chapter": int(m.group(1)), "year": int(m.group(2)), "bills": []}
+    # M9 (Oct 11 2026): "a chapter of the laws of 2015, amending chapter 672 of the laws of 1993 ..., as proposed in legislative bills numbers
+    # S.459 and A.5251, takes effect": the bills name the referenced chapter; the chapter number in the middle is the law it amends
     y = YEAR_REF.search(clause)
     pm = re.search(r"as proposed in legislative bills? numbers?([^;]*?)(?:,? takes? effect|;|$)", clause, re.I)
     if y and pm:
         bills = [(b.group(1).upper(), int(b.group(2))) for b in BILL_REF.finditer(pm.group(1))]
         if bills:
             return {"bills": bills, "chapter": None, "year": int(y.group(1))}
+    m = CHAP_REF.search(clause)
+    if m:
+        return {"chapter": int(m.group(1)), "year": int(m.group(2)), "bills": []}
     return None
 
 
@@ -198,6 +200,11 @@ def _expiry(clause, effective, signed):
             return add_months(effective, 12 * n) if u.startswith("year") else (
                 add_months(effective, n) if u.startswith("month") else effective + timedelta(days=n))
     m = re.search(r"expire(?:s)?(?: on)? (" + MONTH_RE + r")\s+(\d{1,2}),?\s+(\d{4})", low)
+    if m:
+        return date(int(m.group(3)), MONTHS[m.group(1)], int(m.group(2)))
+    # M10 (Oct 11 2026): "...; further provided that this act shall expire and be deemed repealed December 31, 2012" (a proviso after the
+    # effective date; only a statement about the act as a whole counts, a named section's sunset does not)
+    m = re.search(r"(?<!of )\bthis act shall (?:expire|be deemed to expire)(?: and be deemed repealed)?(?: on)?\s+(" + MONTH_RE + r")\s+(\d{1,2}),?\s+(\d{4})", low)
     if m:
         return date(int(m.group(3)), MONTHS[m.group(1)], int(m.group(2)))
     return None

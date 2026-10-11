@@ -190,3 +190,39 @@ def _unspecified(o):
     o.update(agency="Unspecified", agency_full="Unspecified", agency_matched=False, jurisdiction=None, agency_org_type=None,
              agency_group=None, agency_unit=None, actor_unresolved=True, agency_source="unresolved")
     return "unresolved"
+
+
+# M8 (Oct 11 2026): a generic role noun is not a named body. These exact phrases resolve to the State agencies group.
+GENERIC_ROLE = re.compile(r"^(?:the |such |said |each |the same )?(?:appointing (?:authorit(?:y|ies)|officers?)(?: or authorit(?:y|ies))?|head of the agency|agency heads?)$|^the public employer$", re.I)
+
+
+def fix_generic_role(o):
+    """Mutates o and returns True when actor_raw is exactly a generic role noun; a role qualified by a body ('the appointing authority
+    for the advisory council') is left to the other rules."""
+    raw = re.sub(r"\s+", " ", (o.get("actor_raw") or "").strip(" .,;:"))
+    if not GENERIC_ROLE.match(raw):
+        return False
+    o.update(agency="State agencies", agency_full="State agencies", agency_matched=True, jurisdiction="state", agency_org_type="state agency group",
+             agency_group=None, agency_unit=None, agency_source="generic_role")
+    o.pop("actor_unresolved", None)
+    return True
+
+
+# M12 (Oct 11 2026): boards of cooperative educational services are BOCES, never School districts or Unspecified.
+BOCES_RE = re.compile(r"\bboards? of cooperative educational services?\b|\bboces\b", re.I)
+SCHOOL_ALSO = re.compile(r"school district|board of education|schools?\b|\bdepartment\b|\bcommissioner\b", re.I)
+
+
+def fix_boces(o):
+    """Mutates o and returns True when actor_raw names a BOCES and no other body (a compound such as 'school districts and boards of
+    cooperative educational services' keeps its sibling-record split)."""
+    raw = o.get("actor_raw") or ""
+    if not BOCES_RE.search(raw):
+        return False
+    rest = BOCES_RE.sub(" ", re.sub(r"\([^)]*\)", " ", raw))
+    if SCHOOL_ALSO.search(rest) and not re.search(r"board of education of the board of cooperative", raw, re.I):
+        return False
+    o.update(agency="BOCES", agency_full="BOCES", agency_matched=True, jurisdiction="local", agency_org_type="local government group",
+             agency_group="BOCES", agency_unit=None, agency_source="boces")
+    o.pop("actor_unresolved", None)
+    return True

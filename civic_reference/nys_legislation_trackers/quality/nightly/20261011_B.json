@@ -1,0 +1,434 @@
+{
+ "_scoring": {
+  "auditor": "B",
+  "night": "20261011",
+  "laws": 11,
+  "stored_records": 26,
+  "correct": 24,
+  "wrong_fields": 1,
+  "not_real": 1,
+  "missed": 6,
+  "precision_strict": "24/26 = 92.3% (Wilson 95% 75.9-97.9)",
+  "precision_real": "25/26 = 96.2% (Wilson 95% 81.1-99.3)",
+  "recall": "25/31 = 80.6% (Wilson 95% 63.7-90.8)",
+  "effective_dates": "10/11 correct"
+ },
+ "_classes": [
+  {
+   "name": "Benefit receipt stored as a government duty (exemption/abatement amount schedule, actor_raw not in quote)",
+   "criteria": [
+    "1",
+    "3"
+   ],
+   "instances": [
+    "2013-S2320-05"
+   ],
+   "rule": "re.search(r'\\bshall (receive|be eligible to receive|be entitled to)\\b[^.]{0,40}\\b(abatement|exemption|credit|benefit)', quote, re.I); tighter subset adds actor_raw.lower() not in quote.lower()",
+   "db_matches": 10,
+   "db_examples": [
+    "2011-A9168-01",
+    "2013-A7803-03",
+    "2013-A7803-08"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "Passive-subject actor_raw (queued class, still present)",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2013-S3787-02"
+   ],
+   "rule": "re.search(r'\\b(shall|may|must) (be|not be)\\b|\\b(shall|may) \\w+ed\\b', actor_raw, re.I)",
+   "db_matches": 44,
+   "db_examples": [
+    "2009-A2364-01",
+    "2009-A6420-01",
+    "2009-A6472-02"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "Same-as-chapter effective date unresolved when the referenced chapter is named by bill print numbers ('as proposed in legislative bills numbers ...'); reference mis-resolved to the amended base chapter (672 of 1993)",
+   "criteria": [
+    "8"
+   ],
+   "instances": [
+    "2015-A9193"
+   ],
+   "rule": "effective_dates[law].rule == 'same_as_chapter_unresolved' and re.search(r'legislative bills? numbers?', raw_clause, re.I) (resolvable via signed/{Y}.json print_no lookup)",
+   "db_matches": 27,
+   "db_examples": [
+    "2011-S5833",
+    "2013-S7843",
+    "2015-A9193"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "Act-level dated sunset in the act clause not captured as expires_date when the clause opens with a proviso",
+   "criteria": [
+    "8"
+   ],
+   "instances": [
+    "2009-S6150"
+   ],
+   "rule": "re.search(r'this act shall expire and be deemed repealed (on )?<Month> <day>,? <yyyy>', raw_clause, re.I) and not expires_date (43 of 48 such laws; 151 stored records in them)",
+   "db_matches": 43,
+   "db_examples": [
+    "2009-S6150",
+    "2009-A40012",
+    "2009-A40011"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "Sibling duty missed in a multi-duty amended passage or unbraced free-standing section (second report, extended rule power, free-standing HPD certification, interest waiver, local-law content duty)",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2013-S5236 (missed)",
+    "2013-S2320 (missed x4)",
+    "2011-A8007 (missed)"
+   ],
+   "rule": "no mechanical rule",
+   "db_matches": 0,
+   "db_examples": [],
+   "needs_judgment": true
+  }
+ ],
+ "2011-S6899": {
+  "records": {
+   "2011-S6899-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "Bond cap 'shall not issue ... exceeding seventeen billion two hundred eighty million dollars' is a duty with no deadline, extends_existing true (packet rule on bond caps)."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2012-08-17",
+   "computed": "2012-08-17",
+   "verdict": "correct",
+   "note": "'This act shall take effect immediately'; signed 2012-08-17."
+  }
+ },
+ "2011-A8007": {
+  "records": {
+   "2011-A8007-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "'where a grant or gift is of money, the chief administrator shall dispose of same as provided in section eleven of the state finance law.' Proviso on the existing acceptance power, so extends_existing true follows the proviso rule."
+   }
+  },
+  "missed": [
+   {
+    "blind": "b2",
+    "quote": "Accept as agent of the state any grant or gift for the purpose of executing the functions of his or her office",
+    "kind": "power",
+    "agency": "Unified Court System (chief administrator of the courts)",
+    "dropped_by": null,
+    "note": "Deletion of '[with the approval of the chairmen of the senate finance committee and the assembly ways and means committee ...]' widens the acceptance power; packet rule: a deletion that widens is a record, extends_existing true. Weak item: the only new words in the clause are 'or her'."
+   }
+  ],
+  "effective_date": {
+   "stored": "2011-07-20",
+   "computed": "2011-07-20",
+   "verdict": "correct",
+   "note": "Immediately; signed 2011-07-20."
+  }
+ },
+ "2009-A10786": {
+  "records": {
+   "2009-A10786-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "Sunset moved '[ten] {{eleven;}}'; power, extends_existing true, no deadline."
+   },
+   "2009-A10786-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "'the county shall allocate {{each calendar year}} the first twelve million...'; end date struck, annual, extends_existing true."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2010-07-30",
+   "computed": "2010-07-30",
+   "verdict": "correct",
+   "note": "Immediately; signed 2010-07-30."
+  }
+ },
+ "2013-S5236": {
+  "records": {
+   "2013-S5236-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "'{{on or before October first, two thousand seventeen the}} superintendent shall require the association to report'; DFS, fixed_date 2017-10-01."
+   }
+  },
+  "missed": [
+   {
+    "blind": "b2",
+    "quote": "On or before January first, two thousand eighteen, the superintendent shall report to the governor and the legislature regarding the number of policies issued pursuant to this section and such paragraph and shall include recommendations",
+    "kind": "duty",
+    "agency": "DFS",
+    "dropped_by": null,
+    "note": "Report content rewritten in new matter ('{{regarding the number of policies issued pursuant to this section and such paragraph and}}'); one-time report, fixed_date 2018-01-01, extends_existing true. Not stored and not in dropped/2013.json."
+   }
+  ],
+  "effective_date": {
+   "stored": "2013-12-18",
+   "computed": "2013-12-18",
+   "verdict": "correct",
+   "note": "Immediately; signed 2013-12-18."
+  }
+ },
+ "2015-A9193": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": null,
+   "computed": "2015-11-20",
+   "verdict": "wrong",
+   "note": "'take effect on the same date and in the same manner as a chapter of the laws of 2015 ... as proposed in legislative bills numbers S.459 and A.5251'. S459 = chapter 467 of 2015, signed 2015-11-20, 'This act shall take effect immediately' (packets/2015/2015-S459.txt line 87). A9193 signed 2016-03-21, after that date, so 2015-11-20 stands. Stored rule same_as_chapter_unresolved with reference mis-set to chapter 672 of 1993. No records expected: the only new matter is the word '{{district}}' in a list entry name."
+  }
+ },
+ "2013-S7365": {
+  "records": {
+   "2013-S7365-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "'The town of Carmel may so elect by filing ... on or before December 31, 2014'; filing cutoff, deadline none is right."
+   },
+   "2013-S7365-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "'All past service costs ... shall be borne by the town of Carmel.'"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2014-07-22",
+   "computed": "2014-07-22",
+   "verdict": "correct",
+   "note": "Immediately; signed 2014-07-22."
+  }
+ },
+ "2013-S3787": {
+  "records": {
+   "2013-S3787-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-S3787-02": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "actor_raw": "the assessor of the town of Brookhaven"
+    },
+    "note": "actor_raw is the passive clause 'the application shall be reviewed'; the law: 'If accepted, the application shall be reviewed as if it had been received on or before the taxable status date' - the reviewer is the assessor named in the preceding sentence. Agency Towns / Town of Brookhaven is right. Queued class."
+   },
+   "2013-S3787-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-S3787-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "'the applicable governing body or tax department may, in its discretion, provide for the refund'; Town of Brookhaven accepted (Suffolk County as tax-collecting body not ruled out)."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2013-10-21",
+   "computed": "2013-10-21",
+   "verdict": "correct",
+   "note": "Immediately; signed 2013-10-21."
+  }
+ },
+ "2011-A7933": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2011-08-03",
+   "computed": "2011-08-03",
+   "verdict": "correct",
+   "note": "Immediately; signed 2011-08-03. No records expected: both new subdivisions are residency rules for town justices."
+  }
+ },
+ "2009-S6150": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2010-07-15",
+   "computed": "2010-07-15",
+   "verdict": "correct",
+   "note": "Immediately; signed 2010-07-15. expires_date is null although the clause ends 'this act shall expire and be deemed repealed December 31, 2012' (class 4). No records expected: new matter '{{or by a government sponsored enterprise}}' sits in the 'Mortgage' definition and new subdivision 17 is a definition."
+  }
+ },
+ "2013-S2320": {
+  "records": {
+   "2013-S2320-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-S2320-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "'the local housing agency shall require the Applicant to pay two times the actual cost'; stored under Cities with no unit; section 489 applies to any MDL city, accepted."
+   },
+   "2013-S2320-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "'the Department May require ... be filed electronically'; Department of Finance not verifiable from the packet text (no definition of 'department' in the act); accepted."
+   },
+   "2013-S2320-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-S2320-05": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "3"
+    ],
+    "fields": {},
+    "note": "Quote 'eligible dwelling units in property whose average unit assessed value is less than or equal to fifty thousand dollars shall receive a Partial abatement ... of twenty-five percent' is an abatement-rate schedule (a benefit to unit owners), not a duty on the commissioner of finance; actor_raw 'the commissioner of finance' does not appear in the quote."
+   },
+   "2013-S2320-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-S2320-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-S2320-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-S2320-09": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-S2320-10": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-S2320-11": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-S2320-12": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   }
+  },
+  "missed": [
+   {
+    "blind": "b2",
+    "quote": "Any local law or ordinance providing for benefits pursuant to this section must also provide the Following with respect to conversions, alterations or improvements completed on or after December thirty-first, two thousand eleven",
+    "kind": "duty",
+    "agency": "Cities",
+    "dropped_by": null,
+    "note": "New RPTL 489(17)(B) requires the city's J-51 local law to restrict co-op/condo eligibility to projects with substantial governmental assistance."
+   },
+   {
+    "blind": "b9",
+    "quote": "the department of housing preservation and development of New York City shall impose a requirement and either certify (i) that twenty percent of the units on site are affordable",
+    "kind": "duty",
+    "agency": "City of New York Department of Housing Preservation and Development",
+    "dropped_by": null,
+    "note": "Section 14 is a free-standing section (no amendment), so all new law under the packet rule; no stored or dropped record."
+   },
+   {
+    "blind": "b10",
+    "quote": "such Rules May include, but need not be limited to, denial, termination or revocation of Any abatement pursuant to this section",
+    "kind": "power",
+    "agency": "City of New York Department of Finance",
+    "dropped_by": null,
+    "note": "Braced addition to RPTL 467-a(7) widens the commissioner of finance's rulemaking power; extends_existing true."
+   },
+   {
+    "blind": "b12",
+    "quote": "the commissioner of finance May waive Any interest otherwise due on such amount",
+    "kind": "power",
+    "agency": "City of New York Department of Finance",
+    "dropped_by": null,
+    "note": "New RPTL 467-a(9) second sentence; distinct from -09 (amended tax bills)."
+   }
+  ],
+  "effective_date": {
+   "stored": "2013-01-30",
+   "computed": "2013-01-30",
+   "verdict": "correct",
+   "note": "'take effect immediately and shall be deemed to have been in full force and effect on and after June 1, 2012'; stored retroactive_to 2012-06-01 also matches. Clause text in the packet is truncated after 'provided, that:'; provisos not visible."
+  }
+ },
+ "2013-A8046": {
+  "records": {
+   "2013-A8046-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-A8046-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-A8046-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "SLA under ABC crosswalk name is known, not a finding."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2014-03-26",
+   "computed": "2014-03-26",
+   "verdict": "correct",
+   "note": "180th day after 2013-09-27 = 2014-03-26."
+  }
+ }
+}

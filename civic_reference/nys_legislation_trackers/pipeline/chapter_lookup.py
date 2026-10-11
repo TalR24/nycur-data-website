@@ -49,8 +49,40 @@ def _from_bill(session, base):
             "effective_date": e["effective_date"], "rule": e["rule"], "raw_clause": e["raw_clause"]}
 
 
+TEXT_MARKED = os.path.join(HERE, "cache", "text_marked")
+DATA_DIR = os.path.join(HERE, "..", "data")
+
+
+def _local_bill(session, base):
+    """M9 (Oct 11 2026): a bill the act names ('as proposed in legislative bills numbers S.459 and A.5251') is looked up first in the
+    signed index data/signed/{session}.json, with its effective date parsed from the cached marked text (one hop) or read from
+    data/effective_dates/{session}.json. Returns the chapter_lookup record shape, or None when the bill is not in the index."""
+    from effective_date import parse_effective
+    p = os.path.join(DATA_DIR, "signed", "%d.json" % session)
+    if not os.path.exists(p):
+        return None
+    hit = next((l for l in json.load(open(p)) if re.sub(r"[A-Za-z]$", "", l["print_no"]) == base), None)
+    if not hit:
+        return None
+    tp = os.path.join(TEXT_MARKED, hit["key"] + ".txt")
+    ep = os.path.join(DATA_DIR, "effective_dates", "%d.json" % session)
+    if os.path.exists(tp):
+        e = parse_effective(open(tp).read(), hit["signed_date"], resolver=None)
+    elif os.path.exists(ep) and hit["key"] in json.load(open(ep)):
+        e = json.load(open(ep))[hit["key"]]
+    else:
+        return None
+    return {"bill": hit["key"], "chapter": hit["chapter_number"], "year": hit["chapter_year"], "signed_date": hit["signed_date"],
+            "effective_date": e["effective_date"], "rule": e["rule"], "raw_clause": e["raw_clause"]}
+
+
 def resolve(bills=None, chapter=None, year=None):
     idx = _load()
+    if bills and year:
+        for ch, num in bills:
+            rec = _local_bill(session_for(year), "%s%d" % (ch, num))
+            if rec:
+                return rec
     if chapter and year:
         key = "chap:%d-%d" % (year, chapter)
         if key not in idx:

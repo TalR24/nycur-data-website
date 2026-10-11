@@ -1,0 +1,536 @@
+{
+ "_scoring": {
+  "auditor": "A",
+  "night": "20261011",
+  "laws": 11,
+  "stored_records": 22,
+  "correct": 19,
+  "wrong_fields": 3,
+  "not_real": 0,
+  "missed": 14,
+  "precision_strict": "19/22 = 86.4% (Wilson 95% 66.7-95.3%)",
+  "precision_real": "22/22 = 100.0% (Wilson 95% 85.1-100.0%)",
+  "recall": "22/36 = 61.1% (Wilson 95% 44.9-75.2%)",
+  "effective_dates": "11/11 correct"
+ },
+ "_classes": [
+  {
+   "name": "Month offsets dated as 30-day blocks",
+   "criteria": [
+    "5"
+   ],
+   "instances": [
+    "2011-A8496-07"
+   ],
+   "rule": "deadline_kind in (days_after_effective, days_after_enactment) and deadline_text matches '(\\d+|one..thirty-six) months' and deadline_date != base date + N calendar months (base = effective_date or enactment_date)",
+   "db_matches": 18,
+   "db_examples": [
+    "2009-A10984-10",
+    "2011-A340-02",
+    "2011-A340-06"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "Real duty dropped by designation_no_actor (named government subject with a verb)",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2009-A40011-05"
+   ],
+   "rule": "dropped rule == designation_no_actor and quote matches '(director of the budget|commissioner|department|...|village)[^.;]{0,80}(shall|will|must|may|is authorized|is directed)' (also: the gate ignores 'will' as a duty verb)",
+   "db_matches": 3,
+   "db_examples": [
+    "2009-A40011-05",
+    "2009-S5987-06",
+    "2011-S4720-11"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "Distinct duty dropped as deadline_split",
+   "criteria": [
+    "1",
+    "9"
+   ],
+   "instances": [
+    "2011-A8496-08"
+   ],
+   "rule": "dropped rule == deadline_split and quote has no deadline phrase (within|no later than|not later than|on or before|by <month>|days|months|years after|prior to)",
+   "db_matches": 2,
+   "db_examples": [
+    "2011-A340-11",
+    "2011-A8496-08"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "Generic role noun stored as a named body",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2009-A40011-02"
+   ],
+   "rule": "agency_source == named_body and agency matches 'appointing authorit|governing bod|legislative bod|chief executive officer|municipal corporation|political subdivision|^the agency$'",
+   "db_matches": 8,
+   "db_examples": [
+    "2009-A40011-02",
+    "2009-A4091-01",
+    "2009-A4091-02"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "BOCES split between 'School districts' and 'BOCES' agency labels",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2011-S7014-01"
+   ],
+   "rule": "actor_raw matches 'cooperative educational|boces' and agency == 'School districts' (13 other BOCES records use agency 'BOCES'); needs a convention decision, scored correct here",
+   "db_matches": 20,
+   "db_examples": [
+    "2009-A11171-01",
+    "2009-A11171-05",
+    "2009-A11171-06"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "Under-extraction of secondary powers/duties in long free-standing special acts (fee CPI increases, implementation powers, issue-by-event duties, extend-geography power)",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2011-A8496"
+   ],
+   "rule": "no mechanical rule; proxy for triage: laws whose packet text has >= 2x more 'may|shall|authorized' clauses in new matter than stored records",
+   "db_matches": 0,
+   "db_examples": [],
+   "needs_judgment": true,
+   "laws": [
+    "2011-A8496",
+    "2009-A40011"
+   ]
+  },
+  {
+   "name": "Changed existing duty (amended section) stored extends_existing false",
+   "criteria": [
+    "7"
+   ],
+   "instances": [
+    "2009-A2021-01"
+   ],
+   "rule": "no mechanical rule without the packet: extends_existing false where the quote mixes reprinted and braced text in an 'is amended to read' section",
+   "db_matches": 0,
+   "db_examples": [],
+   "needs_judgment": true,
+   "laws": [
+    "2009-A2021"
+   ]
+  },
+  {
+   "name": "Deletion that widens a power not recorded / budget-bill reallocation authority not recorded",
+   "criteria": [
+    "7",
+    "1"
+   ],
+   "instances": [
+    "2011-A8007",
+    "2009-A163"
+   ],
+   "rule": "no mechanical rule",
+   "db_matches": 0,
+   "db_examples": [],
+   "needs_judgment": true,
+   "laws": [
+    "2011-A8007",
+    "2009-A163"
+   ]
+  }
+ ],
+ "2011-S6899": {
+  "records": {
+   "2011-S6899-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2012-08-17",
+   "computed": "2012-08-17",
+   "verdict": "correct",
+   "note": "immediately; signed 2012-08-17"
+  }
+ },
+ "2011-A8007": {
+  "records": {
+   "2011-A8007-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   }
+  },
+  "missed": [
+   {
+    "blind": "b2",
+    "quote": "Accept as agent of the state any grant or gift for the purpose of executing the functions of his or her office",
+    "kind": "power",
+    "agency": "Unified Court System",
+    "dropped_by": null,
+    "note": "the act strikes '[with the approval of the chairmen of the senate finance committee and the assembly ways and means committee and the respective judiciary committees of each house,]': a deletion that widens the acceptance power, extends_existing true"
+   }
+  ],
+  "effective_date": {
+   "stored": "2011-07-20",
+   "computed": "2011-07-20",
+   "verdict": "correct",
+   "note": "immediately"
+  }
+ },
+ "2011-S7014": {
+  "records": {
+   "2011-S7014-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "agency 'School districts' for BOCES accepted; 13 other DB records use 'BOCES' (see class)"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2012-08-17",
+   "computed": "2012-08-17",
+   "verdict": "correct",
+   "note": "immediately"
+  }
+ },
+ "2011-A7668": {
+  "records": {
+   "2011-A7668-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "ABC label is the known SLA crosswalk name"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2011-08-17",
+   "computed": "2011-08-17",
+   "verdict": "correct",
+   "note": "immediately"
+  }
+ },
+ "2011-A2411": {
+  "records": {
+   "2011-A2411-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A2411-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A2411-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A2411-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2011-07-26",
+   "computed": "2011-07-26",
+   "verdict": "correct",
+   "note": "ninetieth day after 2011-04-27"
+  }
+ },
+ "2009-A40011": {
+  "records": {
+   "2009-A40011-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-A40011-02": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "State agencies",
+     "agency_source": "group"
+    },
+    "note": "'the appointing authority shall publicly and conspicuously post' is a role noun, not a named body; sibling record -03 resolves the same actor to State agencies"
+   },
+   "2009-A40011-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-A40011-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   }
+  },
+  "missed": [
+   {
+    "blind": "b6",
+    "quote": "Six months from the effective date of this act, and every six months thereafter, the director of the budget will report to the speaker of the assembly and the temporary president of the senate",
+    "kind": "duty",
+    "agency": "Division of the Budget",
+    "dropped_by": "designation_no_actor",
+    "note": "recurring report, deadline days_after_effective 6 months, recurrence semiannual; the drop rule wrongly saw no lead-in (the actor and verb are in the sentence)"
+   },
+   {
+    "blind": "b3",
+    "quote": "A temporary position established pursuant to subdivision one of this section may be abolished for reasons of economy, consolidation or abolition of functions, curtailment of activities or otherwise.",
+    "kind": "power",
+    "agency": "State agencies",
+    "dropped_by": null,
+    "note": "passive power of the appointing agency in a wholly new section 66(2); borderline"
+   }
+  ],
+  "effective_date": {
+   "stored": "2009-12-04",
+   "computed": "2009-12-04",
+   "verdict": "correct",
+   "note": "immediately; sunset 2011-12-31 is a repeal, not the effective date"
+  }
+ },
+ "2009-A2021": {
+  "records": {
+   "2009-A2021-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "7"
+    ],
+    "fields": {
+     "extends_existing": true
+    },
+    "note": "'which awards [shall run consecutively] {{shall be fully payable in one lump sum upon the request of the injured employee.}}' changes the board's existing award duty in an amended section"
+   }
+  },
+  "missed": [
+   {
+    "blind": "b1",
+    "quote": "An award of compensation payable for permanent partial disability under paragraphs a through T, inclusive, of subdivision three of section fifteen of this article, shall be payable in one lump sum, without commutation to present value upon the request of the injured employee.",
+    "kind": "duty",
+    "agency": "Workers' Compensation Board",
+    "dropped_by": null,
+    "note": "new sentence in WCL 25(1)(b), the parallel of the stored 15(3)(u) record; passive, payer may be a carrier, so borderline"
+   }
+  ],
+  "effective_date": {
+   "stored": "2009-08-26",
+   "computed": "2009-08-26",
+   "verdict": "correct",
+   "note": "immediately"
+  }
+ },
+ "2011-A8496": {
+  "records": {
+   "2011-A8496-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A8496-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A8496-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A8496-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A8496-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A8496-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A8496-07": {
+    "verdict": "wrong",
+    "criteria": [
+     "5"
+    ],
+    "fields": {
+     "deadline_date": "2012-02-21"
+    },
+    "note": "'no later than two months after the date this act shall take effect' from 2011-12-21 is 2012-02-21; stored 2012-02-19 is 60 days"
+   }
+  },
+  "missed": [
+   {
+    "blind": "b4",
+    "quote": "Such geographic limitations may be extended by such taxi and limousine commission or successor agency, acting pursuant to the recommendations of the task force",
+    "kind": "power",
+    "agency": "TLC",
+    "dropped_by": null,
+    "note": "section 3"
+   },
+   {
+    "blind": "b5",
+    "quote": "Such hail privilege vehicle permits shall be issued beginning no later than the public sale of the additional taxicab medallions issued pursuant to section two of this act",
+    "kind": "duty",
+    "agency": "TLC",
+    "dropped_by": null,
+    "note": "event-triggered, deadline none"
+   },
+   {
+    "blind": "b6",
+    "quote": "Such fee amount may be increased by such taxi and limousine commission or successor agency to account for changes in the United States consumer price index, adjusted for inflation.",
+    "kind": "power",
+    "agency": "TLC",
+    "dropped_by": null,
+    "note": "section 3 vehicle permit fee"
+   },
+   {
+    "blind": "b7",
+    "quote": "The city of New York, acting through such taxi and limousine commission, is hereby authorized and empowered to take such actions as are necessary and desirable to implement the provisions of this section",
+    "kind": "power",
+    "agency": "TLC",
+    "dropped_by": null,
+    "note": "section 3"
+   },
+   {
+    "blind": "b10",
+    "quote": "Such fee amount may be increased by such taxi and limousine commission or successor agency to account for changes in the United States consumer price index, adjusted for inflation.",
+    "kind": "power",
+    "agency": "TLC",
+    "dropped_by": null,
+    "note": "section 4 base permit fee (same words as section 3)"
+   },
+   {
+    "blind": "b11",
+    "quote": "Such hail privilege base permits shall be issued beginning no later than the public sale of the additional taxicab medallions issued pursuant to section two of this act.",
+    "kind": "duty",
+    "agency": "TLC",
+    "dropped_by": null,
+    "note": "section 4, deadline none"
+   },
+   {
+    "blind": "b12",
+    "quote": "The city of New York, acting through such taxi and limousine commission, is hereby authorized and empowered to take such actions as are necessary and desirable to implement the provisions of this section",
+    "kind": "power",
+    "agency": "TLC",
+    "dropped_by": null,
+    "note": "section 4"
+   },
+   {
+    "blind": "b15",
+    "quote": "Such task force may also identify up to five locations, including airports, in each of the five boroughs of the city of New York, where for-hire vehicles shall be prohibited from accepting street hail passengers.",
+    "kind": "power",
+    "agency": "Task Force on Areas of New York City Underserved By Medallion Taxicabs",
+    "dropped_by": null,
+    "note": "section 5"
+   },
+   {
+    "blind": "b16",
+    "quote": "Such report and recommendations must be approved by all of the members of the task force and shall be implemented by rule of such commission",
+    "kind": "duty",
+    "agency": "TLC",
+    "dropped_by": "deadline_split",
+    "note": "a distinct rulemaking duty (implement the task force report by rule), not a deadline clause of -02 (which is the licence-sale procedures rule); deadline none"
+   }
+  ],
+  "effective_date": {
+   "stored": "2011-12-21",
+   "computed": "2011-12-21",
+   "verdict": "correct",
+   "note": "immediately"
+  }
+ },
+ "2011-S6536": {
+  "records": {
+   "2011-S6536-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6536-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2012-07-18",
+   "computed": "2012-07-18",
+   "verdict": "correct",
+   "note": "immediately"
+  }
+ },
+ "2009-A163": {
+  "records": {},
+  "missed": [
+   {
+    "blind": "b1",
+    "quote": "and any unused moneys Provided pursuant to this appropriation For High priority Planning grants, General Efficiency Planning grants or efficiency Implementation grants may be used For Twenty-first century Demonstration Project Grants.",
+    "kind": "power",
+    "agency": "Department of State",
+    "dropped_by": null,
+    "note": "new reallocation authority (subject to director of the budget approval) in the local government efficiency grant appropriation, extends_existing true; borderline with the appropriation exclusion. Other braced text is amounts, program headers, a $1,000,000 cap, and Healthy NY transfer/2% reduction language, treated as appropriation mechanics"
+   }
+  ],
+  "effective_date": {
+   "stored": "2009-02-04",
+   "computed": "2009-02-04",
+   "verdict": "correct",
+   "note": "immediately, deemed in force from 2008-04-01; stored retroactive_to 2008-04-01 matches"
+  }
+ },
+ "2013-S4579": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2013-07-12",
+   "computed": "2013-07-12",
+   "verdict": "correct",
+   "note": "immediately; law is a residency/elector exemption for the town of lyndon only, no records expected"
+  }
+ }
+}
