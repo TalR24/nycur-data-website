@@ -57,7 +57,7 @@ SITES = {
         "repo": "statecapacityecosystem",
         "base": "https://statecapacityecosystem.com",
         "og_image": "/assets/sce_logo.png",
-        "exclude": ("404.html", ".github/"),
+        "exclude": ("404.html", ".github/", "roadmap/"),  # roadmap/ is unlisted (noindex)
         "gsc_host": "statecapacityecosystem.com",
     },
 }
