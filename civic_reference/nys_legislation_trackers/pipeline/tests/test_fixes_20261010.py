@@ -120,7 +120,7 @@ tmp.write_text(json.dumps({"rule": "x", "laws": [{"key": "2015-A8083", "reason":
 check("H1 reads keys", npb.deferred_skipped(tmp) == {"2015-A8083"})
 check("H1 missing file -> empty", npb.deferred_skipped(tmp.parent / "none.json") == set())
 real = npb.deferred_skipped()
-check("H1 real file lists 12 keys", len(real) == 12 and "2015-S2001" in real)
+check("H1 real file lists the 12 original keys (later nights append more)", len(real) >= 12 and "2015-S2001" in real)
 full, skipped = npb.unanswered(set()), npb.unanswered({"2015-A8083", "2009-A9708"})
 check("H1 skip removes only the named keys", not [f for f in skipped if f.stem in ("2015-A8083", "2009-A9708")] and len(full) - len(skipped) == len([f for f in full if f.stem in ("2015-A8083", "2009-A9708")]))
 

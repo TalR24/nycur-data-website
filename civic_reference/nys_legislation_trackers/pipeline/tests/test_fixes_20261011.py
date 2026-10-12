@@ -109,7 +109,7 @@ if t:
 
 # J7. data/reask_manual.json is merged into the re-ask list
 man = json.load(open(DATA / "reask_manual.json"))
-check("J7 file lists the seven laws", set(man["laws"]) == {"2011-A8496", "2013-S2320", "2013-S5236", "2009-A2021", "2011-A8007", "2009-A163", "2009-A40011"} and man["laws"]["2011-A8496"][0]["night"] == "20261011")
+check("J7 file lists the seven laws (later nights append more)", set(man["laws"]) >= {"2011-A8496", "2013-S2320", "2013-S5236", "2009-A2021", "2011-A8007", "2009-A163", "2009-A40011"} and man["laws"]["2011-A8496"][0]["night"] == "20261011")
 t = law_text("2013-S2320")
 if t and (ed.EXTRACTED / "2013-S2320.json").exists():
     out = ed.build_reask([(signed("2013-S2320"), t)], [], [])

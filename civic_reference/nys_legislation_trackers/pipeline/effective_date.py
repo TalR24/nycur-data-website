@@ -152,8 +152,9 @@ def _single(clause, signed, ref=None):
             if m.group(2).startswith("month"):
                 return add_months(signed, n), "n_months_after_law", None
             return signed + timedelta(days=n), "n_days_after_law", None
+    # M14 (Oct 12 2026): also "after the date on which it shall have become a law" / "after the date it shall ..."
     # M1 (Oct 10 2026): "one year / two years after it shall have become a law" is the signing date plus the offset
-    m = re.search(r"(?:take|takes) effect (?:on )?(?:the )?(" + NUM_WORDS + r"|\d+)\s+(years?)\s+(?:next\s+)?(?:after|following)\s+(?:it|this act)\s+shall\s+have\s+become\s+(?:a\s+)?law", low)
+    m = re.search(r"(?:take|takes) effect (?:on )?(?:the )?(" + NUM_WORDS + r"|\d+)\s+(years?)\s+(?:next\s+)?(?:after|following)\s+(?:the\s+date\s+(?:on\s+which\s+)?)?(?:it|this act)\s+shall\s+have\s+become\s+(?:a\s+)?law", low)
     if m and m.group(1).strip():
         n = words_to_int(m.group(1)) if not m.group(1).isdigit() else int(m.group(1))
         if n is not None:
@@ -248,6 +249,8 @@ def parse_effective(text, signed_date, resolver=None):
     if refinfo and refinfo.get("effective_date") and refinfo.get("signed_date"):
         refinfo = _amended_reference(text, refinfo, signed)
     eff, rule, ref_used = _single(clause, signed, refinfo)
+    if rule == "unparsed" and not re.search(r"take effect|takes effect", text or "", re.I):
+        rule = "text_truncated"           # M19 (Oct 12 2026): the cached text ends before the act clause (budget schedules) or is empty
     retros = _retro(clause, signed)
     expires = _expiry(clause, eff, signed)
     sections = []

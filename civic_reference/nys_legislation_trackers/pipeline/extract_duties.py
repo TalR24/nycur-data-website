@@ -149,6 +149,10 @@ def effective_table(laws):
     tab = {}
     for law in laws:
         text = (TEXT_MARKED / (law["key"] + ".txt")).read_text()
+        if "take effect" not in text and (HERE / "cache" / "text" / (law["key"] + ".txt")).exists():       # M19: the marked text may end before the act clause
+            full = (HERE / "cache" / "text" / (law["key"] + ".txt")).read_text()
+            if "take effect" in full:
+                text = full
         tab[law["key"]] = parse_effective(text, law["signed_date"], resolver=chapter_lookup.resolve)
     return tab
 
@@ -1206,6 +1210,19 @@ def calendar_deadline(o, bases):
     return None
 
 
+# M17 (Oct 12 2026): who bears a cost is a standing allocation, never a one-time deliverable due on the effective date
+COST_BEARING = re.compile(r"\bshall be borne by\b|\bshall be paid by\b(?!\s+(?:\d|(?:january|february|march|april|may|june|july|august|september|october|november|december)\b))|\bshall bear the (?:cost|costs|expense|expenses)\b|\bat the expense of\b", re.I)
+# Switched off (Oct 12 2026): the literal rule flipped 312 records across 2009-2015 (73, 65, 163, 11), over the 80 the orders allow; Tal decides.
+APPLY_M18 = False
+
+
+def label_only_braces(text):
+    """M18 (Oct 12 2026): True when the law has braced new matter and every braced span is 8 characters or fewer (sub-paragraph
+    labels like '(a)', numbers, years): the act renumbers or restructures existing text."""
+    spans = re.findall(r"\{\{(.*?)\}\}", text, re.S)
+    return bool(spans) and all(len(x.strip()) <= 8 for x in spans)
+
+
 def build_records(laws):
     by_key = {l["key"]: l for l in laws}
     STATS.clear()
@@ -1218,6 +1235,7 @@ def build_records(laws):
             continue
         text = (TEXT_MARKED / (law["key"] + ".txt")).read_text()
         eff = EFFECTIVE[law["key"]]
+        label_only = label_only_braces(text)
         law_d, law_p = [], []
         for o in res["obligations"]:
             o["deadline_date"] = eo.sanitize_deadline(o.get("deadline_date"), law["enactment_date"])
@@ -1268,6 +1286,12 @@ def build_records(laws):
                 bump("m8_generic_role_to_state_agencies")
             elif agency_resolve_nys.fix_boces(o):               # M12
                 bump("m12_boces")
+            elif agency_resolve_nys.fix_public_body(o):         # M16
+                bump("m16_public_body")
+            else:
+                r15 = agency_resolve_nys.fix_resolvable_actor(o, NYC_BY)      # M15
+                if r15:
+                    bump(r15)
             quote = o.get("quote") or ""
             g = gate_record(o, text, "{{" in text)
             if g:
@@ -1283,6 +1307,8 @@ def build_records(laws):
                 o["extends_existing"] = True; bump("f4_proviso_extends")
             if o.get("lead_in_existing"):
                 o["extends_existing"] = True; bump("extends_lead_in_existing")
+            if APPLY_M18 and not o["extends_existing"] and label_only:          # M18: new matter is only labels and numbers, the law restructures existing text
+                o["extends_existing"] = True; bump("m18_label_only_braces_extends")
             if not o["extends_existing"] and (PLACE_EXCEPTION.search(quote) or (sp0 and PLACE_EXCEPTION.search(re.sub(r"\{\{|\}\}", "", context_sentence(sp0, text)[0])))):          # M3: a 200-foot-rule place exception widens an existing authority
                 o["extends_existing"] = True; bump("m3_place_exception_extends")
             if o.get("kind_from_lead_in"):
@@ -1313,6 +1339,8 @@ def build_records(laws):
                   and o.get("deliverable_type") in SETUP_TYPES and not TRIGGER.search(quote) and not CAP_RE.search(quote)
                   and not PROHIBITION.search(quote)):
                 o["deadline_kind"] = "on_effective_date"; bump("triggered_to_setup")
+            if COST_BEARING.search(quote) and (o.get("deadline_kind") != "none" or o.get("recurrence") != "ongoing" or o.get("deadline_date")):
+                o["deadline_kind"], o["deadline_date"], o["recurrence"] = "none", None, "ongoing"; bump("m17_cost_bearing_ongoing")          # M17
             if (o.get("model_unit") and not o.get("agency_unit") and o.get("jurisdiction") == "state"
                     and o.get("agency_org_type") != "local government group" and o.get("agency") not in STATE_UNIT_EXCLUDED):
                 o["agency_unit"] = unit_title(o["model_unit"]); bump("m5_unit_copied")           # M5

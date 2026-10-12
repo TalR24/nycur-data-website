@@ -1,0 +1,419 @@
+{
+ "_scoring": {
+  "auditor": "A",
+  "night": "20261012",
+  "laws": 11,
+  "stored_records": 18,
+  "correct": 13,
+  "wrong_fields": 5,
+  "not_real": 0,
+  "missed": 7,
+  "precision_strict": "13/18 = 72.2% (Wilson 95% 49.1-87.5)",
+  "precision_real": "18/18 = 100.0% (Wilson 95% 82.4-100.0)",
+  "recall": "14/21 = 66.7% (Wilson 95% 45.4-82.8); denominator = 21 blind items + 0 stored correct records the blind pass missed (2013-A2448-01 is a real record the blind pass missed but is graded wrong, so excluded per the formula; including it gives 15/22)",
+  "effective_dates": "10/11 correct"
+ },
+ "_classes": [
+  {
+   "name": "Resolvable actor stored with agency 'Unspecified' (borough president, State enforcement officials, city school district, Battery Park City, other state agencies)",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2013-A2448-01",
+    "2013-A2448-02",
+    "2013-S3810-04"
+   ],
+   "rule": "agency == 'Unspecified' and re.search(r'borough president|of this state|state (officer|official|agenc)|\\bmayor\\b|county|city|town|village|school district|commissioner of|department of', actor_raw, re.I)",
+   "db_matches": 37,
+   "db_examples": [
+    "2009-A10770-01",
+    "2009-A11310-29",
+    "2013-S1025-20"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "Effective date unparsed for 'N years after the date on which it shall have become a law' (variant of the class listed as fixed; 2013 effective_dates rebuilt Oct 12 still null)",
+   "criteria": [
+    "8"
+   ],
+   "instances": [
+    "2013-S3810"
+   ],
+   "rule": "effective_dates[law].effective_date is None and re.search(r'take effect (on the )?\\S+ (\\(\\d+\\) )?(years?|months?|days?) after (the date on which it|it) shall have become a law', raw_clause, re.I); count records whose matter_id is such a law",
+   "db_matches": 7,
+   "db_examples": [
+    "2013-S3810-01",
+    "2013-S3810-04",
+    "2013-S3810-05"
+   ],
+   "needs_judgment": false,
+   "note": "Same rule matches 56 laws in effective_dates/*.json (55 in 2017-2025 files last built Oct 8, none with stored records yet); all 105 null-effective records DB-wide: 2009 unparsed 39, 2011 unparsed 12, 2013 unparsed 31, 2013 same_as_chapter_unresolved 19, 2015 unparsed 4"
+  },
+  {
+   "name": "Passive-subject actor_raw (queued class, recurrence count)",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2009-A3337-02"
+   ],
+   "rule": "re.search(r'^(such|the|an?|any|each) (application|applications|moneys|monies|funds|report|plan|notice|order|petition|request|bonds?|tax|taxes|exemption|roll|program)\\b', actor_raw.strip(), re.I)",
+   "db_matches": 62,
+   "db_examples": [
+    "2009-A1003-01",
+    "2009-A3337-02",
+    "2013-S5589-02"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "extends_existing false where new matter changes how an existing duty is performed (new service method inserted into an existing 'shall be served' sentence)",
+   "criteria": [
+    "7"
+   ],
+   "instances": [
+    "2013-A6567-01"
+   ],
+   "rule": "none mechanical: needs the braced/unbraced split of the source sentence",
+   "db_matches": null,
+   "db_examples": [],
+   "needs_judgment": true,
+   "laws": [
+    "2013-A6567"
+   ]
+  },
+  {
+   "name": "Missed duties/powers carried by implied or passive phrasing ('in a format prescribed by the superintendent', 'regulations established by the commission', licensing administered by 'the department', 'may be accepted by the department', 'admission to the examination may be given', 'will be based upon')",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2015-A1327:b1",
+    "2013-A6567:b2",
+    "2013-S3810:b3",
+    "2013-S3810:b5",
+    "2013-S3810:b6",
+    "2013-S3810:b12",
+    "2013-S7644:b1"
+   ],
+   "rule": "none over stored records (misses); a packet-text scan for r'(prescribed|established|issued|approved|determined) by the (superintendent|commission|department|commissioner|board)|may be (accepted|given|issued) by' in braced matter would surface candidates",
+   "db_matches": null,
+   "db_examples": [],
+   "needs_judgment": true,
+   "laws": [
+    "2015-A1327",
+    "2013-A6567",
+    "2013-S3810",
+    "2013-S7644"
+   ]
+  }
+ ],
+ "2011-S3720": {
+  "records": {
+   "2011-S3720-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "Quote matches 'ending November thirtieth, two thousand thirteen;' after amendment, 59 words; extends_existing true for the new sunset. Recurrence one-time is loose for a standing taxing power but within reason."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2011-07-28",
+   "computed": "2011-07-28",
+   "verdict": "correct",
+   "note": "'This act shall take effect immediately.' signed 2011-07-28"
+  }
+ },
+ "2009-A10443": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2011-01-01",
+   "computed": "2011-01-01",
+   "verdict": "correct",
+   "note": "'This act shall take effect January 1, 2011.' No government actor in new matter (disclosure form for private licensees); zero records is right."
+  }
+ },
+ "2015-A1327": {
+  "records": {},
+  "missed": [
+   {
+    "blind": "b1",
+    "quote": "certified in the request that the proposed services are for an individual who will be appearing ... in a format prescribed by the superintendent of financial services",
+    "kind": "duty",
+    "agency": "Department of Financial Services",
+    "dropped_by": null,
+    "note": "New matter in PHL 4903(2)(B) and Ins Law 4903(b)(2) requires a certification format the superintendent prescribes (setup, on_effective_date). Implied duty; all other duties fall on private utilization review agents. Borderline; counted once for both sections."
+   }
+  ],
+  "effective_date": {
+   "stored": "2016-04-01",
+   "computed": "2016-04-01",
+   "verdict": "correct",
+   "note": "'This act shall take effect April 1, 2016 and shall apply to policies issued...'"
+  }
+ },
+ "2009-A3337": {
+  "records": {
+   "2009-A3337-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "'the assessor of the city of Schenectady is hereby authorized to accept' -> Cities / City of Schenectady, power."
+   },
+   "2009-A3337-02": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "actor_raw": "the assessor of the city of Schenectady"
+    },
+    "note": "Passive sentence 'such application shall be reviewed as if it had been received...'; actor_raw stores the grammatical subject 'such application'. Agency/unit (Cities, City of Schenectady) are right."
+   },
+   "2009-A3337-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "'the assessor ... may upon approval by the city council of such city, grant exemption'"
+   },
+   "2009-A3337-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "'the governing body or tax department may, in its sole discretion, provide for the refund' -> City of Schenectady, not DTF."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2009-08-26",
+   "computed": "2009-08-26",
+   "verdict": "correct",
+   "note": "immediately; signed 2009-08-26"
+  }
+ },
+ "2009-A10049": {
+  "records": {
+   "2009-A10049-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "Sunset extension 'operative only to and including June 30, [2010] 2015' -> Town of Hempstead, extends_existing true. Kind 'power' cannot be checked: the packet reprints only section 3 of ch. 821 of 1970, not the PILOT provision itself (unverified)."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2010-07-30",
+   "computed": "2010-07-30",
+   "verdict": "correct",
+   "note": "immediately; signed 2010-07-30"
+  }
+ },
+ "2009-A2369": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2009-07-16",
+   "computed": "2009-07-16",
+   "verdict": "correct",
+   "note": "immediately. New GOL 5-322.1(2) voids private contract clauses; no government actor; zero records is right."
+  }
+ },
+ "2013-A6567": {
+  "records": {
+   "2013-A6567-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "7"
+    ],
+    "fields": {
+     "extends_existing": true
+    },
+    "note": "Existing duty 'Every order of the commission shall be served upon every person or corporation' (unbraced) is changed by new matter '{{by electronic Service in a manner and format provided for in regulations established by the commission...}}'; packet rule: new matter that changes an existing duty sets extends_existing true."
+   }
+  },
+  "missed": [
+   {
+    "blind": "b2",
+    "quote": "by electronic Service in a manner and format provided for in regulations established by the commission",
+    "kind": "duty",
+    "agency": "PSC",
+    "dropped_by": null,
+    "note": "Implied rulemaking: the commission must establish e-service regulations (rulemaking, on_effective_date). Borderline implied duty."
+   }
+  ],
+  "effective_date": {
+   "stored": "2014-07-22",
+   "computed": "2014-07-22",
+   "verdict": "correct",
+   "note": "immediately; signed 2014-07-22"
+  }
+ },
+ "2015-A6222": {
+  "records": {
+   "2015-A6222-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "'the Court may extend the period of such installation and maintenance by the period of the delinquency' -> Unified Court System, power, wholly new sentence."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2015-11-20",
+   "computed": "2015-11-20",
+   "verdict": "correct",
+   "note": "immediately; signed 2015-11-20"
+  }
+ },
+ "2013-S7644": {
+  "records": {
+   "2013-S7644-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "'All costs associated with the implementation of this act shall be borne by the county of Nassau.' Recurrence one-time is acceptable."
+   }
+  },
+  "missed": [
+   {
+    "blind": "b1",
+    "quote": "Such application will be based upon the full duty standard of a police officer rather than utilize a light duty standard.",
+    "kind": "duty",
+    "agency": "New York State and Local Police and Fire Retirement System",
+    "dropped_by": null,
+    "note": "Directive to the retirement system on how to judge the application ('will be based'), passive; variant of the 'will' class listed as fixed. Byer's 'shall be entitled to file' is an entitlement, correctly absent. Borderline."
+   }
+  ],
+  "effective_date": {
+   "stored": "2014-12-17",
+   "computed": "2014-12-17",
+   "verdict": "correct",
+   "note": "immediately; signed 2014-12-17"
+  }
+ },
+ "2013-A2448": {
+  "records": {
+   "2013-A2448-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Borough Presidents (NYC, via Council crosswalk)"
+    },
+    "note": "Real prohibition on the appointing body: '{{No more than two members shall be less than eighteen years of age.}}' in Charter 2800(a), where members are 'appointed by the borough president'. agency stored 'Unspecified'. (Blind pass had excluded it as a cap; on review it is a limit on a government actor's appointments.)"
+   },
+   "2013-A2448-02": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Borough Presidents (NYC, via Council crosswalk)"
+    },
+    "note": "'{{or community boards in the city of new york}} only, members ... may be under the age of eighteen years' widens the borough presidents' appointment class; actor_raw 'the borough president' resolves to an NYC body, stored 'Unspecified'. Kind power and extends_existing true are right."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2014-08-11",
+   "computed": "2014-08-11",
+   "verdict": "correct",
+   "note": "immediately; signed 2014-08-11"
+  }
+ },
+ "2013-S3810": {
+  "records": {
+   "2013-S3810-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "Board of Regents appoints the state board 'for engineering, land surveying {{and geology}}' with '{{not less than two Professional geologists}}'; relocated quote, extends_existing true."
+   },
+   "2013-S3810-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "New 7207(3) '{{the department may issue a limited permit to practice geology}}' -> SED power."
+   },
+   "2013-S3810-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "7207(2) adds '{{or Professional geologist}}' to the limited permit; extends_existing true; 71-word relocated quote is the known open item."
+   },
+   "2013-S3810-04": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "State agencies"
+    },
+    "note": "'No official of this state ... charged with the enforcement of laws ... shall accept or approve any plans, specifications, {{or geologic drawings or reports}}' -> the State group 'State agencies' (used elsewhere in the DB), not 'Unspecified'."
+   },
+   "2013-S3810-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "Same sentence, 'of any city, county, town or village therein' -> Municipalities (all); distinct actor from -04, not a duplicate."
+   },
+   "2013-S3810-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "'the state education department and the department of state shall allow ... {{geology}}' -> SED, extends true."
+   },
+   "2013-S3810-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "Same provision -> DOS; one record per named agency per packet rule."
+   }
+  },
+  "missed": [
+   {
+    "blind": "b3",
+    "quote": "To qualify for a license as a Professional geologist, an applicant shall fulfill the following requirements: (A) Application: File an application With the department",
+    "kind": "duty",
+    "agency": "SED",
+    "dropped_by": null,
+    "note": "New 7206-b creates the geologist licence the department administers ('File an application With the department', 'good moral character as determined by the department', 'a department conducted examination', fees paid 'to the department', commissioner's regulations; includes the 7206-b(4) one-year no-exam window). Setup duty, on_effective_date."
+   },
+   {
+    "blind": "b5",
+    "quote": "twelve years of practical experience in geological work of a grade and character satisfactory to the board may be accepted by the department",
+    "kind": "power",
+    "agency": "SED",
+    "dropped_by": null,
+    "note": "Explicit new power in 7206-b(2)."
+   },
+   {
+    "blind": "b6",
+    "quote": "provided that admission to the examination may be given when the applicant is within twenty credits of the completion of the requirements of the bachelor's degree",
+    "kind": "power",
+    "agency": "SED",
+    "dropped_by": null,
+    "note": "7206-b(3) intern geologist identification card and early exam admission; passive power."
+   },
+   {
+    "blind": "b12",
+    "quote": "may offer to provide or provide professional engineering, land surveying or Professional geology services only after obtaining a certificate of authorization from the department",
+    "kind": "duty",
+    "agency": "SED",
+    "dropped_by": null,
+    "note": "7210(1) widens the department's certificate-of-authorization program to geology (extends_existing true); parallel 7207(2) widening was stored as -03."
+   }
+  ],
+  "effective_date": {
+   "stored": "null (rule unparsed)",
+   "computed": "2016-11-21",
+   "verdict": "wrong",
+   "note": "'This act shall take effect two years after the date on which it shall have become a law.' signed 2014-11-21 -> 2016-11-21. The 'years after ... become a law' fix does not handle the 'the date on which it' wording."
+  }
+ }
+}

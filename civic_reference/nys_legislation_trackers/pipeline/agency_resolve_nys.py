@@ -226,3 +226,52 @@ def fix_boces(o):
              agency_group="BOCES", agency_unit=None, agency_source="boces")
     o.pop("actor_unresolved", None)
     return True
+
+
+# M15 (Oct 12 2026): actors the model left generic that the text resolves. Only records still stored as Unspecified are touched.
+BOROUGH_PRESIDENT = re.compile(r"^(?:the |such |each |every )?(?:borough presidents?|presidents? of the borough(?: of [A-Za-z ]+)?)$", re.I)
+ENFORCEMENT_ACTOR = re.compile(r"^(?:the |such |each |every |an? |any )?(?:(?:code )?enforcement (?:officers?|officials?)|officials? of this state\b[^.]*?\bcharged with the enforcement\b.*)$", re.I)
+LOCAL_WORDS = re.compile(r"\b(?:cit(?:y|ies)|count(?:y|ies)|towns?|villages?|municipal(?:ity|ities)?|local)\b", re.I)
+
+
+def fix_resolvable_actor(o, nyc_by):
+    """Mutates o and returns the rule name when an Unspecified record's actor_raw is a borough president (NYC crosswalk 'Borough
+    Presidents'), or an enforcement officer or official: State agencies when the quote names the State (alone or with local
+    officials), Local agencies and authorities when it names only local ones; no State or local wording leaves the record alone."""
+    if o.get("agency") != "Unspecified":
+        return None
+    raw = re.sub(r"\s+", " ", (o.get("actor_raw") or "").strip(" .,;:"))
+    if BOROUGH_PRESIDENT.match(raw) and "Borough Presidents" in nyc_by:
+        a = nyc_by["Borough Presidents"]
+        o.update(agency="Borough Presidents", agency_full=a.get("full_name") or "Borough Presidents", agency_matched=True, jurisdiction="nyc",
+                 agency_org_type=a.get("org_type"), agency_group=None, agency_unit=None, agency_source="borough_president")
+        o.pop("actor_unresolved", None)
+        return "m15_borough_president"
+    if ENFORCEMENT_ACTOR.match(raw):
+        ctx = (o.get("quote") or "") + " " + raw
+        state, local = bool(re.search(r"\b(?:this state|state)\b", ctx, re.I)), bool(LOCAL_WORDS.search(ctx))
+        if state:
+            o.update(agency="State agencies", agency_full="State agencies", agency_matched=True, jurisdiction="state", agency_org_type="state agency group",
+                     agency_group=None, agency_unit=None, agency_source="enforcement_official")
+        elif local:
+            o.update(agency="Local agencies and authorities", agency_full="Local agencies and authorities", agency_matched=True, jurisdiction="local",
+                     agency_org_type="local government group", agency_group="Local agencies and authorities", agency_unit=None, agency_source="enforcement_official")
+        else:
+            return None
+        o.pop("actor_unresolved", None)
+        return "m15_enforcement_official"
+    return None
+
+
+# M16 (Oct 12 2026): 'a public body' in the Open Meetings and Public Officers Laws covers State and local bodies (existing crosswalk group).
+PUBLIC_BODY = re.compile(r"^(?:a |an |the |any |each |every |such |said )?public bod(?:y|ies)$", re.I)
+
+
+def fix_public_body(o):
+    raw = re.sub(r"\s+", " ", (o.get("actor_raw") or "").strip(" .,;:"))
+    if not PUBLIC_BODY.match(raw):
+        return False
+    o.update(agency="State and local bodies", agency_full="State and local bodies", agency_matched=True, jurisdiction="state", agency_org_type="state agency group",
+             agency_group=None, agency_unit=None, agency_source="public_body")
+    o.pop("actor_unresolved", None)
+    return True
