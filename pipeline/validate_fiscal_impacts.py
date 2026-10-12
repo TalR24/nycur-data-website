@@ -68,6 +68,23 @@ def year_of(r: dict) -> int | None:
     return None
 
 
+def later_column_dwarfs_total(r: dict, overrides: dict | None = None) -> bool:
+    """SOFT rule (Oct 12 2026, Int 1557-2019): the totals came from one column
+    (full_impact_column or last_year_column) while another column's net is at
+    least 3x the stored net and at least $10M, and no override in
+    fiscal_overrides.json pins the figure for this same statement (keyed on
+    attachment_id, so a stale `audited` stamp or a newer statement never hides
+    a record). A statement pricing a multi-year plan looks like this."""
+    if r.get("totals_basis") not in ("full_impact_column", "last_year_column"):
+        return False
+    ov = (overrides or {}).get(str(r.get("matter_id")))
+    if ov and str(ov.get("attachment_id")) == str(r.get("attachment_id")):
+        return False
+    net = abs(r.get("net_fiscal_impact") or 0)
+    return any(abs(c.get("net") or 0) >= max(3 * net, 10_000_000)
+               for c in (r.get("fiscal_table_columns") or []))
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--json", help="write the full result here")
@@ -78,10 +95,13 @@ def main() -> None:
     args = ap.parse_args()
 
     records = json.loads(DATA.read_text())["records"]
+    _ov_path = Path(__file__).resolve().parent / "fiscal_overrides.json"
+    OVERRIDES_BY_MATTER = json.loads(_ov_path.read_text()) if _ov_path.exists() else {}
     skips = json.loads(SKIP.read_text()) if SKIP.exists() else {}
     laws = json.loads(LAWS.read_text())["laws"] if LAWS.exists() else []
     hard: dict[str, list[str]] = defaultdict(list)
     soft: dict[str, list[str]] = defaultdict(list)
+    soft["later_column_dwarfs_total"]  # always reported, 0 included
 
     # --- HARD: identity ------------------------------------------------------
     seen: Counter = Counter(str(r.get("matter_id")) for r in records)
@@ -156,6 +176,8 @@ def main() -> None:
         # trusting an annual figure with no known program life
         if r.get("time_limited_program") and not r.get("program_end_fy"):
             soft["time_limited_without_program_end_fy"].append(label(r))
+        if later_column_dwarfs_total(r, OVERRIDES_BY_MATTER):
+            soft["later_column_dwarfs_total"].append(label(r))
         fy_first = r.get("fy_first_effective")
         end_fy = r.get("program_end_fy")
         if fy_first and end_fy is not None:

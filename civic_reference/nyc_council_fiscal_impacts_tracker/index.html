@@ -545,6 +545,10 @@
       text-align: right;
     }
     .fiscal-mini-table th:first-child { text-align: left; }
+    /* long column labels wrap instead of inheriting the main header's nowrap */
+    .fiscal-mini-table th { white-space: normal; vertical-align: bottom; min-width: 7rem; }
+    .fiscal-mini-table th:first-child { min-width: 0; }
+    .mini-table-scroll { overflow-x: auto; max-width: 100%; }
     .fiscal-mini-table td {
       border: 1px solid var(--border);
       padding: 5px 10px;
@@ -607,6 +611,14 @@
       margin-top: 12px;
     }
     .detail-link:hover { background: var(--blue); color: #fff; }
+    button.detail-link { font-family: inherit; cursor: pointer; margin-left: 8px; }
+    .net-basis { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.62rem; font-weight: 600;
+      letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-faint); margin-top: 2px; white-space: normal; line-height: 1.25; }
+    .copy-fallback { width: 18rem; max-width: 100%; margin-left: 8px; font-size: 0.75rem; padding: 4px 6px;
+      border: 1px solid var(--border-mid); border-radius: 4px; }
+    @keyframes row-flash { from { background: var(--blue-mid); } to { background: transparent; } }
+    tr.row-flash > td { animation: row-flash 2s ease-out; }
+    @media (prefers-reduced-motion: reduce) { tr.row-flash > td { animation: none; } }
 
     /* ── PAGINATION ──────────────────────────────────────────── */
     .pagination {
@@ -1020,8 +1032,11 @@ async function loadData() {
     // Charts link here with these, e.g. ?agency=DOT&committee=Finance.
     const urlParams = new URLSearchParams(location.search);
     let paramApplied = false;
+    // ?bill= wins: when it names a record, the other filter params are ignored
+    // so the bill cannot be filtered out of its own link.
+    const billWins = !!urlParams.get("bill") && allRecords.some(r => String(r.matter_id) === String(urlParams.get("bill")));
     Object.keys(MS).forEach(k => {
-      const v = urlParams.get(k);
+      const v = billWins ? null : urlParams.get(k);
       if (v) {
         let vals = v.split(",").map(x => x.trim()).filter(Boolean);
         // ?status= accepts the old group value "passed" as an alias for enacted + awaiting_mayor.
@@ -1029,9 +1044,9 @@ async function loadData() {
         MS[k].set(vals); paramApplied = true;
       }
     });
-    const qParam = urlParams.get("q");
+    const qParam = billWins ? null : urlParams.get("q");
     if (qParam) { document.getElementById("f-search").value = qParam; paramApplied = true; }
-    const yearParam = (urlParams.get("year") || "").match(/^\d{4}$/);
+    const yearParam = (billWins ? "" : urlParams.get("year") || "").match(/^\d{4}$/);
     if (yearParam) { yearFilter = parseInt(yearParam[0], 10); paramApplied = true; }
 
     // Deep link: ?intro=692 (or ?intro=Int.%20No.%20692) filters to that bill,
@@ -1065,7 +1080,8 @@ async function loadData() {
     applyFilters();
 
     if (billParam || introParam || paramApplied) {
-      document.getElementById("main-table").scrollIntoView({ behavior: "smooth" });
+      if (expandedId !== null) revealExpanded();
+      else document.getElementById("main-table").scrollIntoView({ behavior: "smooth" });
     }
 
   } catch (e) {
@@ -1327,7 +1343,7 @@ function renderRow(r) {
     <td>${esc(r.prime_sponsor || "—")}</td>
     <td><div class="agency-tags">${agencyHtml || "—"}</div></td>
     <td style="white-space:nowrap;color:var(--text-faint);font-size:0.75rem">${esc(r.date_prepared || "")}</td>
-    <td class="amount-cell ${nl.cls}">${nl.txt}</td>
+    <td class="amount-cell ${nl.cls}">${nl.txt}${r.totals_basis === "program_life_sum" && !r.time_limited_program ? `<div class="net-basis" title="Whole-plan total from the statement, not an annual figure">multi-year</div>` : ""}</td>
     <td class="amount-cell">${expTxt}</td>
     <td class="amount-cell">${capTxt}</td>
     <td class="amount-cell">${revTxt}</td>
@@ -1350,7 +1366,7 @@ function renderDetailRow(r) {
       return `<tr><td>${label}</td>${vals}</tr>`;
     };
     fiscalHtml = `
-      <table class="fiscal-mini-table">
+      <div class="mini-table-scroll"><table class="fiscal-mini-table">
         <thead><tr><th></th>${headers}</tr></thead>
         <tbody>
           ${mkRow("Revenues (+)",     "revenue")}
@@ -1358,7 +1374,7 @@ function renderDetailRow(r) {
           ${cols.some(c => c.capital !== null && c.capital !== undefined) ? mkRow("Capital (−)", "capital") : ""}
           ${mkRow("Net",              "net")}
         </tbody>
-      </table>`;
+      </table></div>`;
   }
 
   // Program breakdown
@@ -1396,9 +1412,13 @@ function renderDetailRow(r) {
       : `<strong>Time-limited program.</strong>${end} The figure shown is its whole run, the sum of the years the statement prices${priced ? ", " + priced : ""}.${quote}`;
   }
 
+  // Audited figure choice, in words (e.g. a ten-year plan priced by its total column)
+  const figureNote = r.figure_note ? `<strong>How this figure was set.</strong> ${esc(r.figure_note)}` : "";
+
   return `<tr class="detail-row">
     <td colspan="12">
       <div class="detail-panel">
+        ${figureNote ? `<div class="package-note-banner">${figureNote}</div>` : ""}
         ${pilotNote ? `<div class="package-note-banner">${pilotNote}</div>` : ""}
         ${r.package_note ? `<div class="package-note-banner">
           <strong>Package assessment note:</strong> ${esc(r.package_note)}
@@ -1493,6 +1513,7 @@ function renderDetailRow(r) {
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
           View on Legistar
         </a>` : `<p class="detail-narrative" style="color:var(--text-faint)">No Legistar page could be matched to this historical record${r.file_number ? `, numbered "${esc(r.file_number)}" on its fiscal impact statement` : ""}.</p>`}
+        <button type="button" class="detail-link" data-url="${esc(location.origin + location.pathname + "?bill=" + encodeURIComponent(r.matter_id))}" onclick="copyRowLink(event, this, 'bill')">Copy link to this bill</button>
       </div>
     </td>
   </tr>`;
@@ -1511,6 +1532,42 @@ function statusField(r) {
               <span class="detail-field-label">Status</span>
               <span class="detail-field-value">${esc(txt)}</span>
             </div>`;
+}
+
+// Copy a record's absolute link; falls back to selecting a read-only input.
+function copyRowLink(ev, btn, noun) {
+  ev.stopPropagation();
+  const url = btn.dataset.url;
+  const label = "Copy link to this " + noun;
+  const done = () => { btn.textContent = "Link copied"; setTimeout(() => { btn.textContent = label; }, 2000); };
+  const fallback = () => {
+    let inp = btn.parentNode.querySelector("input.copy-fallback");
+    if (!inp) {
+      inp = document.createElement("input");
+      inp.type = "text"; inp.readOnly = true; inp.className = "copy-fallback";
+      btn.insertAdjacentElement("afterend", inp);
+    }
+    inp.value = url; inp.focus(); inp.select();
+    try { if (document.execCommand("copy")) done(); } catch (e) { /* the selected input lets the reader copy by hand */ }
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(done, fallback);
+  else fallback();
+}
+
+// Deep link landing: put the expanded record's page on screen, scroll to it, pulse it.
+function revealExpanded() {
+  if (expandedId === null) return;
+  const idx = filtered.findIndex(r => r.matter_id === expandedId);
+  if (idx < 0) return;
+  const wantPage = Math.floor(idx / PAGE_SIZE) + 1;
+  if (wantPage !== page) { page = wantPage; renderTable(); renderPagination(); }
+  const tr = document.querySelector(`tr.data-row[data-id="${CSS.escape(String(expandedId))}"]`);
+  if (!tr) return;
+  tr.classList.add("row-flash");
+  const detail = tr.nextElementSibling;
+  if (detail && detail.classList.contains("detail-row")) detail.classList.add("row-flash");
+  tr.scrollIntoView({ behavior: "smooth", block: "start" });
+  setTimeout(() => { tr.classList.remove("row-flash"); if (detail) detail.classList.remove("row-flash"); }, 2100);
 }
 
 function toggleDetail(id) {

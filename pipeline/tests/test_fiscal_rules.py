@@ -368,6 +368,26 @@ if OVERRIDES_PATH.exists():
 else:
     print("  SKIP  apply_overrides consistency test: fiscal_overrides.json not found")
 
+# ── validator soft rule: a later column dwarfs the column the totals came from ─
+# Source: Int 1557-2019 (Oct 12 2026): totals from the FY22 column ($114.5M), a
+# ten-year total column of $1.74B.
+from validate_fiscal_impacts import later_column_dwarfs_total  # noqa: E402
+_dw = {"totals_basis": "full_impact_column", "net_fiscal_impact": -100_000_000,
+       "fiscal_table_columns": [{"label": "FY22", "net": -100_000_000}, {"label": "10-year", "net": -1_700_000_000}]}
+check("later_column_dwarfs_total: 17x later column is flagged", later_column_dwarfs_total(_dw) is True)
+check("later_column_dwarfs_total: an override for the same statement is not flagged",
+      later_column_dwarfs_total({**_dw, "matter_id": "1", "attachment_id": "9"}, {"1": {"attachment_id": "9"}}) is False)
+check("later_column_dwarfs_total: an override for an older statement does not hide it",
+      later_column_dwarfs_total({**_dw, "matter_id": "1", "attachment_id": "10"}, {"1": {"attachment_id": "9"}}) is True)
+check("later_column_dwarfs_total: a stale audited stamp does not hide it",
+      later_column_dwarfs_total({**_dw, "audited": "Tal"}) is True)
+check("later_column_dwarfs_total: program_life_sum is not flagged", later_column_dwarfs_total({**_dw, "totals_basis": "program_life_sum"}) is False)
+check("later_column_dwarfs_total: under 3x is not flagged",
+      later_column_dwarfs_total({**_dw, "fiscal_table_columns": [{"net": -250_000_000}]}) is False)
+check("later_column_dwarfs_total: under $10M is not flagged",
+      later_column_dwarfs_total({"totals_basis": "last_year_column", "net_fiscal_impact": -1_000_000,
+                                 "fiscal_table_columns": [{"net": -9_000_000}]}) is False)
+
 # ── recurring cost below a Full column that carries one-time costs ──────────
 # Source: matter 5534240 (audit 10 corpus sweep, Sep 28 2026): "a one-time
 # $250,000 technology upgrade" in the first year, 687,000 per year from FY24.

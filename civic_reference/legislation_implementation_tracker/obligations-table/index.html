@@ -142,6 +142,14 @@
     .detail-links { grid-column: 1 / -1; display: flex; gap: 14px; flex-wrap: wrap; }
     .detail-links a { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.75rem; font-weight: 600; color: var(--blue); text-decoration: none; }
     .detail-links a:hover { text-decoration: underline; }
+    .copy-link { font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: 0.75rem; font-weight: 600; color: var(--blue); background: var(--blue-light); border: 1px solid var(--blue-mid); border-radius: 6px; padding: 3px 10px; cursor: pointer; transition: background 0.12s, color 0.12s; }
+    .copy-link:hover { background: var(--blue); color: var(--surface); }
+    .copy-fallback { width: 18rem; max-width: 100%; font-size: 0.75rem; padding: 3px 6px; border: 1px solid var(--border); border-radius: 4px; }
+    .link-notice { font-size: 0.82rem; color: var(--text-mid); background: var(--blue-light); border: 1px solid var(--blue-mid); border-radius: 6px; padding: 8px 12px; margin: 0 0 12px; }
+    .link-notice button { font: inherit; color: var(--blue); background: none; border: none; padding: 0; margin-left: 6px; cursor: pointer; text-decoration: underline; }
+    @keyframes row-flash { from { background: var(--blue-mid); } to { background: transparent; } }
+    tr.row-flash > td { animation: row-flash 2s ease-out; }
+    @media (prefers-reduced-motion: reduce) { tr.row-flash > td { animation: none; } }
 
     .footnotes { margin-top: 20px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; }
     .footnotes p { font-size: 0.8rem; color: var(--text-muted); line-height: 1.65; margin-bottom: 10px; }
@@ -293,6 +301,8 @@
 <main>
   <div class="main-inner">
 
+    <p class="link-notice" id="linkNotice" role="status" hidden></p>
+
     <div class="filters">
       <div class="fgroup wide">
         <label for="fSearch">Search law # or text</label>
@@ -403,6 +413,7 @@ Duties a law only reprints are listed under the law that created them, or marked
   var sortKey = 'deadline';
   var sortDir = 1;
   var openId = null;
+  var lawFilter = null;   // ?law=<matter_id>: show only that law's records
   var PAGE_SIZE = 25;
   var page = 1;
   var ROWS = [];
@@ -419,6 +430,7 @@ Duties a law only reprints are listed under the law that created them, or marked
       }
       buildFilters();
       applyFilters();
+      applyDeepLink();
     })
     .catch(function () {
       document.getElementById('tbody').innerHTML =
@@ -506,9 +518,8 @@ Duties a law only reprints are listed under the law that created them, or marked
     document.getElementById('fSearch').addEventListener('input', applyFilters);
     document.getElementById('fExistingCode').addEventListener('change', applyFilters);
     document.getElementById('fReset').addEventListener('click', function () {
-      document.getElementById('fSearch').value = '';
-      document.getElementById('fExistingCode').checked = true;
-      Object.keys(MS).forEach(function (k) { MS[k].reset(); });
+      resetFilters();
+      syncUrl();
       applyFilters();
     });
     document.querySelectorAll('thead th').forEach(function (th) {
@@ -535,6 +546,80 @@ Duties a law only reprints are listed under the law that created them, or marked
     return hay.indexOf(alt) !== -1;
   }
 
+  function resetFilters() {
+    document.getElementById('fSearch').value = '';
+    document.getElementById('fExistingCode').checked = true;
+    Object.keys(MS).forEach(function (k) { MS[k].reset(); });
+    lawFilter = null;
+    showNotice('');
+  }
+
+  function showNotice(html) {
+    var el = document.getElementById('linkNotice');
+    el.innerHTML = html;
+    el.hidden = !html;
+  }
+
+  // The address bar always names what is open: ?id= for an expanded row, else ?law= if a law is filtered.
+  function syncUrl() {
+    var qs = openId ? '?id=' + encodeURIComponent(openId) : (lawFilter ? '?law=' + encodeURIComponent(lawFilter) : '');
+    history.replaceState(null, '', location.pathname + qs);
+  }
+
+  // Land on a shared link: ?id= opens that record on its own page, scrolled into view and pulsed;
+  // ?law= filters to one law. An id that excludes nothing else wins over ?law=.
+  function applyDeepLink() {
+    var sp = new URLSearchParams(location.search);
+    var id = sp.get('id'), law = sp.get('law');
+    if (id) {
+      var rec = null;
+      for (var i = 0; i < ALL.length; i++) { if (ALL[i].obligation_id === id) { rec = ALL[i]; break; } }
+      if (!rec) { showNotice('No duty with that link was found.'); return; }
+      if (ROWS.indexOf(rec) < 0) { resetFilters(); applyFilters(); }
+      var idx = ROWS.indexOf(rec);
+      openId = id;
+      page = Math.floor(idx / PAGE_SIZE) + 1;
+      paint();
+      var tr = document.querySelector('tr.data-row[data-id="' + CSS.escape(id) + '"]');
+      if (tr) {
+        var det = tr.nextElementSibling;
+        tr.classList.add('row-flash');
+        if (det && det.classList.contains('detail-row')) det.classList.add('row-flash');
+        tr.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        setTimeout(function () { tr.classList.remove('row-flash'); if (det) det.classList.remove('row-flash'); }, 2100);
+      }
+    } else if (law) {
+      lawFilter = String(law);
+      var hit = ALL.filter(function (o) { return String(o.matter_id) === lawFilter; })[0];
+      showNotice(hit
+        ? 'Showing the duties in ' + esc(hit.law_number_display || hit.file_number) + '. <button type="button" id="lawClear">Show all duties</button>'
+        : 'No law with that link was found. <button type="button" id="lawClear">Show all duties</button>');
+      document.getElementById('lawClear').addEventListener('click', function () {
+        lawFilter = null; showNotice(''); syncUrl(); applyFilters();
+      });
+      applyFilters();
+    }
+  }
+
+  function copyLink(ev, btn) {
+    ev.stopPropagation();
+    var url = btn.getAttribute('data-url');
+    var label = 'Copy link to this duty';
+    function done() { btn.textContent = 'Link copied'; setTimeout(function () { btn.textContent = label; }, 2000); }
+    function fallback() {
+      var inp = btn.parentNode.querySelector('input.copy-fallback');
+      if (!inp) {
+        inp = document.createElement('input');
+        inp.type = 'text'; inp.readOnly = true; inp.className = 'copy-fallback';
+        btn.insertAdjacentElement('afterend', inp);
+      }
+      inp.value = url; inp.focus(); inp.select();
+      try { if (document.execCommand('copy')) done(); } catch (e) { /* the selected input lets the reader copy by hand */ }
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(done, fallback);
+    else fallback();
+  }
+
   function applyFilters() {
     var q = document.getElementById('fSearch').value.trim();
     var dlSel = MS.deadline.selected();
@@ -543,6 +628,7 @@ Duties a law only reprints are listed under the law that created them, or marked
     var yearOut = new Date(today.getFullYear() + 1, today.getMonth(), today.getDate());
 
     var rows = ALL.filter(function (o) {
+      if (lawFilter && String(o.matter_id) !== lawFilter) return false;
       if (!showExistingCode && o.restated) return false;
       if (!MS.agency.pass(agencyFilterKey(o))) return false;
       if (!MS.type.pass(o.deliverable_type)) return false;
@@ -682,6 +768,7 @@ Duties a law only reprints are listed under the law that created them, or marked
       b.addEventListener('click', function () {
         page = parseInt(b.getAttribute('data-page'), 10);
         openId = null;
+        syncUrl();
         paint();
         var box = document.getElementById('chart-box');
         if (box) window.scrollTo({ top: box.offsetTop - 80, behavior: 'smooth' });
@@ -720,8 +807,12 @@ Duties a law only reprints are listed under the law that created them, or marked
     document.querySelectorAll('tr.data-row').forEach(function (tr) {
       tr.addEventListener('click', function () {
         openId = openId === tr.getAttribute('data-id') ? null : tr.getAttribute('data-id');
+        syncUrl();
         paint();
       });
+    });
+    document.querySelectorAll('.copy-link').forEach(function (b) {
+      b.addEventListener('click', function (ev) { copyLink(ev, b); });
     });
   }
 
@@ -749,6 +840,7 @@ Duties a law only reprints are listed under the law that created them, or marked
       + '<div class="detail-links">'
       + '<a href="../law/?law=' + encodeURIComponent(o.matter_id) + '">Full law checklist →</a>'
       + '<a href="' + esc(o.legistar_url) + '" target="_blank" rel="noopener">View on Legistar ↗</a>'
+      + '<button type="button" class="copy-link" data-url="' + esc(location.origin + location.pathname + '?id=' + encodeURIComponent(o.obligation_id)) + '">Copy link to this duty</button>'
       + '</div>'
       + '</div></td></tr>';
   }
