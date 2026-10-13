@@ -115,11 +115,24 @@ def overview(all_records):
     # Default view: enacted laws and adopted resolutions only (the page's "Enacted only" button).
     records = [r for r in all_records if r.get("status_bucket") == "enacted"]
     total = len(records)
-    total_cost = sum(cost(r) for r in records)
-    total_rev = sum(r.get("total_revenue") or 0 for r in records)
+    # annual pills hold annual figures only; whole-program totals get their own line (Tal, Oct 13 2026)
+    annual = [r for r in records if r.get("totals_basis") != "program_life_sum"]
+    multi = [r for r in records if r.get("totals_basis") == "program_life_sum"]
+    total_cost = sum(cost(r) for r in annual)
+    total_rev = sum(r.get("total_revenue") or 0 for r in annual)
     rev_bills = sum(1 for r in records if (r.get("net_fiscal_impact") or 0) > 0)
     blocks = {"sp-bills": f"{total:,}", "sp-cost": fmt(total_cost), "sp-revenue": fmt(total_rev),
               "sp-rev-bills": f"{rev_bills:,}"}
+    if multi:
+        m_cost = sum(cost(r) for r in multi)
+        m_rev = sum(r.get("total_revenue") or 0 for r in multi)
+        top = sorted(multi, key=cost, reverse=True)[:3]
+        top_txt = ", ".join(f'<a href="../?bill={r["matter_id"]}">{esc(r.get("legistar_file") or r.get("file_number") or "a bill")}</a> ({fmt(cost(r))})' for r in top)
+        blocks["sp-multi"] = (f"Not counted in the annual figures: {len(multi):,} bills whose statement prices the whole life of a program or plan, totalling "
+                              f"{fmt(m_cost)} in cost" + (f" and {fmt(m_rev)} in revenue" if m_rev else "")
+                              + f" over their full runs. The largest: {top_txt}.")
+    else:
+        blocks["sp-multi"] = ""
 
     sc = {"enacted": 0, "awaiting_mayor": 0, "in_progress": 0, "lapsed": 0, "unknown": 0}
     for r in all_records:

@@ -267,15 +267,18 @@
 416
 <!-- static:sp-bills:end --></span><span class="sp-label">bills with a fiscal estimate</span></div>
     <div class="stat-pill"><span class="sp-num" id="spCost"><!-- static:sp-cost:start -->
-$7.5B
+$5.4B
 <!-- static:sp-cost:end --></span><span class="sp-label">combined annual cost</span></div>
     <div class="stat-pill"><span class="sp-num" id="spRevenue"><!-- static:sp-revenue:start -->
-$615.7M
+$555.2M
 <!-- static:sp-revenue:end --></span><span class="sp-label">combined annual revenue</span></div>
     <div class="stat-pill"><span class="sp-num" id="spRevBills"><!-- static:sp-rev-bills:start -->
 24
 <!-- static:sp-rev-bills:end --></span><span class="sp-label">bills that raise revenue</span></div>
   </div>
+  <p class="section-note" id="spMultiLine"><!-- static:sp-multi:start -->
+Not counted in the annual figures: 15 bills whose statement prices the whole life of a program or plan, totalling $2.1B in cost and $60.5M in revenue over their full runs. The largest: <a href="../?bill=3954291">Int 1557-2019</a> ($1.7B), <a href="../?bill=7927500">Int 0692-2026</a> ($324.9M), <a href="../?bill=1883921">Int 0449-2014</a> ($42.0M).
+<!-- static:sp-multi:end --></p>
   <p class="section-note" id="spStatusLine"><!-- static:sp-status:start -->
 The figures above cover the 416 enacted laws and adopted resolutions. Across all 474 bills with a statement, <a href="../?status=enacted">416</a> are enacted or adopted, <a href="../?status=awaiting_mayor">7</a> passed the Council and await the mayor's signature, <a href="../?status=in_progress">34</a> are still moving through the Council, <a href="../?status=lapsed">0</a> lapsed or failed, and 17 older records have no matched Legistar page.
 <!-- static:sp-status:end --></p>
@@ -544,22 +547,41 @@ Bills by the sign of their net fiscal impact. 4 bills share a package statement 
   document.getElementById('btnEnacted').addEventListener('click', function () { setMode(false); });
   document.getElementById('btnAll').addEventListener('click', function () { setMode(true); });
 
+  function multiLine(multi) {
+    if (!multi.length) return '';
+    var mCost = 0, mRev = 0;
+    multi.forEach(function (r) { mCost += (r.total_expenditure || 0) + (r.total_capital || 0); mRev += r.total_revenue || 0; });
+    var top = multi.slice().sort(function (a, b) {
+      return ((b.total_expenditure || 0) + (b.total_capital || 0)) - ((a.total_expenditure || 0) + (a.total_capital || 0));
+    }).slice(0, 3).map(function (r) {
+      var c = (r.total_expenditure || 0) + (r.total_capital || 0);
+      return '<a href="../?bill=' + encodeURIComponent(r.matter_id) + '">' + (r.legistar_file || r.file_number || 'a bill') + '</a> (' + fmt(c) + ')';
+    });
+    return 'Not counted in the annual figures: ' + multi.length.toLocaleString() + ' bills whose statement prices the whole life of a program or plan, totalling '
+      + fmt(mCost) + ' in cost' + (mRev ? ' and ' + fmt(mRev) + ' in revenue' : '') + ' over their full runs. The largest: ' + top.join(', ') + '.';
+  }
+
   function draw() {
     var records = showAll ? ALL : ALL.filter(function (r) { return r.status_bucket === 'enacted'; });
     var total = records.length;
     var linkTail = showAll ? '' : '&status=enacted';
 
     // ── STAT PILLS ──────────────────────────────────────────────────────────
-    var totalCost = 0, totalRevenue = 0, revBillCount = 0;
+    // Annual pills hold annual figures only (Tal, Oct 13 2026): bills stored as a
+    // whole-program or whole-plan total (totals_basis program_life_sum) are
+    // listed on their own line under the pills instead of being added in.
+    var totalCost = 0, totalRevenue = 0, revBillCount = 0, multi = [];
     records.forEach(function (r) {
+      if (r.net_fiscal_impact != null && r.net_fiscal_impact > 0) revBillCount += 1;
+      if (r.totals_basis === 'program_life_sum') { multi.push(r); return; }
       totalCost += (r.total_expenditure || 0) + (r.total_capital || 0);
       totalRevenue += r.total_revenue || 0;
-      if (r.net_fiscal_impact != null && r.net_fiscal_impact > 0) revBillCount += 1;
     });
     document.getElementById('spBills').textContent = total.toLocaleString();
     document.getElementById('spCost').textContent = fmt(totalCost);
     document.getElementById('spRevenue').textContent = fmt(totalRevenue);
     document.getElementById('spRevBills').textContent = revBillCount.toLocaleString();
+    document.getElementById('spMultiLine').innerHTML = multiLine(multi);
 
     // ── STATUS LINE: the scope of the figures, then every status across all bills ──
     var sc = {enacted: 0, awaiting_mayor: 0, in_progress: 0, lapsed: 0, unknown: 0};
