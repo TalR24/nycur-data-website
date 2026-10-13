@@ -582,6 +582,9 @@ def post_amendment(seg):
     return re.sub(r"\s+([,;.:])", r"\1", seg)
 
 
+AMEND_INSTR = re.compile(r"\b(?:is|are) (?:hereby )?(?:amended|repealed|renumbered)\b|\bamended by (?:adding|inserting|striking|renumbering)\b", re.I)
+
+
 def relocate_quote(quote, text):
     """M6 (Oct 10 2026). An extension record whose quote sits in reprinted unchanged text: returns the verbatim post-amendment sentence that
     holds the nearest {{ }} span of the same act section, or None (no marker, quote already overlaps new matter, or no braced span in the section)."""
@@ -597,11 +600,15 @@ def relocate_quote(quote, text):
     near = [(min(abs(x - sp[1]), abs(y - sp[0])), x, y) for x, y in braced_intervals(text) if start <= x < start + len(sec)]
     if not near:
         return None
-    _, x, y = min(near)
-    sent, (sl, sr) = context_sentence((x, y), text)
-    new = post_amendment(sent)
-    new = re.sub(r"^(?:\d+(?:-\w+)?\.\s+)", "", new)
-    return new if len(new) >= 20 and locate_span(new, text) else None
+    for _, x, y in sorted(near):         # M23 (Oct 13 2026): nearest first, skipping a braced span inside an amending instruction
+        sent, (sl, sr) = context_sentence((x, y), text)
+        if AMEND_INSTR.search(sent):
+            continue
+        new = post_amendment(sent)
+        new = re.sub(r"^(?:\d+(?:-\w+)?\.\s+)", "", new)
+        if len(new) >= 20 and locate_span(new, text):
+            return new
+    return None
 
 
 HDR = re.compile(r"(?m)^(?:§|Section)\s*(\d+)\.")
@@ -719,10 +726,18 @@ def list_lead_in(span, text):
 BENEFIT_RE = re.compile(r"\b(?:shall|will)\s+(?:also\s+)?(?:receive|be eligible to receive|be eligible for|be entitled to|be exempt(?:ed)?)\b", re.I)
 
 
+PASSIVE_BENEFIT = re.compile(r"\binterest\s+shall\s+be\s+allowed\b|\bshall\s+not\s+be\s+required\s+to\s+pay\b|\bshall\s+be\s+credited\s+with\b|\bshall\s+be\s+reimbursed\b", re.I)
+
+
 def benefit_entitlement(o, q):
     """M13 (Oct 11 2026). 'Eligible dwelling units ... shall receive a partial abatement', 'such property shall be exempt', 'the owner shall be
     entitled to': the grammatical subject is the beneficiary. Dropped when no government noun precedes the modal and the record's
     actor_raw does not appear in the quote."""
+    pm = PASSIVE_BENEFIT.search(q or "")      # M22 (Oct 13 2026): 'Interest shall be allowed', 'shall not be required to pay': the subject is an amount or a beneficiary
+    if pm and not GOV_ACTOR.search(q[:pm.start()]):
+        actor0 = re.sub(r"^(?:the|a|an|such|each|any)\s+", "", (o.get("actor_raw") or "").strip().lower())
+        if not GOV_ACTOR.search(actor0) or actor0 not in q.lower():
+            return True
     m = BENEFIT_RE.search(q or "")
     if not m or GOV_ACTOR.search(q[:m.start()]) or len(re.findall(r"[A-Za-z]+", q[:m.start()])) < 2:      # a quote that starts at the modal names no subject: the record stays
         return False
@@ -732,11 +747,16 @@ def benefit_entitlement(o, q):
     return bool(actor) and actor not in q.lower()
 
 
+BDC_NOTIFY = re.compile(r"shall\s+notify\s+the\s+legislative\s+bill\s+drafting\s+commission", re.I)
+
+
 def gate_record(o, text, has_markers):
     """Returns (rule, reason) when the record must be dropped, else None. Rules 1-3 of phase 3b."""
     if not o.get("quote_verified"):
         return "unverified_quote", "quote not found in the law text"
     q = o.get("quote") or ""
+    if BDC_NOTIFY.search(q):
+        return "act_clause_boilerplate", "act-clause notice to the legislative bill drafting commission, a publishing courtesy that binds no program"
     if benefit_entitlement(o, q):
         return "benefit_entitlement", "the subject is the beneficiary (it receives, is entitled to or is exempt from), not a government actor"
     span = locate_span(q, text)
@@ -1040,6 +1060,20 @@ DROPPED_GOV_SUBJECT = re.compile(r"\b(?:trustees?|board|commissioner|university|
 APPLIES_RE = re.compile(r"\bshall (?:not )?(?:only )?(?:be applicable|apply)\b|\b(?:does|do) not apply\b", re.I)
 
 
+APPROVER_BEFORE = re.compile(r"(?:\bapproved\s+by|\bsubject\s+to\s+the\s+(?:prior\s+|written\s+)?approval\s+of|\bwith\s+the\s+(?:prior\s+|written\s+)?approval\s+of|\bupon\s+(?:the\s+)?approval\s+by)\s+(?:the\s+)?$", re.I)
+
+
+def approver_only_actor(r):
+    """J9: every mention of the record's actor_raw in its quote follows an approval phrase."""
+    actor = re.sub(r"^(?:the|a|an|such|each|any)\s+", "", (r.get("actor_raw") or "").strip().lower())
+    q = r.get("quote") or ""
+    if len(actor) < 4:
+        return False
+    low = q.lower()
+    hits = [m.start() for m in re.finditer(re.escape(actor), low)]
+    return bool(hits) and all(APPROVER_BEFORE.search(q[max(0, h - 40):h]) for h in hits)
+
+
 def judgment_flags(text, records):
     """J1-J3 (Oct 9 2026): judgment classes the audits confirmed. Each returns the record's quote so the re-ask packet carries the sentence."""
     flags = []
@@ -1078,6 +1112,10 @@ def judgment_flags(text, records):
         if outside:
             flags.append({"check": "quote_outside_new_matter", "detail": "%d extension records whose quote sits in unchanged text, not in the new matter" % len(outside),
                           "sentences": outside[:12]})
+    ap = [r for r in records if approver_only_actor(r)]
+    if ap:        # J9 (Oct 13 2026)
+        flags.append({"check": "approver_as_actor", "detail": "%d records whose actor_raw appears in the quote only as the approver ('approved by X'): the acting body is the one whose action X approves" % len(ap),
+                      "sentences": [r["quote"] for r in ap][:12]})
     comp = [r for r in records if COMPOUND_LOCAL.search(r.get("actor_raw") or "")]
     if comp:
         flags.append({"check": "compound_local_actor", "detail": "%d records whose actor_raw joins a locality and a named district or authority: one record each" % len(comp),
@@ -1236,6 +1274,12 @@ def build_records(laws):
         text = (TEXT_MARKED / (law["key"] + ".txt")).read_text()
         eff = EFFECTIVE[law["key"]]
         label_only = label_only_braces(text)
+        sx = [e for e in eff.get("section_dates") or [] if e.get("rule") == "section_expiry"]
+        if sx and not eff.get("expires_date"):      # M21: a section-scoped sunset covers the law when every record sits in the expiring section(s)
+            secs = {act_section_of(o.get("quote") or "", text) for o in res["obligations"]}
+            exp_secs = set().union(*[_section_set(e["applies_to"]) for e in sx])
+            if secs and None not in secs and secs <= exp_secs and len(sx) == 1:
+                eff["expires_date"] = sx[0]["expires_date"]; bump("m21_expiry_from_records")
         law_d, law_p = [], []
         for o in res["obligations"]:
             o["deadline_date"] = eo.sanitize_deadline(o.get("deadline_date"), law["enactment_date"])
@@ -1614,6 +1658,9 @@ def main():
         done, left = eo.ingest_packets(d, todo, LOOKUP, BY_CANON, "claude-sonnet-5" if full else "max-subagent", writer=write_cache, prepare=prepare, schema=SCHEMA)
         merged = merge_reask(todo, d / "results", "claude-sonnet-5" if full else "max-subagent")
         duties, powers, excluded = build_records([l for l, _ in todo])
+        if full:      # M21: build_records may add a law-wide expires_date from a section-scoped sunset
+            for y in sorted({l["session"] for l, _ in todo}):
+                json.dump({k: v for k, v in EFFECTIVE.items() if k.startswith("%d-" % y)}, open(DATA / "effective_dates" / ("%d.json" % y), "w"), separators=(",", ":"))
         stamp = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
         reask = build_reask(todo, duties, powers)
         print("re-ask merged %d records; recall checks flag %d laws" % (merged, len(reask)))

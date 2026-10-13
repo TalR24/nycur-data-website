@@ -1,0 +1,49 @@
+{
+ "_scoring": {"auditor": "A", "night": "20261013", "laws": 11, "stored_records": 10, "correct": 7, "wrong_fields": 2, "not_real": 1, "missed": 2,
+   "precision_strict": "7/10 = 70% (Wilson 95% 40-89%)",
+   "precision_real": "9/10 = 90% (Wilson 95% 60-98%)",
+   "recall": "8/11 = 73% (Wilson 95% 43-90%) (brief formula: 8 blind items matched / (10 blind items + 1 stored correct record the blind pass missed, 2009-A7505-01)); 2 misses, both in 2009-S3780 (none dropped)",
+   "effective_dates": "11/11 correct (act-level date); 2009-S3780 section dates and 2011-A7487 sunset not captured, see classes"},
+ "_classes": [
+  {"name": "Section-specific effective dates in the act clause not captured in section_dates, so records from those sections carry the act-level date", "criteria": ["8"], "instances": ["2009-S3780-01", "2009-S3780-02"],
+   "rule": "effective_dates entry where re.search(r'sections? [^.;]{0,120}? of this act shall take effect', raw_clause, re.I) and section_dates == [] ; count stored duty/power records of those laws (some hits are same-as-chapter or relative dates, still unmodelled)",
+   "db_matches": 151, "db_examples": ["2009-S4647-01", "2009-S4647-02", "2009-A8219-01"], "needs_judgment": false, "db_note": "29 laws with records; 468 laws do have section_dates populated, so the parser handles some forms"},
+  {"name": "Deemed-timely review sentence ('If accepted, the application shall be reviewed as if it had been received on or before the taxable status date') stored as a separate duty; it is a condition of the accept-application power", "criteria": ["1"], "instances": ["2011-S5803-02"],
+   "rule": "kind == 'duty' and re.search(r'shall be reviewed as if', quote, re.I)",
+   "db_matches": 136, "db_examples": ["2009-A10025-02", "2009-A10050-02", "2009-A10512-02"], "needs_judgment": false},
+  {"name": "Recurrence of fixed class 'act-level sunsets after a proviso missing from expires_date': 'the amendments made by section one of this act shall expire and be deemed repealed April 1, 2015' left expires_date null", "criteria": ["8"], "instances": ["2011-A7487 (law-level, no records)"],
+   "rule": "effective_dates entry with expires_date null and re.search(r'((?<!of )this act|(the )?amendments made by section one of this act|(?<!s )section one of this act) shall expire and be deemed repealed (on )?<Month> \\d{1,2},? \\d{4}', raw_clause, re.I)",
+   "db_matches": 7, "db_examples": ["2013-S1759-02", "2013-S1759-04", "2013-S1759-06"], "needs_judgment": false, "db_note": "8 of 11 laws matching the pattern have expires_date null: 2011-A4786, 2011-A7487, 2013-S1759, 2013-A6442 and 4 more; 7 stored records across them"},
+  {"name": "Second enforcement provision in a penalty section missed when the first is stored (household written-warning duty and household penalty power in ECL 71-1945(2))", "criteria": ["1"], "instances": ["2009-S3780 b3", "2009-S3780 b4"],
+   "rule": "none mechanical; candidate screen: packet law text contains 'may be assessed by the commissioner' or 'be issued a written warning' more often than stored records quote it", "db_matches": null, "db_examples": [], "needs_judgment": true, "laws": ["2009-S3780"]}
+ ],
+ "2013-A8728": {"records": {}, "missed": [], "effective_date": {"stored": "2014-09-04", "computed": "2014-09-04", "verdict": "correct", "note": "'§ 2. This act shall take effect immediately', signed 2014-09-04. Only new matter is the sunset '{{2017}}' of section five (leased-craft operator exemption, private parties); no record expected."}},
+ "2011-S5803": {"records": {
+   "2011-S5803-01": {"verdict": "correct", "criteria": [], "fields": {}, "note": "'the commissioner of the New York city department of finance is hereby authorized to accept'"},
+   "2011-S5803-02": {"verdict": "not_real", "criteria": ["1"], "fields": {}, "note": "'If accepted, the application shall be reviewed as if it had been received on or before the taxable status date' is a deeming condition of the accept power (-01), not a separate duty"},
+   "2011-S5803-03": {"verdict": "correct", "criteria": [], "fields": {}, "note": "'upon approval by the city council of the city of New York, may grant exemption'"}},
+  "missed": [], "effective_date": {"stored": "2011-08-03", "computed": "2011-08-03", "verdict": "correct", "note": "immediately, signed 2011-08-03"}},
+ "2009-S3780": {"records": {
+   "2009-S3780-01": {"verdict": "wrong", "criteria": ["8"], "fields": {"effective_date": "2012-01-01"}, "note": "ECL 17-2105 is added by section 3; act clause: 'sections three, four, five and six of this act shall take effect January 1, 2012'"},
+   "2009-S3780-02": {"verdict": "wrong", "criteria": ["8"], "fields": {"effective_date": "2012-01-01"}, "note": "ECL 71-1945 is added by section 4; 'sections three, four, five and six of this act shall take effect January 1, 2012'"}},
+  "missed": [
+   {"blind": "b3", "quote": "Any owner or owner's agent, or occupant of a household who violates any provision of title 21 of article 17 of this chapter or any Rule, regulation or order issued thereunder shall, for a first violation be issued a written warning and be provided educational materials", "kind": "duty", "agency": "Department of Environmental Conservation", "dropped_by": null, "note": "passive; DEC (the commissioner assesses penalties in the same subdivision) must issue the warning and materials; new section, all new matter"},
+   {"blind": "b4", "quote": "Such penalties may be assessed by the commissioner after a hearing or opportunity to be heard", "kind": "power", "agency": "Department of Environmental Conservation", "dropped_by": null, "note": "separate household penalty schedule (up to $100 / $250) in ECL 71-1945(2); -02 covers only subdivision 1"}],
+  "effective_date": {"stored": "2010-08-14", "computed": "2010-08-14", "verdict": "correct", "note": "'thirtieth day after it shall have become a law', signed 2010-07-15; but section_dates is empty although the clause sets sections 3-6 to 2012-01-01 and section 2 to 2013-07-01"}},
+ "2013-A7156": {"records": {
+   "2013-A7156-01": {"verdict": "correct", "criteria": [], "fields": {}, "note": "'purse moneys [for races] exclusively for New York-breds {{entered in all races,}}' widens the class; extends_existing true is right"}},
+  "missed": [], "effective_date": {"stored": "2013-07-12", "computed": "2013-07-12", "verdict": "correct", "note": "immediately"}},
+ "2015-S1697": {"records": {}, "missed": [], "effective_date": {"stored": "2015-02-23", "computed": "2015-02-23", "verdict": "correct", "note": "immediately. New matter is not-for-profit (private) duties; '{{including shoes,}}' widens the donatable class but the donating actor is not in the reprinted text, so no miss asserted"}},
+ "2013-S5641": {"records": {}, "missed": [], "effective_date": {"stored": "2013-10-21", "computed": "2013-10-21", "verdict": "correct", "note": "immediately; 'shall be deemed to have retained its tax exempt status' names no actor"}},
+ "2011-A7487": {"records": {}, "missed": [], "effective_date": {"stored": "2011-12-15", "computed": "2011-12-15", "verdict": "correct", "note": "120th day after 2011-08-17 = 2011-12-15. expires_date is null but the clause says 'the amendments made by section one of this act shall expire and be deemed repealed April 1, 2015' (should be 2015-04-01). Prohibition binds persons; rulemaking sentence is boilerplate."}},
+ "2011-S6531": {"records": {
+   "2011-S6531-01": {"verdict": "correct", "criteria": [], "fields": {}, "note": "'The commissioner of transportation shall provide for the installation and maintenance of adequate signing'"}},
+  "missed": [], "effective_date": {"stored": "2012-07-18", "computed": "2012-07-18", "verdict": "correct", "note": "immediately"}},
+ "2009-A7505": {"records": {
+   "2009-A7505-01": {"verdict": "correct", "criteria": [], "fields": {}, "note": "new matter '{{at least forty-five days before the taxable status date...}}' moved into the establishment power; extends_existing true. Not on blind firm list (blind pass held it optional)."},
+   "2009-A7505-02": {"verdict": "correct", "criteria": [], "fields": {}, "note": "'at least [six months] {{forty-five days}} ... {{and filed with the state Board on or before such taxable status date.}}'; covers blind withdrawal items"},
+   "2009-A7505-03": {"verdict": "correct", "criteria": [], "fields": {}, "note": "same changes for termination in 579(4)(c)"}},
+  "missed": [], "effective_date": {"stored": "2009-05-29", "computed": "2009-05-29", "verdict": "correct", "note": "'§ 4. This act shall take effect immediately' (metadata act_clause empty but the section exists)"}},
+ "2011-S4144": {"records": {}, "missed": [], "effective_date": {"stored": "2011-07-08", "computed": "2011-07-08", "verdict": "correct", "note": "30th day after 2011-06-08. Borderline, not counted as a miss: '{{for a registration effective for two years from the date of issuance.}}' lengthens the nursery registration term (Agriculture and Markets); falls under the known 'term widened' item"}},
+ "2013-A9231": {"records": {}, "missed": [], "effective_date": {"stored": "2014-07-22", "computed": "2014-07-22", "verdict": "correct", "note": "immediately; residency-cap exemption for the village of Blasdell fire department, no record expected"}}
+}

@@ -264,6 +264,24 @@ def parse_effective(text, signed_date, resolver=None):
         sub = "This act " + part[part.lower().find("shall take effect"):]
         e2, r2, _ = _single(sub, signed, refinfo)
         sections.append({"applies_to": re.sub(r"^that\s+", "", (sect.group(1) if sect else part[:80]).strip()), "effective_date": e2.isoformat() if e2 else None, "rule": r2})
+    # M20 (Oct 13 2026): "...provided, however, that: 1. ...; 2. sections three, four and five of this act shall take effect January 1, 2012;"
+    # a numbered or lettered proviso names the sections and carries its own date
+    seen = {(x["applies_to"], x["effective_date"]) for x in sections}
+    for m in re.finditer(r"(?:^|[:;]|\b\d{1,2}\.|\([a-z]\))\s*(sections?\s+[\w,\s-]+?\s+of this act)\s+shall take effect\s+([^;]*)", clause, re.I):
+        rest = re.sub(r"\s+", " ", m.group(2)).strip()
+        if re.match(r"(?:on|upon)\s+the\s+(?:expiration|repeal|termination)", rest, re.I) or re.search(r"effective date|such date|such chapter", rest, re.I):
+            continue                # keyed to another event: the on_expiration entry below, or a date this parser cannot fix
+        e2, r2, _ = _single("This act shall take effect " + rest, signed, None)
+        ap = re.sub(r"\s+", " ", m.group(1)).strip()
+        if e2 and (ap, e2.isoformat()) not in seen:
+            seen.add((ap, e2.isoformat()))
+            sections.append({"applies_to": ap, "effective_date": e2.isoformat(), "rule": r2})
+    # M21 (Oct 13 2026): "the amendments made by section one of this act shall expire and be deemed repealed April 1, 2015"
+    sect_exp = []
+    for m in re.finditer(r"(sections?\s+[\w,\s-]+?\s+of this act)\s+shall\s+(?:expire|be deemed to expire)(?:\s+and\s+be\s+deemed\s+repealed)?(?:\s+on)?\s+(" + MONTH_RE + r")\s+(\d{1,2}),?\s+(\d{4})", clause, re.I):
+        d = date(int(m.group(4)), MONTHS[m.group(2).lower()], int(m.group(3)))
+        sect_exp.append({"applies_to": re.sub(r"\s+", " ", m.group(1)).strip(), "effective_date": None, "rule": "section_expiry", "expires_date": d.isoformat()})
+    sections += sect_exp
     for m in re.finditer(r"(sections?\s+[\w,\s-]+?\s+of this act)\s+shall take effect\s+(?:on|upon)\s+the\s+(?:expiration|repeal|termination)\s+of\s+([^;.]*)", clause, re.I):
         # keyed to another law's expiration (Oct 8 2026, audit B): the date is open until that law expires, never the act's own date
         sections.append({"applies_to": re.sub(r"\s+", " ", m.group(1)).strip(), "effective_date": None, "rule": "on_expiration_of_other_law", "open_date": True,
@@ -273,6 +291,19 @@ def parse_effective(text, signed_date, resolver=None):
             sections.append({"applies_to": ap, "effective_date": None, "rule": "retroactive", "retroactive_to": d.isoformat()})
     # top level only for a statement about the act as a whole (main clause, or a proviso conditioned on the act's own signing
     # date); one that names a section ("section 191 ... deemed in full force") stays in section_dates
+    if sect_exp and not expires:
+        nums = {int(x) for x in re.findall(r"(?m)^(?:§|Section)\s*(\d+)\.", (text or "").replace("{{", ""))}
+        subst = {n for n in nums if not re.search(r"(?m)^(?:§|Section)\s*%d\.[^\n]*shall take effect" % n, (text or ""))}
+        from_text = set()
+        for x in sect_exp:
+            mm = re.match(r"\s*sections?\s+(.*?)\s+of this act", x["applies_to"], re.I)
+            for part in re.split(r",|\band\b", mm.group(1) if mm else ""):
+                n = words_to_int(part.strip()) if part.strip() else None
+                if n:
+                    from_text.add(n)
+        if len(sect_exp) == 1 and subst and subst <= from_text:
+            expires = date.fromisoformat(sect_exp[0]["expires_date"])
+            sect_exp[0]["rule"] = "section_expiry_whole_act"
     retro = min({d for ap, d in retros if not ap}, default=None)
     out = {"effective_date": eff.isoformat() if eff else None, "rule": rule,
            "expires_date": expires.isoformat() if expires else None,
