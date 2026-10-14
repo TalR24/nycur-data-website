@@ -85,6 +85,92 @@ def later_column_dwarfs_total(r: dict, overrides: dict | None = None) -> bool:
                for c in (r.get("fiscal_table_columns") or []))
 
 
+_COUNT = (r"(?:two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|"
+          r"sixteen|seventeen|eighteen|nineteen|twenty|thirty|forty|fifty|[2-9]|[1-9]\d+)")
+_OVER_YEARS = rf"\bover (?:the (?:next|first|following) |a |an |the )?(?:{_COUNT}[- ](?:fiscal )?years?\b|(?:fiscal )?years\b)"
+_MULTI_AMOUNT = re.compile(r"\$\s?\d[\d.,]*\s*(?:million|billion|thousand)?[^.]{0,80}" + _OVER_YEARS, re.I)
+_MULTI_TOTAL = re.compile(r"\btotal(?:ing|s)?\b[^.]{0,60}" + _OVER_YEARS + r"[^.]{0,40}", re.I)
+# a per-unit amount ("For each megawatt ... $4.6 million over 20 years") is a rate,
+# not the bill's total: checked against the whole sentence, since the unit
+# usually comes before the dollar figure
+_PER_UNIT = re.compile(r"\bfor each\b|\bper (?:megawatt|MW|unit|vehicle|household|building|person|license|permit)\b", re.I)
+# an annual figure, or the pension actuarial wording, is not a multi-year total
+_NOT_A_TOTAL = re.compile(r"per (?:fiscal )?year|per annum|annual(?:ly)?|each (?:fiscal )?year|every (?:fiscal )?year|"
+                          r"a year|yearly|amortiz|recogni[sz]ed|unfunded|\bUAL\b", re.I)
+
+
+def _pinned_by_override(r: dict, overrides: dict | None) -> bool:
+    ov = (overrides or {}).get(str(r.get("matter_id")))
+    return bool(ov and str(ov.get("attachment_id")) == str(r.get("attachment_id")))
+
+
+def narrative_multi_year_total(r: dict, overrides: dict | None = None) -> str | None:
+    """SOFT rule (Oct 14 2026, Int 0198-2014 and Int 0697-2024): the cost or
+    revenue narrative states a money amount totalled over several years ("$12
+    million over the next ten fiscal years", "$12,500,000 ... over five years")
+    but the stored figure is not a whole-program total. Returns the matching
+    text, or None. Not flagged: program_life_sum and package records, an
+    override for the same statement, annual wording inside the match ("$1
+    million per year over the next five years"), and pension actuarial text
+    ("would amortize over six years")."""
+    if r.get("totals_basis") in ("program_life_sum", "package") or r.get("package_note"):
+        return None
+    if _pinned_by_override(r, overrides):
+        return None
+    for fld in ("impact_narrative_expenditure", "impact_narrative_revenue"):
+        text = re.sub(r"\s+", " ", r.get(fld) or "")
+        for pat in (_MULTI_AMOUNT, _MULTI_TOTAL):
+            for m in pat.finditer(text):
+                span = m.group(0)
+                if _NOT_A_TOTAL.search(span):
+                    continue
+                cut = text.rfind(". ", 0, m.start())
+                start = cut + 2 if cut >= 0 else 0
+                end = text.find(". ", m.end())
+                if _PER_UNIT.search(text[start:end if end >= 0 else len(text)]):
+                    continue
+                if pat is _MULTI_TOTAL and "$" not in span:
+                    continue
+                return span.strip()
+    return None
+
+
+def _col_year(label_text: str) -> int | None:
+    m = re.search(r"FY\s?(\d{2,4})\b", label_text or "")
+    return int(m.group(1)) % 100 if m else None
+
+
+def full_impact_column_earlier_than_succeeding(r: dict, overrides: dict | None = None) -> str | None:
+    """SOFT rule (Oct 14 2026, Int 1150-2016): a column labelled "Full Fiscal
+    Impact FYxx" names an earlier year than the "FY Succeeding Effective FYyy"
+    column, so the label cannot be right (the statement's Full column is its
+    first year), the succeeding-year column is larger, and the stored figure
+    is the Full column's figure. An override
+    for the same statement exempts the record. Returns a description or None."""
+    if _pinned_by_override(r, overrides):
+        return None
+    cols = r.get("fiscal_table_columns") or []
+    succ_cols = [c for c in cols if re.search(r"succeeding", c.get("label") or "", re.I) and _col_year(c.get("label")) is not None]
+    if not succ_cols:
+        return None
+    succ = min(_col_year(c["label"]) for c in succ_cols)
+    succ_net = max(abs(c.get("net") or 0) for c in succ_cols)
+    stored = tuple(r.get(k) or 0 for k in ("total_revenue", "total_expenditure", "total_capital"))
+    for c in cols:
+        lab = c.get("label") or ""
+        y = _col_year(lab)
+        if y is None or not re.search(r"full\s+fiscal\s+impact", lab, re.I) or y >= succ:
+            continue
+        # a one-time first year followed by a zero (or equal) succeeding year is
+        # an ordinary statement; the defect is a later year that costs MORE
+        if succ_net <= abs(c.get("net") or 0):
+            continue
+        if tuple(c.get(k) or 0 for k in ("revenue", "expenditure", "capital")) == stored:
+            return (f"{lab!r} is earlier than the succeeding-year column (FY{succ}), which is larger, "
+                    f"and equals the stored figure")
+    return None
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--json", help="write the full result here")
@@ -102,6 +188,8 @@ def main() -> None:
     hard: dict[str, list[str]] = defaultdict(list)
     soft: dict[str, list[str]] = defaultdict(list)
     soft["later_column_dwarfs_total"]  # always reported, 0 included
+    soft["narrative_multi_year_total"]  # Oct 14 2026
+    soft["full_impact_column_earlier_than_succeeding"]  # Oct 14 2026
 
     # --- HARD: identity ------------------------------------------------------
     seen: Counter = Counter(str(r.get("matter_id")) for r in records)
@@ -178,6 +266,10 @@ def main() -> None:
             soft["time_limited_without_program_end_fy"].append(label(r))
         if later_column_dwarfs_total(r, OVERRIDES_BY_MATTER):
             soft["later_column_dwarfs_total"].append(label(r))
+        if narrative_multi_year_total(r, OVERRIDES_BY_MATTER):
+            soft["narrative_multi_year_total"].append(label(r))
+        if full_impact_column_earlier_than_succeeding(r, OVERRIDES_BY_MATTER):
+            soft["full_impact_column_earlier_than_succeeding"].append(label(r))
         fy_first = r.get("fy_first_effective")
         end_fy = r.get("program_end_fy")
         if fy_first and end_fy is not None:

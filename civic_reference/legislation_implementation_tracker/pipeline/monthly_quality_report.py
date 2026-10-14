@@ -23,11 +23,22 @@ so every metric was silently dropped, the diff never fired, and the
 Aug 20 2026 headline said "clean" over 1,933 hard failures. Any HARD failure or a rising soft count is a
 signal to run a quality loop (database-expansion-playbook skill).
 
+Oct 14 2026: the three fiscal soft checks that point at one bill
+(later_column_dwarfs_total, narrative_multi_year_total,
+full_impact_column_earlier_than_succeeding) have their flagged bill labels
+recorded in the metrics JSON (`_fiscal_flagged`); any label not flagged in the
+previous report is listed under "New fiscal figures to check" and becomes a
+TO DO item in the email. A previous report that predates `_fiscal_flagged`
+gives no baseline, so nothing is listed as new that month.
+
 Usage:  python3 pipeline/monthly_quality_report.py
         (from civic_reference/legislation_implementation_tracker/)
+        --previous PATH   use this report JSON as the baseline (testing)
+        --out-dir DIR     write the report here instead of quality_reports/ (testing)
 """
 from __future__ import annotations
 
+import argparse
 import json
 import subprocess
 import sys
@@ -39,6 +50,8 @@ TRACKER = HERE.parent
 REPO = TRACKER.parent.parent
 FISCAL_VALIDATOR = REPO / "pipeline" / "validate_fiscal_impacts.py"
 OUT_DIR = TRACKER / "quality_reports"
+FISCAL_FLAG_CHECKS = ("later_column_dwarfs_total", "narrative_multi_year_total",
+                      "full_impact_column_earlier_than_succeeding")
 
 
 def run(cmd):
@@ -48,9 +61,31 @@ def run(cmd):
     return proc.returncode, proc.stdout + proc.stderr
 
 
-def main() -> int:
+def new_fiscal_flags(now: dict, prev: dict | None) -> dict:
+    """{label: [checks]} for bills flagged now that the previous report did not
+    flag under that check. No `_fiscal_flagged` in the previous report means
+    no baseline: nothing is new."""
+    if not prev or "_fiscal_flagged" not in prev:
+        return {}
+    out: dict = {}
+    for check, labels in now.items():
+        before = set(prev["_fiscal_flagged"].get(check) or [])
+        for lab in labels:
+            if lab not in before:
+                out.setdefault(lab, []).append(check)
+    return out
+
+
+def main(argv=None) -> int:
+    global OUT_DIR
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--previous", help="baseline report JSON (default: newest earlier report)")
+    ap.add_argument("--out-dir", help="write the report here (default quality_reports/)")
+    args = ap.parse_args(argv)
+    if args.out_dir:
+        OUT_DIR = Path(args.out_dir)
     tag = f"quality_report_{date.today().isoformat()}"
-    OUT_DIR.mkdir(exist_ok=True)
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
     vjson = OUT_DIR / f"{tag}.validator.json"
 
     rc_v, out_v = run([
@@ -82,10 +117,17 @@ def main() -> int:
     crashed = [name for name, path in (("validate_obligations.py", vjson),
                                        ("validate_fiscal_impacts.py", fjson)) if not path.exists()]
     metrics["_crashed"] = crashed
+    fiscal_flagged: dict = {}
+    if fjson.exists():
+        detail = json.loads(fjson.read_text()).get("soft_detail") or {}
+        fiscal_flagged = {c: list(detail.get(c) or []) for c in FISCAL_FLAG_CHECKS}
+    metrics["_fiscal_flagged"] = fiscal_flagged
 
     # Month-over-month diff vs the newest earlier metrics JSON.
     prev_name, prev = None, {}
-    for older in sorted(OUT_DIR.glob("quality_report_*.json"), reverse=True):
+    if args.previous:
+        prev_name, prev = Path(args.previous).stem, json.loads(Path(args.previous).read_text())
+    for older in ([] if args.previous else sorted(OUT_DIR.glob("quality_report_*.json"), reverse=True)):
         if older.stem != tag and not older.name.endswith((".validator.json", ".fiscal.json")):
             cand = json.loads(older.read_text())
             # a crashed run has no counts: never use it as the baseline (round 2:
@@ -112,7 +154,7 @@ def main() -> int:
         v for k, v in metrics.items() if k.startswith("hard:") or k.startswith("fiscal_hard:")
     )
     lines = [
-        f"# Legislation trackers quality report — {tag}",
+        f"# Legislation trackers quality report, {tag}",
         "",
         (f"**VALIDATOR CRASHED: {', '.join(crashed)}. No result for it this month; see its output below.** "
          f"Hard failures in the validator that ran: **{hard_total}**"
@@ -122,6 +164,12 @@ def main() -> int:
     ]
     if prev:
         lines += [f"## Change vs {prev_name}", ""] + delta + [""]
+    new_flags = new_fiscal_flags(fiscal_flagged, prev) if "validate_fiscal_impacts.py" not in crashed else {}
+    metrics["_fiscal_new"] = new_flags
+    if new_flags:
+        lines += ["## New fiscal figures to check", ""]
+        lines += [f"- {lab}: {', '.join(chk)}" for lab, chk in sorted(new_flags.items())]
+        lines += [""]
     lines += ["## validate_obligations.py", "```", out_v.strip()[:12000], "```",
               "", "## validate_against_doris.py", "```",
               out_d.strip()[:8000], "```",

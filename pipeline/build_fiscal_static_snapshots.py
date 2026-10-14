@@ -74,8 +74,10 @@ def fmt_curr(v):
     return f"${a:.0f}"
 
 
-def cost(r):
-    return (r.get("total_expenditure") or 0) + (r.get("total_capital") or 0)
+def annual_operating(r):
+    """Matches the overview's cost pill (Tal, Oct 14 2026): expense only, zero for
+    bills stored as a whole-program total."""
+    return 0 if r.get("totals_basis") == "program_life_sum" else (r.get("total_expenditure") or 0)
 
 
 def hbars(pairs, money, link=None, tail=""):
@@ -115,24 +117,35 @@ def overview(all_records):
     # Default view: enacted laws and adopted resolutions only (the page's "Enacted only" button).
     records = [r for r in all_records if r.get("status_bucket") == "enacted"]
     total = len(records)
-    # annual pills hold annual figures only; whole-program totals get their own line (Tal, Oct 13 2026)
+    # annual pills hold annual operating figures only; whole-program totals and capital get their own line
+    # (Tal, Oct 13 and 14 2026). A whole-program bill's expense goes in the first sentence, its capital in the second.
     annual = [r for r in records if r.get("totals_basis") != "program_life_sum"]
     multi = [r for r in records if r.get("totals_basis") == "program_life_sum"]
-    total_cost = sum(cost(r) for r in annual)
+    capital = [r for r in records if r.get("total_capital")]
+    total_cost = sum(r.get("total_expenditure") or 0 for r in annual)
     total_rev = sum(r.get("total_revenue") or 0 for r in annual)
     rev_bills = sum(1 for r in records if (r.get("net_fiscal_impact") or 0) > 0)
     blocks = {"sp-bills": f"{total:,}", "sp-cost": fmt(total_cost), "sp-revenue": fmt(total_rev),
               "sp-rev-bills": f"{rev_bills:,}"}
+
+    def bill_link(r, amount):
+        return f'<a href="../?bill={r["matter_id"]}">{esc(r.get("legistar_file") or r.get("file_number") or "a bill")}</a> ({fmt(amount)})'
+
+    parts = []
     if multi:
-        m_cost = sum(cost(r) for r in multi)
+        m_cost = sum(r.get("total_expenditure") or 0 for r in multi)
         m_rev = sum(r.get("total_revenue") or 0 for r in multi)
-        top = sorted(multi, key=cost, reverse=True)[:3]
-        top_txt = ", ".join(f'<a href="../?bill={r["matter_id"]}">{esc(r.get("legistar_file") or r.get("file_number") or "a bill")}</a> ({fmt(cost(r))})' for r in top)
-        blocks["sp-multi"] = (f"Not counted in the annual figures: {len(multi):,} bills whose statement prices the whole life of a program or plan, totalling "
-                              f"{fmt(m_cost)} in cost" + (f" and {fmt(m_rev)} in revenue" if m_rev else "")
-                              + f" over their full runs. The largest: {top_txt}.")
-    else:
-        blocks["sp-multi"] = ""
+        top = sorted(multi, key=lambda r: r.get("total_expenditure") or 0, reverse=True)[:3]
+        parts.append(f"Not counted in the annual figures: {len(multi):,} bills whose statement prices the whole life of a program or plan, totalling "
+                     f"{fmt(m_cost)} in cost" + (f" and {fmt(m_rev)} in revenue" if m_rev else "")
+                     + " over their full runs. The largest: " + ", ".join(bill_link(r, r.get("total_expenditure") or 0) for r in top) + ".")
+    if capital:
+        c_total = sum(r.get("total_capital") or 0 for r in capital)
+        top_c = sorted(capital, key=lambda r: r.get("total_capital") or 0, reverse=True)[:3]
+        parts.append("Capital spending is " + ("also " if multi else "") + "kept separate " + ("" if multi else "from the annual figures ")
+                     + f"because it is a one-time outlay: {len(capital):,} bills carry {fmt(c_total)} in capital, the largest "
+                     + ", ".join(bill_link(r, r.get("total_capital") or 0) for r in top_c) + ".")
+    blocks["sp-multi"] = " ".join(parts)
 
     sc = {"enacted": 0, "awaiting_mayor": 0, "in_progress": 0, "lapsed": 0, "unknown": 0}
     for r in all_records:
@@ -152,7 +165,7 @@ def overview(all_records):
         for i, a in enumerate(abbrevs):
             if not a:
                 continue
-            by_agency[a] = by_agency.get(a, 0) + cost(r)
+            by_agency[a] = by_agency.get(a, 0) + annual_operating(r)
             f = fulls[i] if len(fulls) == len(abbrevs) else None
             if f and f != a:
                 votes.setdefault(a, {})
@@ -162,28 +175,28 @@ def overview(all_records):
     # The live chart shows 12 agencies plus "All other agencies"; the static copy stops at 10.
     blocks["chart-agency"] = hbars(agency[:10], True, "agency", "&status=enacted")
     if agency:
-        blocks["title-agency"] = esc(f"{agency[0][2]} is attached to {fmt(agency[0][1])} in annual costs, "
+        blocks["title-agency"] = esc(f"{agency[0][2]} is attached to {fmt(agency[0][1])} in annual operating costs, "
                                      f"more than any other agency")
 
     by_sponsor = {}
     for r in records:
         if r.get("prime_sponsor"):
-            by_sponsor[r["prime_sponsor"]] = by_sponsor.get(r["prime_sponsor"], 0) + cost(r)
+            by_sponsor[r["prime_sponsor"]] = by_sponsor.get(r["prime_sponsor"], 0) + annual_operating(r)
     sponsor = sorted(([k, v] for k, v in by_sponsor.items()), key=lambda p: -p[1])[:10]
     blocks["chart-sponsor"] = hbars(sponsor, True, "sponsor", "&status=enacted")
     if sponsor:
-        blocks["title-sponsor"] = esc(f"{sponsor[0][0]} sponsored bills with the largest combined annual cost: "
+        blocks["title-sponsor"] = esc(f"{sponsor[0][0]} sponsored bills with the largest combined annual operating cost: "
                                       f"{fmt(sponsor[0][1])}")
 
     by_year = {}
     for r in records:
         if r.get("intro_year"):
-            by_year[r["intro_year"]] = by_year.get(r["intro_year"], 0) + cost(r)
+            by_year[r["intro_year"]] = by_year.get(r["intro_year"], 0) + annual_operating(r)
     years = sorted(([k, v] for k, v in by_year.items()), key=lambda p: int(p[0]))
     blocks["chart-year"] = columns([["'" + str(p[0])[2:], p[1]] for p in years], years)
     if years:
         ty = max(years, key=lambda p: p[1])
-        blocks["title-year"] = esc(f"Bills from {ty[0]} carry the largest combined annual cost: {fmt(ty[1])}")
+        blocks["title-year"] = esc(f"Bills from {ty[0]} carry the largest combined annual operating cost: {fmt(ty[1])}")
 
     with_net = [r for r in records if r.get("net_fiscal_impact") is not None]
     cost_b = sum(1 for r in with_net if r["net_fiscal_impact"] < 0)

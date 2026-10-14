@@ -388,6 +388,58 @@ check("later_column_dwarfs_total: under $10M is not flagged",
       later_column_dwarfs_total({"totals_basis": "last_year_column", "net_fiscal_impact": -1_000_000,
                                  "fiscal_table_columns": [{"net": -9_000_000}]}) is False)
 
+# ── validator soft rules (Oct 14 2026): narrative multi-year total, mislabelled Full column ─
+from validate_fiscal_impacts import (narrative_multi_year_total,  # noqa: E402
+                                     full_impact_column_earlier_than_succeeding)
+_n0198 = {"matter_id": "1", "attachment_id": "9", "totals_basis": "document_stated",
+          "impact_narrative_expenditure": "it is estimated that the enactment of this legislation would result in additional "
+          "City expenditures totaling approximately $12 million over the next ten fiscal years (Fiscal 2016 to Fiscal 2025)."}
+_n0697 = {"matter_id": "2", "attachment_id": "9", "totals_basis": "full_impact_column",
+          "impact_narrative_expenditure": "The Council estimates that DSNY would require $12,500,000 in Other Than Personnel "
+          "Services (OTPS) funding over five years to conduct the required waste characterization studies."}
+check("narrative_multi_year_total: '$12 million over the next ten fiscal years' (Int 0198-2014) is flagged",
+      narrative_multi_year_total(_n0198) is not None)
+check("narrative_multi_year_total: '$12,500,000 ... over five years' (Int 0697-2024) is flagged",
+      narrative_multi_year_total(_n0697) is not None)
+check("narrative_multi_year_total: an override for the same statement exempts it",
+      narrative_multi_year_total(_n0198, {"1": {"attachment_id": "9"}}) is None)
+check("narrative_multi_year_total: an override for an older statement does not",
+      narrative_multi_year_total(_n0198, {"1": {"attachment_id": "8"}}) is not None)
+check("narrative_multi_year_total: program_life_sum is not flagged",
+      narrative_multi_year_total({**_n0198, "totals_basis": "program_life_sum"}) is None)
+check("narrative_multi_year_total: a package record is not flagged",
+      narrative_multi_year_total({**_n0198, "package_note": "see Int 229"}) is None)
+check("narrative_multi_year_total: '$1 million per year over the next five years' is annual (Int 0919-2018)",
+      narrative_multi_year_total({"impact_narrative_expenditure": "remediation repairs would total $1 million per year over the next five years."}) is None)
+check("narrative_multi_year_total: pension 'would get recognized over six years' is not a total (matter 71453)",
+      narrative_multi_year_total({"impact_narrative_expenditure": "The corresponding $536,000 increase in the Unfunded Accrued Liability would get recognized over six years, requiring more."}) is None)
+check("narrative_multi_year_total: 'would be amortized over a five-year period' is not a total (matter 71466)",
+      narrative_multi_year_total({"impact_narrative_expenditure": "The UAL would get amortized over a five-year period, and would require $284,000."}) is None)
+check("narrative_multi_year_total: 'spread over calendar year 2018' is one year (Int 1619-2017)",
+      narrative_multi_year_total({"impact_narrative_expenditure": "a one-time investment of $100,000, spread over calendar year 2018, to upgrade"}) is None)
+check("narrative_multi_year_total: no multi-year wording is not flagged",
+      narrative_multi_year_total({"impact_narrative_expenditure": "The cost would be $300,000 in Fiscal 2026."}) is None)
+_c1150 = {"matter_id": "3", "attachment_id": "9", "total_revenue": 0, "total_expenditure": 770438, "total_capital": None,
+          "fiscal_table_columns": [{"label": "Effective FY17", "revenue": 0, "expenditure": 770438, "capital": None, "net": -770438},
+                                   {"label": "FY Succeeding Effective FY18", "revenue": 0, "expenditure": 1770438, "capital": None, "net": -1770438},
+                                   {"label": "Full Fiscal Impact FY17", "revenue": 0, "expenditure": 770438, "capital": None, "net": -770438}]}
+check("full_impact_column_earlier_than_succeeding: Int 1150-2016 shape is flagged",
+      full_impact_column_earlier_than_succeeding(_c1150) is not None)
+check("full_impact_column_earlier_than_succeeding: an override for the same statement exempts it",
+      full_impact_column_earlier_than_succeeding(_c1150, {"3": {"attachment_id": "9"}}) is None)
+check("full_impact_column_earlier_than_succeeding: stored figure that is not the Full column's is not flagged",
+      full_impact_column_earlier_than_succeeding({**_c1150, "total_expenditure": 1770438}) is None)
+_one_time = {**_c1150, "fiscal_table_columns": [dict(_c1150["fiscal_table_columns"][0]),
+             {"label": "FY Succeeding Effective FY18", "revenue": 0, "expenditure": 0, "capital": None, "net": 0},
+             dict(_c1150["fiscal_table_columns"][2])]}
+check("full_impact_column_earlier_than_succeeding: a one-time cost with a zero succeeding year is not flagged",
+      full_impact_column_earlier_than_succeeding(_one_time) is None)
+check("full_impact_column_earlier_than_succeeding: Full column in the same year as the succeeding column is not flagged",
+      full_impact_column_earlier_than_succeeding({**_c1150, "fiscal_table_columns": [
+          {"label": "FY Succeeding Effective FY18", "revenue": 0, "expenditure": 1770438, "capital": None, "net": -1770438},
+          {"label": "Full Fiscal Impact FY18", "revenue": 0, "expenditure": 1770438, "capital": None, "net": -1770438}],
+          "total_expenditure": 1770438}) is None)
+
 # ── recurring cost below a Full column that carries one-time costs ──────────
 # Source: matter 5534240 (audit 10 corpus sweep, Sep 28 2026): "a one-time
 # $250,000 technology upgrade" in the first year, 687,000 per year from FY24.
@@ -483,6 +535,11 @@ check("Filed (End of Session) -> lapsed group and bucket",
       _sf["status_group"] == "lapsed" and _sf["status_bucket"] == "lapsed", str(_sf))
 _sf = status_fields("Adopted")
 check("Adopted -> enacted bucket", _sf["status_group"] == "passed" and _sf["status_bucket"] == "enacted", str(_sf))
+
+from validate_fiscal_impacts import narrative_multi_year_total as _nmyt  # noqa: E402
+check("narrative_multi_year_total: a per-unit amount is not a total (Int 0353-2024)",
+      _nmyt({"totals_basis": "document_stated", "impact_narrative_expenditure":
+             "For each megawatt (MW) that is achieved through PPA it is estimated the City's expense cost will increase by $4.6 million over 20 years."}) is None)
 
 print(f"\n{PASSED} passed, {FAILED} failed")
 if FAILED:
