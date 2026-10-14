@@ -791,10 +791,25 @@ PASSIVE_BENEFIT = re.compile(r"\binterest\s+shall\s+be\s+allowed\b|\bshall\s+not
 AWARDED_BENEFIT = re.compile(r"\bshall\s+be\s+awarded\b(?!\s+(?:by|pursuant|in\s+accordance))", re.I)
 
 
+SALARY_INCREASE = re.compile(r"\b(?:salary|salaries|compensation|wages?)\b[^.;]{0,200}?\bshall\s+be\s+increased\b|\bshall\s+receive\s+an?\s+(?:\w+\s+)?salary\s+increase\b", re.I)
+CONDITION_PRECEDENT = re.compile(r"\bshall\s+not\s+be\s+(?:implemented|paid|effective|operative)\b[^.;]{0,60}?\buntil\b[^.;]{0,400}?\b(?:shall|have|has)\s+(?:have\s+)?(?:delivered|certified|approved|filed|submitted|received|issued)\b", re.I)
+
+
+def salary_entitlement(q):
+    """M32 (Oct 14 2026): 'the basic annual salary of officers and employees ... shall be increased by two percent': the salary is the
+    subject, no government actor precedes the modal and none is named as the one who increases it."""
+    m = SALARY_INCREASE.search(q or "")
+    if not m or GOV_ACTOR.search(q[:m.start()]) or GOV_ACTOR.search(q[m.start():m.end()].replace("officers", "").replace("employees", "")):
+        return False
+    return not re.match(r"\s*by\s+(?:the|such|said)\s", q[m.end():m.end() + 20], re.I)
+
+
 def benefit_entitlement(o, q):
     """M13 (Oct 11 2026). 'Eligible dwelling units ... shall receive a partial abatement', 'such property shall be exempt', 'the owner shall be
     entitled to': the grammatical subject is the beneficiary. Dropped when no government noun precedes the modal and the record's
     actor_raw does not appear in the quote."""
+    if salary_entitlement(q):
+        return True
     am_ = AWARDED_BENEFIT.search(q or "")      # M27: 'shall be awarded' to a beneficiary; 'awarded by the board' / 'contracts shall be awarded' is the board's act
     if am_ and not GOV_ACTOR.search(q[:am_.start()]) and not re.search(r"\bcontracts?\b", q[:am_.start()], re.I):
         actor0 = re.sub(r"^(?:the|a|an|such|each|any)\s+", "", (o.get("actor_raw") or "").strip().lower())
@@ -827,6 +842,8 @@ def gate_record(o, text, has_markers):
     q = o.get("quote") or ""
     if BDC_NOTIFY.search(q):
         return "act_clause_boilerplate", "act-clause notice to the legislative bill drafting commission, a publishing courtesy that binds no program"
+    if CONDITION_PRECEDENT.search(q):
+        return "condition_precedent", "an implementation precondition ('shall not be implemented until X shall have delivered ...'): a condition on another provision, not a duty of the certifying officials"
     if benefit_entitlement(o, q):
         return "benefit_entitlement", "the subject is the beneficiary (it receives, is entitled to or is exempt from), not a government actor"
     span = locate_span(q, text)
@@ -943,6 +960,21 @@ def _cit_parts(c):
 _DIFF_STOP = {"shall", "authority", "section", "subdivision", "paragraph", "provisions", "pursuant", "thereof", "therein", "herein", "hereby", "respectively", "whether", "which", "having", "within", "between"}
 
 
+_NAME_STOP = {"New", "York", "State", "Tier", "Law", "Section", "Article", "Act", "Department", "Authority", "Board", "City", "County", "Town", "Village", "The", "Such", "Upon",
+              "Commissioner", "Comptroller", "Governor", "Court", "Education", "Public", "Service", "Services", "Chapter", "Laws", "Code", "Fund", "School", "District", "Office"}
+
+
+def proper_names(q):
+    """Capitalised words that do not start a sentence and are not generic institution words (personal and place names)."""
+    toks = (q or "").split()
+    out = set()
+    for i, t in enumerate(toks):
+        w = re.sub(r"[^A-Za-z'-]", "", t)
+        if i and re.fullmatch(r"[A-Z][a-z]{2,}", w) and w not in _NAME_STOP and not re.search(r"[.;:]$", toks[i - 1]):
+            out.add(w)
+    return out
+
+
 def distinct_provisions(a, b):
     """True when two same-actor records are different provisions despite overlapping wording: their citations name different
     sections or non-nested sub-parts ('2041-w(2)(A)' vs '(2)(C)'), or each quote carries a noun the other lacks (4+ in all, numbers and dates aside:
@@ -954,6 +986,9 @@ def distinct_provisions(a, b):
         pa, pb = ca[1], cb[1]
         if pa and pb and pa[:len(pb)] != pb[:len(pa)]:
             return True
+    na, nb = proper_names(a.get("quote")), proper_names(b.get("quote"))
+    if APPLY_M31 and (na - nb) and (nb - na):          # M31 (Oct 14 2026): parallel provisions for different named persons or places
+        bump("m31_distinct_names"); return True
     skip = _DIFF_STOP | _NUMW | _DATEW
     wa = {w for w in _words(a.get("quote")) if len(w) >= 6 and not w.isdigit()} - skip
     wb = {w for w in _words(b.get("quote")) if len(w) >= 6 and not w.isdigit()} - skip
@@ -1134,6 +1169,7 @@ def recall_flags(key, text, records, dropped):
 
 COMPOUND_LOCAL = re.compile(r"\b(?:town|city|village|county)\b[^;]*?\band\b[^;]*?\b(?:district|authority|agency|corporation)\b", re.I)
 PRE_2017 = range(2009, 2017)
+APPLY_M31 = True
 DROPPED_GOV_SUBJECT = re.compile(r"\b(?:trustees?|board|commissioner|university|department|authority|council|office)\b", re.I)
 APPLIES_RE = re.compile(r"\bshall (?:not )?(?:only )?(?:be applicable|apply)\b|\b(?:does|do) not apply\b", re.I)
 
@@ -1163,6 +1199,30 @@ def aid_recipient_actor(r):
     actor = re.sub(r"^(?:the|a|an|such|each|any)\s+", "", (r.get("actor_raw") or "").strip().lower())
     return bool(m and actor and actor in q[:m.start()].lower() and GOV_ACTOR.search(actor) and
                 not re.search(r"\b(?:by|from)\s+(?:the\s+)?" + re.escape(actor), q[:m.start()].lower()))
+
+
+JOINT_OPINION = re.compile(r"\bin\s+the\s+(?:opinion|discretion|judgment)\s+of\s+(?:the\s+)?([\w'-]+(?:\s+[\w'-]+){0,6}?)\s+and\s+(?:of\s+)?(?:the\s+)?([\w'-]+(?:\s+[\w'-]+){0,6}?)(?=\s*[,;.]|\s+(?:such|that|the|it)\b)", re.I)
+JOINT_MODAL = re.compile(r"\b(?:the\s+)?([\w'-]+(?:\s+[\w'-]+){0,5}?)\s+and\s+(?:the\s+)?([\w'-]+(?:\s+[\w'-]+){0,5}?)\s+(?:may|shall)\b", re.I)
+
+
+def joint_actor_single(r, records):
+    """J13 (Oct 14 2026): the quote vests the power or duty jointly in two officials ('in the opinion of the director of the budget and the
+    director of employee relations', 'the A and the B may') but the record names only one and no sibling record carries the same quote."""
+    q = r.get("quote") or ""
+    actor = re.sub(r"^(?:the|a|an|such|each|any)\s+", "", (r.get("actor_raw") or "").strip().lower())
+    if not actor or any(x is not r and x.get("quote") == q for x in records):
+        return False
+    for rx in (JOINT_OPINION, JOINT_MODAL):
+        m = rx.search(q)
+        if not m:
+            continue
+        pa, pb = m.group(1).strip().lower(), m.group(2).strip().lower()
+        if not (GOV_ACTOR.search(pa) and GOV_ACTOR.search(pb)) or pa == pb:
+            continue
+        ha, hb = actor in pa or pa in actor, actor in pb or pb in actor
+        if ha != hb:
+            return True
+    return False
 
 
 def judgment_flags(text, records):
@@ -1211,6 +1271,10 @@ def judgment_flags(text, records):
     if ar_:        # J11 (Oct 13 2026)
         flags.append({"check": "aid_recipient_as_actor", "detail": "%d records whose actor_raw is the government that receives the aid or payment: the acting body is the one that pays or awards it" % len(ar_),
                       "sentences": [r["quote"] for r in ar_][:12]})
+    jo = [r for r in records if joint_actor_single(r, records)]
+    if jo:        # J13 (Oct 14 2026)
+        flags.append({"check": "joint_actor_single", "detail": "%d records whose quote vests the power or duty in two named officials but the record names one: one record per named agency" % len(jo),
+                      "sentences": [r["quote"] for r in jo][:12]})
     comp = [r for r in records if COMPOUND_LOCAL.search(r.get("actor_raw") or "")]
     if comp:
         flags.append({"check": "compound_local_actor", "detail": "%d records whose actor_raw joins a locality and a named district or authority: one record each" % len(comp),
@@ -1431,6 +1495,11 @@ def build_records(laws):
                 r15 = agency_resolve_nys.fix_resolvable_actor(o, NYC_BY)      # M15
                 if r15:
                     bump(r15)
+            r33 = agency_resolve_nys.fix_nyc_school_actor(o, text, NYC_BY)      # M33
+            if r33:
+                bump(r33)
+            elif agency_resolve_nys.fix_assessing_unit(o):                      # M34
+                bump("m34_assessing_unit")
             quote = o.get("quote") or ""
             g = gate_record(o, text, "{{" in text)
             if g:

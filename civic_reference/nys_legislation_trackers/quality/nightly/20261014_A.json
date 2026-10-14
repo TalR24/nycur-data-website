@@ -1,0 +1,450 @@
+{
+ "_scoring": {
+  "auditor": "A",
+  "night": "20261014",
+  "laws": 11,
+  "stored_records": 18,
+  "correct": 14,
+  "wrong_fields": 0,
+  "not_real": 4,
+  "missed": 10,
+  "precision_strict": "14/18 = 77.8% (Wilson 95% 54.8-91.0)",
+  "precision_real": "14/18 = 77.8% (Wilson 95% 54.8-91.0)",
+  "recall": "14/24 = 58.3% (Wilson 95% 38.8-75.5)",
+  "effective_dates": "11/11 correct"
+ },
+ "_classes": [
+  {
+   "name": "implementation_precondition_certificate_as_duty",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2009-A8898-02",
+    "2009-A8898-03",
+    "2009-A8898-04"
+   ],
+   "rule": "kind=='duty' and re.search(r\"shall not be (implemented|paid|effective)[^.]{0,40}until\", quote, re.I)",
+   "db_matches": 11,
+   "db_examples": [
+    "2011-S5846-15",
+    "2011-S7747-07",
+    "2013-A8032-03"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "duplicate_provision_drops_parallel_per_person_sections",
+   "criteria": [
+    "1",
+    "9"
+   ],
+   "instances": [
+    "2013-S6935-01",
+    "2013-S6935-02",
+    "2013-S6935-04"
+   ],
+   "rule": "over dropped/*.json: rule=='duplicate_provision' and the quote differs from the 'overlaps <id>' partner's quote by a two-word capitalized name (set(re.findall(r'\\b([A-Z][a-z]+ [A-Z][a-z]+)\\b', q)) - partner names non-empty)",
+   "db_matches": 5,
+   "db_examples": [
+    "2013-S6935-02",
+    "2013-A2371-01",
+    "2011-S50001-06"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "passive_salary_increase_stored_as_duty",
+   "criteria": [
+    "1",
+    "3"
+   ],
+   "instances": [
+    "2011-S6960-01"
+   ],
+   "rule": "kind=='duty' and re.search(r\"(salary|salaries|compensation|wages?)\\b[^.]{0,200}shall be increased\", quote, re.I)",
+   "db_matches": 10,
+   "db_examples": [
+    "2009-A8955-02",
+    "2009-S8245-01",
+    "2009-S8412-02"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "joint_opinion_power_stored_for_one_official",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2011-S6960-03"
+   ],
+   "rule": "re.search(r\"in the (opinion|discretion|judgment) of the [^,;.]{3,80}? and (of )?the (director|commissioner|comptroller|superintendent|secretary)\", quote, re.I) and no other record in the same matter_id has the same quote",
+   "db_matches": 3,
+   "db_examples": [
+    "2009-S8412-07",
+    "2011-S6960-03",
+    "2013-A8032-02"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "collective_bargaining_act_budget_powers_missed",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2011-S6960 b1",
+    "2011-S6960 b2",
+    "2011-S6960 b6",
+    "2011-S6960 b7",
+    "2011-S6960 b9"
+   ],
+   "rule": "no mechanical rule: free-standing DOB/comptroller/state powers in pay-bill acts (\"director of the budget may reduce\", \"is authorized to add\", \"is authorized to allocate\", \"the state shall contribute\") absent from stored and dropped records",
+   "db_matches": 0,
+   "db_examples": [],
+   "needs_judgment": true,
+   "laws": [
+    "2011-S6960"
+   ]
+  },
+  {
+   "name": "cost_amortization_power_missed",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2013-S4800 b3"
+   ],
+   "rule": "no mechanical rule (missing records); candidate scan: packet text 'past service costs ... may be amortized' with no stored power quoting 'amortized'",
+   "db_matches": 0,
+   "db_examples": [],
+   "needs_judgment": true,
+   "laws": [
+    "2013-S4800"
+   ]
+  }
+ ],
+ "2013-S6935": {
+  "records": {
+   "2013-S6935-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "matches blind item"
+   },
+   "2013-S6935-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "matches blind item"
+   }
+  },
+  "missed": [
+   {
+    "blind": "b1",
+    "quote": "Upon the receipt of such application, Kirsten Mason shall be granted Tier V status in the New York state and local employees' retirement system and be eligible for all the rights and benefits thereof.",
+    "kind": "duty",
+    "agency": "State Comptroller",
+    "dropped_by": "duplicate_provision",
+    "note": "Section 1 is a separate grant to a different member (Kirsten Mason); 70% overlap with the Christian Ward sentence is not the same provision (criterion 9 does not apply). If Tier V grants are judged entitlements instead, -03 is not_real and these misses fall away; scored as real."
+   },
+   {
+    "blind": "b2",
+    "quote": "Upon the receipt of such application, Laura Strizzi shall be granted Tier V status in the New York state and local employees' retirement system and be eligible for all the rights and benefits thereof.",
+    "kind": "duty",
+    "agency": "State Comptroller",
+    "dropped_by": "duplicate_provision",
+    "note": "Section 2 is a separate grant to a different member (Laura Strizzi); 70% overlap with the Christian Ward sentence is not the same provision (criterion 9 does not apply). If Tier V grants are judged entitlements instead, -03 is not_real and these misses fall away; scored as real."
+   },
+   {
+    "blind": "b4",
+    "quote": "Upon the receipt of such application, Austin Horton shall be granted Tier V status in the New York state and local employees' retirement system and be eligible for all the rights and benefits thereof.",
+    "kind": "duty",
+    "agency": "State Comptroller",
+    "dropped_by": "duplicate_provision",
+    "note": "Section 4 is a separate grant to a different member (Austin Horton); 70% overlap with the Christian Ward sentence is not the same provision (criterion 9 does not apply). If Tier V grants are judged entitlements instead, -03 is not_real and these misses fall away; scored as real."
+   }
+  ],
+  "effective_date": {
+   "stored": "2014-12-17",
+   "computed": "2014-12-17",
+   "verdict": "correct",
+   "note": "act clause applied to signing date"
+  }
+ },
+ "2013-A6121": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2013-11-13",
+   "computed": "2013-11-13",
+   "verdict": "correct",
+   "note": "immediate; no records expected: only new matter is a fee exemption for voluntary ambulance services"
+  }
+ },
+ "2009-S1888": {
+  "records": {
+   "2009-S1888-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "matches blind item"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2009-07-28",
+   "computed": "2009-07-28",
+   "verdict": "correct",
+   "note": "act clause applied to signing date"
+  }
+ },
+ "2013-S4800": {
+  "records": {
+   "2013-S4800-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "matches blind item"
+   },
+   "2013-S4800-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "matches blind item"
+   }
+  },
+  "missed": [
+   {
+    "blind": "b3",
+    "quote": "the past service costs associated with this act may be amortized over a ten year period",
+    "kind": "power",
+    "agency": "Villages (Village of Rockville Centre)",
+    "dropped_by": null,
+    "note": "Section 2 grants the village an option to amortize its past service cost; not in stored or dropped records. Borderline (could be read as a condition of -02)."
+   }
+  ],
+  "effective_date": {
+   "stored": "2013-07-31",
+   "computed": "2013-07-31",
+   "verdict": "correct",
+   "note": "act clause applied to signing date"
+  }
+ },
+ "2015-A10351": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2016-11-01",
+   "computed": "2016-11-01",
+   "verdict": "correct",
+   "note": "first of November next succeeding 2016-08-19; no records expected: duty-holder is the district management association, a not-for-profit corporation"
+  }
+ },
+ "2009-A8898": {
+  "records": {
+   "2009-A8898-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "matches blind item"
+   },
+   "2009-A8898-02": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "note": "Precondition of 2009-A8898-01, not a duty: s2 'The salary increases and benefit modifications ... shall not be implemented until the chancellor ..., the commissioner of the New York city office of labor relations and the director of employee relations ... shall have delivered ... a certificate'. Nothing requires the certificate to be delivered."
+   },
+   "2009-A8898-03": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "note": "Precondition of 2009-A8898-01, not a duty: s2 'The salary increases and benefit modifications ... shall not be implemented until the chancellor ..., the commissioner of the New York city office of labor relations and the director of employee relations ... shall have delivered ... a certificate'. Nothing requires the certificate to be delivered."
+   },
+   "2009-A8898-04": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "note": "Precondition of 2009-A8898-01, not a duty: s2 'The salary increases and benefit modifications ... shall not be implemented until the chancellor ..., the commissioner of the New York city office of labor relations and the director of employee relations ... shall have delivered ... a certificate'. Nothing requires the certificate to be delivered."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2009-07-11",
+   "computed": "2009-07-11",
+   "verdict": "correct",
+   "note": "immediate; retroactive 'deemed in force upon approval' clause not datable"
+  }
+ },
+ "2015-A680": {
+  "records": {
+   "2015-A680-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "matches blind item"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2017-02-02",
+   "computed": "2017-02-02",
+   "verdict": "correct",
+   "note": "90th day after 2016-11-04"
+  }
+ },
+ "2011-S6960": {
+  "records": {
+   "2011-S6960-01": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "3",
+     "5"
+    ],
+    "fields": {
+     "agency": "n/a",
+     "deadline_kind": "none (the March 27 2014 date is a pay-schedule date, not a deadline)"
+    },
+    "note": "Passive pay entitlement: s3(2) 'the basic annual salary of officers and employees ... shall be increased by two percent'. No government actor named (stored 'the state'/Unspecified); same family as the s4-s7/s11-s13 'shall receive'/'shall be paid' benefits that are correctly excluded."
+   },
+   "2011-S6960-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "matches blind item"
+   },
+   "2011-S6960-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "Correct for DOB; the same clause also vests the power in 'the director of employee relations' (see missed b5)."
+   },
+   "2011-S6960-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "matches blind item"
+   }
+  },
+  "missed": [
+   {
+    "blind": "b1",
+    "quote": "Notwithstanding the provisions of this section, the director of the budget may reduce the salary of any such position which is or becomes vacant.",
+    "kind": "power",
+    "agency": "DOB",
+    "dropped_by": null,
+    "note": "s3(5); not stored or dropped."
+   },
+   {
+    "blind": "b2",
+    "quote": "the director of the budget is authorized to add appropriate adjustments and/or payments to the compensation which such officers and employees are otherwise entitled to receive",
+    "kind": "power",
+    "agency": "DOB",
+    "dropped_by": null,
+    "note": "s3(7); the certificate duty from the same subdivision is stored (-02), the authorization is not."
+   },
+   {
+    "blind": "b5",
+    "quote": "any increase in compensation may be withheld in whole or in part from any employee to whom the provisions of this section are applicable when, in the opinion of the director of the budget and the director of employee relations",
+    "kind": "power",
+    "agency": "OER",
+    "dropped_by": null,
+    "note": "s3(10) names two officials; only the DOB record (-03) exists. One record per named agency."
+   },
+   {
+    "blind": "b6",
+    "quote": "the state shall contribute an amount designated in such agreement and for the period covered by such agreement to the accounts of such employees enrolled for dependent care deductions",
+    "kind": "duty",
+    "agency": "Unspecified (the state)",
+    "dropped_by": null,
+    "note": "s8 duty on the state; would land in the known 'the state' Unspecified bucket."
+   },
+   {
+    "blind": "b7",
+    "quote": "there shall be a statewide labor-management committee continued and administered pursuant to the terms of the agreement negotiated between the state and an employee organization",
+    "kind": "duty",
+    "agency": "OER (statewide labor-management committee)",
+    "dropped_by": null,
+    "note": "s10; borderline (joint labor-management body under the contract)."
+   },
+   {
+    "blind": "b9",
+    "quote": "the director of the budget is authorized to allocate to the various departments and agencies, from any appropriations available in any fund, the amounts necessary to pay such amounts",
+    "kind": "power",
+    "agency": "DOB",
+    "dropped_by": null,
+    "note": "s15 second sentence; the comptroller power from the first sentence is stored (-04)."
+   }
+  ],
+  "effective_date": {
+   "stored": "2012-05-18",
+   "computed": "2012-05-18",
+   "verdict": "correct",
+   "note": "immediate; retroactive_to 2011-04-02 also stored correctly"
+  }
+ },
+ "2013-A8071": {
+  "records": {
+   "2013-A8071-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "matches blind item"
+   },
+   "2013-A8071-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "matches blind item"
+   },
+   "2013-A8071-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "matches blind item"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2014-01-10",
+   "computed": "2014-01-10",
+   "verdict": "correct",
+   "note": "act clause applied to signing date"
+  }
+ },
+ "2013-A10128": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2014-07-23",
+   "computed": "2014-07-23",
+   "verdict": "correct",
+   "note": "immediate; no records expected: penal definitions and a cross-reference fix '[four] {{five}}'"
+  }
+ },
+ "2011-A7729": {
+  "records": {
+   "2011-A7729-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "matches blind item"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2011-09-23",
+   "computed": "2011-09-23",
+   "verdict": "correct",
+   "note": "immediate; retroactive_to 2010-01-01 stored"
+  }
+ }
+}

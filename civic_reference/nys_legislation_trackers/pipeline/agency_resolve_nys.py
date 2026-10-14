@@ -275,3 +275,46 @@ def fix_public_body(o):
              agency_group=None, agency_unit=None, agency_source="public_body")
     o.pop("actor_unresolved", None)
     return True
+
+
+# M33 (Oct 14 2026): in a law that amends the New York City school governance provisions (Education Law article 52-A, section 2590-x, or
+# 'the city school district of the city of New York'), the principal, board of education, chancellor and community superintendent are the
+# NYC Public Schools actors (NYC crosswalk NYCPS). A bare 'the chancellor' needs the city school district named: CUNY and SUNY have chancellors too.
+NYC_SCHOOL_LAW = re.compile(r"article\s+52-?A\b|\bsections?\s+2590(?:-\w+)?\b|city\s+school\s+district\s+of\s+the\s+city\s+of\s+new\s+york|city\s+school\s+district\s+having\s+a\s+population\s+of\s+(?:one\s+million|1,000,000)", re.I)
+NYC_SCHOOL_ACTOR = re.compile(r"^(?:the |such |each |said )?(?:principals?|board of education|chancellor|community superintendents?)$", re.I)
+
+
+def fix_nyc_school_actor(o, text, nyc_by):
+    """Mutates o and returns the rule name when actor_raw is a school-governance officer of a law about the NYC school system and the record is
+    Unspecified or a School districts record with no named unit."""
+    raw = re.sub(r"\s+", " ", (o.get("actor_raw") or "").strip(" .,;:"))
+    if not NYC_SCHOOL_ACTOR.match(raw) or "NYCPS" not in nyc_by:
+        return None
+    if not (o.get("agency") == "Unspecified" or (o.get("agency") == "School districts" and not o.get("agency_unit"))):
+        return None
+    if not NYC_SCHOOL_LAW.search(text or ""):
+        return None
+    if re.search(r"chancellor", raw, re.I) and not re.search(r"city\s+school\s+district", text or "", re.I):
+        return None
+    a = nyc_by["NYCPS"]
+    o.update(agency="NYCPS", agency_full=a.get("full_name") or "NYCPS", agency_matched=True, jurisdiction="nyc", agency_org_type=a.get("org_type"),
+             agency_group=None, agency_unit=None, agency_source="nyc_school_actor")
+    o.pop("actor_unresolved", None)
+    return "m33_nyc_school_actor"
+
+
+# M34 (Oct 14 2026): an assessing unit is a municipality; the named county is context, never the actor.
+ASSESSING_UNIT = re.compile(r"^(?:the |such |each |said |any |an? )?(?:approved\s+)?assessing\s+units?(?:\s+(?:located\s+)?in\s+the\s+county\s+of\s+([A-Za-z .'-]+?))?$", re.I)
+
+
+def fix_assessing_unit(o):
+    raw = re.sub(r"\s+", " ", (o.get("actor_raw") or "").strip(" .,;:"))
+    m = ASSESSING_UNIT.match(raw)
+    if not m or o.get("agency") == "Municipalities (all)":
+        return False
+    o.update(agency="Municipalities (all)", agency_full="Municipalities (all)", agency_matched=True, jurisdiction="local",
+             agency_org_type="local government group", agency_group="Municipalities (all)", agency_unit=None, agency_source="assessing_unit")
+    if m.group(1):
+        o["actor_context"] = "County of " + m.group(1).strip().title()
+    o.pop("actor_unresolved", None)
+    return True
