@@ -251,11 +251,25 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:18px
 
     <!-- FILTER PANEL -->
     <div class="filter-panel">
-      <div class="filter-panel-title">Bills shown per side</div>
+      <div class="filter-panel-title">Measure</div>
+      <div class="metric-row" id="metric-row">
+        <button class="metric-btn active" data-metric="net">Net Fiscal Impact</button>
+        <button class="metric-btn" data-metric="expenditure">Operational Expense</button>
+        <button class="metric-btn" data-metric="capital">Capital Expense</button>
+        <button class="metric-btn" data-metric="revenue">Revenue</button>
+      </div>
+
+      <div class="filter-panel-title" id="topn-title">Bills shown per side</div>
       <div class="metric-row" id="topn-row">
         <button class="metric-btn active" data-n="5">Top 5</button>
         <button class="metric-btn" data-n="10">Top 10</button>
         <button class="metric-btn" data-n="15">Top 15</button>
+      </div>
+
+      <div class="filter-panel-title">Figures</div>
+      <div class="metric-row" id="figures-row">
+        <button class="metric-btn active" data-figures="annual">Annual figures</button>
+        <button class="metric-btn" data-figures="all">Include multi-year totals</button>
       </div>
 
       <div class="filter-panel-title" style="margin-top:4px;">Filters</div>
@@ -309,13 +323,13 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:18px
     <!-- CHART -->
     <figure class="chart-card" id="chart-box" data-slug="fiscal-costs-vs-revenue">
       <div class="c-head">
-        <h2 class="c-title">Net Fiscal Impact: Biggest Costs vs. Revenue Generators</h2>
-        <p class="c-deck">Bars extending left = net cost to the city. Bars extending right = net revenue gain. <span id="topn-note">Only the top 5 bills per side are shown; use filters to narrow the dataset.</span></p>
+        <h2 class="c-title" id="chart-title">Net Fiscal Impact: Biggest Costs vs. Revenue Generators</h2>
+        <p class="c-deck" id="chart-sub">Bars extending left = net cost to the city. Bars extending right = net revenue gain. Only the top 5 bills per side are shown; use filters to narrow the dataset. Net counts capital, a one-time outlay, alongside yearly costs.</p>
       </div>
       <div class="c-plot">
         <div class="chart-legend">
-          <div class="legend-item"><div class="legend-swatch cost"></div> Net cost (bars extend left)</div>
-          <div class="legend-item"><div class="legend-swatch rev"></div> Net revenue (bars extend right)</div>
+          <div class="legend-item" id="legend-cost"><div class="legend-swatch cost"></div> <span id="legend-cost-text">Net cost (bars extend left)</span></div>
+          <div class="legend-item" id="legend-rev"><div class="legend-swatch rev"></div> <span id="legend-rev-text">Net revenue (bars extend right)</span></div>
         </div>
         <div class="chart-area" id="chart-area">
           <canvas id="myChart"></canvas>
@@ -327,7 +341,7 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:18px
       </div>
       <figcaption class="c-foot">
         <div class="c-foot-text">
-          <span>Net fiscal impact of NYC Council legislation. Net = total revenue − operational expense − capital expense. Negative values are net costs; positive values are net revenue gains.
+          <span><span id="foot-measure">Net fiscal impact of NYC Council legislation. Net = total revenue − operational expense − capital expense. Negative values are net costs; positive values are net revenue gains.</span>
         Source: NYC Council Legistar fiscal impact statements, processed by NYCuriosity.</span>
           <span>Created by Tal Roded · NYCuriosity</span>
           <span id="record-count-note" style="font-family:'JetBrains Mono', ui-monospace, monospace;font-size:0.65rem;color:var(--text-faint);"></span>
@@ -341,7 +355,7 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:18px
       <h3>Methodology</h3>
       <ul>
         <li><strong>Net fiscal impact</strong> = total revenue − total operational expense − total capital expense. Negative = net cost to the city. Positive = net revenue gain.</li>
-        <li>Only the top bills by absolute net impact are shown per side. Use the "Top 5 / 10 / 15" selector to adjust. The stat pills above always reflect the full filtered dataset.</li>
+        <li>Net shows the largest net costs and the largest net revenue gains, the chosen number on each side. Operational expense, capital expense and revenue show the largest bills by that figure. Use the "Top 5 / 10 / 15" selector to adjust. The stat pills above always reflect the full filtered dataset.</li>
         <li>The revenue bills include tax amnesties and extensions, a wireless surcharge and a cut to a tax credit.</li>
         <li>Bills assessed as part of a legislative package (e.g., the 2022 and 2023 DSS rental assistance package) are shown with the cost attributed to the primary bill only, to avoid double-counting. See <a href="/civic_reference/nyc_council_fiscal_impacts_tracker/">bill table</a> for package details.</li>
         <li>Source: <a href="https://legistar.council.nyc.gov" target="_blank">NYC Council Legistar</a> fiscal impact statement documents, extracted and structured by NYCuriosity using the Legistar REST API and Claude AI.</li>
@@ -380,6 +394,7 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:18px
 let ALL_RECORDS = [];
 let FILTER_OPTIONS = {};
 let topN = 5;
+let activeMetric = 'net';
 let chart = null;
 
 // ── LOAD DATA ─────────────────────────────────────────────────────────────────
@@ -393,6 +408,7 @@ document.addEventListener('DOMContentLoaded', () => {
       FILTER_OPTIONS = data.filter_options;
       populateFilters();
       MS.status.set(['enacted']);
+      readUrlState();
       render();
     });
 });
@@ -450,6 +466,48 @@ function statusQs() {
   return sel ? '&status=' + [...sel].join(',') : '';
 }
 
+const METRIC_CONFIG = {
+  net:         { key: 'net_fiscal_impact', label: 'Net Fiscal Impact',   legend: '' },
+  expenditure: { key: 'total_expenditure', label: 'Operational Expense', legend: 'Operational expense (bars extend right)' },
+  capital:     { key: 'total_capital',     label: 'Capital Expense',     legend: 'Capital expense (bars extend right)' },
+  revenue:     { key: 'total_revenue',     label: 'Revenue Generated',   legend: 'Revenue (bars extend right)' },
+};
+
+// ── FIGURES AND MEASURE STATE (?figures=all, ?metric=expenditure|capital|revenue) ──
+// Default: bills priced as whole-program totals (totals_basis program_life_sum) are
+// left out, so every bar, pill and count is an annual figure.
+const CAPITAL_NOTE = 'Capital is a one-time outlay, summed over the years each statement prices.';
+const NET_NOTE = 'Net counts capital, a one-time outlay, alongside yearly costs.';
+let showMultiYear = false;
+function isWholeProgram(r) { return r.totals_basis === 'program_life_sum'; }
+function subWithNote(sub) {
+  if (activeMetric === 'capital') return sub + ' ' + CAPITAL_NOTE;
+  if (activeMetric === 'net') return sub + ' ' + NET_NOTE;
+  return sub;
+}
+function figuresNote(count) {
+  const n = count.toLocaleString();
+  if (showMultiYear) return 'Includes ' + n + ' whole-program ' + (count === 1 ? 'total' : 'totals') + '.';
+  return 'Annual figures; ' + n + (count === 1 ? ' bill' : ' bills') + ' priced as whole-program totals left out.';
+}
+function syncControls() {
+  document.querySelectorAll('[data-metric]').forEach(b => b.classList.toggle('active', b.dataset.metric === activeMetric));
+  document.querySelectorAll('[data-figures]').forEach(b => b.classList.toggle('active', (b.dataset.figures === 'all') === showMultiYear));
+}
+function writeUrlState() {
+  const u = new URL(location.href);
+  if (activeMetric === 'net') u.searchParams.delete('metric'); else u.searchParams.set('metric', activeMetric);
+  if (showMultiYear) u.searchParams.set('figures', 'all'); else u.searchParams.delete('figures');
+  history.replaceState(null, '', u);
+}
+function readUrlState() {
+  const p = new URLSearchParams(location.search);
+  const m = p.get('metric');
+  if (m && METRIC_CONFIG[m]) activeMetric = m;
+  showMultiYear = p.get('figures') === 'all';
+  syncControls();
+}
+
 // ── FILTER RECORDS ────────────────────────────────────────────────────────────
 function getFiltered() {
   if (!MS.agency) return [];  // data not loaded yet
@@ -469,6 +527,13 @@ function getFiltered() {
 
 // ── SELECT TOP BILLS ──────────────────────────────────────────────────────────
 function selectBills(records, n) {
+  if (activeMetric !== 'net') {
+    const k = METRIC_CONFIG[activeMetric].key;
+    return records
+      .filter(r => r[k] > 0)
+      .sort((a, b) => b[k] - a[k])  // largest first, drawn top to bottom
+      .slice(0, n);
+  }
   const costBills = records
     .filter(r => r.net_fiscal_impact < 0)
     .sort((a, b) => a.net_fiscal_impact - b.net_fiscal_impact)  // most negative first
@@ -522,7 +587,7 @@ function updateStats(filtered) {
 // The intro counts follow the Bill status filter (Tal, Oct 9 2026): a claim
 // about how many bills cost money must describe the same slice as the chart.
 function updateIntro() {
-  var scope = ALL_RECORDS.filter(function (r) { return MS.status.pass(r.status_bucket || 'unknown'); });
+  var scope = ALL_RECORDS.filter(function (r) { return MS.status.pass(r.status_bucket || 'unknown') && (showMultiYear || !isWholeProgram(r)); });
   var priced = scope.filter(function (r) { return r.net_fiscal_impact !== null && r.net_fiscal_impact !== undefined; });
   var cost = priced.filter(function (r) { return r.net_fiscal_impact < 0; }).length;
   var gain = priced.filter(function (r) { return r.net_fiscal_impact > 0; }).length;
@@ -533,16 +598,40 @@ function updateIntro() {
     + (scope.length - priced.length).toLocaleString() + ' more share a package statement counted on another bill. This chart puts both sides next to each other. Charts show enacted laws and adopted resolutions by default; use the Bill status filter to include pending or lapsed bills.';
 }
 
+const FOOT_MEASURE = {
+  net: 'Net fiscal impact of NYC Council legislation. Net = total revenue − operational expense − capital expense. Negative values are net costs; positive values are net revenue gains.',
+  expenditure: 'Operational expense of NYC Council legislation, the largest bills in the filtered set.',
+  capital: 'Capital expense of NYC Council legislation, the largest bills in the filtered set. Capital is a one-time outlay, summed over the years each statement prices.',
+  revenue: 'Revenue generated by NYC Council legislation, the largest bills in the filtered set.'
+};
+function updateMeasureText() {
+  const f = document.getElementById('foot-measure'); if (f) f.textContent = FOOT_MEASURE[activeMetric] || FOOT_MEASURE.net;
+  const t = document.getElementById('topn-title'); if (t) t.textContent = activeMetric === 'net' ? 'Bills shown per side' : 'Bills shown';
+}
+
 function render() {
-  const filtered = getFiltered();
+  updateMeasureText();
+  const base = getFiltered();
+  const wholeProgram = base.filter(isWholeProgram);
+  const filtered = showMultiYear ? base : base.filter(r => !isWholeProgram(r));
   updateStats(filtered);
   updateIntro();
 
+  const cfg = METRIC_CONFIG[activeMetric];
+  const isNet = activeMetric === 'net';
   document.getElementById('record-count-note').textContent =
-    `${filtered.length} bills in filtered set · ${yrSpan(filtered)} · ${statusNote()}`;
+    `${filtered.length} bills in filtered set · ${yrSpan(filtered)} · ${statusNote()} ${figuresNote(wholeProgram.length)}`;
 
-  document.getElementById('topn-note').textContent =
-    'Only the top ' + topN + ' bills per side are shown; use filters to narrow the dataset.';
+  document.getElementById('chart-title').textContent = isNet
+    ? 'Net Fiscal Impact: Biggest Costs vs. Revenue Generators'
+    : cfg.label + ': Largest Bills';
+  document.getElementById('chart-sub').textContent = subWithNote(isNet
+    ? 'Bars extending left = net cost to the city. Bars extending right = net revenue gain. Only the top ' + topN + ' bills per side are shown; use filters to narrow the dataset.'
+    : 'Bars show each bill\'s total ' + cfg.label.toLowerCase().replace(' generated', '') + ', largest first. Only the top ' + topN + ' bills are shown; use filters to narrow the dataset.');
+  document.getElementById('legend-cost').style.display = (isNet || activeMetric !== 'revenue') ? '' : 'none';
+  document.getElementById('legend-rev').style.display  = (isNet || activeMetric === 'revenue') ? '' : 'none';
+  if (!isNet) document.getElementById(activeMetric === 'revenue' ? 'legend-rev-text' : 'legend-cost-text').textContent = cfg.legend;
+  else { document.getElementById('legend-cost-text').textContent = 'Net cost (bars extend left)'; document.getElementById('legend-rev-text').textContent = 'Net revenue (bars extend right)'; }
   const bills   = selectBills(filtered, topN);
   const empty   = document.getElementById('empty-state');
   const canvas  = document.getElementById('myChart');
@@ -567,12 +656,14 @@ function render() {
     (r.prime_sponsor || '').slice(0, 22),
     truncate(r.file_number || '', 28)
   ]);
-  const values = bills.map(r => r.net_fiscal_impact);
+  const values = bills.map(r => r[cfg.key]);
   const cs = getComputedStyle(document.documentElement);
   const cCost = cs.getPropertyValue('--c-fiscal-cost').trim(), cCostS = cs.getPropertyValue('--c-fiscal-cost-strong').trim();
   const cGain = cs.getPropertyValue('--c-fiscal-gain').trim(), cGainS = cs.getPropertyValue('--c-fiscal-gain-strong').trim();
-  const colors = values.map(v => v < 0 ? cCost : cGain);
-  const hoverColors = values.map(v => v < 0 ? cCostS : cGainS);
+  // Net: sign decides. Operational and capital are costs; revenue is a gain.
+  const isGain = v => isNet ? v > 0 : activeMetric === 'revenue';
+  const colors = values.map(v => isGain(v) ? cGain : cCost);
+  const hoverColors = values.map(v => isGain(v) ? cGainS : cCostS);
 
   // Build a lookup by index for tooltips
   const billByIdx = bills;
@@ -661,10 +752,31 @@ document.getElementById('topn-row').addEventListener('click', e => {
   render();
 });
 
+document.querySelectorAll('[data-metric]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    activeMetric = btn.dataset.metric;
+    syncControls();
+    writeUrlState();
+    render();
+  });
+});
+document.querySelectorAll('[data-figures]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    showMultiYear = btn.dataset.figures === 'all';
+    syncControls();
+    writeUrlState();
+    render();
+  });
+});
+
 // ── RESET ─────────────────────────────────────────────────────────────────────
 document.getElementById('reset-btn').addEventListener('click', () => {
   Object.values(MS).forEach(ms => ms.reset());
   MS.status.set(['enacted']);
+  activeMetric = 'net';
+  showMultiYear = false;
+  syncControls();
+  writeUrlState();
   render();
 });
 

@@ -247,11 +247,17 @@ footer{background:var(--surface);border-top:1px solid var(--border);padding:18px
     <!-- FILTER PANEL -->
     <div class="filter-panel">
       <div class="filter-panel-title">Y-Axis Metric</div>
-      <div class="metric-row">
+      <div class="metric-row" id="metric-row">
         <button class="metric-btn active" data-metric="net">Net Fiscal Impact</button>
         <button class="metric-btn" data-metric="expenditure">Operational Expense</button>
         <button class="metric-btn" data-metric="capital">Capital Expense</button>
         <button class="metric-btn" data-metric="revenue">Revenue</button>
+      </div>
+
+      <div class="filter-panel-title">Figures</div>
+      <div class="metric-row" id="figures-row">
+        <button class="metric-btn active" data-figures="annual">Annual figures</button>
+        <button class="metric-btn" data-figures="all">Include multi-year totals</button>
       </div>
 
       <div class="filter-panel-title" style="margin-top:4px;">Filters</div>
@@ -390,6 +396,7 @@ document.addEventListener('DOMContentLoaded', () => {
       FILTER_OPTIONS = data.filter_options;
       populateFilters();
       MS.status.set(['enacted']);
+      readUrlState();
       render();
     });
 });
@@ -449,6 +456,41 @@ function statusNote() {
 function statusQs() {
   const sel = MS.status.selected();
   return sel ? '&status=' + [...sel].join(',') : '';
+}
+
+// ── FIGURES AND MEASURE STATE (?figures=all, ?metric=expenditure|capital|revenue) ──
+// Default: bills priced as whole-program totals (totals_basis program_life_sum) are
+// left out, so every bar, pill and count is an annual figure.
+const CAPITAL_NOTE = 'Capital is a one-time outlay, summed over the years each statement prices.';
+const NET_NOTE = 'Net counts capital, a one-time outlay, alongside yearly costs.';
+let showMultiYear = false;
+function isWholeProgram(r) { return r.totals_basis === 'program_life_sum'; }
+function subWithNote(sub) {
+  if (activeMetric === 'capital') return sub + ' ' + CAPITAL_NOTE;
+  if (activeMetric === 'net') return sub + ' ' + NET_NOTE;
+  return sub;
+}
+function figuresNote(count) {
+  const n = count.toLocaleString();
+  if (showMultiYear) return 'Includes ' + n + ' whole-program ' + (count === 1 ? 'total' : 'totals') + '.';
+  return 'Annual figures; ' + n + (count === 1 ? ' bill' : ' bills') + ' priced as whole-program totals left out.';
+}
+function syncControls() {
+  document.querySelectorAll('[data-metric]').forEach(b => b.classList.toggle('active', b.dataset.metric === activeMetric));
+  document.querySelectorAll('[data-figures]').forEach(b => b.classList.toggle('active', (b.dataset.figures === 'all') === showMultiYear));
+}
+function writeUrlState() {
+  const u = new URL(location.href);
+  if (activeMetric === 'net') u.searchParams.delete('metric'); else u.searchParams.set('metric', activeMetric);
+  if (showMultiYear) u.searchParams.set('figures', 'all'); else u.searchParams.delete('figures');
+  history.replaceState(null, '', u);
+}
+function readUrlState() {
+  const p = new URLSearchParams(location.search);
+  const m = p.get('metric');
+  if (m && METRIC_CONFIG[m]) activeMetric = m;
+  showMultiYear = p.get('figures') === 'all';
+  syncControls();
 }
 
 // ── FILTER RECORDS ────────────────────────────────────────────────────────────
@@ -532,14 +574,16 @@ function updateStats(records) {
   function yrSpan(rs) { var ys = rs.map(function (r) { return r.intro_year; }).filter(Boolean);
     return ys.length ? Math.min.apply(null, ys) + '–' + Math.max.apply(null, ys) : ''; }
 function render() {
-  const filtered = getFiltered();
+  const base = getFiltered();
+  const wholeProgram = base.filter(isWholeProgram);
+  const filtered = showMultiYear ? base : base.filter(r => !isWholeProgram(r));
   updateStats(filtered);
 
   const cfg = METRIC_CONFIG[activeMetric];
   document.getElementById('chart-title').textContent = cfg.label + ' by Year Legislated';
-  document.getElementById('chart-sub').textContent   = cfg.sub;
+  document.getElementById('chart-sub').textContent   = subWithNote(cfg.sub);
   document.getElementById('record-count-note').textContent =
-    `${filtered.length} bills shown · ${yrSpan(filtered)} · ${statusNote()}`;
+    `${filtered.length} bills shown · ${yrSpan(filtered)} · ${statusNote()} ${figuresNote(wholeProgram.length)}`;
 
   const pairs   = aggregateByIntroYear(filtered, cfg.key);
   const empty   = document.getElementById('empty-state');
@@ -561,8 +605,11 @@ function render() {
   const cs = getComputedStyle(document.documentElement);
   const cCost = cs.getPropertyValue('--c-fiscal-cost').trim(), cCostS = cs.getPropertyValue('--c-fiscal-cost-strong').trim();
   const cGain = cs.getPropertyValue('--c-fiscal-gain').trim(), cGainS = cs.getPropertyValue('--c-fiscal-gain-strong').trim();
-  const colors = values.map(v => v < 0 ? cCost : cGain);
-  const hoverColors = values.map(v => v < 0 ? cCostS : cGainS);
+  // colour by meaning: expense and capital are costs, revenue is a gain, net by sign
+  const isCost = v => activeMetric === 'expenditure' || activeMetric === 'capital' ? true
+    : activeMetric === 'revenue' ? false : v < 0;
+  const colors = values.map(v => isCost(v) ? cCost : cGain);
+  const hoverColors = values.map(v => isCost(v) ? cCostS : cGainS);
 
   // Slice the reader already chose here (committee, sponsor) travels with the click
   const sliceQs = ['committee', 'sponsor'].map(k => MS[k] && MS[k].selected()
@@ -629,11 +676,19 @@ function render() {
 }
 
 // ── EVENT LISTENERS ───────────────────────────────────────────────────────────
-document.querySelectorAll('.metric-btn').forEach(btn => {
+document.querySelectorAll('[data-metric]').forEach(btn => {
   btn.addEventListener('click', () => {
-    document.querySelectorAll('.metric-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
     activeMetric = btn.dataset.metric;
+    syncControls();
+    writeUrlState();
+    render();
+  });
+});
+document.querySelectorAll('[data-figures]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    showMultiYear = btn.dataset.figures === 'all';
+    syncControls();
+    writeUrlState();
     render();
   });
 });
@@ -641,6 +696,10 @@ document.querySelectorAll('.metric-btn').forEach(btn => {
 document.getElementById('reset-btn').addEventListener('click', () => {
   Object.values(MS).forEach(ms => ms.reset());
   MS.status.set(['enacted']);
+  activeMetric = 'net';
+  showMultiYear = false;
+  syncControls();
+  writeUrlState();
   render();
 });
 
