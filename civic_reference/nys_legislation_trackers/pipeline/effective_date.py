@@ -208,6 +208,32 @@ def _expiry(clause, effective, signed):
     m = re.search(r"(?<!of )\bthis act shall (?:expire|be deemed to expire)(?: and be deemed repealed)?(?: on)?\s+(" + MONTH_RE + r")\s+(\d{1,2}),?\s+(\d{4})", low)
     if m:
         return date(int(m.group(3)), MONTHS[m.group(1)], int(m.group(2)))
+    return _act_expiry(clause, effective)
+
+
+EXP_VERB = r"(?:shall|will)\s+(?:expire|be\s+deemed\s+(?:to\s+)?(?:expire|repealed))(?:\s+and\s+(?:shall\s+)?be\s+deemed\s+(?:to\s+)?(?:repealed|expire))?"
+SECT_SUBJ = re.compile(r"(?:sections?|subdivisions?|paragraphs?|subparagraphs?|articles?|parts?|amendments?\s+made\s+by|provisions?)\b[^;]*?\bof\s+this\s+act\b[^;]*$", re.I)
+
+
+def _act_expiry(clause, effective):
+    """M25 (Oct 13 2026): the general act-level sunset. 'This act shall take effect immediately and shall expire and be deemed repealed
+    December 31, 2012' / 'shall expire on <date>' / 'shall be deemed repealed on and after <date>' / 'shall expire and be deemed repealed
+    three years after such effective date'. Only when the subject is the act itself; a clause that names a section or 'the amendments made
+    by section N' is handled as a section expiry (M21)."""
+    low = clause.lower()
+    for m in re.finditer(EXP_VERB + r"(?:\s+(?:on|upon))?(?:\s+and\s+after|\s+or\s+after)?\s+(?:(" + MONTH_RE + r")\s+(\d{1,2}),?\s+(\d{4})|(" + NUM_WORDS + r"|\d+)\s+(years?|months?|days?)\s+(?:after|from)\s+(?:such\s+effective\s+date|such\s+date|the\s+effective\s+date|the\s+date\s+(?:on\s+which\s+)?this\s+act\s+(?:shall\s+have\s+)?(?:takes?|taken)\s+effect|this\s+act\s+(?:shall\s+have\s+)?taken\s+effect))", low):
+        seg_start = max(low.rfind(";", 0, m.start()), low.rfind(". ", 0, m.start())) + 1
+        prefix = low[seg_start:m.start()]
+        if "this act" not in prefix or SECT_SUBJ.search(prefix):
+            continue
+        if m.group(1):
+            return date(int(m.group(3)), MONTHS[m.group(1)], int(m.group(2)))
+        if effective and m.group(4).strip():
+            n = words_to_int(m.group(4)) if not m.group(4).isdigit() else int(m.group(4))
+            if n is not None:
+                u = m.group(5)
+                return add_months(effective, 12 * n) if u.startswith("year") else (
+                    add_months(effective, n) if u.startswith("month") else effective + timedelta(days=n))
     return None
 
 

@@ -585,7 +585,16 @@ def post_amendment(seg):
 AMEND_INSTR = re.compile(r"\b(?:is|are) (?:hereby )?(?:amended|repealed|renumbered)\b|\bamended by (?:adding|inserting|striking|renumbering)\b", re.I)
 
 
-def relocate_quote(quote, text):
+EXEMPT_SENT = re.compile(r"\bshall\s+not\s+(?:apply|be\s+applicable|be\s+construed)\b|\bshall\s+not\s+apply\b|\bexcept\b|\bnothing\s+in\s+this\b|\b(?:does|do)\s+not\s+apply\b", re.I)
+RELOC_MODAL = re.compile(r"\b(?:shall|may|must|is\s+authorized|are\s+authorized|is\s+hereby\s+authorized)\b", re.I)
+_ACTOR_STOP = {"the", "of", "and", "new", "york", "state", "city", "such", "said", "each", "any", "a", "an", "office", "department"}
+
+
+def _actor_head(actor_raw):
+    return [w for w in re.findall(r"[a-z]+", (actor_raw or "").lower()) if w not in _ACTOR_STOP and len(w) > 3]
+
+
+def relocate_quote(quote, text, actor_raw=None):
     """M6 (Oct 10 2026). An extension record whose quote sits in reprinted unchanged text: returns the verbatim post-amendment sentence that
     holds the nearest {{ }} span of the same act section, or None (no marker, quote already overlaps new matter, or no braced span in the section)."""
     if "{{" not in text:
@@ -600,14 +609,64 @@ def relocate_quote(quote, text):
     near = [(min(abs(x - sp[1]), abs(y - sp[0])), x, y) for x, y in braced_intervals(text) if start <= x < start + len(sec)]
     if not near:
         return None
+    heads = _actor_head(actor_raw)
     for _, x, y in sorted(near):         # M23 (Oct 13 2026): nearest first, skipping a braced span inside an amending instruction
         sent, (sl, sr) = context_sentence((x, y), text)
         if AMEND_INSTR.search(sent):
             continue
         new = post_amendment(sent)
         new = re.sub(r"^(?:\d+(?:-\w+)?\.\s+)", "", new)
+        # M26 (Oct 13 2026): never an exemption or applicability sentence; prefer one with a modal or the actor's head noun
+        if EXEMPT_SENT.search(new) or not (RELOC_MODAL.search(new) or any(h in new.lower() for h in heads)):
+            continue
+        vm = re.search(r"\b(?:shall|may|must|is\s+authorized\s+to)\s+(?:not\s+)?(?:be\s+)?([a-z]{4,})", quote or "", re.I)
+        if vm and vm.group(1).lower()[:5] not in new.lower():        # the original operative verb ('may deny') must survive in the new sentence
+            continue
         if len(new) >= 20 and locate_span(new, text):
             return new
+    return None
+
+
+_DAY_W = r"(?:(?:twenty|thirty)[\s-]*)?(?:first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|eleventh|twelfth|thirteenth|fourteenth|fifteenth|sixteenth|seventeenth|eighteenth|nineteenth)|twentieth|thirtieth|\d{1,2}(?:st|nd|rd|th)?"
+SUBMIT_DATE = re.compile(r"\bshall\s+submit\s+(?:such|the\s+(?:final\s+)?)\s*(?:study|report|findings)\b[^.]*?(?:(?:on\s+or\s+before|no\s+later\s+than|not\s+later\s+than)\s+)((?:"
+                         + efd.MONTH_RE + r")\s+(" + _DAY_W + r"),?\s+((?:two\s+thousand(?:\s+(?:and\s+)?[a-z-]+){0,2})|\d{4}))", re.I)
+NEXT_SUBDIV = re.compile(r"\n\n\s*(?:\{\{)?(?:§|Section)\s*\d+\.|\n\n\s*(?:\{\{)?\d+(?:-\w+)?\.\s")
+
+
+def _wordy_date(month, day, year):
+    mo = efd.MONTHS.get(month.lower())
+    d = int(re.sub(r"\D", "", day)) if day[0].isdigit() else efd.words_to_int(day)
+    if year.isdigit():
+        y = int(year)
+    else:
+        rest = re.sub(r"^two\s+thousand\s*(?:and\s+)?", "", year.lower()).strip()
+        n = efd.words_to_int(rest) if rest else 0
+        y = 2000 + n if n is not None else None
+    try:
+        return efd.date(y, mo, d).isoformat() if (mo and d and y) else None
+    except (ValueError, TypeError):
+        return None
+
+
+def study_submission_date(o, text):
+    """M29 (Oct 13 2026). A study or report record with no deadline whose own subdivision, in the following sentences (up to six, same subdivision), says 'The department
+    shall submit such study to the governor ... on or before November first, two thousand sixteen': returns (ISO date, phrase) or None."""
+    if o.get("deliverable_type") not in ("study or audit", "report") or o.get("deadline_kind") not in (None, "none"):
+        return None
+    sp = locate_span(o.get("quote") or "", text)
+    if not sp:
+        return None
+    _, (sl, sr) = context_sentence(sp, text)
+    tail = text[sr:sr + 4000]
+    cut = NEXT_SUBDIV.search(tail)
+    tail = post_amendment(tail[:cut.start()] if cut else tail)
+    sents = re.split(r"(?<=[.;])\s+(?=[A-Z(])", tail)[:6]
+    for sent in sents:
+        m = SUBMIT_DATE.search(sent)
+        if m:
+            iso = _wordy_date(m.group(1).split()[0], m.group(2), m.group(3).strip())
+            if iso:
+                return iso, re.search(r"(?:on\s+or\s+before|no\s+later\s+than|not\s+later\s+than)\s+.*$", m.group(0), re.I).group(0)
     return None
 
 
@@ -726,17 +785,26 @@ def list_lead_in(span, text):
 BENEFIT_RE = re.compile(r"\b(?:shall|will)\s+(?:also\s+)?(?:receive|be eligible to receive|be eligible for|be entitled to|be exempt(?:ed)?)\b", re.I)
 
 
-PASSIVE_BENEFIT = re.compile(r"\binterest\s+shall\s+be\s+allowed\b|\bshall\s+not\s+be\s+required\s+to\s+pay\b|\bshall\s+be\s+credited\s+with\b|\bshall\s+be\s+reimbursed\b", re.I)
+PASSIVE_BENEFIT = re.compile(r"\binterest\s+shall\s+be\s+allowed\b|\bshall\s+not\s+be\s+required\s+to\s+pay\b|\bshall\s+be\s+credited\s+(?:with|for)\b|\bshall\s+be\s+reimbursed\b", re.I)
+
+
+AWARDED_BENEFIT = re.compile(r"\bshall\s+be\s+awarded\b(?!\s+(?:by|pursuant|in\s+accordance))", re.I)
 
 
 def benefit_entitlement(o, q):
     """M13 (Oct 11 2026). 'Eligible dwelling units ... shall receive a partial abatement', 'such property shall be exempt', 'the owner shall be
     entitled to': the grammatical subject is the beneficiary. Dropped when no government noun precedes the modal and the record's
     actor_raw does not appear in the quote."""
+    am_ = AWARDED_BENEFIT.search(q or "")      # M27: 'shall be awarded' to a beneficiary; 'awarded by the board' / 'contracts shall be awarded' is the board's act
+    if am_ and not GOV_ACTOR.search(q[:am_.start()]) and not re.search(r"\bcontracts?\b", q[:am_.start()], re.I):
+        actor0 = re.sub(r"^(?:the|a|an|such|each|any)\s+", "", (o.get("actor_raw") or "").strip().lower())
+        if not actor0 or actor0 not in q.lower():
+            return True
     pm = PASSIVE_BENEFIT.search(q or "")      # M22 (Oct 13 2026): 'Interest shall be allowed', 'shall not be required to pay': the subject is an amount or a beneficiary
     if pm and not GOV_ACTOR.search(q[:pm.start()]):
         actor0 = re.sub(r"^(?:the|a|an|such|each|any)\s+", "", (o.get("actor_raw") or "").strip().lower())
-        if not GOV_ACTOR.search(actor0) or actor0 not in q.lower():
+        # M27 (Oct 13 2026): only an actor_raw named BEFORE the modal is the subject; 'adopted by the village of Penn Yan' after it is not
+        if not GOV_ACTOR.search(actor0) or actor0 not in q[:pm.start()].lower():
             return True
     m = BENEFIT_RE.search(q or "")
     if not m or GOV_ACTOR.search(q[:m.start()]) or len(re.findall(r"[A-Za-z]+", q[:m.start()])) < 2:      # a quote that starts at the modal names no subject: the record stays
@@ -747,6 +815,8 @@ def benefit_entitlement(o, q):
     return bool(actor) and actor not in q.lower()
 
 
+HEREBY_AUTH = re.compile(r"\bhereby\s+(?:further\s+)?authoriz(?:es|ed)\b", re.I)
+HEREBY_AUTHORIZES = re.compile(r"\bhereby\s+(?:further\s+)?authorizes\s+((?:the|such|said|each)\s+[\w'-]+(?:\s+[\w'-]+){0,3}?)(?=\s+(?:and|to)\b|[,.;]|$)", re.I)
 BDC_NOTIFY = re.compile(r"shall\s+notify\s+the\s+legislative\s+bill\s+drafting\s+commission", re.I)
 
 
@@ -783,6 +853,14 @@ def gate_record(o, text, has_markers):
                     o["kind_from_lead_in"] = "duty" if MANDATORY.search(il[0]) else "power"
                     o["lead_in_existing"] = il[1]
                     bump("list_entry_inline_lead_in")
+                elif HEREBY_AUTH.search(q):
+                    # M28 (Oct 13 2026): 'the state of New York hereby authorizes the city ...' / 'the board is hereby authorized': a power of the
+                    # authorized body, never a designation without an actor
+                    o["kind_from_lead_in"] = "power"
+                    am = HEREBY_AUTHORIZES.search(q)
+                    if am:
+                        o["actor_raw"] = am.group(1).strip()
+                    o["rescued_hereby_authorizes"] = True; bump("m28_hereby_authorizes_power")
                 else:
                     return "designation_no_actor", "a designation or list entry with no lead-in duty or power"
         # 2. new matter
@@ -1074,6 +1152,19 @@ def approver_only_actor(r):
     return bool(hits) and all(APPROVER_BEFORE.search(q[max(0, h - 40):h]) for h in hits)
 
 
+AID_RECIPIENT = re.compile(r"\bshall\s+be\s+(?:awarded|apportioned\s+and\s+paid|paid)\b(?!\s+(?:over|into|out|by|through|in\s+advance|on\s+the\s+(?:audit|warrant)))|\bshall\s+(?:also\s+)?receive\b[^.;]{0,120}\b(?:aid|payments?|grants?)\b", re.I)
+
+
+def aid_recipient_actor(r):
+    """J11 (Oct 13 2026): actor_raw is the government that RECEIVES the money ('surviving municipalities ... shall be awarded additional
+    annual aid'): the recipient names the subject of a passive award or payment, the payer is the acting body."""
+    q = r.get("quote") or ""
+    m = AID_RECIPIENT.search(q)
+    actor = re.sub(r"^(?:the|a|an|such|each|any)\s+", "", (r.get("actor_raw") or "").strip().lower())
+    return bool(m and actor and actor in q[:m.start()].lower() and GOV_ACTOR.search(actor) and
+                not re.search(r"\b(?:by|from)\s+(?:the\s+)?" + re.escape(actor), q[:m.start()].lower()))
+
+
 def judgment_flags(text, records):
     """J1-J3 (Oct 9 2026): judgment classes the audits confirmed. Each returns the record's quote so the re-ask packet carries the sentence."""
     flags = []
@@ -1116,6 +1207,10 @@ def judgment_flags(text, records):
     if ap:        # J9 (Oct 13 2026)
         flags.append({"check": "approver_as_actor", "detail": "%d records whose actor_raw appears in the quote only as the approver ('approved by X'): the acting body is the one whose action X approves" % len(ap),
                       "sentences": [r["quote"] for r in ap][:12]})
+    ar_ = [r for r in records if aid_recipient_actor(r)]
+    if ar_:        # J11 (Oct 13 2026)
+        flags.append({"check": "aid_recipient_as_actor", "detail": "%d records whose actor_raw is the government that receives the aid or payment: the acting body is the one that pays or awards it" % len(ar_),
+                      "sentences": [r["quote"] for r in ar_][:12]})
     comp = [r for r in records if COMPOUND_LOCAL.search(r.get("actor_raw") or "")]
     if comp:
         flags.append({"check": "compound_local_actor", "detail": "%d records whose actor_raw joins a locality and a named district or authority: one record each" % len(comp),
@@ -1390,12 +1485,16 @@ def build_records(laws):
                 o["agency_unit"] = unit_title(o["model_unit"]); bump("m5_unit_copied")           # M5
             if (o["extends_existing"] and "{{" in text and not o.get("lead_in_existing") and not o.get("kind_from_lead_in")
                     and sp0 and not in_braces(sp0[0], sp0[1], text)):                    # M6: the quote is reprinted text next to the new matter
-                nq = relocate_quote(quote, text)
+                nq = relocate_quote(quote, text, o.get("actor_raw"))
                 if nq:
                     o["quote_original"], o["quote"], o["quote_relocated"] = quote, nq, True
                     bump("m6_quote_relocated")
                 else:
                     bump("m6_quote_outside_unresolved")
+            if kind == "duty":
+                ssd = study_submission_date(o, text)
+                if ssd:
+                    o["deadline_kind"], o["deadline_date"], o["deadline_text"] = "fixed_date", ssd[0], ssd[1]; bump("m29_study_submission_date")
             # 1. record dates per section; on_effective_date never null when the date is known
             sec_date, sec_src = section_effective(o, text, eff)
             if sec_src != "law":
