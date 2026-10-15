@@ -44,7 +44,7 @@ def _from_bill(session, base):
     a = (r.get("amendments") or {}).get("items", {}).get(r.get("activeVersion") or "") or {}
     h, p = a.get("fullTextHtml"), a.get("fullText")
     txt = text_markup.from_html(h) if h else text_markup.from_plain_old(p or "")
-    e = parse_effective(txt, signed, resolver=None)        # one hop only: a chain of references stays unresolved
+    e = parse_effective(txt, signed, resolver=_hop)        # M40: follows a chain of references, 3 hops at most
     return {"bill": "%d-%s" % (session, base), "chapter": chap, "year": int(signed[:4]), "signed_date": signed,
             "effective_date": e["effective_date"], "rule": e["rule"], "raw_clause": e["raw_clause"]}
 
@@ -67,12 +67,44 @@ def _local_bill(session, base):
     tp = os.path.join(TEXT_MARKED, hit["key"] + ".txt")
     ep = os.path.join(DATA_DIR, "effective_dates", "%d.json" % session)
     if os.path.exists(tp):
-        e = parse_effective(open(tp).read(), hit["signed_date"], resolver=None)
+        e = parse_effective(open(tp).read(), hit["signed_date"], resolver=_hop)
     elif os.path.exists(ep) and hit["key"] in json.load(open(ep)):
         e = json.load(open(ep))[hit["key"]]
     else:
         return None
     return {"bill": hit["key"], "chapter": hit["chapter_number"], "year": hit["chapter_year"], "signed_date": hit["signed_date"],
+            "effective_date": e["effective_date"], "rule": e["rule"], "raw_clause": e["raw_clause"]}
+
+
+_depth = 0
+STALE = ("same_as_chapter_unresolved", "after_chapter_unresolved")
+
+
+def _hop(**kw):
+    """Resolver for a referenced chapter that itself points at another chapter (M40, Oct 15 2026): at most 3 hops."""
+    global _depth
+    if _depth >= 3:
+        return None
+    _depth += 1
+    try:
+        return resolve(**kw)
+    finally:
+        _depth -= 1
+
+
+def _local_chapter(year, chapter):
+    """M40: a chapter the signed index already holds (data/signed/{session}.json, chapter number and year), with its effective date parsed
+    from the cached marked text. No API call. Returns the chapter_lookup record shape, or None."""
+    from effective_date import parse_effective
+    p = os.path.join(DATA_DIR, "signed", "%d.json" % session_for(year))
+    if not os.path.exists(p):
+        return None
+    hit = next((l for l in json.load(open(p)) if l["chapter_number"] == chapter and l["chapter_year"] == year), None)
+    tp = os.path.join(TEXT_MARKED, hit["key"] + ".txt") if hit else None
+    if not hit or not os.path.exists(tp):
+        return None
+    e = parse_effective(open(tp).read(), hit["signed_date"], resolver=_hop)
+    return {"bill": hit["key"], "chapter": chapter, "year": year, "signed_date": hit["signed_date"],
             "effective_date": e["effective_date"], "rule": e["rule"], "raw_clause": e["raw_clause"]}
 
 
@@ -85,6 +117,11 @@ def resolve(bills=None, chapter=None, year=None):
                 return rec
     if chapter and year:
         key = "chap:%d-%d" % (year, chapter)
+        if idx.get(key) and idx[key].get("rule") in STALE:         # M40: an entry that stopped at a second hop is retried locally
+            rec = _local_chapter(year, chapter)
+            if rec and rec["effective_date"]:
+                idx[key] = rec
+                _save()
         if key not in idx:
             found = None
             for sess in {session_for(year), session_for(year) - 0}:

@@ -1,0 +1,835 @@
+{
+ "_scoring": {
+  "auditor": "A",
+  "night": "20261015",
+  "laws": 11,
+  "stored_records": 40,
+  "correct": 29,
+  "wrong_fields": 9,
+  "not_real": 2,
+  "missed": 30,
+  "precision_strict": "29/40 = 72.5% (Wilson 95% 57.2-83.9%)",
+  "precision_real": "38/40 = 95.0% (Wilson 95% 83.5-98.6%)",
+  "recall": "37/67 = 55.2% (Wilson 95% 43.4-66.5%); 25 of the 30 misses sit in two long wholly-new texts (2011-S7000 special-district act, 2009-A11514 appropriation bill)",
+  "effective_dates": "11/11 correct"
+ },
+ "_classes": [
+  {
+   "name": "authorized_and_directed_stored_as_power",
+   "criteria": [
+    "4"
+   ],
+   "instances": [
+    "2009-A11514-03",
+    "2009-A11514-04",
+    "2009-A11514-05"
+   ],
+   "rule": "kind=='power' and re.search(r'authorized and directed', quote, re.I); in the sample kind_model was 'duty' and kind_rule overrode it to 'power'",
+   "db_matches": 64,
+   "db_examples": [
+    "2009-A10468-01",
+    "2009-A10468-02",
+    "2009-A10468-03"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "until_precondition_kept_as_duty",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2011-S5501-03",
+    "2009-A11514-01"
+   ],
+   "rule": "kind=='duty' and re.search(r'(no expenditure may be made|shall not (occur|be made|take place|commence|proceed|be undertaken)\\b[^.;]{0,160}\\buntil)', quote, re.I): condition_precedent rule misses 'No expenditure may be made ... until a certificate' and 'shall not occur until'",
+   "db_matches": 18,
+   "db_examples": [
+    "2009-A10469-03",
+    "2009-A10610-02",
+    "2009-A10740-01"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "stated_fixed_date_lost_on_directed_payment",
+   "criteria": [
+    "5"
+   ],
+   "instances": [
+    "2009-A11514-04"
+   ],
+   "rule": "deadline_kind=='none' and re.search(r'\\bdirected\\b', quote) and deadline_text matches '(on or before|no later than|not later than) <Month> <d>, <yyyy>' (deadline_text captured, date not parsed into fixed_date)",
+   "db_matches": 11,
+   "db_examples": [
+    "2009-A11514-04",
+    "2009-A40023-08",
+    "2009-A40023-10"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "per_election_notice_duty_stamped_on_effective_date",
+   "criteria": [
+    "5"
+   ],
+   "instances": [
+    "2011-S7000-02",
+    "2011-S7000-03"
+   ],
+   "rule": "deadline_kind=='on_effective_date' and re.search(r'\\b(such|any|each|every) (election|hearing|meeting|application|request|vacancy)\\b', quote, re.I)",
+   "db_matches": 4,
+   "db_examples": [
+    "2009-A7607-01",
+    "2011-A8068-02",
+    "2011-S7000-02"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "payment_period_extension_not_flagged_extends_existing",
+   "criteria": [
+    "7"
+   ],
+   "instances": [
+    "2009-S4096-02"
+   ],
+   "rule": "extends_existing is False and re.search(r'during the period beginning .{5,80} and ending', quote, re.I)",
+   "db_matches": 2,
+   "db_examples": [
+    "2009-S4096-02",
+    "2015-S4105-02"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "parallel_appropriation_directives_dropped_as_duplicates",
+   "criteria": [
+    "9"
+   ],
+   "instances": [
+    "2009-A11514-06 (dropped)"
+   ],
+   "rule": "dropped rule=='duplicate_provision' and 'appropriation' in quote (community vs senior colleges differ only by the object; recurrence of the fixed parallel-per-person class)",
+   "db_matches": 10,
+   "db_examples": [
+    "2009-A10468-06",
+    "2009-A10468-07",
+    "2009-A10468-08"
+   ],
+   "needs_judgment": true
+  },
+  {
+   "name": "nyc_acting_through_commissioner_stored_as_city",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2011-S5501-01"
+   ],
+   "rule": "agency=='New York City' and re.search(r'acting (by and )?through', actor_raw, re.I)",
+   "db_matches": 6,
+   "db_examples": [
+    "2011-A10622-01",
+    "2011-A8691-11",
+    "2011-S5501-01"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "passive_subject_actor_raw_provisions (known, queued)",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2015-A7677-01"
+   ],
+   "rule": "re.match(r'(the )?provisions\\b', actor_raw, re.I)",
+   "db_matches": 8,
+   "db_examples": [
+    "2009-S1406-01",
+    "2011-A8508-01",
+    "2013-A6658-01"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "multi_chapter_sunset_extension_yields_one_record",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2015-A7677"
+   ],
+   "rule": "no mechanical rule: law amends three chapters' sunsets, one record stored",
+   "db_matches": 0,
+   "db_examples": [],
+   "needs_judgment": true
+  },
+  {
+   "name": "special_district_creation_act_under_extracted",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2011-S7000"
+   ],
+   "rule": "no mechanical rule: governance duties (annual election, officer elections, vacancy appointments, investment/TAN powers) missed",
+   "db_matches": 0,
+   "db_examples": [],
+   "needs_judgment": true
+  }
+ ],
+ "2009-S6231": {
+  "records": {
+   "2009-S6231-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S6231-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S6231-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S6231-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S6231-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S6231-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S6231-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S6231-09": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S6231-07": {
+    "verdict": "wrong",
+    "criteria": [
+     "6"
+    ],
+    "fields": {
+     "deliverable_type": "other"
+    },
+    "note": "'The application for a temporary permit shall be on such form as the authority shall prescribe.' is prescribing a form, not designation or staffing"
+   }
+  },
+  "missed": [
+   {
+    "blind": "b10",
+    "quote": "A licensee who is liquidating or selling its business, or a former licensee whose license has been surrendered, revoked, cancelled or has expired, to sell its entire stock",
+    "kind": "power",
+    "agency": "ABC",
+    "dropped_by": null,
+    "note": "§3 adds 'revoked, cancelled' to the class eligible for a liquidator's permit: widening, extends_existing true"
+   }
+  ],
+  "effective_date": {
+   "stored": "2010-10-12",
+   "computed": "2010-10-12",
+   "verdict": "correct",
+   "note": "sixtieth day after 2010-08-13"
+  }
+ },
+ "2009-S4960": {
+  "records": {
+   "2009-S4960-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2011-01-01",
+   "computed": "2011-01-01",
+   "verdict": "correct",
+   "note": "first of January next succeeding 2010-05-25"
+  }
+ },
+ "2011-S5501": {
+  "records": {
+   "2011-S5501-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Department of Parks and Recreation (NYC, via Council crosswalk)"
+    },
+    "note": "'the city of New York, acting by and through the commissioner of parks and recreation of such city, is authorized'"
+   },
+   "2011-S5501-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S5501-03": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "note": "condition precedent of -01: 'the discontinuance of parkland authorized by the provisions of this act shall not occur until the city of New York has complied with the federal requirements'"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2011-07-20",
+   "computed": "2011-07-20",
+   "verdict": "correct",
+   "note": "immediately"
+  }
+ },
+ "2011-S7000": {
+  "records": {
+   "2011-S7000-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S7000-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S7000-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S7000-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S7000-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S7000-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S7000-09": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S7000-10": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S7000-11": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S7000-12": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S7000-13": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S7000-14": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S7000-15": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S7000-02": {
+    "verdict": "wrong",
+    "criteria": [
+     "5"
+    ],
+    "fields": {
+     "deadline_kind": "none",
+     "deadline_date": null,
+     "recurrence": "as-needed"
+    },
+    "note": "notice is timed to each election: 'not less than thirteen days and not more than twenty days prior to the date of such election'"
+   },
+   "2011-S7000-03": {
+    "verdict": "wrong",
+    "criteria": [
+     "5"
+    ],
+    "fields": {
+     "deadline_kind": "none",
+     "deadline_date": null,
+     "recurrence": "as-needed"
+    },
+    "note": "'shall designate a resident qualified voter ... to act as chairperson of any election' is per election, not a setup duty"
+   }
+  },
+  "missed": [
+   {
+    "blind": "b5",
+    "quote": "The board of trustees of the existing Grinnell library may adopt a resolution providing that such chairperson, election inspectors and ballot clerks shall be paid reasonable compensation",
+    "kind": "power",
+    "agency": "Public libraries / Existing Grinnell Library",
+    "dropped_by": null,
+    "note": ""
+   },
+   {
+    "blind": "b6",
+    "quote": "The board of trustees of the existing Grinnell library may, to the extent authorized by law, authorize the use of absentee ballots for the election.",
+    "kind": "power",
+    "agency": "Public libraries / Existing Grinnell Library",
+    "dropped_by": null,
+    "note": ""
+   },
+   {
+    "blind": "b8",
+    "quote": "there shall be an annual election conducted by the board of trustees of the Grinnell public library district in accordance with the provisions of subdivision one",
+    "kind": "duty",
+    "agency": "Library districts / Grinnell Public Library District",
+    "dropped_by": null,
+    "note": "annual"
+   },
+   {
+    "blind": "b9",
+    "quote": "At the first regular meeting of the board of trustees of the district, the trustees shall determine when the terms of office of each member shall expire",
+    "kind": "duty",
+    "agency": "Library districts / Grinnell Public Library District",
+    "dropped_by": null,
+    "note": ""
+   },
+   {
+    "blind": "b10",
+    "quote": "All other vacancies caused by resignation, removal, death, or inability to serve shall be filled by appointment by the board of trustees of the district until the next election",
+    "kind": "duty",
+    "agency": "Library districts / Grinnell Public Library District",
+    "dropped_by": null,
+    "note": "defining sentence listed in the packet"
+   },
+   {
+    "blind": "b11",
+    "quote": "The board of trustees at its first meeting after each annual election shall elect or appoint a president and vice-president, who shall be members of the board, and a secretary, treasurer",
+    "kind": "duty",
+    "agency": "Library districts / Grinnell Public Library District",
+    "dropped_by": null,
+    "note": "annual"
+   },
+   {
+    "blind": "b12",
+    "quote": "If the board so determines, the offices of secretary and treasurer may be held by individuals who are not members of the board of trustees and, in that event, such officers may, if the board so determines, receive compensation",
+    "kind": "power",
+    "agency": "Library districts / Grinnell Public Library District",
+    "dropped_by": null,
+    "note": ""
+   },
+   {
+    "blind": "b15",
+    "quote": "The town or the village shall not make any change in the estimate of revenues or expenditures submitted by the board of the district",
+    "kind": "duty",
+    "agency": "Towns, Villages",
+    "dropped_by": null,
+    "note": "prohibition on government actor; one record per named locality"
+   },
+   {
+    "blind": "b18",
+    "quote": "If necessary to meet this schedule, the town board and village board may each issue tax anticipation notes pursuant to article ii of the local finance law",
+    "kind": "power",
+    "agency": "Towns, Villages",
+    "dropped_by": null,
+    "note": ""
+   },
+   {
+    "blind": "b21",
+    "quote": "The proceeds of such bonds, notes, or other evidences of indebtedness shall be paid to the treasurer of the Grinnell public library district and maintained in a segregated account",
+    "kind": "duty",
+    "agency": "Library districts / Grinnell Public Library District",
+    "dropped_by": null,
+    "note": ""
+   },
+   {
+    "blind": "b23",
+    "quote": "The board of trustees may authorize the investment of funds in the custody of the treasurer in the same manner in which town funds may be invested.",
+    "kind": "power",
+    "agency": "Library districts / Grinnell Public Library District",
+    "dropped_by": null,
+    "note": ""
+   },
+   {
+    "blind": "b24",
+    "quote": "The town and the village shall promptly pay over to the district all monies which belong to or are raised for the district.",
+    "kind": "duty",
+    "agency": "Towns, Villages",
+    "dropped_by": null,
+    "note": "'promptly' = deadline none"
+   },
+   {
+    "blind": "b26",
+    "quote": "The treasurer shall keep such records in such manner as the board of trustees may require.",
+    "kind": "duty",
+    "agency": "Library districts / Grinnell Public Library District",
+    "dropped_by": null,
+    "note": ""
+   },
+   {
+    "blind": "b29",
+    "quote": "44. Grinnell Public Library District",
+    "kind": "power",
+    "agency": "Dormitory Authority",
+    "dropped_by": null,
+    "note": "§9 adds the district to the eligible-library list for DASNY financing (added class, extends_existing true); judgment call"
+   }
+  ],
+  "effective_date": {
+   "stored": "2012-07-18",
+   "computed": "2012-07-18",
+   "verdict": "correct",
+   "note": "immediately; proviso (d) defers only subdivision 44"
+  }
+ },
+ "2009-A1069": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2010-04-28",
+   "computed": "2010-04-28",
+   "verdict": "correct",
+   "note": "immediately; text is a private-manufacturer exemption, zero records is correct"
+  }
+ },
+ "2015-A7677": {
+  "records": {
+   "2015-A7677-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "actor_raw": "(unchanged law; actor of ch 378 of 2007)",
+     "agency": "Education Department"
+    },
+    "note": "actor_raw 'the provisions of chapter 378 of the laws of 2007' is a passive subject; the chapter implements IDEA through the education department (known queued class)"
+   }
+  },
+  "missed": [
+   {
+    "blind": "b1",
+    "quote": "sections one through four and six through twenty-one of this act shall expire and be deemed repealed June 30, 2018",
+    "kind": "duty",
+    "agency": "Education Department",
+    "dropped_by": null,
+    "note": "ch 352 of 2005 sunset extension, extends_existing true"
+   },
+   {
+    "blind": "b2",
+    "quote": "sections one, two, and six of this act shall expire and be deemed repealed June 30, 2018",
+    "kind": "duty",
+    "agency": "Education Department",
+    "dropped_by": null,
+    "note": "ch 430 of 2006 sunset extension, extends_existing true"
+   }
+  ],
+  "effective_date": {
+   "stored": "2015-06-30",
+   "computed": "2015-06-30",
+   "verdict": "correct",
+   "note": "immediately; signed on, not after, June 30 2015"
+  }
+ },
+ "2015-A7823": {
+  "records": {
+   "2015-A7823-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2015-10-26",
+   "computed": "2015-10-26",
+   "verdict": "correct",
+   "note": "immediately"
+  }
+ },
+ "2009-A227": {
+  "records": {
+   "2009-A227-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-A227-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-A227-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   }
+  },
+  "missed": [
+   {
+    "blind": "b3",
+    "quote": "such local laws may provide that any taxes imposed shall be paid by the person liable therefor to the owner of the room for hire",
+    "kind": "power",
+    "agency": "Cities / City of New Rochelle",
+    "dropped_by": null,
+    "note": "low severity: scope of the -01 taxing power"
+   },
+   {
+    "blind": "b4",
+    "quote": "such local laws may provide for the filing of returns and the payment of the taxes on a monthly basis or on the basis of any longer or shorter period of time.",
+    "kind": "power",
+    "agency": "Cities / City of New Rochelle",
+    "dropped_by": null,
+    "note": "low severity"
+   }
+  ],
+  "effective_date": {
+   "stored": "2009-07-11",
+   "computed": "2009-07-11",
+   "verdict": "correct",
+   "note": "immediately; expires_date 2012-07-11 also correct"
+  }
+ },
+ "2009-A11514": {
+  "records": {
+   "2009-A11514-01": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "note": "condition precedent: 'No expenditure may be made from any appropriation in this act, until a certificate of approval has been issued by the director of the budget'"
+   },
+   "2009-A11514-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-A11514-03": {
+    "verdict": "wrong",
+    "criteria": [
+     "4"
+    ],
+    "fields": {
+     "kind": "duty"
+    },
+    "note": "'The comptroller is hereby authorized and directed to utilize this appropriation' (kind_model duty, kind_rule flipped to power)"
+   },
+   "2009-A11514-04": {
+    "verdict": "wrong",
+    "criteria": [
+     "4",
+     "5"
+    ],
+    "fields": {
+     "kind": "duty",
+     "deadline_kind": "fixed_date",
+     "deadline_date": "2010-06-30"
+    },
+    "note": "'authorized and directed ... June payments to school districts on or before June 30, 2010'; deadline_text stored but kind none"
+   },
+   "2009-A11514-05": {
+    "verdict": "wrong",
+    "criteria": [
+     "4"
+    ],
+    "fields": {
+     "kind": "duty"
+    },
+    "note": "'The comptroller is hereby authorized and directed to utilize this appropriation for the purpose of repaying the city of New York'"
+   }
+  },
+  "missed": [
+   {
+    "blind": "b11",
+    "quote": "The comptroller is hereby authorized and directed to utilize this appropriation for the purpose of repaying the city of New York for advances made for the State share of operating expenses of city university of New York senior colleges",
+    "kind": "duty",
+    "agency": "State Comptroller",
+    "dropped_by": "duplicate_provision",
+    "note": "separate $103,216,000 appropriation, not a duplicate of the community-college one"
+   },
+   {
+    "blind": "b9",
+    "quote": "$19,600,000 shall be available for payment to the city of Yonkers pursuant to section 54-l of the state finance law no earlier than April 1, 2011 and no later than June 30, 2011 on audit and warrant of the state comptroller",
+    "kind": "duty",
+    "agency": "State Comptroller",
+    "dropped_by": null,
+    "note": "fixed_date 2011-06-30"
+   },
+   {
+    "blind": "b1",
+    "quote": "the commissioner of health shall be authorized to continue contracts with community service programs, multi-service agencies and community development initiatives for all such contracts which were executed on or before March 31, 2010",
+    "kind": "power",
+    "agency": "DOH",
+    "dropped_by": null,
+    "note": ""
+   },
+   {
+    "blind": "b2",
+    "quote": "The department subject to the approval of the director of the division of budget, shall develop an allocation methodology taking into account financial status of the facility as well as resident needs.",
+    "kind": "duty",
+    "agency": "DOH",
+    "dropped_by": null,
+    "note": ""
+   },
+   {
+    "blind": "b3",
+    "quote": "the commissioner of health may establish minimum and maximum awards for providers",
+    "kind": "power",
+    "agency": "DOH",
+    "dropped_by": null,
+    "note": ""
+   },
+   {
+    "blind": "b4",
+    "quote": "The total amount of funds provided herein shall be distributed to school-based health center providers based on the ratio of each provider's total enrollment",
+    "kind": "duty",
+    "agency": "DOH",
+    "dropped_by": null,
+    "note": "judgment: appropriation-embedded allocation rule"
+   },
+   {
+    "blind": "b5",
+    "quote": "subject to the approval of the director of the budget, who shall file such approval with the department of audit and control and copies thereof with the chairman of the senate finance committee",
+    "kind": "duty",
+    "agency": "DOB",
+    "dropped_by": null,
+    "note": ""
+   },
+   {
+    "blind": "b6",
+    "quote": "the director of the budget must approve the release of any request for proposal or request for application or any other procurement initiatives",
+    "kind": "duty",
+    "agency": "DOB",
+    "dropped_by": null,
+    "note": ""
+   },
+   {
+    "blind": "b13",
+    "quote": "local sponsors may use funds contained in reserves for excess student revenue for operating support of a community college program",
+    "kind": "power",
+    "agency": "Counties (community college sponsors)",
+    "dropped_by": null,
+    "note": "judgment"
+   },
+   {
+    "blind": "b14",
+    "quote": "in accordance with a service and usage formula to be established by the commissioner of transportation with the approval of the director of the budget",
+    "kind": "duty",
+    "agency": "DOT",
+    "dropped_by": null,
+    "note": "judgment"
+   },
+   {
+    "blind": "b15",
+    "quote": "such distributions shall be limited to providers or programs where, as determined by the commissioner of health, emergency assistance is vital",
+    "kind": "power",
+    "agency": "DOH",
+    "dropped_by": null,
+    "note": "judgment"
+   }
+  ],
+  "effective_date": {
+   "stored": "2010-06-21",
+   "computed": "2010-06-21",
+   "verdict": "correct",
+   "note": "immediately, retroactive_to 2010-04-01 also stored correctly"
+  }
+ },
+ "2013-A9124": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2014-12-15",
+   "computed": "2014-12-15",
+   "verdict": "correct",
+   "note": "ninetieth day after 2014-09-16; private professionals only, zero records correct"
+  }
+ },
+ "2009-S4096": {
+  "records": {
+   "2009-S4096-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S4096-02": {
+    "verdict": "wrong",
+    "criteria": [
+     "7"
+    ],
+    "fields": {
+     "extends_existing": true
+    },
+    "note": "new braced period 'during the period beginning December first, two thousand nine and ending November thirtieth, two thousand eleven' extends the existing annual payment duty with new amounts"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2009-07-28",
+   "computed": "2009-07-28",
+   "verdict": "correct",
+   "note": "immediately"
+  }
+ }
+}

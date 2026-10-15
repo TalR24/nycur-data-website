@@ -255,6 +255,26 @@ def _amended_reference(text, ref, signed):
     return {**ref, "effective_date": amended.isoformat(), "original_effective_date": ref["effective_date"], "amended_clause_applied": True}
 
 
+AMENDS_EFFECT = re.compile(r"(?is)\bsection\s+\d+\s+of\s+chapter\s+(\d+)\s+of\s+the\s+laws\s+of\s+(\d{4})\b[^§]{0,400}?is\s+amended\s+to\s+read\s+as\s+follows:\s*\n+\s*(?:§\s*\d+\.\s*)?(This act shall take effect[^\n]*)")
+
+
+def _amended_fixed_reference(text, ref, signed=None):
+    """M40 (Oct 15 2026). The act that points at chapter X may itself rewrite chapter X's effective-date section with a new calendar date
+    ('Section 7 of chapter 550 of the laws of 2014 ... is amended to read as follows: This act shall take effect January 1, [2015 ...] {{2016}}').
+    Rule D1: the amended date applies only when the amending chapter was signed on or before the original effective date; signed later, the
+    original stands and the amendment is recorded on the reference (amended_clause_ignored, amended_fixed_date). Returns the reference."""
+    for m in AMENDS_EFFECT.finditer(text or ""):
+        if int(m.group(1)) != ref.get("chapter") or int(m.group(2)) != ref.get("year"):
+            continue
+        sent = re.sub(r"\s+", " ", re.sub(r"\[[^\]]*\]", " ", m.group(3)).replace("{{", "").replace("}}", "")).strip()
+        eff, rule, _ = _single(sent, date.today(), None)
+        if eff and rule == "fixed_date" and eff.isoformat() != ref.get("effective_date"):
+            if signed is not None and ref.get("effective_date") and signed > _d(ref["effective_date"]):
+                return {**ref, "amended_clause_ignored": True, "amended_fixed_date": eff.isoformat()}
+            return {**ref, "effective_date": eff.isoformat(), "original_effective_date": ref.get("effective_date"), "amended_fixed_date_applied": True}
+    return ref
+
+
 def parse_effective(text, signed_date, resolver=None):
     """text: the full act text (marked or plain) or just the clause. signed_date: ISO string of the governor's signature.
     resolver(bills=..., chapter=..., year=...) -> {signed_date, effective_date, chapter, ...} resolves 'same as chapter X'."""
@@ -274,6 +294,7 @@ def parse_effective(text, signed_date, resolver=None):
             refinfo = {"effective_date": None, "signed_date": None, **refinfo}
     if refinfo and refinfo.get("effective_date") and refinfo.get("signed_date"):
         refinfo = _amended_reference(text, refinfo, signed)
+        refinfo = _amended_fixed_reference(text, refinfo, signed)
     eff, rule, ref_used = _single(clause, signed, refinfo)
     if rule == "unparsed" and not re.search(r"take effect|takes effect", text or "", re.I):
         rule = "text_truncated"           # M19 (Oct 12 2026): the cached text ends before the act clause (budget schedules) or is empty
@@ -335,6 +356,10 @@ def parse_effective(text, signed_date, resolver=None):
            "expires_date": expires.isoformat() if expires else None,
            "retroactive_to": retro.isoformat() if retro else None,
            "other_dates": [x for x in sections if x["rule"] != "retroactive"], "section_dates": sections, "raw_clause": clause}
+    if ref_used and ref_used.get("amended_clause_ignored") and ref_used.get("amended_fixed_date"):
+        note = {"applies_to": "the referenced chapter's effective-date section", "effective_date": ref_used["amended_fixed_date"], "rule": "amendment_after_original_effective_date",
+                "note": "amended after the original effective date (D1): the original date stands"}
+        out["other_dates"].append(note); out["section_dates"].append(note)
     if ref_used:
         out["reference"] = {k: ref_used.get(k) for k in ("bill", "chapter", "year", "signed_date", "effective_date", "rule") if k in ref_used}
     return out

@@ -318,3 +318,31 @@ def fix_assessing_unit(o):
         o["actor_context"] = "County of " + m.group(1).strip().title()
     o.pop("actor_unresolved", None)
     return True
+
+
+# M39 (Oct 15 2026): 'the city of New York, acting by and through the commissioner of parks and recreation' / 'acting through the tlc': the City
+# acts through the named agency, so the record is that NYC agency (Council crosswalk), not 'New York City'.
+NYC_ACTING = re.compile(r"^(?:the )?city of new york,?\s+acting\s+(?:by\s+and\s+)?through\s+(?:(?:its|the)\s+)?(?:(?:commissioner|director|head|chair(?:man|person)?|president)\s+of\s+(?:the\s+)?)?(.+?)(?:\s+of\s+(?:such|the)\s+city)?$", re.I)
+
+
+def fix_nyc_acting_through(o, nyc_lookup, nyc_by):
+    """Mutates o and returns True when a 'New York City' record's actor_raw names the agency the City acts through and the Council crosswalk resolves it."""
+    if o.get("agency") != "New York City":
+        return False
+    m = NYC_ACTING.match(re.sub(r"\s+", " ", (o.get("actor_raw") or "").strip(" .,;:")))
+    if not m:
+        return False
+    name = m.group(1).strip().lower()
+    canon = None
+    for cand in (name, "department of " + name, re.sub(r"^department of ", "", name), "the " + name):
+        c = nyc_lookup.get(cand)
+        if c and c in nyc_by:
+            canon = c
+            break
+    if not canon:
+        return False
+    a = nyc_by[canon]
+    o.update(agency=canon, agency_full=a.get("full_name") or canon, agency_matched=True, jurisdiction="nyc", agency_org_type=a.get("org_type"),
+             agency_group=None, agency_unit=None, agency_source="nyc_acting_through")
+    o.pop("actor_unresolved", None)
+    return True

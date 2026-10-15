@@ -13,7 +13,7 @@ prompt wording (state and local government instead of NYC agencies) and the agen
 """
 import argparse, json, os, re, sys, time
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -439,6 +439,10 @@ MANDATORY = re.compile(r"\b(shall|must|is required|are required|required to|is d
 GRANT_PHRASE = re.compile(r"\b(?:shall be|is|are) (?:hereby )?(?:further )?(?:authorized|empowered)(?: and (?:authorized|empowered))?\b|\bshall have (?:the )?(?:power|authority)\b", re.I)
 
 
+# M35 (Oct 15 2026): 'authorized and directed' / 'empowered and directed' is a command to the actor, a duty, whatever the grant words around it.
+AUTH_DIRECTED = re.compile(r"\b(?:authorized|empowered)\s+and\s+directed\b|\bdirected\s+and\s+(?:authorized|empowered)\b", re.I)
+
+
 def grant_only(quote):
     """A grant with no 'shall' aimed at the actor ('is hereby further authorized and empowered to ...', 'may ...')."""
     q = GRANT_PHRASE.sub(" ", quote or "")
@@ -793,6 +797,8 @@ AWARDED_BENEFIT = re.compile(r"\bshall\s+be\s+awarded\b(?!\s+(?:by|pursuant|in\s
 
 SALARY_INCREASE = re.compile(r"\b(?:salary|salaries|compensation|wages?)\b[^.;]{0,200}?\bshall\s+be\s+increased\b|\bshall\s+receive\s+an?\s+(?:\w+\s+)?salary\s+increase\b", re.I)
 CONDITION_PRECEDENT = re.compile(r"\bshall\s+not\s+be\s+(?:implemented|paid|effective|operative)\b[^.;]{0,60}?\buntil\b[^.;]{0,400}?\b(?:shall|have|has)\s+(?:have\s+)?(?:delivered|certified|approved|filed|submitted|received|issued)\b", re.I)
+# M36 (Oct 15 2026): 'No expenditure may be made ... until a certificate ...', 'shall not occur until', 'shall not take place until' are conditions on another provision
+CONDITION_PRECEDENT_M36 = re.compile(r"\bno\s+(?:expenditure|payment|disbursement)s?\s+(?:may|shall)\s+be\s+made\b[^.;]{0,300}?\buntil\b|\bshall\s+not\s+(?:occur|take\s+place)\s+until\b", re.I)
 
 
 def salary_entitlement(q):
@@ -842,7 +848,7 @@ def gate_record(o, text, has_markers):
     q = o.get("quote") or ""
     if BDC_NOTIFY.search(q):
         return "act_clause_boilerplate", "act-clause notice to the legislative bill drafting commission, a publishing courtesy that binds no program"
-    if CONDITION_PRECEDENT.search(q):
+    if CONDITION_PRECEDENT.search(q) or (APPLY_M36 and CONDITION_PRECEDENT_M36.search(q)):
         return "condition_precedent", "an implementation precondition ('shall not be implemented until X shall have delivered ...'): a condition on another provision, not a duty of the certifying officials"
     if benefit_entitlement(o, q):
         return "benefit_entitlement", "the subject is the beneficiary (it receives, is entitled to or is exempt from), not a government actor"
@@ -975,6 +981,17 @@ def proper_names(q):
     return out
 
 
+MONEY_RE = re.compile(r"\$\s?[\d,]+(?:\.\d+)?(?:\s+(?:million|billion|thousand))?", re.I)
+FUND_RE = re.compile(r"\b(?:[A-Z][\w'-]*\s+){1,5}Fund\b")
+
+
+def money_and_funds(q):
+    """M41 (Oct 15 2026): dollar amounts and capitalised fund names in a quote."""
+    q = q or ""
+    return ({re.sub(r"[\s,]", "", m.group(0)).lower() for m in MONEY_RE.finditer(q)}
+            | {re.sub(r"^(?:The|Such|Said|Of|From|To|In)\s+", "", m.group(0)) for m in FUND_RE.finditer(q)})
+
+
 def distinct_provisions(a, b):
     """True when two same-actor records are different provisions despite overlapping wording: their citations name different
     sections or non-nested sub-parts ('2041-w(2)(A)' vs '(2)(C)'), or each quote carries a noun the other lacks (4+ in all, numbers and dates aside:
@@ -989,6 +1006,14 @@ def distinct_provisions(a, b):
     na, nb = proper_names(a.get("quote")), proper_names(b.get("quote"))
     if APPLY_M31 and (na - nb) and (nb - na):          # M31 (Oct 14 2026): parallel provisions for different named persons or places
         bump("m31_distinct_names"); return True
+    if APPLY_M41:           # M41 (Oct 15 2026): parallel appropriation directives that differ in amount, fund or object
+        ma, mb = money_and_funds(a.get("quote")), money_and_funds(b.get("quote"))
+        if (ma - mb) and (mb - ma):
+            bump("m41_distinct_amounts"); return True
+        if re.search(r"\bappropriation\b", (a.get("quote") or "") + " " + (b.get("quote") or ""), re.I):
+            sa, sb = {w for w in _words(a.get("quote")) if len(w) >= 6 and not w.isdigit()} - _DIFF_STOP - _NUMW - _DATEW, {w for w in _words(b.get("quote")) if len(w) >= 6 and not w.isdigit()} - _DIFF_STOP - _NUMW - _DATEW
+            if (sa - sb) and (sb - sa) and len(sa - sb) <= 3 and len(sb - sa) <= 3:
+                bump("m41_distinct_appropriation_object"); return True
     skip = _DIFF_STOP | _NUMW | _DATEW
     wa = {w for w in _words(a.get("quote")) if len(w) >= 6 and not w.isdigit()} - skip
     wb = {w for w in _words(b.get("quote")) if len(w) >= 6 and not w.isdigit()} - skip
@@ -1170,6 +1195,7 @@ def recall_flags(key, text, records, dropped):
 COMPOUND_LOCAL = re.compile(r"\b(?:town|city|village|county)\b[^;]*?\band\b[^;]*?\b(?:district|authority|agency|corporation)\b", re.I)
 PRE_2017 = range(2009, 2017)
 APPLY_M31 = True
+APPLY_M35 = APPLY_M36 = APPLY_M37 = APPLY_M38 = APPLY_M39 = APPLY_M41 = APPLY_J15 = True        # Oct 15 2026 fixes; each can be switched off on its own
 DROPPED_GOV_SUBJECT = re.compile(r"\b(?:trustees?|board|commissioner|university|department|authority|council|office)\b", re.I)
 APPLIES_RE = re.compile(r"\bshall (?:not )?(?:only )?(?:be applicable|apply)\b|\b(?:does|do) not apply\b", re.I)
 
@@ -1225,6 +1251,9 @@ def joint_actor_single(r, records):
     return False
 
 
+NARROW_MUNICIPALITY = re.compile(r"[\"“”']municipalit(?:y|ies)[\"“”']\s+(?:shall\s+)?means?\s+[^.;]{0,200}?(?:located\s+in\s+(?:the\s+)?count(?:y|ies)\s+of|within\s+(?:the\s+)?count(?:y|ies)\s+of|population\s+of|having\s+a\s+population)", re.I)
+
+
 def judgment_flags(text, records):
     """J1-J3 (Oct 9 2026): judgment classes the audits confirmed. Each returns the record's quote so the re-ask packet carries the sentence."""
     flags = []
@@ -1275,6 +1304,11 @@ def judgment_flags(text, records):
     if jo:        # J13 (Oct 14 2026)
         flags.append({"check": "joint_actor_single", "detail": "%d records whose quote vests the power or duty in two named officials but the record names one: one record per named agency" % len(jo),
                       "sentences": [r["quote"] for r in jo][:12]})
+    if APPLY_J15 and NARROW_MUNICIPALITY.search(text or ""):        # J15 (Oct 15 2026)
+        mu = [r for r in records if r.get("agency") == "Municipalities (all)" and not r.get("agency_unit")]
+        if mu:
+            flags.append({"check": "municipality_defined_narrowly", "detail": "%d records resolved to all municipalities, but the law defines 'municipality' as a specific county, city or population class: name that class as the actor" % len(mu),
+                          "sentences": [r["quote"] for r in mu][:12]})
     comp = [r for r in records if COMPOUND_LOCAL.search(r.get("actor_raw") or "")]
     if comp:
         flags.append({"check": "compound_local_actor", "detail": "%d records whose actor_raw joins a locality and a named district or authority: one record each" % len(comp),
@@ -1407,6 +1441,56 @@ def calendar_deadline(o, bases):
     return None
 
 
+# M37 (Oct 15 2026): a stated calendar date in deadline_text that the model left as deadline_kind none becomes a fixed_date. 'December 31, 2010' is
+# the date itself; 'on or before the first day of February each year' is the first such day on or after the law's effective date (Council rule,
+# Sep 29 2026), with the recurrence kept. A period ('for sixty months') or a date inside 'such school year' names no calendar deadline.
+_DL_DAY = r"(?:(?:%s)|\d{1,2}(?:st|nd|rd|th)?)" % efd.ORD_WORD
+_DL_MON = r"(" + efd.MONTH_RE + r")"
+_DL_PREFIX = r"\b(?:on or before|no later than|not later than|by|before)\s+(?:the\s+)?"
+_DL_YEAR_W = r"two\s+thousand(?:\s+(?:and\s+)?(?:" + efd.NUM_WORDS + r"))?"
+DL_FULL = re.compile(_DL_PREFIX + _DL_MON + r"\s+(" + _DL_DAY + r"),?\s+(\d{4}|" + _DL_YEAR_W + r")\b", re.I)
+DL_RECUR = re.compile(_DL_PREFIX + r"(?:(" + _DL_DAY + r")\s+day\s+of\s+" + _DL_MON + r"|" + _DL_MON + r"\s+(" + _DL_DAY + r"))\b,?\s*(?:of|in)\s+(?:each|every|any)\s+(?:calendar\s+|fiscal\s+)?year\b", re.I)
+
+
+def _dl_day(tok):
+    tok = tok.strip().lower()
+    return int(re.sub(r"\D", "", tok)) if re.match(r"\d", tok) else efd.words_to_int(tok)
+
+
+def dated_deadline(text, base):
+    """(ISO date, 'full'|'recurring') for a calendar date in the deadline text, else None. base: ISO effective (or enactment) date for a recurring day."""
+    t = re.sub(r"\s+", " ", text or "")
+    m = DL_FULL.search(t)
+    if m:
+        day = _dl_day(m.group(2))
+        yr = m.group(3)
+        if not yr.isdigit():
+            rest = re.sub(r"(?i)^two\s+thousand\s*(?:and\s+)?", "", yr).strip()
+            yr = 2000 + (efd.words_to_int(rest) if rest else 0)
+        try:
+            return date(int(yr), efd.MONTHS[m.group(1).lower()], day).isoformat(), "full"
+        except (TypeError, ValueError):
+            return None
+    m = DL_RECUR.search(t)
+    if m and base:
+        day = _dl_day(m.group(1) or m.group(4))
+        mon = efd.MONTHS[(m.group(2) or m.group(3)).lower()]
+        b = date.fromisoformat(base)
+        for yr in (b.year, b.year + 1):
+            try:
+                d = date(yr, mon, day)
+            except (TypeError, ValueError):
+                return None
+            if d >= b:
+                return d.isoformat(), "recurring"
+    return None
+
+
+# M38 (Oct 15 2026): a duty tied to each election ('at each general election', 'prior to each election', 'before each annual election', 'notice of such
+# election') waits for that election: triggered, no effective-date deadline.
+ELECTION_TRIGGER = re.compile(r"\b(?:at|prior to|before|for|during|after|in advance of|upon|of)\s+(?:the\s+)?(?:each|every|any|such)\s+(?:general\s+|annual\s+|special\s+|primary\s+|biennial\s+)?election\b", re.I)
+
+
 # M17 (Oct 12 2026): who bears a cost is a standing allocation, never a one-time deliverable due on the effective date
 COST_BEARING = re.compile(r"\bshall be borne by\b|\bshall be paid by\b(?!\s+(?:\d|(?:january|february|march|april|may|june|july|august|september|october|november|december)\b))|\bshall bear the (?:cost|costs|expense|expenses)\b|\bat the expense of\b", re.I)
 # Switched off (Oct 12 2026): the literal rule flipped 312 records across 2009-2015 (73, 65, 163, 11), over the 80 the orders allow; Tal decides.
@@ -1495,6 +1579,8 @@ def build_records(laws):
                 r15 = agency_resolve_nys.fix_resolvable_actor(o, NYC_BY)      # M15
                 if r15:
                     bump(r15)
+            if APPLY_M39 and agency_resolve_nys.fix_nyc_acting_through(o, NYC_LOOKUP, NYC_BY):      # M39
+                bump("m39_nyc_acting_through")
             r33 = agency_resolve_nys.fix_nyc_school_actor(o, text, NYC_BY)      # M33
             if r33:
                 bump(r33)
@@ -1529,6 +1615,8 @@ def build_records(laws):
             ctx = context_sentence(sp, text)[0] if sp else ""
             if kind == "duty" and (grant_only(quote) or (ctx and grant_only(RELATIVE.sub(" ", ctx)))) and not CAP_RE.search(quote):
                 kind = "power"; o["kind_adjusted"] = "grant_only"; bump("grant_only_to_power")
+            if APPLY_M35 and kind == "power" and o.get("kind_model") == "duty" and AUTH_DIRECTED.search(quote):          # M35: the rules above must not override the model's duty
+                kind = "duty"; o["kind_adjusted"] = "authorized_and_directed"; bump("m35_authorized_and_directed_duty")
             # 4. D3: bond caps and issuance cutoffs are duties (a prohibition on the actor) with no deadline
             if CAP_RE.search(quote) and kind in ("duty", "power") and not (kind == "power" and o.get("kind_model") == "power" and not DEBT_WORDS.search(quote)):
                 if kind != "duty":
@@ -1541,6 +1629,12 @@ def build_records(laws):
             if kind == "power":
                 o["deadline_kind"], o["deadline_date"] = "none", None
             # 6. setup / triggered consistency
+            per_election = False
+            if (APPLY_M38 and kind == "duty" and (o.get("deadline_kind") == "on_effective_date" or (o.get("deadline_kind") == "none" and o.get("recurrence") == "one-time"))
+                    and ELECTION_TRIGGER.search(quote) and not CAP_RE.search(quote)):          # a 'none' one-time duty would otherwise be stamped on the effective date by triggered_to_setup
+                per_election = True
+                o["deadline_kind"], o["deadline_date"] = "none", None
+                o["recurrence"] = "annual" if re.search(r"\bannual\s+election\b", quote, re.I) else "as-needed"; bump("m38_per_election_triggered")
             if kind == "duty" and o.get("deadline_kind") == "on_effective_date" and TRIGGER.search(quote) and not CAP_RE.search(quote):
                 o["deadline_kind"], o["deadline_date"] = "none", None; bump("setup_to_triggered")
             elif (kind == "duty" and o.get("deadline_kind") == "none" and o.get("recurrence") == "one-time"
@@ -1568,6 +1662,11 @@ def build_records(laws):
             sec_date, sec_src = section_effective(o, text, eff)
             if sec_src != "law":
                 bump("section_dates_applied")
+            if (APPLY_M37 and kind == "duty" and not per_election and o.get("deadline_kind") in (None, "none") and not o.get("deadline_date")
+                    and o.get("deadline_text") and not CAP_RE.search(quote) and not COST_BEARING.search(quote)):
+                dd = dated_deadline(o["deadline_text"], sec_date or law["enactment_date"])
+                if dd and dd[0] >= law["enactment_date"]:
+                    o["deadline_kind"], o["deadline_date"] = "fixed_date", dd[0]; bump("m37_dated_deadline_" + dd[1])
             if kind == "duty" and o.get("deadline_kind") == "on_effective_date":
                 if o.get("deadline_date") != sec_date:
                     bump("on_effective_date_filled")
