@@ -11,7 +11,7 @@ Q = T / "quality"
 sys.path.insert(0, str(Q))
 import build_gold
 import score_gold
-from gold_lib import quotes_match, wilson
+from gold_lib import agency_code, agency_equal, is_act_clause, quotes_match, wilson
 
 passed = failed = 0
 def check(name, cond):
@@ -49,6 +49,36 @@ check("wilson bounds", wilson(5, 10)[0] < 0.5 < wilson(5, 10)[1])
 res = score_gold.main(["--gold", out, "--json", os.path.join(tmp, "score.json")])
 check("scorer ran", res["gold_laws"] == len(g["laws"]) and res["stored_records_in_gold_laws"] > 0)
 check("rates sane", 0 <= res["precision_strict"]["rate"] <= res["precision_real"]["rate"] <= 1)
+
+for exp, st in (("Education Department", "SED"),
+                ("Department of Parks and Recreation (NYC, via Council crosswalk)", "DPR"),
+                ("public bodies, State and local (not Municipalities (all))", "State and local bodies"),
+                ("Retirement Board of the New York State Teachers' Retirement System", "Teachers' Retirement System Board"),
+                ("Office of the State Comptroller", "OSC")):
+    check("agency normalises: " + exp[:30], agency_equal(st, exp))
+check("agency mismatch detected", not agency_equal("DOH", "Education Department"))
+check("act clause detected", is_act_clause("This act shall take effect immediately.") and not is_act_clause("The board shall adopt rules"))
+
+# excluded items absorb matching records; new detail lists present
+gold_x = {"built_at": "t", "laws": {"2099-A1": {"items": [
+    {"gold_id": "2099-A1-01", "source": {"obligation_id": "x"}, "quote": "the board shall report annually to the governor", "status": "real", "disputed": False,
+     "expected_fields": {"agency": "Education Department"}},
+    {"gold_id": "2099-A1-02", "source": {"obligation_id": "y"}, "quote": "If accepted the application shall be reviewed as if received earlier", "status": "not_real",
+     "disputed": False, "excluded": True, "expected_fields": {}}]}}}
+dd = os.path.join(tmp, "dd")
+os.makedirs(dd + "/duties"); os.makedirs(dd + "/powers")
+base = {"matter_id": "2099-A1", "actor_raw": "a", "agency": "SED", "kind": "duty"}
+json.dump({"obligations": [
+    dict(base, obligation_id="2099-A1-91", quote="The board shall report annually to the governor."),
+    dict(base, obligation_id="2099-A1-92", quote="If accepted, the application shall be reviewed as if received earlier."),
+    dict(base, obligation_id="2099-A1-93", quote="Something entirely different about licences."),
+    dict(base, obligation_id="2099-A1-94", quote="This act shall take effect immediately.")]}, open(dd + "/duties/2099.json", "w"))
+json.dump({"powers": []}, open(dd + "/powers/2099.json", "w"))
+rx = score_gold.score(gold_x, dd)
+check("excluded absorbs record", rx["records_ignored_disputed_or_excluded"] == 1 and rx["stored_records_in_gold_laws"] == 2)
+check("act clause counted apart", rx["act_clause_records"] == 1)
+check("new detail lists", all(k in rx for k in ("unmatched_stored", "field_mismatches", "unmatched_real_items")) and len(rx["unmatched_stored"]) == 1)
+check("agency match via normalisation", rx["field_accuracy"]["agency"]["k"] == 1 and rx["field_mismatches"] == [])
 
 print(f"{passed} passed, {failed} failed")
 sys.exit(1 if failed else 0)

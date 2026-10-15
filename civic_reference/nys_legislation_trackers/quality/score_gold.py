@@ -10,7 +10,7 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-from gold_lib import SCORED_FIELDS, quote_score, quotes_match, wilson
+from gold_lib import SCORED_FIELDS, agency_code, agency_equal, is_act_clause, quote_score, quotes_match, wilson
 
 T = os.path.dirname(HERE)
 
@@ -67,26 +67,35 @@ def score(gold, data_dir):
     by_law = collections.defaultdict(list)
     for r in recs:
         by_law[r["matter_id"]].append(r)
-    n_all = strict = real_ok = ignored = nr_stored = 0
+    n_all = strict = real_ok = ignored = nr_stored = act_clause = 0
+    unmatched_stored, field_mismatches, nr_ids = [], [], []
+    exp_agencies = set()
     covered = set()
     field_tot, field_ok = collections.Counter(), collections.Counter()
     cls = collections.defaultdict(lambda: collections.Counter())
     unmatched_real = collections.defaultdict(list)
     total_real = 0
+    unmatched_items = []
     for law, g in laws.items():
         items = g["items"]
         live = lambda i: not i.get("excluded") and not i["disputed"]
         total_real += sum(1 for i in items if live(i) and i["status"] == "real")
         for r in by_law.get(law, []):
+            if is_act_clause(r.get("quote")):
+                act_clause += 1
+                continue
             it = best_match(r, items)
             if it is not None and not live(it):
                 ignored += 1
                 continue
             n_all += 1
             if it is None:
+                unmatched_stored.append({"obligation_id": r["obligation_id"], "actor_raw": r.get("actor_raw"), "agency": r.get("agency"),
+                                         "kind": r.get("kind"), "quote": (r.get("quote") or "")[:160]})
                 continue
             if it["status"] == "not_real":
                 nr_stored += 1
+                nr_ids.append(r["obligation_id"])
                 for c in it.get("classes", []):
                     cls[c]["not_real_still_stored"] += 1
                 continue
@@ -97,10 +106,17 @@ def score(gold, data_dir):
                 if f not in SCORED_FIELDS:
                     continue
                 field_tot[f] += 1
-                if norm(r.get(f)) == norm(exp):
+                if f in ("agency", "agency_unit"):
+                    if exp:
+                        exp_agencies.add(exp)
+                    same = agency_equal(norm(r.get(f)), norm(exp), r.get("agency_full") if f == "agency" else None)
+                else:
+                    same = norm(r.get(f)) == norm(exp)
+                if same:
                     field_ok[f] += 1
                 else:
                     ok = False
+                    field_mismatches.append({"obligation_id": r["obligation_id"], "field": f, "stored": r.get(f), "expected": exp, "gold_id": it["gold_id"]})
             strict += ok
             for c in it.get("classes", []):
                 cls[c]["matched"] += 1
@@ -111,6 +127,7 @@ def score(gold, data_dir):
                     cls[c]["real_items"] += 1
                 if (law, it["gold_id"]) not in covered:
                     unmatched_real[law].append(it["gold_id"])
+                    unmatched_items.append({"gold_id": it["gold_id"], "law": law, "quote": (it["quote"] or "")[:160]})
     ed_k = ed_n = 0
     ed_cache = {}
     for law, g in laws.items():
@@ -135,6 +152,13 @@ def score(gold, data_dir):
         "recall": rate(n_cov, total_real),
         "field_accuracy": {f: rate(field_ok[f], field_tot[f]) for f in SCORED_FIELDS},
         "not_real_still_stored": nr_stored,
+        "act_clause_records": act_clause,
+        "gold_expected_agencies": {"total": len(exp_agencies), "normalize_to_code": sum(1 for e in exp_agencies if agency_code(e)),
+                                   "not_normalized": sorted(e for e in exp_agencies if not agency_code(e))},
+        "unmatched_stored": unmatched_stored,
+        "field_mismatches": field_mismatches,
+        "unmatched_real_items": unmatched_items,
+        "not_real_still_stored_ids": nr_ids,
         "effective_date_accuracy": rate(ed_k, ed_n),
         "classes": {c: dict(v) for c, v in sorted(cls.items())},
         "unmatched_real_by_law": {l: v for l, v in sorted(unmatched_real.items(), key=lambda kv: -len(kv[1]))},

@@ -531,6 +531,29 @@ def relocated(quote, text):
     return all(any(frac(w, d) >= 0.8 for d in dels if len(d) >= 4) for w in blocks)
 
 
+# Oct 15 2026 (prompt v2 go-live): the act's effective-date/sunset clause is never a record, and a government body that must pay a cost is a duty
+def _act_words(s):
+    return " ".join(re.findall(r"[a-z0-9]+", (s or "").lower()))
+
+
+ACT_CLAUSE_START = re.compile(r"^(?:this act shall take effect|this act shall expire|provided,? however,? that the amendments made by section)")
+
+
+def is_act_clause_quote(quote, act_clause=None):
+    """True when the quote begins with the act clause's opening words or is contained in the law's own act_clause text."""
+    q = _act_words(quote)
+    if not q:
+        return False
+    if ACT_CLAUSE_START.match(" ".join(re.findall(r"[a-z0-9,]+", (quote or "").lower()))) or q.startswith(("this act shall take effect", "this act shall expire")):
+        return True
+    a = _act_words(act_clause)
+    return len(q) >= 25 and q in a
+
+
+GOV_NOUN = r"(?:village|town|city|county|state|school district|district|municipality|authority|department|board|commissioner|comptroller|office|division|agency|corporation|governor|director|superintendent|treasurer|legislature|college|university)"
+COST_DUTY = re.compile(r"\b" + GOV_NOUN + r"\b(?:(?!\bshall\b)[^.;]){0,80}?\bshall (?:pay|bear|reimburse|be borne by)\b", re.I)
+
+
 # ── Phase 3b: hard ingest gates (apply to every model and every run; each drop is counted and listed) ─────────────────
 DROPPED = []
 
@@ -1453,8 +1476,47 @@ def reask_block(key, entry, stored):
     return "\n".join(lines)
 
 
+def upgrade_packet_v2(packet, strict=False):
+    """A version-1 packet re-headed with the version-2 prompt (build_prompt(2)) and the SCHEMA_V2 footer; the variable part (header,
+    marked law text) and the footer path are untouched. A packet that is already version 2 is returned as is; strict=True raises on a packet that is neither."""
+    f2 = build_prompt(2)[0]
+    if packet.startswith(f2):
+        return packet
+    if not packet.startswith(FIXED_PROMPT):
+        if strict:
+            raise ValueError("packet does not start with the version-1 prompt")
+        return packet          # not a production packet (hand-made test text): left as is
+    out = f2 + packet[len(FIXED_PROMPT):]
+    j = out.rfind("\n\nANSWER FORMAT:")
+    k = out.find(":\n", j)
+    if j < 0 or k < 0 or out[k + 2:] != json.dumps(SCHEMA):
+        raise ValueError("packet footer does not end with the version-1 schema")
+    return out[:k + 2] + json.dumps(SCHEMA_V2)
+
+
+def regen_unanswered_packets(root):
+    """Rewrite root/{Y}/{LAW}.txt with the version-2 head for every law that has neither results/{LAW}.json nor results_reask/{LAW}.json.
+    Returns {year: [regenerated, left_as_is]}."""
+    root = Path(root)
+    counts = {}
+    for yd in sorted(p for p in root.iterdir() if p.is_dir() and p.name.isdigit()):
+        n = [0, 0]
+        for f in sorted(yd.glob("*.txt")):
+            if (yd / "results" / (f.stem + ".json")).exists() or (yd / "results_reask" / (f.stem + ".json")).exists():
+                n[1] += 1
+                continue
+            t = f.read_text()
+            u = upgrade_packet_v2(t, strict=True)
+            if u != t:
+                f.write_text(u)
+            n[0] += 1
+        counts[yd.name] = n
+    return counts
+
+
 def reask_packet_text(packet, key, entry, stored, out_path):
-    """Original packet text with the RE-ASK block before the law text and an ANSWER FORMAT footer that names out_path."""
+    """Original packet text, re-headed with the version-2 prompt, with the RE-ASK block before the law text and an ANSWER FORMAT footer that names out_path."""
+    packet = upgrade_packet_v2(packet)
     cut = packet.rfind("\n\nANSWER FORMAT:")
     head, foot = (packet[:cut], packet[cut:]) if cut >= 0 else (packet, "")
     i = head.rfind("\nLAW TEXT:\n")
@@ -1639,7 +1701,12 @@ def build_records(laws):
             if eo.fix_actor(o, LOOKUP, BY_CANON, stage="private") == "private":
                 excluded += 1
                 continue
+            if is_act_clause_quote(o.get("quote"), law.get("act_clause")):      # L2
+                drop(o, "act_clause", "the quote is the act's effective-date or sunset clause, computed separately")
+                continue
             kind = eo._kind(o)
+            if kind == "neither" and o.get("kind_model") == "neither" and COST_DUTY.search(o.get("quote") or ""):      # L3
+                kind = "duty"; o["kind_adjusted"] = "cost_duty"; bump("l3_cost_duty")
             if kind == "neither":
                 excluded += 1
                 continue
@@ -2008,10 +2075,15 @@ def main():
     ap.add_argument("--limit", type=int)
     ap.add_argument("--pilot-only", action="store_true", help="restrict to the 52 audited pilot laws (data/bills.json signed)")
     ap.add_argument("--per-session", action="store_true", help="write data/duties/{Y}.json, data/powers/{Y}.json instead of single files")
-    ap.add_argument("--prompt-version", type=int, choices=(1, 2), default=1, help="2: add prompt_v2_rules.txt and the optional excluded_sentences field (pilot harness)")
+    ap.add_argument("--prompt-version", type=int, choices=(1, 2), default=2, help="2 (default): add prompt_v2_rules.txt and the optional excluded_sentences field; 1: the old production prompt")
+    ap.add_argument("--regen-packets", metavar="DIR", help="rewrite the unanswered laws' packets under DIR/{Y}/ with the version-2 head (answered laws untouched)")
     ap.add_argument("--laws", metavar="FILE", help="with --emit-packets: JSON with a \"laws\" list of keys; packets go to DIR/{Y}/{LAW}.txt with chunk lists in DIR/chunks/")
     ap.add_argument("--data-dir", metavar="DIR", help="with --ingest: write every output file (data files and the extracted cache) under DIR with the same layout; inputs are still read from data/")
     a = ap.parse_args()
+    if a.regen_packets:
+        for y, (n, m) in regen_unanswered_packets(a.regen_packets).items():
+            print("%s regenerated %d left as is %d" % (y, n, m))
+        return
     full = bool(a.api or a.per_session or a.session)
     sessions = (a.session or PILOT_SESSIONS) if full else None
     pilot_keys = None
