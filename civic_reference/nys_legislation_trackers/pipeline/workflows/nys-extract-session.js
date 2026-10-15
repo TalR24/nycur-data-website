@@ -19,7 +19,7 @@ For each packet path in the list file, read the packet fully and follow every RU
 - on_effective_date only for one-time setup duties with no stated deadline; triggered or precondition duties get none; a cutoff date is not a deadline;
 - no records for early-rulemaking boilerplate, cap or residency exemptions, Local Finance Law useful-life entries, goals or findings, appropriation amounts, or conditions ("subject to", "unless") of another record;
 - quotes copied character for character from the law as it reads after amendment (deleted text left out), 10-60 words; one record per distinct duty or power.
-Write ONLY the JSON object the packet's ANSWER FORMAT footer asks for, to the exact results path it names (the results/ folder beside the packet). Check each file parses (python3 -m json.tool) and each quote appears in the packet text with [deleted] spans and {{ }} markers stripped. If a law is too long or unclear to do carefully, skip it. Do not edit any other file.
+Write ONLY the JSON object the packet's ANSWER FORMAT footer asks for, to the EXACT path its ANSWER FORMAT footer names (results/ for a first answer, results_reask/ for a re-ask packet; never any other folder). Check each file parses (python3 -m json.tool) and each quote appears in the packet text with [deleted] spans and {{ }} markers stripped. If a law is too long or unclear to do carefully, skip it. Do not edit any other file.
 Return the count answered and each skipped packet with its reason.`
 phase('Answer')
 const results = await pipeline(args.chunks, (chunk, _o, i) =>

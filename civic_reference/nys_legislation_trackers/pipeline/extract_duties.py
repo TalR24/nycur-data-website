@@ -45,7 +45,11 @@ def _sub(s, old, new):
     return s.replace(old, new)
 
 
-def build_prompt():
+PROMPT_V2_RULES = HERE / "prompt_v2_rules.txt"
+
+
+def build_prompt(version=1):
+    """version 1 is the production prompt; version 2 adds the bullets of prompt_v2_rules.txt before '- Do not invent obligations'."""
     p = eo.EXTRACTION_PROMPT
     p = _sub(p, 'an enacted New York City local law. Extract every concrete obligation the law imposes on, and every power it grants to, a NYC GOVERNMENT entity (an agency, department, office, commission, board, or officer such as "the commissioner", "the mayor", "the department", "the office").',
              'an enacted New York State law (a chapter of the Laws of New York). Extract every concrete obligation the law imposes on, and every power it grants to, a NEW YORK GOVERNMENT entity: a State agency, department, division, office, board, commission or public authority; a statewide elected official (the governor, the comptroller, the attorney general); the courts; a LOCAL GOVERNMENT (a county, city, town, village, school district, or municipalities in general); or an officer of any of these, such as "the commissioner", "the director of the budget", "the superintendent", "the department", "the office". "The commissioner" means the State commissioner the law names or defines (for example the commissioner of health in the public health law).')
@@ -77,6 +81,10 @@ def build_prompt():
         "- The act clause's early-rulemaking boilerplate ('rules and regulations necessary for the implementation of this act on its effective date are authorized to be made ... on or before such date') produces NO record.",
         "- Do NOT record: an exemption from a cap or residency rule that imposes nothing on a government actor, Local Finance Law useful-life entries, program goals or findings, or appropriation amount changes.",
     ]
+    if version == 2:
+        rules += [ln.rstrip() for ln in PROMPT_V2_RULES.read_text().splitlines() if ln.strip()]
+    elif version != 1:
+        raise SystemExit("unknown prompt version %r" % (version,))
     p = _sub(p, '- Do not invent obligations', "\n".join(rules) + '\n- Do not invent obligations')
     p = _sub(p, '- Do not invent obligations', '- A deadline counted from "the date this act shall have become a law" or from signing is days_after_enactment; one counted from "the effective date of this act" is days_after_effective.\n- Do not invent obligations')
     p = (p.replace("{deliverable_types}", json.dumps(eo.DELIVERABLE_TYPES))
@@ -97,6 +105,10 @@ FIXED_PROMPT, VARIABLE_TEMPLATE = build_prompt()
 import copy  # noqa: E402
 SCHEMA = copy.deepcopy(eo.OBLIGATIONS_SCHEMA)       # Council schema plus one optional boolean (not required: older answers lack it)
 SCHEMA["properties"]["obligations"]["items"]["properties"]["extends_existing"] = {"type": "boolean"}
+SCHEMA_V2 = copy.deepcopy(SCHEMA)                   # prompt v2: optional top-level list of sentences the model judged not to be records
+SCHEMA_V2["properties"]["excluded_sentences"] = {"type": "array", "items": {"type": "object", "properties": {"start": {"type": "string"}, "reason": {"type": "string"}},
+                                                                            "required": ["start", "reason"], "additionalProperties": False}}
+EXCLUDED_COUNT = {}                                 # law key -> number of excluded_sentences the model listed (stored on the cache file, otherwise ignored)
 
 
 def render_variable_prompt(law, text):
@@ -159,6 +171,8 @@ def effective_table(laws):
 
 def prepare(law, raw):
     """Replace the model's effective clause with the deterministic parse (the model still answers the schema field)."""
+    if "excluded_sentences" in raw:
+        EXCLUDED_COUNT[law["key"]] = EXCLUDED_COUNT.get(law["key"], 0) + len(raw["excluded_sentences"])
     ACTOR_MODEL[law["key"]] = {"%s-%02d" % (law["key"], i): o.get("actor_resolved") for i, o in enumerate(raw.get("obligations", []), 1)}
     EXT_MODEL[law["key"]] = {"%s-%02d" % (law["key"], i): bool(o.get("extends_existing")) for i, o in enumerate(raw.get("obligations", []), 1)}
     e = EFFECTIVE[law["key"]]
@@ -1406,12 +1420,100 @@ def merge_reask(todo, results_dir, model):
     return n
 
 
+# ── Max-plan re-ask (Oct 15 2026): a COMPLETE fresh answer per law, from packets/{Y}/results_reask/{LAW}.json ─────
+REASK_MARK = "RE-ASK. "
+
+
+def stored_records(key, data_dir=None):
+    """Stored duty and power records of one law, from data/duties/{Y}.json and data/powers/{Y}.json."""
+    dd = Path(data_dir) if data_dir else DATA
+    y = key.split("-")[0]
+    out = []
+    for sub, field in (("duties", "obligations"), ("powers", "powers")):
+        f = dd / sub / (y + ".json")
+        if f.exists():
+            out += [o for o in json.loads(f.read_text())[field] if o.get("matter_id") == key]
+    return sorted(out, key=lambda o: o.get("obligation_id") or "")
+
+
+def reask_block(key, entry, stored):
+    """The RE-ASK text inserted before the law text of an original packet."""
+    lines = [REASK_MARK + "This law was answered before. Your answer REPLACES the earlier one, so give a COMPLETE fresh answer for the whole law: keep the earlier "
+             "records that are correct, fix the ones that are wrong, and add the ones that were missed.",
+             "", "EARLIER RECORDS FOR THIS LAW (%d):" % len(stored)]
+    for o in stored:
+        dl = o.get("deadline_text") or o.get("deadline_kind") or "none"
+        q = re.sub(r"\s+", " ", o.get("quote") or "").strip()
+        lines.append("- %s | actor: %s | kind: %s | deadline: %s | extends existing law: %s | quote: %s" % (
+            o.get("obligation_id"), o.get("actor_raw"), o.get("kind"), dl, "yes" if o.get("extends_existing") else "no", q))
+    if not stored:
+        lines.append("(none stored)")
+    lines += ["", "CHECKS THAT FLAGGED THIS LAW: " + "; ".join("%s (%s)" % (r.get("check"), r.get("detail")) for r in entry["reasons"]),
+              "", reask_instruction(entry), "", ""]
+    return "\n".join(lines)
+
+
+def reask_packet_text(packet, key, entry, stored, out_path):
+    """Original packet text with the RE-ASK block before the law text and an ANSWER FORMAT footer that names out_path."""
+    cut = packet.rfind("\n\nANSWER FORMAT:")
+    head, foot = (packet[:cut], packet[cut:]) if cut >= 0 else (packet, "")
+    i = head.rfind("\nLAW TEXT:\n")
+    block = reask_block(key, entry, stored)
+    head = head[:i + 1] + block + head[i + 1:] if i >= 0 else head + "\n\n" + block
+    k = foot.find(":\n", foot.find("ANSWER FORMAT:") if foot else 0)
+    schema_json = foot[k + 2:] if foot and k >= 0 else ""
+    return (head + "\n\nANSWER FORMAT: this is a re-ask. Write ONLY a JSON object matching this schema, the COMPLETE answer for the whole law, "
+            "to the exact path " + str(out_path) + " (never to results/):\n" + schema_json)
+
+
+def reask_overlay(d, todo, tmp, schema=None):
+    """Packet-results view for eo.ingest_packets: for each law, results_reask/{key}.json (when it parses and fits the schema)
+    stands in for results/{key}.json; otherwise the original answer stands. Returns (overlay_dir, {key: tag})."""
+    d, tmp = Path(d), Path(tmp)
+    (tmp / "results").mkdir(parents=True, exist_ok=True)
+    (tmp / "manifest.json").write_text((d / "manifest.json").read_text())
+    for f in (d / "results").glob("*.json"):
+        (tmp / "results" / f.name).write_text(f.read_text())
+    reasked = {}
+    for law, _ in todo:
+        k = law["key"]
+        rp = d / "results_reask" / (k + ".json")
+        if not rp.exists():
+            continue
+        try:
+            raw = json.loads(rp.read_text())
+        except json.JSONDecodeError:
+            continue
+        if not eo.validate_against_schema(raw, schema or SCHEMA):
+            continue
+        (tmp / "results" / (k + ".json")).write_text(json.dumps(raw))
+        tf = d / "reask" / (k + ".tag")
+        reasked[k] = tf.read_text().strip() if tf.exists() else "unknown"
+    return tmp, reasked
+
+
+def mark_reasked(reasked, done, extracted_dir=None):
+    """Stamp reasked/reask_tag on the cache files of the re-asked laws that ingested; build_records copies it to the records."""
+    ed = Path(extracted_dir) if extracted_dir else EXTRACTED
+    n = 0
+    for k, tag in reasked.items():
+        cp = ed / (k + ".json")
+        if k in done and cp.exists():
+            res = json.loads(cp.read_text())
+            res["reasked"], res["reask_tag"] = True, tag
+            cp.write_text(json.dumps(res, indent=1, ensure_ascii=False))
+            n += 1
+    return n
+
+
 # ── Ingest ──────────────────────────────────────────────────────────────────────────────────────────────────────
 def write_cache(mid, res):
     EXTRACTED.mkdir(parents=True, exist_ok=True)
     if mid in EXT_MODEL:
         res["extends_model"] = EXT_MODEL[mid]
         res["actor_model"] = ACTOR_MODEL[mid]
+    if mid in EXCLUDED_COUNT:
+        res["excluded_sentences_count"] = EXCLUDED_COUNT[mid]
     (EXTRACTED / (mid + ".json")).write_text(json.dumps(res, indent=1, ensure_ascii=False))
 
 
@@ -1678,6 +1780,8 @@ def build_records(laws):
                    "law_title": law["title"], "prime_sponsor": law["sponsor"], "enactment_date": law["enactment_date"],
                    "effective_date": sec_date, "effective_rule": eff["rule"] if sec_src == "law" else ("open_on_expiration_of_other_law" if sec_src == "open" else "section_" + sec_src), "law_expires_date": eff["expires_date"],
                    "openleg_url": law["openleg_url"], "extraction_model": res.get("model")}
+            if res.get("reasked"):
+                rec["reasked"], rec["reask_tag"] = True, res.get("reask_tag")
             (law_p if kind == "power" else law_d).append(rec)
         law_d = drop_conditions(dedupe_law(law_d))
         law_p = drop_conditions(dedupe_law(law_p))
@@ -1865,8 +1969,33 @@ def run_batches(todo, resume_only=False, max_wait_s=300 * 60, reask=None):
         print("re-ask: %d laws flagged; %d batch chunks still pending" % (len(reask), len(left_chunks)))
 
 
+def emit_pilot_packets(root, todo, keys, version):
+    """Pilot packets (prompt v2 harness): one text file per listed law under root/{Y}/{LAW}.txt, built from the same marked text
+    (cache/text_marked via load_todo) and render_variable_prompt the production packets use, with the ANSWER FORMAT footer naming the
+    absolute path root/{Y}/results/{LAW}.json. Chunk lists root/chunks/NNN.lst use next_packet_batch.make_chunks (400 KB, 30 laws).
+    Returns (packets written, chunk list paths, total bytes, {key: reason} for listed laws that could not be emitted)."""
+    import next_packet_batch as nb
+    root = Path(root).resolve()
+    fixed = FIXED_PROMPT if version == 1 else build_prompt(version)[0]
+    schema = SCHEMA if version == 1 else SCHEMA_V2
+    have = {l["key"]: (l, t) for l, t in todo}
+    skipped = {k: "no marked text, or over %d characters (deferred long)" % MAX_CHARS for k in keys if k not in have}
+    files = []
+    for y in sorted({k.split("-")[0] for k in keys if k in have}):
+        d = root / y
+        (d / "results").mkdir(parents=True, exist_ok=True)
+        sub = [have[k] for k in sorted(keys) if k in have and k.split("-")[0] == y]
+        eo.emit_packets(d, sub, fixed_prompt=fixed, render=render_variable_prompt, schema=schema)
+        for f in sorted(d.glob("*.txt")):
+            f.write_text(re.sub(r"schema to results/([^\s:]+\.json):", lambda m: "schema to %s:" % (d / "results" / m.group(1)), f.read_text(), count=1))
+            files.append(f)
+    chunks = nb.make_chunks(files, len(files) or 1, 400_000, 30)
+    lists = nb.write_lists(chunks, root / "chunks") if chunks else []
+    return len(files), lists, sum(f.stat().st_size for f in files), skipped
+
+
 def main():
-    global EFFECTIVE
+    global EFFECTIVE, EXTRACTED
     ap = argparse.ArgumentParser()
     ap.add_argument("--emit-packets", metavar="DIR")
     ap.add_argument("--ingest", metavar="DIR")
@@ -1879,9 +2008,32 @@ def main():
     ap.add_argument("--limit", type=int)
     ap.add_argument("--pilot-only", action="store_true", help="restrict to the 52 audited pilot laws (data/bills.json signed)")
     ap.add_argument("--per-session", action="store_true", help="write data/duties/{Y}.json, data/powers/{Y}.json instead of single files")
+    ap.add_argument("--prompt-version", type=int, choices=(1, 2), default=1, help="2: add prompt_v2_rules.txt and the optional excluded_sentences field (pilot harness)")
+    ap.add_argument("--laws", metavar="FILE", help="with --emit-packets: JSON with a \"laws\" list of keys; packets go to DIR/{Y}/{LAW}.txt with chunk lists in DIR/chunks/")
+    ap.add_argument("--data-dir", metavar="DIR", help="with --ingest: write every output file (data files and the extracted cache) under DIR with the same layout; inputs are still read from data/")
     a = ap.parse_args()
     full = bool(a.api or a.per_session or a.session)
     sessions = (a.session or PILOT_SESSIONS) if full else None
+    pilot_keys = None
+    if a.laws:
+        if not a.emit_packets:
+            sys.exit("--laws needs --emit-packets")
+        lj = json.load(open(a.laws))["laws"]
+        pilot_keys = sorted(lj)
+        sessions = sorted({int(k.split("-")[0]) for k in pilot_keys})
+        todo, deferred = load_todo(sessions)
+        todo = [(l, t) for l, t in todo if l["key"] in set(pilot_keys)]
+        n, lists, nbytes, skipped = emit_pilot_packets(a.emit_packets, todo, pilot_keys, a.prompt_version)
+        print("packets written %d of %d listed laws (prompt version %d), %d bytes; chunk lists %d" % (n, len(pilot_keys), a.prompt_version, nbytes, len(lists)))
+        for l in lists:
+            print("  " + l)
+        for k, why in sorted(skipped.items()):
+            print("skipped %s: %s" % (k, why))
+        return
+    out = Path(a.data_dir) if a.data_dir else DATA
+    if a.data_dir:
+        EXTRACTED = out / "cache" / "extracted"
+    schema = SCHEMA if a.prompt_version == 1 else SCHEMA_V2
     todo, deferred = load_todo(sessions)
     if a.pilot_only:
         pb = json.load(open(DATA / "bills.json"))
@@ -1895,13 +2047,13 @@ def main():
     laws = [l for l, _ in todo] + [l for l in signed_laws(sessions) if l["key"] in {d["key"] for d in deferred}]
     EFFECTIVE = effective_table([l for l, _ in todo])
     if full:
-        (DATA / "effective_dates").mkdir(exist_ok=True)
+        (out / "effective_dates").mkdir(parents=True, exist_ok=True)
         for y in sorted({l["session"] for l, _ in todo}):
-            json.dump({k: v for k, v in EFFECTIVE.items() if k.startswith("%d-" % y)}, open(DATA / "effective_dates" / ("%d.json" % y), "w"), separators=(",", ":"))
+            json.dump({k: v for k, v in EFFECTIVE.items() if k.startswith("%d-" % y)}, open(out / "effective_dates" / ("%d.json" % y), "w"), separators=(",", ":"))
     else:
-        json.dump(EFFECTIVE, open(DATA / "effective_dates.json", "w"), indent=1)
+        json.dump(EFFECTIVE, open(out / "effective_dates.json", "w"), indent=1)
     json.dump({"rule": "signed laws whose marked text exceeds %d characters (budget bills, recodifications) wait for a later phase" % MAX_CHARS,
-               "laws": deferred}, open(DATA / "deferred_long.json", "w"), indent=1)
+               "laws": deferred}, open(out / "deferred_long.json", "w"), indent=1)
     if a.api:
         API_DIR.mkdir(parents=True, exist_ok=True)
         print("laws with text: %d (deferred long %d)" % (len(todo), len(deferred)))
@@ -1916,35 +2068,39 @@ def main():
     if a.emit_packets:
         d = Path(a.emit_packets)
         (d / "results").mkdir(parents=True, exist_ok=True)
-        eo.emit_packets(d, todo, fixed_prompt=FIXED_PROMPT, render=render_variable_prompt, schema=SCHEMA)
+        eo.emit_packets(d, todo, fixed_prompt=FIXED_PROMPT if a.prompt_version == 1 else build_prompt(a.prompt_version)[0], render=render_variable_prompt, schema=schema)
         sizes = sorted(os.path.getsize(d / (l["key"] + ".txt")) for l, _ in todo)
         print("packets %d (signed laws %d, deferred long %d); bytes min %d median %d max %d" % (len(todo), len(laws), len(deferred), sizes[0], sizes[len(sizes) // 2], sizes[-1]))
         return
     if a.ingest:
         d = Path(a.ingest)
-        done, left = eo.ingest_packets(d, todo, LOOKUP, BY_CANON, "claude-sonnet-5" if full else "max-subagent", writer=write_cache, prepare=prepare, schema=SCHEMA)
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmpd:       # a valid results_reask answer replaces results/ for its law
+            view, reasked = reask_overlay(d, todo, tmpd, schema)
+            done, left = eo.ingest_packets(view, todo, LOOKUP, BY_CANON, "claude-sonnet-5" if full else "max-subagent", writer=write_cache, prepare=prepare, schema=schema)
+        print("re-ask answers used: %d laws" % mark_reasked(reasked, set(done)))
         merged = merge_reask(todo, d / "results", "claude-sonnet-5" if full else "max-subagent")
         duties, powers, excluded = build_records([l for l, _ in todo])
         if full:      # M21: build_records may add a law-wide expires_date from a section-scoped sunset
             for y in sorted({l["session"] for l, _ in todo}):
-                json.dump({k: v for k, v in EFFECTIVE.items() if k.startswith("%d-" % y)}, open(DATA / "effective_dates" / ("%d.json" % y), "w"), separators=(",", ":"))
+                json.dump({k: v for k, v in EFFECTIVE.items() if k.startswith("%d-" % y)}, open(out / "effective_dates" / ("%d.json" % y), "w"), separators=(",", ":"))
         stamp = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
         reask = build_reask(todo, duties, powers)
         print("re-ask merged %d records; recall checks flag %d laws" % (merged, len(reask)))
         sess = sorted({l["session"] for l, _ in todo})
         for sub_dir in ("reask", "dropped"):
-            (DATA / sub_dir).mkdir(exist_ok=True)
+            (out / sub_dir).mkdir(parents=True, exist_ok=True)
         for y in (sess if full else []):               # per-session files: an ingest of one session never overwrites another's
-            json.dump({"generated_at": stamp, "laws": {k: v for k, v in reask.items() if k.startswith("%d-" % y)}}, open(DATA / "reask" / ("%d.json" % y), "w"), indent=1, ensure_ascii=False)
-            json.dump({"generated_at": stamp, "dropped": [d for d in DROPPED if (d.get("matter_id") or "").startswith("%d-" % y)]}, open(DATA / "dropped" / ("%d.json" % y), "w"), indent=1, ensure_ascii=False)
+            json.dump({"generated_at": stamp, "laws": {k: v for k, v in reask.items() if k.startswith("%d-" % y)}}, open(out / "reask" / ("%d.json" % y), "w"), indent=1, ensure_ascii=False)
+            json.dump({"generated_at": stamp, "dropped": [d for d in DROPPED if (d.get("matter_id") or "").startswith("%d-" % y)]}, open(out / "dropped" / ("%d.json" % y), "w"), indent=1, ensure_ascii=False)
         if full:     # one file would pass ~25 MB: per-session files, the single store (the pilot laws are in their session's file)
-            (DATA / "duties").mkdir(exist_ok=True); (DATA / "powers").mkdir(exist_ok=True)
+            (out / "duties").mkdir(parents=True, exist_ok=True); (out / "powers").mkdir(parents=True, exist_ok=True)
             for y in sess:
-                json.dump({"generated_at": stamp, "obligations": [o for o in duties if o["session"] == y]}, open(DATA / "duties" / ("%d.json" % y), "w"), separators=(",", ":"), ensure_ascii=False)
-                json.dump({"generated_at": stamp, "powers": [o for o in powers if o["session"] == y]}, open(DATA / "powers" / ("%d.json" % y), "w"), separators=(",", ":"), ensure_ascii=False)
+                json.dump({"generated_at": stamp, "obligations": [o for o in duties if o["session"] == y]}, open(out / "duties" / ("%d.json" % y), "w"), separators=(",", ":"), ensure_ascii=False)
+                json.dump({"generated_at": stamp, "powers": [o for o in powers if o["session"] == y]}, open(out / "powers" / ("%d.json" % y), "w"), separators=(",", ":"), ensure_ascii=False)
         else:        # pilot-only tests write the single legacy files
-            json.dump({"generated_at": stamp, "obligations": duties}, open(DATA / "duties.json", "w"), indent=1, ensure_ascii=False)
-            json.dump({"generated_at": stamp, "powers": powers}, open(DATA / "powers.json", "w"), indent=1, ensure_ascii=False)
+            json.dump({"generated_at": stamp, "obligations": duties}, open(out / "duties.json", "w"), indent=1, ensure_ascii=False)
+            json.dump({"generated_at": stamp, "powers": powers}, open(out / "powers.json", "w"), indent=1, ensure_ascii=False)
         print("ingested %d laws, %d left (missing or invalid result); duties %d, powers %d, excluded (private or neither) %d" % (len(done), len(left), len(duties), len(powers), excluded))
         print("rules applied:", json.dumps(STATS, sort_keys=True))
 
