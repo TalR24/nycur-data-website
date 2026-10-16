@@ -203,7 +203,7 @@ def _title(s):
 
 
 LOCALITY = [
-    (re.compile(r"\b(town|village|city|county)\s+of\s+(?!the\b|new york\b)([a-z][a-z .'-]*?)(?=\s*(?:,|;|\(|\bin\s+the\b|\bwithin\b|\bwhich\b|\bthat\b|\bto\b|\band\b|\bor\b|$))", re.I), None),
+    (re.compile(r"\b(town|village|city|county)\s+of\s+(?!the\b|new york\b)([a-z][a-z .'-]*?)(?=\s*(?:,|;|\(|\bin\s+the\b|\bwithin\b|\bwhich\b|\bthat\b|\bto\b|\band\b|\bor\b|\bis\b|\bare\b|\bshall\b|\bmay\b|\bhereby\b|$))", re.I), None),
     (re.compile(r"\b([A-Za-z][A-Za-z.'-]*(?:\s+[A-Za-z][A-Za-z.'-]*){0,3}?)\s+((?:central |union free |city |common )?school district)\b", re.I), "School districts"),
     (re.compile(r"\b([A-Za-z][A-Za-z.'-]*(?:\s+[A-Za-z][A-Za-z.'-]*){0,2}?)\s+(fire district)\b", re.I), "Fire districts"),
     (re.compile(r"\b([A-Z][A-Za-z.'-]*(?:\s+[A-Z][A-Za-z.'-]*){0,2})\s+(county)\b|\b([a-z]+)\s+(county)\b", re.I), "Counties"),
@@ -216,6 +216,14 @@ LOCAL_ACTOR_NOUN = re.compile(r"\b(?:town|city|village|county|counties|school di
 STATE_GENERIC_ACTOR = re.compile(r"^(?:the |such |said |each |any )?(?:authority|department|commissioner|division|office|superintendent)$", re.I)
 
 
+OPERATIVE_CUT = re.compile(r"\s*,.*$|\s+(?:is\s+hereby|are\s+hereby|is\s+authorized|are\s+authorized|hereby|shall|may|is|are|has|have|will|authorized)\b.*$", re.I)
+
+
+def trim_unit_name(name):
+    """R4 (Oct 16 2026): a locality name stops before operative words and commas ('Nassau Is Hereby Authorized' -> 'Nassau')."""
+    return OPERATIVE_CUT.sub("", name or "").strip(" .")
+
+
 def named_locality(*texts):
     """(group, normalised unit name) for the first named locality in the texts, else None.
     'the town board of the town of cornwall, in the county of orange' -> ('Towns', 'Town of Cornwall')."""
@@ -226,7 +234,7 @@ def named_locality(*texts):
         m = LOCALITY[0][0].search(t)
         if m:
             kind = m.group(1).lower()
-            name = re.sub(r"\s+", " ", m.group(2)).strip(" .")
+            name = trim_unit_name(re.sub(r"\s+", " ", m.group(2)).strip(" ."))
             name = re.sub(r"(?:\s+(?:assessors?|board|clerk|treasurer|supervisor|tax|department|office|shall|may|is|has|will))+$", "", name, flags=re.I)
             name = re.sub(r"\s+" + kind + r"$", "", name, flags=re.I)        # "Town of Brookhaven Town"
             if name and not GENERIC_LEAD.match(name.split()[0]):
@@ -482,7 +490,7 @@ def law_locality(text, title):
     for t in (title or "", _mask_deleted(text)):
         for m in LOCALITY[0][0].finditer(re.sub(r"\([^)]*\)", "", t)):
             kind = m.group(1).lower()
-            name = re.sub(r"\s+", " ", m.group(2)).strip(" .")
+            name = trim_unit_name(re.sub(r"\s+", " ", m.group(2)).strip(" ."))
             name = re.sub(r"(?:\s+(?:assessors?|board|clerk|treasurer|supervisor|tax|department|office|shall|may|is|has|will))+$", "", name, flags=re.I)
             name = re.sub(r"\s+" + kind + r"$", "", name, flags=re.I)        # "Town of Brookhaven Town"
             if name and not GENERIC_LEAD.match(name.split()[0]):
@@ -498,7 +506,7 @@ def law_localities(text, title):
     for t in (title or "", _mask_deleted(text)):
         for m in LOCALITY[0][0].finditer(re.sub(r"\([^)]*\)", "", t)):
             kind = m.group(1).lower()
-            name = re.sub(r"\s+", " ", m.group(2)).strip(" .")
+            name = trim_unit_name(re.sub(r"\s+", " ", m.group(2)).strip(" ."))
             name = re.sub(r"(?:\s+(?:assessors?|board|clerk|treasurer|supervisor|tax|department|office|shall|may|is|has|will))+$", "", name, flags=re.I)
             name = re.sub(r"\s+" + kind + r"$", "", name, flags=re.I)
             if name and not GENERIC_LEAD.match(name.split()[0]):
@@ -548,6 +556,30 @@ def is_act_clause_quote(quote, act_clause=None):
         return True
     a = _act_words(act_clause)
     return len(q) >= 25 and q in a
+
+
+def own_act_clause_quote(quote, text, raw_clause=None, act_clause=None):
+    """R1 (Oct 16 2026): drop an act-clause-looking quote only when it is the law's OWN clause: the located span lies outside {{ }}
+    new matter AND (the quote overlaps the law's own raw_clause, or the span sits in the act's final section when that section
+    is not itself an 'is amended' header). A sunset reprinted with new matter inside an earlier chapter's amended section is a
+    real extends_existing record and is kept."""
+    if not is_act_clause_quote(quote, act_clause):
+        return False
+    span = locate_span(quote, text)
+    if span is None:
+        return True
+    if in_braces(span[0], span[1], text):
+        return False
+    q, raw = _act_words(quote), _act_words(raw_clause)
+    if raw and len(raw) >= 20 and (q in raw or raw in q or q[:60] == raw[:60]):
+        return True
+    heads = list(HDR.finditer(text))
+    if not heads:
+        return True
+    last = heads[-1]
+    eol = text.find("\n", last.start())
+    header_para = text[last.start(): eol if eol >= 0 else len(text)]
+    return span[0] >= last.start() and not AMENDED.search(header_para)
 
 
 GOV_NOUN = r"(?:village|town|city|county|state|school district|district|municipality|authority|department|board|commissioner|comptroller|office|division|agency|corporation|governor|director|superintendent|treasurer|legislature|college|university)"
@@ -823,6 +855,45 @@ def list_lead_in(span, text):
     return para if re.search(r"(?:[:;]|\bfollowing|\bensuring|\bthat)\s*(?:\}\})?\s*$", para) else None
 
 
+IMPERATIVE_ITEM = re.compile(r"^\W*(?:\{\{)?\s*(?:Work|Advise|Serve|Prepare|Review|Develop|Provide|Coordinate|Monitor|Establish|Make|Report|Conduct|Assist|Promote|Ensure|Maintain|Submit|Recommend|Oversee"
+                             r"|Engage|Assure|Require|Determine|Furnish|Consider|Implement|Divide|Eliminate|Identify|Consult|Promulgate|Encourage)\b", re.I)
+GRANTING_LEAD = re.compile(r"\b(?:shall|may|must)\b", re.I)
+LEAD_SUBJECT = re.compile(r"(?:^|[.:;]\s+|\}\}\s*)((?:the|a|an|each|such)\s+[\w-]+(?:\s+[\w-]+){0,5}?)(?:['’]s\s+(?:responsibilit\w+|dut\w+|powers?|functions?))?\s+(?:shall|may|must)\b", re.I)
+
+
+def imperative_lead_in(span, text):
+    """R2 (Oct 16 2026): the lead-in paragraph above a run of same-style list items ('1. {{Advise ...;}}' under 'The officer's
+    responsibilities shall include the following:'), else None. Numbered runs are walked back too (list_lead_in only walks lettered ones)."""
+    paras = [(m.start(), m.end()) for m in re.finditer(r"[^\n]+", text)]
+    idx = next((i for i, (a, b) in enumerate(paras) if a <= span[0] < b), None)
+    if idx is None:
+        return None
+    first = text[paras[idx][0]:paras[idx][1]]
+    if not ITEM_LABEL.match(first) and not re.match(r"^\W*(?:\{\{)?\s*\d+\.\s", first):
+        return None
+    paren = bool(PAREN_ITEM.match(first))
+    j = idx - 1
+    while j >= 0:
+        t = text[paras[j][0]:paras[j][1]]
+        if not t.strip() or (PAREN_ITEM.match(t) if paren else re.match(r"^\W*(?:\{\{)?\s*\d+\.\s", t) and not re.search(r":\s*(?:\}\})?\s*$", t)):
+            j -= 1
+        else:
+            break
+    if j < 0:
+        return None
+    lead = text[paras[j][0]:paras[j][1]]
+    if re.search(r"(?:[:;]|\bfollowing|\binclude|\bensuring)\s*(?:\}\})?\s*$", lead) and GRANTING_LEAD.search(lead) and not AMEND_INSTR.search(lead):
+        return lead
+    return None
+
+
+def lead_in_subject(lead):
+    """The actor a granting lead-in names ('The chief diversity officer's responsibilities shall include' -> 'the chief diversity officer')."""
+    clean = re.sub(r"\{\{|\}\}", "", lead)
+    ms = list(LEAD_SUBJECT.finditer(clean))
+    return ms[-1].group(1).strip() if ms else None
+
+
 BENEFIT_RE = re.compile(r"\b(?:shall|will)\s+(?:also\s+)?(?:receive|be eligible to receive|be eligible for|be entitled to|be exempt(?:ed)?)\b", re.I)
 
 
@@ -847,11 +918,24 @@ def salary_entitlement(q):
     return not re.match(r"\s*by\s+(?:the|such|said)\s", q[m.end():m.end() + 20], re.I)
 
 
+PAID_ENTITLEMENT = re.compile(r"\b(?:lump[\s-]sum(?:\s+payment)?|(?:uniform\s+|clothing\s+|longevity\s+)?allowance|stipend)\b[^.;]{0,100}?\bshall\s+be\s+paid\b", re.I)
+
+
+def paid_entitlement(o, q):
+    """R5 (Oct 16 2026): 'a lump sum shall be paid each year to an employee', 'a uniform allowance shall be paid': the amount is the
+    subject and the payee is the employee. The actor is only 'the state' or Unspecified, so no government body acts in the sentence."""
+    m = PAID_ENTITLEMENT.search(q or "")
+    if not m or GOV_ACTOR.search(q[:m.start()]):
+        return False
+    actor = re.sub(r"^(?:the|a|an)\s+", "", (o.get("actor_raw") or "").strip().lower())
+    return o.get("agency") in (None, "Unspecified") or actor in ("", "state", "unspecified")
+
+
 def benefit_entitlement(o, q):
     """M13 (Oct 11 2026). 'Eligible dwelling units ... shall receive a partial abatement', 'such property shall be exempt', 'the owner shall be
     entitled to': the grammatical subject is the beneficiary. Dropped when no government noun precedes the modal and the record's
     actor_raw does not appear in the quote."""
-    if salary_entitlement(q):
+    if salary_entitlement(q) or paid_entitlement(o, q):
         return True
     am_ = AWARDED_BENEFIT.search(q or "")      # M27: 'shall be awarded' to a beneficiary; 'awarded by the board' / 'contracts shall be awarded' is the board's act
     if am_ and not GOV_ACTOR.search(q[:am_.start()]) and not re.search(r"\bcontracts?\b", q[:am_.start()], re.I):
@@ -921,6 +1005,15 @@ def gate_record(o, text, has_markers):
                     if am:
                         o["actor_raw"] = am.group(1).strip()
                     o["rescued_hereby_authorizes"] = True; bump("m28_hereby_authorizes_power")
+                elif IMPERATIVE_ITEM.match(q) and imperative_lead_in(span, text):
+                    # R2: 'Work with ... to prepare', 'Advise the Governor' under 'shall have the following powers and duties:'
+                    lead = imperative_lead_in(span, text)
+                    o["lead_in"] = re.sub(r"\s+", " ", re.sub(r"\{\{|\}\}", "", lead)).strip()[:400]
+                    o["kind_from_lead_in"] = "duty" if MANDATORY.search(lead) else "power"
+                    subj = lead_in_subject(lead)
+                    if subj:
+                        o["lead_in_actor"] = subj
+                    o["rescued_imperative_item"] = True; bump("r2_imperative_list_item")
                 else:
                     return "designation_no_actor", "a designation or list entry with no lead-in duty or power"
         # 2. new matter
@@ -1229,6 +1322,7 @@ def recall_flags(key, text, records, dropped):
     return flags
 
 
+IDENTIFIABLE_UNSPECIFIED = re.compile(r"\bcourts?\b|\bcompacting\s+states?\b|\bmember\s+states?\b|\bdetaining\s+authority\b", re.I)
 COMPOUND_LOCAL = re.compile(r"\b(?:town|city|village|county)\b[^;]*?\band\b[^;]*?\b(?:district|authority|agency|corporation)\b", re.I)
 PRE_2017 = range(2009, 2017)
 APPLY_M31 = True
@@ -1346,6 +1440,10 @@ def judgment_flags(text, records):
         if mu:
             flags.append({"check": "municipality_defined_narrowly", "detail": "%d records resolved to all municipalities, but the law defines 'municipality' as a specific county, city or population class: name that class as the actor" % len(mu),
                           "sentences": [r["quote"] for r in mu][:12]})
+    ia = [r for r in records if IDENTIFIABLE_UNSPECIFIED.search(r.get("actor_raw") or "") and r.get("agency") == "Unspecified"]
+    if ia:        # J17 (Oct 16 2026)
+        flags.append({"check": "identifiable_actor_unspecified", "detail": "%d records stored with agency Unspecified whose actor_raw names an identifiable body (a court, the compacting or member states, the detaining authority)" % len(ia),
+                      "sentences": [r["quote"] for r in ia][:12]})
     comp = [r for r in records if COMPOUND_LOCAL.search(r.get("actor_raw") or "")]
     if comp:
         flags.append({"check": "compound_local_actor", "detail": "%d records whose actor_raw joins a locality and a named district or authority: one record each" % len(comp),
@@ -1360,7 +1458,8 @@ def build_reask(todo, duties, powers):
         by_law[o["matter_id"]].append(o)
     drops = defaultdict(list)
     for d in DROPPED:
-        drops[d["matter_id"]].append(d)
+        if not (d.get("rule") or "").startswith("excluded_"):        # R3: excluded records are listed for audit but do not count as covered sentences for recall
+            drops[d["matter_id"]].append(d)
     out = {}
     manual = json.loads(REASK_MANUAL.read_text()) if REASK_MANUAL.exists() else {}
     manual_confirmed = json.loads(REASK_MANUAL_DATA.read_text())["laws"] if REASK_MANUAL_DATA.exists() else {}
@@ -1492,6 +1591,50 @@ def upgrade_packet_v2(packet, strict=False):
     if j < 0 or k < 0 or out[k + 2:] != json.dumps(SCHEMA):
         raise ValueError("packet footer does not end with the version-1 schema")
     return out[:k + 2] + json.dumps(SCHEMA_V2)
+
+
+FOOTER_PATH = re.compile(r"schema to (?:the exact path )?(?:\S*?results/)?([^\s:/]+\.json)(?: \(never any other folder\))?:")
+
+
+def absolute_footer(text, results_dir):
+    """The packet text with its ANSWER FORMAT path line naming the ABSOLUTE results_dir/{LAW}.json (a relative path made 11 of 13 chunks
+    write to the subagent's own working directory, Oct 15 2026). Only the first match after the last footer marker changes."""
+    j = text.rfind("\n\nANSWER FORMAT:")
+    if j < 0:
+        return text
+    new = lambda m: "schema to the exact path %s (never any other folder):" % (Path(results_dir).resolve() / m.group(1))
+    return text[:j] + FOOTER_PATH.sub(new, text[j:], count=1)
+
+
+def fix_footers(root):
+    """Rewrite ONLY the footer path of every unanswered packet (no results/ or results_reask/ answer) under root/{Y}/{LAW}.txt.
+    Returns {year: [rewritten, left_as_is]}."""
+    root = Path(root).resolve()
+    counts = {}
+    for yd in sorted(p for p in root.iterdir() if p.is_dir() and p.name.isdigit()):
+        n = [0, 0]
+        for f in sorted(yd.glob("*.txt")):
+            if (yd / "results" / (f.stem + ".json")).exists() or (yd / "results_reask" / (f.stem + ".json")).exists():
+                n[1] += 1
+                continue
+            t = f.read_text()
+            u = absolute_footer(t, yd / "results")
+            if u != t:
+                f.write_text(u)
+                n[0] += 1
+            else:
+                n[1] += 1
+        counts[yd.name] = n
+    return counts
+
+
+def emit_absolute_packets(d, todo, **kw):
+    """eo.emit_packets, then every footer in d made absolute."""
+    d = Path(d).resolve()
+    eo.emit_packets(d, todo, **kw)
+    for l, _ in todo:
+        f = d / (l["key"] + ".txt")
+        f.write_text(absolute_footer(f.read_text(), d / "results"))
 
 
 def regen_unanswered_packets(root):
@@ -1668,6 +1811,85 @@ def label_only_braces(text):
     return bool(spans) and all(len(x.strip()) <= 8 for x in spans)
 
 
+# ── R6 (Oct 16 2026): narrow rules, each capped at R6_CAP records per ingest (a record over the cap keeps its value and gets r6_flag) ──
+R6_CAP = 40
+LEAD_DUTY_NEG = re.compile(r"\b(?:may|authorized|empowered|permitted)\b|\b(?:shall|must)\s+(?:not\b|be\s+(?:authorized|empowered|deemed|levied|fixed|entitled)\b|consist\b|have\s+the\s+(?:following\s+)?powers?\b(?!\s+and\s+(?:dut|respons)))", re.I)
+EVENT_TIED = re.compile(r"\bat the time (?:that|of|when)\b|\b(?:upon|after|following)\s+(?:the\s+)?completion\s+of\b", re.I)
+SAID_AGENCY = re.compile(r"^(?:the\s+)?(?:said|such)\s+agenc(?:y|ies)$", re.I)
+APPOINT_QUOTE = re.compile(r"\bshall\s+(?:be\s+)?appoint(?:ed)?\b|\b(?:to\s+be\s+|as\s+)?appointed\s+by\b", re.I)
+APPOINT_PERIOD = re.compile(r"\bappointments?\b[^.;]{0,80}?\bshall\s+be\s+made\s+within\b|\bshall\s+appoint\b[^.;]{0,200}?\bwithin\b", re.I)
+
+
+def r6_ok(rule, o):
+    """True while the rule is under its cap; otherwise leaves a flag on the record and counts the overflow."""
+    if STATS.get("r6" + rule, 0) >= R6_CAP:
+        o["r6_flag"] = rule; bump("r6" + rule + "_over_cap")
+        return False
+    bump("r6" + rule)
+    return True
+
+
+def lead_in_makes_duty(lead):
+    """R6a: a lead-in whose modal is a bare 'shall'/'must' aimed at its actor ('shall have the following powers and duties:'), not a grant."""
+    last = re.sub(r"\{\{|\}\}", "", lead or "")[-300:]
+    return bool(MANDATORY.search(last)) and not LEAD_DUTY_NEG.search(last)
+
+
+def list_item_lead(span, text):
+    lead = list_lead_in(span, text) or imperative_lead_in(span, text)
+    if not lead:
+        il = inline_lead_in(span, text)
+        lead = il[0] if il else None
+    return lead
+
+
+def resolve_said_agency(recs, text):
+    """R6b: 'said agency' / 'such agency' in a remedial-directive list item is the actor of the lead-in ('the director shall ... direct
+    implementation of remedial actions to:'); copy the actor fields of the sibling record whose quote sits in that lead-in."""
+    n = 0
+    for o in recs:
+        if not SAID_AGENCY.match((o.get("actor_raw") or "").strip()):
+            continue
+        sp = locate_span(o.get("quote") or "", text)
+        lead = list_item_lead(sp, text) if sp else None
+        if not lead or not re.search(r"\bdirect\w*\b|\bremedia\w*\b", lead, re.I):
+            continue
+        la = eo.alnum(re.sub(r"\{\{|\}\}", "", lead))
+        sib = next((r for r in recs if r is not o and len(eo.alnum(r.get("quote") or "")) >= 20 and eo.alnum(r.get("quote") or "") in la
+                    and r.get("agency") not in (None, "Unspecified")), None)
+        if sib and r6_ok("b_said_agency", o):
+            for k in ("actor_raw", "agency", "agency_full", "agency_matched", "agency_group", "agency_org_type", "agency_unit", "jurisdiction", "agency_source"):
+                if k in sib:
+                    o[k] = sib[k]
+            o["actor_from_lead_in"] = True; n += 1
+    return n
+
+
+def appointment_period(recs, text):
+    """R6c: an appointment duty takes the period of its appointment clause ('The appointments provided for in this section shall be made
+    within ninety days of the effective date'): the next sentence in the text, else a sibling duty carrying that clause."""
+    donors = [r for r in recs if r.get("kind") == "duty" and r.get("deadline_kind") == "days_after_effective" and APPOINT_PERIOD.search(r.get("quote") or "")]
+    n = 0
+    for o in recs:
+        if o.get("kind") != "duty" or o.get("deadline_kind") not in (None, "none", "on_effective_date") or not APPOINT_QUOTE.search(o.get("quote") or ""):
+            continue
+        if APPOINT_PERIOD.search(o.get("quote") or "") and not donors:
+            continue
+        src = None
+        sp = locate_span(o.get("quote") or "", text)
+        if sp:
+            after = text[sp[1]:sp[1] + 400]
+            m = re.match(r"[^.]{0,20}\.?\s*\}?\}?\s*([^.]*?\bappointments?\b[^.]*?\bwithin\b[^.]*\.)", after)
+            if m and APPOINT_PERIOD.search(m.group(1)):
+                src = next(iter(donors), None)
+        src = src or (donors[0] if donors else None)
+        if src and src is not o and r6_ok("c_appointment_period", o):
+            for k in ("deadline_kind", "deadline_date", "deadline_text"):
+                o[k] = src.get(k)
+            o["deadline_from_appointment_clause"] = src["obligation_id"]; n += 1
+    return n
+
+
 def build_records(laws):
     by_key = {l["key"]: l for l in laws}
     STATS.clear()
@@ -1698,10 +1920,12 @@ def build_records(laws):
                 o["quote"] = cleaned
                 if has_deleted:
                     o["quote_has_deleted_text"] = True
+            o["matter_id"] = law["key"]
             if eo.fix_actor(o, LOOKUP, BY_CANON, stage="private") == "private":
                 excluded += 1
+                drop(o, "excluded_private", "the actor is a private party, not a government actor")      # R3: no silent loss
                 continue
-            if is_act_clause_quote(o.get("quote"), law.get("act_clause")):      # L2
+            if own_act_clause_quote(o.get("quote"), text, eff.get("raw_clause"), law.get("act_clause")):      # L2, narrowed by R1
                 drop(o, "act_clause", "the quote is the act's effective-date or sunset clause, computed separately")
                 continue
             kind = eo._kind(o)
@@ -1709,6 +1933,8 @@ def build_records(laws):
                 kind = "duty"; o["kind_adjusted"] = "cost_duty"; bump("l3_cost_duty")
             if kind == "neither":
                 excluded += 1
+                drop(o, "excluded_missing_provision_kind" if not o.get("provision_kind") else "excluded_neither",
+                     "the model gave no provision kind" if not o.get("provision_kind") else "the model and the quote rule both say neither a duty nor a power")      # R3
                 continue
             if kind == "power" and o.get("kind_model") == "duty" and WILL_DUTY.search(o.get("quote") or "") and not GRANT_WORD.search(o.get("quote") or ""):
                 kind = "duty"; o["kind_adjusted"] = "will_duty"; bump("m11_will_duty")        # M11: the quote has no 'shall', so the quote rule said power
@@ -1779,6 +2005,12 @@ def build_records(laws):
             if (kind == "duty" and o.get("kind_model") == "power" and o.get("kind_list_item") and not o.get("kind_from_lead_in")
                     and not MANDATORY.search(quote) and not DEBT_WORDS.search(quote)):
                 kind = "power"; o["kind_adjusted"] = "model_power_kept"; bump("list_item_keeps_model_power")     # no mandatory verb aimed at the actor
+            if (kind == "power" and o.get("kind_list_item") and not o.get("kind_from_lead_in") and not GRANT_WORD.search(quote)
+                    and not CAP_RE.search(quote)):          # R6a: an item under a 'shall' lead-in with no 'may' of its own is a duty
+                spa = locate_span(quote, text)
+                lead = list_item_lead(spa, text) if spa else None
+                if lead and lead_in_makes_duty(lead) and r6_ok("a_shall_lead_in_duty", o):
+                    kind = "duty"; o["kind_adjusted"] = "shall_lead_in_duty"; o["lead_in"] = re.sub(r"\s+", " ", re.sub(r"\{\{|\}\}", "", lead)).strip()[:400]
             # 3. a grant with no mandatory verb is a power
             sp = locate_span(quote, text)
             ctx = context_sentence(sp, text)[0] if sp else ""
@@ -1806,8 +2038,11 @@ def build_records(laws):
                 o["recurrence"] = "annual" if re.search(r"\bannual\s+election\b", quote, re.I) else "as-needed"; bump("m38_per_election_triggered")
             if kind == "duty" and o.get("deadline_kind") == "on_effective_date" and TRIGGER.search(quote) and not CAP_RE.search(quote):
                 o["deadline_kind"], o["deadline_date"] = "none", None; bump("setup_to_triggered")
+            elif (kind == "duty" and o.get("deadline_kind") == "on_effective_date" and EVENT_TIED.search(quote) and not CAP_RE.search(quote)
+                  and r6_ok("d_event_tied", o)):          # R6d: 'at the time that the member takes the oath', 'after the completion of ...'
+                o["deadline_kind"], o["deadline_date"] = "none", None
             elif (kind == "duty" and o.get("deadline_kind") == "none" and o.get("recurrence") == "one-time"
-                  and o.get("deliverable_type") in SETUP_TYPES and not TRIGGER.search(quote) and not CAP_RE.search(quote)
+                  and o.get("deliverable_type") in SETUP_TYPES and not TRIGGER.search(quote) and not EVENT_TIED.search(quote) and not CAP_RE.search(quote)
                   and not PROHIBITION.search(quote)):
                 o["deadline_kind"] = "on_effective_date"; bump("triggered_to_setup")
             if COST_BEARING.search(quote) and (o.get("deadline_kind") != "none" or o.get("recurrence") != "ongoing" or o.get("deadline_date")):
@@ -1850,6 +2085,8 @@ def build_records(laws):
             if res.get("reasked"):
                 rec["reasked"], rec["reask_tag"] = True, res.get("reask_tag")
             (law_p if kind == "power" else law_d).append(rec)
+        resolve_said_agency(law_d + law_p, text)
+        appointment_period(law_d + law_p, text)
         law_d = drop_conditions(dedupe_law(law_d))
         law_p = drop_conditions(dedupe_law(law_p))
         for lst in (law_d, law_p):       # never merge across jurisdictions or named localities
@@ -1859,6 +2096,16 @@ def build_records(laws):
                 eo.merge_split_list_duplicates(grp)
                 keep += grp
             lst[:] = sorted(keep, key=lambda o: o["obligation_id"])
+        kept = {o["obligation_id"] for o in law_d + law_p}
+        dropped_ids = {d["obligation_id"] for d in DROPPED if d.get("matter_id") == law["key"]}
+        for o in res["obligations"]:       # R3 safety net: a record that left through a merge or any other path is listed, never silent
+            if o.get("obligation_id") not in kept and o.get("obligation_id") not in dropped_ids:
+                o["matter_id"] = law["key"]
+                aq = eo.alnum(o.get("quote") or "")
+                if aq and any(aq in eo.alnum(k.get("quote") or "") or eo.alnum(k.get("quote") or "") in aq for k in law_d + law_p):
+                    drop(o, "excluded_merged_duplicate", "merged into a stored sibling record that carries the same sentence")
+                else:
+                    drop(o, "excluded_unrecorded", "left the stored lists through a list pass that recorded no rule")
         duties += law_d
         powers += law_p
     return duties, powers, excluded
@@ -2052,10 +2299,8 @@ def emit_pilot_packets(root, todo, keys, version):
         d = root / y
         (d / "results").mkdir(parents=True, exist_ok=True)
         sub = [have[k] for k in sorted(keys) if k in have and k.split("-")[0] == y]
-        eo.emit_packets(d, sub, fixed_prompt=fixed, render=render_variable_prompt, schema=schema)
-        for f in sorted(d.glob("*.txt")):
-            f.write_text(re.sub(r"schema to results/([^\s:]+\.json):", lambda m: "schema to %s:" % (d / "results" / m.group(1)), f.read_text(), count=1))
-            files.append(f)
+        emit_absolute_packets(d, sub, fixed_prompt=fixed, render=render_variable_prompt, schema=schema)
+        files += sorted(d.glob("*.txt"))
     chunks = nb.make_chunks(files, len(files) or 1, 400_000, 30)
     lists = nb.write_lists(chunks, root / "chunks") if chunks else []
     return len(files), lists, sum(f.stat().st_size for f in files), skipped
@@ -2077,9 +2322,14 @@ def main():
     ap.add_argument("--per-session", action="store_true", help="write data/duties/{Y}.json, data/powers/{Y}.json instead of single files")
     ap.add_argument("--prompt-version", type=int, choices=(1, 2), default=2, help="2 (default): add prompt_v2_rules.txt and the optional excluded_sentences field; 1: the old production prompt")
     ap.add_argument("--regen-packets", metavar="DIR", help="rewrite the unanswered laws' packets under DIR/{Y}/ with the version-2 head (answered laws untouched)")
+    ap.add_argument("--fix-footers", metavar="DIR", help="rewrite ONLY the footer path of the unanswered packets under DIR/{Y}/ to the absolute results path (answered packets untouched)")
     ap.add_argument("--laws", metavar="FILE", help="with --emit-packets: JSON with a \"laws\" list of keys; packets go to DIR/{Y}/{LAW}.txt with chunk lists in DIR/chunks/")
     ap.add_argument("--data-dir", metavar="DIR", help="with --ingest: write every output file (data files and the extracted cache) under DIR with the same layout; inputs are still read from data/")
     a = ap.parse_args()
+    if a.fix_footers:
+        for y, (n, m) in fix_footers(a.fix_footers).items():
+            print("%s footers rewritten %d left as is %d" % (y, n, m))
+        return
     if a.regen_packets:
         for y, (n, m) in regen_unanswered_packets(a.regen_packets).items():
             print("%s regenerated %d left as is %d" % (y, n, m))
@@ -2140,7 +2390,7 @@ def main():
     if a.emit_packets:
         d = Path(a.emit_packets)
         (d / "results").mkdir(parents=True, exist_ok=True)
-        eo.emit_packets(d, todo, fixed_prompt=FIXED_PROMPT if a.prompt_version == 1 else build_prompt(a.prompt_version)[0], render=render_variable_prompt, schema=schema)
+        emit_absolute_packets(d, todo, fixed_prompt=FIXED_PROMPT if a.prompt_version == 1 else build_prompt(a.prompt_version)[0], render=render_variable_prompt, schema=schema)
         sizes = sorted(os.path.getsize(d / (l["key"] + ".txt")) for l, _ in todo)
         print("packets %d (signed laws %d, deferred long %d); bytes min %d median %d max %d" % (len(todo), len(laws), len(deferred), sizes[0], sizes[len(sizes) // 2], sizes[-1]))
         return

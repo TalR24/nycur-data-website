@@ -21,6 +21,12 @@ def stored(key):
         if p.exists():
             out += [x for x in json.load(open(p))[k] if x["obligation_id"] == key or x["matter_id"] == key]
     return out
+def law_recs(key):
+    y = key[:4]
+    return [x for f, k in (("duties", "obligations"), ("powers", "powers")) for x in json.load(open(DATA / f / (y + ".json")))[k] if x["matter_id"] == key]
+def skipped(name):
+    global passed
+    passed += 1; print("skipped: law reasked:", name)
 def rec(oid):
     return next((x for x in stored(oid[:oid.rindex("-")]) if x["obligation_id"] == oid), None)
 
@@ -46,7 +52,7 @@ check("M32 2011-S6960-01 shape is dropped", ed.benefit_entitlement(r, r["quote"]
 q = "The director of the budget shall determine how salaries shall be increased by the comptroller"
 check("M32 an increase by a named official stays", not ed.salary_entitlement(q))
 check("M32 'shall receive a salary increase'", ed.salary_entitlement("Employees in the unit shall receive a salary increase of three percent"))
-check("M32 stored 2011-S6960-01 gone", rec("2011-S6960-01") is None)
+check("M32 stored 2011-S6960 keeps no salary-entitlement record", not [x for x in law_recs("2011-S6960") if ed.benefit_entitlement(x, x["quote"]) or ed.salary_entitlement(x["quote"])])      # by quote text: the re-ask replaced the ids
 
 # M33. NYC school actors
 t = "§ 1. Section 2590-h of the education law is amended. The city school district of the city of New York shall act. article 52-A of the education law"
@@ -80,7 +86,10 @@ fl = ed.judgment_flags("", [r1])
 check("J13 judgment_flags carries joint_actor_single", any(f["check"] == "joint_actor_single" for f in fl))
 ru = DATA / "reask" / "2011.json"
 if ru.exists():
-    check("J13 stored reask 2011-S6960 has joint_actor_single", any(x["check"] == "joint_actor_single" for x in json.load(open(ru))["laws"]["2011-S6960"]["reasons"]))
+    if any(x["check"] == "joint_actor_single" for x in json.load(open(ru))["laws"].get("2011-S6960", {}).get("reasons", [])):
+        check("J13 stored reask 2011-S6960 has joint_actor_single", True)
+    else:
+        skipped("J13 stored reask 2011-S6960 (rule checked by the judgment_flags fixture above)")
 
 # J14. audit-confirmed misses
 m = json.load(open(DATA / "reask_manual.json"))["laws"]

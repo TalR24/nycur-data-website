@@ -41,6 +41,9 @@ if sg.exists() and (TM / "2013-S3810.txt").exists():
 
 # M15. resolvable actors stored as Unspecified
 nyc_by = ed.NYC_BY
+def rec_by_law(key):
+    y = key[:4]
+    return [x for f, k in (("duties", "obligations"), ("powers", "powers")) for x in json.load(open(DATA / f / (y + ".json")))[k] if x["matter_id"] == key]
 for raw in ("the borough president", "borough presidents", "the president of the borough of Queens"):
     o = {"actor_raw": raw, "agency": "Unspecified", "actor_unresolved": True, "quote": "x"}
     check("M15 %s" % raw, ar.fix_resolvable_actor(o, nyc_by) and o["agency"] == "Borough Presidents" and o["jurisdiction"] == "nyc" and not o.get("actor_unresolved"))
@@ -55,8 +58,8 @@ o = {"actor_raw": "the borough president", "agency": "Governor"}
 check("M15 a resolved record is untouched", not ar.fix_resolvable_actor(o, nyc_by) and o["agency"] == "Governor")
 r = rec("2013-A2448-01")
 check("M15 stored 2013-A2448-01 -> Borough Presidents", bool(r) and r["agency"] == "Borough Presidents" and r["jurisdiction"] == "nyc")
-r = rec("2013-S3810-04")
-check("M15 stored 2013-S3810-04 -> State agencies", bool(r) and r["agency"] == "State agencies")
+r = next((x for x in rec_by_law("2013-S3810") if x["quote"].startswith("No official of this state")), None)      # by quote text: the re-ask renumbered 2013-S3810-04
+check("M15 stored 2013-S3810 'No official of this state' record -> State agencies", bool(r) and r["agency"] == "State agencies")
 
 # M16. public bodies
 for raw in ("a public body", "the public body", "public bodies", "Public bodies"):

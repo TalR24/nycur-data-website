@@ -1,0 +1,1223 @@
+{
+ "_scoring": {
+  "auditor": "A",
+  "night": "20261016",
+  "laws": 11,
+  "stored_records": 93,
+  "correct": 81,
+  "wrong_fields": 12,
+  "not_real": 0,
+  "missed": 27,
+  "precision_strict": "81/93 = 87.1% (Wilson 95% 78.8-92.5)",
+  "precision_real": "93/93 = 100.0% (Wilson 95% 96.0-100.0)",
+  "recall": "84/115 = 73.0% (Wilson 95% 64.3-80.3) [111 blind items, 84 matched, 27 missed; +4 stored correct records the blind pass missed]",
+  "effective_dates": "11/11 correct",
+  "split": {
+   "reask_laws(6: 2009-S6263, 2015-A4490, 2013-A7400, 2015-A9910, 2011-A55, 2009-A8392)": {
+    "precision_strict": "75/86 = 87.2% (78.5-92.7)",
+    "recall": "77/107 = 72.0% (62.8-79.6)"
+   },
+   "first_answer_laws(5)": {
+    "precision_strict": "6/7 = 85.7% (48.7-97.4)",
+    "recall": "7/8 = 87.5% (52.9-97.8)"
+   }
+  },
+  "judgment_calls": "Interstate Commission for Juveniles counted as a compact agency New York joins (like the Port Authority); 74 of 111 blind items are 2011-A55. Art IV 'powers and duties' items judged item by item, not all as duties. 'officers shall be reimbursed' treated as an entitlement."
+ },
+ "_classes": [
+  {
+   "name": "agency_unit_hereby_authorized_fragment",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2015-S4725-04"
+   ],
+   "rule": "re.search(r'\\b(Is|Are) Hereby\\b|\\bHereby\\b|\\bAuthorized\\b|\\bShall\\b|\\bMay\\b', agency_unit)",
+   "db_matches": 13,
+   "db_examples": [
+    "2009-S5760-04",
+    "2011-S7477-04",
+    "2013-S4211-04"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "identifiable_actor_stored_unspecified",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2013-A7400-02",
+    "2011-A55-10",
+    "2011-A55-11"
+   ],
+   "rule": "agency=='Unspecified' and re.search(r'\\bcourts?\\b|\\bcompacting states?\\b|\\bmember states?\\b|\\beach state\\b', actor_raw, re.I)",
+   "db_matches": 19,
+   "db_examples": [
+    "2009-A9017-09",
+    "2011-S7190-01",
+    "2013-S3149-03"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "invented_named_body_for_passive_actor",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2011-A55-15"
+   ],
+   "rule": "agency_source=='named_body' and re.match(r'^(Detaining|Appropriate|Responsible|Applicable|Arresting|Custodial)\\b', agency)",
+   "db_matches": 3,
+   "db_examples": [
+    "2009-S4766-13",
+    "2009-S7327-02",
+    "2011-A55-15"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "appointment_items_ignore_sibling_N_day_clause",
+   "criteria": [
+    "5"
+   ],
+   "instances": [
+    "2011-A55-02",
+    "2011-A55-03",
+    "2011-A55-04",
+    "2011-A55-05"
+   ],
+   "rule": "same matter_id has a record with deadline_kind days_after_* whose quote matches r'appointments?\\b.*\\bshall be made within'; flag records whose quote matches r'\\bappointed by\\b' and deadline_kind not days_after_*",
+   "db_matches": 5,
+   "db_examples": [
+    "2011-A55-02",
+    "2011-A55-03",
+    "2011-A55-04"
+   ],
+   "needs_judgment": false,
+   "note": "1 of 5 matches is a false positive (2011-A55-01 is §501-f, outside the §501-g 90-day clause)"
+  },
+  {
+   "name": "event_anchored_deadline_as_on_effective_date",
+   "criteria": [
+    "5"
+   ],
+   "instances": [
+    "2011-A55-47"
+   ],
+   "rule": "deadline_kind=='on_effective_date' and re.search(r'\\b(within|not later than|no later than)\\b[^.]{0,40}\\bafter (the )?(first|receipt|completion|conclusion|formation|appointment)\\b', quote, re.I)",
+   "db_matches": 2,
+   "db_examples": [
+    "2011-A55-47",
+    "2013-S6887-56"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "list_item_kind_ignores_lead_in",
+   "criteria": [
+    "4"
+   ],
+   "instances": [
+    "2013-A7400-05",
+    "2011-A55-43"
+   ],
+   "rule": "(kind=='duty' and re.match(r'^[Tt]o (promptly )?(return|stay|refrain|permit|pay|participate|provide)\\b', quote)) or (kind=='power' and re.match(r'^[Tt]o report\\b', quote))",
+   "db_matches": 3,
+   "db_examples": [
+    "2009-S8357-06",
+    "2013-A7400-05",
+    "2011-A55-43"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "parallel_sections_collapsed (known class, recurrence)",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2013-A7400 b2,b4-b10 missed",
+    "2009-S6263 b11 missed"
+   ],
+   "rule": "no field rule: needs the law text to see the twin sections",
+   "db_matches": null,
+   "db_examples": [],
+   "needs_judgment": true,
+   "laws": [
+    "2013-A7400",
+    "2009-S6263"
+   ]
+  },
+  {
+   "name": "gate_act_clause_drops_amended_chapter_sunset",
+   "criteria": [
+    "1",
+    "7"
+   ],
+   "instances": [
+    "2015-S4993-01 (dropped)"
+   ],
+   "rule": "over dropped/*.json: rule=='act_clause' and the law's signed act_clause matches r'^AN ACT to amend chapter \\d+ of the laws of' and quote matches r'expire'",
+   "db_matches": 85,
+   "db_examples": [
+    "2009-A10123-01",
+    "2009-A10741-01",
+    "2009-A11322-01"
+   ],
+   "needs_judgment": false,
+   "note": "count is over dropped records, not stored ones; each match is a law whose only change is extending a prior chapter's sunset"
+  },
+  {
+   "name": "gate_exemption_drops_disclosure_power",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2011-A55-27 (dropped)"
+   ],
+   "rule": "over dropped/*.json: rule=='exemption_or_applicability' and kind_model=='power' and re.search(r'\\bmay exempt\\b', quote, re.I)",
+   "db_matches": 2,
+   "db_examples": [
+    "2011-A55-27",
+    "2013-S6887-33"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "gate_designation_drops_list_item_under_shall_lead_in",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2011-A55-56 (dropped)"
+   ],
+   "rule": "over dropped/*.json: rule=='designation_no_actor' and re.match(r'^(Promulgate|Publish|Provide|Allow|Establish|Maintain|Submit|Adopt|Prepare|Develop|Conduct|Notify|Report)\\b', quote)",
+   "db_matches": 14,
+   "db_examples": [
+    "2009-A3661-06",
+    "2009-A4097-04",
+    "2009-A9017-03"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "model_typo_dropped_by_quote_check",
+   "criteria": [
+    "2"
+   ],
+   "instances": [
+    "2009-S6263-06 (dropped)"
+   ],
+   "rule": "over dropped/*.json: rule=='unverified_quote'",
+   "db_matches": 3,
+   "db_examples": [
+    "2009-S6263-06",
+    "2011-S50001-07",
+    "2015-S2926-02"
+   ],
+   "needs_judgment": true,
+   "laws": [
+    "2009-S6263"
+   ]
+  },
+  {
+   "name": "reviewed_as_if",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2015-S4725-02"
+   ],
+   "rule": "re.search(r'reviewed as if', quote, re.I)",
+   "db_matches": 138,
+   "db_examples": [
+    "2009-A10025-02",
+    "2009-A10050-02",
+    "2009-A10512-02"
+   ],
+   "needs_judgment": true,
+   "note": "known, under Tal's review; scored correct here"
+  },
+  {
+   "name": "uncovered_new_sentence (no record, no drop)",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2015-A9910 b2",
+    "2009-A8392 b1",
+    "2011-A55 n15,n16,n17,c5,c12f,c12g,c12n,c12p,c29,c34,c36,c39"
+   ],
+   "rule": "no field rule: coverage gaps need the text",
+   "db_matches": null,
+   "db_examples": [],
+   "needs_judgment": true,
+   "laws": [
+    "2015-A9910",
+    "2009-A8392",
+    "2011-A55"
+   ]
+  }
+ ],
+ "2009-S6263": {
+  "records": {
+   "2009-S6263-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S6263-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S6263-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S6263-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S6263-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S6263-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S6263-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S6263-09": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S6263-10": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S6263-12": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   }
+  },
+  "missed": [
+   {
+    "blind": "b6",
+    "quote": "then the superintendent shall require the insurer to offer to the policyholder replacement coverage that includes a benefit that is the same as or substantially similar to the benefit set forth in the policy that the insurer discontinued.",
+    "kind": "duty",
+    "agency": "DFS",
+    "dropped_by": "unverified_quote",
+    "note": "Ins Law 3221(p)(3)(C)(ii); model typed 'policie', quote check dropped it; the 4305 twin 2009-S6263-12 is stored"
+   },
+   {
+    "blind": "b11",
+    "quote": "The superintendent may request such additional information as the superintendent may require.",
+    "kind": "power",
+    "agency": "DFS",
+    "dropped_by": null,
+    "note": "Ins Law 4305(j)(3)(C)(i) copy; only the 3221 copy (2009-S6263-05) is stored, identical sentence in the parallel section not recorded"
+   }
+  ],
+  "effective_date": {
+   "stored": "2011-01-01",
+   "computed": "2011-01-01",
+   "verdict": "correct",
+   "note": "first of January next succeeding signing 2010-08-13"
+  }
+ },
+ "2015-S4745": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2016-01-01",
+   "computed": "2016-01-01",
+   "verdict": "correct",
+   "note": "January 1, 2016"
+  }
+ },
+ "2015-S4725": {
+  "records": {
+   "2015-S4725-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S4725-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "reviewed_as_if: 'If accepted, the applications shall be reviewed as if they had been received on or before the taxable status date'; scored correct by own reading (duty of the county assessor)"
+   },
+   "2015-S4725-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S4725-04": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency_unit": "County of Nassau; Town of North Hempstead; Village of New Hyde Park"
+    },
+    "note": "agency_unit carries the fragment 'County of Nassau Is Hereby Authorized' lifted from 'the assessor of the county of Nassau is hereby authorized to accept'"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2015-09-25",
+   "computed": "2015-09-25",
+   "verdict": "correct",
+   "note": "act clause applied to signing date"
+  }
+ },
+ "2015-S4984": {
+  "records": {
+   "2015-S4984-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "'hereby further authorized and empowered' is a power; extends_existing true for 'seventeen'"
+   },
+   "2015-S4984-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2015-08-13",
+   "computed": "2015-08-13",
+   "verdict": "correct",
+   "note": "act clause applied to signing date"
+  }
+ },
+ "2015-S4993": {
+  "records": {},
+  "missed": [
+   {
+    "blind": "b1",
+    "quote": "This act shall take effect December 1, 2007 and shall expire and be deemed repealed November 30, 2017.",
+    "kind": "power",
+    "agency": "Counties (County of Chautauqua)",
+    "dropped_by": "act_clause",
+    "note": "the law's only operative change is §2 of chapter 405 of 2007 '[2015] {{2017}}', extending Chautauqua's hotel/motel tax; the gate treats the amended chapter's own sunset as this act's act clause; extends_existing true"
+   }
+  ],
+  "effective_date": {
+   "stored": "2015-09-25",
+   "computed": "2015-09-25",
+   "verdict": "correct",
+   "note": "act clause applied to signing date"
+  }
+ },
+ "2015-A4490": {
+  "records": {
+   "2015-A4490-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2015-04-01",
+   "computed": "2015-04-01",
+   "verdict": "correct",
+   "note": "April 1, 2015; deemed in effect from chapter 549 of 2014 (retroactivity not a separate date error)"
+  }
+ },
+ "2015-S4741": {
+  "records": {
+   "2015-S4741-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2016-11-28",
+   "computed": "2016-11-28",
+   "verdict": "correct",
+   "note": "act clause applied to signing date"
+  }
+ },
+ "2013-A7400": {
+  "records": {
+   "2013-A7400-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-A7400-02": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Unified Court System"
+    },
+    "note": "'The family court and the criminal courts shall have concurrent jurisdiction': the criminal courts are State courts, not Unspecified"
+   },
+   "2013-A7400-05": {
+    "verdict": "wrong",
+    "criteria": [
+     "4",
+     "7"
+    ],
+    "fields": {
+     "kind": "power",
+     "extends_existing": true
+    },
+    "note": "lead-in reads 'Such an order may require the petitioner or the respondent: ... (i) 1. To promptly return specified identification documents'; a new item added to the court's existing order-of-protection menu"
+   }
+  },
+  "missed": [
+   {
+    "blind": "b2",
+    "quote": "identity theft in the first degree, identity theft in the second degree, identity theft in the third degree, grand larceny in the fourth degree, grand larceny in the third degree or coercion in the second degree as set forth in subdivisions one, two and three of section 135.60 of the penal law",
+    "kind": "duty",
+    "agency": "Unified Court System",
+    "dropped_by": null,
+    "note": "CPL 530.11(1) twin of FCA 812; only FCA 812 stored"
+   },
+   {
+    "blind": "b4",
+    "quote": "To promptly return specified identification documents to the protected party, in whose favor the order of protection or temporary order of protection is issued",
+    "kind": "power",
+    "agency": "Unified Court System",
+    "dropped_by": null,
+    "note": "FCA 551(j) adds the same order condition; collapsed into 2013-A7400-05 (FCA 446)"
+   },
+   {
+    "blind": "b5",
+    "quote": "To promptly return specified identification documents to the protected party, in whose favor the order of protection or temporary order of protection is issued",
+    "kind": "power",
+    "agency": "Unified Court System",
+    "dropped_by": null,
+    "note": "FCA 656(j) adds the same order condition; collapsed into 2013-A7400-05 (FCA 446)"
+   },
+   {
+    "blind": "b6",
+    "quote": "To promptly return specified identification documents to the protected party, in whose favor the order of protection or temporary order of protection is issued",
+    "kind": "power",
+    "agency": "Unified Court System",
+    "dropped_by": null,
+    "note": "FCA 842(j) adds the same order condition; collapsed into 2013-A7400-05 (FCA 446)"
+   },
+   {
+    "blind": "b7",
+    "quote": "To promptly return specified identification documents to the protected party, in whose favor the order of protection or temporary order of protection is issued",
+    "kind": "power",
+    "agency": "Unified Court System",
+    "dropped_by": null,
+    "note": "FCA 1056(1)(h) adds the same order condition; collapsed into 2013-A7400-05 (FCA 446)"
+   },
+   {
+    "blind": "b8",
+    "quote": "To promptly return specified identification documents to the protected party, in whose favor the order of protection or temporary order of protection is issued",
+    "kind": "power",
+    "agency": "Unified Court System",
+    "dropped_by": null,
+    "note": "DRL 240(3)(a)(8) adds the same order condition; collapsed into 2013-A7400-05 (FCA 446)"
+   },
+   {
+    "blind": "b9",
+    "quote": "To promptly return specified identification documents to the protected party, in whose favor the order of protection or temporary order of protection is issued",
+    "kind": "power",
+    "agency": "Unified Court System",
+    "dropped_by": null,
+    "note": "DRL 252(1)(h) adds the same order condition; collapsed into 2013-A7400-05 (FCA 446)"
+   },
+   {
+    "blind": "b10",
+    "quote": "To promptly return specified identification documents to the protected party, in whose favor the order of protection or temporary order of protection is issued",
+    "kind": "power",
+    "agency": "Unified Court System",
+    "dropped_by": null,
+    "note": "CPL 530.12(1)(A)(7) adds the same order condition; collapsed into 2013-A7400-05 (FCA 446)"
+   }
+  ],
+  "effective_date": {
+   "stored": "2013-12-18",
+   "computed": "2013-12-18",
+   "verdict": "correct",
+   "note": "act clause applied to signing date"
+  }
+ },
+ "2015-A9910": {
+  "records": {
+   "2015-A9910-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   }
+  },
+  "missed": [
+   {
+    "blind": "b2",
+    "quote": "An order under paragraph (a) directing compliance must contain a finding that compliance is not in violation of 18 u.s.c. Section 2702, as amended.",
+    "kind": "duty",
+    "agency": "Unified Court System",
+    "dropped_by": null,
+    "note": "EPTL 13-A-4.2(B), a requirement on the court's compliance order"
+   }
+  ],
+  "effective_date": {
+   "stored": "2016-09-29",
+   "computed": "2016-09-29",
+   "verdict": "correct",
+   "note": "act clause applied to signing date"
+  }
+ },
+ "2011-A55": {
+  "records": {
+   "2011-A55-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A55-02": {
+    "verdict": "wrong",
+    "criteria": [
+     "5"
+    ],
+    "fields": {
+     "deadline_kind": "days_after_effective",
+     "deadline_offset": "90 days",
+     "deadline_date": "2011-09-21"
+    },
+    "note": "§501-g(2): 'The appointments provided for in this section shall be made within ninety days of the effective date of this section.'"
+   },
+   "2011-A55-03": {
+    "verdict": "wrong",
+    "criteria": [
+     "5"
+    ],
+    "fields": {
+     "deadline_kind": "days_after_effective",
+     "deadline_offset": "90 days",
+     "deadline_date": "2011-09-21"
+    },
+    "note": "same 90-day clause in §501-g(2)"
+   },
+   "2011-A55-04": {
+    "verdict": "wrong",
+    "criteria": [
+     "5"
+    ],
+    "fields": {
+     "deadline_kind": "days_after_effective",
+     "deadline_offset": "90 days",
+     "deadline_date": "2011-09-21"
+    },
+    "note": "same 90-day clause in §501-g(2)"
+   },
+   "2011-A55-05": {
+    "verdict": "wrong",
+    "criteria": [
+     "5"
+    ],
+    "fields": {
+     "deadline_kind": "days_after_effective",
+     "deadline_offset": "90 days",
+     "deadline_date": "2011-09-21"
+    },
+    "note": "same 90-day clause in §501-g(2); stored on_effective_date"
+   },
+   "2011-A55-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A55-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "'Vacancies ... shall be filled in the same manner as original appointments' - real; blind pass missed it"
+   },
+   "2011-A55-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A55-09": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A55-10": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "OCFS",
+     "agency_unit": "State Council for Interstate Juvenile Supervision"
+    },
+    "note": "'Each member state shall create a state council'; §501-g: 'there is hereby created within the office of children and family services a state council'"
+   },
+   "2011-A55-11": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "OCFS"
+    },
+    "note": "'The compacting states shall report to the interstate commission'; New York's compact administrator is 'the commissioner of the office of children and family services' (§501-g(1))"
+   },
+   "2011-A55-12": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "joint actor 'courts and executive agencies' stored for UCS only (known class); executive-agency copy dropped as duplicate_provision 2011-A55-13"
+   },
+   "2011-A55-14": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A55-15": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Unspecified"
+    },
+    "note": "'he or she shall be brought before the appropriate court within seventy-two hours': passive, the detaining body is not named; 'Detaining Authority' is an invented named body"
+   },
+   "2011-A55-16": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A55-17": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A55-18": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A55-19": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A55-20": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A55-21": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A55-22": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A55-23": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A55-24": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A55-25": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A55-26": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A55-28": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A55-29": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A55-30": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A55-31": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A55-32": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A55-33": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A55-34": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A55-35": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A55-36": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A55-37": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A55-38": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A55-39": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A55-40": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A55-41": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A55-42": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A55-43": {
+    "verdict": "wrong",
+    "criteria": [
+     "4"
+    ],
+    "fields": {
+     "kind": "duty"
+    },
+    "note": "Art IV lead-in 'The commission shall have the following powers and duties' + 'Q. To report annually to the legislatures, governors, judiciary' is a reporting duty"
+   },
+   "2011-A55-44": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A55-45": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A55-46": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A55-47": {
+    "verdict": "wrong",
+    "criteria": [
+     "5"
+    ],
+    "fields": {
+     "deadline_kind": "none"
+    },
+    "note": "'within twelve months after the first interstate commission meeting, adopt bylaws': anchored to an undated event, not the effective date"
+   },
+   "2011-A55-48": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A55-49": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A55-50": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A55-51": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A55-52": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A55-53": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A55-54": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "rulemaking procedure item 2; blind pass collapsed items 1-4 into one"
+   },
+   "2011-A55-55": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "rulemaking procedure item 3; blind pass collapsed items 1-4 into one"
+   },
+   "2011-A55-57": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A55-58": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A55-59": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A55-60": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A55-61": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A55-62": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A55-63": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A55-64": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A55-65": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A55-66": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A55-67": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A55-68": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A55-69": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A55-70": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   }
+  },
+  "missed": [
+   {
+    "blind": "n15",
+    "quote": "the compacting states shall cooperate and observe their individual and collective duties and responsibilities for the prompt return and acceptance of juveniles subject to the provisions of this compact",
+    "kind": "duty",
+    "agency": "OCFS",
+    "dropped_by": null,
+    "note": "Art I"
+   },
+   {
+    "blind": "n16",
+    "quote": "The withdrawing state shall immediately notify the chairperson of the interstate commission in writing upon the introduction of legislation repealing this compact in the withdrawing state.",
+    "kind": "duty",
+    "agency": "OCFS",
+    "dropped_by": null,
+    "note": "Art XI A.3"
+   },
+   {
+    "blind": "n17",
+    "quote": "a commissioner, in consultation with the state council, shall appoint another authorized representative, in the absence of the commissioner from that state, to cast a vote",
+    "kind": "duty",
+    "agency": "OCFS",
+    "dropped_by": null,
+    "note": "Art III G"
+   },
+   {
+    "blind": "c5",
+    "quote": "The executive Committee shall oversee the day-to-day activities of the administration of the compact managed by an executive director and interstate commission staff",
+    "kind": "duty",
+    "agency": "Interstate Commission for Juveniles",
+    "dropped_by": null,
+    "note": "Art III F"
+   },
+   {
+    "blind": "c7",
+    "quote": "The interstate commission may exempt from disclosure any information or official records to the extent they would adversely affect personal privacy rights or proprietary interests.",
+    "kind": "power",
+    "agency": "Interstate Commission for Juveniles",
+    "dropped_by": "exemption_or_applicability",
+    "note": "a records-withholding power, not a tax/cap exemption; gate misfire (2011-A55-27)"
+   },
+   {
+    "blind": "c12f",
+    "quote": "To purchase and maintain insurance and bonds;",
+    "kind": "power",
+    "agency": "Interstate Commission for Juveniles",
+    "dropped_by": null,
+    "note": "Art IV F"
+   },
+   {
+    "blind": "c12g",
+    "quote": "To borrow, accept, hire or contract for services of personnel;",
+    "kind": "power",
+    "agency": "Interstate Commission for Juveniles",
+    "dropped_by": null,
+    "note": "Art IV G"
+   },
+   {
+    "blind": "c12n",
+    "quote": "To sue and be sued;",
+    "kind": "power",
+    "agency": "Interstate Commission for Juveniles",
+    "dropped_by": null,
+    "note": "Art IV N"
+   },
+   {
+    "blind": "c12p",
+    "quote": "To perform such functions as may be necessary or appropriate to achieve the purposes of this compact;",
+    "kind": "power",
+    "agency": "Interstate Commission for Juveniles",
+    "dropped_by": null,
+    "note": "Art IV P"
+   },
+   {
+    "blind": "c21-4",
+    "quote": "Promulgate a final rule and its effective date, if appropriate, based on input from state or local officials, or interested parties;",
+    "kind": "duty",
+    "agency": "Interstate Commission for Juveniles",
+    "dropped_by": "designation_no_actor",
+    "note": "lead-in 'When promulgating a rule, the interstate commission shall, at a minimum:'; items 1-3 stored (-53,-54,-55), item 4 dropped (2011-A55-56)"
+   },
+   {
+    "blind": "c29",
+    "quote": "The interstate commission shall not incur any obligations of any kind prior to securing the funds adequate to meet the same",
+    "kind": "duty",
+    "agency": "Interstate Commission for Juveniles",
+    "dropped_by": null,
+    "note": "Art VIII C"
+   },
+   {
+    "blind": "c34",
+    "quote": "The interstate commission shall immediately notify the defaulting state in writing of the penalty imposed by the interstate commission and of the default pending a cure of the default.",
+    "kind": "duty",
+    "agency": "Interstate Commission for Juveniles",
+    "dropped_by": null,
+    "note": "Art XI B.1(D)"
+   },
+   {
+    "blind": "c36",
+    "quote": "The interstate commission shall not bear any costs relating to the defaulting state unless otherwise mutually agreed upon in writing",
+    "kind": "duty",
+    "agency": "Interstate Commission for Juveniles",
+    "dropped_by": null,
+    "note": "Art XI B.4"
+   },
+   {
+    "blind": "c39",
+    "quote": "The executive director shall serve as secretary to the interstate commission, but shall not be a member and shall hire and supervise such other staff as may be authorized by the interstate commission.",
+    "kind": "duty",
+    "agency": "Interstate Commission for Juveniles",
+    "dropped_by": null,
+    "note": "Art V B.2"
+   }
+  ],
+  "effective_date": {
+   "stored": "2011-06-23",
+   "computed": "2011-06-23",
+   "verdict": "correct",
+   "note": "30th day after 2011-05-24; expires 2013-09-01 matches"
+  }
+ },
+ "2009-A8392": {
+  "records": {
+   "2009-A8392-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-A8392-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "'Such commission shall consult with individuals and entities' - real; my blind pass folded it into the study"
+   },
+   "2009-A8392-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-A8392-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   }
+  },
+  "missed": [
+   {
+    "blind": "b1",
+    "quote": "shall be accepted for recording so long as it has been signed by one Agent named therein whose Signature has been acknowledged",
+    "kind": "duty",
+    "agency": "Counties (recording officers)",
+    "dropped_by": null,
+    "note": "GOL 5-1504(7), new subdivision; passive, recording officer must accept"
+   }
+  ],
+  "effective_date": {
+   "stored": "2010-09-12",
+   "computed": "2010-09-12",
+   "verdict": "correct",
+   "note": "30th day after 2010-08-13; retroactive_to 2009-09-01 matches"
+  }
+ }
+}

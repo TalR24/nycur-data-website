@@ -19,6 +19,7 @@ import argparse
 import json
 import os
 import re
+import sys
 from datetime import datetime
 from pathlib import Path
 
@@ -122,6 +123,17 @@ def write_lists(chunks: list[list[Path]], out: Path) -> list[str]:
     return paths
 
 
+def relative_footers(files: list[Path]) -> list[Path]:
+    """Listed packets whose ANSWER FORMAT footer does not name an absolute results path."""
+    bad = []
+    for f in files:
+        t = f.read_text()
+        foot = t[t.rfind("\n\nANSWER FORMAT:"):] if "\n\nANSWER FORMAT:" in t else ""
+        if not re.search(r"to (?:the exact path )?/\S*\.json", foot.split(":\n", 1)[0] + ":"):
+            bad.append(f)
+    return bad
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--chunks", type=int, default=30, help="chunks this run (one subagent each)")
@@ -150,7 +162,11 @@ def main() -> None:
     chunks = make_chunks(todo, max(a.chunks - len(reask_chunks), 0), a.max_bytes, a.max_laws) if a.chunks > len(reask_chunks) else []
     all_paths += write_lists(chunks, out)
     laws = sum(len(c) for c in chunks)
-    res = {"tag": tag, "chunks": all_paths, "laws": laws + reask_laws, "left_after": len(todo) - laws, "skipped_deferred": n_skipped}
+    listed = [f for c in chunks for f in c] + [f for c in reask_chunks for f in c]
+    rel = relative_footers(listed)
+    if rel:
+        print("WARNING: %d listed packets have a relative results path in the footer, first %s (run extract_duties.py --fix-footers)" % (len(rel), rel[0]), file=sys.stderr)
+    res = {"tag": tag, "chunks": all_paths, "laws": laws + reask_laws, "left_after": len(todo) - laws, "skipped_deferred": n_skipped, "relative_footers": len(rel)}
     if a.reask:
         res.update({"reask_laws": reask_laws, "reask_left_after": reask_left})
     print(json.dumps(res))

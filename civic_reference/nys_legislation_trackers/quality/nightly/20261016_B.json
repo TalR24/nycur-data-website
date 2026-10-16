@@ -1,0 +1,1110 @@
+{
+ "_scoring": {
+  "auditor": "B",
+  "night": "20261016",
+  "laws": 11,
+  "stored_records": 92,
+  "correct": 73,
+  "wrong_fields": 12,
+  "not_real": 7,
+  "missed": 21,
+  "precision_strict": "73/92 = 79.3% (Wilson 95% 70.0-86.4)",
+  "precision_real": "85/92 = 92.4% (Wilson 95% 85.1-96.3)",
+  "recall": "70/103 = 68.0% (Wilson 95% 58.4-76.2)",
+  "effective_dates": "11/11 correct",
+  "split": {
+   "reask_laws(5: 2009-S6263, 2011-S4376, 2013-A371, 2009-A40026, 2009-S8314)": {
+    "stored": 85,
+    "correct": 67,
+    "wrong": 11,
+    "not_real": 7,
+    "precision_strict": "67/85 = 78.8% (Wilson 95% 69.0-86.2)",
+    "precision_real": "78/85 = 91.8% (Wilson 95% 84.0-96.0)",
+    "recall": "63/90 = 70.0% (Wilson 95% 59.9-78.5)"
+   },
+   "first_answer_laws(6)": {
+    "stored": 7,
+    "correct": 6,
+    "wrong": 1,
+    "not_real": 0,
+    "precision_strict": "6/7 = 85.7% (Wilson 95% 48.7-97.4)",
+    "precision_real": "7/7 = 100.0% (Wilson 95% 64.6-100.0)",
+    "recall": "7/13 = 53.8% (Wilson 95% 29.1-76.8)"
+   }
+  }
+ },
+ "_classes": [
+  {
+   "name": "designation_no_actor gate drops real list-item duties under a 'shall have the following powers and duties' / 'responsibilities shall include' / 'shall (a)' lead-in",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2011-S4376-03",
+    "2011-S4376-04",
+    "2009-S8314-03",
+    "2009-S8314-04",
+    "2009-S8314-05",
+    "2009-S8314-06",
+    "2009-S8314-07",
+    "2009-S8314-08",
+    "2009-S8314-09",
+    "2009-S8314-28"
+   ],
+   "rule": "dropped/*.json: rule=='designation_no_actor' and re.match(r'^(To [a-z]+|Advise|Work with|Serve as|Review and|Engage in|Assure|Provide|Require|Conduct|Determine|Furnish|Establish|Develop|Prepare|Maintain|[Cc]onsider|Implement|Divide|Eliminate|Identify)\\b', quote) (335 designation_no_actor drops in total)",
+   "db_matches": 78,
+   "db_examples": [
+    "2009-A2876-01",
+    "2009-A4097-04",
+    "2009-A42014-01"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "act_clause gate drops amended sunset sections of OTHER chapters (real extends_existing records)",
+   "criteria": [
+    "1",
+    "7"
+   ],
+   "instances": [
+    "2015-S4978-04",
+    "2015-S4978-05",
+    "2015-S4978-06",
+    "2015-S4978-08",
+    "2015-S4978-10"
+   ],
+   "rule": "dropped/*.json: rule=='act_clause' and in the packet law text (deleted matter removed) the 600 chars before the quote match r'(section|subdivision|paragraph) [\\w-]+ of (chapter|part) [\\w-]+ of the laws of \\d{4}[^.]*is (hereby )?amended'. Note: 0 of 139 act_clause drops match the law's own stored raw_clause.",
+   "db_matches": 129,
+   "db_examples": [
+    "2009-A10049-01",
+    "2009-A10123-01",
+    "2009-A10137-01"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "list items under a 'shall' lead-in stored as power (powers-and-duties list, director-shall-promulgate list)",
+   "criteria": [
+    "4"
+   ],
+   "instances": [
+    "2011-S4376-01",
+    "2011-S4376-02",
+    "2011-S4376-05",
+    "2009-S8314-21",
+    "2009-S8314-22"
+   ],
+   "rule": "kind=='power' and re.match(r'^(To )?(promulgate|furnish|conduct|determine|provide|require|establish)\\b', quote, re.I); over-inclusive, true powers also match",
+   "db_matches": 24,
+   "db_examples": [
+    "2009-A2201-01",
+    "2009-A2201-02",
+    "2009-A2201-03"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "one-time setup duty (rulemaking, appointment, signage installation) given deadline none instead of on_effective_date",
+   "criteria": [
+    "5"
+   ],
+   "instances": [
+    "2009-S8314-01",
+    "2009-S8314-21",
+    "2009-S8314-22",
+    "2009-S8314-25",
+    "2015-S4952-01",
+    "2011-S4376-01",
+    "2011-S4376-02",
+    "2011-S4376-05"
+   ],
+   "rule": "kind=='duty' and deadline_kind=='none' and ((recurrence=='one-time' and deliverable_type in ('rulemaking','designation or staffing')) or (deliverable_type=='signage or installation' and re.search('install', quote, re.I)))",
+   "db_matches": 52,
+   "db_examples": [
+    "2009-A2209-02",
+    "2009-A42007-01",
+    "2009-A42007-02"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "benefit/amount sentences stored as duties (known entitlement class, recurrence)",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2009-A40026-04",
+    "2009-A40026-07",
+    "2009-A40026-08",
+    "2009-A40026-09",
+    "2009-A40026-17",
+    "2009-A40026-18"
+   ],
+   "rule": "kind=='duty' and re.search(r'\\b(rate|final average salary|allowances?|pensions?|interest|benefits?)\\b[^.;]{0,160}\\bshall be (calculated|continued|used|equal|one-half|allowed|increased|credited)', quote, re.I)",
+   "db_matches": 8,
+   "db_examples": [
+    "2009-A40026-04",
+    "2009-A40026-07",
+    "2009-A40026-08"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "contents of a director's remedial directive stored with the directed agency ('said agency') as actor",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2009-S8314-39",
+    "2009-S8314-40",
+    "2009-S8314-41",
+    "2009-S8314-42"
+   ],
+   "rule": "re.match(r'^said ', actor_raw, re.I)",
+   "db_matches": 10,
+   "db_examples": [
+    "2009-A5025-07",
+    "2009-S8314-39",
+    "2009-S8314-40"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "silent record loss: obligation_id gaps with no stored or dropped record (parallel provision with identical quote)",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2009-S6263-11"
+   ],
+   "rule": "per matter_id, integers 1..max(obligation_id suffix) absent from both stored records and dropped/*.json",
+   "db_matches": 113,
+   "db_examples": [
+    "2009-A1002-01",
+    "2009-A11100-04",
+    "2009-A11100-05"
+   ],
+   "needs_judgment": false
+  }
+ ],
+ "2009-S6263": {
+  "records": {
+   "2009-S6263-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S6263-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S6263-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S6263-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S6263-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S6263-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S6263-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S6263-09": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S6263-10": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S6263-12": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   }
+  },
+  "missed": [
+   {
+    "blind": "b6",
+    "quote": "then the superintendent shall require the insurer to offer to the policyholder replacement coverage that includes a benefit that is the same as or substantially similar to the benefit set forth in the policy that the insurer discontinued",
+    "kind": "duty",
+    "agency": "DFS",
+    "dropped_by": "unverified_quote",
+    "note": "model typo 'policie' in quote; Ins Law 3221(p)(3)(C)(ii)"
+   },
+   {
+    "blind": "b11",
+    "quote": "The superintendent may request such additional information as the superintendent may require.",
+    "kind": "power",
+    "agency": "DFS",
+    "dropped_by": null,
+    "note": "4305(j)(3)(C)(i) parallel of -05; id -11 absent from stored and dropped (silent loss)"
+   }
+  ],
+  "effective_date": {
+   "stored": "2011-01-01",
+   "computed": "2011-01-01",
+   "verdict": "correct",
+   "note": "first of January next succeeding 2010-08-13"
+  }
+ },
+ "2015-S4745": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2016-01-01",
+   "computed": "2016-01-01",
+   "verdict": "correct",
+   "note": "new matter is eligibility/coverage-date entitlement only"
+  }
+ },
+ "2015-S4920": {
+  "records": {},
+  "missed": [
+   {
+    "blind": "b1",
+    "quote": "in two newspapers of Regular commercial circulation by subscription and/or newsstand sale, to be designated by the county clerk of the county where the cemetery is located",
+    "kind": "duty",
+    "agency": "Counties (county clerk)",
+    "dropped_by": "designation_no_actor",
+    "note": "county clerk designates newspapers per application; everything else binds a private religious cemetery corporation"
+   }
+  ],
+  "effective_date": {
+   "stored": "2016-01-10",
+   "computed": "2016-01-10",
+   "verdict": "correct",
+   "note": "30th day after 2015-12-11"
+  }
+ },
+ "2015-S4729": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2015-07-02",
+   "computed": "2015-07-02",
+   "verdict": "correct",
+   "note": "adds Seneca to a season table; no actor; act clause truncated after 'provided, however, that:'"
+  }
+ },
+ "2011-S4376": {
+  "records": {
+   "2011-S4376-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S4376-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S4376-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S4376-09": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S4376-10": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S4376-11": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S4376-12": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S4376-13": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S4376-14": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S4376-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "4",
+     "5"
+    ],
+    "fields": {
+     "kind": "duty",
+     "deadline_kind": "on_effective_date"
+    },
+    "note": "lead-in 'The commissioner shall have the following powers and duties:' then 'To promulgate regulations defining...'"
+   },
+   "2011-S4376-02": {
+    "verdict": "wrong",
+    "criteria": [
+     "4",
+     "5"
+    ],
+    "fields": {
+     "kind": "duty",
+     "deadline_kind": "on_effective_date"
+    },
+    "note": "same lead-in; 'To promulgate regulations establishing such different medical specialties'"
+   },
+   "2011-S4376-05": {
+    "verdict": "wrong",
+    "criteria": [
+     "4",
+     "5"
+    ],
+    "fields": {
+     "kind": "duty",
+     "deadline_kind": "on_effective_date"
+    },
+    "note": "same lead-in; 'To furnish the education department with suggested criteria'"
+   }
+  },
+  "missed": [
+   {
+    "blind": "b3",
+    "quote": "To conduct and support continuing studies respecting the nature and scope of the duties of Specialist assistants",
+    "kind": "duty",
+    "agency": "DOH",
+    "dropped_by": "designation_no_actor",
+    "note": "PHL 3711(3) under 'shall have the following powers and duties'"
+   },
+   {
+    "blind": "b4",
+    "quote": "To determine the desirability of and to establish rules for requiring continuing education of Specialist assistants;",
+    "kind": "duty",
+    "agency": "DOH",
+    "dropped_by": "designation_no_actor",
+    "note": "PHL 3711(4)"
+   },
+   {
+    "blind": "b10",
+    "quote": "shall issue to each applicant who satisfies the requirements of subdivision one of this section a license as a physician assistant",
+    "kind": "duty",
+    "agency": "SED",
+    "dropped_by": null,
+    "note": "Educ 6541(2) registration converted to licensure; only the furnish-form half (-12) stored"
+   }
+  ],
+  "effective_date": {
+   "stored": "2013-01-01",
+   "computed": "2013-01-01",
+   "verdict": "correct",
+   "note": "first of January next succeeding 2012-05-31"
+  }
+ },
+ "2013-A371": {
+  "records": {
+   "2013-A371-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "'{{the office for the aging,}}' added as commission member; extends_existing true defensible"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2013-07-31",
+   "computed": "2013-07-31",
+   "verdict": "correct",
+   "note": "immediately"
+  }
+ },
+ "2009-A40026": {
+  "records": {
+   "2009-A40026-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-A40026-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-A40026-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-A40026-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-A40026-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-A40026-10": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-A40026-11": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-A40026-12": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-A40026-13": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-A40026-14": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-A40026-15": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-A40026-16": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-A40026-04": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "note": "'A member's final average salary shall be calculated...' is a benefit formula, subject is the amount"
+   },
+   "2009-A40026-07": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "note": "'the rate of such contribution assumed by an employer ... shall be one-half the rate' is an amount rule; change is a deleted sunset on an employee benefit"
+   },
+   "2009-A40026-08": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "note": "'the rate of such contribution ... shall be equal to the rate' amount rule (480(b)(ii))"
+   },
+   "2009-A40026-09": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "note": "'supplemental retirement allowances ... shall be continued' is an entitlement; actor Unspecified"
+   },
+   "2009-A40026-17": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "note": "'the Rate of Interest that was being charged ... shall be Used for new loans' subject is the rate; board's amend power pre-exists"
+   },
+   "2009-A40026-18": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "note": "Educ 2575(20)(e)(2) parallel of -17, same reason"
+   }
+  },
+  "missed": [
+   {
+    "blind": "b2",
+    "quote": "The provisions of this subdivision shall expire thirty-six years from July first, nineteen hundred seventy-seven, and hereafter May be renewed every four Years.",
+    "kind": "duty",
+    "agency": "PERB",
+    "dropped_by": null,
+    "note": "CSL 209(4)(d) sunset of PERB-administered interest arbitration extended; low confidence on actor"
+   }
+  ],
+  "effective_date": {
+   "stored": "2009-12-10",
+   "computed": "2009-12-10 (act s3); Part A 2010-01-09, Part B 2010-01-01, Part C 2009-12-10",
+   "verdict": "correct",
+   "note": "Part-level dates are a known omnibus case; Part A/B rulemaking deadline_date 2009-12-10 inherits it"
+  }
+ },
+ "2009-S8314": {
+  "records": {
+   "2009-S8314-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S8314-10": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S8314-11": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S8314-12": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S8314-13": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S8314-14": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S8314-15": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S8314-16": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S8314-17": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S8314-18": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S8314-19": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S8314-20": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S8314-23": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S8314-24": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S8314-26": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S8314-27": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S8314-29": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S8314-30": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S8314-31": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S8314-33": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S8314-34": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S8314-35": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S8314-36": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S8314-37": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S8314-38": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S8314-43": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S8314-44": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S8314-45": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S8314-46": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S8314-47": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S8314-48": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S8314-49": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S8314-50": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S8314-51": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S8314-52": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S8314-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "5"
+    ],
+    "fields": {
+     "deadline_kind": "on_effective_date"
+    },
+    "note": "'A chief diversity officer for the state shall be appointed by the Governor' is a one-time setup"
+   },
+   "2009-S8314-21": {
+    "verdict": "wrong",
+    "criteria": [
+     "4",
+     "5"
+    ],
+    "fields": {
+     "kind": "duty",
+     "deadline_kind": "on_effective_date"
+    },
+    "note": "item of 'The director shall promulgate Rules and regulations that will accomplish the following'; 'may' belongs to the bidder"
+   },
+   "2009-S8314-22": {
+    "verdict": "wrong",
+    "criteria": [
+     "4",
+     "5"
+    ],
+    "fields": {
+     "kind": "duty",
+     "deadline_kind": "on_effective_date"
+    },
+    "note": "same lead-in; 'an agency may waive' is the content of the director's rule"
+   },
+   "2009-S8314-25": {
+    "verdict": "wrong",
+    "criteria": [
+     "5"
+    ],
+    "fields": {
+     "deadline_kind": "on_effective_date"
+    },
+    "note": "same 2-a rulemaking list; siblings -17..-24 carry on_effective_date"
+   },
+   "2009-S8314-39": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "ESD",
+     "agency_unit": "Division of Minority and Women-owned Business Development"
+    },
+    "note": "315(7): 'the director shall ... direct implementation of remedial actions to: ...'; the director holds the duty"
+   },
+   "2009-S8314-40": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "ESD",
+     "agency_unit": "Division of Minority and Women-owned Business Development"
+    },
+    "note": "315(7): 'the director shall ... direct implementation of remedial actions to: ...'; the director holds the duty"
+   },
+   "2009-S8314-41": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "ESD",
+     "agency_unit": "Division of Minority and Women-owned Business Development"
+    },
+    "note": "315(7): 'the director shall ... direct implementation of remedial actions to: ...'; the director holds the duty"
+   },
+   "2009-S8314-42": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "ESD",
+     "agency_unit": "Division of Minority and Women-owned Business Development"
+    },
+    "note": "315(7): 'the director shall ... direct implementation of remedial actions to: ...'; the director holds the duty"
+   },
+   "2009-S8314-32": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "note": "'Each bid or proposal shall be analyzed on an individual per bid ... basis' is a condition on the 313-a assessment rules (-31)"
+   }
+  },
+  "missed": [
+   {
+    "blind": "c6",
+    "quote": "Work with the director of the division of Minority and women's Business development to prepare an annual plan",
+    "kind": "duty",
+    "agency": "Governor (unit Chief Diversity Officer)",
+    "dropped_by": "designation_no_actor",
+    "note": "Exec Law 4-a list under 'The chief diversity officer's responsibilities shall include the following:'"
+   },
+   {
+    "blind": "c7",
+    "quote": "Advise the Governor and the agencies regarding any measures necessary to ensure full compliance with article fifteen-a",
+    "kind": "duty",
+    "agency": "Governor (unit Chief Diversity Officer)",
+    "dropped_by": "designation_no_actor",
+    "note": "Exec Law 4-a list under 'The chief diversity officer's responsibilities shall include the following:'"
+   },
+   {
+    "blind": "c8",
+    "quote": "Serve as a member of the state procurement council established under section one hundred sixty-one of the state finance law",
+    "kind": "duty",
+    "agency": "Governor (unit Chief Diversity Officer)",
+    "dropped_by": "designation_no_actor",
+    "note": "Exec Law 4-a list under 'The chief diversity officer's responsibilities shall include the following:'"
+   },
+   {
+    "blind": "c9",
+    "quote": "Serve as the governor's liaison with organizations representing Minority and women-owned Business enterprises",
+    "kind": "duty",
+    "agency": "Governor (unit Chief Diversity Officer)",
+    "dropped_by": "designation_no_actor",
+    "note": "Exec Law 4-a list under 'The chief diversity officer's responsibilities shall include the following:'"
+   },
+   {
+    "blind": "c10",
+    "quote": "Serve as the governor's liaison to the small Business advisory council",
+    "kind": "duty",
+    "agency": "Governor (unit Chief Diversity Officer)",
+    "dropped_by": "designation_no_actor",
+    "note": "Exec Law 4-a list under 'The chief diversity officer's responsibilities shall include the following:'"
+   },
+   {
+    "blind": "c11",
+    "quote": "Review and consult with the director of Minority and women's business development regarding policies",
+    "kind": "duty",
+    "agency": "Governor (unit Chief Diversity Officer)",
+    "dropped_by": "designation_no_actor",
+    "note": "Exec Law 4-a list under 'The chief diversity officer's responsibilities shall include the following:'"
+   },
+   {
+    "blind": "c12",
+    "quote": "Engage in other actions assigned to him or her by the Governor relating to diversity in hiring",
+    "kind": "duty",
+    "agency": "Governor (unit Chief Diversity Officer)",
+    "dropped_by": "designation_no_actor",
+    "note": "Exec Law 4-a list under 'The chief diversity officer's responsibilities shall include the following:'"
+   },
+   {
+    "blind": "c24",
+    "quote": "consider where practicable, the severability of construction projects and other bundled contracts",
+    "kind": "duty",
+    "agency": "State agencies",
+    "dropped_by": "designation_no_actor",
+    "note": "313(4)(c) under 'the contracting agency shall'"
+   },
+   {
+    "blind": "c21",
+    "quote": "Reports to the director pursuant to section three hundred fifteen of this article shall include activities with respect to all such state contracts.",
+    "kind": "duty",
+    "agency": "State agencies",
+    "dropped_by": null,
+    "note": "313(3) widens agency reporting to leases; extends_existing true; low confidence"
+   }
+  ],
+  "effective_date": {
+   "stored": "2010-10-13",
+   "computed": "2010-10-13",
+   "verdict": "correct",
+   "note": "90th day after 2010-07-15"
+  }
+ },
+ "2015-S4943": {
+  "records": {
+   "2015-S4943-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2015-08-13",
+   "computed": "2015-08-13",
+   "verdict": "correct",
+   "note": "immediately"
+  }
+ },
+ "2015-S4952": {
+  "records": {
+   "2015-S4952-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "5"
+    ],
+    "fields": {
+     "deadline_kind": "on_effective_date"
+    },
+    "note": "'shall provide for the installation and maintenance of adequate signing' is a setup install with no stated deadline"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2016-09-29",
+   "computed": "2016-09-29",
+   "verdict": "correct",
+   "note": "immediately"
+  }
+ },
+ "2015-S4978": {
+  "records": {
+   "2015-S4978-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S4978-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S4978-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S4978-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S4978-09": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   }
+  },
+  "missed": [
+   {
+    "blind": "b2",
+    "quote": "shall remain in full force and effect until July 23, 2017 at which time it shall be repealed",
+    "kind": "power",
+    "agency": "New York State Housing Finance Agency",
+    "dropped_by": "act_clause",
+    "note": "s2 amends s6 ch 514/1983; sunset [2015] {{2017}} of another chapter, extends_existing true"
+   },
+   {
+    "blind": "b3",
+    "quote": "sections one, three, four, five and six of this act shall remain in full force and effect until July 23, 2017",
+    "kind": "power",
+    "agency": "New York State Housing Finance Agency",
+    "dropped_by": "act_clause",
+    "note": "s3 amends s7 ch 396/1984; sunset [2015] {{2017}} of another chapter, extends_existing true"
+   },
+   {
+    "blind": "b4",
+    "quote": "shall cease to be of force and effect on and after July 23, 2017",
+    "kind": "power",
+    "agency": "State of New York Mortgage Agency",
+    "dropped_by": "act_clause",
+    "note": "s4 amends s16 ch 915/1982; sunset [2015] {{2017}} of another chapter, extends_existing true"
+   },
+   {
+    "blind": "b8",
+    "quote": "shall remain in full force and effect until July 23, 2017, whereupon such date the provisions of this act shall expire",
+    "kind": "power",
+    "agency": "State of New York Mortgage Agency",
+    "dropped_by": "act_clause",
+    "note": "s7 amends s2 ch 172/2002; sunset [2015] {{2017}} of another chapter, extends_existing true"
+   },
+   {
+    "blind": "b10",
+    "quote": "shall expire and be deemed repealed on and after July 23, 2017",
+    "kind": "power",
+    "agency": "State of New York Mortgage Agency",
+    "dropped_by": "act_clause",
+    "note": "s9 amends s5 ch 246/2010; sunset [2015] {{2017}} of another chapter, extends_existing true"
+   }
+  ],
+  "effective_date": {
+   "stored": "2015-07-23",
+   "computed": "2015-07-23",
+   "verdict": "correct",
+   "note": "immediately"
+  }
+ }
+}

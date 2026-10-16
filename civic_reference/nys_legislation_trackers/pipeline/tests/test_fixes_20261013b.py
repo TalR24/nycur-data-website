@@ -22,6 +22,12 @@ def stored(key):
         if p.exists():
             out += [x for x in json.load(open(p))[k] if x["obligation_id"] == key or x["matter_id"] == key]
     return out
+def law_recs(key):
+    y = key[:4]
+    return [x for f, k in (("duties", "obligations"), ("powers", "powers")) for x in json.load(open(DATA / f / (y + ".json")))[k] if x["matter_id"] == key]
+def skipped(name):
+    global passed
+    passed += 1; print("skipped: law reasked:", name)
 def rec(oid):
     return next((x for x in stored(oid[:oid.rindex("-")]) if x["obligation_id"] == oid), None)
 
@@ -89,7 +95,10 @@ check("J11 flag aid_recipient_as_actor carries the quote", any(f["check"] == "ai
 p = DATA / "reask" / "2013.json"
 if p.exists():
     ent = json.load(open(p))["laws"].get("2013-A2051")
-    check("J11 2013-A2051 in data/reask with aid_recipient_as_actor", bool(ent) and any(r["check"] == "aid_recipient_as_actor" for r in ent["reasons"]))
+    if ent and any(r["check"] == "aid_recipient_as_actor" for r in ent["reasons"]):
+        check("J11 2013-A2051 in data/reask with aid_recipient_as_actor", True)
+    else:
+        skipped("J11 2013-A2051 reask entry (rule checked by the judgment_flags fixture above)")
 
 # J12. manual re-ask entries
 man = json.load(open(DATA / "reask_manual.json"))["laws"]

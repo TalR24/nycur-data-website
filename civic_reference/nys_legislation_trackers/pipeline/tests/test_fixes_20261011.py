@@ -36,8 +36,8 @@ check("M7 an already calendar date is untouched", ed.calendar_deadline(o, ["2011
 check("M7 effective dates use calendar months", efd.parse_effective("§ 3. This act shall take effect six months after it shall have become a law.", "2015-08-31")["effective_date"] == "2016-02-29")
 p = DATA / "duties" / "2011.json"
 if p.exists():
-    r = next(x for x in json.load(open(p))["obligations"] if x["obligation_id"] == "2011-A8496-07")
-    check("M7 stored 2011-A8496-07 = 2012-02-21", r["deadline_date"] == "2012-02-21")
+    r = next((x for x in json.load(open(p))["obligations"] if x["matter_id"] == "2011-A8496" and "two months after the date this act shall take effect" in x["quote"]), None)      # looked up by quote: the re-ask renumbered the ids
+    check("M7 stored two-months record of 2011-A8496 = 2012-02-21", bool(r) and r["deadline_date"] == "2012-02-21")
 
 # M8. generic role nouns are the State agencies group
 for raw in ("the appointing authority", "the appointing authorities", "such appointing authority or authorities", "the appointing officer", "the head of the agency", "each agency head", "the public employer"):
@@ -82,8 +82,8 @@ if t:
     check("M11 not dropped as designation_no_actor", not g or g[0] != "designation_no_actor")
     p = DATA / "duties" / "2009.json"
     if p.exists():
-        r = next((x for x in json.load(open(p))["obligations"] if x["obligation_id"] == "2009-A40011-05"), None)
-        check("M11 stored 2009-A40011-05 is a duty", bool(r) and r["kind"] == "duty")
+        r = next((x for x in json.load(open(p))["obligations"] if x["matter_id"] == "2009-A40011" and "director of the budget will report" in x["quote"]), None)      # by quote: the re-ask renumbered the ids
+        check("M11 stored 2009-A40011 'director of the budget will report' record is a duty", bool(r) and r["kind"] == "duty")
 
 # M12. BOCES
 for raw in ("board of cooperative educational services", "boards of cooperative educational services", "The boces", "Southern Westchester BOCES", "such board of cooperative educational services"):

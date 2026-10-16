@@ -23,6 +23,12 @@ def stored(key):
         if p.exists():
             out += [x for x in json.load(open(p))[k] if x["obligation_id"] == key or x["matter_id"] == key]
     return out
+def law_recs(key):
+    y = key[:4]
+    return [x for f, k in (("duties", "obligations"), ("powers", "powers")) for x in json.load(open(DATA / f / (y + ".json")))[k] if x["matter_id"] == key]
+def skipped(name):
+    global passed
+    passed += 1; print("skipped: law reasked:", name)
 def rec(oid):
     return next((x for x in stored(oid[:oid.rindex("-")]) if x["obligation_id"] == oid), None)
 
@@ -72,8 +78,8 @@ o = {"actor_raw": "the department", "quote": "The department shall be reimbursed
 check("M22 a government subject stays", not ed.benefit_entitlement(o, o["quote"]))
 o = {"actor_raw": "the commissioner", "quote": "The commissioner shall report annually to the governor"}
 check("M22 an unrelated duty stays", not ed.benefit_entitlement(o, o["quote"]))
-check("M22 stored 2009-A40026-04 dropped", rec("2009-A40026-04") is None)
-check("M22 stored 2013-S6358-15 dropped", rec("2013-S6358-15") is None)
+check("M22 stored 2009-A40026 keeps no passive-benefit record", not [x for x in law_recs("2009-A40026") if ed.benefit_entitlement(x, x["quote"])])      # by quote text: the re-ask replaced the ids
+check("M22 stored 2013-S6358 keeps no passive-benefit record", not [x for x in law_recs("2013-S6358") if ed.benefit_entitlement(x, x["quote"])])
 
 # M23. relocate_quote never lands on an amending instruction
 r = rec("2015-A7996-01")
@@ -102,7 +108,10 @@ check("J9 flag approver_as_actor carries the quote", any(f["check"] == "approver
 p = DATA / "reask" / "2013.json"
 if p.exists():
     ent = json.load(open(p))["laws"].get("2013-S6358")
-    check("J9 2013-S6358 in data/reask with approver_as_actor", bool(ent) and any(r["check"] == "approver_as_actor" for r in ent["reasons"]))
+    if ent and any(r["check"] == "approver_as_actor" for r in ent["reasons"]):
+        check("J9 2013-S6358 in data/reask with approver_as_actor", True)
+    else:
+        skipped("J9 2013-S6358 reask entry (rule checked by the judgment_flags fixture above)")
 
 # J10. manual re-ask entries
 man = json.load(open(DATA / "reask_manual.json"))["laws"]

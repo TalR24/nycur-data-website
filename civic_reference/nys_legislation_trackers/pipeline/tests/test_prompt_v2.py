@@ -49,7 +49,9 @@ check("emit wrote 2 packets", [p.stem for p in pk] == sorted(keys))
 for p in pk:
     y = p.stem.split("-")[0]
     txt = p.read_text()
-    check("footer names absolute results path " + p.stem, "schema to %s:" % (out.resolve() / y / "results" / (p.stem + ".json")) in txt)
+    check("footer names absolute results path " + p.stem, "schema to the exact path %s (never any other folder):\n" % (out.resolve() / y / "results" / (p.stem + ".json")) in txt)
+    check("footer ends with results/{LAW}.json " + p.stem, txt.rsplit("\n\nANSWER FORMAT:", 1)[1].split(":\n", 1)[0].endswith("results/%s.json (never any other folder)" % p.stem))
+    check("upgrade_packet_v2 still parses the absolute footer " + p.stem, ed.upgrade_packet_v2(txt, strict=True) == txt)
     check("packet is v2 " + p.stem, rules[0] in txt and '"excluded_sentences"' in txt)
 chunks = sorted((out / "chunks").glob("*.lst"))
 check("one chunk list", len(chunks) == 1 and len(chunks[0].read_text().split()) == 2)
@@ -97,6 +99,24 @@ check("upgrade is idempotent", ed.upgrade_packet_v2(up) == up)
 rq = ed.reask_packet_text(v1pk, "2009-A1", {"reasons": [{"check": "x", "detail": "y", "sentences": []}]}, [], Path("/tmp/x/results_reask/2009-A1.json"))
 check("re-ask packet head is version 2", "COVERAGE STEP" in rq and ed.REASK_MARK in rq and rq.rstrip().endswith(json.dumps(ed.SCHEMA_V2)) and "results_reask/2009-A1.json" in rq)
 check("v1 answer validates under SCHEMA_V2 (default ingest schema)", eo.validate_against_schema({k: v for k, v in ex.items() if k != "excluded_sentences"}, ed.SCHEMA_V2))
+
+# --fix-footers on a temp copy: unanswered relative packet fixed, answered packet untouched
+fx = tmp / "fx"
+for law, answered in (("2015-S1", False), ("2015-S2", True)):
+    (fx / "2015" / "results").mkdir(parents=True, exist_ok=True)
+    (fx / "2015" / (law + ".txt")).write_text(v1pk.replace("2009-A1", law))
+    if answered:
+        (fx / "2015" / "results" / (law + ".json")).write_text("{}")
+before = hashlib.sha256((fx / "2015" / "2015-S2.txt").read_bytes()).hexdigest()
+cnt = ed.fix_footers(fx)
+fixed = (fx / "2015" / "2015-S1.txt").read_text()
+check("fix-footers counts", cnt == {"2015": [1, 1]})
+check("fix-footers makes the footer absolute", "schema to the exact path %s (never any other folder):\n" % (fx.resolve() / "2015" / "results" / "2015-S1.json") in fixed and fixed.endswith(json.dumps(ed.SCHEMA)))
+check("fix-footers leaves the answered packet alone", hashlib.sha256((fx / "2015" / "2015-S2.txt").read_bytes()).hexdigest() == before)
+check("fix-footers is idempotent", ed.fix_footers(fx) == {"2015": [0, 2]})
+check("reask_packet_text still finds the footer after the fix", "never to results/" in ed.reask_packet_text(fixed, "2015-S1", {"reasons": []}, [], Path("/tmp/r.json")))
+import next_packet_batch as nb
+check("batch check: relative flagged, absolute not", nb.relative_footers([fx / "2015" / "2015-S2.txt"]) != [] and nb.relative_footers([fx / "2015" / "2015-S1.txt"]) == [])
 
 print("%d passed, %d failed" % (passed, failed))
 sys.exit(1 if failed else 0)

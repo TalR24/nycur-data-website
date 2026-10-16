@@ -46,7 +46,7 @@ check("both ingested", sorted(done) == ["2013-S4552", "2019-S3360"] and not left
 duties, powers, excluded = ed.build_records(list(laws.values()))
 check("one power", len(powers) == 1 and powers[0]["agency"] == "Towns" and powers[0]["agency_unit"] == "Town of Hempstead")
 check("local jurisdiction", powers[0]["jurisdiction"] == "local" and powers[0]["agency_group"] == "Towns")
-check("fabricated quote is dropped by the unverified-quote gate", len(duties) == 1 and [d["rule"] for d in ed.DROPPED] == ["unverified_quote"])
+check("fabricated quote is dropped by the unverified-quote gate", len(duties) == 1 and [d["rule"] for d in ed.DROPPED if not d["rule"].startswith("excluded_")] == ["unverified_quote"])
 d0 = duties[0]
 check("state agency matched", d0["agency"] == "DOS" and d0["jurisdiction"] == "state" and d0["agency_matched"])
 check("deadline is the parsed effective date plus 30 days", d0["effective_date"] == "2020-03-19" and d0["deadline_date"] == "2020-04-18")
