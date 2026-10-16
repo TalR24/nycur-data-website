@@ -14,7 +14,7 @@ import re
 
 # curated aliases: normalised phrase -> canonical in the NYS crosswalk (checked first)
 ALIASES = {
-    "state liquor authority": "ABC", "liquor authority": "ABC", "new york state liquor authority": "ABC",
+    "division of alcoholic beverage control": "ABC", "state liquor authority": "ABC", "liquor authority": "ABC", "new york state liquor authority": "ABC",
     "department of education": "SED", "state education department": "SED", "education department": "SED",
     "banking department": "DFS", "state banking department": "DFS", "superintendent of banks": "DFS",
     "department of economic development": "ESD", "commissioner of economic development": "ESD",
@@ -204,6 +204,21 @@ def fix_generic_role(o):
         return False
     o.update(agency="State agencies", agency_full="State agencies", agency_matched=True, jurisdiction="state", agency_org_type="state agency group",
              agency_group=None, agency_unit=None, agency_source="generic_role")
+    o.pop("actor_unresolved", None)
+    return True
+
+
+# O2 (Oct 16 2026): 'the state' / 'the State of New York' as the acting body, with no agency resolved, is the State agencies group (unit: State of New York).
+STATE_ACTOR = re.compile(r"^(?:the )?state(?: of new york)?$|^this state$", re.I)
+
+
+def fix_state_actor(o):
+    """Mutates o and returns True when actor_raw is exactly 'the state' / 'the State of New York' and the agency is Unspecified."""
+    raw = re.sub(r"\s+", " ", (o.get("actor_raw") or "").strip(" .,;:"))
+    if not STATE_ACTOR.match(raw) or o.get("agency") not in (None, "Unspecified"):
+        return False
+    o.update(agency="State agencies", agency_full="State agencies", agency_matched=True, jurisdiction="state", agency_org_type="state agency group",
+             agency_group=None, agency_unit="State of New York", agency_source="state_actor")
     o.pop("actor_unresolved", None)
     return True
 

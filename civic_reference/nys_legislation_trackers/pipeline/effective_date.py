@@ -124,7 +124,7 @@ def find_reference(clause):
 def _single(clause, signed, ref=None):
     """(effective_date, rule, reference_info) for the first 'shall take effect' statement of the clause."""
     c = re.sub(r"^\s*(?:§|Section|S)\s*\d+\.\s*", "", clause)
-    sent = re.split(r";|\.\s+(?=[A-Z])", c)[0]
+    sent = re.split(r";|:\s+(?=provided)|\.\s+(?=[A-Z])", c)[0]      # E3: "take effect July 1, 2014: provided, however, ... same date as such chapter" is a proviso, not the main rule
     low = sent.lower()
     if re.search(r"same date and in the same manner|same date and same manner|same manner and on the same date", low):
         # the referenced chapter could not be found (not signed yet, or outside the
@@ -275,7 +275,116 @@ def _amended_fixed_reference(text, ref, signed=None):
     return ref
 
 
-def parse_effective(text, signed_date, resolver=None):
+# E1 (Oct 16 2026): omnibus acts of Parts. Each Part ends with its own "This act shall take effect ..." section and the act closes with
+# a general clause ("the applicable effective date of Parts A through C shall be as set forth in the last section of such Parts").
+# Part headings are "{{Part}} B" inline at the end of the previous Part's last paragraph (marked text) or a bare "PART B" / "Part B" line.
+PART_MARK = re.compile(r"\{\{Part\}\}[ \t]+([A-Z]{1,2}\d?)\b|^[ \t]*(?:PART|Part)[ \t]+([A-Z]{1,2}\d?)[ \t]*$", re.M)
+OWN_CLAUSE = re.compile(r"^(?:(?:§|Section)\s*\d+\.\s*)?This act shall take effect", re.I)
+PAGE_HDR = re.compile(r"(?:\s+[SA]\.\s*\d+(?:-[A-Za-z])?\s+\d+){1,2}(?:\s+[SA]\.\s*\d+(?:-[A-Za-z])?)?\s*$")
+
+
+def _own_clauses(text):
+    """[(start, end, clause_text)] for every paragraph that starts "[§ N.] This act shall take effect", provisos that follow a colon merged;
+    start/end are character offsets in `text`."""
+    paras = [(m.start(), m.end(), m.group(0)) for m in re.finditer(r"\S(?:[^\n]|\n(?!\s*\n))*", text)]
+    out = []
+    for i, (a, b, p) in enumerate(paras):
+        q = re.sub(r"\s+", " ", re.sub(r"\s*\{\{Part\}\}\s+[A-Z]{1,2}\d?\b.*$", "", p, flags=re.S).replace("{{", "").replace("}}", "")).strip()   # the next Part's heading rides on this paragraph
+        if not OWN_CLAUSE.match(q):
+            continue
+        end, j = b, i + 1
+        if re.search(r":\s*$", q):
+            while j < len(paras):
+                qq = re.sub(r"\s+", " ", paras[j][2]).strip()
+                if re.match(r"^(?:§|Section)\s*\d+\.", qq) or re.match(r"^Fiscal\s+NOTE", qq, re.I):
+                    break
+                q += " " + qq; end = paras[j][1]; j += 1
+        q = re.split(r"\s*Fiscal\s+NOTE", q, flags=re.I)[0]
+        q = PAGE_HDR.sub("", q).strip()
+        out.append((a, end, q))
+    return out
+
+
+def part_dates(text, signed_date, resolver=None):
+    """E1. Section-date entries for each Part's own effective-date clause, scoped to that Part's character span in `text`:
+    {applies_to, part, span_start, span_end, effective_date, rule, raw_clause[, expires_date]}. [] unless the text has two or more
+    Part headings and two or more "This act shall take effect" clauses. The final act-level clause is not a Part entry (it stays the law's date)."""
+    text = text or ""
+    marks, seen = [], set()
+    for m in PART_MARK.finditer(text):
+        letter = m.group(1) or m.group(2)
+        if letter not in seen:                 # a running page header repeats the letter: the first one opens the Part
+            seen.add(letter)
+            marks.append((m.start(), letter))
+    clauses = _own_clauses(text)
+    if len(marks) < 2 or len(clauses) < 2:
+        return []
+    act = clauses[-1]
+    last_start = marks[-1][0]
+    act_level = bool(re.search(r"\bparts?\b", act[2], re.I)) or sum(1 for c in clauses if c[0] >= last_start) >= 2
+    out = []
+    for i, (pos, letter) in enumerate(marks):
+        nxt = marks[i + 1][0] if i + 1 < len(marks) else None
+        end = nxt if nxt is not None else (act[0] if act_level and act[0] >= pos else len(text))
+        inside = [c for c in clauses if pos <= c[0] < (nxt if nxt is not None else len(text)) and not (nxt is None and act_level and c is act)]
+        if not inside:
+            continue
+        c = inside[-1]
+        e = parse_effective(c[2], signed_date, resolver=resolver, _parts=False)
+        entry = {"applies_to": "Part %s of this act" % letter, "part": letter, "span_start": pos, "span_end": end,
+                 "effective_date": e["effective_date"], "rule": e["rule"], "raw_clause": c[2]}
+        if e["expires_date"]:
+            entry["expires_date"] = e["expires_date"]
+        if e.get("expires_rule"):
+            entry["expires_rule"] = e["expires_rule"]
+            if e.get("expires_reference"):
+                entry["expires_reference"] = e["expires_reference"]
+        out.append(entry)
+    return out
+
+
+# E2 (Oct 16 2026): the repeal is bound to a section's own sunset, not a date of this act
+_UNIT = r"(?:section|subdivision|paragraph|subparagraph|clause|article|title|part|subsection|item|act|provision)s?"
+SECTION_BOUND = [
+    re.compile(r"(?:expire|repeal|deemed\s+(?:to\s+)?(?:expire|repealed?))(?:\s+and\s+(?:be\s+)?deemed\s+(?:to\s+)?repealed?)?\s+(?:on\s+)?the\s+same\s+date\s+as\s+such\s+" + _UNIT, re.I),
+    re.compile(r"\bof\s+such\s+" + _UNIT + r"\b[^;]{0,140}?\band\s+shall\s+(?:be\s+)?(?:deemed\s+(?:to\s+)?(?:be\s+)?(?:expired?|repealed?)|expire|repeal)(?:\s+and\s+(?:be\s+)?deemed\s+(?:to\s+be\s+)?repealed)?\s+therewith", re.I),
+]
+NAMED_CHAPTER_SECTION = re.compile(r"\bsections?\s+([\w.-]+)\s+of\s+chapter\s+(\d+)\s+of\s+the\s+laws\s+of\s+(\d{4})", re.I)
+
+
+def section_bound_expiry(clause, resolver=None):
+    """-> None, or {"expires_rule": "with_referenced_section", "expires_date": ISO|None, "reference": {...}|None}. The date is filled only
+    when the clause names 'section N of chapter M of the laws of YYYY' and resolver(chapter=M, year=YYYY) returns that chapter's own
+    expiry (record key expires_date, or a section_expiry entry for section N in its section_dates)."""
+    hit = None
+    for rx in SECTION_BOUND:
+        m = rx.search(clause or "")
+        if m and (hit is None or m.start() < hit.start()):
+            hit = m
+    if not hit:
+        return None
+    out = {"expires_rule": "with_referenced_section", "expires_date": None, "reference": None}
+    named = list(NAMED_CHAPTER_SECTION.finditer(clause[max(0, hit.start() - 400):hit.end()]))
+    if named and resolver:
+        sec, ch, yr = named[-1].group(1), int(named[-1].group(2)), int(named[-1].group(3))
+        rec = None
+        try:
+            rec = resolver(bills=[], chapter=ch, year=yr)
+        except Exception:
+            rec = None
+        out["reference"] = {"section": sec, "chapter": ch, "year": yr}
+        if rec:
+            exp = rec.get("expires_date")
+            for x in rec.get("section_dates") or []:
+                if x.get("rule") in ("section_expiry", "section_expiry_whole_act") and x.get("expires_date"):
+                    mm = re.match(r"\s*sections?\s+(.*?)\s+of this act", x.get("applies_to") or "", re.I)
+                    if mm and sec.lower() in [w.strip().lower() for w in re.split(r",|\band\b", mm.group(1))]:
+                        exp = x["expires_date"]
+            out["expires_date"] = exp
+    return out
+
+
+def parse_effective(text, signed_date, resolver=None, _parts=True):
     """text: the full act text (marked or plain) or just the clause. signed_date: ISO string of the governor's signature.
     resolver(bills=..., chapter=..., year=...) -> {signed_date, effective_date, chapter, ...} resolves 'same as chapter X'."""
     signed = _d(signed_date)
@@ -356,10 +465,26 @@ def parse_effective(text, signed_date, resolver=None):
            "expires_date": expires.isoformat() if expires else None,
            "retroactive_to": retro.isoformat() if retro else None,
            "other_dates": [x for x in sections if x["rule"] != "retroactive"], "section_dates": sections, "raw_clause": clause}
+    out["expires_rule"] = None
+    if not out["expires_date"]:
+        sb = section_bound_expiry(clause, resolver)
+        if not sb and _parts:        # the proviso may sit in a lettered list before the closing clause: scan the act's tail for "made by section N of this act ..."
+            tail = re.sub(r"\s+", " ", (text or "")[-6000:].replace("{{", "").replace("}}", ""))
+            sb = section_bound_expiry(tail, resolver)
+        if sb:
+            out["expires_rule"], out["expires_date"] = sb["expires_rule"], sb["expires_date"]
+            if sb["reference"]:
+                out["expires_reference"] = sb["reference"]
+    if _parts:
+        out["section_dates"].extend(part_dates(text, signed_date, resolver))
     if ref_used and ref_used.get("amended_clause_ignored") and ref_used.get("amended_fixed_date"):
         note = {"applies_to": "the referenced chapter's effective-date section", "effective_date": ref_used["amended_fixed_date"], "rule": "amendment_after_original_effective_date",
                 "note": "amended after the original effective date (D1): the original date stands"}
         out["other_dates"].append(note); out["section_dates"].append(note)
+    if rule == "same_as_chapter_unresolved" and not ref_used and re.search(r"concurrent resolution", clause, re.I):
+        # E3 (Oct 16 2026): a constitutional amendment has no chapter number; the lookups made are recorded instead of silence
+        out["reference"] = {"tried": "concurrent resolution, no chapter: Open Legislation API search of the session's bills by its subject returned no resolution, "
+                                     "and /api/3/resolutions/{session}/search returned 404; date left open"}
     if ref_used:
-        out["reference"] = {k: ref_used.get(k) for k in ("bill", "chapter", "year", "signed_date", "effective_date", "rule") if k in ref_used}
+        out["reference"] = {k: ref_used.get(k) for k in ("bill", "chapter", "year", "signed_date", "effective_date", "rule", "tried") if k in ref_used}
     return out

@@ -441,6 +441,13 @@ def section_effective(o, text, eff):
     section its quote sits in, else the law's own date (D1 in effective_date.py decides the values)."""
     cit = re.search(r"§\s*([\w.-]+)\s*\((\w+)\)\s*\((\w)\)", o.get("citation") or "")
     secno = act_section_of(o.get("quote") or "", text)
+    pos = locate(o.get("quote") or "", text)                  # omnibus Parts (Oct 16 2026): a record inside a Part takes that Part's own clause
+    if pos is not None and not isinstance(pos, int):
+        pos = pos[0] if isinstance(pos, (tuple, list)) else getattr(pos, "start", lambda: None)()
+    for e in eff.get("section_dates") or []:
+        if e.get("part") and e.get("effective_date") and pos is not None and e.get("span_start") is not None \
+                and e["span_start"] <= pos < e["span_end"]:
+            return e["effective_date"], "part"
     for e in eff.get("section_dates") or []:                  # keyed to another law's expiration: the date is open, not the act's own
         if e.get("rule") == "on_expiration_of_other_law" and secno and secno in _section_set(e["applies_to"]):
             return None, "open"
@@ -667,7 +674,35 @@ def _actor_head(actor_raw):
     return [w for w in re.findall(r"[a-z]+", (actor_raw or "").lower()) if w not in _ACTOR_STOP and len(w) > 3]
 
 
-def relocate_quote(quote, text, actor_raw=None):
+MAX_RELOC_WORDS = 60
+
+
+def trim_to_window(new, a_char, b_char, max_words=MAX_RELOC_WORDS):
+    """O3 (Oct 16 2026): a contiguous whole-word window of at most max_words words of `new` that holds the characters [a_char, b_char)
+    (the braced new matter), centred on it, starting at a clause boundary (after ';' or ', and') when one fits. Verbatim slice of `new`."""
+    ws = [(m.start(), m.end()) for m in re.finditer(r"\S+", new)]
+    n = len(ws)
+    if n <= max_words:
+        return new
+    idx = [i for i, (x, y) in enumerate(ws) if y > a_char and x < b_char] or [min(range(n), key=lambda i: abs(ws[i][0] - a_char))]
+    a, b = idx[0], idx[-1] + 1
+    if b - a >= max_words:
+        s = a
+    else:
+        s = max(0, min(a - (max_words - (b - a)) // 2, n - max_words))
+        cands = [i for i in range(max(0, b - max_words), a + 1)
+                 if i == 0 or new[ws[i - 1][0]:ws[i - 1][1]].endswith(";") or (new[ws[i - 1][0]:ws[i - 1][1]].lower() == "and" and i >= 2 and new[ws[i - 2][0]:ws[i - 2][1]].endswith(","))]
+        if cands:
+            s = min(cands, key=lambda i: abs(i - s))
+    e = min(n, s + max_words)
+    if e < n:                                                 # end at a clause end when one lies after the new matter
+        ends = [i + 1 for i in range(max(b, e - 20), e) if new[ws[i][0]:ws[i][1]].endswith((";", "."))]
+        if ends:
+            e = ends[-1]
+    return new[ws[s][0]:ws[e - 1][1]]
+
+
+def relocate_quote(quote, text, actor_raw=None, trim=False, stats=None):
     """M6 (Oct 10 2026). An extension record whose quote sits in reprinted unchanged text: returns the verbatim post-amendment sentence that
     holds the nearest {{ }} span of the same act section, or None (no marker, quote already overlaps new matter, or no braced span in the section)."""
     if "{{" not in text:
@@ -696,6 +731,19 @@ def relocate_quote(quote, text, actor_raw=None):
         if vm and vm.group(1).lower()[:5] not in new.lower():        # the original operative verb ('may deny') must survive in the new sentence
             continue
         if len(new) >= 20 and locate_span(new, text):
+            if trim and len(new.split()) > MAX_RELOC_WORDS:
+                num = len(new) - len(re.sub(r"^(?:\d+(?:-\w+)?\.\s+)", "", post_amendment(sent)))
+                pre = post_amendment(text[sl:x])
+                a_c = max(0, len(pre) + (1 if pre else 0) - num)
+                b_c = max(a_c + 1, len(post_amendment(text[sl:y])) - num)
+                t = trim_to_window(new, a_c, b_c)
+                sp_t = locate_span(t, text) if len(t) >= 20 else None
+                if stats is not None:
+                    stats["before"] = stats.get("before", 0) + 1
+                if sp_t and in_braces(sp_t[0], sp_t[1], text):      # quote_verified is rechecked on the trimmed text
+                    return t
+                if stats is not None:
+                    stats["untrimmed"] = stats.get("untrimmed", 0) + 1
             return new
     return None
 
@@ -906,7 +954,8 @@ AWARDED_BENEFIT = re.compile(r"\bshall\s+be\s+awarded\b(?!\s+(?:by|pursuant|in\s
 SALARY_INCREASE = re.compile(r"\b(?:salary|salaries|compensation|wages?)\b[^.;]{0,200}?\bshall\s+be\s+increased\b|\bshall\s+receive\s+an?\s+(?:\w+\s+)?salary\s+increase\b", re.I)
 CONDITION_PRECEDENT = re.compile(r"\bshall\s+not\s+be\s+(?:implemented|paid|effective|operative)\b[^.;]{0,60}?\buntil\b[^.;]{0,400}?\b(?:shall|have|has)\s+(?:have\s+)?(?:delivered|certified|approved|filed|submitted|received|issued)\b", re.I)
 # M36 (Oct 15 2026): 'No expenditure may be made ... until a certificate ...', 'shall not occur until', 'shall not take place until' are conditions on another provision
-CONDITION_PRECEDENT_M36 = re.compile(r"\bno\s+(?:expenditure|payment|disbursement)s?\s+(?:may|shall)\s+be\s+made\b[^.;]{0,300}?\buntil\b|\bshall\s+not\s+(?:occur|take\s+place)\s+until\b", re.I)
+CONDITION_PRECEDENT_M36 = re.compile(r"\bno\s+(?:expenditure|payment|disbursement)s?\s+(?:may|shall)\s+be\s+made\b[^.;]{0,300}?\buntil\b|\bshall\s+not\s+(?:occur|take\s+place)\s+until\b"
+                                  r"|\bshall\s+not\s+(?:proceed\s+with|commence)\b[^.;]{0,200}?\buntil\b", re.I)      # O5 (Oct 16 2026)
 
 
 def salary_entitlement(q):
@@ -960,6 +1009,7 @@ def benefit_entitlement(o, q):
 HEREBY_AUTH = re.compile(r"\bhereby\s+(?:further\s+)?authoriz(?:es|ed)\b", re.I)
 HEREBY_AUTHORIZES = re.compile(r"\bhereby\s+(?:further\s+)?authorizes\s+((?:the|such|said|each)\s+[\w'-]+(?:\s+[\w'-]+){0,3}?)(?=\s+(?:and|to)\b|[,.;]|$)", re.I)
 BDC_NOTIFY = re.compile(r"shall\s+notify\s+the\s+legislative\s+bill\s+drafting\s+commission", re.I)
+REVIEWED_AS_IF = re.compile(r"shall\s+be\s+reviewed\s+as\s+if\s+(?:it|such\s+application)\s+had\s+been\s+(?:received|filed|made)\s+on\s+or\s+before", re.I)     # O1 (Oct 16 2026)
 
 
 def gate_record(o, text, has_markers):
@@ -969,6 +1019,8 @@ def gate_record(o, text, has_markers):
     q = o.get("quote") or ""
     if BDC_NOTIFY.search(q):
         return "act_clause_boilerplate", "act-clause notice to the legislative bill drafting commission, a publishing courtesy that binds no program"
+    if REVIEWED_AS_IF.search(q):
+        return "reviewed_as_if_condition", "'shall be reviewed as if it had been received on or before ...' is a condition of the accept-late-application power, not a duty of its own"
     if CONDITION_PRECEDENT.search(q) or (APPLY_M36 and CONDITION_PRECEDENT_M36.search(q)):
         return "condition_precedent", "an implementation precondition ('shall not be implemented until X shall have delivered ...'): a condition on another provision, not a duty of the certifying officials"
     if benefit_entitlement(o, q):
@@ -1305,6 +1357,10 @@ def recall_flags(key, text, records, dropped):
            and (DROPPED_GOV_SUBJECT.search(d.get("quote") or "") or re.match(r"\W*to\s", d.get("quote") or "", re.I))]
     if des:
         flags.append({"check": "dropped_designation_with_actor", "detail": "%d dropped list entries or designations that name a government body or officer" % len(des), "sentences": des[:12]})
+    # O7 (Oct 16 2026): an imperative list item with no granting lead-in, dropped for having no actor
+    imp = [d.get("quote") or "" for d in dropped if d.get("rule") == "designation_no_actor" and IMPERATIVE_ITEM.match(d.get("quote") or "")]
+    if imp:
+        flags.append({"check": "imperative_item_no_lead_in", "detail": "%d dropped imperative list items with no granting lead-in" % len(imp), "sentences": imp[:12]})
     # J6: an applicability sentence dropped by the exemption gate whose new matter is a date or number (a sunset extension, not an exemption)
     ext = []
     for d in dropped:
@@ -1829,6 +1885,62 @@ def r6_ok(rule, o):
     return True
 
 
+def run_agency_fixes(o, text, law):
+    """Second-pass agency resolver and the actor fixes M8-M39, O2. Used on every record, and again after a gate rescue (O4)."""
+    if not o.get("agency_matched") and o.get("agency") != "All agencies":      # fix 2b, 3: second-pass resolver
+        bump("agency_" + agency_resolve_nys.resolve_unmatched(o, text, law, {**RESOLVE_DEPS, "named_locality": named_locality}))
+    if agency_resolve_nys.fix_generic_role(o):          # M8
+        bump("m8_generic_role_to_state_agencies")
+    elif agency_resolve_nys.fix_boces(o):               # M12
+        bump("m12_boces")
+    elif agency_resolve_nys.fix_public_body(o):         # M16
+        bump("m16_public_body")
+    else:
+        r15 = agency_resolve_nys.fix_resolvable_actor(o, NYC_BY)      # M15
+        if r15:
+            bump(r15)
+    if APPLY_M39 and agency_resolve_nys.fix_nyc_acting_through(o, NYC_LOOKUP, NYC_BY):      # M39
+        bump("m39_nyc_acting_through")
+    r33 = agency_resolve_nys.fix_nyc_school_actor(o, text, NYC_BY)      # M33
+    if r33:
+        bump(r33)
+    elif agency_resolve_nys.fix_assessing_unit(o):                      # M34
+        bump("m34_assessing_unit")
+    if agency_resolve_nys.fix_state_actor(o):          # O2
+        bump("o2_state_actor_to_state_agencies")
+
+
+def reresolve_after_rescue(o, text, law):
+    """O4 (Oct 16 2026): a record the gate rescued (hereby-authorizes, imperative list item) carries a new actor (actor_raw, or the lead-in's
+    subject); run the agency resolver again on it. Returns True when the agency changed."""
+    if not (o.get("rescued_hereby_authorizes") or o.get("rescued_imperative_item")):
+        return False
+    before = (o.get("agency"), o.get("agency_unit"))
+    saved = {k: o.get(k) for k in ("agency", "agency_full", "agency_matched", "jurisdiction", "agency_org_type", "agency_group", "agency_unit", "agency_source", "actor_unresolved", "actor_resolved_model")}
+    if o.get("rescued_imperative_item") and o.get("lead_in_actor"):
+        o["actor_raw_before_rescue"] = o.get("actor_raw")
+        o["actor_raw"] = o["lead_in_actor"]
+    o.update(agency="Unspecified", agency_full="Unspecified", agency_matched=False, jurisdiction=None, agency_org_type=None, agency_group=None, agency_unit=None, actor_resolved_model=None)
+    run_agency_fixes(o, text, law)
+    if o.get("agency") in (None, "Unspecified"):          # nothing better: keep the model's agency
+        o.update(saved)
+        return False
+    o["actor_resolved_model"] = saved["actor_resolved_model"]
+    changed = (o.get("agency"), o.get("agency_unit")) != before
+    if changed:
+        bump("o4_agency_reresolved_after_rescue")
+    return changed
+
+
+REL_MAY = re.compile(r"\b(?:which|that|as)\b(?:\s+[\w'-]+){0,8}?\s+may\b", re.I)
+
+
+def strip_relative_may(q):
+    """O6 (Oct 16 2026): drop relative clauses ('duties which may be assigned', 'the manner in which such duties may be performed') so the
+    item's own 'may' is the only one left to test."""
+    return REL_MAY.sub(" ", q or "")
+
+
 def lead_in_makes_duty(lead):
     """R6a: a lead-in whose modal is a bare 'shall'/'must' aimed at its actor ('shall have the following powers and duties:'), not a grant."""
     last = re.sub(r"\{\{|\}\}", "", lead or "")[-300:]
@@ -1962,30 +2074,13 @@ def build_records(laws):
                 else:                                   # never DTF without State wording
                     o.update(agency="Unspecified", agency_full="Unspecified", agency_matched=False, jurisdiction=None, agency_org_type=None, agency_group=None, agency_unit=None, actor_unresolved=True)
                     bump("dtf_to_unspecified")
-            if not o.get("agency_matched") and o.get("agency") != "All agencies":      # fix 2b, 3: second-pass resolver
-                bump("agency_" + agency_resolve_nys.resolve_unmatched(o, text, law, {**RESOLVE_DEPS, "named_locality": named_locality}))
-            if agency_resolve_nys.fix_generic_role(o):          # M8
-                bump("m8_generic_role_to_state_agencies")
-            elif agency_resolve_nys.fix_boces(o):               # M12
-                bump("m12_boces")
-            elif agency_resolve_nys.fix_public_body(o):         # M16
-                bump("m16_public_body")
-            else:
-                r15 = agency_resolve_nys.fix_resolvable_actor(o, NYC_BY)      # M15
-                if r15:
-                    bump(r15)
-            if APPLY_M39 and agency_resolve_nys.fix_nyc_acting_through(o, NYC_LOOKUP, NYC_BY):      # M39
-                bump("m39_nyc_acting_through")
-            r33 = agency_resolve_nys.fix_nyc_school_actor(o, text, NYC_BY)      # M33
-            if r33:
-                bump(r33)
-            elif agency_resolve_nys.fix_assessing_unit(o):                      # M34
-                bump("m34_assessing_unit")
+            run_agency_fixes(o, text, law)
             quote = o.get("quote") or ""
             g = gate_record(o, text, "{{" in text)
             if g:
                 drop(o, g[0], g[1])
                 continue
+            reresolve_after_rescue(o, text, law)          # O4
             o["extends_existing"] = bool(res.get("extends_model", {}).get(o["obligation_id"])) or extends_by_text(quote, text)
             if not o["extends_existing"] and relocated(quote, text):          # D4
                 o["extends_existing"] = True; bump("d4_relocated")
@@ -2005,7 +2100,7 @@ def build_records(laws):
             if (kind == "duty" and o.get("kind_model") == "power" and o.get("kind_list_item") and not o.get("kind_from_lead_in")
                     and not MANDATORY.search(quote) and not DEBT_WORDS.search(quote)):
                 kind = "power"; o["kind_adjusted"] = "model_power_kept"; bump("list_item_keeps_model_power")     # no mandatory verb aimed at the actor
-            if (kind == "power" and o.get("kind_list_item") and not o.get("kind_from_lead_in") and not GRANT_WORD.search(quote)
+            if (kind == "power" and o.get("kind_list_item") and not o.get("kind_from_lead_in") and not GRANT_WORD.search(strip_relative_may(quote))
                     and not CAP_RE.search(quote)):          # R6a: an item under a 'shall' lead-in with no 'may' of its own is a duty
                 spa = locate_span(quote, text)
                 lead = list_item_lead(spa, text) if spa else None
@@ -2052,9 +2147,15 @@ def build_records(laws):
                 o["agency_unit"] = unit_title(o["model_unit"]); bump("m5_unit_copied")           # M5
             if (o["extends_existing"] and "{{" in text and not o.get("lead_in_existing") and not o.get("kind_from_lead_in")
                     and sp0 and not in_braces(sp0[0], sp0[1], text)):                    # M6: the quote is reprinted text next to the new matter
-                nq = relocate_quote(quote, text, o.get("actor_raw"))
+                rst = {}
+                nq = relocate_quote(quote, text, o.get("actor_raw"), trim=True, stats=rst)
+                if rst.get("before"):
+                    bump("o3_relocated_over60_before")
+                    if len(nq.split()) > MAX_RELOC_WORDS:
+                        bump("o3_relocated_over60_after")
                 if nq:
                     o["quote_original"], o["quote"], o["quote_relocated"] = quote, nq, True
+                    o["quote_verified"] = bool(locate_span(nq, text))
                     bump("m6_quote_relocated")
                 else:
                     bump("m6_quote_outside_unresolved")
