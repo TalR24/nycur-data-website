@@ -60,6 +60,31 @@ CREATED_BY_NOUN = {
 LOCAL_NOUN = re.compile(r"\b(district|library|town|village|county|school|fire company)\b", re.I)
 
 
+# S2 (Oct 17 2026): a county unit must be one of New York's 62 counties; 'any other entity county' / 'such county' never yield a unit.
+COUNTIES = ["Albany", "Allegany", "Bronx", "Broome", "Cattaraugus", "Cayuga", "Chautauqua", "Chemung", "Chenango", "Clinton", "Columbia", "Cortland",
+            "Delaware", "Dutchess", "Erie", "Essex", "Franklin", "Fulton", "Genesee", "Greene", "Hamilton", "Herkimer", "Jefferson", "Kings", "Lewis",
+            "Livingston", "Madison", "Monroe", "Montgomery", "Nassau", "New York", "Niagara", "Oneida", "Onondaga", "Ontario", "Orange", "Orleans",
+            "Oswego", "Otsego", "Putnam", "Queens", "Rensselaer", "Richmond", "Rockland", "St. Lawrence", "Saratoga", "Schenectady", "Schoharie",
+            "Schuyler", "Seneca", "Steuben", "Suffolk", "Sullivan", "Tioga", "Tompkins", "Ulster", "Warren", "Washington", "Wayne", "Westchester",
+            "Wyoming", "Yates"]
+_COUNTY_BY_LOWER = {c.lower().replace("saint ", "st. "): c for c in COUNTIES}
+_COUNTY_ALT = "|".join(sorted((re.escape(c) for c in COUNTIES), key=len, reverse=True))
+COUNTY_FIRST = re.compile(r"^(%s)\b" % _COUNTY_ALT, re.I)
+COUNTY_BEFORE = re.compile(r"\b(%s)\s+county\b" % _COUNTY_ALT, re.I)
+
+
+def county_name(name):
+    """The canonical county a name STARTS with ('onondaga for any county purpose' -> 'Onondaga'), else None."""
+    m = COUNTY_FIRST.match(re.sub(r"\s+", " ", (name or "").strip()).replace("Saint ", "St. ").replace("saint ", "st. "))
+    return _COUNTY_BY_LOWER.get(m.group(1).lower()) if m else None
+
+
+def county_before_word(text):
+    """The canonical county in '<Name> county' (case-insensitive) in the text, else None."""
+    m = COUNTY_BEFORE.search(text or "")
+    return _COUNTY_BY_LOWER.get(m.group(1).lower()) if m else None
+
+
 def norm(s):
     s = re.sub(r"\([^)]*\)", " ", (s or "").lower())
     s = s.replace("’", "'")

@@ -1,0 +1,740 @@
+{
+ "_scoring": {
+  "auditor": "B",
+  "night": "20261017",
+  "laws": 11,
+  "stored_records": 45,
+  "correct": 26,
+  "wrong_fields": 17,
+  "not_real": 2,
+  "missed": 12,
+  "precision_strict": "26/45 = 57.8% (Wilson 95% 43.3-71.0)",
+  "precision_real": "43/45 = 95.6% (Wilson 95% 85.2-98.8)",
+  "recall": "32/44 = 72.7% (Wilson 95% 58.2-83.7)",
+  "effective_dates": "11/11 correct"
+ },
+ "_classes": [
+  {
+   "name": "designation_no_actor gate drops real powers and duties written as list items of a body's enumerated powers ('To appoint...', 'Report to...')",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2015-S5948-01",
+    "2015-S5948-02",
+    "2015-S5948-03",
+    "2015-S5948-04",
+    "2013-S1195-07"
+   ],
+   "rule": "dropped/*.json where rule=='designation_no_actor' and quote matches ^(To\\s+[a-z]+|Report|Establish|Adopt|Provide|Maintain|Prepare|Submit|Develop|Make|Issue|Appoint|...|Perform)\\b (imperative verb start; noun-start report-content items excluded)",
+   "db_matches": 92,
+   "db_examples": [
+    "2009-A2209-78",
+    "2009-A2876-01",
+    "2009-A4097-04"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "model resolved the actor (Nassau county, named partnership) but stored agency is Unspecified (passive-subject and named-public-body resolver gap)",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2009-A7329-03",
+    "2009-A7329-04",
+    "2009-A7329-05",
+    "2009-A7329-06",
+    "2009-A7329-07",
+    "2009-A7329-11",
+    "2015-S5948-05"
+   ],
+   "rule": "agency=='Unspecified' and actor_resolved_model.lower() not in ('','unspecified')",
+   "db_matches": 134,
+   "db_examples": [
+    "2009-A10770-01",
+    "2009-A10770-03",
+    "2009-A11100-01"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "bogus county agency_unit built from a stray word ('Entity County', 'Empower County')",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2009-A7329-08",
+    "2009-A7329-02"
+   ],
+   "rule": "agency_group=='Counties' and agency_unit, after stripping 'County of '/' County', does not start with one of the 62 NY county names",
+   "db_matches": 28,
+   "db_examples": [
+    "2009-A1002-02",
+    "2009-A1002-03",
+    "2009-A40008-05"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "list items under a 'shall:' lead-in stored as power although kind_rule and kind_model both say duty (lead-in kind taken from the preceding 'may adopt' sentence)",
+   "criteria": [
+    "4"
+   ],
+   "instances": [
+    "2013-S1195-02",
+    "2013-S1195-03",
+    "2013-S1195-04",
+    "2013-S1195-06"
+   ],
+   "rule": "kind=='power' and kind_rule=='duty' and kind_model=='duty'",
+   "db_matches": 80,
+   "db_examples": [
+    "2009-A10984-09",
+    "2009-A11523-03",
+    "2009-A2209-12"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "reprinted duty or power whose only braced words are pronoun or title substitutions stored as a record",
+   "criteria": [
+    "1",
+    "2"
+   ],
+   "instances": [
+    "2009-A7329-21"
+   ],
+   "rule": "locate quote in packet text with [deleted] removed; braced segments inside the quoted span are all in {'or her','or she','or his','his or her','he or she','the superintendent','the commissioner'}",
+   "db_matches": 6,
+   "db_examples": [
+    "2009-S8090-64",
+    "2009-A7266-02",
+    "2009-A7329-21"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "tax-benefit availability window (421-a) stored as a NYC duty",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2015-S5997-02"
+   ],
+   "rule": "quote matches (?i)benefits of this (sub)?(paragraph|section|subdivision|title) shall be available|shall be (eligible|entitled) (for|to) (the )?(benefits|exemption)",
+   "db_matches": 1,
+   "db_examples": [
+    "2015-S5997-02"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "follow-on design duty for a pilot given on_effective_date while the pilot itself has a 180-day offset",
+   "criteria": [
+    "5"
+   ],
+   "instances": [
+    "2013-S1195-09",
+    "2013-S1195-13",
+    "2013-S1195-17"
+   ],
+   "rule": "deadline_kind=='on_effective_date' and quote matches ^(Such|The|Each) (pilot|program|project|study|plan|report)s?\\b and another record of the same matter_id has deadline_kind days_after_effective/enactment",
+   "db_matches": 4,
+   "db_examples": [
+    "2011-S6255-54",
+    "2013-S1195-09",
+    "2013-S1195-13"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "extension-only laws: braced sunset dates in earlier chapters' effective sections not stored (rent-law extenders, sunset deletion)",
+   "criteria": [
+    "7"
+   ],
+   "instances": [
+    "2015-S5997",
+    "2015-S6426"
+   ],
+   "rule": "none mechanical: misses are absent records",
+   "db_matches": 0,
+   "db_examples": [],
+   "needs_judgment": true
+  }
+ ],
+ "2015-S5948": {
+  "records": {
+   "2015-S5948-05": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Historic Hudson-Hoosic Rivers Partnership",
+     "agency_matched": "true"
+    },
+    "note": "named public body left Unspecified: 'The Historic Hudson-Hoosic Rivers Partnership, established pursuant to article 42 ... is authorized to acquire the following property'"
+   }
+  },
+  "missed": [
+   {
+    "blind": "b1",
+    "quote": "To appoint and remove an executive officer, officers, agents and employees, and prescribe their duties and qualifications and fix their compensation.",
+    "kind": "power",
+    "agency": "Historic Hudson-Hoosic Rivers Partnership",
+    "dropped_by": "designation_no_actor",
+    "note": "ECL 42-0107 power list, {{and remove}} widens; extends_existing true"
+   },
+   {
+    "blind": "b2",
+    "quote": "To contract for professional and technical assistance and advice, including retaining or employing counsel, private consultants and independent contractors.",
+    "kind": "power",
+    "agency": "Historic Hudson-Hoosic Rivers Partnership",
+    "dropped_by": "designation_no_actor",
+    "note": "extends_existing true"
+   },
+   {
+    "blind": "b3",
+    "quote": "To adopt and use a seal.",
+    "kind": "power",
+    "agency": "Historic Hudson-Hoosic Rivers Partnership",
+    "dropped_by": "designation_no_actor",
+    "note": "new subdivision 13"
+   },
+   {
+    "blind": "b4",
+    "quote": "To construct or cause to have constructed necessary facilities, including paths and trails, a visitor education center, and related parking areas",
+    "kind": "power",
+    "agency": "Historic Hudson-Hoosic Rivers Partnership",
+    "dropped_by": "designation_no_actor",
+    "note": "new subdivision 14"
+   }
+  ],
+  "effective_date": {
+   "stored": "2015-12-11",
+   "computed": "2015-12-11",
+   "verdict": "correct",
+   "note": "immediately; signed 2015-12-11"
+  }
+ },
+ "2009-A7329": {
+  "records": {
+   "2009-A7329-20": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "DMV denial now covers 1111-b liability; extends_existing true"
+   },
+   "2009-A7329-21": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "note": "reprinted: only '{{or her}}' braced in 'the commissioner may, in his {{or her}} discretion, deny a registration'; the widening is carried by -20"
+   },
+   "2009-A7329-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-A7329-02": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency_unit": "County of Nassau"
+    },
+    "note": "unit 'Empower County' from 'shall empower such county'"
+   },
+   "2009-A7329-03": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Counties",
+     "agency_unit": "County of Nassau"
+    },
+    "note": "'Such demonstration program shall utilize necessary technologies' is Nassau county's program"
+   },
+   "2009-A7329-04": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Counties",
+     "agency_unit": "County of Nassau"
+    },
+    "note": "'such local law or ordinance may provide For an additional penalty' = Nassau county power"
+   },
+   "2009-A7329-05": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Counties",
+     "agency_unit": "County of Nassau"
+    },
+    "note": "'notice of liability shall be sent by first class mail'; (G)4 says 'prepared and mailed by Nassau county'"
+   },
+   "2009-A7329-06": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Counties",
+     "agency_unit": "County of Nassau"
+    },
+    "note": "notice contents, mailed by Nassau county per (G)4"
+   },
+   "2009-A7329-07": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Counties",
+     "agency_unit": "County of Nassau"
+    },
+    "note": "notice contents, mailed by Nassau county per (G)4"
+   },
+   "2009-A7329-08": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency_unit": "County of Nassau"
+    },
+    "note": "unit 'Entity County' from 'or by any other entity authorized by such county'"
+   },
+   "2009-A7329-09": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "courts; 'Adjudication ... shall be by the court having jurisdiction over traffic infractions'"
+   },
+   "2009-A7329-10": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Counties",
+     "agency_unit": "County of Nassau"
+    },
+    "note": "'all fines and penalties collected under such program shall be made to the county treasurer' - collecting body is Nassau county's program"
+   },
+   "2009-A7329-11": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Counties",
+     "agency_unit": "County of Nassau"
+    },
+    "note": "actor_raw 'such county' (Nassau) left Unspecified"
+   },
+   "2009-A7329-22": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   }
+  },
+  "missed": [
+   {
+    "blind": "b8",
+    "quote": "Any photographs, microphotographs, videotape or other recorded images evidencing such a violation shall be available For inspection in any proceeding to adjudicate the liability",
+    "kind": "duty",
+    "agency": "Counties (County of Nassau)",
+    "dropped_by": null,
+    "note": "1111-b(D)"
+   },
+   {
+    "blind": "b14",
+    "quote": "Are photographs, microphotographs, videotape or other recorded images prepared under authority of section eleven hundred eleven-b of the vehicle and traffic law.",
+    "kind": "power",
+    "agency": "State and local agencies (FOIL withholding)",
+    "dropped_by": null,
+    "note": "new POL 87(2)(k) class agencies may withhold; extends_existing true"
+   }
+  ],
+  "effective_date": {
+   "stored": "2009-05-28",
+   "computed": "2009-05-28",
+   "verdict": "correct",
+   "note": "thirtieth day after 2009-04-28; expires 2014-12-01 stored too. GML 103 sentence (s9) dropped as condition_of_other_record: not counted as a miss"
+  }
+ },
+ "2015-S6474": {
+  "records": {
+   "2015-S6474-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "sunset of ch 548/2004 moved [2016]{{2018}}; CUNY as actor not named in the text, kind power not verifiable from this text"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2016-06-30",
+   "computed": "2016-06-30",
+   "verdict": "correct",
+   "note": "immediately"
+  }
+ },
+ "2015-S7110": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2016-09-30",
+   "computed": "2016-09-30",
+   "verdict": "correct",
+   "note": "immediately; text holds only an abatement amount and an applicant's filing window, no record expected"
+  }
+ },
+ "2015-S6623": {
+  "records": {
+   "2015-S6623-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "[may] {{shall}} impose; extends_existing true"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2016-12-28",
+   "computed": "2016-12-28",
+   "verdict": "correct",
+   "note": "90th day after 2016-09-29"
+  }
+ },
+ "2015-S6601": {
+  "records": {
+   "2015-S6601-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2015-12-28",
+   "computed": "2015-12-28",
+   "verdict": "correct",
+   "note": "same as ch 586 of 2015 (S1380, immediately, signed 2015-12-28); signed later, that date stands"
+  }
+ },
+ "2015-S7364": {
+  "records": {
+   "2015-S7364-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2016-11-28",
+   "computed": "2016-11-28",
+   "verdict": "correct",
+   "note": "immediately"
+  }
+ },
+ "2015-S5997": {
+  "records": {
+   "2015-S5997-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "EHRCL sunset June [15] {{23}}, 2015, HCR"
+   },
+   "2015-S5997-02": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "note": "421-a exemption window: 'the benefits of this subparagraph shall be available ... before June twenty-third, two thousand fifteen only if' imposes nothing on the city"
+   }
+  },
+  "missed": [
+   {
+    "blind": "b1",
+    "quote": "This act shall take effect immediately and shall remain in full force and effect until and including the twenty-third day of June 2015",
+    "kind": "power",
+    "agency": "HCR / ETPA localities",
+    "dropped_by": null,
+    "note": "ch 576/1974 (ETPA) sunset extended; extends_existing true"
+   },
+   {
+    "blind": "b3",
+    "quote": "the provisions of subdivision 6 of section 12 of the emergency housing rent control law, as added by this act, shall remain in full force and effect until and including June 23, 2015",
+    "kind": "duty",
+    "agency": "HCR",
+    "dropped_by": null,
+    "note": "Albany recontrol, ch 329/1963"
+   },
+   {
+    "blind": "b4",
+    "quote": "the provisions of sections one, two and nine of this act shall remain in full force and effect only until and including June 23, 2015",
+    "kind": "duty",
+    "agency": "Department of Law",
+    "dropped_by": null,
+    "note": "NYC coop conversion ch 555/1982; actor from 'plan accepted for filing by the department of law'"
+   },
+   {
+    "blind": "b5",
+    "quote": "the provisions of sections one and three of this act shall remain in full force and effect only until and including June 23, 2015",
+    "kind": "duty",
+    "agency": "Department of Law",
+    "dropped_by": null,
+    "note": "Nassau/Westchester/Rockland conversion ch 402/1983"
+   }
+  ],
+  "effective_date": {
+   "stored": "2015-06-18 (retroactive_to 2015-06-15)",
+   "computed": "2015-06-18, deemed in effect from 2015-06-15",
+   "verdict": "correct",
+   "note": "RRRA s.46(6) sunset (sections 28-28c) left out of blind count: actor not determinable from this text"
+  }
+ },
+ "2015-S6740": {
+  "records": {
+   "2015-S6740-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S6740-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S6740-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2016-07-21",
+   "computed": "2016-07-21",
+   "verdict": "correct",
+   "note": "immediately; -02 dropped by reviewed_as_if_condition per Oct 16 decision"
+  }
+ },
+ "2013-S1195": {
+  "records": {
+   "2013-S1195-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-S1195-02": {
+    "verdict": "wrong",
+    "criteria": [
+     "4"
+    ],
+    "fields": {
+     "kind": "duty"
+    },
+    "note": "'In adopting such regulations, the agency shall: 1. Consider the types of programs'"
+   },
+   "2013-S1195-03": {
+    "verdict": "wrong",
+    "criteria": [
+     "4"
+    ],
+    "fields": {
+     "kind": "duty"
+    },
+    "note": "'the agency shall: ... 2. Ensure that a streamlined proceeding may only be used'"
+   },
+   "2013-S1195-04": {
+    "verdict": "wrong",
+    "criteria": [
+     "4"
+    ],
+    "fields": {
+     "kind": "duty"
+    },
+    "note": "'the agency shall: ... 3. Specify the format or formats'"
+   },
+   "2013-S1195-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-S1195-06": {
+    "verdict": "wrong",
+    "criteria": [
+     "4"
+    ],
+    "fields": {
+     "kind": "duty"
+    },
+    "note": "'the agency shall: ... 5. Provide that ... such proceeding may be rescheduled'"
+   },
+   "2013-S1195-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "180 days -> 2014-05-12"
+   },
+   "2013-S1195-12": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-S1195-16": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-S1195-09": {
+    "verdict": "wrong",
+    "criteria": [
+     "5"
+    ],
+    "fields": {
+     "deadline_kind": "days_after_effective",
+     "deadline_date": "2014-05-12"
+    },
+    "note": "'Such pilot projects shall be designed by the agency' is due with the pilots, 'Within one hundred eighty days of the effective date'"
+   },
+   "2013-S1195-13": {
+    "verdict": "wrong",
+    "criteria": [
+     "5"
+    ],
+    "fields": {
+     "deadline_kind": "days_after_effective",
+     "deadline_date": "2014-05-12"
+    },
+    "note": "same as -09, DOH"
+   },
+   "2013-S1195-17": {
+    "verdict": "wrong",
+    "criteria": [
+     "5"
+    ],
+    "fields": {
+     "deadline_kind": "days_after_effective",
+     "deadline_date": "2014-05-12"
+    },
+    "note": "same as -09, DOL"
+   },
+   "2013-S1195-10": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-S1195-14": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-S1195-18": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-S1195-11": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-S1195-15": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-S1195-19": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-S1195-20": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   }
+  },
+  "missed": [
+   {
+    "blind": "b3",
+    "quote": "Report to the commissioner, the governor and the legislature on agency use of streamlined optional adjudicatory proceedings for Small businesses.",
+    "kind": "duty",
+    "agency": "ESD (small business advisory board)",
+    "dropped_by": "designation_no_actor",
+    "note": "new EDL 133(6)(i), list item of the board's duties"
+   }
+  ],
+  "effective_date": {
+   "stored": "2013-11-13",
+   "computed": "2013-11-13",
+   "verdict": "correct",
+   "note": "immediately"
+  }
+ },
+ "2015-S6426": {
+  "records": {
+   "2015-S6426-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "cap changed to totality per annum; extends_existing true"
+   },
+   "2015-S6426-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "deadline none acceptable for 'within ninety days after the end of the fiscal year'"
+   }
+  },
+  "missed": [
+   {
+    "blind": "b3",
+    "quote": "This act shall take effect immediately [and shall expire and be deemed repealed December 31, 2016 ...]",
+    "kind": "power",
+    "agency": "RIOC",
+    "dropped_by": null,
+    "note": "deletion of ch 517/2015 sunset widens its provisions; needs_judgment on which records it extends"
+   }
+  ],
+  "effective_date": {
+   "stored": "2016-04-08 (sections 1 and 3: 2015-12-03)",
+   "computed": "2016-04-08; sections 1 and 3 same as ch 517 of 2015 (immediately, 2015-12-03)",
+   "verdict": "correct",
+   "note": "records carry 2015-12-03 via section_section"
+  }
+ }
+}

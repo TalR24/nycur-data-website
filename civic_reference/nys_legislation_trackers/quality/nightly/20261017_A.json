@@ -1,0 +1,792 @@
+{
+ "_scoring": {
+  "auditor": "A",
+  "night": "20261017",
+  "laws": 11,
+  "stored_records": 51,
+  "correct": 33,
+  "wrong_fields": 14,
+  "not_real": 4,
+  "missed": 10,
+  "precision_strict": "33/51 = 64.7% (Wilson 95% 51.0-76.4)",
+  "precision_real": "47/51 = 92.2% (Wilson 95% 81.5-96.9)",
+  "recall": "45/55 = 81.8% (Wilson 95% 69.7-89.8); 54 blind items, 44 matched, plus 1 real stored record outside the blind list (2009-A7329-04, counted in numerator and denominator)",
+  "effective_dates": "11/11 correct",
+  "split": "re-ask (2009-A7329, 2013-S2372, 2011-S6363): strict 12/27 = 44.4% (27.6-62.7), real 24/27 = 88.9% (71.9-96.1), recall 22/24 = 91.7% (74.2-97.7); first-answer (8 laws): strict 21/24 = 87.5% (69.0-95.7), real 23/24 = 95.8% (79.8-99.3), recall 23/31 = 74.2% (56.8-86.3)"
+ },
+ "_classes": [
+  {
+   "name": "Passive or program subject stored with agency Unspecified instead of the named locality",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2009-A7329-03",
+    "2009-A7329-05",
+    "2009-A7329-06",
+    "2009-A7329-07",
+    "2009-A7329-10",
+    "2009-A7329-11",
+    "2009-A7329-04",
+    "2015-S5948-05"
+   ],
+   "rule": "agency=='Unspecified' and actor_raw.lower()!='unspecified' (broad); narrow: agency=='Unspecified' and re.search(r'^(an? |the |such |all )?(notice|demonstration program|fines|penalt|local law|application|report|moneys|funds|program)', actor_raw.lower())",
+   "db_matches": 261,
+   "db_examples": [
+    "2009-A10448-01",
+    "2009-A10468-19",
+    "2009-A10770-01"
+   ],
+   "needs_judgment": false,
+   "note": "narrow rule: 10 matches (2009-A7329-03, -05, -06). 2009-A7329-11 'such county' and 2015-S5948-05 (named partnership) also Unspecified: resolver fails on 'such county' and on bodies not in the crosswalk. Known passive-subject class; this is a recurrence on the agency field."
+  },
+  {
+   "name": "Garbage agency_unit built from a capitalised verb or noun ('Entity County', 'Empower County')",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2009-A7329-08",
+    "2009-A7329-02"
+   ],
+   "rule": "agency_unit and re.match(r'^(Entity|Empower|Such|Said|Any|Each|Every|The|Other|Authorized|Which|Shall|May)\\b', agency_unit)",
+   "db_matches": 2,
+   "db_examples": [
+    "2009-A7329-08",
+    "2009-A7329-02"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "Real enumerated powers or list-item duties and extension entries dropped by designation_no_actor",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2015-S5948-01",
+    "2015-S5948-02",
+    "2015-S5948-03",
+    "2015-S5948-04",
+    "2015-S7208-01",
+    "2013-S2372-02"
+   ],
+   "rule": "over data/dropped/*.json: rule=='designation_no_actor' and (re.match(r'^To [a-z]+', quote) [71] or re.match(r'^(Assist|Serve|Support|Seek|Provide|Establish|Develop|Maintain|Coordinate|Promote|Encourage|Conduct|Prepare|Review|Advise)\\b', quote) [14] or re.search(r'\\buntil\\b[^.;]{0,80}(two thousand|20\\d\\d)', quote, re.I) [27])",
+   "db_matches": 112,
+   "db_examples": [
+    "2009-A2209-78",
+    "2009-A2876-01",
+    "2011-A6954-01"
+   ],
+   "needs_judgment": false,
+   "note": "runs over dropped files, not duties/powers (these are misses). Sum of three sub-rules, overlap not removed. The gate keeps report-content list items out correctly (2009-A7329-12..19) but also drops subdivisions of a 'shall have the following powers' or 'duties of the office shall include' section, and species/date list entries whose lead-in is a power."
+  },
+  {
+   "name": "List item under a 'duties ... shall include' lead-in stored as power although rule and model both said duty",
+   "criteria": [
+    "4"
+   ],
+   "instances": [
+    "2013-S2372-01"
+   ],
+   "rule": "kind_model=='duty' and kind_rule=='duty' and kind=='power'",
+   "db_matches": 80,
+   "db_examples": [
+    "2009-A10984-09",
+    "2009-A11523-03",
+    "2009-A2209-12"
+   ],
+   "needs_judgment": false,
+   "note": "74 of the 80 have kind_list_item true; some later override flips the stored kind against both classifiers."
+  },
+  {
+   "name": "extends_existing false on a record whose quote is mostly pre-existing text widened by a braced insertion",
+   "criteria": [
+    "7"
+   ],
+   "instances": [
+    "2013-S2372-05",
+    "2015-S6865-04"
+   ],
+   "rule": "extends_existing is False and 0 < (share of quote characters inside {{ }} in the packet text after removing [ ]) < 0.5",
+   "db_matches": 191,
+   "db_examples": [
+    "2009-A10164-01",
+    "2009-A10468-01",
+    "2009-A10634-04"
+   ],
+   "needs_judgment": false,
+   "note": "mechanical screen, will include some true negatives (a new sentence spliced into old text)."
+  },
+  {
+   "name": "Reprinted existing duty or power stored where the only braced matter in the quote is gender wording or nothing, in an amended section",
+   "criteria": [
+    "1",
+    "2"
+   ],
+   "instances": [
+    "2009-A7329-21"
+   ],
+   "rule": "quote located in packet text after removing [ ]; braced characters in the quote, minus 'or her/or she', contain no word; nearest section header says 'amended to read' or 'amended by adding' (not 'a new section/article')",
+   "db_matches": 62,
+   "db_examples": [
+    "2009-A10468-20",
+    "2009-A2209-70",
+    "2009-A3910-01"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "Pre-existing actor kept as a record when braces only add a second actor to the same sentence",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2013-S2372-07"
+   ],
+   "rule": "none mechanical: needs the braced span to be matched to the actor phrase",
+   "db_matches": 0,
+   "db_examples": [],
+   "needs_judgment": true,
+   "laws": [
+    "2013-S2372"
+   ]
+  },
+  {
+   "name": "Goal statement or litigation consequence stored as a record",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2013-S2372-12",
+    "2015-S6865-03"
+   ],
+   "rule": "re.search(r'\\bgoals?\\b[^.]{0,40}\\bmay include\\b|deemed abandoned if', quote, re.I)",
+   "db_matches": 2,
+   "db_examples": [
+    "2015-S6865-03",
+    "2013-S2372-12"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "Local agency stored under its own name instead of the local group with the name in agency_unit",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2009-A7329-22"
+   ],
+   "rule": "re.search(r'\\b(County|City|Town|Village)\\b', agency) and agency not in (Counties, Cities, Towns, Villages) and jurisdiction!='nyc' and not re.search('New York City|NYC', agency)",
+   "db_matches": 19,
+   "db_examples": [
+    "2009-A9466-04",
+    "2009-S7327-02",
+    "2011-A9539-11"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "Emergency or proviso powers and parallel content duties omitted by the model (no stored or dropped record)",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2015-S6503 b5",
+    "2015-S6503 b9",
+    "2015-S6503 b10a",
+    "2011-S6363 b3"
+   ],
+   "rule": "none mechanical",
+   "db_matches": 0,
+   "db_examples": [],
+   "needs_judgment": true,
+   "laws": [
+    "2015-S6503",
+    "2011-S6363"
+   ]
+  }
+ ],
+ "2015-S5948": {
+  "records": {
+   "2015-S5948-05": {
+    "verdict": "wrong",
+    "criteria": [
+     "3",
+     "6"
+    ],
+    "fields": {
+     "agency": "Historic Hudson-Hoosic Rivers Partnership",
+     "recurrence": "one-time"
+    },
+    "note": "'The Historic Hudson-Hoosic Rivers Partnership ... is authorized to acquire the following property' names the body; stored Unspecified."
+   }
+  },
+  "missed": [
+   {
+    "blind": "b1",
+    "quote": "To appoint and remove an executive officer, officers, agents and employees, and prescribe their duties and qualifications and fix their compensation.",
+    "kind": "power",
+    "agency": "Historic Hudson-Hoosic Rivers Partnership",
+    "dropped_by": "designation_no_actor",
+    "note": "ECL 42-0107(4) power list item; new matter '{{and remove}}' widens it, extends_existing true."
+   },
+   {
+    "blind": "b2",
+    "quote": "To contract for professional and technical assistance and advice, including retaining or employing counsel, private consultants and independent contractors.",
+    "kind": "power",
+    "agency": "Historic Hudson-Hoosic Rivers Partnership",
+    "dropped_by": "designation_no_actor",
+    "note": "extends_existing true."
+   },
+   {
+    "blind": "b3",
+    "quote": "To adopt and use a seal.",
+    "kind": "power",
+    "agency": "Historic Hudson-Hoosic Rivers Partnership",
+    "dropped_by": "designation_no_actor",
+    "note": "new subdivision 13 (under 10 words; dropped quote also stitched '14. To construct')."
+   },
+   {
+    "blind": "b4",
+    "quote": "To construct or cause to have constructed necessary facilities, including paths and trails, a visitor education center, and related parking areas on the land described in section three",
+    "kind": "power",
+    "agency": "Historic Hudson-Hoosic Rivers Partnership",
+    "dropped_by": "designation_no_actor",
+    "note": "new subdivision 14."
+   }
+  ],
+  "effective_date": {
+   "stored": "2015-12-11",
+   "computed": "2015-12-11",
+   "verdict": "correct",
+   "note": "immediately; signed 2015-12-11"
+  }
+ },
+ "2009-A7329": {
+  "records": {
+   "2009-A7329-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-A7329-02": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency_unit": "County of Nassau"
+    },
+    "note": "'Such demonstration program shall empower such county to install and operate' ; unit stored 'Empower County'."
+   },
+   "2009-A7329-03": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Counties",
+     "agency_unit": "County of Nassau"
+    },
+    "note": "'Such demonstration program shall utilize necessary technologies' : the program is the county's; stored Unspecified."
+   },
+   "2009-A7329-04": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Counties",
+     "agency_unit": "County of Nassau"
+    },
+    "note": "'such local law or ordinance may provide For an additional penalty' : power of Nassau county via its local law; stored Unspecified."
+   },
+   "2009-A7329-05": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Counties",
+     "agency_unit": "County of Nassau"
+    },
+    "note": "'A notice of liability shall be sent by first class mail' : (G)(4) says 'prepared and mailed by Nassau county'; stored Unspecified."
+   },
+   "2009-A7329-06": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Counties",
+     "agency_unit": "County of Nassau"
+    },
+    "note": "'notice of liability shall contain the name and address' : passive subject; stored Unspecified."
+   },
+   "2009-A7329-07": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Counties",
+     "agency_unit": "County of Nassau"
+    },
+    "note": "'The notice of liability shall contain information advising the person charged' : passive subject; stored Unspecified."
+   },
+   "2009-A7329-08": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency_unit": "County of Nassau"
+    },
+    "note": "'prepared and mailed by Nassau county' ; unit stored 'Entity County'."
+   },
+   "2009-A7329-09": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-A7329-10": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Counties",
+     "agency_unit": "County of Nassau"
+    },
+    "note": "'all fines and penalties collected under such program shall be made to the county treasurer' : passive subject; stored Unspecified."
+   },
+   "2009-A7329-11": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Counties",
+     "agency_unit": "County of Nassau"
+    },
+    "note": "'such county shall submit an annual report' : county named; stored Unspecified."
+   },
+   "2009-A7329-20": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-A7329-21": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "2"
+    ],
+    "fields": {},
+    "note": "'the commissioner may, in his {{or her}} discretion, deny a registration' : only 'or her' is braced; the power is reprinted unchanged text."
+   },
+   "2009-A7329-22": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Counties",
+     "agency_unit": "Nassau County Traffic and Parking Violations Agency"
+    },
+    "note": "'The Nassau county traffic and parking violations agency ... may be authorized to assist' : a county agency, resolves to Counties with the unit named."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2009-05-28",
+   "computed": "2009-05-28",
+   "verdict": "correct",
+   "note": "thirtieth day after 2009-04-28; expires 2014-12-01 also matches"
+  }
+ },
+ "2015-S6395": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2015-12-22",
+   "computed": "2015-12-22",
+   "verdict": "correct",
+   "note": "same as ch 575 of 2015 (S3012, immediately, signed 2015-12-22); amendment signed 2016-03-11 after that date, date stands. All new matter governs private insurers; no records expected."
+  }
+ },
+ "2013-S2372": {
+  "records": {
+   "2013-S2372-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "4"
+    ],
+    "fields": {
+     "kind": "duty"
+    },
+    "note": "Lead-in 'The duties of the office shall include:' then 'E. Assist, support and encourage contact'; kind_rule and kind_model both duty, stored power."
+   },
+   "2013-S2372-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-S2372-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-S2372-05": {
+    "verdict": "wrong",
+    "criteria": [
+     "7"
+    ],
+    "fields": {
+     "extends_existing": "true"
+    },
+    "note": "'Any state agency ... with title {{in fee or of a lesser interest}} to vacant public land may permit' : state-agency power pre-existed; braced words widen it."
+   },
+   "2013-S2372-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-S2372-07": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "note": "'State agencies {{and municipalities}} which have received an application ... shall respond' : only municipalities are new; the State-agency duty is reprinted (-08 holds the new duty)."
+   },
+   "2013-S2372-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-S2372-09": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-S2372-10": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-S2372-11": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-S2372-12": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "note": "'The goals of the task force may include, but are not limited to, the study' : a goal statement."
+   }
+  },
+  "missed": [
+   {
+    "blind": "b3",
+    "quote": "Assist, support and encourage communication, and the sharing of resources between community Garden organizations and the new york harvest for new york kids week program",
+    "kind": "duty",
+    "agency": "DAM (Office of Community Gardens)",
+    "dropped_by": "designation_no_actor",
+    "note": "item F under 'The duties of the office shall include'; its sibling E survived as -01."
+   }
+  ],
+  "effective_date": {
+   "stored": "2014-01-01",
+   "computed": "2014-01-01",
+   "verdict": "correct",
+   "note": "first of January next succeeding 2013-12-18"
+  }
+ },
+ "2015-S6865": {
+  "records": {
+   "2015-S6865-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S6865-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S6865-03": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "note": "'Shall be deemed abandoned if the agency fails to serve and file a record and brief within sixty days' : a litigation consequence for the appealing party, not a duty."
+   },
+   "2015-S6865-04": {
+    "verdict": "wrong",
+    "criteria": [
+     "7"
+    ],
+    "fields": {
+     "extends_existing": "true"
+    },
+    "note": "'{{and pursuant to paragraph (d) of subdivision four of section eighty-nine of the public officers law,}} shall be given preference' : adds a class to the existing CPLR 5521(b) preference."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2017-05-27",
+   "computed": "2017-05-27",
+   "verdict": "correct",
+   "note": "180th day after 2016-11-28"
+  }
+ },
+ "2011-S6363": {
+  "records": {
+   "2011-S6363-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6363-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   }
+  },
+  "missed": [
+   {
+    "blind": "b3",
+    "quote": "This act shall take effect immediately and shall be deemed repealed on November 1, 2013 if the creation of the Brookville library funding district shall not have been approved before November 1, 2013",
+    "kind": "power",
+    "agency": "Towns (Town of Oyster Bay)",
+    "dropped_by": null,
+    "note": "chapter 226 of 2003's own sunset, quoted inside the amendment ([2011] {{2013}}); per the Oct 16 decision an extension record. No stored or dropped record."
+   }
+  ],
+  "effective_date": {
+   "stored": "2012-07-18",
+   "computed": "2012-07-18",
+   "verdict": "correct",
+   "note": "immediately; signed 2012-07-18"
+  }
+ },
+ "2015-S6428": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2016-03-10",
+   "computed": "2016-03-10",
+   "verdict": "correct",
+   "note": "same as ch 557 of 2015 (S5946, 90th day after 2015-12-11 = 2016-03-10); amendment signed 2016-03-11 after it, date stands. New matter binds private retailers only."
+  }
+ },
+ "2015-S7442": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2016-09-30",
+   "computed": "2016-09-30",
+   "verdict": "correct",
+   "note": "immediately. New matter removes a tax exemption ('shall not be exempt from the additional tax'); no government duty or power."
+  }
+ },
+ "2015-S7208": {
+  "records": {},
+  "missed": [
+   {
+    "blind": "b1",
+    "quote": "hickory shad (Alosa mediocris) until December thirty-first, two thousand nineteen.",
+    "kind": "power",
+    "agency": "DEC",
+    "dropped_by": "designation_no_actor",
+    "note": "extends DEC's ECL 13-0339-a species-management authority from [sixteen] to {{nineteen}}; extends_existing true, the law's only provision."
+   }
+  ],
+  "effective_date": {
+   "stored": "2016-07-21",
+   "computed": "2016-07-21",
+   "verdict": "correct",
+   "note": "immediately"
+  }
+ },
+ "2015-S6497": {
+  "records": {
+   "2015-S6497-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2016-09-29",
+   "computed": "2016-09-29",
+   "verdict": "correct",
+   "note": "immediately"
+  }
+ },
+ "2015-S6503": {
+  "records": {
+   "2015-S6503-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S6503-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S6503-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S6503-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S6503-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S6503-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S6503-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S6503-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S6503-09": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S6503-10": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S6503-11": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S6503-12": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S6503-13": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S6503-14": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S6503-15": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S6503-16": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S6503-17": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S6503-18": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   }
+  },
+  "missed": [
+   {
+    "blind": "b5",
+    "quote": "Provided however, that in an instance of a health or public safety emergency, the board may include additional items to the agenda with less than three days notice.",
+    "kind": "power",
+    "agency": "Board of Regents",
+    "dropped_by": null,
+    "note": "regular-meeting proviso, (1)(a)."
+   },
+   {
+    "blind": "b10a",
+    "quote": "Provided however, that in an instance of a health or public safety emergency, the board may include additional items to the agenda with less than three days notice.",
+    "kind": "power",
+    "agency": "Board of Regents",
+    "dropped_by": null,
+    "note": "special-meeting proviso, (1)(b); parallel provision."
+   },
+   {
+    "blind": "b9",
+    "quote": "The board of regents special public meeting agenda shall be comprised of a list of all items to be considered with a description of the subject Matter of each such item",
+    "kind": "duty",
+    "agency": "Board of Regents",
+    "dropped_by": null,
+    "note": "special-meeting agenda content; the regular-meeting twin is -04."
+   }
+  ],
+  "effective_date": {
+   "stored": "2016-12-08",
+   "computed": "2016-12-08",
+   "verdict": "correct",
+   "note": "90th day after 2016-09-09"
+  }
+ }
+}

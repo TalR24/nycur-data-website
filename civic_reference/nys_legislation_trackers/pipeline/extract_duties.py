@@ -237,6 +237,8 @@ def named_locality(*texts):
             name = trim_unit_name(re.sub(r"\s+", " ", m.group(2)).strip(" ."))
             name = re.sub(r"(?:\s+(?:assessors?|board|clerk|treasurer|supervisor|tax|department|office|shall|may|is|has|will))+$", "", name, flags=re.I)
             name = re.sub(r"\s+" + kind + r"$", "", name, flags=re.I)        # "Town of Brookhaven Town"
+            if kind == "county":          # S2: only New York's 62 counties
+                name = agency_resolve_nys.county_name(name)
             if name and not GENERIC_LEAD.match(name.split()[0]):
                 return LOCAL_GROUPS[kind], _title("%s of %s" % (kind, name))
         for rx, group in LOCALITY[1:3]:
@@ -247,10 +249,11 @@ def named_locality(*texts):
                 if words and not GENERIC_LEAD.match(lead.split()[-1]):
                     return group, _title(" ".join(words) + " " + m.group(2).lower())
         m = re.search(r"\b((?:[A-Z][A-Za-z.'-]*\s+){1,2})County\b", t) or re.search(r"\b([a-z]+(?:\s+[a-z]+)?)\s+county\b", t)
-        if m:
-            words = [w for w in m.group(1).split() if not GENERIC_LEAD.match(w)]
-            if words and len(words) <= 2:
-                return "Counties", _title(" ".join(words) + " county")
+        if m:          # S2: '<Name> county' only when Name is one of the 62 counties ('any other entity county' is no locality)
+            for k in range(len(m.group(1).split())):
+                cn = agency_resolve_nys.county_name(" ".join(m.group(1).split()[k:]))
+                if cn:
+                    return "Counties", "County of " + cn
     return None
 
 
@@ -282,6 +285,8 @@ def attach_jurisdiction(o, quote_context=""):
     if loc and (not state_hit or any(LOCAL_OFFICERS.search(x) for x in actor_text) or o["agency"] in ("DTF",)):
         group, unit = loc
         o.update(agency=group, agency_full=group, agency_matched=True, jurisdiction="local", agency_org_type="local government group", agency_group=group, agency_unit=unit)
+        if o.get("actor_raw") and not named_locality(o["actor_raw"]) and named_locality(o.get("actor_resolved_model") or ""):
+            o["actor_source"] = "model_resolved"          # S1: the locality came from the model's actor, not the raw text
         return
     if o.get("agency_matched") and o["agency"] in BY_CANON:
         a = BY_CANON[o["agency"]]
@@ -500,6 +505,8 @@ def law_locality(text, title):
             name = trim_unit_name(re.sub(r"\s+", " ", m.group(2)).strip(" ."))
             name = re.sub(r"(?:\s+(?:assessors?|board|clerk|treasurer|supervisor|tax|department|office|shall|may|is|has|will))+$", "", name, flags=re.I)
             name = re.sub(r"\s+" + kind + r"$", "", name, flags=re.I)        # "Town of Brookhaven Town"
+            if kind == "county":          # S2: only New York's 62 counties
+                name = agency_resolve_nys.county_name(name)
             if name and not GENERIC_LEAD.match(name.split()[0]):
                 units.add((LOCAL_GROUPS[kind], _title("%s of %s" % (kind, name))))
     if len(units) > 1:
@@ -515,7 +522,9 @@ def law_localities(text, title):
             kind = m.group(1).lower()
             name = trim_unit_name(re.sub(r"\s+", " ", m.group(2)).strip(" ."))
             name = re.sub(r"(?:\s+(?:assessors?|board|clerk|treasurer|supervisor|tax|department|office|shall|may|is|has|will))+$", "", name, flags=re.I)
-            name = re.sub(r"\s+" + kind + r"$", "", name, flags=re.I)
+            name = re.sub(r"\s+" + kind + r"$", "", name, flags=re.I)        # "Town of Brookhaven Town"
+            if kind == "county":          # S2: only New York's 62 counties
+                name = agency_resolve_nys.county_name(name)
             if name and not GENERIC_LEAD.match(name.split()[0]):
                 units.add((LOCAL_GROUPS[kind], _title("%s of %s" % (kind, name))))
     return units
@@ -904,8 +913,19 @@ def list_lead_in(span, text):
 
 
 IMPERATIVE_ITEM = re.compile(r"^\W*(?:\{\{)?\s*(?:Work|Advise|Serve|Prepare|Review|Develop|Provide|Coordinate|Monitor|Establish|Make|Report|Conduct|Assist|Promote|Ensure|Maintain|Submit|Recommend|Oversee"
-                             r"|Engage|Assure|Require|Determine|Furnish|Consider|Implement|Divide|Eliminate|Identify|Consult|Promulgate|Encourage)\b", re.I)
-GRANTING_LEAD = re.compile(r"\b(?:shall|may|must)\b", re.I)
+                             r"|Engage|Assure|Require|Determine|Furnish|Consider|Implement|Divide|Eliminate|Identify|Consult|Promulgate|Encourage)\b"
+                             r"|^\W*(?:\{\{)?\s*To\s+(?!(?:the|such|any|each|all|an?|this|that|these|those|be|which|its|their|him|her|them|whom|what)\b)[a-z]+", re.I)      # S4: infinitive list items
+GRANTING_LEAD = re.compile(r"\b(?:shall|may|must)\b|\b(?:is|are)\s+(?:hereby\s+)?(?:authorized|empowered)\s+to\b", re.I)
+INFINITIVE_ITEM = re.compile(r"^\W*(?:\{\{)?\s*To\s+[a-z]+", re.I)
+POWER_LEAD = re.compile(r"\bshall\s+have\s+(?:the\s+)?(?:following\s+|general\s+)?powers?\b(?!\s+and\s+(?:dut|respons))|\b(?:may|authorized|empowered|permitted)\b", re.I)
+
+
+def infinitive_lead_kind(lead):
+    """S4: 'shall have the following powers:' / 'may:' / 'is authorized to:' make the infinitive items powers; 'shall:' and 'powers and duties' make them duties."""
+    last = re.sub(r"\{\{|\}\}", "", lead or "")[-300:]
+    if POWER_LEAD.search(last):
+        return "power"
+    return "duty" if MANDATORY.search(last) else "power"
 LEAD_SUBJECT = re.compile(r"(?:^|[.:;]\s+|\}\}\s*)((?:the|a|an|each|such)\s+[\w-]+(?:\s+[\w-]+){0,5}?)(?:['’]s\s+(?:responsibilit\w+|dut\w+|powers?|functions?))?\s+(?:shall|may|must)\b", re.I)
 
 
@@ -958,6 +978,9 @@ CONDITION_PRECEDENT_M36 = re.compile(r"\bno\s+(?:expenditure|payment|disbursemen
                                   r"|\bshall\s+not\s+(?:proceed\s+with|commence)\b[^.;]{0,200}?\buntil\b", re.I)      # O5 (Oct 16 2026)
 
 
+BENEFIT_WINDOW = re.compile(r"\bbenefits?\s+of\s+this\s+(?:sub)?(?:paragraph|section|subdivision|title|article|clause)\s+shall\s+be\s+available\b|\bshall\s+be\s+(?:eligible|entitled)\s+(?:for|to)\s+(?:the\s+)?(?:benefits|exemption)\b", re.I)
+
+
 def salary_entitlement(q):
     """M32 (Oct 14 2026): 'the basic annual salary of officers and employees ... shall be increased by two percent': the salary is the
     subject, no government actor precedes the modal and none is named as the one who increases it."""
@@ -991,6 +1014,9 @@ def benefit_entitlement(o, q):
         actor0 = re.sub(r"^(?:the|a|an|such|each|any)\s+", "", (o.get("actor_raw") or "").strip().lower())
         if not actor0 or actor0 not in q.lower():
             return True
+    bw = BENEFIT_WINDOW.search(q or "")      # S6b (Oct 17 2026): 'the benefits of this subparagraph shall be available in ...' is an availability window for beneficiaries
+    if bw and not GOV_ACTOR.search(q[:bw.start()]) and not GOV_ACTOR.search(q[bw.start():bw.end()]):
+        return True
     pm = PASSIVE_BENEFIT.search(q or "")      # M22 (Oct 13 2026): 'Interest shall be allowed', 'shall not be required to pay': the subject is an amount or a beneficiary
     if pm and not GOV_ACTOR.search(q[:pm.start()]):
         actor0 = re.sub(r"^(?:the|a|an|such|each|any)\s+", "", (o.get("actor_raw") or "").strip().lower())
@@ -1012,6 +1038,10 @@ BDC_NOTIFY = re.compile(r"shall\s+notify\s+the\s+legislative\s+bill\s+drafting\s
 REVIEWED_AS_IF = re.compile(r"shall\s+be\s+reviewed\s+as\s+if\s+(?:it|such\s+application)\s+had\s+been\s+(?:received|filed|made)\s+on\s+or\s+before", re.I)     # O1 (Oct 16 2026)
 
 
+_PRON = r"(?:his|her|hers|she|he|himself|herself|him|his or her|her or his|he or she|she or he|himself or herself|herself or himself|him or her|her or him)"
+GENDER_EDIT = re.compile(r"^[\s,;]*(?:(?:or|and|/)?\s*%s\b[\s,;]*)+$" % _PRON, re.I)
+
+
 def gate_record(o, text, has_markers):
     """Returns (rule, reason) when the record must be dropped, else None. Rules 1-3 of phase 3b."""
     if not o.get("quote_verified"):
@@ -1029,6 +1059,11 @@ def gate_record(o, text, has_markers):
     # 3. no-record classes
     if STRONG_EXEMPT_RE.search(q) or (EXEMPT_RE.search(q) and not MANDATORY.search(EXEMPT_RE.sub(" ", q))):
         return "exemption_or_applicability", "exemption, residency or refund-review applicability clause, binds no government actor"
+    if span and has_markers:          # S5: the only new matter in the quoted sentence is a gender-neutral pronoun edit ('his or her', 'or she')
+        sent0 = context_sentence(span, text)[0]
+        blocks0 = [m.group(1) for m in re.finditer(r"\{\{(.*?)\}\}", sent0, re.S)]
+        if blocks0 and all(GENDER_EDIT.match(b) for b in blocks0):
+            return "reprinted_gender_neutral", "the sentence is existing text; the only new matter is a gender-neutral pronoun edit"
     if span:
         hdr, sec = section_of_span(span, text)
         if sec and re.search(r"\b11\.00\b[^.]{0,80}local finance law|local finance law[^.]{0,80}\b11\.00\b", hdr + " " + sec[:400], re.I):
@@ -1039,6 +1074,8 @@ def gate_record(o, text, has_markers):
             if lead and (VERBISH.search(lead) or TO_VERB.search(lead)):          # a list entry: the duty is in the lead-in sentence
                 o["lead_in"] = re.sub(r"\s+", " ", re.sub(r"\{\{|\}\}", "", lead)).strip()[:400]
                 o["kind_from_lead_in"] = "duty" if MANDATORY.search(lead) else "power"
+                if INFINITIVE_ITEM.match(q):
+                    o["kind_from_lead_in"] = infinitive_lead_kind(lead); bump("s4_infinitive_list_item")          # S4: 'shall have the following powers:' grants powers
                 if o["kind_from_lead_in"] == "duty" and o.get("kind_model") == "power" and LIMIT_RE.search(lead) and not MANDATORY.search(LIMIT_RE.sub(" ", lead)) and not DEBT_WORDS.search(lead + " " + q):
                     o["kind_from_lead_in"] = "power"; bump("lead_in_limit_stays_power")     # 'shall not exceed' on a court's order is a limit on a power
                 bump("list_entry_attached_to_lead_in")
@@ -1062,6 +1099,8 @@ def gate_record(o, text, has_markers):
                     lead = imperative_lead_in(span, text)
                     o["lead_in"] = re.sub(r"\s+", " ", re.sub(r"\{\{|\}\}", "", lead)).strip()[:400]
                     o["kind_from_lead_in"] = "duty" if MANDATORY.search(lead) else "power"
+                    if INFINITIVE_ITEM.match(q):
+                        o["kind_from_lead_in"] = infinitive_lead_kind(lead); bump("s4_infinitive_list_item")
                     subj = lead_in_subject(lead)
                     if subj:
                         o["lead_in_actor"] = subj
@@ -1500,6 +1539,11 @@ def judgment_flags(text, records):
     if ia:        # J17 (Oct 16 2026)
         flags.append({"check": "identifiable_actor_unspecified", "detail": "%d records stored with agency Unspecified whose actor_raw names an identifiable body (a court, the compacting or member states, the detaining authority)" % len(ia),
                       "sentences": [r["quote"] for r in ia][:12]})
+    lb = [r for r in records if (r.get("agency_source") == "named_body" and r.get("jurisdiction") == "local")
+          or (r.get("actor_source") == "model_resolved" and r.get("agency_org_type") == "named body")]
+    if lb:        # S7 (Oct 17 2026)
+        flags.append({"check": "local_body_unresolved", "detail": "%d records whose acting body is stored under its own name because the crosswalk has no code for it: name the body and the local government (county, town, city) it belongs to" % len(lb),
+                      "sentences": [r["quote"] for r in lb][:12]})
     comp = [r for r in records if COMPOUND_LOCAL.search(r.get("actor_raw") or "")]
     if comp:
         flags.append({"check": "compound_local_actor", "detail": "%d records whose actor_raw joins a locality and a named district or authority: one record each" % len(comp),
@@ -1876,6 +1920,17 @@ APPOINT_QUOTE = re.compile(r"\bshall\s+(?:be\s+)?appoint(?:ed)?\b|\b(?:to\s+be\s
 APPOINT_PERIOD = re.compile(r"\bappointments?\b[^.;]{0,80}?\bshall\s+be\s+made\s+within\b|\bshall\s+appoint\b[^.;]{0,200}?\bwithin\b", re.I)
 
 
+PILOT_FOLLOW_ON = re.compile(r"^\W*(?:Such|The|Each)\s+(?:pilot|program|project|study|plan)s?\b[^.;]*?\bshall\s+(?:be\s+)?design(?:ed)?\b", re.I)
+PERIOD_RE = re.compile(r"\bwithin\s+[\w-]+(?:\s+[\w-]+){0,5}?\s+(?:days?|months?|years?)\b|\b(?:days?|months?|years?)\s+(?:of|after|from)\s+the\s+(?:effective|enactment)", re.I)
+
+
+def preceding_sentence_has_period(span, text):
+    """S6a: the sentence just before the span states a period ('Within one hundred eighty days of the effective date ... shall institute pilot projects ...')."""
+    before = re.sub(r"\{\{|\}\}", "", text[max(0, span[0] - 900):span[0]]).strip()
+    sents = [x for x in re.split(r"(?<=[.])\s+", before) if x.strip()]
+    return bool(sents) and bool(PERIOD_RE.search(sents[-1])) and bool(re.search(r"\bpilot", sents[-1], re.I))
+
+
 def r6_ok(rule, o):
     """True while the rule is under its cap; otherwise leaves a flag on the record and counts the overflow."""
     if STATS.get("r6" + rule, 0) >= R6_CAP:
@@ -1885,7 +1940,7 @@ def r6_ok(rule, o):
     return True
 
 
-def run_agency_fixes(o, text, law):
+def run_agency_fixes(o, text, law, _model_pass=False):
     """Second-pass agency resolver and the actor fixes M8-M39, O2. Used on every record, and again after a gate rescue (O4)."""
     if not o.get("agency_matched") and o.get("agency") != "All agencies":      # fix 2b, 3: second-pass resolver
         bump("agency_" + agency_resolve_nys.resolve_unmatched(o, text, law, {**RESOLVE_DEPS, "named_locality": named_locality}))
@@ -1908,6 +1963,55 @@ def run_agency_fixes(o, text, law):
         bump("m34_assessing_unit")
     if agency_resolve_nys.fix_state_actor(o):          # O2
         bump("o2_state_actor_to_state_agencies")
+    if not _model_pass and o.get("agency") == "Unspecified" and resolve_from_model_actor(o, text, law):      # S1
+        bump("s1_model_actor_resolved")
+    elif (not _model_pass and o.get("agency") not in (None, "Unspecified") and not o.get("actor_source") and o.get("actor_resolved_model") and o.get("agency_source") in MODEL_FIRST_SOURCES
+          and (PASSIVE_SUBJECT.match((o.get("actor_raw") or "").strip()) or not GOV_ACTOR.search(o.get("actor_raw") or ""))):
+        o["actor_source"] = "model_resolved"; bump("s1_model_actor_tagged")          # the chain's first candidate is the model's actor: a passive raw can only have resolved from it
+
+
+MODEL_FIRST_SOURCES = {"alias", "nyc_crosswalk", "crosswalk_retry", "group", "library", "named_body"}          # resolve_unmatched tries the model's actor first
+MODEL_COUNTY = re.compile(r"^(?:the\s+)?(?:([A-Za-z. ]+?)\s+county|county\s+of\s+([A-Za-z. ]+?))$", re.I)
+SUCH_COUNTY = re.compile(r"^(?:the |such |said |each |that )?county$", re.I)
+RESOLVE_FIELDS = ("agency", "agency_full", "agency_matched", "jurisdiction", "agency_org_type", "agency_group", "agency_unit", "agency_source")
+
+
+def resolve_from_model_actor(o, text, law):
+    """S1 (Oct 17 2026): a record still Unspecified after the chain ran on actor_raw ('such demonstration program', 'the notice') takes the
+    body its actor_resolved_model names, through the same chain (crosswalks, locality, groups, named bodies). actor_raw stays as the model
+    wrote it; actor_source becomes 'model_resolved'. 'such county' takes the law's single named county first, then the model's actor."""
+    model = re.sub(r"\s+", " ", (o.get("actor_resolved_model") or "").strip(" .,;:"))
+    if not model or model.lower() in ("unspecified", "not stated", "n/a", "none", "unknown"):
+        return False
+    t = {k: o.get(k) for k in ("citation", "quote", "action_summary", "model_unit", "matter_id")}
+    t.update(actor_raw=model, actor_resolved_model=None, agency="Unspecified", agency_full="Unspecified", agency_matched=False, jurisdiction=None,
+             agency_org_type=None, agency_group=None, agency_unit=None)
+    ll = None
+    if SUCH_COUNTY.match(re.sub(r"\s+", " ", (o.get("actor_raw") or "").strip(" .,;:"))):
+        ll = law_locality(text, (law or {}).get("title")) if law else None
+        if ll and ll[0] != "Counties":
+            ll = None
+        ll = ll or next((x for x in [named_locality(model)] if x and x[0] == "Counties"), None)
+    if ll:
+        t.update(agency=ll[0], agency_full=ll[0], agency_matched=True, jurisdiction="local", agency_org_type="local government group", agency_group=ll[0], agency_unit=ll[1])
+    else:
+        canon, full = eo.match_agency(model, LOOKUP, BY_CANON)
+        if canon and not NYC_MARKERS.search(model):
+            t.update(agency=canon, agency_full=full, agency_matched=True)
+        attach_jurisdiction(t)
+        run_agency_fixes(t, text, law, _model_pass=True)
+        mc = MODEL_COUNTY.match(model)
+        if t.get("agency") in (None, "Unspecified") and mc and agency_resolve_nys.county_name(mc.group(1) or mc.group(2)):
+            cn = agency_resolve_nys.county_name(mc.group(1) or mc.group(2))
+            t.update(agency="Counties", agency_full="Counties", agency_matched=True, jurisdiction="local", agency_org_type="local government group", agency_group="Counties", agency_unit="County of " + cn)
+    if t.get("agency") in (None, "Unspecified"):
+        return False
+    for k in RESOLVE_FIELDS:
+        if k in t:
+            o[k] = t[k]
+    o["actor_source"] = "model_resolved"
+    o.pop("actor_unresolved", None)
+    return True
 
 
 def reresolve_after_rescue(o, text, law):
@@ -2104,7 +2208,10 @@ def build_records(laws):
                     and not CAP_RE.search(quote)):          # R6a: an item under a 'shall' lead-in with no 'may' of its own is a duty
                 spa = locate_span(quote, text)
                 lead = list_item_lead(spa, text) if spa else None
-                if lead and lead_in_makes_duty(lead) and r6_ok("a_shall_lead_in_duty", o):
+                uncapped = bool(lead) and o.get("kind_model") == "duty" and lead_in_makes_duty(lead)          # S3: the model said duty too, no cap
+                if uncapped:
+                    bump("s3_shall_lead_in_duty_model_duty")
+                if lead and lead_in_makes_duty(lead) and (uncapped or r6_ok("a_shall_lead_in_duty", o)):
                     kind = "duty"; o["kind_adjusted"] = "shall_lead_in_duty"; o["lead_in"] = re.sub(r"\s+", " ", re.sub(r"\{\{|\}\}", "", lead)).strip()[:400]
             # 3. a grant with no mandatory verb is a power
             sp = locate_span(quote, text)
@@ -2133,6 +2240,9 @@ def build_records(laws):
                 o["recurrence"] = "annual" if re.search(r"\bannual\s+election\b", quote, re.I) else "as-needed"; bump("m38_per_election_triggered")
             if kind == "duty" and o.get("deadline_kind") == "on_effective_date" and TRIGGER.search(quote) and not CAP_RE.search(quote):
                 o["deadline_kind"], o["deadline_date"] = "none", None; bump("setup_to_triggered")
+            elif (kind == "duty" and o.get("deadline_kind") == "on_effective_date" and PILOT_FOLLOW_ON.match(quote) and sp0
+                  and preceding_sentence_has_period(sp0, text)):          # S6a: 'Such pilot projects shall be designed ...' follows the sentence that sets the pilot's period
+                o["deadline_kind"], o["deadline_date"] = "none", None; bump("s6a_pilot_follow_on_triggered")
             elif (kind == "duty" and o.get("deadline_kind") == "on_effective_date" and EVENT_TIED.search(quote) and not CAP_RE.search(quote)
                   and r6_ok("d_event_tied", o)):          # R6d: 'at the time that the member takes the oath', 'after the completion of ...'
                 o["deadline_kind"], o["deadline_date"] = "none", None
