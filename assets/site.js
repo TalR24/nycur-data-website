@@ -40,6 +40,7 @@
       { label: 'What Has MCB3 Focused On Over Time?', href: '/nycuriosity_substack_posts/mcb3_history_analysis/' }
     ]},
     { cat: 'Budget & Policy', topic: 'budget', items: [
+      { label: 'Fair Housing Growth Strategy targets', href: '/nycuriosity_substack_posts/fair_housing_growth_strategy/' },
       { label: 'Park restroom costs', href: '/nycuriosity_substack_posts/public_restrooms/' },
       { label: 'Labor Costs and the 2026 Bargaining Round', href: '/nycuriosity_substack_posts/public_sector_unions_2026/' },
       { label: 'What the Council Asks of NYC Agencies', href: '/nycuriosity_substack_posts/council_obligations/' },
