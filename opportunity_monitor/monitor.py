@@ -616,6 +616,25 @@ def send_email(subject, text_body, html_body):
     return True
 
 
+def write_for_brief(out_base, subject, html_body, text_body):
+    """DIGEST_DELIVERY=file: leave <out_base>.{html,txt,json} in the premium
+    repo for the Sunday week-ahead email and skip the direct email. Returns
+    True when the files were written; False (email mode, or the write failed)
+    means the caller emails as before, so a digest is never lost."""
+    sys.path.append(str(Path(__file__).resolve().parents[1] / "seo"))
+    try:
+        from common import digest_delivery, write_digest_section
+        if digest_delivery() != "file":
+            return False
+        out = Path(out_base)
+        write_digest_section(out.parent, out.name, "opportunities", subject,
+                             html_body, text_body, needs_tal=0)
+        return True
+    except Exception as e:  # noqa: BLE001 - any failure means "email instead"
+        print(f"Could not write the digest section ({e}); emailing instead.", file=sys.stderr)
+        return False
+
+
 # -------------------------------------------------------------------- main
 
 def parse_args(argv):
@@ -682,7 +701,11 @@ def main(argv=None):
 
     email_ok = True
     if args.email:
-        email_ok = send_email(subject, text_body, html_body)
+        if write_for_brief(out_base, subject, html_body, text_body):
+            print("DIGEST_DELIVERY=file: digest left in the premium repo for the Sunday email.",
+                  file=sys.stderr)
+        else:
+            email_ok = send_email(subject, text_body, html_body)
 
     print(subject)
     print(text_body)

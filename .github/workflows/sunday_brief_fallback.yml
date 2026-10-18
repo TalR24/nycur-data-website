@@ -1,0 +1,76 @@
+name: Sunday brief fallback
+
+# The Sunday cloud routine writes planning/briefs/YYYY-MM-DD.md into the private
+# premium repo and sends the ONE Sunday week-ahead email. This workflow runs
+# after it is due. If today's marker file is missing, it emails the raw mention
+# and opportunity digests so nothing is lost; if the marker exists it exits
+# silently. Delivery: SMTP via seo/common.send_email. Billing: no Anthropic API.
+# Secrets: GMAIL_USER, GMAIL_APP_PASSWORD, PREMIUM_PUSH_TOKEN.
+
+on:
+  schedule:
+    - cron: "30 16 * * 0"   # Sunday 16:30 UTC, after the 13:00 UTC Sunday week-ahead routine (trig_01F1EJTV9kbR5MJiJQEKKoPw)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fallback:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Clone the premium repo
+        env:
+          PREMIUM_PUSH_TOKEN: ${{ secrets.PREMIUM_PUSH_TOKEN }}
+        run: git clone --depth 1 "https://TalR24:${PREMIUM_PUSH_TOKEN}@github.com/TalR24/nycur-data-premium.git" "$RUNNER_TEMP/premium"
+
+      - name: Email the raw digests if the Sunday brief is missing
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          PREMIUM_DIR: ${{ runner.temp }}/premium
+        run: |
+          python3 - <<'PY'
+          import html, os, sys
+          from datetime import datetime, timezone
+          from pathlib import Path
+          sys.path.insert(0, "seo")
+          from common import send_email
+
+          premium = Path(os.environ["PREMIUM_DIR"])
+          today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+          marker = premium / "planning" / "briefs" / f"{today}.md"
+          if marker.exists():
+              print(f"Marker {marker.name} exists; the Sunday brief arrived. Nothing to do.")
+              sys.exit(0)
+
+          digests = [("Mention digest", premium / "mention_monitor_state" / "digests" / f"{today}"),
+                     ("Opportunity digest", premium / "opportunities" / "state" / "digests" / f"{today}")]
+          intro = ("The Sunday week-ahead email did not arrive. Check the routine at "
+                   "https://claude.ai/code/routines/trig_01F1EJTV9kbR5MJiJQEKKoPw and run the /ci-triage skill "
+                   "if an Action failed. The raw digests follow.")
+          text, page, missing = [intro, ""], [f"<p>{html.escape(intro)}</p>"], []
+          for label, base in digests:
+              h, t = base.with_suffix(".html"), base.with_suffix(".txt")
+              if h.exists():
+                  page.append(f"<hr><h2>{label}</h2>" + h.read_text(encoding="utf-8"))
+                  text += ["=" * 60, label.upper(), "=" * 60, t.read_text(encoding="utf-8") if t.exists() else "(HTML only)", ""]
+              else:
+                  missing.append(label)
+          if missing:
+              note = "Missing today: " + ", ".join(missing) + "."
+              text.insert(2, note)
+              page.insert(1, f"<p><strong>{html.escape(note)}</strong></p>")
+          ok = send_email("Sunday week-ahead email did not arrive, raw digests below",
+                          "\n".join(text), html="\n".join(page))
+          sys.exit(0 if ok else 1)
+          PY

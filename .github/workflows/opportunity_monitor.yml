@@ -1,8 +1,18 @@
 name: Opportunity Monitor
 
+# Delivery (Oct 17 2026): DIGEST_DELIVERY=file means the radar no longer emails
+# its own digest. It writes opportunities/state/digests/YYYY-MM-DD.{html,txt,json}
+# into the premium repo, and the Sunday cloud routine folds it into ONE Sunday
+# week-ahead email (the Friday discovery routine still runs first). If the write
+# or the push fails, the digest is emailed directly, and sunday_brief_fallback.yml
+# emails the raw digests if the routine's brief never lands. Set
+# DIGEST_DELIVERY=email below to restore the direct email. The "run failed"
+# alert is unchanged.
+# Billing: no Anthropic API.
+
 on:
   schedule:
-    - cron: "0 12 * * 6"   # Saturday 12:00 UTC = 8:00 EDT / 7:00 EST
+    - cron: "0 11 * * 0"   # Sunday 11:00 UTC = 7:00 EDT / 6:00 EST (before the 13:00 UTC Sunday brief routine)
   workflow_dispatch:
     inputs:
       send_email:
@@ -20,6 +30,8 @@ permissions:
 jobs:
   monitor:
     runs-on: ubuntu-latest
+    env:
+      DIGEST_DELIVERY: ${{ github.event_name == 'schedule' && 'file' || 'email' }}   # scheduled runs feed the Sunday brief; manual dispatch emails directly
     timeout-minutes: 30
     steps:
       - name: Checkout repository
@@ -53,8 +65,8 @@ jobs:
           MENTION_DIGEST_TO: ${{ secrets.MENTION_DIGEST_TO }}
           OPPS_DIGEST_TO: ${{ secrets.OPPS_DIGEST_TO }}
           OPPS_TRACKER_URL: ${{ secrets.OPPS_TRACKER_URL }}
-        # A scheduled run always emails, even when quiet: a missing email
-        # must mean failure, not "nothing to report".
+        # A scheduled run always writes a digest, even when quiet, so a missing
+        # opportunity section in the Sunday brief means failure, not "nothing to report".
         run: |
           python3 opportunity_monitor/monitor.py \
             --watchlist "$RUNNER_TEMP/premium/opportunities/watchlist.yaml" \
@@ -87,6 +99,7 @@ jobs:
           EOF
 
       - name: Commit state to the private repo
+        id: commit
         if: always()
         run: |
           cd "$RUNNER_TEMP/premium"
@@ -97,6 +110,21 @@ jobs:
             echo "No state changes."
           else
             git commit -m "Opportunities radar: update state and digest"
-            git pull --rebase origin main
-            git push
+            if ! git pull --rebase origin main || ! git push; then
+              echo "push_ok=false" >> "$GITHUB_OUTPUT"
+              echo "::error::Could not push to the premium repo; the next step emails the digest."
+              exit 1
+            fi
           fi
+
+      # Never lose a digest: in file mode a failed push leaves it only on this
+      # runner, so email it directly.
+      - name: Email the digest if the premium push failed
+        if: ${{ always() && steps.commit.outputs.push_ok == 'false' && env.DIGEST_DELIVERY == 'file' && (github.event_name == 'schedule' || inputs.send_email) }}
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+        run: |
+          D="$RUNNER_TEMP/premium/opportunities/state/digests/$(date -u +%Y-%m-%d)"
+          test -f "$D.txt" || { echo "No digest was written; nothing to email."; exit 0; }
+          python3 ops_digest/assemble.py --send-files --subject "Opportunities radar (premium push failed)" --txt "$D.txt" --html "$D.html"

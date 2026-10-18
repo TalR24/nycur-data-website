@@ -4,7 +4,12 @@
 # tracker's validate_fiscal_impacts.py (Sep 2026), commits a dated
 # report with a month-over-month diff to
 # civic_reference/legislation_implementation_tracker/quality_reports/,
-# and emails Tal the headline + delta. No API keys needed; DORIS check
+# and, until Oct 17 2026, emailed Tal the headline + delta. Now
+# DIGEST_DELIVERY=file: the summary goes to premium ops_digest/pending/
+# trackers_quality.{html,txt,json} for monthly_ops_digest.yml (one monthly ops
+# email on the 5th); if that write or push fails it emails as before. Set
+# DIGEST_DELIVERY=email to restore the direct email.
+# Billing: no Anthropic API. No API keys needed; DORIS check
 # hits NYC Open Data anonymously.
 #
 # Scheduled the 3rd at 14:00 UTC: AFTER the 1st-of-month implementation
@@ -62,9 +67,47 @@ jobs:
             git push origin main
           fi
 
-      - name: Email summary to Tal
+      - name: Check out the premium repo (ops digest sections)
         continue-on-error: true
         env:
+          PREMIUM_PUSH_TOKEN: ${{ secrets.PREMIUM_PUSH_TOKEN }}
+        run: git clone --depth 1 "https://TalR24:${PREMIUM_PUSH_TOKEN}@github.com/TalR24/nycur-data-premium.git" "$RUNNER_TEMP/premium"
+
+      - name: Write the summary for the monthly ops digest
+        id: summary
+        continue-on-error: true
+        env:
+          DIGEST_DELIVERY: file   # file | email
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          OPS_DIGEST_PENDING: ${{ runner.temp }}/premium/ops_digest/pending
+        # With no premium checkout the folder is missing: use email mode then.
+        run: |
+          if [ ! -d "$RUNNER_TEMP/premium/.git" ]; then export DIGEST_DELIVERY=email; fi
+          python3 civic_reference/legislation_implementation_tracker/pipeline/email_quality_summary.py
+
+      - name: Push the section to the premium repo
+        id: push
+        continue-on-error: true
+        run: |
+          cd "$RUNNER_TEMP/premium" 2>/dev/null || exit 0
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if [ -d ops_digest/pending ]; then git add ops_digest/pending; fi
+          if git diff --cached --quiet; then
+            echo "Nothing to push."
+          else
+            git commit -m "Ops digest section: trackers_quality"
+            git pull --rebase origin main && git push
+          fi
+
+      # Never lose a report: if the section did not reach the premium repo,
+      # send the direct email.
+      - name: Email the summary if the premium push failed
+        if: ${{ always() && (steps.summary.outcome == 'failure' || steps.push.outcome == 'failure') }}
+        continue-on-error: true
+        env:
+          DIGEST_DELIVERY: email
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
         run: python3 civic_reference/legislation_implementation_tracker/pipeline/email_quality_summary.py

@@ -2752,6 +2752,23 @@ def send_email(subject, text_body, html_body=None):
     return True
 
 
+def write_for_brief(outdir, stem, subject, html_body, text_body):
+    """DIGEST_DELIVERY=file: write <stem>.{html,txt,json} next to the .md digest
+    (premium mention_monitor_state/digests/) for the Sunday week-ahead email and
+    skip the direct email. Returns True when written; False (email mode, or the
+    write failed) means the caller emails as before, so a digest is never lost."""
+    sys.path.append(str(Path(__file__).resolve().parents[1] / "seo"))
+    try:
+        from common import digest_delivery, write_digest_section
+        if digest_delivery() != "file":
+            return False
+        write_digest_section(outdir, stem, "mentions", subject, html_body, text_body, needs_tal=0)
+        return True
+    except Exception as e:  # noqa: BLE001 - any failure means "email instead"
+        print(f"Could not write the digest section ({e}); emailing instead.", file=sys.stderr)
+        return False
+
+
 def next_digest_path(outdir, run_date):
     """Never overwrite a same-day digest: a second --digest run on the same
     date gets `<date>-2.md`, a third `<date>-3.md`, and so on."""
@@ -3158,7 +3175,11 @@ def main():
     if args.email and has_content:
         subject = build_digest_subject(new_items, own_items, research_items, digest_errors,
                                          removal_suggestions, discovery_added, cfg_runtime, run_date)
-        send_email(subject, digest, digest_html)
+        if write_for_brief(outdir, outpath.stem, subject, digest_html, digest):
+            print("DIGEST_DELIVERY=file: digest left in the premium repo for the Sunday email.",
+                  file=sys.stderr)
+        else:
+            send_email(subject, digest, digest_html)
     elif args.email:
         print("No new content; skipping email.", file=sys.stderr)
 

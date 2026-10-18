@@ -20,14 +20,14 @@ Weekly only (`--digest` and `--backfill` runs):
 ## How a run works
 
 1. Collect from the sources above, dedupe against `seen.db` (SQLite), and queue newly flagged items as pending. Google News links are opaque redirects, so each item is keyed on both its normalized URL and an outlet-domain plus title fingerprint. Everything fetched, including excluded items, is marked seen.
-2. On Sundays (or with `--digest`), build `digests/YYYY-MM-DD.md` from all pending items, mark them digested, and with `--email` send it as a multipart text and HTML message.
+2. On Sundays (or with `--digest`), build `digests/YYYY-MM-DD.md` from all pending items, mark them digested, and with `--email` deliver it: by default a multipart text and HTML email; with `DIGEST_DELIVERY=file` (the workflow setting since Oct 17 2026) it writes `digests/YYYY-MM-DD.{html,txt,json}` beside the `.md` in the premium repo instead, for the Sunday cloud routine's one week-ahead email (a failed write or push falls back to the email; `sunday_brief_fallback.yml` emails the raw digests if that routine's brief never lands). A week with no new content writes no html/txt.
 3. Digest sections: outside citations (ordered news, newsletter, social), Research citations (OpenAlex and `research_domains`), New research listings, My own pieces, Sites sending visitors this week, Suggested website updates, Suggested removals, Candidates needing manual review, Scan progress, Source errors.
 
 A collect-only run never writes a digest. A run skipped for several days is not lost: the next digest covers every pending row.
 
 ## How it runs
 
-`.github/workflows/mention_monitor.yml` runs daily at 11:30 UTC. Every day it collects and queues; on Sundays it also builds and emails the digest. It runs the offline tests first (`MENTION_MONITOR_SKIP_LIVE_TESTS=1`). `workflow_dispatch` inputs: `backfill`, `digest`, `send_email` (implies digest), `referrers_only`, `referrers_window_hours`. A failed run emails "Mention monitor run failed", because a failure otherwise looks like a quiet week.
+`.github/workflows/mention_monitor.yml` runs daily at 11:30 UTC. Every day it collects and queues; on Sundays it also builds the digest and delivers it as above. It runs the offline tests first (`MENTION_MONITOR_SKIP_LIVE_TESTS=1`). `workflow_dispatch` inputs: `backfill`, `digest`, `send_email` (implies digest), `referrers_only`, `referrers_window_hours`. A failed run emails "Mention monitor run failed", because a failure otherwise looks like a quiet week.
 
 State (`seen.db`, `digests/`, `discovered_sources.json`) lives in the private premium repo under `mention_monitor_state/`, never in this public repo. The workflow clones it with `PREMIUM_PUSH_TOKEN`, passes `--db`, `--outdir` and `--discovered-path`, and commits the state back there. `mention_monitor/check_freshness.py` (run by `site_health.yml`) emails if that folder has had no commit for 3 days.
 

@@ -344,3 +344,26 @@ def send_email(subject, body, to=ALERT_TO, html=None):
         s.login(user, pw)
         s.sendmail(user, to, msg.as_string())
     return True
+
+
+def digest_delivery():
+    """`file` (write the digest into the premium repo for the Sunday brief or
+    the monthly ops digest) or `email` (send it directly, the old behaviour).
+    Unset means `email`; the workflows set DIGEST_DELIVERY=file."""
+    return (os.environ.get("DIGEST_DELIVERY") or "email").strip().lower()
+
+
+def write_digest_section(dest_dir, stem, source, title, html, text, needs_tal=0):
+    """Write <stem>.html, <stem>.txt and <stem>.json ({source, title,
+    generated_at, needs_tal}) into dest_dir. Returns the json dict. Raises
+    OSError on a failed write, so callers can fall back to emailing."""
+    from datetime import datetime, timezone
+    dest = Path(dest_dir)
+    dest.mkdir(parents=True, exist_ok=True)
+    meta = {"source": source, "title": title,
+            "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            "needs_tal": int(needs_tal)}
+    (dest / f"{stem}.html").write_text(html, encoding="utf-8")
+    (dest / f"{stem}.txt").write_text(text, encoding="utf-8")
+    (dest / f"{stem}.json").write_text(json.dumps(meta, indent=1), encoding="utf-8")
+    return meta

@@ -1,0 +1,54 @@
+name: Monthly ops digest
+
+# ONE monthly ops email on the 5th. Reads every section waiting in the private
+# premium repo's ops_digest/pending/ (written by the SEO report, trackers quality
+# report and Block Party quality report Actions as .html/.txt/.json, and by the
+# fiscal drafts, copy currency and brand QA cloud routines as .md), sends the
+# digest with "Needs you", "Did not report" and failed Action runs on top, then
+# files the sections under ops_digest/sent/YYYY-MM/. Dry run prints the email and
+# moves nothing. See ops_digest/README.md.
+# Delivery: SMTP via seo/common.send_email. Billing: no Anthropic API.
+# Secrets: GMAIL_USER, GMAIL_APP_PASSWORD, PREMIUM_PUSH_TOKEN (clone, push, and
+# reading failed runs in the other repos). GITHUB_TOKEN reads this repo's runs.
+# The SCE monthly email (sce_monthly.yml) is separate and unchanged.
+
+on:
+  schedule:
+    - cron: "0 15 5 * *"   # 5th of each month, 15:00 UTC
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Print the email instead of sending it; move nothing"
+        type: boolean
+        default: false
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Clone the premium repo
+        env:
+          PREMIUM_PUSH_TOKEN: ${{ secrets.PREMIUM_PUSH_TOKEN }}
+        run: git clone "https://TalR24:${PREMIUM_PUSH_TOKEN}@github.com/TalR24/nycur-data-premium.git" "$RUNNER_TEMP/premium"
+
+      - name: Assemble and send the digest
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PREMIUM_PUSH_TOKEN: ${{ secrets.PREMIUM_PUSH_TOKEN }}
+          PREMIUM_DIR: ${{ runner.temp }}/premium
+        run: python3 ops_digest/assemble.py --premium "$PREMIUM_DIR" ${{ inputs.dry_run && '--dry-run' || '' }}

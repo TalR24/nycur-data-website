@@ -2,7 +2,7 @@
 
 Last refreshed: Oct 3 2026.
 
-Saturday email digest of Tal's private opportunities watch list (conferences, fellowships, grants, awards, civic seats). Sibling of `mention_monitor/`; it shares that monitor's premium-repo state checkout and Gmail SMTP conventions.
+Sunday digest of Tal's private opportunities watch list (conferences, fellowships, grants, awards, civic seats). Sibling of `mention_monitor/`; it shares that monitor's premium-repo state checkout and Gmail SMTP conventions.
 
 ## What it does
 
@@ -12,11 +12,11 @@ Reads `opportunities/watchlist.yaml` from the private `nycur-data-premium` repo 
 3. Scores what is left against `opportunities/profile.md`.
 4. Builds an HTML and plain-text digest with these sections, in order: Your priorities; Deadlines announced or changed; Pursuing; Closing in the next 45 days; New this week; Windows opening soon; Pages that changed; Rolling and open (first week of the month only); Past deadline, update or retire.
 
-A scheduled run always emails, even when nothing is flagged, so a missing email means a failure. A failed run sends "Opportunities radar run failed".
+Since Oct 17 2026 (`DIGEST_DELIVERY=file`) the radar no longer emails the digest: it writes `digests/YYYY-MM-DD.{html,txt,json}` to the premium repo, and the Sunday cloud routine sends it inside the one Sunday week-ahead email. If the write or push fails the digest is emailed directly, and `sunday_brief_fallback.yml` (16:30 UTC) emails the raw digests when the routine's `planning/briefs/<date>.md` marker is missing. With `DIGEST_DELIVERY=email` (the script default) a scheduled run emails even when nothing is flagged, so a missing email means a failure. A failed run sends "Opportunities radar run failed".
 
 ## How it runs
 
-`.github/workflows/opportunity_monitor.yml` runs Saturdays at 12:00 UTC. It installs `requirements.txt` (requests, PyYAML), runs the offline tests, clones the premium repo with `PREMIUM_PUSH_TOKEN`, runs the monitor, and commits `opportunities/state/` back to the premium repo. Manual dispatch inputs: `send_email` and `no_fetch`.
+`.github/workflows/opportunity_monitor.yml` runs Sundays at 11:00 UTC (after the Friday discovery routine). It installs `requirements.txt` (requests, PyYAML), runs the offline tests, clones the premium repo with `PREMIUM_PUSH_TOKEN`, runs the monitor, and commits `opportunities/state/` back to the premium repo. Manual dispatch inputs: `send_email` and `no_fetch`.
 
 Secrets (names only):
 - `GMAIL_USER`, `GMAIL_APP_PASSWORD`: Gmail SMTP login, shared with the mention monitor.
@@ -42,7 +42,7 @@ python3 opportunity_monitor/monitor.py \
   --today 2026-10-03 --no-fetch
 ```
 
-Flags: `--watchlist` and `--state-dir` (required), `--today YYYY-MM-DD`, `--no-fetch` (skip the network re-check), `--email` (send the digest; needs the Gmail secrets as environment variables), `--out PATH` (write `PATH.html` and `PATH.txt` instead of `<state-dir>/digests/<date>.{html,txt}`).
+Flags: `--watchlist` and `--state-dir` (required), `--today YYYY-MM-DD`, `--no-fetch` (skip the network re-check), `--email` (deliver the digest: with `DIGEST_DELIVERY=file` it is left in the premium repo, otherwise it is emailed and needs the Gmail secrets as environment variables), `--out PATH` (write `PATH.html` and `PATH.txt` instead of `<state-dir>/digests/<date>.{html,txt}`).
 
 Tests (offline, no network; 54 tests as of Oct 3 2026):
 

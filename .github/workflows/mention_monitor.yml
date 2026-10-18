@@ -1,5 +1,15 @@
 name: Mention Monitor
 
+# Delivery (Oct 17 2026): the daily collect runs are unchanged. On Sundays the
+# digest is no longer emailed when DIGEST_DELIVERY=file: it is written to
+# mention_monitor_state/digests/YYYY-MM-DD.{html,txt,json} in the premium repo
+# and the Sunday cloud routine folds it into ONE Sunday week-ahead email. If the
+# write or push fails, the digest is emailed directly, and
+# sunday_brief_fallback.yml emails the raw digests if the routine's brief never
+# lands. Set DIGEST_DELIVERY=email below to restore the direct email. The "run
+# failed" alert is unchanged.
+# Billing: no Anthropic API.
+
 on:
   schedule:
     - cron: "30 11 * * *"   # daily ~6:30-7:30am ET; Sundays send the digest
@@ -31,6 +41,8 @@ permissions:
 jobs:
   monitor:
     runs-on: ubuntu-latest
+    env:
+      DIGEST_DELIVERY: ${{ github.event_name == 'schedule' && 'file' || 'email' }}   # scheduled runs feed the Sunday brief; manual dispatch emails directly
     timeout-minutes: 45
     steps:
       - name: Checkout repository
@@ -118,6 +130,7 @@ jobs:
           EOF
 
       - name: Commit state to the private repo
+        id: commit
         if: always()
         run: |
           cd "$RUNNER_TEMP/premium"
@@ -130,6 +143,22 @@ jobs:
             echo "No state changes."
           else
             git commit -m "Mention monitor: update state and digest"
-            git pull --rebase origin main
-            git push
+            if ! git pull --rebase origin main || ! git push; then
+              echo "push_ok=false" >> "$GITHUB_OUTPUT"
+              echo "::error::Could not push to the premium repo; the next step emails the digest."
+              exit 1
+            fi
           fi
+
+      # Never lose a digest: in file mode a failed push leaves it only on this
+      # runner, so email it directly (only on days a digest email was due).
+      - name: Email the digest if the premium push failed
+        if: ${{ always() && steps.commit.outputs.push_ok == 'false' && env.DIGEST_DELIVERY == 'file' && ((github.event_name == 'schedule' && steps.day.outputs.is_digest_day == 'true') || inputs.send_email) }}
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          MENTION_DIGEST_TO: ${{ secrets.MENTION_DIGEST_TO }}
+        run: |
+          D="$STATE_DIR/digests/$(date -u +%Y-%m-%d)"
+          test -f "$D.txt" || { echo "No digest was written (quiet week or earlier failure); nothing to email."; exit 0; }
+          python3 ops_digest/assemble.py --send-files --subject "NYCuriosity mention digest (premium push failed)" --txt "$D.txt" --html "$D.html"

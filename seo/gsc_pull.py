@@ -44,7 +44,8 @@ from pathlib import Path
 from urllib.parse import quote, urlsplit
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from common import SITES, WORKSPACE, send_email, sitemap_entries  # noqa: E402
+from common import (SITES, WORKSPACE, digest_delivery, send_email, sitemap_entries,  # noqa: E402
+                    write_digest_section)
 import report_email  # noqa: E402
 
 PROPERTIES = ["sc-domain:nycuriosity.com"]  # SCE has its own routine (Tal, Oct 2 2026)
@@ -294,6 +295,8 @@ def main():
     ap.add_argument("--out", help="folder for the report files (default: nycur-data-premium/seo_reports/ "
                                   "if present, else ./seo_reports/)")
     ap.add_argument("--email", action="store_true")
+    ap.add_argument("--ops-pending", help="premium ops_digest/pending folder: with DIGEST_DELIVERY=file, --email "
+                                          "writes seo.{html,txt,json} there for the monthly ops digest instead of emailing")
     ap.add_argument("--end", help="period end date YYYY-MM-DD (default: today minus data lag)")
     ap.add_argument("--changes", help="seo_reports/changes.md to judge earlier changes against "
                                       "(default: the premium repo copy if present)")
@@ -327,8 +330,17 @@ def main():
 
     if args.email:
         n = len(plan["actions"])
-        send_email(f"NYCuriosity SEO report, {end.strftime('%B %Y')}: {n} action{'s' if n != 1 else ''}",
-                   report, html=page)
+        subject = f"NYCuriosity SEO report, {end.strftime('%B %Y')}: {n} action{'s' if n != 1 else ''}"
+        sent_to_file = False
+        if digest_delivery() == "file" and args.ops_pending:
+            try:
+                write_digest_section(args.ops_pending, "seo", "seo", subject, page, report, needs_tal=n)
+                sent_to_file = True
+                print(f"DIGEST_DELIVERY=file: wrote seo section to {args.ops_pending}", file=sys.stderr)
+            except OSError as e:
+                print(f"Could not write the ops digest section ({e}); emailing instead.", file=sys.stderr)
+        if not sent_to_file:
+            send_email(subject, report, html=page)
 
 
 if __name__ == "__main__":
