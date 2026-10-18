@@ -98,7 +98,11 @@ jobs:
             echo "Nothing to push."
           else
             git commit -m "Ops digest section: trackers_quality"
-            git pull --rebase origin main && git push
+            for i in 1 2 3; do  # retry a lost push race (audit A8); a final failure fails the step and triggers the email fallback
+              if git pull --rebase origin main && git push; then break; fi
+              if [ "$i" = 3 ]; then exit 1; fi
+              sleep $((i * 15))
+            done
           fi
 
       # Never lose a report: if the section did not reach the premium repo,

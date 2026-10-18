@@ -2,7 +2,7 @@
 
 Last refreshed: Oct 3 2026.
 
-Sunday digest of Tal's private opportunities watch list (conferences, fellowships, grants, awards, civic seats). Sibling of `mention_monitor/`; it shares that monitor's premium-repo state checkout and Gmail SMTP conventions.
+Weekly digest (built Saturday, read by the Sunday week-ahead routine) of Tal's private opportunities watch list (conferences, fellowships, grants, awards, civic seats). Sibling of `mention_monitor/`; it shares that monitor's premium-repo state checkout and Gmail SMTP conventions.
 
 ## What it does
 
@@ -16,7 +16,7 @@ Since Oct 17 2026 (`DIGEST_DELIVERY=file`) the radar no longer emails the digest
 
 ## How it runs
 
-`.github/workflows/opportunity_monitor.yml` runs Sundays at 11:00 UTC (after the Friday discovery routine). It installs `requirements.txt` (requests, PyYAML), runs the offline tests, clones the premium repo with `PREMIUM_PUSH_TOKEN`, runs the monitor, and commits `opportunities/state/` back to the premium repo. Manual dispatch inputs: `send_email` and `no_fetch`.
+`.github/workflows/opportunity_monitor.yml` runs Saturdays at 12:00 UTC (after the Friday discovery routine; GitHub usually starts it 3 to 5 hours late). It installs `requirements.txt` (requests, PyYAML), runs the offline tests, clones the premium repo with `PREMIUM_PUSH_TOKEN`, runs the monitor, and commits `opportunities/state/` back to the premium repo. Manual dispatch inputs: `send_email` and `no_fetch`.
 
 Secrets (names only):
 - `GMAIL_USER`, `GMAIL_APP_PASSWORD`: Gmail SMTP login, shared with the mention monitor.

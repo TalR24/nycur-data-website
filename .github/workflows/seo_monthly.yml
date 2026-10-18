@@ -79,7 +79,12 @@ jobs:
             echo "Report unchanged."
           else
             git commit -m "Monthly SEO report snapshot"
-            if ! git pull --rebase origin main || ! git push; then
+            ok=false
+            for i in 1 2 3; do  # retry a lost push race (audit A8)
+              if git pull --rebase origin main && git push; then ok=true; break; fi
+              sleep $((i * 15))
+            done
+            if [ "$ok" != true ]; then
               echo "push_ok=false" >> "$GITHUB_OUTPUT"
               echo "::warning::Could not push to the premium repo; the next step emails the report."
             fi

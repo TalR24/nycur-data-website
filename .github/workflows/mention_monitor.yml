@@ -1,6 +1,6 @@
 name: Mention Monitor
 
-# Delivery (Oct 17 2026): the daily collect runs are unchanged. On Sundays the
+# Delivery (Oct 17 2026): the daily collect runs are unchanged. On Saturdays the
 # digest is no longer emailed when DIGEST_DELIVERY=file: it is written to
 # mention_monitor_state/digests/YYYY-MM-DD.{html,txt,json} in the premium repo
 # and the Sunday cloud routine folds it into ONE Sunday week-ahead email. If the
@@ -12,7 +12,7 @@ name: Mention Monitor
 
 on:
   schedule:
-    - cron: "30 11 * * *"   # daily ~6:30-7:30am ET; Sundays send the digest
+    - cron: "30 11 * * *"   # daily (GitHub starts it 3 to 9 h late); Saturdays build the digest so it is ready for the Sunday 13:00 UTC brief
   workflow_dispatch:
     inputs:
       backfill:
@@ -24,7 +24,7 @@ on:
         type: boolean
         default: false
       send_email:
-        description: "Email the digest when it runs (implies digest; scheduled Sunday runs always email)"
+        description: "Email the digest when it runs (implies digest; scheduled Saturday runs write the digest for the Sunday brief)"
         type: boolean
         default: false
       referrers_only:
@@ -71,9 +71,9 @@ jobs:
           mkdir -p "$RUNNER_TEMP/premium/mention_monitor_state/digests"
           echo "STATE_DIR=$RUNNER_TEMP/premium/mention_monitor_state" >> "$GITHUB_ENV"
 
-      - name: Determine if today is Sunday
+      - name: Determine if today is the digest day (Saturday)
         id: day
-        run: echo "is_digest_day=$([ "$(date -u +%u)" = "7" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+        run: echo "is_digest_day=$([ "$(date -u +%u)" = "6" ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
 
       - name: Run mention monitor
         env:
@@ -85,11 +85,11 @@ jobs:
           CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
           GOOGLE_ALERT_FEEDS: ${{ secrets.GOOGLE_ALERT_FEEDS }}
         # referrers_only runs the Cloudflare referrer probe alone, nothing
-        # else. Otherwise: digest fires on a scheduled Sunday run, or when
+        # else. Otherwise: digest fires on a scheduled Saturday run, or when
         # explicitly asked for via workflow_dispatch (inputs.digest), or
         # whenever send_email is requested (send_email implies digest,
         # since emailing with no digest built is a no-op). Email follows
-        # the same Sunday/send_email rule. A manual dispatch on a Sunday
+        # the same Saturday/send_email rule. A manual dispatch on a Saturday
         # must NOT auto-add --digest/--email just because is_digest_day is true.
         run: |
           STATE_ARGS="--db $STATE_DIR/seen.db --outdir $STATE_DIR/digests --discovered-path $STATE_DIR/discovered_sources.json"
@@ -143,7 +143,12 @@ jobs:
             echo "No state changes."
           else
             git commit -m "Mention monitor: update state and digest"
-            if ! git pull --rebase origin main || ! git push; then
+            ok=false
+            for i in 1 2 3; do  # other jobs and routines push to premium too: retry a lost race (audit A8)
+              if git pull --rebase origin main && git push; then ok=true; break; fi
+              sleep $((i * 15))
+            done
+            if [ "$ok" != true ]; then
               echo "push_ok=false" >> "$GITHUB_OUTPUT"
               echo "::error::Could not push to the premium repo; the next step emails the digest."
               exit 1
@@ -159,6 +164,7 @@ jobs:
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           MENTION_DIGEST_TO: ${{ secrets.MENTION_DIGEST_TO }}
         run: |
-          D="$STATE_DIR/digests/$(date -u +%Y-%m-%d)"
-          test -f "$D.txt" || { echo "No digest was written (quiet week or earlier failure); nothing to email."; exit 0; }
-          python3 ops_digest/assemble.py --send-files --subject "NYCuriosity mention digest (premium push failed)" --txt "$D.txt" --html "$D.html"
+          T=$(ls -t "$STATE_DIR"/digests/"$(date -u +%Y-%m-%d)"*.txt 2>/dev/null | head -1)  # newest, incl. -2/-3 names (audit A4)
+          test -n "$T" || { echo "No digest was written (quiet week or earlier failure); nothing to email."; exit 0; }
+          D="${T%.txt}"
+          python3 ops_digest/assemble.py --send-files --to "${MENTION_DIGEST_TO:-${GMAIL_USER}}" --subject "NYCuriosity mention digest (premium push failed)" --txt "$D.txt" --html "$D.html"

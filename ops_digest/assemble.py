@@ -30,6 +30,7 @@ import json
 import os
 import re
 import subprocess
+import time
 import sys
 import urllib.error
 import urllib.request
@@ -48,6 +49,8 @@ REPOS = [("TalR24/nycur-data-website", "GITHUB_TOKEN"),
          ("TalR24/talroded_personal", "PREMIUM_PUSH_TOKEN"),
          ("block-party-studio/resolution_engine", "PREMIUM_PUSH_TOKEN")]
 SKIP_WORKFLOWS = ("pages-build-deployment", "pages build and deployment")
+# Expected sources that cannot report yet; shown with the reason instead of as a failure (audit A3, Oct 18 2026)
+SETUP_PENDING = {"block_party_quality": "waiting on the PREMIUM_PUSH_TOKEN secret in block-party-studio/resolution_engine (TODO_tal.md)"}
 DASHES = re.compile(r"^-{10,}\s*$")
 URL = re.compile(r"(https?://[^\s<>\"')]+)")
 
@@ -57,19 +60,24 @@ URL = re.compile(r"(https?://[^\s<>\"')]+)")
 def parse_md(text):
     """(subject, needs_tal, body) from a routine's .md section."""
     lines = text.splitlines()
-    subject, needs = None, 0
-    i = 0
-    while i < len(lines) and i < 2:
-        m = re.match(r"(?i)\s*(subject|needs_tal)\s*:\s*(.*)$", lines[i])
-        if not m:
+    subject, needs, drop, seen = None, 0, set(), 0
+    for i, line in enumerate(lines):
+        if not line.strip():
+            continue
+        seen += 1
+        if seen > 10:
             break
-        if m.group(1).lower() == "subject":
-            subject = m.group(2).strip()
-        else:
-            digits = re.search(r"\d+", m.group(2))
-            needs = int(digits.group()) if digits else 0
-        i += 1
-    return subject, needs, "\n".join(lines[i:]).lstrip("\n")
+        m = re.match(r"(?i)\s*(?:[#*>`-]+\s*)?(subject|needs_tal)\s*:\s*(.*?)\**\s*$", line)
+        if m:
+            if m.group(1).lower() == "subject" and subject is None:
+                subject = m.group(2).strip().strip("*").strip()
+            elif m.group(1).lower() == "needs_tal":
+                digits = re.search(r"\d+", m.group(2))
+                needs = int(digits.group()) if digits else 0
+            drop.add(i)
+    if subject is None:
+        print("warning: section has no Subject: header in its first 10 lines", file=sys.stderr)
+    return subject, needs, "\n".join(l for i, l in enumerate(lines) if i not in drop).strip("\n")
 
 
 def text_to_html(body):
@@ -160,14 +168,20 @@ def failed_runs(since, env=os.environ):
     out = []
     for repo, tok_name in REPOS:
         token = env.get(tok_name) or ""
-        url = (f"https://api.github.com/repos/{repo}/actions/runs?status=failure"
-               f"&created=%3E%3D{since}&per_page=100")
-        req = urllib.request.Request(url, headers={"Accept": "application/vnd.github+json",
-                                                   "User-Agent": "nycur-ops-digest",
-                                                   **({"Authorization": f"Bearer {token}"} if token else {})})
+        runs, page = [], 1
         try:
-            with urllib.request.urlopen(req, timeout=30) as r:
-                runs = json.load(r).get("workflow_runs", [])
+            while True:  # every page until an empty one (counts rule: never a capped first page)
+                url = (f"https://api.github.com/repos/{repo}/actions/runs?status=failure"
+                       f"&created=%3E%3D{since}&per_page=100&page={page}")
+                req = urllib.request.Request(url, headers={"Accept": "application/vnd.github+json",
+                                                           "User-Agent": "nycur-ops-digest",
+                                                           **({"Authorization": f"Bearer {token}"} if token else {})})
+                with urllib.request.urlopen(req, timeout=30) as r:
+                    batch = json.load(r).get("workflow_runs", [])
+                if not batch:
+                    break
+                runs += batch
+                page += 1
         except urllib.error.HTTPError as e:
             if e.code in (401, 403, 404):
                 out.append((repo, f"not checked (token cannot read {repo})", []))
@@ -202,7 +216,7 @@ def compose(secs, missing, runs, today):
     t = ["NEEDS YOU", ""]
     t += [f"- {s['title']}: {s['needs']}" for s in secs if s["needs"]] or ["Nothing."]
     t += ["", "DID NOT REPORT", ""]
-    t += [f"- {LABELS[k]} ({k}): no file in ops_digest/pending/" for k in missing] or ["All expected sources reported."]
+    t += [f"- {LABELS[k]} ({k}): " + (SETUP_PENDING.get(k) or "no file in ops_digest/pending/") for k in missing] or ["All expected sources reported."]
     t += ["", "FAILED ACTION RUNS SINCE THE LAST DIGEST", ""]
     any_run = False
     for repo, note, rows in runs:
@@ -222,7 +236,7 @@ def compose(secs, missing, runs, today):
          f'<h1 style="font-size:20px">{e(subject)}</h1>', '<h2 style="font-size:16px">Needs you</h2>', "<ul>"]
     h += [f'<li><a href="#sec-{s["key"]}">{e(s["title"])}</a>: {s["needs"]}</li>' for s in secs if s["needs"]] or ["<li>Nothing.</li>"]
     h += ["</ul>", '<h2 style="font-size:16px">Did not report</h2>', "<ul>"]
-    h += [f"<li>{e(LABELS[k])} (<code>{k}</code>): no file in ops_digest/pending/</li>" for k in missing] or ["<li>All expected sources reported.</li>"]
+    h += [f"<li>{e(LABELS[k])} (<code>{k}</code>): {e(SETUP_PENDING.get(k) or 'no file in ops_digest/pending/')}</li>" for k in missing] or ["<li>All expected sources reported.</li>"]
     h += ["</ul>", '<h2 style="font-size:16px">Failed Action runs since the last digest</h2>', "<ul>"]
     li = []
     for repo, note, rows in runs:
@@ -257,8 +271,15 @@ def file_sent(premium, today):
         git(premium, "config", "user.email", "github-actions[bot]@users.noreply.github.com")
         git(premium, "add", "ops_digest")
         git(premium, "commit", "-m", f"Ops digest {today.strftime('%Y-%m')}: file sent sections")
-        git(premium, "pull", "--rebase", "origin", "main")
-        git(premium, "push")
+        for attempt in range(3):  # other jobs push to premium too; retry a lost race (audit A7)
+            try:
+                git(premium, "pull", "--rebase", "origin", "main")
+                git(premium, "push")
+                break
+            except subprocess.CalledProcessError:
+                if attempt == 2:
+                    raise
+                time.sleep(10 * (attempt + 1))
     return moved
 
 
@@ -271,6 +292,7 @@ def main():
     ap.add_argument("--no-runs", action="store_true", help="skip the GitHub failed-runs lookup (testing)")
     ap.add_argument("--send-files", action="store_true", help="just email --txt/--html (fallback path)")
     ap.add_argument("--subject")
+    ap.add_argument("--to", help="recipient for --send-files (default: the seo/common ALERT_TO)")
     ap.add_argument("--txt")
     ap.add_argument("--html")
     a = ap.parse_args()
@@ -278,7 +300,8 @@ def main():
     if a.send_files:
         body = Path(a.txt).read_text(encoding="utf-8") if a.txt and Path(a.txt).exists() else ""
         page = Path(a.html).read_text(encoding="utf-8") if a.html and Path(a.html).exists() else None
-        return 0 if send_email(a.subject or "NYCuriosity digest", body, html=page) else 1
+        kw = {"to": a.to} if a.to else {}
+        return 0 if send_email(a.subject or "NYCuriosity digest", body, html=page, **kw) else 1
 
     today = date.fromisoformat(a.today) if a.today else datetime.now(timezone.utc).date()
     premium = Path(a.premium)

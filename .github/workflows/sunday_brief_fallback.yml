@@ -1,6 +1,6 @@
 name: Sunday brief fallback
 
-# The Sunday cloud routine writes planning/briefs/YYYY-MM-DD.md into the private
+# Digests are built on Saturday (GitHub cron starts 3 to 9 h late). The Sunday cloud routine writes planning/briefs/YYYY-MM-DD.md into the private
 # premium repo and sends the ONE Sunday week-ahead email. This workflow runs
 # after it is due. If today's marker file is missing, it emails the raw mention
 # and opportunity digests so nothing is lost; if the marker exists it exits
@@ -41,20 +41,27 @@ jobs:
         run: |
           python3 - <<'PY'
           import html, os, sys
-          from datetime import datetime, timezone
+          from datetime import datetime, timedelta, timezone
           from pathlib import Path
           sys.path.insert(0, "seo")
           from common import send_email
 
           premium = Path(os.environ["PREMIUM_DIR"])
-          today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
-          marker = premium / "planning" / "briefs" / f"{today}.md"
+          now = datetime.now(timezone.utc)
+          # this run can start hours late (GitHub cron delay), even after midnight UTC: check the most recent Sunday
+          sunday = (now - timedelta(days=(now.weekday() + 1) % 7)).strftime("%Y-%m-%d")
+          marker = premium / "planning" / "briefs" / f"{sunday}.md"
           if marker.exists():
               print(f"Marker {marker.name} exists; the Sunday brief arrived. Nothing to do.")
               sys.exit(0)
 
-          digests = [("Mention digest", premium / "mention_monitor_state" / "digests" / f"{today}"),
-                     ("Opportunity digest", premium / "opportunities" / "state" / "digests" / f"{today}")]
+          def newest(folder):
+              # digests are built on Saturday (names YYYY-MM-DD or YYYY-MM-DD-2); take the newest from the last 2 days
+              cutoff = (now - timedelta(days=2)).strftime("%Y-%m-%d")
+              stems = sorted({p.stem for p in folder.glob("*.html") if p.stem[:10] >= cutoff})
+              return folder / stems[-1] if stems else folder / "missing"
+          digests = [("Mention digest", newest(premium / "mention_monitor_state" / "digests")),
+                     ("Opportunity digest", newest(premium / "opportunities" / "state" / "digests"))]
           intro = ("The Sunday week-ahead email did not arrive. Check the routine at "
                    "https://claude.ai/code/routines/trig_01F1EJTV9kbR5MJiJQEKKoPw and run the /ci-triage skill "
                    "if an Action failed. The raw digests follow.")
@@ -67,7 +74,7 @@ jobs:
               else:
                   missing.append(label)
           if missing:
-              note = "Missing today: " + ", ".join(missing) + "."
+              note = "Missing (none built in the last 2 days): " + ", ".join(missing) + "."
               text.insert(2, note)
               page.insert(1, f"<p><strong>{html.escape(note)}</strong></p>")
           ok = send_email("Sunday week-ahead email did not arrive, raw digests below",

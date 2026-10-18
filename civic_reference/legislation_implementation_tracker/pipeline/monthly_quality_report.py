@@ -159,7 +159,7 @@ def main(argv=None) -> int:
         (f"**VALIDATOR CRASHED: {', '.join(crashed)}. No result for it this month; see its output below.** "
          f"Hard failures in the validator that ran: **{hard_total}**"
          if crashed else
-         f"Hard failures: **{hard_total}**" + (" — RUN A QUALITY LOOP" if hard_total else " (clean)")),
+         f"Hard failures: **{hard_total}**" + (": RUN A QUALITY LOOP" if hard_total else " (clean)")),
         "",
     ]
     if prev:
