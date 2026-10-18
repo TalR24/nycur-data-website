@@ -132,6 +132,14 @@ def _single(clause, signed, ref=None):
         if not ref or not ref.get("effective_date"):
             return None, "same_as_chapter_unresolved", ref
         return _d(ref["effective_date"]), "same_as_chapter", ref
+    # T3 (Oct 18 2026): "the first day of the first month next succeeding the one hundred twentieth day after it shall have become a law" is the signing date
+    # plus N days, then the first day of the month after that
+    m = re.search(r"(?:take|takes) effect (?:on )?(?:the )?first(?: day)? of the (?:first )?month (?:next )?(?:succeeding|following)(?: the)? (" + ORD_WORD + r"|\d+(?:st|nd|rd|th)?) day (?:next )?(?:after|following)", low)
+    if m:
+        n = words_to_int(m.group(1)) if not m.group(1)[0].isdigit() else int(re.sub(r"\D", "", m.group(1)))
+        if n is not None:
+            d = signed + timedelta(days=n)
+            return add_months(date(d.year, d.month, 1), 1), "first_of_month_after_nth_day", None
     m = re.search(r"take effect (?:on )?(?:the )?first of (" + MONTH_RE + r") next succeeding", low)
     if m:
         return next_succeeding(MONTHS[m.group(1)], 1, signed), "first_of_month_next_succeeding", None

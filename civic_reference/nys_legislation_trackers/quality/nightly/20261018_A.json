@@ -1,0 +1,1135 @@
+{
+ "_scoring": {
+  "auditor": "A",
+  "night": "20261018",
+  "laws": 11,
+  "stored_records": 123,
+  "correct": 102,
+  "wrong_fields": 20,
+  "not_real": 1,
+  "missed": 2,
+  "precision_strict": "102/123 = 82.9% (Wilson 95% 75.3-88.6)",
+  "precision_real": "122/123 = 99.2% (Wilson 95% 95.5-99.9)",
+  "recall": "75/94 = 79.8% (Wilson 95% 70.6-86.7); denominator = 77 blind provisions + 17 stored-correct provisions the blind pass skipped (school district/BOCES twins of one provision counted once)",
+  "effective_dates": "11/11 correct",
+  "split": "re-ask (2011-A5318, 2011-S6732): strict 93/104 = 89.4% (82.0-94.0), real 103/104, recall 53/71 = 74.6% (63.4-83.3); first-answer (9 laws): strict 9/19 = 47.4% (27.3-68.3), real 19/19, recall 22/23 = 95.7% (79.0-99.2)",
+  "method": "blind list saved to /tmp/blindA_20261018.txt before stored records were opened; S6800 b1 withdrawn after review (it sits inside a definition, so the designation_no_actor drop is right)"
+ },
+ "_classes": [
+  {
+   "name": "IDA 'each agency' (GML art 18-a industrial development agency) resolved to 'All agencies'/'State agencies' instead of a local IDA group",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2015-S5867-01",
+    "2015-S5867-02",
+    "2015-S5867-03",
+    "2015-S5867-04",
+    "2015-S5867-05",
+    "2015-S5867-06",
+    "2015-S5867-07",
+    "2015-S5867-08"
+   ],
+   "rule": "agency in ('All agencies','State agencies') and re.search(r'General Municipal Law § ?8[5-8]\\d', citation)",
+   "db_matches": 9,
+   "db_examples": [
+    "2015-S5867-01",
+    "2015-S5867-03",
+    "2011-S5137-01"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "NYC chancellor / city school district actor left Unspecified (should be NYCPS, as 2011-S6732-61 and -84 are)",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2011-S6732-79",
+    "2011-S6732-80",
+    "2011-S6732-83",
+    "2011-S6732-93",
+    "2011-S6732-90",
+    "2011-S6732-92"
+   ],
+   "rule": "agency=='Unspecified' and re.search(r'chancellor|^the district$', actor_raw.strip(), re.I)",
+   "db_matches": 9,
+   "db_examples": [
+    "2011-S587-01",
+    "2011-S6732-79",
+    "2011-S6732-80"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "List items under a mandatory 'the department shall determine whether' lead-in stored as powers (recurrence of the Oct 17 class said to be fixed tonight)",
+   "criteria": [
+    "4"
+   ],
+   "instances": [
+    "2011-A5318-08",
+    "2011-A5318-09"
+   ],
+   "rule": "file powers and kind_rule=='duty' and not kind_adjusted and re.search(r'\\bshall\\b|\\bmust\\b',quote) and not re.search(r'\\bmay\\b|authori[sz]|empower|\\bpower|entitled|jurisdiction',quote,re.I) (broad: a sample shows some true powers such as 'shall be entitled'; judge before bulk fix)",
+   "db_matches": 325,
+   "db_examples": [
+    "2009-A10000-01",
+    "2009-A10049-01",
+    "2009-A10123-01"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "Signage 'installation and maintenance' duty stored one-time (twin law 2015-S6064-01 is ongoing)",
+   "criteria": [
+    "6"
+   ],
+   "instances": [
+    "2015-S7390-01"
+   ],
+   "rule": "re.search(r'installation and maintenance', quote, re.I) and recurrence=='one-time' (68 such records are 'ongoing')",
+   "db_matches": 32,
+   "db_examples": [
+    "2009-A10620-01",
+    "2009-A8252-01",
+    "2009-S5743-01"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "Triggered deadline ('after the notice is received') stored on_effective_date",
+   "criteria": [
+    "5"
+   ],
+   "instances": [
+    "2015-S7521-01"
+   ],
+   "rule": "deadline_kind=='on_effective_date' and re.search(r'after (the|such|each|any) [\\w ]{0,30}(is|are|has been|have been) (received|filed|submitted|made)|upon (receipt|request)', quote, re.I)",
+   "db_matches": 1,
+   "db_examples": [
+    "2015-S7521-01"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "Power quote opens with another record's duty sentence (truncated at a page marker)",
+   "criteria": [
+    "2"
+   ],
+   "instances": [
+    "2011-S6732-65"
+   ],
+   "rule": "file powers and re.search(r'\\bshall\\b[^.]*\\.\\s+[^.]*\\bmay\\b', quote)",
+   "db_matches": 4,
+   "db_examples": [
+    "2011-S4426-02",
+    "2011-S6732-65",
+    "2013-A6357-52"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "designation_no_actor drops list items that sit under a mandatory lead-in ('the department shall determine whether: ... E-H')",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2011-A5318 dropped 15-1503(2)(C),(E),(F),(G),(H)"
+   ],
+   "rule": "dropped rule=='designation_no_actor'; whether a lead-in exists needs the section text",
+   "db_matches": 385,
+   "db_examples": [
+    "2011-A5318 (5 drops)"
+   ],
+   "needs_judgment": true
+  },
+  {
+   "name": "New 'added criterion' items under an existing duty marked extends_existing false while sibling items are true",
+   "criteria": [
+    "7"
+   ],
+   "instances": [
+    "2011-A5318-11"
+   ],
+   "rule": "no field separates a new list item under an existing lead-in",
+   "db_matches": 0,
+   "db_examples": [],
+   "needs_judgment": true
+  },
+  {
+   "name": "Permit term cap stored as a duty with passive actor_raw",
+   "criteria": [
+    "1",
+    "3"
+   ],
+   "instances": [
+    "2011-A5318-17"
+   ],
+   "rule": "re.search(r'shall be valid for a (period|term) (of time )?not to exceed', quote, re.I)",
+   "db_matches": 1,
+   "db_examples": [
+    "2011-A5318-17"
+   ],
+   "needs_judgment": false
+  }
+ ],
+ "2015-S7371": {
+  "records": {
+   "2015-S7371-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S7371-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S7371-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2016-07-21",
+   "computed": "2016-07-21",
+   "verdict": "correct",
+   "note": "immediately; signed 2016-07-21"
+  }
+ },
+ "2015-S5867": {
+  "records": {
+   "2015-S5867-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Industrial development agencies (local; GML art 18-a IDAs plus Troy and Auburn IDAs)"
+    },
+    "note": "'Each agency shall develop a standard application form' - 'agency' is an industrial development agency under article 18-a, a local public benefit corporation, not a State agency or 'All agencies'"
+   },
+   "2015-S5867-02": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Industrial development agencies (local; GML art 18-a IDAs plus Troy and Auburn IDAs)"
+    },
+    "note": "'Each agency shall develop a standard application form' - 'agency' is an industrial development agency under article 18-a, a local public benefit corporation, not a State agency or 'All agencies'"
+   },
+   "2015-S5867-03": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Industrial development agencies (local; GML art 18-a IDAs plus Troy and Auburn IDAs)"
+    },
+    "note": "'Each agency shall develop a standard application form' - 'agency' is an industrial development agency under article 18-a, a local public benefit corporation, not a State agency or 'All agencies'"
+   },
+   "2015-S5867-04": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Industrial development agencies (local; GML art 18-a IDAs plus Troy and Auburn IDAs)"
+    },
+    "note": "'Each agency shall develop a standard application form' - 'agency' is an industrial development agency under article 18-a, a local public benefit corporation, not a State agency or 'All agencies'"
+   },
+   "2015-S5867-05": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Industrial development agencies (local; GML art 18-a IDAs plus Troy and Auburn IDAs)"
+    },
+    "note": "'Each agency shall develop a standard application form' - 'agency' is an industrial development agency under article 18-a, a local public benefit corporation, not a State agency or 'All agencies'"
+   },
+   "2015-S5867-06": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Industrial development agencies (local; GML art 18-a IDAs plus Troy and Auburn IDAs)"
+    },
+    "note": "'Each agency shall develop a standard application form' - 'agency' is an industrial development agency under article 18-a, a local public benefit corporation, not a State agency or 'All agencies'"
+   },
+   "2015-S5867-07": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Industrial development agencies (local; GML art 18-a IDAs plus Troy and Auburn IDAs)"
+    },
+    "note": "'Each agency shall develop a standard application form' - 'agency' is an industrial development agency under article 18-a, a local public benefit corporation, not a State agency or 'All agencies'"
+   },
+   "2015-S5867-08": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Industrial development agencies (local; GML art 18-a IDAs plus Troy and Auburn IDAs)"
+    },
+    "note": "'Each agency shall develop a standard application form' - 'agency' is an industrial development agency under article 18-a, a local public benefit corporation, not a State agency or 'All agencies'"
+   }
+  },
+  "missed": [
+   {
+    "blind": "b3",
+    "quote": "An assessment by the agency of all material information included in connection with the application for financial assistance, as necessary to afford a reasonable basis for the decision by the agency to provide financial assistance for the project",
+    "kind": "duty",
+    "agency": "Industrial development agencies",
+    "dropped_by": null,
+    "note": "859-a(5)(A), one of the steps that 'must occur prior to the approval'; (B) and (D) were stored, (A) was not"
+   }
+  ],
+  "effective_date": {
+   "stored": "2016-06-15",
+   "computed": "2016-06-15",
+   "verdict": "correct",
+   "note": "180th day after 2015-12-18"
+  }
+ },
+ "2015-S6064": {
+  "records": {
+   "2015-S6064-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2016-09-29",
+   "computed": "2016-09-29",
+   "verdict": "correct",
+   "note": "immediately"
+  }
+ },
+ "2015-S7366": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2016-08-19",
+   "computed": "2016-08-19",
+   "verdict": "correct",
+   "note": "only new matter adds Prospect Terrace Fire Company to the 45% limit exemption list; no record expected"
+  }
+ },
+ "2015-S6459": {
+  "records": {
+   "2015-S6459-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S6459-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2016-07-21",
+   "computed": "2016-07-21",
+   "verdict": "correct",
+   "note": "immediately"
+  }
+ },
+ "2015-S6650": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2016-07-20",
+   "computed": "2016-07-20",
+   "verdict": "correct",
+   "note": "fixed July 20, 2016; expires 2016-07-25 stored correctly; only private licensees act"
+  }
+ },
+ "2015-S6800": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2017-03-28",
+   "computed": "2017-03-28",
+   "verdict": "correct",
+   "note": "180th day after 2016-09-29; early-rulemaking proviso correctly produced no record"
+  }
+ },
+ "2015-S7390": {
+  "records": {
+   "2015-S7390-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "6"
+    ],
+    "fields": {
+     "recurrence": "ongoing"
+    },
+    "note": "'shall provide for the installation and maintenance of adequate signing' - maintenance is continuous; identical sentence in 2015-S6064-01 is ongoing"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2016-09-29",
+   "computed": "2016-09-29",
+   "verdict": "correct",
+   "note": "immediately"
+  }
+ },
+ "2015-S7521": {
+  "records": {
+   "2015-S7521-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "5"
+    ],
+    "fields": {
+     "deadline_kind": "none",
+     "deadline_date": null
+    },
+    "note": "'shall provide written notice of this election ... no less than thirty days after the notice is received' is triggered by receipt, not a setup duty"
+   },
+   "2015-S7521-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S7521-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S7521-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2016-10-09",
+   "computed": "2016-10-09",
+   "verdict": "correct",
+   "note": "30th day after 2016-09-09"
+  }
+ },
+ "2011-A5318": {
+  "records": {
+   "2011-A5318-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A5318-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A5318-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A5318-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A5318-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A5318-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A5318-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A5318-16": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A5318-18": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A5318-19": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A5318-20": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A5318-21": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A5318-22": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-A5318-08": {
+    "verdict": "wrong",
+    "criteria": [
+     "4"
+    ],
+    "fields": {
+     "kind": "duty (move to duties)"
+    },
+    "note": "lead-in 'the department shall determine whether:' is mandatory; item A 'the proposed {{Water withdrawal}} takes proper consideration of other sources'"
+   },
+   "2011-A5318-09": {
+    "verdict": "wrong",
+    "criteria": [
+     "4"
+    ],
+    "fields": {
+     "kind": "duty (move to duties)"
+    },
+    "note": "same mandatory lead-in; item B 'the {{quantity of}} supply will be adequate {{for the proposed use;}}'"
+   },
+   "2011-A5318-11": {
+    "verdict": "wrong",
+    "criteria": [
+     "7"
+    ],
+    "fields": {
+     "extends_existing": true
+    },
+    "note": "'{{D. The need for all or part of the proposed Water withdrawal cannot be reasonably avoided}}' adds a criterion to the existing 'the department shall determine whether' duty; siblings -08/-09 are true"
+   },
+   "2011-A5318-17": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "3"
+    ],
+    "fields": {},
+    "note": "'new permit ... shall be valid for a period of time not to exceed ten years' is a term cap; actor_raw 'A new permit' is the passive subject"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2012-02-15",
+   "computed": "2012-02-15",
+   "verdict": "correct",
+   "note": "fixed Feb 15 2012; section 4 immediately (2011-08-16) stored in section_dates and on -18"
+  }
+ },
+ "2011-S6732": {
+  "records": {
+   "2011-S6732-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-09": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-10": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-11": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-12": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-13": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-14": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-15": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-16": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-17": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-18": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-19": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-20": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-21": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-22": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-25": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-26": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-31": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-32": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-35": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-36": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-37": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-38": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-39": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-40": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-41": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-42": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-43": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-44": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-45": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-46": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-47": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-48": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-49": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-50": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-51": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-52": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-53": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-54": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-55": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-56": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-57": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-58": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-59": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-60": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-61": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-62": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-63": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-64": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-65": {
+    "verdict": "wrong",
+    "criteria": [
+     "2"
+    ],
+    "fields": {
+     "quote": "The commissioner may reject a plan that does not rigorously adhere to the provisions of this Section and the regulations of the commissioner."
+    },
+    "note": "stored quote opens with -64's duty sentence 'The commissioner shall approve or reject the plan by September first...' and stops at 'may reject a plan'"
+   },
+   "2011-S6732-66": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-67": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-68": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-69": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-70": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-71": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-72": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-73": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-74": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-75": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-76": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-77": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-78": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-79": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "NYCPS (agency_unit: city school district of the city of New York)"
+    },
+    "note": "'appeal that rating to the chancellor of the city school District, who shall make a final determination'; stored agency Unspecified, while -61 (chancellor) and -84 (board of education) resolve to NYCPS"
+   },
+   "2011-S6732-80": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "NYCPS (agency_unit: city school district of the city of New York)"
+    },
+    "note": "'a person selected by the chancellor of the city school District'; stored agency Unspecified, while -61 (chancellor) and -84 (board of education) resolve to NYCPS"
+   },
+   "2011-S6732-81": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-82": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-83": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "NYCPS (agency_unit: city school district of the city of New York)"
+    },
+    "note": "'The chancellor of the city school District shall notify the uft of all ineffective ratings.'; stored agency Unspecified, while -61 (chancellor) and -84 (board of education) resolve to NYCPS"
+   },
+   "2011-S6732-84": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-85": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-86": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-87": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-88": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-89": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-90": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "NYCPS (agency_unit: city school district of the city of New York)"
+    },
+    "note": "'the District may bring a proceeding' - the District in subdivision 5-a is the New York City school district; stored agency Unspecified, while -61 (chancellor) and -84 (board of education) resolve to NYCPS"
+   },
+   "2011-S6732-91": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-92": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "NYCPS (agency_unit: city school district of the city of New York)"
+    },
+    "note": "'the District may not bring proceeding' - New York City school district; stored agency Unspecified, while -61 (chancellor) and -84 (board of education) resolve to NYCPS"
+   },
+   "2011-S6732-93": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "NYCPS (agency_unit: city school district of the city of New York)"
+    },
+    "note": "'appeal the year two ineffective rating to the chancellor of the city school District, who shall make a final determination'; stored agency Unspecified, while -61 (chancellor) and -84 (board of education) resolve to NYCPS"
+   },
+   "2011-S6732-94": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6732-95": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   }
+  },
+  "missed": [
+   {
+    "blind": "b10",
+    "quote": "For evaluations For the two thousand twelve--two thousand thirteen school year and thereafter, that such assessment must incorporate multiple school visits by a supervisor, a trained administrator or other trained evaluator, with at least one visit conducted by the supervisor and at least one unannounced visit.",
+    "kind": "duty",
+    "agency": "School districts; BOCES",
+    "dropped_by": null,
+    "note": "3012-c(2)(h)(4); -44/-45 quote only the 'majority of these sixty points' clause"
+   }
+  ],
+  "effective_date": {
+   "stored": "2012-03-27",
+   "computed": "2012-03-27",
+   "verdict": "correct",
+   "note": "immediately; NYC appeals proviso (Jan 16 2013 unless a bargained plan) not captured in section_dates (known proviso parser gap)"
+  }
+ }
+}

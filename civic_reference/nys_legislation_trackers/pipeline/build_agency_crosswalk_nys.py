@@ -121,6 +121,7 @@ CURATED = [
     ("TBTA", "Triborough Bridge and Tunnel Authority", "public authority", ["triborough bridge and tunnel authority", "tbta", "mta bridges and tunnels", "triborough bridge and tunnel authority (mta bridges and tunnels)"]),
     ("Fire Prevention and Building Code Council", "State Fire Prevention and Building Code Council", "board/commission", ["state fire prevention and building code council", "fire prevention and building code council", "new york state fire prevention and building code council", "code council"]),
     ("Fire districts", "Fire districts", "local government group", ["fire district", "fire districts", "board of fire commissioners", "fire commissioners", "each fire district"]),
+    ("Industrial development agencies", "Industrial development agencies", "local government group", ["industrial development agency", "industrial development agencies", "industrial development agencies and authorities"]),
     ("Special districts", "Special districts", "local government group", ["special district", "special districts", "improvement district", "improvement districts", "district corporation"]),
     ("Assessors (local)", "Assessors (local)", "local government group", ["assessor", "assessors", "board of assessors", "local assessor", "the assessor"]),
     ("Local veterans' service agencies", "Local veterans' service agencies", "local government group", ["veterans service agency", "veterans service agencies", "veterans' service agency", "veterans' service agencies", "county veterans service agency", "local veterans service agency"]),

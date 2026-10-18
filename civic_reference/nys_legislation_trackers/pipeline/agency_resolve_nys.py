@@ -321,7 +321,9 @@ def fix_public_body(o):
 # 'the city school district of the city of New York'), the principal, board of education, chancellor and community superintendent are the
 # NYC Public Schools actors (NYC crosswalk NYCPS). A bare 'the chancellor' needs the city school district named: CUNY and SUNY have chancellors too.
 NYC_SCHOOL_LAW = re.compile(r"article\s+52-?A\b|\bsections?\s+2590(?:-\w+)?\b|city\s+school\s+district\s+of\s+the\s+city\s+of\s+new\s+york|city\s+school\s+district\s+having\s+a\s+population\s+of\s+(?:one\s+million|1,000,000)", re.I)
-NYC_SCHOOL_ACTOR = re.compile(r"^(?:the |such |each |said )?(?:principals?|board of education|chancellor|community superintendents?)$", re.I)
+NYC_SCHOOL_ACTOR = re.compile(r"^(?:the |such |each |said )?(?:principals?|board of education|chancellor|community superintendents?)$"
+                              r"|^(?:the |such |said )?chancellor of the city school district(?: of the city of new york)?$|^the district$", re.I)          # T2 (Oct 18 2026): chancellor wording, 'the District'
+
 
 
 def fix_nyc_school_actor(o, text, nyc_by):
@@ -341,6 +343,48 @@ def fix_nyc_school_actor(o, text, nyc_by):
              agency_group=None, agency_unit=None, agency_source="nyc_school_actor")
     o.pop("actor_unresolved", None)
     return "m33_nyc_school_actor"
+
+
+# T1 (Oct 18 2026): in a law about industrial development agencies (General Municipal Law article 18-A) 'each agency' / 'the agency' is an IDA, a local
+# public benefit corporation, never All agencies or State agencies.
+IDA_LAW = re.compile(r"industrial\s+development\s+agenc(?:y|ies)", re.I)
+IDA_ACTOR = re.compile(r"^(?:the |each |an? |every |any |such |said )?agency$", re.I)
+
+
+def fix_ida_agency(o, text, title, by_canon):
+    """Mutates o and returns True when actor_raw is a bare 'agency' in a law whose title or text names industrial development agencies."""
+    raw = re.sub(r"\s+", " ", (o.get("actor_raw") or "").strip(" .,;:"))
+    if not IDA_ACTOR.match(raw) or "Industrial development agencies" not in by_canon:
+        return False
+    if o.get("agency") not in (None, "Unspecified", "All agencies", "State agencies"):
+        return False
+    if not (IDA_LAW.search(title or "") or IDA_LAW.search(text or "")):
+        return False
+    a = by_canon["Industrial development agencies"]
+    o.update(agency="Industrial development agencies", agency_full=a.get("full_name") or "Industrial development agencies", agency_matched=True, jurisdiction="local",
+             agency_org_type="local government group", agency_group="Industrial development agencies", agency_unit=None, agency_source="ida_agency")
+    o.pop("actor_unresolved", None)
+    return True
+
+
+# T5 (Oct 18 2026): 'the employer' in a State employee-contract law (the State is the employer: Civil Service Law article 14, State Finance Law salary acts) is
+# the State agencies group, not Public employers.
+EMPLOYER_ACTOR = re.compile(r"^(?:the |such |said )?(?:public )?employer$", re.I)
+STATE_EMPLOYER_LAW = re.compile(r"article\s+(?:fourteen|14)\s+of\s+the\s+civil\s+service\s+law|\bthe\s+state,?\s+as\s+(?:the\s+)?employer\b|\bstate\s+as\s+(?:the\s+)?employer\b"
+                                r"|section\s+2\d\d(?:-\w+)?\s+of\s+the\s+state\s+finance\s+law|\bstate\s+finance\s+law\b[^.]{0,80}\bsalar", re.I)
+
+
+def fix_state_employer(o, text):
+    """Mutates o and returns True when 'the employer' resolved to Public employers (or nothing) in a law where the State is the employer."""
+    raw = re.sub(r"\s+", " ", (o.get("actor_raw") or "").strip(" .,;:"))
+    if not EMPLOYER_ACTOR.match(raw) or o.get("agency") not in (None, "Unspecified", "Public employers"):
+        return False
+    if not (STATE_EMPLOYER_LAW.search(text or "") or re.search(r"\bstate\b", o.get("actor_resolved_model") or "", re.I)):
+        return False
+    o.update(agency="State agencies", agency_full="State agencies", agency_matched=True, jurisdiction="state", agency_org_type="state agency group",
+             agency_group=None, agency_unit="State of New York", agency_source="state_employer")
+    o.pop("actor_unresolved", None)
+    return True
 
 
 # M34 (Oct 14 2026): an assessing unit is a municipality; the named county is context, never the actor.

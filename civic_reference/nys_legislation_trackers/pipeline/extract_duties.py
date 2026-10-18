@@ -272,6 +272,7 @@ def attach_jurisdiction(o, quote_context=""):
     # 2. a named locality (or its assessor, tax office, governing body) resolves to the locality, never to a State agency
     state_hit = o.get("agency_matched") and o["agency"] in BY_CANON and BY_CANON[o["agency"]]["jurisdiction"] == "state"
     actor_text = [x for x in (o.get("actor_raw"), o.get("actor_resolved_model")) if x]
+    raw_resolved = bool(o.get("agency_matched")) and o.get("agency") not in (None, "Unspecified")          # T2 (Oct 18): the actor_raw chain already resolved, so the model did not
     loc = named_locality(*actor_text)
     if not loc and (not o.get("agency_matched") or (state_hit and any(LOCAL_OFFICERS.search(x) for x in actor_text))):
         # M2 (Oct 10 2026): the quote's locality fills the actor only when the actor text names a local-government noun, or is unresolved
@@ -285,7 +286,7 @@ def attach_jurisdiction(o, quote_context=""):
     if loc and (not state_hit or any(LOCAL_OFFICERS.search(x) for x in actor_text) or o["agency"] in ("DTF",)):
         group, unit = loc
         o.update(agency=group, agency_full=group, agency_matched=True, jurisdiction="local", agency_org_type="local government group", agency_group=group, agency_unit=unit)
-        if o.get("actor_raw") and not named_locality(o["actor_raw"]) and named_locality(o.get("actor_resolved_model") or ""):
+        if (not raw_resolved and o.get("actor_raw") and not named_locality(o["actor_raw"]) and named_locality(o.get("actor_resolved_model") or "")):
             o["actor_source"] = "model_resolved"          # S1: the locality came from the model's actor, not the raw text
         return
     if o.get("agency_matched") and o["agency"] in BY_CANON:
@@ -469,12 +470,13 @@ def section_effective(o, text, eff):
 
 
 GRANT_WORD = re.compile(r"\b(?:is|are|hereby|further)\s+(?:hereby\s+)?(?:further\s+)?(?:authorized|empowered)\b|\bmay\b(?!\s+not)|\b(?:has|have) the power\b|\b(?:is|are) permitted\b", re.I)
+VESTED_POWER = re.compile(r"\bshall\s+have\s+and\s+(?:is|are)\s+hereby\s+vested\s+with\b[^.;]{0,160}\b(?:jurisdiction|powers?|authority)\b", re.I)          # T5 (Oct 18 2026)
 MANDATORY = re.compile(r"\b(shall|must|is required|are required|required to|is directed|are directed)\b", re.I)
 GRANT_PHRASE = re.compile(r"\b(?:shall be|is|are) (?:hereby )?(?:further )?(?:authorized|empowered)(?: and (?:authorized|empowered))?\b|\bshall have (?:the )?(?:power|authority)\b", re.I)
 
 
 # M35 (Oct 15 2026): 'authorized and directed' / 'empowered and directed' is a command to the actor, a duty, whatever the grant words around it.
-AUTH_DIRECTED = re.compile(r"\b(?:authorized|empowered)\s+and\s+directed\b|\bdirected\s+and\s+(?:authorized|empowered)\b", re.I)
+AUTH_DIRECTED = re.compile(r"\b(?:authorized|empowered)\s+and\s+(?:directed|required)\b|\b(?:directed|required)\s+and\s+(?:authorized|empowered)\b", re.I)
 
 
 def grant_only(quote):
@@ -491,7 +493,8 @@ STATE_MARK = re.compile(r"\b(state|department of taxation and finance|commission
 TRIGGER = re.compile(r"\b(upon|whenever|when|promptly|as soon as|as needed|until|if|unless|in response to)\b|\breceipt of\b|\breceives?\b|\bat the request\b"
                      r"|\bon the (?:written )?requests?\b|\bupon (?:the )?(?:written )?requests?\b|\bat the date of\b|\b(?:at|on|upon) (?:the )?dissolution\b"
                      r"|\b(?:after|following) (?:the )?(?:receipt|filing|submission)\b|\bin the event\b|\bon the date of (?:its |the )?(?:dissolution|termination)\b"
-                     r"|\b(?:prior to|before) submitting\b|\b(?:wants?|wish(?:es)?|seeks?|elects?|chooses?) to\b|\bthat applies\b|\bprior to (?:the )?(?:filing|approval|issuance)\b", re.I)
+                     r"|\b(?:prior to|before) submitting\b|\b(?:wants?|wish(?:es)?|seeks?|elects?|chooses?) to\b|\bthat applies\b|\bprior to (?:the )?(?:filing|approval|issuance)\b"
+                     r"|\bafter (?:the |such |each |any )[\w ]{0,30}?(?:is|are|has been|have been) (?:received|filed|submitted)\b", re.I)          # T7 (Oct 18 2026): 'after the notice is received'
 PROHIBITION = re.compile(r"\b(?:shall not|may not|must not)\b|^\s*no\b", re.I)
 SETUP_TYPES = {"rulemaking", "plan or strategy", "program or service", "designation or staffing", "database or data publication", "notice or posting", "training", "outreach or education"}
 
@@ -1480,9 +1483,29 @@ def joint_actor_single(r, records):
 NARROW_MUNICIPALITY = re.compile(r"[\"“”']municipalit(?:y|ies)[\"“”']\s+(?:shall\s+)?means?\s+[^.;]{0,200}?(?:located\s+in\s+(?:the\s+)?count(?:y|ies)\s+of|within\s+(?:the\s+)?count(?:y|ies)\s+of|population\s+of|having\s+a\s+population)", re.I)
 
 
+def mandatory_drop_flags(text, dropped):
+    """T8 (Oct 18 2026): a designation_no_actor drop whose list lead-in is mandatory ('the department shall determine whether:') may be a duty item. Flag only."""
+    qs = []
+    for d in dropped:
+        if d.get("rule") != "designation_no_actor":
+            continue
+        sp = locate_span(d.get("quote") or "", text)
+        lead = list_item_lead(sp, text) if sp else None
+        if lead and lead_in_makes_duty(lead):
+            qs.append(d.get("quote") or "")
+    if not qs:
+        return []
+    return [{"check": "mandatory_lead_in_item_dropped", "detail": "%d dropped list items sit under a mandatory lead-in" % len(qs), "sentences": qs[:12]}]
+
+
 def judgment_flags(text, records):
     """J1-J3 (Oct 9 2026): judgment classes the audits confirmed. Each returns the record's quote so the re-ask packet carries the sentence."""
     flags = []
+    single = [r for r in records if agency_resolve_nys.STATE_ACTOR.match(re.sub(r"\s+", " ", (r.get("actor_raw") or "").strip(" .,;:")))
+              and r.get("agency") not in (None, "Unspecified", "State agencies", "All agencies", "Governor")]
+    if single:      # T6 (Oct 18 2026): 'the state' resolved to one named agency; re-ask whether the quote names it
+        flags.append({"check": "state_as_single_agency", "detail": "%d records whose actor_raw is only 'the state' but resolved to one named agency" % len(single),
+                      "sentences": [r["quote"] for r in single][:12]})
     ps = [r for r in records if PASSIVE_SUBJECT.match((r.get("actor_raw") or "").strip())]
     if ps:
         flags.append({"check": "passive_subject_actor", "detail": "%d records whose actor_raw is the passive subject of the sentence, not the acting body" % len(ps),
@@ -1572,6 +1595,7 @@ def build_reask(todo, duties, powers):
             fl.append({"check": "d_actor_unresolved", "detail": "%d records whose acting body could not be resolved" % len(unres),
                        "sentences": [r["quote"] for r in unres][:12]})
         fl += judgment_flags(text, by_law.get(law["key"], []))
+        fl += mandatory_drop_flags(text, drops.get(law["key"], []))      # T8
         if law["key"] in manual:     # fix 11: missed items the audits found
             sents = []
             for frag in manual[law["key"]]:
@@ -1857,6 +1881,8 @@ _DL_PREFIX = r"\b(?:on or before|no later than|not later than|by|before)\s+(?:th
 _DL_YEAR_W = r"two\s+thousand(?:\s+(?:and\s+)?(?:" + efd.NUM_WORDS + r"))?"
 DL_FULL = re.compile(_DL_PREFIX + _DL_MON + r"\s+(" + _DL_DAY + r"),?\s+(\d{4}|" + _DL_YEAR_W + r")\b", re.I)
 DL_RECUR = re.compile(_DL_PREFIX + r"(?:(" + _DL_DAY + r")\s+day\s+of\s+" + _DL_MON + r"|" + _DL_MON + r"\s+(" + _DL_DAY + r"))\b,?\s*(?:of|in)\s+(?:each|every|any)\s+(?:calendar\s+|fiscal\s+)?year\b", re.I)
+# T7 (Oct 18 2026): 'beginning in January of each year', 'commencing with the first day of July' name the first occurrence of a dated start; the first such day on or after the base.
+DL_START = re.compile(r"\b(?:beginning|commencing|starting)\s+(?:in|on|with)\s+(?:the\s+)?(?:(" + _DL_DAY + r")\s+day\s+of\s+)?" + _DL_MON + r"(?:\s+(" + _DL_DAY + r")\b)?(?:,?\s+(\d{4})\b)?", re.I)
 
 
 def _dl_day(tok):
@@ -1876,6 +1902,20 @@ def dated_deadline(text, base):
             yr = 2000 + (efd.words_to_int(rest) if rest else 0)
         try:
             return date(int(yr), efd.MONTHS[m.group(1).lower()], day).isoformat(), "full"
+        except (TypeError, ValueError):
+            return None
+    m = DL_START.search(t)
+    if m and base:
+        day = _dl_day(m.group(1) or m.group(3)) if (m.group(1) or m.group(3)) else 1
+        mon = efd.MONTHS[m.group(2).lower()]
+        b = date.fromisoformat(base)
+        try:
+            if m.group(4):
+                return date(int(m.group(4)), mon, day).isoformat(), "start"
+            for yr in (b.year, b.year + 1):
+                d = date(yr, mon, day)
+                if d >= b:
+                    return d.isoformat(), "start"
         except (TypeError, ValueError):
             return None
     m = DL_RECUR.search(t)
@@ -1961,12 +2001,16 @@ def run_agency_fixes(o, text, law, _model_pass=False):
         bump(r33)
     elif agency_resolve_nys.fix_assessing_unit(o):                      # M34
         bump("m34_assessing_unit")
+    if agency_resolve_nys.fix_ida_agency(o, text, (law or {}).get("title"), BY_CANON):      # T1
+        bump("t1_ida_agency")
+    if agency_resolve_nys.fix_state_employer(o, text):      # T5
+        bump("t5_state_employer")
     if agency_resolve_nys.fix_state_actor(o):          # O2
         bump("o2_state_actor_to_state_agencies")
     if not _model_pass and o.get("agency") == "Unspecified" and resolve_from_model_actor(o, text, law):      # S1
         bump("s1_model_actor_resolved")
     elif (not _model_pass and o.get("agency") not in (None, "Unspecified") and not o.get("actor_source") and o.get("actor_resolved_model") and o.get("agency_source") in MODEL_FIRST_SOURCES
-          and (PASSIVE_SUBJECT.match((o.get("actor_raw") or "").strip()) or not GOV_ACTOR.search(o.get("actor_raw") or ""))):
+          and PASSIVE_SUBJECT.match((o.get("actor_raw") or "").strip())):
         o["actor_source"] = "model_resolved"; bump("s1_model_actor_tagged")          # the chain's first candidate is the model's actor: a passive raw can only have resolved from it
 
 
@@ -2213,12 +2257,14 @@ def build_records(laws):
                     bump("s3_shall_lead_in_duty_model_duty")
                 if lead and lead_in_makes_duty(lead) and (uncapped or r6_ok("a_shall_lead_in_duty", o)):
                     kind = "duty"; o["kind_adjusted"] = "shall_lead_in_duty"; o["lead_in"] = re.sub(r"\s+", " ", re.sub(r"\{\{|\}\}", "", lead)).strip()[:400]
+            if kind == "duty" and VESTED_POWER.search(quote) and not re.search(r"\bshall\s+(?!have\b)\w+", quote, re.I):          # T5
+                kind = "power"; o["kind_adjusted"] = "vested_power"; bump("t5_vested_power")
             # 3. a grant with no mandatory verb is a power
             sp = locate_span(quote, text)
             ctx = context_sentence(sp, text)[0] if sp else ""
             if kind == "duty" and (grant_only(quote) or (ctx and grant_only(RELATIVE.sub(" ", ctx)))) and not CAP_RE.search(quote):
                 kind = "power"; o["kind_adjusted"] = "grant_only"; bump("grant_only_to_power")
-            if APPLY_M35 and kind == "power" and o.get("kind_model") == "duty" and AUTH_DIRECTED.search(quote):          # M35: the rules above must not override the model's duty
+            if APPLY_M35 and kind == "power" and (o.get("kind_model") == "duty" or o.get("kind_adjusted") == "model_power_kept" or o.get("kind_list_item")) and AUTH_DIRECTED.search(quote):          # M35: the rules above must not override the model's duty
                 kind = "duty"; o["kind_adjusted"] = "authorized_and_directed"; bump("m35_authorized_and_directed_duty")
             # 4. D3: bond caps and issuance cutoffs are duties (a prohibition on the actor) with no deadline
             if CAP_RE.search(quote) and kind in ("duty", "power") and not (kind == "power" and o.get("kind_model") == "power" and not DEBT_WORDS.search(quote)):
@@ -2250,6 +2296,9 @@ def build_records(laws):
                   and o.get("deliverable_type") in SETUP_TYPES and not TRIGGER.search(quote) and not EVENT_TIED.search(quote) and not CAP_RE.search(quote)
                   and not PROHIBITION.search(quote)):
                 o["deadline_kind"] = "on_effective_date"; bump("triggered_to_setup")
+            if (kind == "duty" and o.get("recurrence") == "one-time" and re.search(r"installation and maintenance", quote, re.I)
+                    and re.search(r"\bsign(?:s|age)?\b", quote + " " + (law.get("title") or ""), re.I)):          # T7: a sign that is installed and maintained is a standing duty
+                o["recurrence"] = "ongoing"; bump("t7_signage_ongoing")
             if COST_BEARING.search(quote) and (o.get("deadline_kind") != "none" or o.get("recurrence") != "ongoing" or o.get("deadline_date")):
                 o["deadline_kind"], o["deadline_date"], o["recurrence"] = "none", None, "ongoing"; bump("m17_cost_bearing_ongoing")          # M17
             if (o.get("model_unit") and not o.get("agency_unit") and o.get("jurisdiction") == "state"
@@ -2278,8 +2327,10 @@ def build_records(laws):
             if sec_src != "law":
                 bump("section_dates_applied")
             if (APPLY_M37 and kind == "duty" and not per_election and o.get("deadline_kind") in (None, "none") and not o.get("deadline_date")
-                    and o.get("deadline_text") and not CAP_RE.search(quote) and not COST_BEARING.search(quote)):
-                dd = dated_deadline(o["deadline_text"], sec_date or law["enactment_date"])
+                    and (o.get("deadline_text") or DL_START.search(quote)) and not CAP_RE.search(quote) and not COST_BEARING.search(quote)):
+                dd = dated_deadline(o.get("deadline_text") or quote, sec_date or law["enactment_date"])
+                if dd and not o.get("deadline_text") and dd[1] != "start":      # a stated date in the quote alone is only taken for a dated start
+                    dd = None
                 if dd and dd[0] >= law["enactment_date"]:
                     o["deadline_kind"], o["deadline_date"] = "fixed_date", dd[0]; bump("m37_dated_deadline_" + dd[1])
             if kind == "duty" and o.get("deadline_kind") == "on_effective_date":
@@ -2288,7 +2339,7 @@ def build_records(laws):
                 o["deadline_date"] = sec_date
             elif o.get("deadline_kind") in (None, "none") and o.get("deadline_date") and o["deadline_date"] == res.get("effective_date"):
                 o["deadline_date"] = None
-            rec = {**o, "kind": kind, "chapter": law["chapter_number"], "chapter_year": law["chapter_year"],
+            rec = {**o, "kind": kind, "kind_rule": kind, "chapter": law["chapter_number"], "chapter_year": law["chapter_year"],
                    "session": law["session"], "print_no": law["print_no"], "law_number_display": law["law_number_display"],
                    "law_title": law["title"], "prime_sponsor": law["sponsor"], "enactment_date": law["enactment_date"],
                    "effective_date": sec_date, "effective_rule": eff["rule"] if sec_src == "law" else ("open_on_expiration_of_other_law" if sec_src == "open" else "section_" + sec_src), "law_expires_date": eff["expires_date"],

@@ -1,0 +1,1115 @@
+{
+ "_scoring": {
+  "auditor": "B",
+  "night": "20261018",
+  "laws": 11,
+  "stored_records": 94,
+  "correct": 78,
+  "wrong_fields": 16,
+  "not_real": 0,
+  "missed": 19,
+  "precision_strict": "78/94 = 83.0% (Wilson 95% 74.1-89.2)",
+  "precision_real": "94/94 = 100.0% (Wilson 95% 96.1-100.0)",
+  "recall": "94/116 = 81.0% (Wilson 95% 73.0-87.1)",
+  "effective_dates": "10/11 correct"
+ },
+ "_classes": [
+  {
+   "name": "NYS 'each agency' resolved to All agencies / 'Every city agency' (Council label) or State agencies for industrial development agencies",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2015-S5867-01",
+    "2015-S5867-02",
+    "2015-S5867-03",
+    "2015-S5867-04",
+    "2015-S5867-05",
+    "2015-S5867-06",
+    "2015-S5867-07",
+    "2015-S5867-08"
+   ],
+   "rule": "agency_full == 'Every city agency' OR ('industrial development' in actor_resolved_model.lower() AND agency in ('State agencies','All agencies'))",
+   "db_matches": 14,
+   "db_examples": [
+    "2009-A6382-01",
+    "2009-A7246-03",
+    "2009-S8314-13"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "actor_raw 'the state' resolved to a specific agency instead of State agencies / State of New York",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2015-S5957-02",
+    "2015-S5957-04",
+    "2015-S5957-05"
+   ],
+   "rule": "re.fullmatch(r'(the )?state', actor_raw.lower().strip()) AND agency != 'State agencies' (some hits may be context-justified, e.g. 2013-S6887-80 DVS)",
+   "db_matches": 9,
+   "db_examples": [
+    "2013-S6887-80",
+    "2013-S6887-81",
+    "2013-S6887-82"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "'the employer' in State employee-contract laws resolved to Public employers instead of the State",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2009-S8412-07",
+    "2009-S8412-10"
+   ],
+   "rule": "actor_raw.lower().strip()=='the employer' AND agency=='Public employers' AND 'state' in actor_resolved_model.lower()",
+   "db_matches": 5,
+   "db_examples": [
+    "2009-A11144-20",
+    "2009-A11144-21",
+    "2009-A11144-22"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "designation_no_actor gate drops real operative duties (list items under a 'shall:' lead-in, 'will' clauses)",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2015-S5957-06",
+    "2013-S7909-01"
+   ],
+   "rule": "dropped rule=='designation_no_actor' AND (quote matches r'^[A-Z][a-z]+ (whether|a|an|the|and)\\b' OR r'\\b(will|shall|must)\\b'); noisy, e.g. 2009-A10260-01 is a purpose clause; 385 designation_no_actor drops total",
+   "db_matches": 41,
+   "db_examples": [
+    "2009-A10260-01",
+    "2009-A10260-02",
+    "2009-A11308-24"
+   ],
+   "needs_judgment": true
+  },
+  {
+   "name": "effective-date parser: 'first day of the first month next succeeding the Nth day' left unparsed",
+   "criteria": [
+    "8"
+   ],
+   "instances": [
+    "2015-S5949"
+   ],
+   "rule": "effective_dates[law].rule=='unparsed' AND raw_clause matches r'first day of the (first )?(calendar )?month next succeeding' (laws; 57 records on them lack effective/deadline dates)",
+   "db_matches": 5,
+   "db_examples": [
+    "2015-S5949",
+    "2019-A2163",
+    "2019-A2236"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "'shall have and is hereby vested with ... jurisdiction' stored as duty",
+   "criteria": [
+    "4"
+   ],
+   "instances": [
+    "2015-S5949-04"
+   ],
+   "rule": "file==duties AND quote matches r'is hereby vested with|shall have (the )?(sole )?(jurisdiction|power|authority)\\b' AND no other 'shall <verb>' or 'duty' in quote",
+   "db_matches": 1,
+   "db_examples": [
+    "2015-S5949-04"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "dated recurring deadline stored as none (known class, recurrence count)",
+   "criteria": [
+    "5"
+   ],
+   "instances": [
+    "2015-S6916-02"
+   ],
+   "rule": "deadline_kind=='none' AND quote matches r'beginning (in|on) <Month>|(on or before|by) <Month> \\w+ of each year'",
+   "db_matches": 23,
+   "db_examples": [
+    "2009-A11566-04",
+    "2009-A8888-01",
+    "2009-S4234-02"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "government power to grant exemptions dropped as exemption_or_applicability",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2015-S5949-28"
+   ],
+   "rule": "dropped rule=='exemption_or_applicability' AND quote matches r'\\b(commission|commissioner|department|board|secretary|director)\\b[^.]{0,40}\\bmay\\b[^.]{0,20}\\bexempt' (2011-A55-27 is an interstate commission, not NY)",
+   "db_matches": 3,
+   "db_examples": [
+    "2011-A55-27",
+    "2013-S6887-33",
+    "2015-S5949-28"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "deadline_split drop with no surviving record",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2015-S5949-27"
+   ],
+   "rule": "dropped rule=='deadline_split'; whether a sibling record survived needs per-law check",
+   "db_matches": 10,
+   "db_examples": [
+    "2009-A2209-03",
+    "2009-A40012-02",
+    "2009-A7203-03"
+   ],
+   "needs_judgment": true
+  },
+  {
+   "name": "specific statutory 'the director' left Unspecified",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2009-S8412-01"
+   ],
+   "rule": "agency=='Unspecified' AND actor_raw.lower().strip()=='the director'",
+   "db_matches": 1,
+   "db_examples": [
+    "2009-S8412-01"
+   ],
+   "needs_judgment": false
+  }
+ ],
+ "2015-S7371": {
+  "records": {
+   "2015-S7371-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S7371-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S7371-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2016-07-21",
+   "computed": "2016-07-21",
+   "verdict": "correct",
+   "note": "'This act shall take effect immediately'; signed 2016-07-21. Dropped -02 (reviewed_as_if_condition) is decided policy."
+  }
+ },
+ "2015-S5867": {
+  "records": {
+   "2015-S5867-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Industrial development agencies (local public benefit corporations, jurisdiction local)",
+     "agency_full": "Industrial development agencies"
+    },
+    "note": "'Each agency shall develop...' in GML 859-a/874 means an industrial development agency; stored as All agencies / 'Every city agency'"
+   },
+   "2015-S5867-02": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Industrial development agencies (local public benefit corporations, jurisdiction local)",
+     "agency_full": "Industrial development agencies"
+    },
+    "note": "'Each agency shall develop...' in GML 859-a/874 means an industrial development agency; stored as All agencies / 'Every city agency'"
+   },
+   "2015-S5867-05": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Industrial development agencies (local public benefit corporations, jurisdiction local)",
+     "agency_full": "Industrial development agencies"
+    },
+    "note": "'Each agency shall develop...' in GML 859-a/874 means an industrial development agency; stored as All agencies / 'Every city agency'"
+   },
+   "2015-S5867-06": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Industrial development agencies (local public benefit corporations, jurisdiction local)",
+     "agency_full": "Industrial development agencies"
+    },
+    "note": "'Each agency shall develop...' in GML 859-a/874 means an industrial development agency; stored as All agencies / 'Every city agency'"
+   },
+   "2015-S5867-07": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Industrial development agencies (local public benefit corporations, jurisdiction local)",
+     "agency_full": "Industrial development agencies"
+    },
+    "note": "'Each agency shall develop...' in GML 859-a/874 means an industrial development agency; stored as All agencies / 'Every city agency'"
+   },
+   "2015-S5867-08": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Industrial development agencies (local public benefit corporations, jurisdiction local)",
+     "agency_full": "Industrial development agencies"
+    },
+    "note": "'Each agency shall develop...' in GML 859-a/874 means an industrial development agency; stored as All agencies / 'Every city agency'"
+   },
+   "2015-S5867-03": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Industrial development agencies (local public benefit corporations, jurisdiction local)",
+     "agency_full": "Industrial development agencies"
+    },
+    "note": "'by the agency' is the IDA (actor_resolved_model says so); stored as State agencies"
+   },
+   "2015-S5867-04": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Industrial development agencies (local public benefit corporations, jurisdiction local)",
+     "agency_full": "Industrial development agencies"
+    },
+    "note": "'by the agency' is the IDA (actor_resolved_model says so); stored as State agencies"
+   }
+  },
+  "missed": [
+   {
+    "blind": "b3",
+    "quote": "An assessment by the agency of all material information included in connection with the application for financial assistance, as necessary to afford a reasonable basis for the decision by the agency to provide financial assistance for the project",
+    "kind": "duty",
+    "agency": "Industrial development agencies",
+    "dropped_by": null,
+    "note": "5(A) sibling of stored 5(B) and 5(D) items; not stored or dropped"
+   },
+   {
+    "blind": "b10",
+    "quote": "All such returned amounts of tax exemptions shall be redistributed to the appropriate affected tax jurisdiction, unless agreed to otherwise by any local taxing jurisdiction.",
+    "kind": "duty",
+    "agency": "Industrial development agencies",
+    "dropped_by": null,
+    "note": "874(11) redistribution duty; not stored or dropped"
+   }
+  ],
+  "effective_date": {
+   "stored": "2016-06-15",
+   "computed": "2016-06-15",
+   "verdict": "correct",
+   "note": "180th day after 2015-12-18"
+  }
+ },
+ "2015-S5903": {
+  "records": {
+   "2015-S5903-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S5903-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S5903-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2016-11-28",
+   "computed": "2016-11-28",
+   "verdict": "correct",
+   "note": "immediately"
+  }
+ },
+ "2009-S8412": {
+  "records": {
+   "2009-S8412-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S8412-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S8412-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S8412-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S8412-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S8412-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S8412-09": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S8412-11": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S8412-12": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-S8412-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "3",
+     "6"
+    ],
+    "fields": {
+     "agency": "OER (director of employee relations; SFL 207-a 'the director' - definition not in packet, unverified)",
+     "recurrence": "one-time"
+    },
+    "note": "'the director shall provide for the payment of moneys to such employee organization' names a specific director; left Unspecified. Payments are for April first two thousand seven and eight only, not annual"
+   },
+   "2009-S8412-07": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "State agencies",
+     "agency_unit": "State of New York"
+    },
+    "note": "'the employer shall provide additional premium, maintenance and/or command compensation' - employer of the security supervisors unit is the State; stored Public employers"
+   },
+   "2009-S8412-10": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "State agencies",
+     "agency_unit": "State of New York"
+    },
+    "note": "'the employer shall increase the funding for dcaa, LifeWorks and Directions' - the State; stored Public employers"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2010-07-02",
+   "computed": "2010-07-02",
+   "verdict": "correct",
+   "note": "'take effect immediately and shall be deemed to have been in full force and effect on and after April 1, 2007'; retroactive_to 2007-04-01 stored, correct"
+  }
+ },
+ "2015-S6916": {
+  "records": {
+   "2015-S6916-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S6916-02": {
+    "verdict": "wrong",
+    "criteria": [
+     "5"
+    ],
+    "fields": {
+     "deadline_kind": "fixed_date",
+     "deadline_date": "2017-01-01 (first January after 2016-09-29; month only stated)"
+    },
+    "note": "'On at least a quarterly basis beginning in January of each year, the commissioner shall report' - dated recurring start stored as none"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2016-09-29",
+   "computed": "2016-09-29",
+   "verdict": "correct",
+   "note": "immediately"
+  }
+ },
+ "2015-S5957": {
+  "records": {
+   "2015-S5957-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S5957-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S5957-02": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "State agencies",
+     "agency_unit": "State of New York"
+    },
+    "note": "actor_raw 'the state' ('the state or a participating local government may request assistance') resolved to DHSES/State Office of Emergency Management; Oct 16 decision: 'the state' is State agencies, unit State of New York"
+   },
+   "2015-S5957-04": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "State agencies",
+     "agency_unit": "State of New York"
+    },
+    "note": "actor_raw 'the state' ('the state or any requesting local government ... shall be liable and responsible') resolved to DHSES/State Office of Emergency Management; Oct 16 decision: 'the state' is State agencies, unit State of New York"
+   },
+   "2015-S5957-05": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "State agencies",
+     "agency_unit": "State of New York"
+    },
+    "note": "actor_raw 'the state' ('The state or requesting local government shall reimburse') resolved to DHSES/State Office of Emergency Management; Oct 16 decision: 'the state' is State agencies, unit State of New York"
+   }
+  },
+  "missed": [
+   {
+    "blind": "b6",
+    "quote": "The assisting local government shall be liable for salaries or other compensation for its employees deployed to the state or a requesting local government during the time they are not rendering assistance",
+    "kind": "duty",
+    "agency": "Municipalities (all)",
+    "dropped_by": null,
+    "note": "extension ('the state or' added); extends_existing true; judgment item"
+   },
+   {
+    "blind": "b7",
+    "quote": "Where a dispute arises between an assisting local government and the state or a requesting local government regarding reimbursement ... the parties will make every effort to resolve the dispute within thirty business days",
+    "kind": "duty",
+    "agency": "State agencies; Municipalities (all)",
+    "dropped_by": "designation_no_actor",
+    "note": "'will <verb>' with government parties is a duty per packet rule; dropped as designation_no_actor (2015-S5957-06)"
+   },
+   {
+    "blind": "b8",
+    "quote": "employees of an assisting local government shall be under the direction and control of the director of the state office of emergency management, local emergency management director or other official",
+    "kind": "power",
+    "agency": "DHSES (State Office of Emergency Management)",
+    "dropped_by": null,
+    "note": "new braced matter adds the State OEM director's control; not stored or dropped"
+   },
+   {
+    "blind": "b9",
+    "quote": "Assets and equipment of an assisting local government shall continue under the ownership of the assisting local government, but shall be under the direction and control of the director of the state office of emergency management",
+    "kind": "power",
+    "agency": "DHSES (State Office of Emergency Management)",
+    "dropped_by": null,
+    "note": "9(b) parallel of b8; not stored or dropped"
+   }
+  ],
+  "effective_date": {
+   "stored": "2015-08-13",
+   "computed": "2015-08-13",
+   "verdict": "correct",
+   "note": "immediately"
+  }
+ },
+ "2015-S5949": {
+  "records": {
+   "2015-S5949-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S5949-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S5949-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S5949-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S5949-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S5949-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S5949-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S5949-09": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S5949-10": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S5949-11": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S5949-12": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S5949-13": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S5949-14": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S5949-15": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S5949-16": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "blind pass did not list; accepted ('it shall be summarily rejected'), counted as blind-missed correct"
+   },
+   "2015-S5949-17": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S5949-18": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S5949-19": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S5949-20": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S5949-21": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S5949-22": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "blind pass did not list separately; accepted, counted as blind-missed correct"
+   },
+   "2015-S5949-23": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S5949-24": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S5949-25": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S5949-26": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S5949-29": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S5949-30": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S5949-31": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S5949-32": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S5949-33": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S5949-34": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S5949-35": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S5949-36": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S5949-37": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S5949-38": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S5949-39": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S5949-40": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S5949-41": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S5949-42": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S5949-43": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S5949-44": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S5949-45": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S5949-46": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S5949-47": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S5949-49": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S5949-50": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S5949-51": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S5949-52": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S5949-53": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S5949-54": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S5949-55": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S5949-56": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S5949-57": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S5949-58": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S5949-59": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S5949-60": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S5949-04": {
+    "verdict": "wrong",
+    "criteria": [
+     "4"
+    ],
+    "fields": {
+     "kind": "power"
+    },
+    "note": "'The commission shall have and is hereby vested with the sole direction, management, control and jurisdiction over' grants authority (shall have ... jurisdiction), stored as a duty"
+   }
+  },
+  "missed": [
+   {
+    "blind": "b15",
+    "quote": "All such suspensions shall be recorded in his or her license by a commission official.",
+    "kind": "duty",
+    "agency": "DOS (State Athletic Commission)",
+    "dropped_by": null,
+    "note": "s1007(4)(A)"
+   },
+   {
+    "blind": "b24",
+    "quote": "The results of all such examinations herein required shall become a part of the professional's permanent medical record as maintained by the commission.",
+    "kind": "duty",
+    "agency": "DOS (State Athletic Commission)",
+    "dropped_by": null,
+    "note": "s1010(2)"
+   },
+   {
+    "blind": "b26",
+    "quote": "All medical reports submitted to, and all medical records of the medical advisory board or the commission relative to the physical examination or condition of professionals shall be considered confidential",
+    "kind": "duty",
+    "agency": "DOS (State Athletic Commission)",
+    "dropped_by": null,
+    "note": "s1010(3); judgment"
+   },
+   {
+    "blind": "b29",
+    "quote": "The fee for such temporary working permit shall be established by the commission pursuant to rule.",
+    "kind": "duty",
+    "agency": "DOS (State Athletic Commission)",
+    "dropped_by": "deadline_split",
+    "note": "dropped 2015-S5949-27; no surviving record carries it"
+   },
+   {
+    "blind": "b30",
+    "quote": "The commission in its judgment may exempt from licensing under this article Any training facility providing contact sparring established and maintained on a temporary basis",
+    "kind": "power",
+    "agency": "DOS (State Athletic Commission)",
+    "dropped_by": "exemption_or_applicability",
+    "note": "dropped 2015-S5949-28; a discretionary power of the commission, not a self-executing exemption"
+   },
+   {
+    "blind": "b39",
+    "quote": "The winner shall be determined in accordance with a scoring system prescribed by the commission.",
+    "kind": "duty",
+    "agency": "DOS (State Athletic Commission)",
+    "dropped_by": null,
+    "note": "s1015(3); judgment"
+   },
+   {
+    "blind": "b43",
+    "quote": "all professionals must be examined by a physician designated by the commission before entering the ring or combat surface and each such physician shall immediately file with the commission a written report of such examination",
+    "kind": "duty",
+    "agency": "DOS (State Athletic Commission)",
+    "dropped_by": null,
+    "note": "s1015(6)"
+   },
+   {
+    "blind": "b46",
+    "quote": "Such physician may enter the ring at Any time during an authorized professional combative sport and may terminate the match",
+    "kind": "power",
+    "agency": "DOS (State Athletic Commission)",
+    "dropped_by": null,
+    "note": "s1015(8)"
+   },
+   {
+    "blind": "b49",
+    "quote": "a penalty in the sum of not more than one thousand dollars for each offense, which may be recovered by the attorney-general in the name of the people of the state of new york",
+    "kind": "power",
+    "agency": "Attorney General",
+    "dropped_by": null,
+    "note": "s1015(9)"
+   },
+   {
+    "blind": "b50",
+    "quote": "each applicant for a license to conduct an authorized professional combative sport shall execute and file with the secretary of state a bond in an amount to be determined by the commission to be approved as to form and sufficiency of sureties thereon by the secretary of state",
+    "kind": "duty",
+    "agency": "DOS",
+    "dropped_by": null,
+    "note": "s1015(10), parallel of stored -42"
+   },
+   {
+    "blind": "b57",
+    "quote": "Each such promoter shall execute and file with the comptroller a bond in an amount not less than twenty thousand dollars to be approved as to form and sufficiency of sureties thereon by the comptroller",
+    "kind": "duty",
+    "agency": "State Comptroller",
+    "dropped_by": null,
+    "note": "s1017(3)"
+   },
+   {
+    "blind": "b61",
+    "quote": "to be imposed by the commission, to be sued for by the attorney-general in the name of the people of the state of new york if directed by the commission",
+    "kind": "power",
+    "agency": "Attorney General",
+    "dropped_by": null,
+    "note": "s1019(4); -51 covers only the commission"
+   }
+  ],
+  "effective_date": {
+   "stored": null,
+   "computed": "2016-09-01",
+   "verdict": "wrong",
+   "note": "'take effect on the first day of the first month next succeeding the one hundred twentieth day after it shall have become a law'; signed 2016-04-14, +120 days = 2016-08-12, next month's first day 2016-09-01. Stored rule 'unparsed', so 26 on_effective_date records carry no deadline_date"
+  }
+ },
+ "2015-S6849": {
+  "records": {
+   "2015-S6849-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S6849-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2016-07-21",
+   "computed": "2016-07-21",
+   "verdict": "correct",
+   "note": "immediately; s2 expires with 500-c (with_referenced_section)"
+  }
+ },
+ "2013-S7909": {
+  "records": {
+   "2013-S7909-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   }
+  },
+  "missed": [
+   {
+    "blind": "b1",
+    "quote": "Determine whether an assessment of the youth for substance use disorder by an office of alcoholism and substance abuse services certified provider is necessary when a person seeking to file a petition alleges",
+    "kind": "duty",
+    "agency": "Counties (designated lead agency)",
+    "dropped_by": "designation_no_actor",
+    "note": "dropped 2013-S7909-01; list item (v) under mandatory lead-in 'The designated lead agency shall:'"
+   }
+  ],
+  "effective_date": {
+   "stored": "2014-12-20",
+   "computed": "2014-12-20",
+   "verdict": "correct",
+   "note": "180th day after 2014-06-23"
+  }
+ },
+ "2015-S7258": {
+  "records": {
+   "2015-S7258-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2016-07-21",
+   "computed": "2016-07-21",
+   "verdict": "correct",
+   "note": "immediately. Note: blind pass listed no records (residency rule); stored power is a locality's act-by-resolution power and is accepted, counted as a blind-missed correct record"
+  }
+ },
+ "2015-S6790": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2016-11-14",
+   "computed": "2016-11-14",
+   "verdict": "correct",
+   "note": "immediately; raffle prize caps on private organizations, no records expected"
+  }
+ }
+}
