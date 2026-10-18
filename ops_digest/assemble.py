@@ -50,7 +50,7 @@ REPOS = [("TalR24/nycur-data-website", "GITHUB_TOKEN"),
          ("block-party-studio/resolution_engine", "PREMIUM_PUSH_TOKEN")]
 SKIP_WORKFLOWS = ("pages-build-deployment", "pages build and deployment")
 # Expected sources that cannot report yet; shown with the reason instead of as a failure (audit A3, Oct 18 2026)
-SETUP_PENDING = {"block_party_quality": "waiting on the PREMIUM_PUSH_TOKEN secret in block-party-studio/resolution_engine (TODO_tal.md)"}
+SETUP_PENDING = {"block_party_quality": "no file; until the PREMIUM_PUSH_TOKEN secret exists in block-party-studio/resolution_engine this is expected (TODO_tal.md), after that check its monthly-quality-report run"}
 DASHES = re.compile(r"^-{10,}\s*$")
 URL = re.compile(r"(https?://[^\s<>\"')]+)")
 
@@ -60,23 +60,22 @@ URL = re.compile(r"(https?://[^\s<>\"')]+)")
 def parse_md(text):
     """(subject, needs_tal, body) from a routine's .md section."""
     lines = text.splitlines()
-    subject, needs, drop, seen = None, 0, set(), 0
-    for i, line in enumerate(lines):
-        if not line.strip():
-            continue
-        seen += 1
-        if seen > 10:
-            break
-        m = re.match(r"(?i)\s*(?:[#*>`-]+\s*)?(subject|needs_tal)\s*:\s*(.*?)\**\s*$", line)
-        if m:
-            if m.group(1).lower() == "subject" and subject is None:
-                subject = m.group(2).strip().strip("*").strip()
-            elif m.group(1).lower() == "needs_tal":
-                digits = re.search(r"\d+", m.group(2))
-                needs = int(digits.group()) if digits else 0
-            drop.add(i)
+    subject, needs, drop = None, 0, set()
+    for i, line in enumerate(lines[:12]):
+        t = line.strip()
+        if not t or t.startswith(("#", "```")):
+            continue  # titles, fences and blanks may sit above the headers
+        m = re.match(r"(?i)(?:[*>`-]+\s*)?(subject|needs_tal)\s*:\s*(.*?)\**\s*$", t)
+        if not m:
+            break  # headers only at the top: a 'Subject:' inside a prompt box is body text (audit round 2, A2-03)
+        if m.group(1).lower() == "subject" and subject is None:
+            subject = m.group(2).strip().strip("*").strip()
+        elif m.group(1).lower() == "needs_tal" and i not in drop:
+            digits = re.search(r"\d+", m.group(2))
+            needs = int(digits.group()) if digits else 0
+        drop.add(i)
     if subject is None:
-        print("warning: section has no Subject: header in its first 10 lines", file=sys.stderr)
+        print("warning: section has no Subject: header at its top", file=sys.stderr)
     return subject, needs, "\n".join(l for i, l in enumerate(lines) if i not in drop).strip("\n")
 
 
@@ -257,30 +256,37 @@ def git(premium, *args):
 
 
 def file_sent(premium, today):
+    """Move the sections that were just sent into sent/YYYY-MM/ and push. Each attempt starts from a fresh
+    origin/main, so a section that landed while the digest ran is left in pending/ for next month instead of
+    breaking the rebase (audit round 2, A2-02)."""
     pend = Path(premium) / "ops_digest" / "pending"
-    dest = Path(premium) / "ops_digest" / "sent" / today.strftime("%Y-%m")
-    dest.mkdir(parents=True, exist_ok=True)
-    moved = 0
-    for f in sorted(pend.iterdir()):
-        if f.name.startswith("."):
-            continue
-        git(premium, "mv", "-f", str(f.relative_to(premium)), str((dest / f.name).relative_to(premium)))
-        moved += 1
-    if moved:
-        git(premium, "config", "user.name", "github-actions[bot]")
-        git(premium, "config", "user.email", "github-actions[bot]@users.noreply.github.com")
-        git(premium, "add", "ops_digest")
-        git(premium, "commit", "-m", f"Ops digest {today.strftime('%Y-%m')}: file sent sections")
-        for attempt in range(3):  # other jobs push to premium too; retry a lost race (audit A7)
-            try:
-                git(premium, "pull", "--rebase", "origin", "main")
-                git(premium, "push")
-                break
-            except subprocess.CalledProcessError:
-                if attempt == 2:
-                    raise
-                time.sleep(10 * (attempt + 1))
-    return moved
+    names = [f.name for f in sorted(pend.iterdir()) if not f.name.startswith(".")]
+    if not names:
+        return 0
+    month = today.strftime("%Y-%m")
+    git(premium, "config", "user.name", "github-actions[bot]")
+    git(premium, "config", "user.email", "github-actions[bot]@users.noreply.github.com")
+    for attempt in range(3):
+        try:
+            git(premium, "fetch", "origin", "main")
+            git(premium, "reset", "--hard", "origin/main")
+            dest = Path(premium) / "ops_digest" / "sent" / month
+            dest.mkdir(parents=True, exist_ok=True)
+            moved = 0
+            for n in names:
+                if (pend / n).exists():
+                    git(premium, "mv", "-f", f"ops_digest/pending/{n}", f"ops_digest/sent/{month}/{n}")
+                    moved += 1
+            if not moved:
+                return 0
+            git(premium, "commit", "-m", f"Ops digest {month}: file sent sections")
+            git(premium, "push", "origin", "HEAD:main")
+            return moved
+        except subprocess.CalledProcessError:
+            if attempt == 2:
+                raise
+            time.sleep(10 * (attempt + 1))
+    return 0
 
 
 def main():

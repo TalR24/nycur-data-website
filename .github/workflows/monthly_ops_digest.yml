@@ -52,3 +52,21 @@ jobs:
           PREMIUM_PUSH_TOKEN: ${{ secrets.PREMIUM_PUSH_TOKEN }}
           PREMIUM_DIR: ${{ runner.temp }}/premium
         run: python3 ops_digest/assemble.py --premium "$PREMIUM_DIR" ${{ inputs.dry_run && '--dry-run' || '' }}
+
+      # A failed run would otherwise be silent until someone notices no digest arrived (audit round 2, A2-04)
+      - name: Email Tal if the digest run failed
+        if: failure()
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          python3 - <<'PY'
+          import os, sys
+          sys.path.insert(0, "seo")
+          from common import send_email
+          url = os.environ["RUN_URL"]
+          ok = send_email("Monthly ops digest run failed",
+                          f"The monthly ops digest workflow failed: {url}\nIf the email went out, sections may still sit in premium ops_digest/pending/. Use the ci-triage skill.")
+          print("Failure email sent." if ok else "Failure email NOT sent (no Gmail credentials).")
+          PY
