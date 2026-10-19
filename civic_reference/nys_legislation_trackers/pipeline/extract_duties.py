@@ -645,7 +645,7 @@ BOUNDARY = r"(?<!\bSt)(?<!\bNo)(?<!\bCo)(?<!\bInc)(?<!\bMr)(?<!\bMrs)(?<!\bDr)(?
 def context_sentence(span, text):
     """The sentence (or list item) around a span: from the previous '. ' / '; ' / paragraph break to the next one."""
     start, end = span
-    left = max((m.end() for m in re.finditer(BOUNDARY, text[:start])), default=0)
+    left = max((m.end() for m in re.finditer(BOUNDARY, text[:start + 1]) if m.end() <= start), default=0)          # N4: one char of lookahead, or a span that opens a sentence is read as part of the previous one
     m = re.search(BOUNDARY, text[end:])
     right = end + m.start() + 1 if m else len(text)
     return text[left:right], (left, right)
@@ -1059,6 +1059,8 @@ def benefit_entitlement(o, q):
         actor0 = re.sub(r"^(?:the|a|an|such|each|any)\s+", "", (o.get("actor_raw") or "").strip().lower())
         if not GOV_ACTOR.search(actor0) or actor0 not in q[:cl.start()].lower():
             return True
+    if APPLY_N1 and amount_rule_subject(q):
+        return True
     m = BENEFIT_RE.search(q or "")
     if not m or GOV_ACTOR.search(q[:m.start()]) or len(re.findall(r"[A-Za-z]+", q[:m.start()])) < 2:      # a quote that starts at the modal names no subject: the record stays
         return False
@@ -1069,6 +1071,45 @@ def benefit_entitlement(o, q):
 
 
 CLAIM_PASSIVE = re.compile(r"\b(?:claims?|amounts?)\b[^.;]{0,80}?\bshall\s+be\s+(?:paid|computed|calculated|determined|allowed|credited)\b(?!\s+by\b)", re.I)       # U9
+
+# N1 (Oct 19 2026): the amount, rate, cap or term is the grammatical subject; the department / system named in the quote is not the actor
+AMOUNT_SUBJECT = re.compile(
+    r"\b(?:(?:final\s+average\s+)?salary|rate\s+of\s+(?:such\s+)?(?:contribution|interest)|amount\s+equal\s+to\s+the\s+amount|amount\s+of\s+such\s+additional\s+accrual"
+    r"|supplemental\s+(?:retirement\s+allowances?|pensions?)|state\s+reimbursement\s+otherwise\s+payable)\b[^.;]{0,260}?\bshall\s+(?:first\s+)?(?:be|continue)\b"
+    r"|\bno\s+grant\s+shall\s+be\s+made\b[^.;]{0,200}?\bin\s+excess\s+of\b"
+    r"|\bshall\s+be\s+valid\s+for\s+a\s+period\b[^.;]{0,60}?\bnot\s+to\s+exceed\b"
+    r"|^\W*(?:the\s+)?claims?\s+for\s+an?\s+\w+[^.;]{0,120}?\bshall\s+be\s+submitted\b"
+    r"|^\W*applications?\s+for\s+\w+[^.;]{0,80}?\bshall\s+be\s+made\b[^.;]{0,60}?\bforms?\s+prescribed\s+by\b", re.I)
+
+
+def amount_rule_subject(q):
+    """N1: grant caps, permit term caps, benefit-rate and amount rules, claim and application form procedures. Dropped when the subject word
+    opens the match (no government noun heads the sentence before it)."""
+    m = AMOUNT_SUBJECT.search(q or "")
+    return bool(m) and not GOV_ACTOR.search(q[:m.start()]) and not re.search(r"\bshall\s+be\s+applied\b", m.group(0), re.I) and not re.match(r"\s+(?:established|fixed|set|appointed)\s+by\b", q[m.end():m.end() + 30], re.I)
+
+
+# N2: availability and expiry windows of a law's own provisions ('shall remain in full force and effect only until and including June 23, 2015')
+WINDOW_N2 = re.compile(r"\bno\s+benefits?\b[^.;]{0,80}\bshall\s+be\s+granted\b[^.;]{0,80}\bafter\b|\bbenefits?\b[^.;]{0,60}\bshall\s+be\s+available\b"
+                       r"|^\W*the\s+provisions\s+of\s+(?:this\s+act|sections?\b[^.;]{0,60}\bof\s+this\s+act)\b[^.;]{0,100}?\bshall\s+remain\s+in\s+full\s+force\s+and\s+effect\b", re.I)
+# N3: goal statements, findings and litigation consequences
+GOAL_N3 = re.compile(r"\bit\s+is\s+the\s+intent\b|^\W*(?:the\s+)?purposes?\s+of\s+this\s+\w+\s+(?:is|are)\b|\bthe\s+legislature\s+finds\b|\bgoals?\s+of\b[^.;]{0,60}\bmay\s+include\b", re.I)
+DEEMED_N3 = re.compile(r"^\W*shall\s+be\s+deemed\s+(?:abandoned|withdrawn|waived|denied)\b", re.I)
+
+
+def goal_or_window(q):
+    """Returns (rule, reason) for N2 / N3, else None."""
+    if APPLY_N2:
+        m = WINDOW_N2.search(q or "")
+        if m and not GOV_ACTOR.search(q[:m.start()]):
+            return "benefit_window", "an availability or expiry window for a law's own provisions or a benefit; no government verb names an actor"
+    if APPLY_N3:
+        if GOAL_N3.search(q or "") and not re.search(r"\b(?:shall|must|authorized)\b|\bmay\b(?![^.;]{0,20}\binclude\b)", q):
+            return "goal_statement", "a statement of intent, purpose, finding or goal; no operative modal on a government actor"
+        if DEEMED_N3.match(q or ""):
+            return "goal_statement", "a litigation consequence ('shall be deemed abandoned'), not a duty of the government actor"
+    return None
+
 RESIDENCY_EXCEPTION = re.compile(r"\bmay\s+(?:be\s+)?appoint(?:ed)?\s+(?:an?\s+)?\w+\s+residing\b"
                                  r"|\bmay\s+be\s+(?:appointed|employed|elected|designated)\b[^.;]{0,80}\bnotwithstanding\b[^.;]{0,80}\bresiden(?:ce|cy|t|ts)\b"
                                  r"|\bnotwithstanding\b[^.;]{0,80}\bresiden(?:ce|cy)\b[^.;]{0,100}\bmay\s+(?:be\s+)?(?:appoint\w*|employ\w*|elect\w*|designat\w*)\b", re.I)          # U9
@@ -1082,6 +1123,22 @@ _PRON = r"(?:his|her|hers|she|he|himself|herself|him|his or her|her or his|he or
 GENDER_EDIT = re.compile(r"^[\s,;]*(?:(?:or|and|/)?\s*%s\b[\s,;]*)+$" % _PRON, re.I)
 
 
+def existing_actor_only(o, span, text):
+    """N5 (Oct 19 2026): 'State agencies {{and municipalities}} ... shall respond': every braced block in the sentence is 'and/or <actor>' ahead of the
+    modal and the record's actor_raw sits outside the braces, so the record restates the pre-existing duty."""
+    sent = context_sentence(span, text)[0]
+    blocks = list(re.finditer(r"\{\{(.*?)\}\}", sent, re.S))
+    mm = re.search(r"\b(?:shall|must|may)\b", sent)
+    if not blocks or not mm or not all(re.match(r"^\s*(?:and|or)\s+(?:the\s+)?[A-Za-z' -]{3,60}$", b.group(1)) and b.end() <= mm.start() for b in blocks):
+        return False
+    actor = re.sub(r"^(?:the|a|an|such|each|any)\s+", "", (o.get("actor_raw") or "").strip().lower())
+    if len(actor) < 4:
+        return False
+    outside = re.sub(r"\{\{.*?\}\}", " ", sent, flags=re.S).lower()
+    return actor in outside and not any(actor in b.group(1).lower() for b in blocks) and bool(re.search(re.escape(actor) + r"\s*\{\{\s*(?:and|or)\s", sent, re.I))      # the braces sit right after the actor
+
+
+
 def gate_record(o, text, has_markers):
     """Returns (rule, reason) when the record must be dropped, else None. Rules 1-3 of phase 3b."""
     if not o.get("quote_verified"):
@@ -1093,6 +1150,9 @@ def gate_record(o, text, has_markers):
         return "reviewed_as_if_condition", "'shall be reviewed as if it had been received on or before ...' is a condition of the accept-late-application power, not a duty of its own"
     if CONDITION_PRECEDENT.search(q) or (APPLY_M36 and CONDITION_PRECEDENT_M36.search(q)):
         return "condition_precedent", "an implementation precondition ('shall not be implemented until X shall have delivered ...'): a condition on another provision, not a duty of the certifying officials"
+    gw = goal_or_window(q)
+    if gw:
+        return gw
     if benefit_entitlement(o, q):
         return "benefit_entitlement", "the subject is the beneficiary (it receives, is entitled to or is exempt from), not a government actor"
     if APPLY_U9 and RESIDENCY_EXCEPTION.search(q):
@@ -1106,6 +1166,8 @@ def gate_record(o, text, has_markers):
         blocks0 = [m.group(1) for m in re.finditer(r"\{\{(.*?)\}\}", sent0, re.S)]
         if blocks0 and all(GENDER_EDIT.match(b) for b in blocks0):
             return "reprinted_gender_neutral", "the sentence is existing text; the only new matter is a gender-neutral pronoun edit"
+    if APPLY_N5 and span and has_markers and existing_actor_only(o, span, text):
+        return "reprinted_existing_actor", "the actor stood in the sentence before the amendment; the braces only add a second actor, whose own record carries the new duty"
     if span:
         hdr, sec = section_of_span(span, text)
         if sec and re.search(r"\b11\.00\b[^.]{0,80}local finance law|local finance law[^.]{0,80}\b11\.00\b", hdr + " " + sec[:400], re.I):
@@ -1502,6 +1564,7 @@ IDENTIFIABLE_UNSPECIFIED = re.compile(r"\bcourts?\b|\bcompacting\s+states?\b|\bm
 COMPOUND_LOCAL = re.compile(r"\b(?:town|city|village|county)\b[^;]*?\band\b[^;]*?\b(?:district|authority|agency|corporation)\b", re.I)
 PRE_2017 = range(2009, 2017)
 APPLY_M31 = True
+APPLY_N1 = APPLY_N2 = APPLY_N3 = APPLY_N5 = True        # Oct 19 2026 closing fixes; a rule dropping over 40 records database-wide is set False
 APPLY_U1 = APPLY_U4 = APPLY_U5 = APPLY_U6 = APPLY_U7 = APPLY_U9 = True        # Oct 19 2026 fixes
 APPLY_M35 = APPLY_M36 = APPLY_M37 = APPLY_M38 = APPLY_M39 = APPLY_M41 = APPLY_J15 = True        # Oct 15 2026 fixes; each can be switched off on its own
 DROPPED_GOV_SUBJECT = re.compile(r"\b(?:trustees?|board|commissioner|university|department|authority|council|office)\b", re.I)
@@ -1653,8 +1716,28 @@ def judgment_flags(text, records):
     return flags
 
 
-def build_reask(todo, duties, powers):
-    """data/reask.json content: {key: {reasons: [...]}} for the laws whose recall checks flag."""
+# Oct 19 2026: checks that only re-state a mechanical condition (gate, resolver or crosswalk work, or a quote the Oct 15
+# relocation already fixes) do not queue a re-ask; they are written to data/mechanical_flags/{Y}.json instead.
+MECHANICAL_CHECKS = frozenset({"quote_outside_new_matter", "imperative_item_no_lead_in", "state_as_single_agency",
+                               "local_body_unresolved", "mandatory_lead_in_item_dropped"})
+
+
+def split_mechanical(entries):
+    """({key: entry} with only re-ask reasons, {key: entry} with only the mechanical reasons); a law with no re-ask reason leaves the first."""
+    keep, mech = {}, {}
+    for k, e in entries.items():
+        a = [r for r in e["reasons"] if r.get("check") not in MECHANICAL_CHECKS]
+        b = [r for r in e["reasons"] if r.get("check") in MECHANICAL_CHECKS]
+        if a:
+            keep[k] = dict(e, reasons=a)
+        if b:
+            mech[k] = dict(e, reasons=b)
+    return keep, mech
+
+
+def build_reask(todo, duties, powers, mechanical=None):
+    """data/reask.json content: {key: {reasons: [...]}} for the laws whose recall checks flag.
+    Mechanical-only reasons (MECHANICAL_CHECKS) are left out and, when a dict is passed as `mechanical`, collected there."""
     by_law = defaultdict(list)
     for o in duties + powers:
         by_law[o["matter_id"]].append(o)
@@ -1694,6 +1777,9 @@ def build_reask(todo, duties, powers):
                        "sentences": sents})
         if fl:
             out[law["key"]] = {"reasons": fl}
+    out, mech = split_mechanical(out)
+    if mechanical is not None:
+        mechanical.update(mech)
     return out
 
 
@@ -2884,12 +2970,14 @@ def main():
             for y in sorted({l["session"] for l, _ in todo}):
                 json.dump({k: v for k, v in EFFECTIVE.items() if k.startswith("%d-" % y)}, open(out / "effective_dates" / ("%d.json" % y), "w"), separators=(",", ":"))
         stamp = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
-        reask = build_reask(todo, duties, powers)
+        mech_flags = {}
+        reask = build_reask(todo, duties, powers, mech_flags)
         print("re-ask merged %d records; recall checks flag %d laws" % (merged, len(reask)))
         sess = sorted({l["session"] for l, _ in todo})
-        for sub_dir in ("reask", "dropped"):
+        for sub_dir in ("reask", "dropped", "mechanical_flags"):
             (out / sub_dir).mkdir(parents=True, exist_ok=True)
         for y in (sess if full else []):               # per-session files: an ingest of one session never overwrites another's
+            json.dump({"generated_at": stamp, "laws": {k: v for k, v in mech_flags.items() if k.startswith("%d-" % y)}}, open(out / "mechanical_flags" / ("%d.json" % y), "w"), indent=1, ensure_ascii=False)
             json.dump({"generated_at": stamp, "laws": {k: v for k, v in reask.items() if k.startswith("%d-" % y)}}, open(out / "reask" / ("%d.json" % y), "w"), indent=1, ensure_ascii=False)
             json.dump({"generated_at": stamp, "dropped": [d for d in DROPPED if (d.get("matter_id") or "").startswith("%d-" % y)]}, open(out / "dropped" / ("%d.json" % y), "w"), indent=1, ensure_ascii=False)
         if full:     # one file would pass ~25 MB: per-session files, the single store (the pilot laws are in their session's file)

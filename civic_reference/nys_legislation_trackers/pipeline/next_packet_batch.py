@@ -77,9 +77,23 @@ def make_chunks(files: list[Path], n_chunks: int, max_bytes: int, max_laws: int)
     return chunks
 
 
+def live_reasons(entry: dict) -> list[dict]:
+    """Reasons that still queue a re-ask (the mechanical checks, which old reask files may still hold, do not)."""
+    import extract_duties as ed
+    return [r for r in entry["reasons"] if r.get("check") not in ed.MECHANICAL_CHECKS]
+
+
+def reask_priority(key: str, entry: dict) -> tuple:
+    """0 audit_confirmed_miss, 1 sunset_extension_unnamed_holder, 2 three or more remaining reasons, 3 the rest; then key."""
+    rs = live_reasons(entry)
+    checks = {r.get("check") for r in rs}
+    tier = 0 if "audit_confirmed_miss" in checks else 1 if "sunset_extension_unnamed_holder" in checks else 2 if len(rs) >= 3 else 3
+    return (tier, key)
+
+
 def reask_candidates(skip: set[str], data_dir: Path | None = None, packets_dir: Path | None = None,
                      sessions: tuple = (2009, 2011, 2013, 2015)) -> list[tuple[str, dict]]:
-    """Laws in data/reask/{Y}.json that can still be re-asked, best first: an audit_confirmed_miss reason, then more reasons, then key.
+    """Laws in data/reask/{Y}.json that can still be re-asked, in reask_priority order. A law whose only reasons are mechanical checks is not a candidate.
     Skips deferred/skipped laws, laws without an original packet, and laws that already have a results_reask answer."""
     data_dir, packets_dir = data_dir or DATA, packets_dir or PACKETS
     out = []
@@ -88,11 +102,41 @@ def reask_candidates(skip: set[str], data_dir: Path | None = None, packets_dir: 
         if not f.exists():
             continue
         for key, entry in json.load(open(f))["laws"].items():
-            if key in skip or not (packets_dir / str(y) / f"{key}.txt").exists() or (packets_dir / str(y) / "results_reask" / f"{key}.json").exists():
+            if key in skip or not live_reasons(entry) or not (packets_dir / str(y) / f"{key}.txt").exists() or (packets_dir / str(y) / "results_reask" / f"{key}.json").exists():
                 continue
             out.append((key, entry))
-    out.sort(key=lambda kv: (0 if any(r.get("check") == "audit_confirmed_miss" for r in kv[1]["reasons"]) else 1, -len(kv[1]["reasons"]), kv[0]))
+    out.sort(key=lambda kv: reask_priority(*kv))
     return out
+
+
+def defer_twice_skipped(packets_dir: Path | None = None, draws_path: Path | None = None, deferred_path: Path | None = None) -> list[str]:
+    """A law drawn for re-ask in two different batches with no results_reask file afterwards was skipped by an agent twice:
+    add it to data/deferred_skipped.json (reason "re-ask skipped twice") so it is not redrawn. Returns the keys added."""
+    packets_dir = packets_dir or PACKETS
+    draws_path = draws_path or packets_dir / "reask_draws.json"
+    deferred_path = deferred_path or DATA / "deferred_skipped.json"
+    draws = json.load(open(draws_path)) if draws_path.exists() else {}
+    dj = json.load(open(deferred_path)) if deferred_path.exists() else {"rule": "laws agents skipped as too long, omnibus or empty text; retried in a later phase", "laws": []}
+    have = {x["key"] for x in dj["laws"]}
+    added = []
+    for key, tags in sorted(draws.items()):
+        if key in have or len(set(tags)) < 2 or (packets_dir / key.split("-")[0] / "results_reask" / f"{key}.json").exists():
+            continue
+        dj["laws"].append({"key": key, "reason": "re-ask skipped twice"})
+        added.append(key)
+    if added:
+        json.dump(dj, open(deferred_path, "w"), indent=2, ensure_ascii=False)
+    return added
+
+
+def record_draws(keys: list[str], tag: str, draws_path: Path | None = None) -> None:
+    draws_path = draws_path or PACKETS / "reask_draws.json"
+    draws = json.load(open(draws_path)) if draws_path.exists() else {}
+    for k in keys:
+        if tag not in draws.setdefault(k, []):
+            draws[k].append(tag)
+    draws_path.parent.mkdir(parents=True, exist_ok=True)
+    json.dump(draws, open(draws_path, "w"), indent=0)
 
 
 def write_reask_packets(picks: list[tuple[str, dict]], tag: str, data_dir: Path | None = None, packets_dir: Path | None = None) -> list[Path]:
@@ -139,9 +183,14 @@ def main() -> None:
     ap.add_argument("--chunks", type=int, default=30, help="chunks this run (one subagent each)")
     ap.add_argument("--max-bytes", type=int, default=400_000)
     ap.add_argument("--max-laws", type=int, default=30)
-    ap.add_argument("--reask", type=int, metavar="N", help="draw up to N laws from data/reask/*.json as re-ask packets (Max path); their chunks come first")
+    ap.add_argument("--reask", type=int, metavar="N", help="draw up to N laws from data/reask/*.json as re-ask packets (Max path; default 100 with --extract); their chunks come first")
     ap.add_argument("--extract", action="store_true", help="with --reask: also fill the remaining chunks with never-answered laws")
     a = ap.parse_args()
+    if a.reask is None and a.extract:
+        a.reask = 100
+    if a.reask:
+        for k in defer_twice_skipped():
+            print("deferred (re-ask skipped twice): " + k, file=sys.stderr)
     skip = deferred_skipped()
     tag = datetime.now().strftime("%Y%m%d-%H%M")
     out = PACKETS / "batches" / tag
@@ -151,6 +200,7 @@ def main() -> None:
         picks = cands[:a.reask]
         packets = write_reask_packets(picks, tag)
         reask_chunks = make_chunks(packets, a.chunks, a.max_bytes, a.max_laws)
+        record_draws([f.stem for c in reask_chunks for f in c], tag)
         reask_laws = sum(len(c) for c in reask_chunks)
         reask_left = len(cands) - reask_laws
         all_paths += write_lists(reask_chunks, out / "reask")

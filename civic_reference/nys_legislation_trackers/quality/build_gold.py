@@ -70,11 +70,13 @@ def main(argv=None):
     ap.add_argument("--data-dir", default=os.path.join(T, "data"))
     ap.add_argument("--nightly-dir", default=os.path.join(HERE, "nightly"))
     ap.add_argument("--overrides", default=os.path.join(HERE, "gold_overrides.json"))
+    ap.add_argument("--additions", default=os.path.join(HERE, "gold_verified_additions.json"))
     a = ap.parse_args(argv)
 
     ov = load(a.overrides)
     rec_ov = ov.get("records", {})
     excl_classes = set(ov.get("exclude_classes", []))
+    kept = ov.get("kept_not_real", {})  # Oct 19 2026: not_real items kept on purpose; treated as real
     recs, dropped = stored_index(a.data_dir)
 
     files = sorted(glob.glob(os.path.join(a.nightly_dir, "*_[AB].json")))
@@ -154,6 +156,8 @@ def main(argv=None):
                 excluded = f"adjudication {nt}: {v[:60]}"
             else:
                 verdict, disputed, fields = "correct", False, {}
+        if oid in kept and excluded is None:
+            verdict, disputed, fields = "correct", False, {}
         classes = class_of.get(oid, [])
         cur_rec = recs.get(oid)
         drop_rec = dropped.get(oid)
@@ -200,17 +204,46 @@ def main(argv=None):
             item["excluded"] = excluded
         if classes:
             item["classes"] = classes
+        if oid in kept:
+            item["kept_not_real"] = kept[oid].get("why")
         if len({(n, au) for n, au, _ in lst}) > 1:
             item["also"] = sorted({f"{n}_{au}" for n, au, _ in lst})
         if disputed:
             item["verdicts_seen"] = sorted(str(x) for x in verdicts)
         law_bucket(law)["items"].append(item)
 
+    # blind-verified records the auditors never listed (list of {obligation_id, law, quote, kind, agency, verdict, source})
+    added = 0
+    if os.path.exists(a.additions):
+        have = {i["gold_id"] for g in gold_laws.values() for i in g["items"]}
+        for ad in load(a.additions):
+            oid, law = ad["obligation_id"], ad.get("law") or law_of(ad["obligation_id"])
+            if oid in have or ad.get("verdict") not in ("real", "not_real"):
+                continue
+            rec = recs.get(oid)
+            src_rec = rec or dropped.get(oid) or {}
+            item = {
+                "gold_id": oid,
+                "kind": ad.get("kind") or src_rec.get("kind") or "duty",
+                "status": ad["verdict"],
+                "source": {"night": "bulk_verification", "auditor": "bulk_verification", "obligation_id": oid, "note": ad.get("source")},
+                "quote": ad.get("quote") or src_rec.get("quote"),
+                "expected_fields": {k: rec[k] for k in ("agency", "kind", "deadline_kind", "extends_existing", "agency_unit") if k in rec}
+                if ad["verdict"] == "real" and rec else {},
+                "disputed": False,
+            }
+            if ad.get("agency"):
+                item["agency_hint"] = ad["agency"]
+            law_bucket(law)["items"].append(item)
+            have.add(oid)
+            added += 1
+    counts["bulk_verification_added"] = added
+
     for law, lst in sorted(missed.items()):
-        kept = []
+        kept_m = []
         for n, au, m in lst:
             q = m.get("quote") or ""
-            dup = next((k for k in kept if quotes_match(k[1]["quote"], q)), None)
+            dup = next((k for k in kept_m if quotes_match(k[1]["quote"], q)), None)
             if dup:
                 dup[1].setdefault("also", []).append(f"{n}_{au}:{m.get('blind')}")
                 continue
@@ -232,8 +265,8 @@ def main(argv=None):
                 item["dropped_by"] = m["dropped_by"]
             if excl:
                 item["excluded"] = excl
-            kept.append((None, item))
-        for _, it in kept:
+            kept_m.append((None, item))
+        for _, it in kept_m:
             law_bucket(law)["items"].append(it)
 
     ed_conflicts = []
