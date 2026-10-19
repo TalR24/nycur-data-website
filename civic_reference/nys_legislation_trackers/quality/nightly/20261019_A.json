@@ -1,0 +1,707 @@
+{
+ "_scoring": {
+  "auditor": "A",
+  "night": "20261019",
+  "laws": 11,
+  "stored_records": 46,
+  "correct": 39,
+  "wrong_fields": 6,
+  "not_real": 1,
+  "missed": 19,
+  "precision_strict": "39/46 = 84.8% (Wilson 95% 71.8-92.4)",
+  "precision_real": "45/46 = 97.8% (Wilson 95% 88.7-99.6)",
+  "recall": "43/63 = 68.3% (Wilson 95% 56.0-78.4)",
+  "effective_dates": "11/11 correct",
+  "split": {
+   "reask (2009-A7332, 2009-A11101)": {
+    "precision_strict": "20/23 = 87.0% (67.9-95.5)",
+    "precision_real": "23/23 = 100% (85.7-100)",
+    "recall": "21/25 = 84.0% (65.3-93.6)"
+   },
+   "first_answer (9 laws)": {
+    "precision_strict": "19/23 = 82.6% (62.9-93.0)",
+    "precision_real": "22/23 = 95.7% (79.0-99.2)",
+    "recall": "22/38 = 57.9% (42.2-72.1)"
+   }
+  }
+ },
+ "_classes": [
+  {
+   "name": "stated date in deadline_text but deadline_kind none",
+   "criteria": [
+    "5"
+   ],
+   "instances": [
+    "2017-A11227-01",
+    "2017-A11227-02",
+    "2017-A11227-10"
+   ],
+   "rule": "deadline_kind=='none' and deadline_text matches /(not later than|no later than|on or before|prior to|by)\\s+(month name|\\w+ \\d+,? \\d{4}|\\d)/i",
+   "db_matches": 65,
+   "db_examples": [
+    "2013-A5503-33",
+    "2013-A7514-02",
+    "2015-S8131-08"
+   ],
+   "needs_judgment": false,
+   "note": "some db matches may be true cutoffs (crit 5 says a cutoff is not a deadline); sampled 2009-A8076-01, 2009-A3078-01 read 'on or before December 31, 20xx' with kind none"
+  },
+  {
+   "name": "residency-rule exception stored as an appointment power",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2017-A10487-01"
+   ],
+   "rule": "quote matches /\\bmay appoint an? \\w+ residing\\b/i",
+   "db_matches": 3,
+   "db_examples": [
+    "2009-A8355-01",
+    "2011-S4415-01",
+    "2017-A10487-01"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "amended sunset clause of an earlier chapter not recorded (extension record missed)",
+   "criteria": [
+    "1",
+    "7"
+   ],
+   "instances": [
+    "2009-A11101 (s.4 ch.316/1997)",
+    "2009-A11101 (s.5 ch.645/2006)"
+   ],
+   "rule": "packet LAW TEXT has a non-final line /^§ \\d+\\. This act shall/ containing '{{' and /expire|repeal/, and no stored record of the law whose normalized quote's first 40 chars appear in that line; counted laws (not records) with at least one stored record",
+   "db_matches": 89,
+   "db_examples": [
+    "2009-A10213",
+    "2009-A10468",
+    "2009-A10848"
+   ],
+   "needs_judgment": false,
+   "note": "a further 734 packet laws match but have zero stored records (may be unanswered, or all-missed like 2009-A10118 '[6] {{9}} years')"
+  },
+  {
+   "name": "parallel per-year/per-unit pools collapsed into one record (known class, recurrence)",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2017-A11227-02",
+    "2017-A11227-10"
+   ],
+   "rule": "action_summary matches /\\b(two|both|three) (annual )?(pools|grants|payments|appropriations)\\b|\\b(19|20)\\d\\d and (19|20)\\d\\d (lump|bonus|pools?)/i (low recall rule)",
+   "db_matches": 2,
+   "db_examples": [
+    "2017-A11227-02",
+    "2017-A11227-10"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "condition_of_other_record gate drops a real duty linked to an unrelated record",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2009-A7332-06"
+   ],
+   "rule": "dropped rule=='condition_of_other_record' and Jaccard(words>=4 chars of dropped quote, quote of the record named in reason) < 0.15",
+   "db_matches": 49,
+   "db_examples": [
+    "2015-A6430-05",
+    "2015-A6430-06",
+    "2015-A9219-01"
+   ],
+   "needs_judgment": false,
+   "note": "2009-A7332-06 ('such schedule shall be promulgated by such bureau') was dropped as a condition on 2009-A7332-03 (photo-technology duty), overlap 0.08; db matches are candidates, not confirmed"
+  },
+  {
+   "name": "court actor resolved to the locality",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2009-A7332-08"
+   ],
+   "rule": "actor_raw matches /court having jurisdiction|supreme court/i and agency in {Cities,Counties,Towns,Villages,Municipalities (all)}",
+   "db_matches": 4,
+   "db_examples": [
+    "2009-A7331-08",
+    "2009-A7332-08",
+    "2009-A7420-06"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "multi-section identical extension stored once (same sunset change in parallel sections)",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2017-A10355 (s.1 and s.2 waive powers)"
+   ],
+   "rule": "no reliable field rule; needs packet comparison of identical '[x] {{y}}' edits across sections vs stored count",
+   "db_matches": 0,
+   "db_examples": [],
+   "needs_judgment": true,
+   "laws": [
+    "2017-A10355"
+   ]
+  },
+  {
+   "name": "governance duties in collective-bargaining acts missed (labor-management committees, second withholding power, 'will be determined by management')",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2017-A11227"
+   ],
+   "rule": "no mechanical rule",
+   "db_matches": 0,
+   "db_examples": [],
+   "needs_judgment": true,
+   "laws": [
+    "2017-A11227"
+   ]
+  }
+ ],
+ "2017-A10355": {
+  "records": {
+   "2017-A10355-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   }
+  },
+  "missed": [
+   {
+    "blind": "b1",
+    "quote": "the governing body, or the commission where so authorized to act by the governing body, may waive the area designation requirement",
+    "kind": "power",
+    "agency": "Municipalities (all)",
+    "dropped_by": null,
+    "note": "s.1, GML 693, sunset [eighteen] {{twenty-one}}; extends_existing true"
+   },
+   {
+    "blind": "b2",
+    "quote": "the governing body, or the commission where so authorized to act by the governing body, may waive any such standards and procedures required by local law or charter",
+    "kind": "power",
+    "agency": "Municipalities (all)",
+    "dropped_by": null,
+    "note": "s.2, GML 694(5), same extension; extends_existing true"
+   }
+  ],
+  "effective_date": {
+   "stored": "2018-07-01",
+   "computed": "2018-07-01",
+   "verdict": "correct",
+   "note": "immediately; signed July 1 after June 30 so retroactive to 2018-06-30, stored retroactive_to 2018-06-30"
+  }
+ },
+ "2015-S7644": {
+  "records": {
+   "2015-S7644-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2016-08-18",
+   "computed": "2016-08-18",
+   "verdict": "correct",
+   "note": "immediately; deemed repealed with part O (expires_rule with_referenced_section)"
+  }
+ },
+ "2015-S8077": {
+  "records": {
+   "2015-S8077-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2017-06-29",
+   "computed": "2017-06-29",
+   "verdict": "correct",
+   "note": "180th day after 2016-12-31"
+  }
+ },
+ "2017-A11227": {
+  "records": {
+   "2017-A11227-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2017-A11227-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2017-A11227-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2017-A11227-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2017-A11227-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2017-A11227-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2017-A11227-09": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2017-A11227-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "5"
+    ],
+    "fields": {
+     "deadline_kind": "fixed_date",
+     "deadline_date": "2018-12-31"
+    },
+    "note": "law: 'Such lump sum payments ... shall occur not later than December 31, 2018'; stored deadline_text holds it but kind none. Kind power vs duty arguable ('in their discretion')"
+   },
+   "2017-A11227-02": {
+    "verdict": "wrong",
+    "criteria": [
+     "5"
+    ],
+    "fields": {
+     "deadline_kind": "fixed_date",
+     "deadline_date": "2019-12-31"
+    },
+    "note": "law: 'Such distributions ... shall occur not later than December 31 of each year'; first is 2019 pool. Also collapses two parallel pools (equity pool missed, see b3)"
+   },
+   "2017-A11227-10": {
+    "verdict": "wrong",
+    "criteria": [
+     "5"
+    ],
+    "fields": {
+     "deadline_kind": "fixed_date",
+     "deadline_date": "2018-12-31"
+    },
+    "note": "law s.19(1)(c): 'Such payment shall occur not later than December 31 of each year'; also collapses the 2017 $600 and 2018 1% pools (one missed, b24)"
+   }
+  },
+  "missed": [
+   {
+    "blind": "b3",
+    "quote": "there also shall be available an amount equal to one-half of 1 percent (0.5%) of the total of the basic annual salaries on June 30 of each such year ... by the state university trustees in their discretion to address equity, compression and inversion issues",
+    "kind": "power",
+    "agency": "SUNY",
+    "dropped_by": null,
+    "note": "second parallel pool collapsed into -02"
+   },
+   {
+    "blind": "b4",
+    "quote": "The credit hour equivalent for contact hours and other credit equivalencies will be determined by management based on the practice at each individual campus.",
+    "kind": "duty",
+    "agency": "SUNY",
+    "dropped_by": null,
+    "note": "'will <verb>' with government subject is a duty per packet rule"
+   },
+   {
+    "blind": "b8",
+    "quote": "any increase in compensation may be withheld in whole or in part from any employee to whom the provisions of this section are applicable when, in the opinion of the director of employee relations and the director of the budget, such increase is not warranted or is not appropriate.",
+    "kind": "power",
+    "agency": "OER",
+    "dropped_by": null,
+    "note": "s.3(3) lifeguard unit; only s.2(18) stored"
+   },
+   {
+    "blind": "b9",
+    "quote": "(same s.3(3) sentence)",
+    "kind": "power",
+    "agency": "DOB",
+    "dropped_by": null,
+    "note": "joint actor, one record per body"
+   },
+   {
+    "blind": "b10",
+    "quote": "who is required to be available for immediate recall and who must be prepared to return to duty within a limited period of time, may be granted additional compensation for each day",
+    "kind": "power",
+    "agency": "SUNY",
+    "dropped_by": null,
+    "note": "s.5 on-call; arguable entitlement"
+   },
+   {
+    "blind": "b11-b17",
+    "quote": "During the period July 2, 2016 through July 1, 2022, there shall be a statewide joint labor-management committee continued and administered pursuant to the terms of the agreement, which shall have the responsibility for studying and making recommendations",
+    "kind": "duty",
+    "agency": "OER (State side of joint committees)",
+    "dropped_by": null,
+    "note": "s.7(1)-(7): seven parallel committees, none stored; counted as 7 misses (judgment call)"
+   },
+   {
+    "blind": "b24",
+    "quote": "For the year 2017 there shall be made available a lump sum payment amount of $600 ... for distribution ... by the state university trustees, in their discretion",
+    "kind": "power",
+    "agency": "SUNY",
+    "dropped_by": null,
+    "note": "collapsed into -10 with the 2018 pool"
+   }
+  ],
+  "effective_date": {
+   "stored": "2018-08-24",
+   "computed": "2018-08-24",
+   "verdict": "correct",
+   "note": "immediately, deemed in effect from 2016-07-02 (stored retroactive_to matches)"
+  }
+ },
+ "2017-A2620": {
+  "records": {
+   "2017-A2620-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2017-A2620-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2017-A2620-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2017-A2620-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2017-A2620-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2018-07-31",
+   "computed": "2018-07-31",
+   "verdict": "correct",
+   "note": "immediately; section one on 180th day = 2019-01-27, stored as section date"
+  }
+ },
+ "2017-A10192": {
+  "records": {
+   "2017-A10192-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   }
+  },
+  "missed": [
+   {
+    "blind": "b2",
+    "quote": "The art installation authorized by this paragraph shall not be materially altered, sold, leased, exchanged, donated, other than the donation authorized by this paragraph from the museum to the trust, subjected to concession agreement, or used for other than its original purpose without the express authority of an act of the legislature.",
+    "kind": "duty",
+    "agency": "HRPT",
+    "dropped_by": null,
+    "note": "prohibition binding the trust once donated (moderate confidence)"
+   }
+  ],
+  "effective_date": {
+   "stored": "2018-07-31",
+   "computed": "2018-07-31",
+   "verdict": "correct",
+   "note": "immediately"
+  }
+ },
+ "2017-A10085": {
+  "records": {
+   "2017-A10085-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2018-07-01",
+   "computed": "2018-07-01",
+   "verdict": "correct",
+   "note": "immediately"
+  }
+ },
+ "2009-A7332": {
+  "records": {
+   "2009-A7332-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-A7332-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-A7332-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-A7332-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-A7332-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-A7332-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-A7332-09": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-A7332-10": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-A7332-11": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-A7332-14": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "quote trimmed at 60 words and omits 'the bureau shall not issue any notice of fine or penalty'; accepted under the Oct 16 trim decision"
+   },
+   "2009-A7332-15": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-A7332-16": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-A7332-17": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-A7332-18": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-A7332-19": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-A7332-08": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Unified Court System (Rochester City Court)",
+     "agency_unit": "court having jurisdiction over traffic infractions"
+    },
+    "note": "law: 'Adjudication of the liability imposed upon owners by this section shall be by the Court having jurisdiction over traffic infractions'; a court is a State court, not the City of Rochester"
+   },
+   "2009-A7332-12": {
+    "verdict": "wrong",
+    "criteria": [
+     "7"
+    ],
+    "fields": {
+     "extends_existing": true
+    },
+    "note": "'To adjudicate the liability of owners For violations ... in accordance with section eleven hundred eleven-b' adds a class to existing PVB functions; sibling -11 (same widening) is true"
+   },
+   "2009-A7332-13": {
+    "verdict": "wrong",
+    "criteria": [
+     "2"
+    ],
+    "fields": {
+     "quote": "Whenever a person charged with a parking violation enters a plea of not guilty or a person alleged to be liable in accordance with section eleven hundred eleven-a of this chapter or section eleven hundred eleven-b of this chapter ..."
+    },
+    "note": "stored quote's only new matter is '{{or she}}' (gender word); the operative new matter '{{of this chapter or section eleven hundred eleven-b}}' sits earlier in the same sentence"
+   }
+  },
+  "missed": [
+   {
+    "blind": "b5",
+    "quote": "except that if such city by local law has authorized the adjudication of such owner liability by a parking violations bureau, such schedule shall be promulgated by such bureau.",
+    "kind": "duty",
+    "agency": "Cities (City of Rochester, parking violations bureau)",
+    "dropped_by": "condition_of_other_record",
+    "note": "dropped as 'a condition on 2009-A7332-03', the photo-technology duty; unrelated provision"
+   }
+  ],
+  "effective_date": {
+   "stored": "2009-05-28",
+   "computed": "2009-05-28",
+   "verdict": "correct",
+   "note": "30th day after 2009-04-28; expires 2014-12-01 stored"
+  }
+ },
+ "2017-A10487": {
+  "records": {
+   "2017-A10487-01": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "note": "'and the district attorney of Broome county may appoint a stenographer residing in the county of Onondaga' is an exception to s.322's residency rule ('shall be a citizen and resident of the county'); residency rules are excluded"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2018-07-31",
+   "computed": "2018-07-31",
+   "verdict": "correct",
+   "note": "immediately"
+  }
+ },
+ "2015-S7772": {
+  "records": {
+   "2015-S7772-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S7772-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2016-09-09",
+   "computed": "2016-09-09",
+   "verdict": "correct",
+   "note": "immediately; expires 2026-07-01 stored"
+  }
+ },
+ "2009-A11101": {
+  "records": {
+   "2009-A11101-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-A11101-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-A11101-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-A11101-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-A11101-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "not on blind list (read as a cap); accepted as a real extension of the phase-five contract term limit [May fifteenth] {{June second}}; counted in recall denominator"
+   }
+  },
+  "missed": [
+   {
+    "blind": "b5",
+    "quote": "§ 9. This act shall take effect immediately and shall expire and be deemed repealed June 2, 2010.",
+    "kind": "power",
+    "agency": "NYPA",
+    "dropped_by": null,
+    "note": "s.4 amends ch.316 of 1997 sunset [May 15] {{June 2}}; an earlier chapter's sunset inside an amendment is an extension record (Oct 16)"
+   },
+   {
+    "blind": "b6",
+    "quote": "provided further, however, that section seven of this act shall expire and be deemed repealed June 2, 2010.",
+    "kind": "power",
+    "agency": "NYPA",
+    "dropped_by": null,
+    "note": "s.5 amends ch.645 of 2006 s.11; extension record"
+   }
+  ],
+  "effective_date": {
+   "stored": "2010-05-25",
+   "computed": "2010-05-25",
+   "verdict": "correct",
+   "note": "immediately, deemed in effect from 2010-05-15 (stored retroactive_to); amendments expire with ss.183/189"
+  }
+ }
+}

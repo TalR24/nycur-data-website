@@ -1,0 +1,687 @@
+{
+ "_scoring": {
+  "auditor": "B",
+  "night": "20261019",
+  "laws": 11,
+  "stored_records": 33,
+  "correct": 25,
+  "wrong_fields": 2,
+  "not_real": 6,
+  "missed": 20,
+  "precision_strict": "25/33 = 75.8% (Wilson 95% 59.0-87.2)",
+  "precision_real": "27/33 = 81.8% (Wilson 95% 65.6-91.4)",
+  "recall": "28/48 = 58.3% (Wilson 95% 44.3-71.2); numerator = 27 blind items matched + 1 correct stored record the blind pass merged (2017-A2805-07); excluding the 12 sunset-extension items whose actor the text does not state: 28/36 = 77.8% (61.9-88.3)",
+  "effective_dates": "11/11 correct",
+  "split": "re-ask laws (2011-A10205, 2011-A2289): precision_strict 9/15 = 60.0% (35.7-80.2), recall 12/24 = 50.0% (31.4-68.6); first-answer laws (9, incl. 2015-S7644 which carries no reasked flag): precision_strict 16/18 = 88.9% (67.2-96.9), recall 16/24 = 66.7% (46.7-82.0)"
+ },
+ "_classes": [
+  {
+   "name": "duplicate_provision gate drops distinct parallel provisions (different subsection, different text)",
+   "criteria": [
+    "9",
+    "1"
+   ],
+   "instances": [
+    "2017-A10220-01",
+    "2017-A10220-02",
+    "2011-A2289-13"
+   ],
+   "rule": "dropped rule=='duplicate_provision' and the normalized dropped quote differs from the overlapped kept record's quote over their common prefix length",
+   "db_matches": 47,
+   "db_examples": [
+    "2009-A10468-12",
+    "2009-A10468-13",
+    "2009-A10468-14"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "designation_no_actor drops verb/infinitive list items whose lead-in ('The department shall:', BOCES powers list) sits outside the quote (recurrence of Oct 17 class, now also mandatory lead-ins)",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2017-A2805-06",
+    "2011-A10205-01"
+   ],
+   "rule": "dropped rule=='designation_no_actor' and quote matches ^\\s*(\\(?\\w{1,4}\\)\\s*)?(to\\s+[a-z]+|<operative verb list>)\\b (case-insensitive)",
+   "db_matches": 124,
+   "db_examples": [
+    "2009-A2209-78",
+    "2009-A2876-01",
+    "2009-A3397-01"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "entitlement procedure stored as duty: claim/amount/certification as passive subject (recurrence of passive-subject and entitlement classes)",
+   "criteria": [
+    "1",
+    "3"
+   ],
+   "instances": [
+    "2011-A2289-07",
+    "2011-A2289-08",
+    "2011-A2289-09"
+   ],
+   "rule": "kind duty and actor_raw matches ^(the |an |such |any )?(claim|amount|application|moneys|payment|aid|apportionment)s?\\b",
+   "db_matches": 29,
+   "db_examples": [
+    "2009-A41011-08",
+    "2009-A8905-02",
+    "2009-S249-12"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "NYC city school district left Unspecified (recurrence of NYC school actors)",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2011-A2289-02"
+   ],
+   "rule": "agency=='Unspecified' and actor_raw matches (population of one million|city of new york)",
+   "db_matches": 9,
+   "db_examples": [
+    "2009-A10770-01",
+    "2009-A10770-03",
+    "2009-A11171-12"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "city school district resolved to the city (Cities) instead of School districts",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2011-A2289-15"
+   ],
+   "rule": "actor_raw matches 'school district' and agency in {Cities, Towns, Villages, Counties}",
+   "db_matches": 32,
+   "db_examples": [
+    "2009-A1245-01",
+    "2009-A8920-01",
+    "2011-S5593-03"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "grant cap stored as duty",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2017-A2805-04"
+   ],
+   "rule": "kind duty, quote has no bond/note and matches ^\\s*no\\s+(grant|award|loan|payment|contract)s?\\s+shall\\s+be\\s+(made|awarded|paid)[^.]{0,120}in excess of",
+   "db_matches": 1,
+   "db_examples": [
+    "2017-A2805-04"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "applicant form requirement stored as agency duty",
+   "criteria": [
+    "1",
+    "3"
+   ],
+   "instances": [
+    "2017-A2805-03"
+   ],
+   "rule": "kind duty and quote matches ^(an |the |such |any )?(application|claim|request|petition)s?\\b[^.]{0,80}shall be (made|submitted|filed)[^.]{0,80}prescribed by",
+   "db_matches": 2,
+   "db_examples": [
+    "2017-A2279-05",
+    "2017-A2805-03"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "report stored twice: 'prepare' record (on_effective_date) plus dated 'submit' record",
+   "criteria": [
+    "9",
+    "5"
+   ],
+   "instances": [
+    "2011-A10205-03"
+   ],
+   "rule": "same matter_id, agency, citation, deliverable_type report, one record deadline_kind on_effective_date and one fixed_date; flag the on_effective_date one",
+   "db_matches": 1,
+   "db_examples": [
+    "2011-A10205-03"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "earlier chapter's sunset extended ([YYYY] {{YYYY}}) with no extension record",
+   "criteria": [
+    "1",
+    "7"
+   ],
+   "instances": [
+    "2017-A11026 b1",
+    "2017-A10342 b1",
+    "2011-A2289 b4-b13"
+   ],
+   "rule": "answered packets (results file exists) whose LAW TEXT matches (expire|deemed repealed|remain in full force)[^\\n§]{0,160}?\\[old\\]\\s*\\{\\{new\\}\\} where no stored record of the law quotes the new value; 220 laws / 275 sentences; misses year-before-'expire' wording (2017-A10342). Whether each extended provision has a government holder needs judgment",
+   "db_matches": 220,
+   "db_examples": [
+    "2009-A6825",
+    "2009-A11515",
+    "2009-A11064"
+   ],
+   "needs_judgment": true
+  }
+ ],
+ "2017-A10355": {
+  "records": {
+   "2017-A10355-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "GML 695(6)(d) disposal power extended to 2021; quote verbatim post-amendment"
+   }
+  },
+  "missed": [
+   {
+    "blind": "b1",
+    "quote": "the governing body, or the commission where so authorized to act by the governing body, may waive the area designation requirement",
+    "kind": "power",
+    "agency": "Municipalities (all)",
+    "dropped_by": null,
+    "note": "GML 693, window extended 'two thousand [eighteen] {{twenty-one}}'; extends_existing true"
+   },
+   {
+    "blind": "b2",
+    "quote": "the governing body, or the commission where so authorized to act by the governing body, may waive any such standards and procedures required by local law or charter",
+    "kind": "power",
+    "agency": "Municipalities (all)",
+    "dropped_by": null,
+    "note": "GML 694(5), same extension; extends_existing true"
+   }
+  ],
+  "effective_date": {
+   "stored": "2018-07-01 (retroactive_to 2018-06-30)",
+   "computed": "2018-07-01, retroactive to 2018-06-30",
+   "verdict": "correct",
+   "note": "signed 2018-07-01, after June 30, 2018: 'take effect immediately and shall be retroactive to ... June 30, 2018'"
+  }
+ },
+ "2015-S7644": {
+  "records": {
+   "2015-S7644-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "quarterly updates, first due 'On or before January 1, 2017'"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2016-08-18, expires_rule with_referenced_section",
+   "computed": "2016-08-18",
+   "verdict": "correct",
+   "note": "'take effect immediately; ... deemed repealed therewith'; new §2 itself repeals April 1, 2018 via renumbered §3"
+  }
+ },
+ "2017-A2702": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2018-02-16",
+   "computed": "2018-02-16",
+   "verdict": "correct",
+   "note": "sixtieth day after 2017-12-18; only new matter binds operators (private); DOH clause is early-rulemaking boilerplate"
+  }
+ },
+ "2017-A10220": {
+  "records": {
+   "2017-A10220-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "SED/DOS 'shall allow' conversion 'Prior to the first day of March, two thousand nineteen'; extends true, deadline none"
+   },
+   "2017-A10220-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "SED/DOS 'shall allow' conversion 'Prior to the first day of March, two thousand nineteen'; extends true, deadline none"
+   },
+   "2017-A10220-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "SED/DOS 'shall allow' conversion 'Prior to the first day of March, two thousand nineteen'; extends true, deadline none"
+   },
+   "2017-A10220-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "SED/DOS 'shall allow' conversion 'Prior to the first day of March, two thousand nineteen'; extends true, deadline none"
+   }
+  },
+  "missed": [
+   {
+    "blind": "b1",
+    "quote": "the state education department and the department of state shall allow an existing business corporation organized under article four of this chapter to become a professional service corporation",
+    "kind": "duty",
+    "agency": "SED",
+    "dropped_by": "duplicate_provision",
+    "note": "BCL 1503(b-6) is a different provision from (b-7) 'design professional service corporation'; dropped as 70% overlap with -03"
+   },
+   {
+    "blind": "b2",
+    "quote": "the state education department and the department of state shall allow an existing business corporation organized under article four of this chapter to become a professional service corporation",
+    "kind": "duty",
+    "agency": "DOS",
+    "dropped_by": "duplicate_provision",
+    "note": "same as b1 for DOS; dropped as overlap with -04"
+   }
+  ],
+  "effective_date": {
+   "stored": "2018-10-01 (retroactive_to 2018-03-01)",
+   "computed": "2018-10-01, deemed in effect from 2018-03-01",
+   "verdict": "correct",
+   "note": "'take effect immediately and shall be deemed to have been in full force and effect on and after March 1, 2018'"
+  }
+ },
+ "2017-A11026": {
+  "records": {},
+  "missed": [
+   {
+    "blind": "b1",
+    "quote": "paragraphs (a) and (c) of subdivision 3 of section 538 of the labor law as added by section one of this act shall remain in full force and effect until December 31, 2020",
+    "kind": "power",
+    "agency": "unverified (Labor Law 538(3) holder not in text)",
+    "dropped_by": null,
+    "note": "sunset extension of an earlier chapter (Oct 16 decision: an extension record); the holder of the extended authority is not stated in the packet text, agency unverified"
+   }
+  ],
+  "effective_date": {
+   "stored": "2018-08-24",
+   "computed": "2018-08-24",
+   "verdict": "correct",
+   "note": "'This act shall take effect immediately.'"
+  }
+ },
+ "2017-A10100": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2018-08-24",
+   "computed": "2018-08-24",
+   "verdict": "correct",
+   "note": "immediately; EPTL text binds no government actor"
+  }
+ },
+ "2017-A2805": {
+  "records": {
+   "2017-A2805-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "EDL 211(1) establish and support centers"
+   },
+   "2017-A2805-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "EDL 211(2) selection criteria"
+   },
+   "2017-A2805-03": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "3"
+    ],
+    "fields": {},
+    "note": "'Application for grants ... shall be made in the manner and on forms prescribed by the department' binds the applicant; the department is not the sentence's actor (borderline)"
+   },
+   "2017-A2805-04": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "note": "'no grant shall be made ... in excess of seventy-five thousand dollars' is a grant cap"
+   },
+   "2017-A2805-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "212(1) monitor and require reports"
+   },
+   "2017-A2805-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "212(2) 'Such reports shall be made available to the public on the department's website'"
+   },
+   "2017-A2805-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "212(3) independent evaluation, 2019-01-01 annual"
+   },
+   "2017-A2805-09": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "212(4) maintain records"
+   }
+  },
+  "missed": [
+   {
+    "blind": "b4",
+    "quote": "Evaluate the entrepreneurial assistance centers established under this article and report quarterly and annually, on or before January first, two thousand eighteen, and on or before each January first thereafter",
+    "kind": "duty",
+    "agency": "ESD",
+    "dropped_by": "designation_no_actor",
+    "note": "list item under 'The department shall:'; siblings -05/-08/-09 under the same lead-in were kept; due 2019-01-01 annual (first Jan 1 after 2018-12-07)"
+   }
+  ],
+  "effective_date": {
+   "stored": "2018-12-07",
+   "computed": "2018-12-07",
+   "verdict": "correct",
+   "note": "immediately; 591-a proviso is a section-scoped repeal tie"
+  }
+ },
+ "2017-A10342": {
+  "records": {},
+  "missed": [
+   {
+    "blind": "b1",
+    "quote": "nothing contained in this act shall be construed so as to extend the provisions of this act beyond October 1, 2020",
+    "kind": "power",
+    "agency": "unverified (holder of the Albany rifle-hunting authorization not in text; may be private)",
+    "dropped_by": null,
+    "note": "sunset extension of an earlier chapter (Oct 16 decision: an extension record); the holder of the extended authority is not stated in the packet text, agency unverified"
+   }
+  ],
+  "effective_date": {
+   "stored": "2018-07-31",
+   "computed": "2018-07-31",
+   "verdict": "correct",
+   "note": "immediately"
+  }
+ },
+ "2017-A10681": {
+  "records": {
+   "2017-A10681-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "county power to alienate and convey"
+   },
+   "2017-A10681-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "revenues 'shall be used for capital improvements'"
+   },
+   "2017-A10681-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "town maintain, own, operate"
+   },
+   "2017-A10681-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "available to public, equitable method"
+   }
+  },
+  "missed": [
+   {
+    "blind": "b2",
+    "quote": "provided that the town of Southampton shall provide access to such parklands and/or recreational facilities to all residents of the county of Suffolk",
+    "kind": "duty",
+    "agency": "Towns (Town of Southampton)",
+    "dropped_by": null,
+    "note": "proviso is its own provision under the packet rules; no record and not in dropped"
+   }
+  ],
+  "effective_date": {
+   "stored": "2018-07-31",
+   "computed": "2018-07-31",
+   "verdict": "correct",
+   "note": "immediately"
+  }
+ },
+ "2011-A10205": {
+  "records": {
+   "2011-A10205-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "'shall not be reduced or eliminated' prohibition on BOCES"
+   },
+   "2011-A10205-03": {
+    "verdict": "not_real",
+    "criteria": [
+     "9",
+     "5"
+    ],
+    "fields": {},
+    "note": "duplicates -04: 'shall prepare two reports' are the interim and final reports -04 dates ('by no later than April 15, 2013 ... December 15, 2013'); stored on_effective_date"
+   },
+   "2011-A10205-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "interim and final report; carries first date 2013-04-15 (final 2013-12-15 in text)"
+   }
+  },
+  "missed": [
+   {
+    "blind": "b1",
+    "quote": "to enter into contracts of no more than two years and subject to the sunset date of this subparagraph, with out-of-state school districts for special Education and/or career and technical Education services",
+    "kind": "power",
+    "agency": "BOCES",
+    "dropped_by": "designation_no_actor",
+    "note": "Ed Law 1950(4)(h)(10) new subparagraph; 'Contracts must be executed by the board of cooperative educational services'; the act's core power"
+   }
+  ],
+  "effective_date": {
+   "stored": "2012-08-17, expires 2014-07-01",
+   "computed": "2012-08-17, expires 2014-07-01",
+   "verdict": "correct",
+   "note": "immediately, 'deemed repealed July 1, 2014'"
+  }
+ },
+ "2011-A2289": {
+  "records": {
+   "2011-A2289-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "273(12) new FY2010-11 expenditure authority, extends true (borderline appropriation)"
+   },
+   "2011-A2289-02": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "NYC Public Schools (Department of Education)"
+    },
+    "note": "'a city school district in a city having a population of one million or more inhabitants ... may use no more than eighty percent' is the NYC school district, stored Unspecified"
+   },
+   "2011-A2289-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "4402(6) class-size authority extended to June 30, 2011"
+   },
+   "2011-A2289-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "§13 bus driver training grants"
+   },
+   "2011-A2289-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "§14 apportion library moneys; actor_raw is the passive subject but agency SED is right"
+   },
+   "2011-A2289-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "§14 proportional reduction plan"
+   },
+   "2011-A2289-07": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "note": "'The claim for an apportionment ... shall be submitted to the commissioner ... and shall be payable' is the claim procedure of an optional entitlement ('shall be eligible to receive'), not a district duty"
+   },
+   "2011-A2289-08": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "3"
+    ],
+    "fields": {},
+    "note": "'an amount equal to the amount paid ... shall first be deducted' subject is the amount (entitlement recoupment); no actor named"
+   },
+   "2011-A2289-09": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "3"
+    ],
+    "fields": {},
+    "note": "'The amount of such additional accrual shall be certified to the commissioner' is a precondition of the §16 application"
+   },
+   "2011-A2289-12": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "§17a suballocate"
+   },
+   "2011-A2289-14": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "§17d interchange"
+   },
+   "2011-A2289-15": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "School districts",
+     "agency_unit": "Rochester City School District"
+    },
+    "note": "'the city school district of the city of Rochester ... may purchase' is the school district, stored as Cities / City of Rochester"
+   }
+  },
+  "missed": [
+   {
+    "blind": "b4",
+    "quote": "shall be deemed repealed on June 30, 2011",
+    "kind": "power",
+    "agency": "unverified",
+    "dropped_by": null,
+    "note": "§4 ch 756/1992 CWE program sunset extension of an earlier chapter (Oct 16 decision: an extension record); the holder of the extended authority is not stated in the packet text, agency unverified"
+   },
+   {
+    "blind": "b5",
+    "quote": "shall expire and be deemed repealed June 30, 2011",
+    "kind": "duty",
+    "agency": "School districts (unverified)",
+    "dropped_by": null,
+    "note": "§5 ch 425/2002 sunset extension of an earlier chapter (Oct 16 decision: an extension record); the holder of the extended authority is not stated in the packet text, agency unverified"
+   },
+   {
+    "blind": "b6",
+    "quote": "sections one, two and three of this act shall expire and be deemed repealed on June 30, 2011",
+    "kind": "duty",
+    "agency": "unverified",
+    "dropped_by": null,
+    "note": "§6 ch 101/2003 sunset extension of an earlier chapter (Oct 16 decision: an extension record); the holder of the extended authority is not stated in the packet text, agency unverified"
+   },
+   {
+    "blind": "b7",
+    "quote": "shall expire July 1, 2011 when upon such date the provisions of this act shall be deemed repealed",
+    "kind": "power",
+    "agency": "School districts (unverified)",
+    "dropped_by": null,
+    "note": "§7 ch 147/2001 conditional appointment sunset extension of an earlier chapter (Oct 16 decision: an extension record); the holder of the extended authority is not stated in the packet text, agency unverified"
+   },
+   {
+    "blind": "b8",
+    "quote": "section 23 of this act shall take effect July 1, 2008 and shall expire and be deemed repealed June 30, 2012",
+    "kind": "duty",
+    "agency": "unverified",
+    "dropped_by": null,
+    "note": "§8 UPK sunset extension of an earlier chapter (Oct 16 decision: an extension record); the holder of the extended authority is not stated in the packet text, agency unverified"
+   },
+   {
+    "blind": "b9",
+    "quote": "this act shall be deemed repealed on and after January 1, 2015",
+    "kind": "power",
+    "agency": "SED (unverified)",
+    "dropped_by": null,
+    "note": "§9 ch 386/1996 waiver sunset extension of an earlier chapter (Oct 16 decision: an extension record); the holder of the extended authority is not stated in the packet text, agency unverified"
+   },
+   {
+    "blind": "b10",
+    "quote": "section seventy-one of this act shall expire and be deemed repealed June 30, 2011",
+    "kind": "duty",
+    "agency": "unverified",
+    "dropped_by": null,
+    "note": "§10 sunset extension of an earlier chapter (Oct 16 decision: an extension record); the holder of the extended authority is not stated in the packet text, agency unverified"
+   },
+   {
+    "blind": "b11",
+    "quote": "sections three, fifteen, seventeen, twenty, twenty-two and twenty-three of this act shall expire and be deemed repealed on March 31, 2012",
+    "kind": "duty",
+    "agency": "unverified",
+    "dropped_by": null,
+    "note": "§11 sunset extension of an earlier chapter (Oct 16 decision: an extension record); the holder of the extended authority is not stated in the packet text, agency unverified"
+   },
+   {
+    "blind": "b12",
+    "quote": "section one hundred thirteen of this act shall remain in full force and effect until July 1, 2011 at which time it shall be deemed repealed",
+    "kind": "duty",
+    "agency": "unverified",
+    "dropped_by": null,
+    "note": "§12(22) sunset extension of an earlier chapter (Oct 16 decision: an extension record); the holder of the extended authority is not stated in the packet text, agency unverified"
+   },
+   {
+    "blind": "b13",
+    "quote": "the amendments made pursuant to section one hundred nineteen of this act shall be deemed to be repealed on and after July 1, 2011",
+    "kind": "duty",
+    "agency": "unverified",
+    "dropped_by": null,
+    "note": "§12(24) sunset extension of an earlier chapter (Oct 16 decision: an extension record); the holder of the extended authority is not stated in the packet text, agency unverified"
+   },
+   {
+    "blind": "b18",
+    "quote": "all moneys appropriated to the state education department for aid to localities shall be available for payment of aid heretofore or hereafter to accrue and may be suballocated to other departments and agencies",
+    "kind": "power",
+    "agency": "SED",
+    "dropped_by": "duplicate_provision",
+    "note": "§17c is a separate subsection from §17a (-12); dropped as overlap"
+   }
+  ],
+  "effective_date": {
+   "stored": "2011-02-14 (retroactive_to 2010-04-01)",
+   "computed": "2011-02-14, deemed in effect from 2010-04-01",
+   "verdict": "correct",
+   "note": "§21 'take effect immediately and shall be deemed ... on and after April 1, 2010, provided, however, that:' -- the packet text ends at the colon, so the provisos could not be checked"
+  }
+ }
+}

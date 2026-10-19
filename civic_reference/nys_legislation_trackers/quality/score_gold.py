@@ -28,10 +28,20 @@ def stored_records(data_dir):
     return out
 
 
-def best_match(rec, items):
-    """Item for a stored record: same-generation id first, else best quote overlap >= 0.5."""
+def quote_only_law(law_recs, items):
+    """U2 (Oct 19 2026): a re-asked law renumbers its records, so an id that still exists can point at a different record. True when any stored
+    record of the law has reasked true, or any gold item's source obligation id is absent from the stored ids: such a law is matched by quote only."""
+    if any(r.get("reasked") for r in law_recs):
+        return True
+    have = {r.get("obligation_id") for r in law_recs}
+    ids = [(it.get("source") or {}).get("obligation_id") for it in items]
+    return any(i and i not in have for i in ids)
+
+
+def best_match(rec, items, quote_only=False):
+    """Item for a stored record: same-generation id first (skipped when quote_only), else best quote overlap >= 0.5."""
     qs = [q for q in (rec.get("quote"), rec.get("quote_original")) if q]
-    for it in items:
+    for it in ([] if quote_only else items):
         s = it["source"]
         if s.get("obligation_id") == rec["obligation_id"]:
             if it["quote"] is None or any(quotes_match(q, it["quote"]) for q in qs):
@@ -80,11 +90,12 @@ def score(gold, data_dir):
         items = g["items"]
         live = lambda i: not i.get("excluded") and not i["disputed"]
         total_real += sum(1 for i in items if live(i) and i["status"] == "real")
+        qonly = quote_only_law(by_law.get(law, []), items)
         for r in by_law.get(law, []):
             if is_act_clause(r.get("quote")):
                 act_clause += 1
                 continue
-            it = best_match(r, items)
+            it = best_match(r, items, qonly)
             if it is not None and not live(it):
                 ignored += 1
                 continue

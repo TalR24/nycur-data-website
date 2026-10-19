@@ -430,3 +430,82 @@ def fix_nyc_acting_through(o, nyc_lookup, nyc_by):
              agency_group=None, agency_unit=None, agency_source="nyc_acting_through")
     o.pop("actor_unresolved", None)
     return True
+
+
+# U3 (Oct 19 2026): in a law whose title names one authority ('the dissolution of the Montgomery, Otsego, Schoharie solid waste management authority'),
+# 'the authority' is that authority, never the Local agencies and authorities group.
+TITLE_AUTHORITY = re.compile(r"\bthe\s+((?:[A-Z][\w'’-]*,?\s+(?:and\s+)?)+(?:[\w'’-]+\s+){0,5}?(?i:authority))\b")
+AUTHORITY_ACTOR = re.compile(r"^(?:the |such |said )?authority$", re.I)
+GENERIC_AGENCIES = {None, "Unspecified", "Local agencies and authorities", "State authorities", "State agencies", "All agencies", "State and local bodies", "Municipalities (all)"}
+
+
+def fix_title_authority(o, title, lookup=None, by_canon=None):
+    """Mutates o and returns True when actor_raw is 'the authority' / 'such authority' and the law title names exactly one authority."""
+    raw = re.sub(r"\s+", " ", (o.get("actor_raw") or "").strip(" .,;:"))
+    if not AUTHORITY_ACTOR.match(raw) or o.get("agency") not in GENERIC_AGENCIES:
+        return False
+    names = {re.sub(r"\s+", " ", m.group(1)).strip().lower(): m.group(1) for m in TITLE_AUTHORITY.finditer(re.sub(r"\s+", " ", title or ""))}
+    if len(names) != 1:
+        return False
+    low, name = next(iter(names.items()))
+    name = title_case(re.sub(r"\s+", " ", name).strip())
+    canon = (lookup or {}).get(low) or (lookup or {}).get(norm(name))
+    if canon:
+        a = (by_canon or {}).get(canon) or {}
+        o.update(agency=canon, agency_full=a.get("full_name") or canon, agency_matched=True, jurisdiction=a.get("jurisdiction") or o.get("jurisdiction"),
+                 agency_org_type=a.get("org_type") or o.get("agency_org_type"), agency_group=None, agency_unit=None, agency_source="title_authority")
+        o.pop("actor_unresolved", None)
+        return True
+    words = [w.strip(",") for w in name.split()]
+    local = bool(LOCAL_NOUN.search(name)) or any(county_name(" ".join(words[i:i + 1])) for i in range(len(words))) or bool(re.search(r"\b(?:counties|county|town|village|city|municipal|regional)\b", title or "", re.I))
+    o.update(agency=name, agency_full=name, agency_matched=True, jurisdiction="local" if local else "state", agency_org_type="public authority",
+             agency_group=None, agency_unit=None, agency_source="title_authority")
+    o.pop("actor_unresolved", None)
+    return True
+
+
+# U8 (Oct 19 2026): 'city school district of Yonkers' / 'the Yonkers city school district' is School districts with the unit '<City> City School District'; the
+# one of the City of New York is NYCPS. 'the court' / 'the family court' / 'the supreme court' is the Unified Court System, never a city or county.
+CSD_NYC = re.compile(r"^(?:the )?city school district of (?:the )?(?:city of )?new york(?: city)?$|^(?:the )?new york(?: city)? city school district$", re.I)
+CSD_OF = re.compile(r"^(?:the )?city school district of (?:the )?(?:city of )?([A-Za-z][A-Za-z .'-]*?)$", re.I)
+CSD_NAMED = re.compile(r"^(?:the )?([A-Za-z][A-Za-z .'-]*?)\s+city school district$", re.I)
+CSD_NOT_CITY = {"the", "of", "such", "said", "each", "any", "a", "an", "chancellor", "board", "superintendent", "president", "members", "member", "clerk", "trustees", "principal", "office", "department"}
+COURT_ACTOR = re.compile(r"^(?:the |such |said |a )?(?:family |supreme |surrogate's |county |criminal )?court$", re.I)
+LOCAL_COURT_GROUPS = {"Cities", "Counties", "Towns", "Villages", "Municipalities (all)", "Local agencies and authorities"}
+
+
+def fix_city_school_district(o, nyc_by):
+    raw = re.sub(r"\s+", " ", (o.get("actor_raw") or "").strip(" .,;:"))
+    if CSD_NYC.match(raw):
+        if "NYCPS" not in nyc_by or o.get("agency") == "NYCPS":
+            return False
+        a = nyc_by["NYCPS"]
+        o.update(agency="NYCPS", agency_full=a.get("full_name") or "NYCPS", agency_matched=True, jurisdiction="nyc", agency_org_type=a.get("org_type"),
+                 agency_group=None, agency_unit=None, agency_source="city_school_district")
+        o.pop("actor_unresolved", None)
+        return True
+    m = CSD_OF.match(raw) or CSD_NAMED.match(raw)
+    if not m:
+        return False
+    city = title_case(re.sub(r"\s+", " ", m.group(1)).strip())
+    if not city or len(city.split()) > 3 or any(w.lower() in CSD_NOT_CITY for w in city.split()):          # 'the chancellor of the city school district' names an officer
+        return False
+    unit = city + " City School District"
+    o.update(agency="School districts", agency_full="School districts", agency_matched=True, jurisdiction="local", agency_org_type="local government group",
+             agency_group="School districts", agency_unit=unit, agency_source="city_school_district")
+    o.pop("actor_unresolved", None)
+    return True
+
+
+def fix_court_actor(o, by_canon):
+    raw = re.sub(r"\s+", " ", (o.get("actor_raw") or "").strip(" .,;:"))
+    if not COURT_ACTOR.match(raw):
+        return False
+    unit = o.get("agency_unit") or ""
+    if not (o.get("agency") in LOCAL_COURT_GROUPS or re.match(r"(?:City|County|Town|Village) of\b", unit)):
+        return False
+    a = by_canon.get("Unified Court System") or {}
+    o.update(agency="Unified Court System", agency_full=a.get("full_name") or "Unified Court System", agency_matched=True, jurisdiction="state",
+             agency_org_type=a.get("org_type") or "judiciary", agency_group=None, agency_unit=None, agency_source="court_actor")
+    o.pop("actor_unresolved", None)
+    return True

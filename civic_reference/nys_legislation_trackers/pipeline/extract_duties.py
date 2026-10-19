@@ -958,6 +958,34 @@ def imperative_lead_in(span, text):
     return None
 
 
+SCAN_LEAD_END = re.compile(r":\s*(?:\}\})?\s*$")
+SCAN_LEAD_WORDS = re.compile(r"\b(?:shall|may|powers?|duties)\b", re.I)
+NUMBERED_ITEM = re.compile(r"^\W*(?:\{\{)?\s*\d+\.\s")
+
+
+def scan_back_lead_in(span, text, max_paras=80):
+    """U4 (Oct 19 2026): the lead-in of a list item that neither list_lead_in nor imperative_lead_in found ('2. Evaluate the centers ...' under
+    '1. Monitor ...' under '{{§ 212. Reporting. The department shall:}}'). Scans back, past the other list items and blank lines, to the nearest paragraph that
+    ends with ':' and holds shall, may, powers or duties; a prose paragraph in between ends the scan. Returns the paragraph, else None."""
+    paras = [(m.start(), m.end()) for m in re.finditer(r"[^\n]+", text)]
+    idx = next((i for i, (a, b) in enumerate(paras) if a <= span[0] < b), None)
+    if idx is None:
+        return None
+    first = text[paras[idx][0]:paras[idx][1]]
+    if not (ITEM_LABEL.match(first) or NUMBERED_ITEM.match(first)):
+        return None
+    for j in range(idx - 1, max(-1, idx - max_paras), -1):
+        t = text[paras[j][0]:paras[j][1]]
+        if not t.strip():
+            continue
+        if SCAN_LEAD_END.search(t) and SCAN_LEAD_WORDS.search(t) and not AMEND_INSTR.search(t):
+            return t
+        if ITEM_LABEL.match(t) or NUMBERED_ITEM.match(t) or SCAN_LEAD_END.search(t):
+            continue
+        return None
+    return None
+
+
 def lead_in_subject(lead):
     """The actor a granting lead-in names ('The chief diversity officer's responsibilities shall include' -> 'the chief diversity officer')."""
     clean = re.sub(r"\{\{|\}\}", "", lead)
@@ -1026,6 +1054,11 @@ def benefit_entitlement(o, q):
         # M27 (Oct 13 2026): only an actor_raw named BEFORE the modal is the subject; 'adopted by the village of Penn Yan' after it is not
         if not GOV_ACTOR.search(actor0) or actor0 not in q[:pm.start()].lower():
             return True
+    cl = CLAIM_PASSIVE.search(q or "") if APPLY_U9 else None      # U9 (Oct 19 2026): 'the claim shall be paid', 'the amount shall be computed': the claim or amount is the subject
+    if cl and not GOV_ACTOR.search(q[:cl.start()]) and not GOV_ACTOR.search(q[cl.start():cl.end()]):
+        actor0 = re.sub(r"^(?:the|a|an|such|each|any)\s+", "", (o.get("actor_raw") or "").strip().lower())
+        if not GOV_ACTOR.search(actor0) or actor0 not in q[:cl.start()].lower():
+            return True
     m = BENEFIT_RE.search(q or "")
     if not m or GOV_ACTOR.search(q[:m.start()]) or len(re.findall(r"[A-Za-z]+", q[:m.start()])) < 2:      # a quote that starts at the modal names no subject: the record stays
         return False
@@ -1035,6 +1068,10 @@ def benefit_entitlement(o, q):
     return bool(actor) and actor not in q.lower()
 
 
+CLAIM_PASSIVE = re.compile(r"\b(?:claims?|amounts?)\b[^.;]{0,80}?\bshall\s+be\s+(?:paid|computed|calculated|determined|allowed|credited)\b(?!\s+by\b)", re.I)       # U9
+RESIDENCY_EXCEPTION = re.compile(r"\bmay\s+(?:be\s+)?appoint(?:ed)?\s+(?:an?\s+)?\w+\s+residing\b"
+                                 r"|\bmay\s+be\s+(?:appointed|employed|elected|designated)\b[^.;]{0,80}\bnotwithstanding\b[^.;]{0,80}\bresiden(?:ce|cy|t|ts)\b"
+                                 r"|\bnotwithstanding\b[^.;]{0,80}\bresiden(?:ce|cy)\b[^.;]{0,100}\bmay\s+(?:be\s+)?(?:appoint\w*|employ\w*|elect\w*|designat\w*)\b", re.I)          # U9
 HEREBY_AUTH = re.compile(r"\bhereby\s+(?:further\s+)?authoriz(?:es|ed)\b", re.I)
 HEREBY_AUTHORIZES = re.compile(r"\bhereby\s+(?:further\s+)?authorizes\s+((?:the|such|said|each)\s+[\w'-]+(?:\s+[\w'-]+){0,3}?)(?=\s+(?:and|to)\b|[,.;]|$)", re.I)
 BDC_NOTIFY = re.compile(r"shall\s+notify\s+the\s+legislative\s+bill\s+drafting\s+commission", re.I)
@@ -1058,6 +1095,8 @@ def gate_record(o, text, has_markers):
         return "condition_precedent", "an implementation precondition ('shall not be implemented until X shall have delivered ...'): a condition on another provision, not a duty of the certifying officials"
     if benefit_entitlement(o, q):
         return "benefit_entitlement", "the subject is the beneficiary (it receives, is entitled to or is exempt from), not a government actor"
+    if APPLY_U9 and RESIDENCY_EXCEPTION.search(q):
+        return "residency_exception", "a residency-rule exception ('may appoint a stenographer residing in ...') grants no power of its own"
     span = locate_span(q, text)
     # 3. no-record classes
     if STRONG_EXEMPT_RE.search(q) or (EXEMPT_RE.search(q) and not MANDATORY.search(EXEMPT_RE.sub(" ", q))):
@@ -1108,6 +1147,16 @@ def gate_record(o, text, has_markers):
                     if subj:
                         o["lead_in_actor"] = subj
                     o["rescued_imperative_item"] = True; bump("r2_imperative_list_item")
+                elif APPLY_U4 and scan_back_lead_in(span, text):
+                    lead = scan_back_lead_in(span, text)          # U4: the nearest ':' paragraph above the item's run holds the shall / may
+                    o["lead_in"] = re.sub(r"\s+", " ", re.sub(r"\{\{|\}\}", "", lead)).strip()[:400]
+                    o["kind_from_lead_in"] = "duty" if MANDATORY.search(lead) else "power"
+                    if INFINITIVE_ITEM.match(q):
+                        o["kind_from_lead_in"] = infinitive_lead_kind(lead)
+                    subj = lead_in_subject(lead)
+                    if subj:
+                        o["lead_in_actor"] = subj
+                    o["rescued_imperative_item"] = True; bump("u4_scan_back_lead_in")
                 else:
                     return "designation_no_actor", "a designation or list entry with no lead-in duty or power"
         # 2. new matter
@@ -1119,6 +1168,15 @@ def gate_record(o, text, has_markers):
 def _stems(s):
     skip = {"depart", "commis", "provis", "subdiv", "sectio", "effect", "applic", "author", "agency", "board", "within", "which", "shall"}
     return {w[:6] for w in re.findall(r"[a-z]{5,}", (s or "").lower())} - skip
+
+
+STRICT_COND = re.compile(r"^\W*no\b[^.;]{0,160}\bunless\b|^\W*subject to\b", re.I)          # U7: an explicit 'no ... unless' / 'subject to' condition keeps the stem test alone
+
+
+def word_overlap(a, b):
+    """U7: share of the first quote's distinct words that the second quote also holds."""
+    wa, wb = _wset(a), _wset(b)
+    return len(wa & wb) / len(wa) if wa else 0.0
 
 
 def drop_conditions(lst):
@@ -1140,6 +1198,8 @@ def drop_conditions(lst):
             if o is r or ((o.get("agency"), o.get("agency_unit")) != (r.get("agency"), r.get("agency_unit")) and not approval):
                 continue         # 'subject to the approval of X' qualifies another actor's record: same-actor test waived
             if _stems(r["quote"]) & _stems(o["quote"]) and not CONDITION_RE.search(o["quote"]):
+                if APPLY_U7 and not STRICT_COND.search(q) and word_overlap(r["quote"], o["quote"]) < 0.3:
+                    bump("u7_condition_low_overlap_kept"); break          # U7: the record it would attach to shares under 30% of its words: it stands
                 out.remove(r); drop(r, "condition_of_other_record", "a condition on %s, same actor and object" % o["obligation_id"])
                 break
     return out
@@ -1216,6 +1276,17 @@ def money_and_funds(q):
             | {re.sub(r"^(?:The|Such|Said|Of|From|To|In)\s+", "", m.group(0)) for m in FUND_RE.finditer(q)})
 
 
+PLACE_OF = re.compile(r"\b(?:county|city|town|village|borough)\s+of\s+(?:the\s+)?([A-Za-z][\w.'-]*)", re.I)
+PLACE_COUNTY = re.compile(r"\b([A-Z][a-z]+)\s+[Cc]ounty\b")
+ORDINAL_LABEL = re.compile(r"^\W*(?:\{\{)?\s*\(([A-Za-z]{1,4}|\d{1,3})\)\s")
+
+
+def place_names(q):
+    """U6: lower-cased place words after 'county of', 'town of' ... and before 'county'."""
+    q = q or ""
+    return {m.group(1).lower() for m in PLACE_OF.finditer(q)} | {m.group(1).lower() for m in PLACE_COUNTY.finditer(q)}
+
+
 def distinct_provisions(a, b):
     """True when two same-actor records are different provisions despite overlapping wording: their citations name different
     sections or non-nested sub-parts ('2041-w(2)(A)' vs '(2)(C)'), or each quote carries a noun the other lacks (4+ in all, numbers and dates aside:
@@ -1227,6 +1298,13 @@ def distinct_provisions(a, b):
         pa, pb = ca[1], cb[1]
         if pa and pb and pa[:len(pb)] != pb[:len(pa)]:
             return True
+    if APPLY_U6:          # U6 (Oct 19 2026): parallel provisions that differ in a place or county name, or in an ordinal label
+        pa_, pb_ = place_names(a.get("quote")), place_names(b.get("quote"))
+        if (pa_ - pb_) and (pb_ - pa_):
+            bump("u6_distinct_places"); return True
+        la_, lb_ = ORDINAL_LABEL.match(a.get("quote") or ""), ORDINAL_LABEL.match(b.get("quote") or "")
+        if la_ and lb_ and la_.group(1).lower() != lb_.group(1).lower():
+            bump("u6_distinct_labels"); return True
     na, nb = proper_names(a.get("quote")), proper_names(b.get("quote"))
     if APPLY_M31 and (na - nb) and (nb - na):          # M31 (Oct 14 2026): parallel provisions for different named persons or places
         bump("m31_distinct_names"); return True
@@ -1424,6 +1502,7 @@ IDENTIFIABLE_UNSPECIFIED = re.compile(r"\bcourts?\b|\bcompacting\s+states?\b|\bm
 COMPOUND_LOCAL = re.compile(r"\b(?:town|city|village|county)\b[^;]*?\band\b[^;]*?\b(?:district|authority|agency|corporation)\b", re.I)
 PRE_2017 = range(2009, 2017)
 APPLY_M31 = True
+APPLY_U1 = APPLY_U4 = APPLY_U5 = APPLY_U6 = APPLY_U7 = APPLY_U9 = True        # Oct 19 2026 fixes
 APPLY_M35 = APPLY_M36 = APPLY_M37 = APPLY_M38 = APPLY_M39 = APPLY_M41 = APPLY_J15 = True        # Oct 15 2026 fixes; each can be switched off on its own
 DROPPED_GOV_SUBJECT = re.compile(r"\b(?:trustees?|board|commissioner|university|department|authority|council|office)\b", re.I)
 APPLIES_RE = re.compile(r"\bshall (?:not )?(?:only )?(?:be applicable|apply)\b|\b(?:does|do) not apply\b", re.I)
@@ -1596,6 +1675,10 @@ def build_reask(todo, duties, powers):
                        "sentences": [r["quote"] for r in unres][:12]})
         fl += judgment_flags(text, by_law.get(law["key"], []))
         fl += mandatory_drop_flags(text, drops.get(law["key"], []))      # T8
+        if law["key"] in SUNSET_UNNAMED:          # U1: an earlier chapter's sunset moved, and the title names no single government body
+            su = SUNSET_UNNAMED[law["key"]]
+            fl.append({"check": "sunset_extension_unnamed_holder", "detail": "the law moves a sunset date in an earlier chapter and its title names no single holder: %s" % su["title"],
+                       "sentences": [su["sentence"]], "title": su["title"]})
         if law["key"] in manual:     # fix 11: missed items the audits found
             sents = []
             for frag in manual[law["key"]]:
@@ -1933,6 +2016,33 @@ def dated_deadline(text, base):
     return None
 
 
+# U5 (Oct 19 2026): 'within ninety days after the effective date' in deadline_text with kind none is a period deadline; 'after <date> no ...' is a cutoff and stays none.
+DL_CUTOFF = re.compile(r"^\W*after\b|\bno\b[^.;]{0,80}\bafter\b", re.I)
+DL_PERIOD = re.compile(r"\bwithin\s+(\d+|[a-z-]+(?:\s+[a-z-]+){0,3}?)\s+(days?|weeks?|months?|years?)\s+(?:after|of|from|following)\s+(?:the\s+)?(effective\s+date|date\s+(?:on\s+which\s+)?this\s+act\s+(?:shall\s+)?take[s]?\s+effect|enactment|date\s+this\s+act\s+shall\s+have\s+become\s+a\s+law)", re.I)
+
+
+def period_deadline(text, eff_base, enact_base):
+    """(ISO date, deadline_kind) for 'within N days|weeks|months|years after the effective date / enactment', else None."""
+    m = DL_PERIOD.search(re.sub(r"\s+", " ", text or ""))
+    if not m:
+        return None
+    raw = m.group(1).strip().lower()
+    n = int(raw) if raw.isdigit() else efd.words_to_int(raw)
+    eff = "effective" in m.group(3).lower() or "take" in m.group(3).lower()
+    base = eff_base if eff else enact_base
+    if not n or not base:
+        return None
+    b = date.fromisoformat(base)
+    unit = m.group(2).lower()
+    if unit.startswith("day"):
+        d = b + timedelta(days=n)
+    elif unit.startswith("week"):
+        d = b + timedelta(days=7 * n)
+    else:
+        d = efd.add_months(b, n if unit.startswith("month") else 12 * n)
+    return d.isoformat(), ("days_after_effective" if eff else "days_after_enactment")
+
+
 # M38 (Oct 15 2026): a duty tied to each election ('at each general election', 'prior to each election', 'before each annual election', 'notice of such
 # election') waits for that election: triggered, no effective-date deadline.
 ELECTION_TRIGGER = re.compile(r"\b(?:at|prior to|before|for|during|after|in advance of|upon|of)\s+(?:the\s+)?(?:each|every|any|such)\s+(?:general\s+|annual\s+|special\s+|primary\s+|biennial\s+)?election\b", re.I)
@@ -2001,6 +2111,12 @@ def run_agency_fixes(o, text, law, _model_pass=False):
         bump(r33)
     elif agency_resolve_nys.fix_assessing_unit(o):                      # M34
         bump("m34_assessing_unit")
+    if agency_resolve_nys.fix_city_school_district(o, NYC_BY):      # U8
+        bump("u8_city_school_district")
+    if agency_resolve_nys.fix_court_actor(o, BY_CANON):      # U8
+        bump("u8_court_actor")
+    if agency_resolve_nys.fix_title_authority(o, (law or {}).get("title"), LOOKUP, BY_CANON):      # U3
+        bump("u3_title_authority")
     if agency_resolve_nys.fix_ida_agency(o, text, (law or {}).get("title"), BY_CANON):      # T1
         bump("t1_ida_agency")
     if agency_resolve_nys.fix_state_employer(o, text):      # T5
@@ -2150,10 +2266,100 @@ def appointment_period(recs, text):
     return n
 
 
+# ── U1 (Oct 19 2026): unnamed-holder sunset extensions ──────────────────────────────────────────────────────────────
+# A law that only moves a date in an earlier chapter's act clause ('Section 3 of chapter 123 of the laws of 2009 ... is amended to read: This act
+# shall take effect immediately and shall expire ... {{2020}}') extends an authority whose holder the sentence never names. The holder is the
+# government body the act title (or act clause) names; with none, or two, the law goes to the re-ask list.
+SUNSET_AMEND = re.compile(r"(?:^|\n)[ \t]*(?:§|Section)\s*\d+\.\s*Sections?\s+([\w-]+)\s+of\s+chapter\s+(\d+)\s+of\s+the\s+laws\s+of\s+((?:19|20)\d{2})\b[^\n]*?\b(?:is|are)\s+(?:hereby\s+)?amended\s+to\s+read\s+as\s+follows:[ \t]*\n+([^\n]+)", re.I)
+SUNSET_BODY = re.compile(r"^\W*(?:(?:§|Section)\s*\d+\.\s*)?(?:\{\{)?\s*(?:this act|sections?\b[^.]{0,80}\bof this act)\b", re.I)
+SUNSET_WORDS = re.compile(r"\bexpire|\brepeal|\bremain\s+in\s+(?:full\s+)?(?:force|effect)|\boperative\s+only|\bin\s+effect\s+until|\beffective\s+until", re.I)
+_HOLD_STOP = r"(?:to|for|in|and|by|until|relating|that|which|with|from|on|at|as|or|of|is|are|shall|may|a|an|the)\b"
+HOLDER_LOCAL = re.compile(r"\b(?i:(?:the\s+)?(town|city|village|county))\s+(?i:of)\s+((?:(?!(?i:" + _HOLD_STOP + r"))[A-Z][\w.'’-]*\s*){1,4})")
+HOLDER_COUNTY = re.compile(r"\b([A-Z][a-z]+(?:\s[A-Z][a-z]+)?)\s+[Cc]ounty\b")
+HOLDER_DEPT = re.compile(r"\bthe\s+(?:state\s+)?((?:department|office|division|commission|bureau|authority|board)\s+of\s+(?!" + _HOLD_STOP + r")[a-z]+(?:\s+(?!" + _HOLD_STOP + r")[a-z]+){0,4})", re.I)
+SUNSET_UNNAMED = {}           # law key -> {sentence, title}, filled by build_records, read by build_reask
+
+
+def sunset_holder(*texts):
+    """The single government body the act title or act clause names, as an actor_raw ('the town of Islip'), else None (none named, or several)."""
+    found = {}
+    for t in texts:
+        t = re.sub(r"\s+", " ", t or "")
+        for m in HOLDER_LOCAL.finditer(t):
+            kind, name = m.group(1).lower(), m.group(2).strip(" .,;")
+            if kind == "county":
+                cn = agency_resolve_nys.county_name(name)
+                name = cn or name
+            found.setdefault(("%s of %s" % (kind, name)).lower(), "the %s of %s" % (kind, name))
+        for m in HOLDER_COUNTY.finditer(t):
+            cn = agency_resolve_nys.county_name(m.group(1))
+            if cn:
+                found.setdefault(("county of %s" % cn).lower(), "the county of %s" % cn)
+        for m in HOLDER_DEPT.finditer(t.lower()):
+            found.setdefault(m.group(1), "the " + m.group(1))
+    return next(iter(found.values())) if len(found) == 1 else None
+
+
+def sunset_extension_sentences(text):
+    """[(post-amendment sentence, 'Chapter N of the Laws of YYYY, § M')] for each earlier-chapter act-clause section the law re-enacts with braced new matter."""
+    out = []
+    for m in SUNSET_AMEND.finditer(text):
+        body = m.group(4)
+        if "{{" not in body or not SUNSET_BODY.match(body) or not SUNSET_WORDS.search(re.sub(r"\[[^\[\]]*\]", "", body)):
+            continue
+        a = m.start(4) + body.index("{{")
+        sent = context_sentence((a, a + 2), text)[0]
+        q = re.sub(r"\s+", " ", re.sub(r"\{\{|\}\}", "", re.sub(r"\[[^\[\]]*\]", "", sent))).strip()
+        q = re.sub(r"^(?:§|Section)\s*\d+\.\s*", "", q).strip()
+        q = re.sub(r"\s+([,.;])", r"\1", q)
+        if q:
+            out.append((q, "Chapter %s of the Laws of %s, § %s" % (m.group(2), m.group(3), m.group(1))))
+    return out
+
+
+def sunset_extension_records(law, text, eff, existing, res):
+    """U1: (records, unnamed) where records are new power records for the sunset sentences no stored record covers, and unnamed is
+    {sentence, title} for the first such sentence when the law's title names no single government body."""
+    sents = [(q, c) for q, c in sunset_extension_sentences(text)
+             if not any(overlap(q, r.get("quote") or "") >= 0.6 for r in existing)]
+    if not sents:
+        return [], None
+    holder = sunset_holder(law.get("title"), law.get("act_clause"))
+    if not holder:
+        bump("u1_sunset_extension_unnamed")
+        return [], {"sentence": sents[0][0], "title": law.get("title") or ""}
+    ids = [int(m.group(1)) for o in res.get("obligations", []) for m in [re.search(r"-(\d+)$", o.get("obligation_id") or "")] if m]
+    nxt = max(ids or [0]) + 1
+    out = []
+    for i, (q, cit) in enumerate(sents):
+        o = {"obligation_id": "%s-%02d" % (law["key"], nxt + i), "matter_id": law["key"], "actor_raw": holder, "model_unit": None,
+             "agency": holder, "agency_full": holder, "agency_matched": False,          # as the model writes it: the chain below resolves it
+             "action_summary": "Continue the authority granted by an earlier chapter, now running to the date in: " + q[:200],
+             "deliverable_type": "other", "citation": cit, "quote": q, "quote_verified": True, "kind_rule": "power", "kind_model": "power",
+             "kind_list_item": False, "deadline_kind": "none", "deadline_text": None, "deadline_date": None, "recurrence": "ongoing",
+             "affected_groups": [], "extends_existing": True, "record_source": "sunset_extension_from_title", "provision_kind": "power"}
+        if eo.fix_actor(o, LOOKUP, BY_CANON, stage="private") == "private":
+            continue
+        canon, full = eo.match_agency(holder, LOOKUP, BY_CANON)          # the crosswalk match finalize_extraction gives every model actor
+        if canon:
+            o.update(agency=canon, agency_full=full, agency_matched=True)
+        attach_jurisdiction(o)
+        run_agency_fixes(o, text, law)
+        sec_date, sec_src = section_effective(o, text, eff)
+        out.append({**o, "kind": "power", "chapter": law["chapter_number"], "chapter_year": law["chapter_year"],
+                    "session": law["session"], "print_no": law["print_no"], "law_number_display": law["law_number_display"],
+                    "law_title": law["title"], "prime_sponsor": law["sponsor"], "enactment_date": law["enactment_date"],
+                    "effective_date": sec_date, "effective_rule": eff["rule"] if sec_src == "law" else ("open_on_expiration_of_other_law" if sec_src == "open" else "section_" + sec_src),
+                    "law_expires_date": eff["expires_date"], "openleg_url": law["openleg_url"], "extraction_model": res.get("model")})
+        bump("u1_sunset_extension_built")
+    return out, None
+
+
 def build_records(laws):
     by_key = {l["key"]: l for l in laws}
     STATS.clear()
     DROPPED.clear()
+    SUNSET_UNNAMED.clear()
     duties, powers, excluded = [], [], 0
     for f in sorted(EXTRACTED.glob("*.json")):
         res = json.loads(f.read_text())
@@ -2333,6 +2539,10 @@ def build_records(laws):
                     dd = None
                 if dd and dd[0] >= law["enactment_date"]:
                     o["deadline_kind"], o["deadline_date"] = "fixed_date", dd[0]; bump("m37_dated_deadline_" + dd[1])
+                elif not dd and APPLY_U5 and o.get("deadline_text") and not DL_CUTOFF.search(o["deadline_text"]):
+                    pd_ = period_deadline(o["deadline_text"], sec_date, law["enactment_date"])          # U5: 'within 90 days after the effective date'
+                    if pd_:
+                        o["deadline_kind"], o["deadline_date"] = pd_[1], pd_[0]; bump("u5_period_deadline")
             if kind == "duty" and o.get("deadline_kind") == "on_effective_date":
                 if o.get("deadline_date") != sec_date:
                     bump("on_effective_date_filled")
@@ -2351,6 +2561,11 @@ def build_records(laws):
         appointment_period(law_d + law_p, text)
         law_d = drop_conditions(dedupe_law(law_d))
         law_p = drop_conditions(dedupe_law(law_p))
+        if APPLY_U1:
+            sx_recs, sx_unnamed = sunset_extension_records(law, text, eff, law_d + law_p, res)
+            law_p += sx_recs
+            if sx_unnamed:
+                SUNSET_UNNAMED[law["key"]] = sx_unnamed
         for lst in (law_d, law_p):       # never merge across jurisdictions or named localities
             keep = []
             for jur in {(o.get("jurisdiction"), o.get("agency_unit")) for o in lst}:
