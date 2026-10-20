@@ -1,0 +1,458 @@
+{
+ "_scoring": {
+  "auditor": "B",
+  "night": "20261020",
+  "laws": 11,
+  "stored_records": 28,
+  "correct": 26,
+  "wrong_fields": 2,
+  "not_real": 0,
+  "missed": 4,
+  "precision_strict": "26/28 = 92.9% (Wilson 95% 77.4-98.0)",
+  "precision_real": "28/28 = 100.0% (Wilson 95% 87.9-100.0)",
+  "recall": "28/32 = 87.5% (Wilson 95% 71.9-95.0)",
+  "effective_dates": "11/11 correct (13/13 incl. calibration)",
+  "calibration_laws": [
+   "2015-S7258",
+   "2009-A10507"
+  ],
+  "split_reask_vs_first": {
+   "reask_laws": [
+    "2009-S5114",
+    "2011-A8030"
+   ],
+   "reask": {
+    "precision_strict": "0/1 = 0.0% (Wilson 95% 0.0-79.3)",
+    "precision_real": "1/1 = 100.0% (20.7-100.0)",
+    "recall": "1/1 = 100.0% (20.7-100.0)"
+   },
+   "first_answer": {
+    "precision_strict": "26/27 = 96.3% (Wilson 95% 81.7-99.3)",
+    "precision_real": "27/27 = 100.0% (87.5-100.0)",
+    "recall": "27/31 = 87.1% (71.1-94.9)"
+   }
+  },
+  "note": "Counts cover the 11 sample laws plus the 2 calibration laws (13 laws). Blind list saved before stored records were opened."
+ },
+ "_classes": [
+  {
+   "name": "earlier-chapter sunset extension stored with no government holder (agency Unspecified)",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2009-S5114-01"
+   ],
+   "rule": "agency in ('Unspecified', None, '') and re.search(r'shall expire|deemed repealed|remain in full force', quote, re.I)",
+   "db_matches": 26,
+   "db_examples": [
+    "2009-A9949-03",
+    "2009-S3860-01",
+    "2009-S5114-01"
+   ],
+   "needs_judgment": false,
+   "note": "Re-ask did not resolve the holder when the title names none; each needs a decision: resolve a holder or drop as a benefit/private-party extension."
+  },
+  {
+   "name": "earlier-chapter sunset extensions missed in multi-section extender laws that do store other records",
+   "criteria": [
+    "1",
+    "7"
+   ],
+   "instances": [
+    "2017-A7746 b10 (§5)",
+    "2017-A7746 b11 (§6)"
+   ],
+   "rule": "packet text: a non-final section line matching r'shall expire|deemed repealed|remain in full force' containing r'\\]\\s*\\{\\{(new year text)\\}\\}', law has >=1 stored record, and no stored quote contains the new text (over-masks when another record quotes the same year, so a lower bound)",
+   "db_matches": "46 sentences in 31 laws",
+   "db_examples": [
+    "2009-A10848",
+    "2009-A11515",
+    "2009-A6466"
+   ],
+   "needs_judgment": false,
+   "note": "Without the 'has stored records' filter the same rule flags 810 sentences in 644 laws, most of them pure one-section extenders like 2011-A8030 that legitimately store nothing; those are needs_judgment."
+  },
+  {
+   "name": "governor appointment of task-force/board members in new matter not recorded",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2017-A6893 b1"
+   ],
+   "rule": "packet braced text matches r'\\{\\{[^}]*shall be appointed by the governor' and no stored record for the law has 'governor' in actor_raw",
+   "db_matches": "27 laws",
+   "db_examples": [
+    "2023-S8026",
+    "2023-S9475",
+    "2023-A3301"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "single list item dropped from a mandatory-lead-in list (others stored)",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2017-A6893 b12 (§459(8))"
+   ],
+   "rule": "no mechanical rule (list-item coverage needs the packet's list structure)",
+   "db_matches": null,
+   "db_examples": [],
+   "needs_judgment": true,
+   "laws": [
+    "2017-A6893"
+   ]
+  }
+ ],
+ "2017-A7152": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2017-09-12",
+   "computed": "2017-09-12",
+   "verdict": "correct",
+   "note": "'This act shall take effect immediately'; signed 2017-09-12. No records: new matter only sets dividend options 'at the election of the holder' (private)."
+  }
+ },
+ "2017-A8154": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2017-08-21",
+   "computed": "2017-08-21",
+   "verdict": "correct",
+   "note": "immediately; signed 2017-08-21. No records: weekend arbitration/mediation needs consent of 'all parties and the tribunal' (no government duty or power)."
+  }
+ },
+ "2017-A7509": {
+  "records": {
+   "2017-A7509-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "'The department shall maintain a link on its web site to the current list of all biological products ...'"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2017-10-23",
+   "computed": "2017-10-23",
+   "verdict": "correct",
+   "note": "Effective date right; expires_date null although the clause says 'shall expire five years after having become a law' (2022-10-23): known parser gap ('N years after it shall have become a law'), recurrence only."
+  }
+ },
+ "2017-A2954": {
+  "records": {
+   "2017-A2954-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "'A board of education or trustees of a school district may enter into an agreement ...'"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2018-08-24",
+   "computed": "2018-08-24",
+   "verdict": "correct",
+   "note": "immediately; signed 2018-08-24"
+  }
+ },
+ "2009-S5114": {
+  "records": {
+   "2009-S5114-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "needs_judgment: no holder named in the text or title ('relating to creating a presumption relating to certain lung disabilities incurred by volunteer firefighters'); Unspecified is not a government actor"
+    },
+    "note": "Re-ask answer. Extension is real under the Oct 19 decision ('shall expire and be deemed repealed June 30, [2010] {{2015}}'), but the stored record has agency Unspecified, actor_raw 'not stated'. The title names no government body, so the re-ask did not resolve it; the extended matter is a benefit presumption for volunteer firefighters."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2010-07-30",
+   "computed": "2010-07-30",
+   "verdict": "correct",
+   "note": "'§ 2. This act shall take effect immediately.'; signed 2010-07-30"
+  }
+ },
+ "2017-A381": {
+  "records": {
+   "2017-A381-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "'Beginning in the two thousand seventeen--two thousand eighteen school year the commissioner shall collect data ...'; annual, deadline none acceptable (start year predates signing)."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2018-12-07",
+   "computed": "2018-12-07",
+   "verdict": "correct",
+   "note": "immediately"
+  }
+ },
+ "2011-A8030": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2011-08-03",
+   "computed": "2011-08-03",
+   "verdict": "correct",
+   "note": "immediately. Re-ask answer, no records stored or dropped: the extended chapter ('immunizing agents to be administered to adults by pharmacists', March 31, [2012] {{2016}}) is a pharmacist (private) authority; agreed, no record."
+  }
+ },
+ "2017-A6893": {
+  "records": {
+   "2017-A6893-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "Combines 'shall meet at the call of the chairperson and organize' with 'Thereafter, the task force shall meet ...'; accepted as one record."
+   },
+   "2017-A6893-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2017-A6893-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2017-A6893-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2017-A6893-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2017-A6893-06": {
+    "verdict": "wrong",
+    "criteria": [
+     "6"
+    ],
+    "fields": {
+     "deliverable_type": "other"
+    },
+    "note": "'Identify and work with federal and state entities to prevent seafood mislabeling' gives the task force no enforcement or inspection role; deliverable_type 'enforcement or inspection' is not sensible."
+   },
+   "2017-A6893-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2017-A6893-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2017-A6893-09": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2017-A6893-10": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2017-A6893-11": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2017-A6893-12": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   }
+  },
+  "missed": [
+   {
+    "blind": "b1",
+    "quote": "Ten additional members, each of whom shall be appointed by the governor, in accordance with the following categories:",
+    "kind": "duty",
+    "agency": "Governor",
+    "dropped_by": null,
+    "note": "Appointment duty of the governor (designation or staffing, on_effective_date); not stored, not in dropped."
+   },
+   {
+    "blind": "b12",
+    "quote": "Issue recommendations necessary to achieve these goals;",
+    "kind": "duty",
+    "agency": "ESD (New York Seafood Marketing Task Force)",
+    "dropped_by": null,
+    "note": "§ 459(8) list item under 'The task force shall support and work collaboratively ...'; items 1-7 and 9 are stored as -03..-10, item 8 is missing and not in dropped."
+   }
+  ],
+  "effective_date": {
+   "stored": "2017-12-18",
+   "computed": "2017-12-18",
+   "verdict": "correct",
+   "note": "immediately"
+  }
+ },
+ "2017-A7746": {
+  "records": {
+   "2017-A7746-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2017-A7746-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2017-A7746-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2017-A7746-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2017-A7746-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2017-A7746-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "'may be recouped by the state' -> State agencies / State of New York per Oct 16 decision."
+   },
+   "2017-A7746-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2017-A7746-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2017-A7746-09": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   }
+  },
+  "missed": [
+   {
+    "blind": "b10",
+    "quote": "(i-1) section thirty-one-a of this act shall be deemed repealed July 1, 2020;",
+    "kind": "power",
+    "agency": "needs_judgment (DOH likely; act clause 'relating to adjustments of rates')",
+    "dropped_by": null,
+    "note": "§ 5 extends an earlier chapter's sunset ('[2017] {{2020}}'); an earlier chapter's sunset inside an amendment IS an extension record (Oct 16/19). Not stored, not dropped."
+   },
+   {
+    "blind": "b11",
+    "quote": "12. Sections one hundred five-b through one hundred five-f of this act shall expire June 30, 2018.",
+    "kind": "power",
+    "agency": "needs_judgment (DOH likely; ch 81 of 1995 'relating to medical reimbursement')",
+    "dropped_by": null,
+    "note": "§ 6 '[March 31, 2017] {{June 30, 2018}}'; not stored, not dropped."
+   }
+  ],
+  "effective_date": {
+   "stored": "2017-06-29",
+   "computed": "2017-06-29",
+   "verdict": "correct",
+   "note": "'§ 8. This act shall take effect immediately.' § 7 (ch 779 of 1986, adult-home services for non-residents, until July 1 {{2020}}) not counted as a miss: it extends an authority of adult-home operators (private)."
+  }
+ },
+ "2017-A3178": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2018-04-21",
+   "computed": "2018-04-21",
+   "verdict": "correct",
+   "note": "'on the one hundred eightieth day after it shall have become a law'; 2017-10-23 + 180 days. No records: labeling duties fall on 'Any wholesaler' (private)."
+  }
+ },
+ "2017-A8092": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2017-10-23",
+   "computed": "2017-10-23",
+   "verdict": "correct",
+   "note": "immediately. No records: '(ii) ... the overtime ceiling percentage shall be increased' is a definition/computation, no government actor named."
+  }
+ },
+ "2015-S7258": {
+  "records": {
+   "2015-S7258-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "'the village board of trustees of the incorporated village of Aurora, Cayuga county, may, by resolution, provide ...'; Villages / Village of Aurora."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2016-07-21",
+   "computed": "2016-07-21",
+   "verdict": "correct",
+   "note": "immediately"
+  }
+ },
+ "2009-A10507": {
+  "records": {
+   "2009-A10507-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "'voting machines, including lever voting machines, may be used' (trustees or board of education), extends_existing true"
+   },
+   "2009-A10507-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "BOCES same widening, extends_existing true"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2010-08-13",
+   "computed": "2010-08-13",
+   "verdict": "correct",
+   "note": "immediately; expires 2012-12-31 stored correctly"
+  }
+ }
+}

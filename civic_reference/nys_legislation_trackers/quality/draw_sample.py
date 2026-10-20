@@ -118,6 +118,13 @@ def main(argv=None):
     ap.add_argument("--gold", default=os.path.join(HERE, "gold.json"))
     a = ap.parse_args(argv)
     res = draw(a.night, a.source, a.packets, a.data_dir, a.nightly_dir, a.gold)
+    # Blinding (Oct 20 2026): the auditors read a.out, so the gold verdicts of the calibration laws go to a sibling file
+    # the orchestrator alone reads; the auditors' file names the calibration laws but never their verdicts.
+    gv = (res.get("calibration") or {}).pop("gold_verdicts", None)
+    if gv is not None:
+        root, ext = os.path.splitext(a.out)
+        with open(root + "_calibration_gold" + (ext or ".json"), "w") as f:
+            json.dump({"gold_verdicts": gv}, f, indent=1)
     with open(a.out, "w") as f:
         json.dump(res, f, indent=1)
     print(json.dumps(res, indent=1))

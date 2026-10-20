@@ -1138,6 +1138,77 @@ def existing_actor_only(o, span, text):
     return actor in outside and not any(actor in b.group(1).lower() for b in blocks) and bool(re.search(re.escape(actor) + r"\s*\{\{\s*(?:and|or)\s", sent, re.I))      # the braces sit right after the actor
 
 
+# V1-V3 (Oct 20 2026): the last not-real classes of the Oct 19 bulk verification
+CONTENT_LEAD = re.compile(r"\b(?:reports?|stud(?:y|ies)|plans?|applications?|notices?|statements?|proposals?|assessments?|analys[ie]s)\b[^.:;]{0,120}?\bshall\s+(?:include|contain|set\s+forth)\b[^.:;]{0,80}:\s*(?:\}\})?\s*$", re.I)
+CRITERIA_LEAD = re.compile(r"\bshall\s+(?:determine\s+whether|consider)\s*:\s*(?:\}\})?\s*$", re.I)          # V1B: 7 records database-wide incl. 2 gold-real (2011-A5318-09, -11); off
+CONTENT_LEAD_NOT = re.compile(r"\b(?:powers?|dut(?:y|ies)|responsibilit\w+|functions?)\b", re.I)
+LIMITED_LEAD = re.compile(r"\b(?:shall|may)\s+(?:be\s+)?limited\s+to\s*:\s*(?:\}\})?\s*$", re.I)
+CAP_ITEM = re.compile(r"^\W*(?:\(?\w{1,4}[.)]\s*)?for\s+[^,;]{3,80},\s+(?:not\s+more\s+than|no\s+more\s+than|not\s+to\s+exceed)\b", re.I)
+CAP_SUBJECT = re.compile(r"^\W*(?:the\s+)?(?:fees?|surcharges?|charges?|rates?|contracts?\s+price|total\s+amount|aggregate\s+amount)\b[^.;]{0,120}?\bshall\s+not\s+exceed\b", re.I)
+DEFINITION = re.compile(r"^\W*(?:the\s+term\s+)?[\"“'][^\"”']{1,90}[\"”']\s+(?:shall\s+mean|means)\b|^[^.;,]{1,90}?\bshall\s+mean\b", re.I)
+FOIL_NONDISCLOSURE = re.compile(r"\bshall\s+not\s+be\s+subject\s+to\s+disclosure\s+under\s+article\s+six\s+of\s+the\s+public\s+officers\s+law\b|\bmay\s+deny\s+access\s+to\s+(?:such\s+|the\s+)?records\b", re.I)
+FOIL_SECTION = re.compile(r"\bsection\s+(?:87|eighty-seven)\s+of\s+the\s+public\s+officers\s+law\b", re.I)
+DESIGNATION = re.compile(r"\bshall\s+constitute\s+(?:respectively\s+)?the\s+interim\b|\bshall\s+consist\s+of\b|\bshall\s+be\s+the\s+members\s+of\b", re.I)
+ELECTION_MECH = re.compile(r"^\W*the\s+offices?\s+of\b[^.;]{0,160}\bshall\s+be\s+filled\s+by\s+(?:election|appointment)\b", re.I)
+OTHER_MODAL = re.compile(r"\b(?:shall|must|may|directed|authorized|empowered|required)\b", re.I)
+DUTY_NOUNS = re.compile(r"\b(?:powers?|dut(?:y|ies)|responsibilit\w+|functions?)\b", re.I)
+
+
+def item_lead_full(span, text, max_paras=60):
+    """V1: the complete lead-in of a list item. Walks back over the other list items (lettered, numbered, parenthesised) and blank lines to the first
+    paragraph that is not an item, or the nearest item that itself ends with ':'; returns it only when it ends with ':' (o['lead_in'] keeps just 400 characters)."""
+    paras = [(m.start(), m.end()) for m in re.finditer(r"[^\n]+", text)]
+    idx = next((i for i, (x, y) in enumerate(paras) if x <= span[0] < y), None)
+    if idx is None:
+        return None
+    first = text[paras[idx][0]:paras[idx][1]]
+    if not (ITEM_LABEL.match(first) or NUMBERED_ITEM.match(first)):
+        return None
+    for j in range(idx - 1, max(-1, idx - max_paras), -1):
+        t = text[paras[j][0]:paras[j][1]]
+        if not t.strip():
+            continue
+        if SCAN_LEAD_END.search(t):
+            return None if AMEND_INSTR.search(t) else re.sub(r"\{\{|\}\}", "", t)
+        if ITEM_LABEL.match(t) or NUMBERED_ITEM.match(t):
+            continue
+        return None
+    return None
+
+
+def v_quote_rule(q):
+    """V2 / V3 on the quote alone: (rule, reason) or None."""
+    if APPLY_V2:
+        if (CAP_ITEM.search(q) and not re.search(r"\b(?:shall|must|may)\b", q)) or CAP_SUBJECT.search(q):
+            return "cap_not_duty", "a fee or contract cap with no government verb; it limits an amount and binds no actor"
+        if FOIL_NONDISCLOSURE.search(q):
+            return "exemption_or_applicability", "a FOIL exemption ground (records not subject to disclosure, access may be denied), binds no government actor"
+        if DEFINITION.match(q) and not re.search(r"\b(?:shall|must)\b(?!\s+mean)", q):
+            return "definition", "a definition sentence ('means', 'shall mean'), not a duty"
+    if APPLY_V3:
+        if ELECTION_MECH.search(q):
+            return "designation_composition", "election mechanics for filling offices, no government actor's duty"
+        m = DESIGNATION.search(q)
+        if m and not OTHER_MODAL.search(q[:m.start()] + " " + q[m.end():]) and not DUTY_NOUNS.search(q) and not re.search(r"\bselected\s+by\b", q):
+            return "designation_composition", "a designation or composition ('shall constitute the interim', 'shall consist of'), not a duty to act"
+    return None
+
+
+def v_item_rule(o, span, text, hdr, sec):
+    """V1 / V2 for a list item whose duty sits in a lead-in: (rule, reason) or None."""
+    q = o.get("quote") or ""
+    if APPLY_V2 and sec and FOIL_SECTION.search((hdr or "") + " " + sec[:300]) and not VERBISH.search(q):
+        return "exemption_or_applicability", "a paragraph added to the FOIL exemption list (Public Officers Law section 87), binds no government actor"
+    lead = item_lead_full(span, text)
+    if not lead or IMPERATIVE_ITEM.match(q) or INFINITIVE_ITEM.match(q):
+        return None
+    tail = lead[-220:]
+    if APPLY_V2 and LIMITED_LEAD.search(tail):
+        return "cap_not_duty", "a condition inside a cap ('shall be limited to:'); it limits an amount and binds no actor"
+    if ((APPLY_V1 and CONTENT_LEAD.search(tail)) or (APPLY_V1B and CRITERIA_LEAD.search(tail))) and not CONTENT_LEAD_NOT.search(tail[-120:]):
+        return "sub_item_of_parent", "a list item under a lead-in that describes the content of one deliverable; part of the parent record, not a record"
+    return None
+
 
 def gate_record(o, text, has_markers):
     """Returns (rule, reason) when the record must be dropped, else None. Rules 1-3 of phase 3b."""
@@ -1157,6 +1228,9 @@ def gate_record(o, text, has_markers):
         return "benefit_entitlement", "the subject is the beneficiary (it receives, is entitled to or is exempt from), not a government actor"
     if APPLY_U9 and RESIDENCY_EXCEPTION.search(q):
         return "residency_exception", "a residency-rule exception ('may appoint a stenographer residing in ...') grants no power of its own"
+    vq = v_quote_rule(q)
+    if vq:
+        return vq
     span = locate_span(q, text)
     # 3. no-record classes
     if STRONG_EXEMPT_RE.search(q) or (EXEMPT_RE.search(q) and not MANDATORY.search(EXEMPT_RE.sub(" ", q))):
@@ -1221,6 +1295,10 @@ def gate_record(o, text, has_markers):
                     o["rescued_imperative_item"] = True; bump("u4_scan_back_lead_in")
                 else:
                     return "designation_no_actor", "a designation or list entry with no lead-in duty or power"
+        if (APPLY_V1 or APPLY_V1B or APPLY_V2) and not VERBISH.search(q) and not VERBISH.search(sent):
+            vi = v_item_rule(o, span, text, hdr, sec)
+            if vi:
+                return vi
         # 2. new matter
         if has_markers and hdr and AMENDED.search(hdr) and not in_braces(sl, sr, text) and not re.search(r"\[[^\[\]]{2,}\]", sent):
             return "reprinted_existing_text", "amended section, no new matter in the quote's sentence"
@@ -1564,6 +1642,10 @@ IDENTIFIABLE_UNSPECIFIED = re.compile(r"\bcourts?\b|\bcompacting\s+states?\b|\bm
 COMPOUND_LOCAL = re.compile(r"\b(?:town|city|village|county)\b[^;]*?\band\b[^;]*?\b(?:district|authority|agency|corporation)\b", re.I)
 PRE_2017 = range(2009, 2017)
 APPLY_M31 = True
+APPLY_V1 = APPLY_V2 = APPLY_V3 = True        # Oct 20 2026 closing fixes; a rule dropping over 40 records database-wide is set False
+APPLY_W3 = True          # Oct 20 2026
+APPOINT_RE = re.compile(r"\bthe\s+governor\s+shall\s+appoint|\bshall\s+be\s+appointed\s+by\s+the\s+governor|\bmembers?\s+(?:of\s+[^.;]{0,60}?)?shall\s+be\s+appointed", re.I)
+APPLY_V1B = False        # V1 with 'shall determine whether:' / 'shall consider:' leads: with it V1 drops 41 (over the 40 cap) and 2 gold-real items
 APPLY_N1 = APPLY_N2 = APPLY_N3 = APPLY_N5 = True        # Oct 19 2026 closing fixes; a rule dropping over 40 records database-wide is set False
 APPLY_U1 = APPLY_U4 = APPLY_U5 = APPLY_U6 = APPLY_U7 = APPLY_U9 = True        # Oct 19 2026 fixes
 APPLY_M35 = APPLY_M36 = APPLY_M37 = APPLY_M38 = APPLY_M39 = APPLY_M41 = APPLY_J15 = True        # Oct 15 2026 fixes; each can be switched off on its own
@@ -1709,6 +1791,14 @@ def judgment_flags(text, records):
     if lb:        # S7 (Oct 17 2026)
         flags.append({"check": "local_body_unresolved", "detail": "%d records whose acting body is stored under its own name because the crosswalk has no code for it: name the body and the local government (county, town, city) it belongs to" % len(lb),
                       "sentences": [r["quote"] for r in lb][:12]})
+    if APPLY_W3:          # W3 (Oct 20 2026): the new matter has the governor or the act appoint members, and no stored record is an appointment duty
+        if not any(r.get("deliverable_type") == "designation or staffing" or re.search(r"appoint", r.get("quote") or "", re.I) for r in records):
+            iv = braced_intervals(text) if "{{" in text else None
+            ap = [t for a, b, t in sentences_with_offsets(text)
+                  if APPOINT_RE.search(t) and (iv is None or any(x < b and y > a for x, y in iv))]
+            if ap:
+                flags.append({"check": "appointment_duty_missing", "detail": "the new matter has appointments by the governor or of members, and no stored record is an appointment duty",
+                              "sentences": [re.sub(r"\s+", " ", t).strip() for t in ap][:6]})
     comp = [r for r in records if COMPOUND_LOCAL.search(r.get("actor_raw") or "")]
     if comp:
         flags.append({"check": "compound_local_actor", "detail": "%d records whose actor_raw joins a locality and a named district or authority: one record each" % len(comp),
@@ -2356,8 +2446,8 @@ def appointment_period(recs, text):
 # A law that only moves a date in an earlier chapter's act clause ('Section 3 of chapter 123 of the laws of 2009 ... is amended to read: This act
 # shall take effect immediately and shall expire ... {{2020}}') extends an authority whose holder the sentence never names. The holder is the
 # government body the act title (or act clause) names; with none, or two, the law goes to the re-ask list.
-SUNSET_AMEND = re.compile(r"(?:^|\n)[ \t]*(?:§|Section)\s*\d+\.\s*Sections?\s+([\w-]+)\s+of\s+chapter\s+(\d+)\s+of\s+the\s+laws\s+of\s+((?:19|20)\d{2})\b[^\n]*?\b(?:is|are)\s+(?:hereby\s+)?amended\s+to\s+read\s+as\s+follows:[ \t]*\n+([^\n]+)", re.I)
-SUNSET_BODY = re.compile(r"^\W*(?:(?:§|Section)\s*\d+\.\s*)?(?:\{\{)?\s*(?:this act|sections?\b[^.]{0,80}\bof this act)\b", re.I)
+SUNSET_AMEND = re.compile(r"(?:^|\n)[ \t]*(?:§|Section)\s*\d+\.\s*(?:Sections?|Subdivisions?\s+[\w-]+\s+of\s+sections?)\s+([\w-]+)\s+of\s+chapter\s+(\d+)\s+of\s+the\s+laws\s+of\s+((?:19|20)\d{2})\b[^\n]*?\b(?:is|are)\s+(?:hereby\s+)?amended\s+to\s+read\s+as\s+follows:[ \t]*\n+([^\n]+)", re.I)
+SUNSET_BODY = re.compile(r"^\W*(?:(?:§|Section)\s*\d+\.\s*)?(?:\(?[\w-]+[.)]\s+)?(?:\{\{)?\s*(?:this act|sections?\b[^.]{0,80}\bof this act)\b", re.I)
 SUNSET_WORDS = re.compile(r"\bexpire|\brepeal|\bremain\s+in\s+(?:full\s+)?(?:force|effect)|\boperative\s+only|\bin\s+effect\s+until|\beffective\s+until", re.I)
 _HOLD_STOP = r"(?:to|for|in|and|by|until|relating|that|which|with|from|on|at|as|or|of|is|are|shall|may|a|an|the)\b"
 HOLDER_LOCAL = re.compile(r"\b(?i:(?:the\s+)?(town|city|village|county))\s+(?i:of)\s+((?:(?!(?i:" + _HOLD_STOP + r"))[A-Z][\w.'’-]*\s*){1,4})")
@@ -2397,6 +2487,7 @@ def sunset_extension_sentences(text):
         sent = context_sentence((a, a + 2), text)[0]
         q = re.sub(r"\s+", " ", re.sub(r"\{\{|\}\}", "", re.sub(r"\[[^\[\]]*\]", "", sent))).strip()
         q = re.sub(r"^(?:§|Section)\s*\d+\.\s*", "", q).strip()
+        q = re.sub(r"^\(?\d+[.)]\s+(?=(?:this act|sections?\b))", "", q, flags=re.I).strip()
         q = re.sub(r"\s+([,.;])", r"\1", q)
         if q:
             out.append((q, "Chapter %s of the Laws of %s, § %s" % (m.group(2), m.group(3), m.group(1))))

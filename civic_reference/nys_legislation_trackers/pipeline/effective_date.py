@@ -219,6 +219,18 @@ def _expiry(clause, effective, signed):
     return _act_expiry(clause, effective)
 
 
+def _signed_expiry(clause, signed):
+    """W2 (Oct 20 2026): 'shall expire five years after having become a law' / 'after it shall have become a law' is the signing date plus N."""
+    low = clause.lower()
+    m = re.search(r"\bthis act shall (?:take effect[^;]*?\s+and\s+shall\s+)?(?:expire|be deemed to expire)(?:\s+and\s+be\s+deemed\s+repealed)?\s+(" + NUM_WORDS + r"|\d+)\s+(years?|months?)\s+after\s+(?:having\s+become\s+a\s+law|(?:it|this\s+act)\s+shall\s+have\s+become\s+a\s+law)", low)
+    if not (m and signed and m.group(1).strip()):
+        return None
+    n = words_to_int(m.group(1)) if not m.group(1).isdigit() else int(m.group(1))
+    if n is None:
+        return None
+    return add_months(signed, 12 * n if m.group(2).startswith("year") else n)
+
+
 EXP_VERB = r"(?:shall|will)\s+(?:expire|be\s+deemed\s+(?:to\s+)?(?:expire|repealed))(?:\s+and\s+(?:shall\s+)?be\s+deemed\s+(?:to\s+)?(?:repealed|expire))?"
 SECT_SUBJ = re.compile(r"(?:sections?|subdivisions?|paragraphs?|subparagraphs?|articles?|parts?|amendments?\s+made\s+by|provisions?)\b[^;]*?\bof\s+this\s+act\b[^;]*$", re.I)
 
@@ -417,6 +429,8 @@ def parse_effective(text, signed_date, resolver=None, _parts=True):
         rule = "text_truncated"           # M19 (Oct 12 2026): the cached text ends before the act clause (budget schedules) or is empty
     retros = _retro(clause, signed)
     expires = _expiry(clause, eff, signed)
+    if not expires:
+        expires = _signed_expiry(clause, signed)
     sections = []
     for m in re.finditer(r";\s*provided(?:,? however,?| further,?)?,?\s+(?:that\s+)?(.*?)(?=;\s*provided|$)", clause, re.I):
         part = m.group(1)

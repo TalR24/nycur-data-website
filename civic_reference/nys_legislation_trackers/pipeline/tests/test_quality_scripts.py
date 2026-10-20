@@ -57,7 +57,10 @@ check("20 distinct laws", len(set(r["A"]) | set(r["B"])) == 20)
 check("seed is the night number", r["seed"] == 20261101 and draw_sample.seed_of("20261013b") == 202610132)
 check("calibration: 2 gold laws per auditor, seeded, in the file", len(r["calibration"]["A"]) == 2 and len(r["calibration"]["B"]) == 2
       and len(set(r["calibration"]["A"] + r["calibration"]["B"])) == 4 and json.load(open(out))["calibration"] == r["calibration"])
-check("calibration verdicts carried", all(r["calibration"]["gold_verdicts"][l][0]["status"] == "real" for l in r["calibration"]["A"]))
+gvf = os.path.join(tmp, "s_calibration_gold.json")      # Oct 20 2026: verdicts live in a sibling file the auditors never see
+gv = json.load(open(gvf))["gold_verdicts"] if os.path.exists(gvf) else {}
+check("calibration verdicts in the sibling file, not the auditors' file",
+      "gold_verdicts" not in json.load(open(out))["calibration"] and all(gv[l][0]["status"] == "real" for l in r["calibration"]["A"]))
 r2 = draw_sample.main(["--night", "20261101", "--out", out, "--packets", pk, "--data-dir", dd, "--nightly-dir", nd, "--gold", gp])
 check("draw is deterministic", r2["A"] == r["A"] and r2["B"] == r["B"])
 ru = draw_sample.main(["--night", "20261101", "--source", "unaudited", "--out", out, "--packets", pk, "--data-dir", dd, "--nightly-dir", nd, "--gold", gp])
@@ -137,7 +140,7 @@ check("add assigns ids and counts", [i["id"] for i in backlog.load(bp)["items"]]
 check("done closes an item", backlog.done(bp, "B7", "n2")["status"] == "done" and len(backlog.open_items(bp)) == 6)
 check("next limit is 5", backlog.NEXT_LIMIT == 5 and len(backlog.open_items(bp)[:backlog.NEXT_LIMIT]) == 5)
 sb = backlog.load(str(Q / "backlog.json"))["items"]
-check("seeded backlog holds only open items", sb and all(i["status"] == "open" for i in sb) and {"id", "added", "class", "instances", "count", "rule", "status"} <= set(sb[0]))
+check("backlog items are well-formed (open or done)", sb and all(i["status"] in ("open", "done") for i in sb) and {"id", "added", "class", "instances", "count", "rule", "status"} <= set(sb[0]))
 
 # Q6 trend
 md = trend.build(str(Q / "nightly"), str(Q / "gold_history.jsonl"))
