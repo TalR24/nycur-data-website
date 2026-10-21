@@ -95,10 +95,14 @@
       var inval = rows[i].querySelector('.c-bar-inval');
       if (!fill || !inval) continue;
       if (fill.getBoundingClientRect().width < inval.scrollWidth + 22) {
+        // Sit the label past the end of the bar, on the track, so dark text
+        // never lands on the fill colour.
         inval.style.color = SEQ_INK_DARK;
         inval.style.paddingRight = '0';
         inval.style.paddingLeft = '8px';
-        fill.style.justifyContent = 'flex-start';
+        inval.style.position = 'absolute';
+        inval.style.left = '100%';
+        fill.style.position = 'relative';
         fill.style.overflow = 'visible';
       }
     }
