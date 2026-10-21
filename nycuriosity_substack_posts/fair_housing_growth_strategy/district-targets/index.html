@@ -240,6 +240,16 @@
     .fh-seg--none { background: var(--c-bad); color: #fff; }
     @media (max-width: 620px) { .fh-fund { flex-direction: column; } .fh-fund .fh-seg { width: 100% !important; } }
     .c-plot--scroll > svg { min-width: 940px; }
+    .dt-tip { position: absolute; pointer-events: none; z-index: 5; display: none;
+      background: var(--b-surface-dark, #1A1208); color: #fff; border-radius: 8px; padding: 10px 12px;
+      font-family: var(--c-mono); font-size: 0.72rem; line-height: 1.5; white-space: nowrap;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.18); }
+    .dt-tip strong { font-family: var(--c-sans); font-size: 0.8rem; display: block; margin-bottom: 2px; }
+    .dt-col { cursor: default; }
+    .dt-hl { opacity: 0; transition: opacity 0.12s; }
+    .dt-col:hover .dt-hl, .dt-col:focus .dt-hl { opacity: 0.7; }
+    .dt-col:focus { outline: none; }
+
     /* ── TOPIC COLOUR (2026 rebrand) ──────────────────────
        Colour encodes what KIND of thing something is. The bright fills are
        decorative only; the -ink twins are the only variants safe for text
@@ -360,8 +370,8 @@
           <li class="c-legend-item"><span class="sw" style="background:var(--c-cat-1)"></span>Fast Track district</li>
         </ul>
       </div>
-      <div class="c-plot c-plot--scroll">
-        <svg id="target-bars" viewBox="0 0 1000 640" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Bar chart of all 59 NYC community districts. Each outlined bar is the district's 2030 housing target; the filled part is homes added in 2021 to 2025. Sorted by target as a multiple of recent output; Canarsie is highest at 32 times."></svg>
+      <div class="c-plot c-plot--scroll" id="targetPlot" style="position:relative">
+        <svg id="target-bars" viewBox="0 0 1000 460" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Bar chart of all 59 NYC community districts. Each outlined bar is the district's 2030 housing target; the filled part is homes added in 2021 to 2025. Sorted by target as a multiple of recent output; Canarsie is highest at 32 times."></svg>
       </div>
       <figcaption class="c-foot">
         <div class="c-foot-text">
@@ -411,7 +421,7 @@
 <script>
   const DATA = [{"cd":"BK 18","nm":"Canarsie, Flatlands","h":190,"t":6090,"ft":1,"m":32.05},{"cd":"QN 13","nm":"Queens Village, Bellerose, Rosedale","h":285,"t":5600,"ft":1,"m":19.65},{"cd":"QN 10","nm":"South Ozone Park & Howard Beach","h":210,"t":3620,"ft":1,"m":17.24},{"cd":"BK 10","nm":"Bay Ridge, Dyker Heights","h":305,"t":4060,"ft":1,"m":13.31},{"cd":"MN 7","nm":"Upper West Side","h":835,"t":10735,"ft":1,"m":12.86},{"cd":"MN 2","nm":"Greenwich Village, Tribeca","h":500,"t":6360,"ft":0,"m":12.72},{"cd":"SI 2","nm":"Mid-Island","h":420,"t":4605,"ft":1,"m":10.96},{"cd":"MN 8","nm":"Upper East Side, Roosevelt Island","h":1285,"t":13515,"ft":1,"m":10.52},{"cd":"QN 9","nm":"Kew Gardens, Richmond Hill, Woodhaven","h":495,"t":4985,"ft":0,"m":10.07},{"cd":"QN 11","nm":"Auburndale, Bayside, Douglaston","h":445,"t":4305,"ft":1,"m":9.67},{"cd":"BK 15","nm":"Sheepshead Bay, Gravesend (East)","h":570,"t":5385,"ft":0,"m":9.45},{"cd":"QN 5","nm":"Ridgewood, Maspeth, Middle Village","h":605,"t":5340,"ft":1,"m":8.83},{"cd":"BX 10","nm":"Co-op City, Throgs Neck","h":540,"t":3945,"ft":0,"m":7.31},{"cd":"SI 3","nm":"South Shore","h":985,"t":6575,"ft":1,"m":6.68},{"cd":"BK 12","nm":"Borough Park, Kensington","h":850,"t":5505,"ft":1,"m":6.48},{"cd":"QN 8","nm":"Fresh Meadows, Hillcrest, Briarwood","h":1015,"t":5890,"ft":0,"m":5.8},{"cd":"QN 4","nm":"Elmhurst, Corona","h":875,"t":5065,"ft":1,"m":5.79},{"cd":"SI 1","nm":"North Shore","h":1045,"t":5670,"ft":0,"m":5.43},{"cd":"BK 11","nm":"Bensonhurst, Bath Beach","h":1095,"t":5795,"ft":0,"m":5.29},{"cd":"MN 6","nm":"East Midtown","h":1820,"t":8905,"ft":0,"m":4.89},{"cd":"BX 11","nm":"Pelham Parkway, Morris Park","h":765,"t":3680,"ft":0,"m":4.81},{"cd":"QN 3","nm":"Jackson Heights, East Elmhurst","h":985,"t":4740,"ft":0,"m":4.81},{"cd":"MN 3","nm":"Lower East Side, Chinatown","h":1745,"t":7450,"ft":0,"m":4.27},{"cd":"MN 10","nm":"Harlem","h":1645,"t":5625,"ft":0,"m":3.42},{"cd":"QN 6","nm":"Forest Hills, Rego Park","h":1860,"t":6325,"ft":0,"m":3.4},{"cd":"BK 7","nm":"Sunset Park, Windsor Terrace","h":1590,"t":5235,"ft":0,"m":3.29},{"cd":"BX 9","nm":"Soundview, Parkchester","h":1875,"t":5990,"ft":0,"m":3.19},{"cd":"QN 7","nm":"Flushing, Murray Hill, Whitestone","h":2870,"t":8650,"ft":0,"m":3.01},{"cd":"MN 9","nm":"Morningside Heights, Hamilton Heights","h":1410,"t":4100,"ft":0,"m":2.91},{"cd":"BX 8","nm":"Riverdale, Kingsbridge, Marble Hill","h":1395,"t":3990,"ft":0,"m":2.86},{"cd":"MN 12","nm":"Washington Heights, Inwood","h":2570,"t":6805,"ft":0,"m":2.65},{"cd":"MN 5","nm":"Midtown, Flatiron","h":1770,"t":4390,"ft":0,"m":2.48},{"cd":"BX 12","nm":"Wakefield, Williamsbridge, Eastchester","h":2570,"t":5490,"ft":0,"m":2.14},{"cd":"MN 11","nm":"East Harlem","h":2405,"t":4910,"ft":0,"m":2.04},{"cd":"BK 14","nm":"Flatbush, Midwood","h":2830,"t":5750,"ft":0,"m":2.03},{"cd":"BK 6","nm":"Park Slope, Carroll Gardens","h":3155,"t":6220,"ft":0,"m":1.97},{"cd":"BK 13","nm":"Coney Island, Brighton Beach","h":2070,"t":3970,"ft":0,"m":1.92},{"cd":"BK 4","nm":"Bushwick","h":2720,"t":5005,"ft":0,"m":1.84},{"cd":"MN 4","nm":"Chelsea, Hell’s Kitchen","h":4925,"t":8865,"ft":0,"m":1.8},{"cd":"BK 9","nm":"Crown Heights (South)","h":2645,"t":4405,"ft":0,"m":1.67},{"cd":"BK 17","nm":"East Flatbush","h":3450,"t":5715,"ft":0,"m":1.66},{"cd":"BX 2","nm":"Longwood, Hunts Point","h":1360,"t":2085,"ft":0,"m":1.53},{"cd":"BK 8","nm":"Crown Heights (North)","h":3515,"t":5270,"ft":0,"m":1.5},{"cd":"MN 1","nm":"Financial District","h":3855,"t":5600,"ft":0,"m":1.45},{"cd":"BX 3","nm":"Morrisania","h":2610,"t":3660,"ft":0,"m":1.4},{"cd":"BX 7","nm":"Fordham, Bedford Park, Norwood","h":4090,"t":5695,"ft":0,"m":1.39},{"cd":"BK 3","nm":"Bedford- Stuyvesant","h":6095,"t":7895,"ft":0,"m":1.3},{"cd":"BX 4","nm":"Highbridge, Concourse","h":4695,"t":5840,"ft":0,"m":1.24},{"cd":"QN 12","nm":"Jamaica, St. Albans, Hollis","h":6275,"t":7520,"ft":0,"m":1.2},{"cd":"BK 16","nm":"Ocean Hill, Brownsville","h":3490,"t":4035,"ft":0,"m":1.16},{"cd":"QN 1","nm":"Astoria, Queensbridge","h":8225,"t":9520,"ft":0,"m":1.16},{"cd":"BK 5","nm":"East New York, Cypress Hills","h":6735,"t":7730,"ft":0,"m":1.15},{"cd":"BX 6","nm":"Tremont, Belmont, West Farms","h":3270,"t":3630,"ft":0,"m":1.11},{"cd":"QN 14","nm":"The Rockaways","h":3575,"t":3540,"ft":0,"m":0.99},{"cd":"BX 5","nm":"Morris Heights, Mount Hope","h":5190,"t":5080,"ft":0,"m":0.98},{"cd":"BK 1","nm":"Williamsburg, Greenpoint","h":11670,"t":10165,"ft":0,"m":0.87},{"cd":"QN 2","nm":"Long Island City, Sunnyside, Woodside","h":12150,"t":8805,"ft":0,"m":0.72},{"cd":"BX 1","nm":"Melrose, Mott Haven, Port Morris","h":6455,"t":4370,"ft":0,"m":0.68},{"cd":"BK 2","nm":"Downtown Brooklyn, Fort Greene","h":12170,"t":7980,"ft":0,"m":0.66}];
   const W = 1000, PADL = 58, PADR = 14, PADT = 40, PH = 360;
-  const H = 640;
+  const H = 460;
   const YMAX = 14000, BASE = PADT + PH;
   const yFor = v => BASE - v / YMAX * PH;
   const svg = document.getElementById('target-bars');
@@ -426,19 +436,45 @@
     el('text', { x: PADL - 8, y: yFor(v) + 4, 'text-anchor': 'end', class: 'c-tick' }, v.toLocaleString());
   }
   el('text', { x: PADL - 8, y: PADT - 22, 'text-anchor': 'end', class: 'c-tick' }, 'Homes');
+  const plot = document.getElementById('targetPlot');
+  const tip = document.createElement('div');
+  tip.className = 'dt-tip';
+  plot.appendChild(tip);
+  function g(attrs, parent) { const n = document.createElementNS(NS, 'g'); for (const k in attrs) n.setAttribute(k, attrs[k]); (parent || svg).appendChild(n); return n; }
+  function add(parent, tag, attrs, txt) { const n = document.createElementNS(NS, tag); for (const k in attrs) n.setAttribute(k, attrs[k]); if (txt !== undefined) n.textContent = txt; parent.appendChild(n); return n; }
+  function showTip(r, evt) {
+    tip.innerHTML = '<strong>' + r.cd + ' · ' + r.nm.replace('- ', '-') + (r.ft ? ' (Fast Track)' : '') + '</strong>'
+      + 'Homes added, 2021–2025: ' + r.h.toLocaleString() + '<br>'
+      + '2030 target: ' + r.t.toLocaleString() + '<br>'
+      + 'Target vs. recent output: ' + fmtMult(r.m);
+    tip.style.display = 'block';
+    const box = plot.getBoundingClientRect();
+    let x = evt.clientX - box.left + plot.scrollLeft + 14, y = evt.clientY - box.top - 10;
+    const maxX = plot.scrollLeft + plot.clientWidth - tip.offsetWidth - 6;
+    if (x > maxX) x = evt.clientX - box.left + plot.scrollLeft - tip.offsetWidth - 14;
+    tip.style.left = Math.max(plot.scrollLeft + 4, x) + 'px';
+    tip.style.top = Math.max(0, y) + 'px';
+  }
+  function hideTip() { tip.style.display = 'none'; }
   rowsSorted.forEach((r, i) => {
     const x = PADL + i * slot + (slot - barW) / 2, cx = x + barW / 2;
     const col = r.ft ? 'var(--c-cat-1)' : 'var(--c-ink-3)';
-    el('rect', { x: x, y: yFor(r.h), width: barW, height: BASE - yFor(r.h), rx: 1, style: 'fill:' + col });
-    el('rect', { x: x + 0.75, y: yFor(r.t), width: barW - 1.5, height: BASE - yFor(r.t), rx: 1, style: 'fill:none;stroke:' + col + ';stroke-width:1.5' });
+    const grp = g({ class: 'dt-col', tabindex: 0, role: 'img',
+      'aria-label': r.cd + ' ' + r.nm + ': ' + r.h.toLocaleString() + ' homes added 2021 to 2025, 2030 target ' + r.t.toLocaleString() });
+    add(grp, 'rect', { class: 'dt-hl', x: PADL + i * slot, y: PADT - 34, width: slot, height: H - PADT + 30, style: 'fill:var(--c-line)' });
+    add(grp, 'rect', { x: x, y: yFor(r.h), width: barW, height: BASE - yFor(r.h), rx: 1, style: 'fill:' + col });
+    add(grp, 'rect', { x: x + 0.75, y: yFor(r.t), width: barW - 1.5, height: BASE - yFor(r.t), rx: 1, style: 'fill:none;stroke:' + col + ';stroke-width:1.5' });
     const barTop = yFor(Math.max(r.h, r.t));
-    el('text', { x: cx, y: barTop - 5, 'text-anchor': 'start', transform: 'rotate(-90 ' + cx + ' ' + (barTop - 5) + ')', class: 'c-val',
+    add(grp, 'text', { x: cx, y: barTop - 5, 'text-anchor': 'start', transform: 'rotate(-90 ' + cx + ' ' + (barTop - 5) + ')', class: 'c-val',
       style: 'font-size:11px;dominant-baseline:middle;fill:' + (r.ft ? 'var(--b-tangerine-deep)' : 'var(--c-ink-2)') }, fmtMult(r.m));
-    let lab = r.cd + ' ' + r.nm.replace('- ', '-');
-    if (lab.length > 30) lab = lab.slice(0, 29) + '\u2026';
     const ly = BASE + 8;
-    el('text', { x: cx, y: ly, 'text-anchor': 'end', transform: 'rotate(-90 ' + cx + ' ' + ly + ')', class: 'c-tick',
-      style: 'font-family:var(--c-sans);font-size:11px;dominant-baseline:middle;fill:var(--c-ink);font-weight:' + (r.ft ? 700 : 400) }, lab);
+    add(grp, 'text', { x: cx, y: ly, 'text-anchor': 'end', transform: 'rotate(-90 ' + cx + ' ' + ly + ')', class: 'c-tick',
+      style: 'font-size:11px;dominant-baseline:middle;fill:var(--c-ink);font-weight:' + (r.ft ? 700 : 400) }, r.cd);
+    grp.addEventListener('mousemove', e => showTip(r, e));
+    grp.addEventListener('mouseleave', hideTip);
+    grp.addEventListener('click', e => { showTip(r, e); });
+    grp.addEventListener('focus', () => { const b = grp.getBoundingClientRect(); showTip(r, { clientX: b.left + b.width / 2, clientY: b.top + 40 }); });
+    grp.addEventListener('blur', hideTip);
   });
   el('line', { x1: PADL, y1: BASE, x2: W - PADR, y2: BASE, class: 'c-axis' });
 </script>
