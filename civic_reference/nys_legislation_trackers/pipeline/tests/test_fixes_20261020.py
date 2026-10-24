@@ -29,7 +29,7 @@ def rule(oid):
 # V1: the 8 content items of one annual report (flag on), and the five permit criteria (V1B, off by default)
 for n in range(12, 20):
     check("V1 2009-A7329-%d" % n, rule("2009-A7329-%d" % n) == "sub_item_of_parent")
-check("V1B is off by default", ed.APPLY_V1B is False and rule("2011-A5318-10") is None)
+check("V1B is on since Oct 21 (adjudicated: criteria items are sub-items)", ed.APPLY_V1B is True and rule("2011-A5318-10") == "sub_item_of_parent")
 ed.APPLY_V1B = True
 for n in (10, 12, 13, 14, 15):
     check("V1B 2011-A5318-%02d" % n, rule("2011-A5318-%02d" % n) == "sub_item_of_parent")

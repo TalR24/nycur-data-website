@@ -1141,6 +1141,7 @@ def existing_actor_only(o, span, text):
 # V1-V3 (Oct 20 2026): the last not-real classes of the Oct 19 bulk verification
 CONTENT_LEAD = re.compile(r"\b(?:reports?|stud(?:y|ies)|plans?|applications?|notices?|statements?|proposals?|assessments?|analys[ie]s)\b[^.:;]{0,120}?\bshall\s+(?:include|contain|set\s+forth)\b[^.:;]{0,80}:\s*(?:\}\})?\s*$", re.I)
 CRITERIA_LEAD = re.compile(r"\bshall\s+(?:determine\s+whether|consider)\s*:\s*(?:\}\})?\s*$", re.I)          # V1B: 7 records database-wide incl. 2 gold-real (2011-A5318-09, -11); off
+CRITERIA_ITEM_MODAL = re.compile(r"\b(?:shall|must|may)\b", re.I)          # X1: a criteria item that states its own modal stays a record
 CONTENT_LEAD_NOT = re.compile(r"\b(?:powers?|dut(?:y|ies)|responsibilit\w+|functions?)\b", re.I)
 LIMITED_LEAD = re.compile(r"\b(?:shall|may)\s+(?:be\s+)?limited\s+to\s*:\s*(?:\}\})?\s*$", re.I)
 CAP_ITEM = re.compile(r"^\W*(?:\(?\w{1,4}[.)]\s*)?for\s+[^,;]{3,80},\s+(?:not\s+more\s+than|no\s+more\s+than|not\s+to\s+exceed)\b", re.I)
@@ -1205,7 +1206,7 @@ def v_item_rule(o, span, text, hdr, sec):
     tail = lead[-220:]
     if APPLY_V2 and LIMITED_LEAD.search(tail):
         return "cap_not_duty", "a condition inside a cap ('shall be limited to:'); it limits an amount and binds no actor"
-    if ((APPLY_V1 and CONTENT_LEAD.search(tail)) or (APPLY_V1B and CRITERIA_LEAD.search(tail))) and not CONTENT_LEAD_NOT.search(tail[-120:]):
+    if ((APPLY_V1 and CONTENT_LEAD.search(tail)) or (APPLY_V1B and CRITERIA_LEAD.search(tail) and not CRITERIA_ITEM_MODAL.search(q))) and not CONTENT_LEAD_NOT.search(tail[-120:]):
         return "sub_item_of_parent", "a list item under a lead-in that describes the content of one deliverable; part of the parent record, not a record"
     return None
 
@@ -1341,6 +1342,25 @@ def drop_conditions(lst):
                 if APPLY_U7 and not STRICT_COND.search(q) and word_overlap(r["quote"], o["quote"]) < 0.3:
                     bump("u7_condition_low_overlap_kept"); break          # U7: the record it would attach to shares under 30% of its words: it stands
                 out.remove(r); drop(r, "condition_of_other_record", "a condition on %s, same actor and object" % o["obligation_id"])
+                break
+    return out
+
+
+PREPARE_REPORT = re.compile(r"\bshall\s+(?:prepare|produce|compile)\s+(?:an?\s+|the\s+|two\s+|\w+\s+)?(?:\w+\s+)?reports?\b", re.I)
+SUBMIT_REPORT = re.compile(r"\bshall\s+(?:submit|deliver|file|transmit)\s+(?:an?\s+|the\s+)?(?:\w+\s+)?reports?\b", re.I)
+
+
+def drop_prepare_duplicates(lst):
+    """X2 (Oct 21 2026): 'the commissioner shall prepare two reports describing X' (no date of its own) plus 'the commissioner shall submit an interim
+    report ... by April 15, 2013 and a final report ...' are one deliverable: the dated submit record carries it, the prepare record is dropped."""
+    out = list(lst)
+    for r in list(out):
+        if not PREPARE_REPORT.search(r.get("quote") or "") or SUBMIT_REPORT.search(r.get("quote") or "") or r.get("deadline_kind") not in (None, "none", "on_effective_date"):
+            continue
+        for o in out:
+            if o is not r and (o.get("agency"), o.get("agency_unit")) == (r.get("agency"), r.get("agency_unit")) and o.get("deadline_kind") not in (None, "none", "on_effective_date") \
+                    and SUBMIT_REPORT.search(o.get("quote") or "") and (r.get("actor_raw") or "").lower() == (o.get("actor_raw") or "").lower():
+                out.remove(r); drop(r, "duplicate_prepare_report", "the dated 'submit' record %s carries the same report" % o["obligation_id"])
                 break
     return out
 
@@ -1645,7 +1665,7 @@ APPLY_M31 = True
 APPLY_V1 = APPLY_V2 = APPLY_V3 = True        # Oct 20 2026 closing fixes; a rule dropping over 40 records database-wide is set False
 APPLY_W3 = True          # Oct 20 2026
 APPOINT_RE = re.compile(r"\bthe\s+governor\s+shall\s+appoint|\bshall\s+be\s+appointed\s+by\s+the\s+governor|\bmembers?\s+(?:of\s+[^.;]{0,60}?)?shall\s+be\s+appointed", re.I)
-APPLY_V1B = False        # V1 with 'shall determine whether:' / 'shall consider:' leads: with it V1 drops 41 (over the 40 cap) and 2 gold-real items
+APPLY_V1B = True   # Oct 21 2026: on after adjudication; dry run 44 drops (37 V1 + 7 V1B), all criteria or content sub-items; cap exceeded by 4 knowingly        # V1 with 'shall determine whether:' / 'shall consider:' leads: with it V1 drops 41 (over the 40 cap) and 2 gold-real items
 APPLY_N1 = APPLY_N2 = APPLY_N3 = APPLY_N5 = True        # Oct 19 2026 closing fixes; a rule dropping over 40 records database-wide is set False
 APPLY_U1 = APPLY_U4 = APPLY_U5 = APPLY_U6 = APPLY_U7 = APPLY_U9 = True        # Oct 19 2026 fixes
 APPLY_M35 = APPLY_M36 = APPLY_M37 = APPLY_M38 = APPLY_M39 = APPLY_M41 = APPLY_J15 = True        # Oct 15 2026 fixes; each can be switched off on its own
@@ -1653,7 +1673,7 @@ DROPPED_GOV_SUBJECT = re.compile(r"\b(?:trustees?|board|commissioner|university|
 APPLIES_RE = re.compile(r"\bshall (?:not )?(?:only )?(?:be applicable|apply)\b|\b(?:does|do) not apply\b", re.I)
 
 
-APPROVER_BEFORE = re.compile(r"(?:\bapproved\s+by|\bsubject\s+to\s+the\s+(?:prior\s+|written\s+)?approval\s+of|\bwith\s+the\s+(?:prior\s+|written\s+)?approval\s+of|\bupon\s+(?:the\s+)?approval\s+by)\s+(?:the\s+)?$", re.I)
+APPROVER_BEFORE = re.compile(r"(?:\bapproved\s+by|\bsubject\s+to\s+the\s+(?:prior\s+|written\s+)?approval\s+of|\bwith\s+the\s+(?:prior\s+|written\s+)?approval\s+of|\bupon\s+(?:the\s+)?approval\s+by|\bwith\s+the\s+(?:prior\s+|written\s+)?consent\s+of\s+(?:the\s+[\w' -]{3,40}?\s+and\s+)?)\s*(?:the\s+)?$", re.I)
 
 
 def approver_only_actor(r):
@@ -1664,7 +1684,9 @@ def approver_only_actor(r):
         return False
     low = q.lower()
     hits = [m.start() for m in re.finditer(re.escape(actor), low)]
-    return bool(hits) and all(APPROVER_BEFORE.search(q[max(0, h - 40):h]) for h in hits)
+    if not hits and actor.endswith(" of the city of new york"):        # X1b: 'the comptroller of such city' restates 'the comptroller of the city of New York'
+        hits = [m.start() for m in re.finditer(re.escape(actor[:-len(" of the city of new york")] + " of such city"), low)]
+    return bool(hits) and all(APPROVER_BEFORE.search(q[max(0, h - 60):h]) for h in hits)
 
 
 AID_RECIPIENT = re.compile(r"\bshall\s+be\s+(?:awarded|apportioned\s+and\s+paid|paid)\b(?!\s+(?:over|into|out|by|through|in\s+advance|on\s+the\s+(?:audit|warrant)))|\bshall\s+(?:also\s+)?receive\b[^.;]{0,120}\b(?:aid|payments?|grants?)\b", re.I)
@@ -2736,8 +2758,8 @@ def build_records(laws):
             (law_p if kind == "power" else law_d).append(rec)
         resolve_said_agency(law_d + law_p, text)
         appointment_period(law_d + law_p, text)
-        law_d = drop_conditions(dedupe_law(law_d))
-        law_p = drop_conditions(dedupe_law(law_p))
+        law_d = drop_prepare_duplicates(drop_conditions(dedupe_law(law_d)))
+        law_p = drop_prepare_duplicates(drop_conditions(dedupe_law(law_p)))
         if APPLY_U1:
             sx_recs, sx_unnamed = sunset_extension_records(law, text, eff, law_d + law_p, res)
             law_p += sx_recs
