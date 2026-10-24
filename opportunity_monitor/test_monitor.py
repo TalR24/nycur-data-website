@@ -471,8 +471,10 @@ class EmailFailureExitTests(unittest.TestCase):
             watchlist_path = Path(tmp) / "watchlist.yaml"
             watchlist_path.write_text(yaml_mod.safe_dump({"items": []}))
             state_dir = Path(tmp) / "state"
+            # DIGEST_DELIVERY=file (set on scheduled runs) skips the email path,
+            # so clear it too or the test passes locally and fails on the cron.
             env_backup = {k: os.environ.pop(k, None) for k in
-                          ("GMAIL_USER", "GMAIL_APP_PASSWORD")}
+                          ("GMAIL_USER", "GMAIL_APP_PASSWORD", "DIGEST_DELIVERY")}
             try:
                 rc = monitor.main([
                     "--watchlist", str(watchlist_path),
