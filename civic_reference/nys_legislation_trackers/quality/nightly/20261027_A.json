@@ -1,0 +1,1063 @@
+{
+ "_scoring": {
+  "auditor": "A",
+  "night": "20261027",
+  "laws": 11,
+  "stored_records": 97,
+  "correct": 71,
+  "wrong_fields": 7,
+  "not_real": 19,
+  "missed": 8,
+  "precision_strict": "71/97 = 73.2% (Wilson 95% 63.6-81.0)",
+  "precision_real": "78/97 = 80.4% (Wilson 95% 71.4-87.1)",
+  "recall": "78/86 = 90.7% (Wilson 95% 82.7-95.2)",
+  "effective_dates": "11/11 correct (calibration 2/2)",
+  "calibration_laws": [
+   "2015-S7772",
+   "2015-S6426"
+  ],
+  "note": "totals cover 13 laws (11 + 2 calibration). Recall counts real stored records (correct+wrong) over those plus missed items; 3 stored records (2009-A10507-03/04/05) and 2 misses (p1,p2) were not on the blind list and were added on comparison",
+  "split_reask_vs_first": "re-ask (9 laws incl. calibration 2015-S6426): strict 65/91 = 71.4% (Wilson 95% 61.4-79.7), real 72/91 = 79.1% (Wilson 95% 69.7-86.2), recall 72/79 = 91.1% (Wilson 95% 82.8-95.6) | first-answer (4 laws incl. calibration 2015-S7772): strict 6/6 = 100.0% (Wilson 95% 61.0-100.0), real 6/6 = 100.0% (Wilson 95% 61.0-100.0), recall 6/7 = 85.7% (Wilson 95% 48.7-97.4)",
+  "main_11_only": "11 sample laws: strict 68/93 = 73.1% (Wilson 95% 63.3-81.1), real 74/93 = 79.6% (Wilson 95% 70.3-86.5), recall 74/81 = 91.4% (Wilson 95% 83.2-95.8)"
+ },
+ "_classes": [
+  {
+   "name": "litigation joinder clause ('shall be joined as a party') stored as a locality duty",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2015-A209-04",
+    "2015-A209-13",
+    "2015-A209-22",
+    "2015-A209-31",
+    "2015-A209-40",
+    "2015-A209-49",
+    "2015-A209-58",
+    "2015-A209-67"
+   ],
+   "rule": "quote =~ /shall be joined as a party/i",
+   "db_matches": 10,
+   "db_examples": [
+    "2009-A227-04",
+    "2015-A2008-04",
+    "2015-A209-04"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "local-law duration cap ('for a period of time no longer than N years') stored as a separate power",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2015-A209-09",
+    "2015-A209-18",
+    "2015-A209-27",
+    "2015-A209-36",
+    "2015-A209-45",
+    "2015-A209-54",
+    "2015-A209-63",
+    "2015-A209-72"
+   ],
+   "rule": "kind==power and quote =~ /period of time no longer than|for a period (of time )?not (to )?exceed(ing)? \\w+ years from the date of its enactment/i",
+   "db_matches": 14,
+   "db_examples": [
+    "2009-A227-08",
+    "2009-A289-07",
+    "2015-A2008-09"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "officer phrase minted as agency name (generic 'Chief Executive Officer of That/Each Agency...')",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2009-A4091-01",
+    "2009-A4091-02",
+    "2009-A4091-03"
+   ],
+   "rule": "agency =~ /^(Chief Executive Officer|Head|Director|Commissioner|Chairman|Chair)\\b.*\\b(of|Of) (That|Each|Every|Such|the|a|Any) (Agency|Agencies|Department|State|Public)/",
+   "db_matches": 7,
+   "db_examples": [
+    "2009-A4091-01",
+    "2009-A4091-02",
+    "2009-A4091-03"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "identical-text parallel sections collapsed by excluded_merged_duplicate (recurrence of known 'parallel provisions collapsed')",
+   "criteria": [
+    "9"
+   ],
+   "instances": [
+    "2017-S6683-02",
+    "2009-A10507-06"
+   ],
+   "rule": "dropped rule==excluded_merged_duplicate and the de-marked quote's first 150 chars occur 2+ times in the packet LAW TEXT (upper bound: includes intentional same-section merges if the sentence is repeated)",
+   "db_matches": 287,
+   "db_examples": [
+    "2009-A1002-03",
+    "2009-A10061-03",
+    "2009-A10507-06"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "school board resolved to its city (Cities/Villages/Towns) instead of School districts",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2009-A10507-05"
+   ],
+   "rule": "agency in {Cities,Villages,Towns} and actor_raw =~ /board of education|school district|trustees of (the )?(any )?school/i",
+   "db_matches": 33,
+   "db_examples": [
+    "2009-A10507-05",
+    "2015-A9932-02",
+    "2015-A9932-26"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "single-word substitution in a reprinted duty ('[verify] {{attest}}', renumbered cross-reference) stored as a record",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2015-S6390-01",
+    "2015-S6390-02",
+    "2015-S7160-01"
+   ],
+   "rule": "none mechanical without aligning quotes to the braced spans",
+   "db_matches": null,
+   "db_examples": [],
+   "needs_judgment": true,
+   "laws": [
+    "2015-S6390",
+    "2015-S7160"
+   ]
+  },
+  {
+   "name": "extends_existing set backwards (true on a wholly new sentence, false on a duty whose timing was widened)",
+   "criteria": [
+    "7"
+   ],
+   "instances": [
+    "2009-A2500-01",
+    "2015-S6426-02"
+   ],
+   "rule": "none mechanical",
+   "db_matches": null,
+   "db_examples": [],
+   "needs_judgment": true,
+   "laws": [
+    "2009-A2500",
+    "2015-S6426"
+   ]
+  },
+  {
+   "name": "scope widening by substituted reference ('{{this}} title [one of this article]', 'as provided in s2035') missed or quoted on the wrong sentence",
+   "criteria": [
+    "2",
+    "7"
+   ],
+   "instances": [
+    "2009-A2500 b1",
+    "2009-A10507-03",
+    "2009-A10507 p1"
+   ],
+   "rule": "none mechanical",
+   "db_matches": null,
+   "db_examples": [],
+   "needs_judgment": true,
+   "laws": [
+    "2009-A2500",
+    "2009-A10507"
+   ]
+  },
+  {
+   "name": "appropriation-bill interchange/transfer powers not recorded",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2009-A10469 b4",
+    "2009-A10469 b5"
+   ],
+   "rule": "none mechanical (needs packet sentence scan of 'may be increased or decreased by interchange|may be used for transfer' vs stored)",
+   "db_matches": null,
+   "db_examples": [],
+   "needs_judgment": true,
+   "laws": [
+    "2009-A10469"
+   ]
+  }
+ ],
+ "2015-A209": {
+  "records": {
+   "2015-A209-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-A209-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "actor_raw 'such local laws' names no body (known passive-subject class); agency and unit correct"
+   },
+   "2015-A209-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "actor_raw 'such local laws' names no body (known passive-subject class); agency and unit correct"
+   },
+   "2015-A209-04": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "note": "'the commissioner of finance or other fiscal officers ... shall be joined as a party in any action or proceeding brought to collect the tax by the owner' is a litigation-joinder rule binding the private plaintiff, not a duty the locality performs"
+   },
+   "2015-A209-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "actor_raw 'such local laws' names no body (known passive-subject class); agency and unit correct"
+   },
+   "2015-A209-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "'no assessment of additional tax shall be made after the expiration of more than three years' accepted as a prohibition on the locality; actor_raw 'such local laws' is not a body but agency/unit are right"
+   },
+   "2015-A209-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "actor_raw 'such local laws' names no body (known passive-subject class); agency and unit correct"
+   },
+   "2015-A209-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "actor_raw 'such local laws' names no body (known passive-subject class); agency and unit correct"
+   },
+   "2015-A209-09": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "note": "'each enactment of such a local law may provide for the imposition of a hotel or motel tax for a period of time no longer than three years' is a duration cap on the tax power (record 1 of this locality), not a separate power"
+   },
+   "2015-A209-10": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-A209-11": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "actor_raw 'such local laws' names no body (known passive-subject class); agency and unit correct"
+   },
+   "2015-A209-12": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "actor_raw 'such local laws' names no body (known passive-subject class); agency and unit correct"
+   },
+   "2015-A209-13": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "note": "'the commissioner of finance or other fiscal officers ... shall be joined as a party in any action or proceeding brought to collect the tax by the owner' is a litigation-joinder rule binding the private plaintiff, not a duty the locality performs"
+   },
+   "2015-A209-14": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "actor_raw 'such local laws' names no body (known passive-subject class); agency and unit correct"
+   },
+   "2015-A209-15": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "'no assessment of additional tax shall be made after the expiration of more than three years' accepted as a prohibition on the locality; actor_raw 'such local laws' is not a body but agency/unit are right"
+   },
+   "2015-A209-16": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "actor_raw 'such local laws' names no body (known passive-subject class); agency and unit correct"
+   },
+   "2015-A209-17": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "actor_raw 'such local laws' names no body (known passive-subject class); agency and unit correct"
+   },
+   "2015-A209-18": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "note": "'each enactment of such a local law may provide for the imposition of a hotel or motel tax for a period of time no longer than three years' is a duration cap on the tax power (record 1 of this locality), not a separate power"
+   },
+   "2015-A209-19": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-A209-20": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "actor_raw 'such local laws' names no body (known passive-subject class); agency and unit correct"
+   },
+   "2015-A209-21": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "actor_raw 'such local laws' names no body (known passive-subject class); agency and unit correct"
+   },
+   "2015-A209-22": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "note": "'the commissioner of finance or other fiscal officers ... shall be joined as a party in any action or proceeding brought to collect the tax by the owner' is a litigation-joinder rule binding the private plaintiff, not a duty the locality performs"
+   },
+   "2015-A209-23": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "actor_raw 'such local laws' names no body (known passive-subject class); agency and unit correct"
+   },
+   "2015-A209-24": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "'no assessment of additional tax shall be made after the expiration of more than three years' accepted as a prohibition on the locality; actor_raw 'such local laws' is not a body but agency/unit are right"
+   },
+   "2015-A209-25": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "actor_raw 'such local laws' names no body (known passive-subject class); agency and unit correct"
+   },
+   "2015-A209-26": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "actor_raw 'such local laws' names no body (known passive-subject class); agency and unit correct"
+   },
+   "2015-A209-27": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "note": "'each enactment of such a local law may provide for the imposition of a hotel or motel tax for a period of time no longer than three years' is a duration cap on the tax power (record 1 of this locality), not a separate power"
+   },
+   "2015-A209-28": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-A209-29": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "actor_raw 'such local laws' names no body (known passive-subject class); agency and unit correct"
+   },
+   "2015-A209-30": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "actor_raw 'such local laws' names no body (known passive-subject class); agency and unit correct"
+   },
+   "2015-A209-31": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "note": "'the commissioner of finance or other fiscal officers ... shall be joined as a party in any action or proceeding brought to collect the tax by the owner' is a litigation-joinder rule binding the private plaintiff, not a duty the locality performs"
+   },
+   "2015-A209-32": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "actor_raw 'such local laws' names no body (known passive-subject class); agency and unit correct"
+   },
+   "2015-A209-33": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "'no assessment of additional tax shall be made after the expiration of more than three years' accepted as a prohibition on the locality; actor_raw 'such local laws' is not a body but agency/unit are right"
+   },
+   "2015-A209-34": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "actor_raw 'such local laws' names no body (known passive-subject class); agency and unit correct"
+   },
+   "2015-A209-35": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "actor_raw 'such local laws' names no body (known passive-subject class); agency and unit correct"
+   },
+   "2015-A209-36": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "note": "'each enactment of such a local law may provide for the imposition of a hotel or motel tax for a period of time no longer than three years' is a duration cap on the tax power (record 1 of this locality), not a separate power"
+   },
+   "2015-A209-37": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-A209-38": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "actor_raw 'such local laws' names no body (known passive-subject class); agency and unit correct"
+   },
+   "2015-A209-39": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "actor_raw 'such local laws' names no body (known passive-subject class); agency and unit correct"
+   },
+   "2015-A209-40": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "note": "'the commissioner of finance or other fiscal officers ... shall be joined as a party in any action or proceeding brought to collect the tax by the owner' is a litigation-joinder rule binding the private plaintiff, not a duty the locality performs"
+   },
+   "2015-A209-41": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "actor_raw 'such local laws' names no body (known passive-subject class); agency and unit correct"
+   },
+   "2015-A209-42": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "'no assessment of additional tax shall be made after the expiration of more than three years' accepted as a prohibition on the locality; actor_raw 'such local laws' is not a body but agency/unit are right"
+   },
+   "2015-A209-43": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "actor_raw 'such local laws' names no body (known passive-subject class); agency and unit correct"
+   },
+   "2015-A209-44": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "actor_raw 'such local laws' names no body (known passive-subject class); agency and unit correct"
+   },
+   "2015-A209-45": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "note": "'each enactment of such a local law may provide for the imposition of a hotel or motel tax for a period of time no longer than three years' is a duration cap on the tax power (record 1 of this locality), not a separate power"
+   },
+   "2015-A209-46": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-A209-47": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "actor_raw 'such local laws' names no body (known passive-subject class); agency and unit correct"
+   },
+   "2015-A209-48": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "actor_raw 'such local laws' names no body (known passive-subject class); agency and unit correct"
+   },
+   "2015-A209-49": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "note": "'the commissioner of finance or other fiscal officers ... shall be joined as a party in any action or proceeding brought to collect the tax by the owner' is a litigation-joinder rule binding the private plaintiff, not a duty the locality performs"
+   },
+   "2015-A209-50": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "actor_raw 'such local laws' names no body (known passive-subject class); agency and unit correct"
+   },
+   "2015-A209-51": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "'no assessment of additional tax shall be made after the expiration of more than three years' accepted as a prohibition on the locality; actor_raw 'such local laws' is not a body but agency/unit are right"
+   },
+   "2015-A209-52": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "actor_raw 'such local laws' names no body (known passive-subject class); agency and unit correct"
+   },
+   "2015-A209-53": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "actor_raw 'such local laws' names no body (known passive-subject class); agency and unit correct"
+   },
+   "2015-A209-54": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "note": "'each enactment of such a local law may provide for the imposition of a hotel or motel tax for a period of time no longer than three years' is a duration cap on the tax power (record 1 of this locality), not a separate power"
+   },
+   "2015-A209-55": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-A209-56": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "actor_raw 'such local laws' names no body (known passive-subject class); agency and unit correct"
+   },
+   "2015-A209-57": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "actor_raw 'such local laws' names no body (known passive-subject class); agency and unit correct"
+   },
+   "2015-A209-58": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "note": "'the commissioner of finance or other fiscal officers ... shall be joined as a party in any action or proceeding brought to collect the tax by the owner' is a litigation-joinder rule binding the private plaintiff, not a duty the locality performs"
+   },
+   "2015-A209-59": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "actor_raw 'such local laws' names no body (known passive-subject class); agency and unit correct"
+   },
+   "2015-A209-60": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "'no assessment of additional tax shall be made after the expiration of more than three years' accepted as a prohibition on the locality; actor_raw 'such local laws' is not a body but agency/unit are right"
+   },
+   "2015-A209-61": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "actor_raw 'such local laws' names no body (known passive-subject class); agency and unit correct"
+   },
+   "2015-A209-62": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "actor_raw 'such local laws' names no body (known passive-subject class); agency and unit correct"
+   },
+   "2015-A209-63": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "note": "'each enactment of such a local law may provide for the imposition of a hotel or motel tax for a period of time no longer than three years' is a duration cap on the tax power (record 1 of this locality), not a separate power"
+   },
+   "2015-A209-64": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-A209-65": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "actor_raw 'such local laws' names no body (known passive-subject class); agency and unit correct"
+   },
+   "2015-A209-66": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "actor_raw 'such local laws' names no body (known passive-subject class); agency and unit correct"
+   },
+   "2015-A209-67": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "note": "'the commissioner of finance or other fiscal officers ... shall be joined as a party in any action or proceeding brought to collect the tax by the owner' is a litigation-joinder rule binding the private plaintiff, not a duty the locality performs"
+   },
+   "2015-A209-68": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "actor_raw 'such local laws' names no body (known passive-subject class); agency and unit correct"
+   },
+   "2015-A209-69": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "'no assessment of additional tax shall be made after the expiration of more than three years' accepted as a prohibition on the locality; actor_raw 'such local laws' is not a body but agency/unit are right"
+   },
+   "2015-A209-70": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "actor_raw 'such local laws' names no body (known passive-subject class); agency and unit correct"
+   },
+   "2015-A209-71": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "actor_raw 'such local laws' names no body (known passive-subject class); agency and unit correct"
+   },
+   "2015-A209-72": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "note": "'each enactment of such a local law may provide for the imposition of a hotel or motel tax for a period of time no longer than three years' is a duration cap on the tax power (record 1 of this locality), not a separate power"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2016-12-31",
+   "computed": "2016-12-31",
+   "verdict": "correct",
+   "note": "immediately; expires 2019-09-01 stored correctly"
+  }
+ },
+ "2017-S7821": {
+  "records": {
+   "2017-S7821-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "'the authority does not deny such application within {{seven business}} days' shortens the review clock; SLA, extends_existing true"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2019-03-31",
+   "computed": "2019-03-31",
+   "verdict": "correct",
+   "note": "'This act shall take effect March 31, 2019.'"
+  }
+ },
+ "2009-A10875": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2010-08-13",
+   "computed": "2010-08-13",
+   "verdict": "correct",
+   "note": "only new matter widens the RPTL 487 exemption window to 'two thousand {{fifteen.}}': an exemption, no record (criterion 1); none stored"
+  }
+ },
+ "2009-A4091": {
+  "records": {
+   "2009-A4091-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "State agencies (State agencies and public authorities that let >$10M in contracts)"
+    },
+    "note": "agency minted from the officer phrase 'Chief Executive Officer of That Agency, Department Or Authority'; the holder is every 'state agency, department and authority which has let more than ten million dollars'"
+   },
+   "2009-A4091-02": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "State agencies (State agencies and public authorities that let >$10M in contracts)"
+    },
+    "note": "same junk agency 'Chief Executive Officer of Each Agency, Department Or Authority'"
+   },
+   "2009-A4091-03": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "State agencies (State agencies and public authorities that let >$10M in contracts)"
+    },
+    "note": "same junk agency 'Chief Executive Officer of the Agency, Department Or Authority'"
+   }
+  },
+  "missed": [
+   {
+    "blind": "b4",
+    "quote": "No determination of affiliation or control may be found between a protege firm and its mentor firm based on the mentor-protege agreement or any assistance provided pursuant to such agreement.",
+    "kind": "duty",
+    "agency": "State agencies",
+    "dropped_by": null,
+    "note": "prohibition on the determining government body in a wholly new section; no stored or dropped record"
+   }
+  ],
+  "effective_date": {
+   "stored": "2009-08-26",
+   "computed": "2009-08-26",
+   "verdict": "correct",
+   "note": "immediately"
+  }
+ },
+ "2015-S7160": {
+  "records": {
+   "2015-S7160-01": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "3"
+    ],
+    "fields": {},
+    "note": "quote 'a member who first joins ... shall pay such retirement system' is the member's payment obligation (private party); the only new matter in it is the renumbered cross-reference '{{Three}}'; agency Unspecified"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2016-05-31",
+   "computed": "2016-05-31",
+   "verdict": "correct",
+   "note": "immediately; new matter is the deletion of the service-period list (member entitlement) and renumbering; s2 is an appropriation"
+  }
+ },
+ "2015-S6390": {
+  "records": {
+   "2015-S6390-01": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "note": "DOH's streamlined-process duty is reprinted; the only new matter is '[verify] {{attest}}', a change to the operator's act, so no new or widened government duty"
+   },
+   "2015-S6390-02": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "note": "same: '[verify] {{attest}}' single-word substitution in a reprinted DOH duty"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2015-12-22",
+   "computed": "2015-12-22",
+   "verdict": "correct",
+   "note": "same as ch. 574 of 2015 (A7681, effective immediately 2015-12-22); amendment signed 2016-03-21 leaves that date standing (criterion 8)"
+  }
+ },
+ "2017-S6683": {
+  "records": {
+   "2017-S6683-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "RSSL 551(h)(2) or 552(j)(2) participating-employer election widened to NYPD-certified deputies; Counties, extends true"
+   }
+  },
+  "missed": [
+   {
+    "blind": "b2",
+    "quote": "a participating employer may elect on a form filed with the comptroller for that purpose to provide that creditable service shall also include any and all service performed by a deputy sheriff who is a police officer ... or as certified by the police department of the city of New York",
+    "kind": "power",
+    "agency": "Counties",
+    "dropped_by": "excluded_merged_duplicate",
+    "note": "s2 (RSSL 551, 20-year plan) and s3 (RSSL 552, 25-year plan) are separate sections with identical text; 2017-S6683-02 was merged away, collapsing two parallel provisions into one"
+   }
+  ],
+  "effective_date": {
+   "stored": "2018-12-28",
+   "computed": "2018-12-28",
+   "verdict": "correct",
+   "note": "immediately"
+  }
+ },
+ "2009-A2500": {
+  "records": {
+   "2009-A2500-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "7"
+    ],
+    "fields": {
+     "extends_existing": false
+    },
+    "note": "'{{In connection with the institution of any such action or proceeding, the attorney general is authorized to take proof ... and to issue subpoenas}}' is a wholly new sentence"
+   },
+   "2009-A2500-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "court's discretionary cost award, wholly new; Unified Court System"
+   }
+  },
+  "missed": [
+   {
+    "blind": "b1",
+    "quote": "If it appears to the attorney general that any person, association, or corporation has violated or is violating any of the provisions of this title, an action or proceeding may be instituted by the attorney general",
+    "kind": "power",
+    "agency": "Attorney General",
+    "dropped_by": null,
+    "note": "'{{this}} title [one of this article]' widens the AG enforcement power to the whole title: extends_existing true. 2009-A2500-02 was dropped by duplicate_provision but its quote is the subpoena sentence, so no record covers the widening"
+   }
+  ],
+  "effective_date": {
+   "stored": "2009-07-16",
+   "computed": "2009-07-16",
+   "verdict": "correct",
+   "note": "immediately"
+  }
+ },
+ "2017-S5682": {
+  "records": {
+   "2017-S5682-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "actor_raw 'he or she shall be allowed' is the passive subject (known class), agency DOCCS correct"
+   },
+   "2017-S5682-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2017-09-20",
+   "computed": "2017-09-20",
+   "verdict": "correct",
+   "note": "thirtieth day after 2017-08-21"
+  }
+ },
+ "2009-A10469": {
+  "records": {
+   "2009-A10469-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-A10469-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-A10469-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-A10469-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   }
+  },
+  "missed": [
+   {
+    "blind": "b4",
+    "quote": "the moneys hereby appropriated may be increased or decreased by interchange with any appropriation of the department of health medical assistance administration program and/or medical assistance program",
+    "kind": "power",
+    "agency": "Department of Health",
+    "dropped_by": null,
+    "note": "s10 interchange/transfer power (DOB approval is a condition, the approver is not the actor); quote must rejoin the line-break hyphen 'adminis- tration'"
+   },
+   {
+    "blind": "b5",
+    "quote": "Notwithstanding any inconsistent provision of law, moneys hereby appropriated may be used for transfer to the federal revenue maximization contract fund, pursuant to the provisions of the state finance law.",
+    "kind": "power",
+    "agency": "Department of Health",
+    "dropped_by": null,
+    "note": "s10 transfer power; the v2 prompt asks every power in appropriation bills to be recorded"
+   }
+  ],
+  "effective_date": {
+   "stored": "2010-03-29",
+   "computed": "2010-03-29",
+   "verdict": "correct",
+   "note": "immediately, retroactive_to 2010-04-01 stored"
+  }
+ },
+ "2009-A10507": {
+  "records": {
+   "2009-A10507-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-A10507-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "BOCES actor (known class) kept as BOCES"
+   },
+   "2009-A10507-03": {
+    "verdict": "wrong",
+    "criteria": [
+     "2"
+    ],
+    "fields": {
+     "quote": "Such modifications may include the use of voting machines, as provided in subdivision one of section two thousand thirty-five of this chapter, and the use of nominating petitions."
+    },
+    "note": "quoted sentence's only new matter is '[chapter] {{article}}', a citation fix; the widening sits in the next sentence '{{as provided in subdivision one of section two thousand thirty-five of this chapter,}}'"
+   },
+   "2009-A10507-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "Educ 2502(9)(l): voting machine 'as provided in' 2035 now includes lever machines; extends true. Not on blind list, accepted on comparison"
+   },
+   "2009-A10507-05": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "School districts",
+     "agency_unit": "City School District of the City of Rensselaer"
+    },
+    "note": "Educ 2502(9-a)(l) 'members of such board of education' is the city school district's board, not the City of Rensselaer"
+   }
+  },
+  "missed": [
+   {
+    "blind": "p1",
+    "quote": "Such modifications may include the use of voting machines, as provided in subdivision one of section two thousand thirty-five of this chapter, and shall include the use of absentee ballots",
+    "kind": "power",
+    "agency": "State Education Department",
+    "dropped_by": null,
+    "note": "s1 Educ 1803(5) commissioner power, same widening as s2; found on comparison, not on blind list"
+   },
+   {
+    "blind": "p2",
+    "quote": "Voting for the election of members of such board of education shall be by voting machine, as provided in subdivision one of section two thousand thirty-five of this chapter, and shall be governed by the applicable provisions of the election law with respect to voting machines.",
+    "kind": "duty",
+    "agency": "School districts",
+    "dropped_by": "excluded_merged_duplicate",
+    "note": "s7 Educ 2553(10)(l) is a separate section from s5 2502(9)(l); 2009-A10507-06 merged away. Found on comparison"
+   }
+  ],
+  "effective_date": {
+   "stored": "2010-08-13",
+   "computed": "2010-08-13",
+   "verdict": "correct",
+   "note": "immediately; expires 2012-12-31 stored"
+  }
+ },
+ "2015-S7772": {
+  "records": {
+   "2015-S7772-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S7772-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "fixed_date 2026-01-01 matches 'no later than January first, two thousand twenty-six'"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2016-09-09",
+   "computed": "2016-09-09",
+   "verdict": "correct",
+   "note": "immediately; expires 2026-07-01"
+  }
+ },
+ "2015-S6426": {
+  "records": {
+   "2015-S6426-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "changed limit '{{the totality of such grants}} not to exceed 3% {{per annum}}' is a changed amount on an existing power: extends true per packet rule"
+   },
+   "2015-S6426-02": {
+    "verdict": "wrong",
+    "criteria": [
+     "7"
+    ],
+    "fields": {
+     "extends_existing": true
+    },
+    "note": "'[On or before May 1, 2016] {{annually, within ninety days after the end of the fiscal year}}' turns an existing one-time report duty into an annual one: widens an existing duty"
+   }
+  },
+  "missed": [
+   {
+    "blind": "b3",
+    "quote": "This act shall take effect immediately [and shall expire and be deemed repealed December 31, 2016; ...]",
+    "kind": "power",
+    "agency": "Roosevelt Island Operating Corporation",
+    "dropped_by": null,
+    "note": "s2 strikes the sunset of the earlier 2015 RIOC management chapter (ch. 517 of 2015): an earlier chapter's sunset amended inside this law is an extension record (Oct 16), holder from title per Oct 19; deletion widens, extends true. Low confidence: the quote has no braced matter"
+   }
+  ],
+  "effective_date": {
+   "stored": "2016-04-08 (ss1,3: 2015-12-03)",
+   "computed": "2016-04-08 (ss1,3: 2015-12-03)",
+   "verdict": "correct",
+   "note": "ss1,3 same as S5813 = ch. 517 of 2015 signed and effective 2015-12-03"
+  }
+ }
+}

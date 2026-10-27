@@ -32,14 +32,14 @@ ALIASES = {
 # group classes: (regex on the normalised phrase, canonical name, jurisdiction, org_type). Canonical names not in the NYS
 # crosswalk are created here as groups.
 GROUPS = [
-    (r"^(?:state )?(?:agency|agencies)$|^state (?:agency|agencies|departments?|officers?|entit(?:y|ies))\b|^all state agencies|^(?:state )?contracting agenc|^authorized state entit|^(?:state )?(?:agency|agencies) (?:and|or) (?:authorit|commission)", "State agencies", "state", "state agency group"),
-    (r"^state (?:authorit(?:y|ies)|financing agenc|commission)|^public (?:authorit(?:y|ies)|benefit corporations?)|^subsidiary public benefit|^(?:every )?member, officer or employee of a state authority|^(?:state authorities|public authorities)", "State authorities", "state", "state agency group"),
+    (r"^(?:state )?(?:agency|agencies)$|^state (?:agency|agencies|departments?|officers?|entit(?:y|ies))\b|^all state agencies|^(?:state )?contracting agenc|^authorized state entit|^(?:state )?(?:agency|agencies) (?:and|or) (?:authorit|commission)|^state (?:commissions?|councils?)\b", "State agencies", "state", "state agency group"),
+    (r"^state (?:authorit(?:y|ies)|financing agenc)|^public (?:authorit(?:y|ies)|benefit corporations?)|^subsidiary public benefit|^(?:every )?member, officer or employee of a state authority|^(?:state authorities|public authorities)", "State authorities", "state", "state agency group"),
     (r"^(?:state|local) (?:and|or) (?:local|state|municipal)\b|^all state and local|^state and local", "State and local bodies", "state", "state agency group"),
     (r"^(?:local )?(?:authorit(?:y|ies)|agenc(?:y|ies)|municipal commissions?|municipal corporations?)$|^local (?:authorit|agenc|offic)|^municipal commission", "Local agencies and authorities", "local", "local government group"),
     (r"^(?:municipalit(?:y|ies)|governmental (?:entit(?:y|ies)|agenc(?:y|ies))|public bod(?:y|ies)|governmental agencies|special assessing units?|cities that are special|special assessing)", "Municipalities (all)", "local", "local government group"),
     (r"^(?:county )?boards? of elections?|^(?:central )?boards? of inspectors|^(?:the )?inspectors?(?: of election)?$|^(?:clerks or )?inspectors|^each polling place|^any polling place|^election inspectors|^bipartisan team of inspectors|^boards of election", "Boards of elections", "local", "local government group"),
     (r"^social services (?:district|official)", "Social services districts", "local", "local government group"),
-    (r"^(?:the )?(?:courts?|court of this state|court having jurisdiction|courts having jurisdiction|new york state courts|judge|justice|any judge|trier of fact|unspecified court)\b|^(?:courts|court)$|^(?:a )?court\b", "Unified Court System", "state", "judiciary"),
+    (r"^(?:the )?(?:courts?|court of this state|court having jurisdiction|courts having jurisdiction|new york state courts|judge|justice(?! center)|any judge|trier of fact|unspecified court)\b|^(?:courts|court)$|^(?:a )?court\b", "Unified Court System", "state", "judiciary"),   # Oct 27 2026: 'justice center' is the Justice Center, not a court
     (r"^sheriffs?\b", "Sheriffs", "local", "local government group"),
     (r"^boards? of cooperative educational|^boces", "BOCES", "local", "local government group"),
     (r"^(?:public )?employers?$|^(?:such )?public employers?|^each participating employer|^participating employers?", "Public employers", "state", "state agency group"),
@@ -96,9 +96,22 @@ def strip_art(s):
     return re.sub(r"^(?:the|such|said|each|every|any|a|an)\s+", "", s)
 
 
+_SMALL = {"of", "the", "and", "in", "on", "for", "to", "a"}
+
+
+def _cap_part(p):
+    """Capitalise one hyphen part; O'Brien / D'Angelo capitalise after the apostrophe, Hell's does not."""
+    p = p[:1].upper() + p[1:]
+    return re.sub(r"^([A-Za-z])'([a-z])", lambda m: m.group(1) + "'" + m.group(2).upper(), p)
+
+
 def title_case(s):
-    small = {"of", "the", "and", "in", "on", "for", "to", "a"}
-    return " ".join(w if (i and w in small) else (w[:1].upper() + w[1:]) for i, w in enumerate(s.split()))
+    """Per-word title case including after hyphens and apostrophes (R3, Oct 27 2026); small words stay lower unless first."""
+    out = []
+    for i, w in enumerate(s.split()):
+        parts = w.split("-")
+        out.append("-".join(pt.lower() if ((i or j) and pt.lower() in _SMALL) else _cap_part(pt) for j, pt in enumerate(parts)))
+    return " ".join(out)
 
 
 def distinctive(s):
@@ -134,6 +147,9 @@ def resolve_unmatched(o, text, law, deps):
     eo, LOOKUP, BY_CANON = deps["eo"], deps["LOOKUP"], deps["BY_CANON"]
     NYC_LOOKUP, NYC_BY, NYC_MARKERS = deps["NYC_LOOKUP"], deps["NYC_BY"], deps["NYC_MARKERS"]
     named_locality = deps["named_locality"]
+    r27 = fix_20261027(o, text, LOOKUP, BY_CANON, eo.match_agency)          # R1, R2, R4 (Oct 27 2026)
+    if r27:
+        return r27
     raw = (o.get("actor_raw") or "").strip()
     cands = []
     for c in (o.get("actor_resolved_model"), o.get("agency"), raw):
@@ -509,3 +525,149 @@ def fix_court_actor(o, by_canon):
              agency_org_type=a.get("org_type") or "judiciary", agency_group=None, agency_unit=None, agency_source="court_actor")
     o.pop("actor_unresolved", None)
     return True
+
+
+# ---- Oct 27 2026 night (R1-R5) ----------------------------------------------------------------------------------------------
+OTB_REGIONS = ("Capital", "Catskill", "Nassau", "Suffolk", "Western")
+OTB_BRANCH = re.compile(r"off-?track betting corporation(?:s)? branch offices?|branch offices? of (?:the |each |every |any |an? )?(?:(?:capital|catskill|nassau|suffolk|western)(?: district| region)? )?(?:regional )?off-?track betting corporations?", re.I)
+OTB_GROUP = "Off-track betting corporations"
+
+
+def _set_group(o, group, jur, otype, unit, rule):
+    o.update(agency=group, agency_full=group, agency_matched=True, jurisdiction=jur, agency_org_type=otype,
+             agency_group=group if otype == "local government group" else None, agency_unit=unit, agency_source=rule)
+    o.pop("actor_unresolved", None)
+    return rule
+
+
+def fix_otb_branch(o):
+    """R1: 'every off-track betting corporation branch office' is the regional off-track betting corporation the text names
+    (Capital, Catskill, Nassau, Suffolk, Western), else the group; never a 'branch offices' body."""
+    raw = re.sub(r"\s+", " ", (o.get("actor_raw") or "").strip(" .,;:"))
+    if not OTB_BRANCH.search(raw):
+        return False
+    hay = " ".join(str(o.get(k) or "") for k in ("actor_raw", "quote", "action_summary", "actor_resolved_model"))
+    named = [r for r in OTB_REGIONS if re.search(r"\b%s(?:\s+(?:district|region))?(?:\s+regional)?\s+off-?track" % r, hay, re.I)]
+    unit = ("%s Regional Off-Track Betting Corporation" % named[0]) if len(named) == 1 else None
+    _set_group(o, OTB_GROUP, "local", "local government group", unit, "otb_branch")
+    return True
+
+
+STATE_COMMISSION = re.compile(r"^(?:the |such |said )?(state )?(?:commission|council) (?:of|on|for) (?!(?:the )?(?:cit(?:y|ies)|towns?|villages?|count(?:y|ies)|school|municipal|board of education)\b)(.+)$", re.I)
+
+
+def fix_state_commission(o, lookup, by_canon, match):
+    """R2: a named State commission or council resolves to its own crosswalk code; with no code it is State agencies (unit = its
+    name), never State authorities. A record already on a crosswalk code is never demoted to a group."""
+    raw = re.sub(r"\s+", " ", (o.get("actor_raw") or "").strip(" .,;:"))
+    m = STATE_COMMISSION.match(raw)
+    if not m:
+        return False
+    body = re.sub(r"^(?:the |such |said )", "", raw, flags=re.I)
+    plain = re.sub(r"^state\s+", "", body, flags=re.I)
+    canon = None
+    for v in (body, plain, "state " + plain):
+        canon, _ = match(v.lower(), lookup, by_canon)
+        if canon:
+            break
+    if canon:
+        if o.get("agency") == canon:
+            return False
+        a = by_canon[canon]
+        o.update(agency=canon, agency_full=a.get("full_name") or canon, agency_matched=True, jurisdiction=a.get("jurisdiction") or "state",
+                 agency_org_type=a.get("org_type"), agency_group=None, agency_unit=None, agency_source="state_commission")
+        o.pop("actor_unresolved", None)
+        return True
+    cur = o.get("agency")
+    if cur in by_canon and cur not in ("State authorities", "State agencies"):
+        return False
+    if cur == "State agencies" and o.get("agency_unit"):
+        return False
+    if not (m.group(1) or cur in (None, "Unspecified", "State authorities", "State agencies") or o.get("agency_source") in ("named_body", "group")):
+        return False
+    if o.get("jurisdiction") not in (None, "state"):
+        return False
+    _set_group(o, "State agencies", "state", "state agency group", title_case(plain), "state_commission")
+    return True
+
+
+LOC_UNIT = re.compile(r"^(City|Town|Village|County) of (.+)$")
+
+
+def locality_title(unit):
+    """R3: 'Village of Hastings-on-hudson' -> 'Village of Hastings-on-Hudson'; only 'City/Town/Village/County of X' units."""
+    m = LOC_UNIT.match(unit or "")
+    if not m:
+        return unit
+    return m.group(1) + " of " + title_case(m.group(2))
+
+
+def fix_unit_casing(o):
+    new = locality_title(o.get("agency_unit"))
+    if new and new != o.get("agency_unit"):
+        o["agency_unit"] = new
+        return True
+    return False
+
+
+OFFICER_OF_AGENCY = re.compile(r"^(?:the |such |said |each |every )?(?:chief executive officer|chief executive|head|commissioner|director|chair(?:man|person)?|executive director|secretary|president|chief administrative officer)s? of (?:such|that|the said|said|each such|any such|the same) (?:state )?(?:agency|department|authority|office|board|commission|division)(?:,? (?:agency|department|authority|office|board|commission|division))*(?:,? (?:or|and) (?:agency|department|authority|office|board|commission|division))?$", re.I)
+
+
+def fix_officer_phrase(o, text, lookup, by_canon):
+    """R4: 'the chief executive officer of that agency' is an officer phrase, not an agency name. It resolves to the one crosswalk
+    agency the sentence names (the quote), else State agencies."""
+    raw = re.sub(r"\s+", " ", (o.get("actor_raw") or "").strip(" .,;:"))
+    if not OFFICER_OF_AGENCY.match(raw):
+        return False
+    if o.get("agency") in by_canon and o.get("agency") not in ("State agencies", "State authorities"):
+        return False
+    quote = (o.get("quote") or "")
+    found = set()
+    for k, canon in lookup.items():
+        if len(k) >= 6 and canon in by_canon and re.search(r"\b%s\b" % re.escape(k), quote, re.I):
+            found.add(canon)
+    if len(found) == 1:
+        c = next(iter(found)); a = by_canon[c]
+        o.update(agency=c, agency_full=a.get("full_name") or c, agency_matched=True, jurisdiction=a.get("jurisdiction") or "state",
+                 agency_org_type=a.get("org_type"), agency_group=None, agency_unit=None, agency_source="officer_phrase")
+        o.pop("actor_unresolved", None)
+        return True
+    _set_group(o, "State agencies", "state", "state agency group", None, "officer_phrase")
+    return True
+
+
+SCHOOL_BOARD_ACTOR = re.compile(r"^(?:the |such |said |each )?(?:board of education|school board)(?:\s+of\s+(?:the\s+)?(?:city school district|city)(?:\s+of\s+(?:the\s+)?(?:city of\s+)?([A-Za-z][A-Za-z .'-]*))?)?$", re.I)
+
+
+def fix_city_school_board(o):
+    """R5: the board of education / school board of a named city is School districts with unit '<City> City School District',
+    never the city (the Oct 19 U8 rule covers 'city school district of <city>' wording only). New York City is NYCPS (M33)."""
+    if o.get("agency") not in ("Cities", "Towns", "Villages", "Counties") and not (o.get("agency_unit") or "").startswith("City of"):
+        return False
+    m = SCHOOL_BOARD_ACTOR.match(re.sub(r"\s+", " ", (o.get("actor_raw") or "").strip(" .,;:")))
+    if not m:
+        return False
+    um = re.match(r"^City of (.+)$", o.get("agency_unit") or "")
+    city = title_case(m.group(1).strip()) if m.group(1) else (um.group(1) if um else None)
+    if not city or re.fullmatch(r"(?i)(?:the )?new york(?: city)?", city) or len(city.split()) > 3 or any(w.lower() in CSD_NOT_CITY for w in city.split()):
+        return False
+    if um and um.group(1).lower() != city.lower():
+        return False
+    _set_group(o, "School districts", "local", "local government group", city + " City School District", "city_school_board")
+    return True
+
+
+def fix_20261027(o, text, lookup, by_canon, match):
+    """One entry point for R1-R5 (and R3 unit casing). `match` is eo.match_agency. Returns the rule name or None."""
+    rule = None
+    if fix_otb_branch(o):
+        rule = "r1_otb_branch"
+    elif fix_state_commission(o, lookup, by_canon, match):
+        rule = "r2_state_commission"
+    elif fix_officer_phrase(o, text, lookup, by_canon):
+        rule = "r4_officer_phrase"
+    elif fix_city_school_board(o):
+        rule = "r5_city_school_board"
+    if fix_unit_casing(o) and not rule:
+        rule = "r3_unit_casing"
+    return rule

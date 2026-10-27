@@ -36,6 +36,7 @@ ed.APPLY_V1B = False
 
 # X2a: 'consent of the mayor and the comptroller of such city' makes the comptroller an approver
 o, _, _ = stored("2013-A7175-05")
+o["actor_raw"] = "the comptroller of the city of New York"      # the Oct 27 re-ask changed the stored actor to the city; the rule is tested on the comptroller reading
 check("X2a consent-of approver flagged", ed.approver_only_actor(o))
 check("X2a actor that also acts is not flagged", not ed.approver_only_actor({"actor_raw": "the comptroller", "quote": "The comptroller shall audit the sale with the consent of the mayor"}))
 

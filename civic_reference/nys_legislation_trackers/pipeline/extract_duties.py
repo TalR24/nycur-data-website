@@ -198,8 +198,7 @@ ACTOR_MODEL = {}
 
 
 def _title(s):
-    small = {"of", "the", "and", "in", "on", "for"}
-    return " ".join(w if (i and w in small) else w[:1].upper() + w[1:] for i, w in enumerate(s.split()))
+    return agency_resolve_nys.title_case(s)
 
 
 LOCALITY = [
@@ -1121,6 +1120,16 @@ REVIEWED_AS_IF = re.compile(r"shall\s+be\s+reviewed\s+as\s+if\s+(?:it|such\s+app
 
 _PRON = r"(?:his|her|hers|she|he|himself|herself|him|his or her|her or his|he or she|she or he|himself or herself|herself or himself|him or her|her or him)"
 GENDER_EDIT = re.compile(r"^[\s,;]*(?:(?:or|and|/)?\s*%s\b[\s,;]*)+$" % _PRON, re.I)
+# G1 (Oct 27 2026): provisos inside a section that grants a local tax power are conditions of the power, not records
+TAX_POWER_GRANT = re.compile(r"\bis\s+hereby\s+authorized\s+and\s+empowered\s+to\s+adopt\s+and\s+amend\s+local\s+laws?\s+imposing\b[^.]{0,200}\btax\b|\bare\s+hereby\s+authorized\s+and\s+empowered\s+to\s+adopt\s+and\s+amend\s+local\s+laws?\s+imposing\b[^.]{0,200}\btax\b", re.I)
+TAX_PROVISO = re.compile(r"shall\s+be\s+joined\s+as\s+a\s+party\s+in\s+any\s+action\s+or\s+proceeding\s+brought\s+to\s+collect\s+the\s+tax"
+                         r"|each\s+enactment\s+of\s+such\s+a\s+local\s+law\s+may\s+provide\s+for\s+the\s+imposition\s+of\s+[^.]{0,80}?tax\s+for\s+a\s+period\s+of\s+time\s+no\s+longer\s+than\s+three\s+years", re.I)
+# G2 (Oct 27 2026): '[tax commission] {{commissioner}}', '[it] {{he or she}}': a noun-phrase or word swap with no modal, number, date or place is reprinted text
+NAME_SWAP_PAIR = re.compile(r"\[([^\[\]]{1,80})\]\s*\{\{([^{}]{1,80})\}\}")
+NAME_SWAP_BAD = re.compile(r"\d|\b(?:shall|must|may|can|will|required|authorized|empowered|directed|power|duty|responsible|within|after|before|until|by|from|county|city|town|village|state|january|february|march|april|june|july|august|september|october|november|december|year|years|day|days|month|months|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|\w+teen|\w+ty|hundred|thousand|million|first|second|third|fourth|fifth|\w+th)\b", re.I)
+NAME_SWAP_EDGE = {"in", "for", "and", "or", "to", "of", "with", "on", "at", "as", "that", "which", "but", "if", "than", "until"}
+NAME_SWAP_NEW = re.compile(r"^(?:(?:the|such|said)\s+)?(?:(?:[\w'-]+\s+){0,2}(?:commissioner|department|office|division|board|commission|chair|chairperson|chairman|superintendent|director|officer|authority|agency|bureau|council|committee)s?|it|its|they|them|their|%s)$" % _PRON, re.I)
+NAME_SWAP_CITE = re.compile(r"\b(?:subdivisions?|paragraphs?|subparagraphs?|sections?|clauses?|subclauses?)\s+$", re.I)
 
 
 def existing_actor_only(o, span, text):
@@ -1195,6 +1204,20 @@ def v_quote_rule(q):
     return None
 
 
+DEFINITION_PARA = re.compile(r"^\W*(?:\d+\W{0,3})?(?:\[?\d+\]\s*)?(?:\{\{\d+\}\}\W*)?(?:the\s+term\s+)?[\"“'][^\"”']{1,90}[\"”']\s+(?:shall\s+mean|means)\b", re.I)
+
+
+def inside_definition(q, span, text):
+    """Y1 (Oct 27 2026): the quote is a clause inside a definition paragraph ('6. "bus rapid transit program" shall mean up to ten routes designated by
+    the department ...'): the designating verb is part of what the defined term covers, not a power or duty. A quote that states its own modal stays."""
+    if re.search(r"\b(?:shall|must|may)\b|\brules?\b|\bregulations?\b", q):          # a definition delegated to rules is a rulemaking power (2009-A6772-01)
+        return False
+    a = text.rfind("\n", 0, span[0]) + 1
+    head = text[a:span[0]]
+    m = DEFINITION_PARA.match(head + q)
+    return bool(m) and not re.search(r"[.;:]\s", re.sub(r"\[[^\[\]]*\]?", " ", head[m.end():]))          # only within the definition's first sentence
+
+
 def v_item_rule(o, span, text, hdr, sec):
     """V1 / V2 for a list item whose duty sits in a lead-in: (rule, reason) or None."""
     q = o.get("quote") or ""
@@ -1209,6 +1232,21 @@ def v_item_rule(o, span, text, hdr, sec):
     if ((APPLY_V1 and CONTENT_LEAD.search(tail)) or (APPLY_V1B and CRITERIA_LEAD.search(tail) and not CRITERIA_ITEM_MODAL.search(q))) and not CONTENT_LEAD_NOT.search(tail[-120:]):
         return "sub_item_of_parent", "a list item under a lead-in that describes the content of one deliverable; part of the parent record, not a record"
     return None
+
+
+def reprinted_name_swap(sent):
+    """G2: True when every braced block in the sentence replaces a bracketed deletion right before it and the replacement is a bare word or
+    office or body name or pronoun (no modal, digit, date, number word or place); verb swaps and cross-reference renumbering stay records."""
+    n = sent.count("{{")
+    pairs = list(NAME_SWAP_PAIR.finditer(sent))
+    if not n or len(pairs) != n:
+        return False
+    for m in pairs:
+        old, new = m.group(1), m.group(2)
+        nw = re.sub(r"^\W+|\W+$", "", new)
+        if len(old.split()) > 4 or NAME_SWAP_BAD.search(new) or NAME_SWAP_BAD.search(old) or not NAME_SWAP_NEW.match(nw):
+            return False
+    return True
 
 
 def gate_record(o, text, has_markers):
@@ -1233,6 +1271,8 @@ def gate_record(o, text, has_markers):
     if vq:
         return vq
     span = locate_span(q, text)
+    if span and inside_definition(q, span, text):
+        return "definition", "a clause inside a definition paragraph ('shall mean ...'), not a duty or power"
     # 3. no-record classes
     if STRONG_EXEMPT_RE.search(q) or (EXEMPT_RE.search(q) and not MANDATORY.search(EXEMPT_RE.sub(" ", q))):
         return "exemption_or_applicability", "exemption, residency or refund-review applicability clause, binds no government actor"
@@ -1241,6 +1281,13 @@ def gate_record(o, text, has_markers):
         blocks0 = [m.group(1) for m in re.finditer(r"\{\{(.*?)\}\}", sent0, re.S)]
         if blocks0 and all(GENDER_EDIT.match(b) for b in blocks0):
             return "reprinted_gender_neutral", "the sentence is existing text; the only new matter is a gender-neutral pronoun edit"
+    if span and has_markers:          # G2
+        if reprinted_name_swap(context_sentence(span, text)[0]):
+            return "reprinted_name_swap", "the sentence is existing text; the only new matter is a word or office name replacing a deleted one"
+    if span and TAX_PROVISO.search(q):          # G1
+        hdr1, sec1 = section_of_span(span, text)
+        if sec1 and TAX_POWER_GRANT.search(re.sub(r"\s+", " ", re.sub(r"\{\{|\}\}", "", sec1))):
+            return "condition_of_tax_power", "a proviso inside the section that grants a local tax power (joinder of the fiscal officer, three-year limit): a condition of the power, not a record"
     if APPLY_N5 and span and has_markers and existing_actor_only(o, span, text):
         return "reprinted_existing_actor", "the actor stood in the sentence before the amendment; the braces only add a second actor, whose own record carries the new duty"
     if span:
@@ -2313,6 +2360,9 @@ def run_agency_fixes(o, text, law, _model_pass=False):
         bump("u8_city_school_district")
     if agency_resolve_nys.fix_court_actor(o, BY_CANON):      # U8
         bump("u8_court_actor")
+    r27 = agency_resolve_nys.fix_20261027(o, text, LOOKUP, BY_CANON, eo.match_agency)      # R1, R2, R4 (Oct 27 2026)
+    if r27:
+        bump(r27)
     if agency_resolve_nys.fix_title_authority(o, (law or {}).get("title"), LOOKUP, BY_CANON):      # U3
         bump("u3_title_authority")
     if agency_resolve_nys.fix_ida_agency(o, text, (law or {}).get("title"), BY_CANON):      # T1
@@ -2498,8 +2548,33 @@ def sunset_holder(*texts):
     return next(iter(found.values())) if len(found) == 1 else None
 
 
-def sunset_extension_sentences(text):
-    """[(post-amendment sentence, 'Chapter N of the Laws of YYYY, § M')] for each earlier-chapter act-clause section the law re-enacts with braced new matter."""
+PART_BOUNDARY = re.compile(r"(?m)^[ \t]*(?:PART\s+[A-Z]{1,2}(?:-\d+)?\b|Part\s+[A-Z]{1,2}(?:-\d+)?\s*$)|\{\{Part\}\}\s+[A-Z]{1,2}(?:-\d+)?\b|(?m:^)[ \t]*Section\s+1\.\s")
+
+
+def part_starts(text):
+    """G3: character offsets where a Part of a multi-Part act begins ('PART B' / 'Part B' headings, an inserted '{{Part}} B', or a numbering
+    restart at 'Section 1.'); [] when the act has fewer than two Parts."""
+    st = []
+    for x in sorted({m.start() for m in PART_BOUNDARY.finditer(text)}):
+        if not st or x - st[-1] > 40:          # '{{Part}} D' then 'Section 1.' is one boundary
+            st.append(x)
+    return st if len(st) >= 2 else []
+
+
+def part_title(text, pos):
+    """G3: the Part heading plus the Part's own first section title (its text up to 'is amended'), for the Part holding offset pos."""
+    st = part_starts(text)
+    if not st:
+        return None
+    i = max([j for j, x in enumerate(st) if x <= pos] or [0])
+    seg = text[st[i]:st[i + 1] if i + 1 < len(st) else len(text)]
+    seg = re.sub(r"^\s*(?:\{\{Part\}\}\s+[A-Z]{1,2}\b|(?:PART|Part)\s+[A-Z]{1,2}(?:-\d+)?)", "", seg)
+    m = re.search(r"\b(?:is|are)\s+(?:hereby\s+)?amended\b|\bto\s+read\s+as\s+follows", seg)
+    return re.sub(r"\{\{|\}\}", "", seg[:min(m.start() if m else 400, 400)])
+
+
+def sunset_extension_sentences_pos(text):
+    """[(post-amendment sentence, citation, offset of its braced date)]; each sentence is verbatim, trimmed to at most 60 words around the braced date (G3)."""
     out = []
     for m in SUNSET_AMEND.finditer(text):
         body = m.group(4)
@@ -2507,30 +2582,53 @@ def sunset_extension_sentences(text):
             continue
         a = m.start(4) + body.index("{{")
         sent = context_sentence((a, a + 2), text)[0]
-        q = re.sub(r"\s+", " ", re.sub(r"\{\{|\}\}", "", re.sub(r"\[[^\[\]]*\]", "", sent))).strip()
+        q = re.sub(r"\[[^\[\]]*\]", "", sent)
+        q = re.sub(r"\{\{", "\x01", q); q = re.sub(r"\}\}", "\x02", q)
+        q = re.sub(r"\s+", " ", q).strip()
         q = re.sub(r"^(?:§|Section)\s*\d+\.\s*", "", q).strip()
         q = re.sub(r"^\(?\d+[.)]\s+(?=(?:this act|sections?\b))", "", q, flags=re.I).strip()
         q = re.sub(r"\s+([,.;])", r"\1", q)
+        if "\x01" in q and "\x02" in q:
+            ca, cb = q.index("\x01"), q.index("\x02") - 1
+            q = q.replace("\x01", "").replace("\x02", "")
+            q = trim_to_window(q, ca, cb)
+        q = q.replace("\x01", "").replace("\x02", "")
         if q:
-            out.append((q, "Chapter %s of the Laws of %s, § %s" % (m.group(2), m.group(3), m.group(1))))
+            out.append((q, "Chapter %s of the Laws of %s, § %s" % (m.group(2), m.group(3), m.group(1)), a))
     return out
+
+
+def sunset_extension_sentences(text):
+    """[(post-amendment sentence, 'Chapter N of the Laws of YYYY, § M')] for each earlier-chapter act-clause section the law re-enacts with braced new matter."""
+    return [(q, c) for q, c, _ in sunset_extension_sentences_pos(text)]
 
 
 def sunset_extension_records(law, text, eff, existing, res):
     """U1: (records, unnamed) where records are new power records for the sunset sentences no stored record covers, and unnamed is
     {sentence, title} for the first such sentence when the law's title names no single government body."""
-    sents = [(q, c) for q, c in sunset_extension_sentences(text)
-             if not any(overlap(q, r.get("quote") or "") >= 0.6 for r in existing)]
+    sents, unnamed = [], None
+    law_holder = sunset_holder(law.get("title"), law.get("act_clause"))
+    multi_part = bool(part_starts(text))
+    for q, c, pos in sunset_extension_sentences_pos(text):
+        if any(overlap(q, r.get("quote") or "") >= 0.6 for r in existing):
+            continue
+        if multi_part:          # G3: the holder is the Part's own, never the whole act's title
+            holder = sunset_holder(part_title(text, pos))
+            if holder:
+                bump("g3_holder_from_part")
+        else:
+            holder = law_holder
+        if holder:
+            sents.append((q, c, holder))
+        elif unnamed is None:
+            bump("u1_sunset_extension_unnamed")
+            unnamed = {"sentence": q, "title": (part_title(text, pos) if multi_part else None) or law.get("title") or ""}
     if not sents:
-        return [], None
-    holder = sunset_holder(law.get("title"), law.get("act_clause"))
-    if not holder:
-        bump("u1_sunset_extension_unnamed")
-        return [], {"sentence": sents[0][0], "title": law.get("title") or ""}
+        return [], unnamed
     ids = [int(m.group(1)) for o in res.get("obligations", []) for m in [re.search(r"-(\d+)$", o.get("obligation_id") or "")] if m]
     nxt = max(ids or [0]) + 1
     out = []
-    for i, (q, cit) in enumerate(sents):
+    for i, (q, cit, holder) in enumerate(sents):
         o = {"obligation_id": "%s-%02d" % (law["key"], nxt + i), "matter_id": law["key"], "actor_raw": holder, "model_unit": None,
              "agency": holder, "agency_full": holder, "agency_matched": False,          # as the model writes it: the chain below resolves it
              "action_summary": "Continue the authority granted by an earlier chapter, now running to the date in: " + q[:200],
@@ -2551,7 +2649,7 @@ def sunset_extension_records(law, text, eff, existing, res):
                     "effective_date": sec_date, "effective_rule": eff["rule"] if sec_src == "law" else ("open_on_expiration_of_other_law" if sec_src == "open" else "section_" + sec_src),
                     "law_expires_date": eff["expires_date"], "openleg_url": law["openleg_url"], "extraction_model": res.get("model")})
         bump("u1_sunset_extension_built")
-    return out, None
+    return out, unnamed
 
 
 def build_records(laws):

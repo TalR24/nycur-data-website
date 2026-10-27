@@ -1,0 +1,1163 @@
+{
+ "_scoring": {
+  "auditor": "B",
+  "night": "20261027",
+  "laws": 11,
+  "stored_records": 105,
+  "correct": 67,
+  "wrong_fields": 16,
+  "not_real": 22,
+  "missed": 5,
+  "precision_strict": "67/105 = 63.8% (Wilson 95% 54.3-72.4)",
+  "precision_real": "83/105 = 79.0% (Wilson 95% 70.3-85.7)",
+  "recall": "81/86 = 94.2% (Wilson 95% 87.1-97.5)",
+  "effective_dates": "11/11 correct",
+  "calibration_laws": [
+   "2015-S6849",
+   "2009-A4687"
+  ],
+  "scope_note": "Totals cover the 11 sample laws plus the 2 calibration laws (13 laws). Blind items in 2015-A209 counted once per named locality (7 provisions x 8 localities). Calibration effective dates 2/2 correct.",
+  "split": {
+   "reask_laws": "2015-A209, 2009-A10875, 2009-A10718, 2009-A11515 (+ calibration 2009-A4687, records carry reasked true): precision_strict 58/91 = 63.7% (53.5-72.9), precision_real 71/91 = 78.0% (68.5-85.3), recall 70/74 = 94.6% (86.9-97.9)",
+   "first_answer_laws": "2017-S7174, 2017-S6724, 2017-S7305, 2017-S6756, 2017-S5723, 2017-S7219, 2017-S5570 (+ calibration 2015-S6849): precision_strict 9/14 = 64.3% (38.8-83.7), precision_real 12/14 = 85.7% (60.1-96.0), recall 11/12 = 91.7% (64.6-98.5)"
+  },
+  "blind_list_file": "/tmp/auditB_20261027/blind.md"
+ },
+ "_classes": [
+  {
+   "name": "Conditions/limits of the local-law tax power stored as records (litigation joinder proviso; 3-year duration limit on each local law)",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2015-A209-04",
+    "2015-A209-09",
+    "2015-A209-13",
+    "2015-A209-18",
+    "2015-A209-22",
+    "2015-A209-27",
+    "2015-A209-31",
+    "2015-A209-36",
+    "2015-A209-40",
+    "2015-A209-45",
+    "2015-A209-49",
+    "2015-A209-54",
+    "2015-A209-58",
+    "2015-A209-63",
+    "2015-A209-67",
+    "2015-A209-72"
+   ],
+   "rule": "re.search(r'shall be joined as a party|for a period of time no longer than', quote, re.I)",
+   "db_matches": 24,
+   "db_examples": [
+    "2015-A2008-04",
+    "2015-A2008-09",
+    "2009-A227-04"
+   ],
+   "needs_judgment": false,
+   "note": "10 joinder + 14 duration-limit matches. Joinder: 'the commissioner of finance ... shall be joined as a party in any action or proceeding brought to collect the tax by the owner' binds the private plaintiff, not the officer."
+  },
+  {
+   "name": "Title or pronoun substitution only ('[tax commission] {{commissioner}}', '[it] {{he or she}}') stored as an extends_existing record",
+   "criteria": [
+    "1",
+    "7"
+   ],
+   "instances": [
+    "2009-A11515-10",
+    "2009-A11515-11"
+   ],
+   "rule": "map quote into packet post-amendment text (brackets removed, whitespace collapsed, brace mask kept); flag when every new-matter word in the quote span is in {commissioner, he, or, she, his, her, him, chairperson, chair, the, such, department, superintendent, person, individual} and at least one of he/she/commissioner/chairperson; script /tmp/auditB_20261027/s/c2b.py",
+   "db_matches": 12,
+   "db_examples": [
+    "2009-A7330-13",
+    "2017-A380-03",
+    "2021-S7111-19"
+   ],
+   "needs_judgment": false,
+   "note": "Recurrence of the Oct 17 gender-word-only reprint class, extended to office-name substitutions; the reprinted_gender_neutral gate did not catch these."
+  },
+  {
+   "name": "sunset_extension_from_title holder taken from another Part of an omnibus act clause, quote not trimmed to 60 words",
+   "criteria": [
+    "1",
+    "2",
+    "3"
+   ],
+   "instances": [
+    "2009-A11515-15",
+    "2009-A11515-16"
+   ],
+   "rule": "record_source=='sunset_extension_from_title' and re.search(r'\\(Part [A-Z]', signed.act_clause)  [omnibus]; companion: record_source=='sunset_extension_from_title' and len(quote.split())>60",
+   "db_matches": 2,
+   "db_examples": [
+    "2009-A11515-15",
+    "2009-A11515-16"
+   ],
+   "needs_judgment": false,
+   "note": "Holder 'the city of New York' comes from Part D's title words ('tax on tobacco products, city of New York'); the sentences are Part C racing-law sunsets. Companion rule (>60 words) matches 23 records, e.g. 2009-A7328-04."
+  },
+  {
+   "name": "OTB holder stored under an ad hoc label 'Off-track Betting Corporation Branch Offices' instead of the regional off-track betting corporations",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2009-A11515-01",
+    "2009-A11515-02",
+    "2009-A11515-03"
+   ],
+   "rule": "'Branch Office' in agency",
+   "db_matches": 3,
+   "db_examples": [
+    "2009-A11515-01",
+    "2009-A11515-02",
+    "2009-A11515-03"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "One-time installation duty with no stated deadline stored as deadline none (should be on_effective_date)",
+   "criteria": [
+    "5"
+   ],
+   "instances": [
+    "2017-S5570-03",
+    "2017-S5570-04",
+    "2017-S5570-05"
+   ],
+   "rule": "file duties and deadline_kind=='none' and deliverable_type=='signage or installation' and recurrence=='one-time' (misses 'installed and maintained' records stored ongoing, e.g. 2017-S5570-03)",
+   "db_matches": 4,
+   "db_examples": [
+    "2017-S5570-01",
+    "2017-S5570-02",
+    "2017-S5570-04"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "Named State commission filed under the group 'State authorities'",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2017-S5570-05"
+   ],
+   "rule": "agency=='State authorities' and re.search(r'commission (on|for|of) ', actor_raw, re.I)",
+   "db_matches": 2,
+   "db_examples": [
+    "2017-S5570-01",
+    "2017-S5570-05"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "Locality name casing broken after a hyphen ('Hastings-on-hudson')",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2015-A209-55",
+    "2015-A209-56",
+    "2015-A209-57",
+    "2015-A209-59",
+    "2015-A209-60",
+    "2015-A209-61",
+    "2015-A209-62"
+   ],
+   "rule": "re.search(r'-on-[a-z]|-upon-[a-z]', agency_unit)",
+   "db_matches": 9,
+   "db_examples": [
+    "2015-A209-58",
+    "2015-A209-60",
+    "2015-A209-61"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "Stated future appointment date ('on and after July first in the year next succeeding ...') stored as on_effective_date",
+   "criteria": [
+    "5"
+   ],
+   "instances": [
+    "2009-A4687-01"
+   ],
+   "rule": "deadline_kind=='on_effective_date' and re.search(r'on and after|next succeeding|no later than [A-Za-z]+ (first|\\d)|on or before [A-Za-z]+ (first|\\d)', quote, re.I)",
+   "db_matches": 2,
+   "db_examples": [
+    "2009-A4687-01",
+    "2011-A8068-01"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "Salary entitlement of board members stored as a duty (known class, recurrence)",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2009-A4687-02"
+   ],
+   "rule": "re.search(r'^(the )?(chairman|chairperson|chair|members?)\\b[^.]{0,140}shall receive an? (annual )?(salary|stipend)', quote, re.I)",
+   "db_matches": 1,
+   "db_examples": [
+    "2009-A4687-02"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "Missed earlier-chapter sunset extensions with no holder in the sentence (Oct 19 rule) and a missed narrowed duty",
+   "criteria": [
+    "1",
+    "7"
+   ],
+   "instances": [
+    "2009-A11515 Part B s1",
+    "2009-A11515 Part C s4",
+    "2009-A11515 Part C s11",
+    "2017-S7305 s1"
+   ],
+   "rule": "needs_judgment",
+   "db_matches": 0,
+   "db_examples": [],
+   "needs_judgment": true,
+   "laws": [
+    "2009-A11515",
+    "2017-S7305"
+   ]
+  }
+ ],
+ "2015-A209": {
+  "records": {
+   "2015-A209-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-A209-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-A209-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-A209-04": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "note": "Proviso binds the private plaintiff: 'the commissioner of finance or other fiscal officers ... shall be joined as a party in any action or proceeding brought to collect the tax by the owner'."
+   },
+   "2015-A209-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-A209-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-A209-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-A209-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-A209-09": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "note": "Duration limit on the s1202-dd(1) power, a cap/condition: 'each enactment of such a local law may provide for the imposition of a hotel or motel tax for a period of time no longer than three years'."
+   },
+   "2015-A209-10": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-A209-11": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-A209-12": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-A209-13": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "note": "Proviso binds the private plaintiff: 'the commissioner of finance or other fiscal officers ... shall be joined as a party in any action or proceeding brought to collect the tax by the owner'."
+   },
+   "2015-A209-14": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-A209-15": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-A209-16": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-A209-17": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-A209-18": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "note": "Duration limit on the s1202-dd(1) power, a cap/condition: 'each enactment of such a local law may provide for the imposition of a hotel or motel tax for a period of time no longer than three years'."
+   },
+   "2015-A209-19": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-A209-20": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-A209-21": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-A209-22": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "note": "Proviso binds the private plaintiff: 'the commissioner of finance or other fiscal officers ... shall be joined as a party in any action or proceeding brought to collect the tax by the owner'."
+   },
+   "2015-A209-23": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-A209-24": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-A209-25": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-A209-26": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-A209-27": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "note": "Duration limit on the s1202-dd(1) power, a cap/condition: 'each enactment of such a local law may provide for the imposition of a hotel or motel tax for a period of time no longer than three years'."
+   },
+   "2015-A209-28": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-A209-29": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-A209-30": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-A209-31": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "note": "Proviso binds the private plaintiff: 'the commissioner of finance or other fiscal officers ... shall be joined as a party in any action or proceeding brought to collect the tax by the owner'."
+   },
+   "2015-A209-32": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-A209-33": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-A209-34": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-A209-35": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-A209-36": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "note": "Duration limit on the s1202-dd(1) power, a cap/condition: 'each enactment of such a local law may provide for the imposition of a hotel or motel tax for a period of time no longer than three years'."
+   },
+   "2015-A209-37": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-A209-38": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-A209-39": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-A209-40": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "note": "Proviso binds the private plaintiff: 'the commissioner of finance or other fiscal officers ... shall be joined as a party in any action or proceeding brought to collect the tax by the owner'."
+   },
+   "2015-A209-41": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-A209-42": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-A209-43": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-A209-44": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-A209-45": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "note": "Duration limit on the s1202-dd(1) power, a cap/condition: 'each enactment of such a local law may provide for the imposition of a hotel or motel tax for a period of time no longer than three years'."
+   },
+   "2015-A209-46": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-A209-47": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-A209-48": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-A209-49": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "note": "Proviso binds the private plaintiff: 'the commissioner of finance or other fiscal officers ... shall be joined as a party in any action or proceeding brought to collect the tax by the owner'."
+   },
+   "2015-A209-50": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-A209-51": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-A209-52": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-A209-53": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-A209-54": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "note": "Duration limit on the s1202-dd(1) power, a cap/condition: 'each enactment of such a local law may provide for the imposition of a hotel or motel tax for a period of time no longer than three years'."
+   },
+   "2015-A209-55": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency_unit": "Village of Hastings-on-Hudson"
+    },
+    "note": "Law names 'hastings-on-hudson'; stored unit 'Village of Hastings-on-hudson' miscases Hudson."
+   },
+   "2015-A209-56": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency_unit": "Village of Hastings-on-Hudson"
+    },
+    "note": "Law names 'hastings-on-hudson'; stored unit 'Village of Hastings-on-hudson' miscases Hudson."
+   },
+   "2015-A209-57": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency_unit": "Village of Hastings-on-Hudson"
+    },
+    "note": "Law names 'hastings-on-hudson'; stored unit 'Village of Hastings-on-hudson' miscases Hudson."
+   },
+   "2015-A209-58": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "note": "Proviso binds the private plaintiff: 'the commissioner of finance or other fiscal officers ... shall be joined as a party in any action or proceeding brought to collect the tax by the owner'."
+   },
+   "2015-A209-59": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency_unit": "Village of Hastings-on-Hudson"
+    },
+    "note": "Law names 'hastings-on-hudson'; stored unit 'Village of Hastings-on-hudson' miscases Hudson."
+   },
+   "2015-A209-60": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency_unit": "Village of Hastings-on-Hudson"
+    },
+    "note": "Law names 'hastings-on-hudson'; stored unit 'Village of Hastings-on-hudson' miscases Hudson."
+   },
+   "2015-A209-61": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency_unit": "Village of Hastings-on-Hudson"
+    },
+    "note": "Law names 'hastings-on-hudson'; stored unit 'Village of Hastings-on-hudson' miscases Hudson."
+   },
+   "2015-A209-62": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency_unit": "Village of Hastings-on-Hudson"
+    },
+    "note": "Law names 'hastings-on-hudson'; stored unit 'Village of Hastings-on-hudson' miscases Hudson."
+   },
+   "2015-A209-63": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "note": "Duration limit on the s1202-dd(1) power, a cap/condition: 'each enactment of such a local law may provide for the imposition of a hotel or motel tax for a period of time no longer than three years'."
+   },
+   "2015-A209-64": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-A209-65": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-A209-66": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-A209-67": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "note": "Proviso binds the private plaintiff: 'the commissioner of finance or other fiscal officers ... shall be joined as a party in any action or proceeding brought to collect the tax by the owner'."
+   },
+   "2015-A209-68": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-A209-69": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-A209-70": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-A209-71": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-A209-72": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "note": "Duration limit on the s1202-dd(1) power, a cap/condition: 'each enactment of such a local law may provide for the imposition of a hotel or motel tax for a period of time no longer than three years'."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2016-12-31",
+   "computed": "2016-12-31",
+   "verdict": "correct",
+   "note": "immediately; expires 2019-09-01 stored"
+  }
+ },
+ "2009-A10875": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2010-08-13",
+   "computed": "2010-08-13",
+   "verdict": "correct",
+   "note": "Only change is the RPTL 487 exemption window '[eleven] {{fifteen.}}'; exemption, no holder (crit 1); zero records agreed."
+  }
+ },
+ "2017-S7174": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2018-12-28",
+   "computed": "2018-12-28",
+   "verdict": "correct",
+   "note": "Only new matter adds lakes to a definition list; no actor; zero records agreed."
+  }
+ },
+ "2017-S6724": {
+  "records": {
+   "2017-S6724-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2017-S6724-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2017-09-13",
+   "computed": "2017-09-13",
+   "verdict": "correct",
+   "note": ""
+  }
+ },
+ "2017-S7305": {
+  "records": {},
+  "missed": [
+   {
+    "blind": "b1",
+    "quote": "the department shall prioritize such inmate's placement into the assigned program.",
+    "kind": "duty",
+    "agency": "DOCCS",
+    "dropped_by": null,
+    "note": "New matter '{{and such program remains incomplete by no fault of the inmate,}}' and deletion of '[immediate]' change an existing DOCCS duty in Executive Law 259-l(1); record with extends_existing true, deadline none. No stored or dropped record."
+   }
+  ],
+  "effective_date": {
+   "stored": "2017-12-18",
+   "computed": "2017-12-18",
+   "verdict": "correct",
+   "note": "same as chapter 476 of 2017 (A6353, signed 2017-12-18, immediately); this law signed 2018-04-18, so the referenced date stands"
+  }
+ },
+ "2009-A10718": {
+  "records": {
+   "2009-A10718-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2010-09-17",
+   "computed": "2010-09-17",
+   "verdict": "correct",
+   "note": ""
+  }
+ },
+ "2009-A11515": {
+  "records": {
+   "2009-A11515-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-A11515-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-A11515-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-A11515-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-A11515-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-A11515-12": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-A11515-13": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-A11515-14": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2009-A11515-09": {
+    "verdict": "wrong",
+    "criteria": [
+     "6"
+    ],
+    "fields": {
+     "recurrence": "quarterly"
+    },
+    "note": "'The Indian tax exemption coupons shall be provided to Such Indian nations or tribes on a quarterly basis'."
+   },
+   "2009-A11515-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Regional off-track betting corporations"
+    },
+    "note": "RPWBL 1016 sunset to 2011/2010; holder is 'every off-track betting corporation branch office' of the regional OTB corporations; 'Off-track Betting Corporation Branch Offices' is not a body."
+   },
+   "2009-A11515-02": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Regional off-track betting corporations"
+    },
+    "note": "RPWBL 1018 sunset to 2011/2010; holder is 'every off-track betting corporation branch office' of the regional OTB corporations; 'Off-track Betting Corporation Branch Offices' is not a body."
+   },
+   "2009-A11515-03": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Regional off-track betting corporations"
+    },
+    "note": "RPWBL 1014 sunset to 2011/2010; holder is 'every off-track betting corporation branch office' of the regional OTB corporations; 'Off-track Betting Corporation Branch Offices' is not a body."
+   },
+   "2009-A11515-16": {
+    "verdict": "wrong",
+    "criteria": [
+     "2",
+     "3"
+    ],
+    "fields": {
+     "agency": "Regional off-track betting corporations (RPWBL 1013 simulcasting; unverified)",
+     "quote": "section 1013 of the racing, pari-mutuel wagering and breeding law, as added by section thirty-eight of this act, shall expire and be deemed repealed on July 1, 2011"
+    },
+    "note": "Part C sunset of RPWBL 1013 to 'July 1, [2010] {{2011}}'; holder 'the city of New York' taken from Part D title words; quote 90 words (>60)."
+   },
+   "2009-A11515-10": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "7"
+    ],
+    "fields": {},
+    "note": "Only new matter is '[tax commission] {{commissioner}}' and '[it] {{he or she}}'; the stamp power is pre-existing, nothing widened."
+   },
+   "2009-A11515-11": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "7"
+    ],
+    "fields": {},
+    "note": "'if the [tax commission] {{commissioner}} so prescribes': office-name substitution only."
+   },
+   "2009-A11515-15": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "2",
+     "3"
+    ],
+    "fields": {},
+    "note": "'the pari-mutuel tax reductions in section six of this act shall expire and be deemed repealed on July 1, [2010] {{2011}}' extends a tax reduction for racing corporations (entitlement); holder 'the city of New York' is from Part D's title; quote 65 words and ends in page header 'S.'."
+   }
+  },
+  "missed": [
+   {
+    "blind": "b2",
+    "quote": "The provisions of this act and all regulations, orders and requirements thereunder shall terminate at the close of the calendar day July 2, 2010.",
+    "kind": "power",
+    "agency": "NYC Loft Board (cities over one million, from Part B title)",
+    "dropped_by": null,
+    "note": "Part B: earlier chapter 349/1982 sunset '[June 25] {{July 2}}, 2010' quoted inside an amendment is an extension record (Oct 16/19 decisions); title names 'cities over one million'."
+   },
+   {
+    "blind": "b5",
+    "quote": "The provisions of this section shall govern the simulcasting of races conducted at harness tracks located in another state or country during the period July first, nineteen hundred ninety-four through June thirtieth, two thousand eleven.",
+    "kind": "power",
+    "agency": "Regional off-track betting corporations",
+    "dropped_by": null,
+    "note": "RPWBL 1015 sunset '[ten] {{eleven.}}'; sibling sections 1014/1016/1018 were stored, 1015 was not."
+   },
+   {
+    "blind": "b9",
+    "quote": "The provisions of this section shall expire and be of no further force and effect after June thirtieth, two thousand eleven.",
+    "kind": "power",
+    "agency": "unresolved (title names no body; Oct 19 re-ask rule)",
+    "dropped_by": null,
+    "note": "RPWBL 1012(5) sunset '[ten] {{eleven.}}'."
+   },
+   {
+    "blind": "b16",
+    "quote": "shall be paid by September 20, 2010, subject to such terms and conditions as the commissioner of taxation and finance shall prescribe.",
+    "kind": "duty",
+    "agency": "DTF",
+    "dropped_by": null,
+    "note": "Borderline: Part D s13 floor-stock tax, the commissioner shall prescribe terms."
+   }
+  ],
+  "effective_date": {
+   "stored": "2010-06-21",
+   "computed": "2010-06-21",
+   "verdict": "correct",
+   "note": "immediately; Parts A-D each immediately; Part D s26 dates (July 1 / Aug 1 / Sept 1 2010 for named sections) not in other_dates, known parser gap"
+  }
+ },
+ "2017-S6756": {
+  "records": {
+   "2017-S6756-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2017-S6756-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2017-S6756-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2017-S6756-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2019-05-04",
+   "computed": "2019-05-04",
+   "verdict": "correct",
+   "note": "180th day after 2018-11-05; section 4 start on 2021-10-01 left 'unparsed' (known gap)"
+  }
+ },
+ "2017-S5723": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2017-09-13",
+   "computed": "2017-09-13",
+   "verdict": "correct",
+   "note": "Only change is a private insurer's notice period '[five months'] {{ninety days'}}'; zero records agreed."
+  }
+ },
+ "2017-S7219": {
+  "records": {
+   "2017-S7219-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2018-11-05",
+   "computed": "2018-11-05",
+   "verdict": "correct",
+   "note": ""
+  }
+ },
+ "2017-S5570": {
+  "records": {
+   "2017-S5570-01": {
+    "verdict": "not_real",
+    "criteria": [
+     "9",
+     "1"
+    ],
+    "fields": {},
+    "note": "Legislative findings s1 'Now therefore, the state commission ... and the office of general services shall work in conjunction to install a memorial plaque' duplicates the codified s5-c duty held in -05."
+   },
+   "2017-S5570-02": {
+    "verdict": "not_real",
+    "criteria": [
+     "9",
+     "1"
+    ],
+    "fields": {},
+    "note": "Same findings sentence for OGS duplicates s5-c 'There shall be installed and maintained in the Capitol, a commemorative plaque' (-03)."
+   },
+   "2017-S5570-03": {
+    "verdict": "wrong",
+    "criteria": [
+     "5"
+    ],
+    "fields": {
+     "deadline_kind": "on_effective_date",
+     "deadline_date": "2017-07-25"
+    },
+    "note": "Setup duty with no stated deadline: 'There shall be installed and maintained in the Capitol, a commemorative plaque'."
+   },
+   "2017-S5570-04": {
+    "verdict": "wrong",
+    "criteria": [
+     "5"
+    ],
+    "fields": {
+     "deadline_kind": "on_effective_date",
+     "deadline_date": "2017-07-25"
+    },
+    "note": "'be designed and placed in a manner as determined jointly' is one-time setup with no stated deadline."
+   },
+   "2017-S5570-05": {
+    "verdict": "wrong",
+    "criteria": [
+     "3",
+     "5"
+    ],
+    "fields": {
+     "agency": "Commission on the Restructuring of the Capitol",
+     "deadline_kind": "on_effective_date",
+     "deadline_date": "2017-07-25"
+    },
+    "note": "Named State commission keeps its own name, not the group 'State authorities'; setup duty."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2017-07-25",
+   "computed": "2017-07-25",
+   "verdict": "correct",
+   "note": ""
+  }
+ },
+ "2015-S6849": {
+  "records": {
+   "2015-S6849-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S6849-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2016-07-21",
+   "computed": "2016-07-21",
+   "verdict": "correct",
+   "note": "immediately; s2 deemed repealed with Correction Law 500-c (with_referenced_section)"
+  }
+ },
+ "2009-A4687": {
+  "records": {
+   "2009-A4687-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "5"
+    ],
+    "fields": {
+     "deadline_kind": "fixed_date",
+     "deadline_date": "2011-07-01"
+    },
+    "note": "'on and after July first in the year next succeeding the year in which this sentence shall take effect' (took effect 2010-09-17) = 2011-07-01, not on_effective_date."
+   },
+   "2009-A4687-02": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "note": "Salary entitlement: 'the chairman and the members of the authority ... shall receive a salary the amount of which shall be fixed by local law' (known entitlement class)."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2010-09-17",
+   "computed": "2010-09-17",
+   "verdict": "correct",
+   "note": ""
+  }
+ }
+}
