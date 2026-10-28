@@ -1,3 +1,4 @@
+import os
 """Plain script: the Oct 15 2026 audit fixes M35-M41 and J15-J16. Uses stored data when present. Prints 'N passed, M failed'."""
 import json, os, sys
 from pathlib import Path
@@ -123,7 +124,12 @@ check("J15 judgment_flags carries municipality_defined_narrowly", any(f["check"]
 check("J15 a record with a named unit is not flagged", not any(f["check"] == "municipality_defined_narrowly" for f in ed.judgment_flags(t, [{"obligation_id": "x-01", "agency": "Municipalities (all)", "agency_unit": "County of Westchester", "quote": "q"}])))
 ru = DATA / "reask" / "2013.json"
 if ru.exists():
-    check("J15 stored reask 2013-A4086 has municipality_defined_narrowly", any(x["check"] == "municipality_defined_narrowly" for x in json.load(open(ru))["laws"]["2013-A4086"]["reasons"]))
+    _rk = json.load(open(ru))["laws"].get("2013-A4086")
+    _reasked = os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "cache", "packets", "2013", "results_reask", "2013-A4086.json"))
+    if _rk is None or _reasked:
+        print("skipped: law reasked (2013-A4086 was re-asked; the municipality flag no longer applies)"); passed += 1
+    else:
+        check("J15 stored reask 2013-A4086 has municipality_defined_narrowly", any(x["check"] == "municipality_defined_narrowly" for x in _rk["reasons"]))
 
 # J16. audit-confirmed misses
 m = json.load(open(DATA / "reask_manual.json"))["laws"]

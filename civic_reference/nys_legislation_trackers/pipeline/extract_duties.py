@@ -985,6 +985,38 @@ def scan_back_lead_in(span, text, max_paras=80):
     return None
 
 
+NOMODAL_LEAD = re.compile(r"^\W*(?:\{\{)?\s*(?:\d+(?:-\w+)?\.\s*)?(?:\{\{)?\s*(?:the\s+)?(?:(?:powers?\s+and\s+)?(?:duties|functions|responsibilities|powers)(?:\s+and\s+(?:duties|functions|responsibilities|powers))?)\s+of\s+(?:the\s+)?((?:[\w-]+\s+){0,5}?(?:board|office|department|commission|council|committee|agency|authority|commissioner|director|division|bureau|task force|corporation|secretary|superintendent|institute|center|program|panel))\b[^.;:]{0,60}:\s*(?:\}\})?\s*$", re.I)
+
+
+def nomodal_lead_actor(lead):
+    m = NOMODAL_LEAD.match(re.sub(r"\s+", " ", lead or ""))
+    return ("the " + m.group(1).strip()) if m else None
+
+
+def nomodal_actor_lead_in(span, text, max_paras=80):
+    """B2 (Oct 27 2026): the nearest ':' paragraph above an imperative list run that names a government actor and holds no modal ('The duties of the
+    board:', 'Functions of the office:'). A prose paragraph in between, or any shall / may / must in the lead, ends the scan and the item stays flagged."""
+    paras = [(m.start(), m.end()) for m in re.finditer(r"[^\n]+", text)]
+    idx = next((i for i, (a, b) in enumerate(paras) if a <= span[0] < b), None)
+    if idx is None:
+        return None
+    first = text[paras[idx][0]:paras[idx][1]]
+    if not (ITEM_LABEL.match(first) or NUMBERED_ITEM.match(first)):
+        return None
+    for j in range(idx - 1, max(-1, idx - max_paras), -1):
+        t = text[paras[j][0]:paras[j][1]]
+        if not t.strip():
+            continue
+        if SCAN_LEAD_END.search(t):
+            if GRANTING_LEAD.search(t) or AMEND_INSTR.search(t):
+                return None
+            return t if nomodal_lead_actor(t) else None
+        if ITEM_LABEL.match(t) or NUMBERED_ITEM.match(t):
+            continue
+        return None
+    return None
+
+
 def lead_in_subject(lead):
     """The actor a granting lead-in names ('The chief diversity officer's responsibilities shall include' -> 'the chief diversity officer')."""
     clean = re.sub(r"\{\{|\}\}", "", lead)
@@ -1341,6 +1373,14 @@ def gate_record(o, text, has_markers):
                     if subj:
                         o["lead_in_actor"] = subj
                     o["rescued_imperative_item"] = True; bump("u4_scan_back_lead_in")
+                elif IMPERATIVE_ITEM.match(q) and nomodal_actor_lead_in(span, text) and r6_ok("e_b2_nomodal_actor_lead_in", o):
+                    lead = nomodal_actor_lead_in(span, text)          # B2: 'The duties of the board:' names the actor, no modal; the items are its duties
+                    o["lead_in"] = re.sub(r"\s+", " ", re.sub(r"\{\{|\}\}", "", lead)).strip()[:400]
+                    o["kind_from_lead_in"] = "duty"
+                    subj = nomodal_lead_actor(lead)
+                    if subj:
+                        o["lead_in_actor"] = subj
+                    o["rescued_imperative_item"] = True; bump("b2_nomodal_actor_lead_in")
                 else:
                     return "designation_no_actor", "a designation or list entry with no lead-in duty or power"
         if (APPLY_V1 or APPLY_V1B or APPLY_V2) and not VERBISH.search(q) and not VERBISH.search(sent):
@@ -1499,6 +1539,10 @@ def distinct_provisions(a, b):
     sections or non-nested sub-parts ('2041-w(2)(A)' vs '(2)(C)'), or each quote carries a noun the other lacks (4+ in all, numbers and dates aside:
     'transfer stations' vs 'landfills')."""
     ca, cb = _cit_parts(a.get("citation")), _cit_parts(b.get("citation"))
+    if bool(ca) != bool(cb):          # B13: a citation on one record only
+        return True
+    if ca and cb and re.sub(r"[^a-z]+", " ", (a.get("citation") or "").lower().split("§")[0]).strip() != re.sub(r"[^a-z]+", " ", (b.get("citation") or "").lower().split("§")[0]).strip():
+        return True          # B13: same section number in a different law ('Insurance Law § 4902' vs 'Public Health Law § 4902')
     if ca and cb:
         if ca[0] != cb[0]:
             return True
@@ -1528,6 +1572,23 @@ def distinct_provisions(a, b):
     wb = {w for w in _words(b.get("quote")) if len(w) >= 6 and not w.isdigit()} - skip
     ua, ub = wa - wb, wb - wa
     return len(ua) >= 1 and len(ub) >= 1 and len(ua) + len(ub) >= 4
+
+
+def merge_key(o, text):
+    """B13 (Oct 27 2026): what two records must share to be one provision: the normalized citation (law name, section and sub-parts; empty matches empty only)
+    and the act section the quote sits in. The same sentence enacted in different sections for different bodies, taxes or statutes stays as separate records."""
+    cit = re.sub(r"[^a-z0-9]+", " ", (o.get("citation") or "").lower()).strip()
+    return cit, act_section_of(o.get("quote") or "", text)
+
+
+def merge_partitions(grp, text):
+    """B13: split a record list into the groups that may merge with each other (equal merge_key); order inside a group is kept."""
+    parts = {}
+    for o in grp:
+        parts.setdefault(merge_key(o, text), []).append(o)
+    if len(parts) > 1:
+        bump("b13_merge_partitions")
+    return list(parts.values())
 
 
 def dedupe_law(lst):
@@ -2123,10 +2184,95 @@ def reask_packet_text(packet, key, entry, stored, out_path):
             "to the exact path " + str(out_path) + " (never to results/):\n" + schema_json)
 
 
-def reask_overlay(d, todo, tmp, schema=None):
+REASK_MODE = "replace"   # Oct 28 2026: merge mode added 3,940 records from 810 re-asks (reworded quotes failed the 0.5 match) and cut gold strict 83.4 -> 78.7; back to replace until the merge matches on located text spans (backlog B14)            # "merge": the original answer plus the re-ask's additions and fixes; "replace": the re-ask answer stands alone
+REASK_FIX_CHECKS = {"passive_subject_actor", "approver_as_actor", "joint_actor_single", "aid_recipient_as_actor", "identifiable_actor_unspecified",
+                    "municipality_defined_narrowly", "compound_local_actor", "d_actor_unresolved", "a_numbers_only_fewer_extends", "condition_only_new_matter"}
+REASK_MERGE_INFO = {}           # law key -> {"tags": {normalised quote: tag}, "removed": [quotes]}, filled by reask_overlay, read by mark_reasked
+
+
+def _qwords(s):
+    return re.findall(r"[a-z0-9]+", (s or "").lower())
+
+
+def _qscore(a, b):
+    """gold_lib-style: 1.0 when one normalised quote contains the other, else word Jaccard (implemented locally)."""
+    wa, wb = _qwords(a), _qwords(b)
+    if not wa or not wb:
+        return 0.0
+    if " ".join(wa) in " ".join(wb) or " ".join(wb) in " ".join(wa):
+        return 1.0
+    sa, sb = set(wa), set(wb)
+    return len(sa & sb) / len(sa | sb)
+
+
+def _effective_unparsed(ec):
+    return (not ec) or ec.get("kind") in (None, "", "unparsed") or (ec.get("kind") == "other" and not ec.get("text"))
+
+
+def _orig_flagged(key, i, o, entry):
+    """True when the re-ask was asked to fix this original record: a fix-type reason names its id or quotes it."""
+    oid = "%s-%02d" % (key, i + 1)
+    for r in (entry or {}).get("reasons", []):
+        if r.get("check") not in REASK_FIX_CHECKS:
+            continue
+        if oid in json.dumps(r, ensure_ascii=False) or o.get("obligation_id") and o["obligation_id"] in json.dumps(r, ensure_ascii=False):
+            return True
+        if any(_qscore(o.get("quote"), sent) >= 0.5 for sent in r.get("sentences", [])):
+            return True
+    return False
+
+
+def merge_reask_answer(key, orig, reask, entry):
+    """Additive merge of a re-ask answer into the original answer (raw schema dicts). Returns (merged, tags, removed):
+    tags {normalised quote: kept_original | reask_fields | added}, removed = quotes of flagged originals the re-ask omitted (rule reask_removed)."""
+    oo, ro = list(orig.get("obligations", [])), list(reask.get("obligations", []))
+    flagged = [_orig_flagged(key, i, o, entry) for i, o in enumerate(oo)]
+    pairs, used = [], set()
+    for j, r in enumerate(ro):
+        best, bs = None, 0.5
+        for i, o in enumerate(oo):
+            if i in used:
+                continue
+            sc = _qscore(r.get("quote"), o.get("quote"))
+            if sc >= bs:
+                best, bs = i, sc
+        if best is not None:
+            used.add(best)
+        pairs.append(best)
+    out, tags, removed = [], {}, []
+    by_orig = {i: j for j, i in enumerate(pairs) if i is not None}
+    for i, o in enumerate(oo):
+        if i in by_orig:
+            if flagged[i]:
+                rec, tag = dict(ro[by_orig[i]]), "reask_fields"
+            else:
+                rec, tag = dict(o), "kept_original"
+        elif flagged[i]:
+            removed.append(o.get("quote"))
+            continue
+        else:
+            rec, tag = dict(o), "kept_original"
+        out.append(rec)
+        tags[" ".join(_qwords(rec.get("quote")))] = tag
+    for j, i in enumerate(pairs):
+        if i is None:
+            out.append(dict(ro[j]))
+            tags[" ".join(_qwords(ro[j].get("quote")))] = "added"
+    merged = {**orig, "obligations": out}
+    if _effective_unparsed(orig.get("effective_clause")):
+        merged["effective_clause"] = reask.get("effective_clause", orig.get("effective_clause"))
+    return merged, tags, removed
+
+
+def reask_overlay(d, todo, tmp, schema=None, mode=None, entries=None):
     """Packet-results view for eo.ingest_packets: for each law, results_reask/{key}.json (when it parses and fits the schema)
-    stands in for results/{key}.json; otherwise the original answer stands. Returns (overlay_dir, {key: tag})."""
+    is merged into results/{key}.json (REASK_MODE "merge", the default) or stands in for it ("replace"); otherwise the
+    original answer stands. Returns (overlay_dir, {key: tag}); merge details go to REASK_MERGE_INFO."""
     d, tmp = Path(d), Path(tmp)
+    mode = mode or REASK_MODE
+    REASK_MERGE_INFO.clear()
+    if entries is None and mode == "merge":
+        entries = load_reask()
     (tmp / "results").mkdir(parents=True, exist_ok=True)
     (tmp / "manifest.json").write_text((d / "manifest.json").read_text())
     for f in (d / "results").glob("*.json"):
@@ -2143,6 +2289,15 @@ def reask_overlay(d, todo, tmp, schema=None):
             continue
         if not eo.validate_against_schema(raw, schema or SCHEMA):
             continue
+        op = d / "results" / (k + ".json")
+        if mode == "merge" and op.exists():
+            try:
+                orig = json.loads(op.read_text())
+            except json.JSONDecodeError:
+                orig = None
+            if orig is not None and eo.validate_against_schema(orig, schema or SCHEMA):
+                raw, tags, removed = merge_reask_answer(k, orig, raw, (entries or {}).get(k))
+                REASK_MERGE_INFO[k] = {"tags": tags, "removed": removed}
         (tmp / "results" / (k + ".json")).write_text(json.dumps(raw))
         tf = d / "reask" / (k + ".tag")
         reasked[k] = tf.read_text().strip() if tf.exists() else "unknown"
@@ -2150,7 +2305,8 @@ def reask_overlay(d, todo, tmp, schema=None):
 
 
 def mark_reasked(reasked, done, extracted_dir=None):
-    """Stamp reasked/reask_tag on the cache files of the re-asked laws that ingested; build_records copies it to the records."""
+    """Stamp reasked/reask_tag on the cache files of the re-asked laws that ingested; build_records copies it to the records.
+    Merged laws also stamp reasked and reask_merge on each obligation (matched by normalised quote) and list reask_removed quotes."""
     ed = Path(extracted_dir) if extracted_dir else EXTRACTED
     n = 0
     for k, tag in reasked.items():
@@ -2158,6 +2314,14 @@ def mark_reasked(reasked, done, extracted_dir=None):
         if k in done and cp.exists():
             res = json.loads(cp.read_text())
             res["reasked"], res["reask_tag"] = True, tag
+            info = REASK_MERGE_INFO.get(k)
+            if info:
+                for o in res.get("obligations", []):
+                    t = info["tags"].get(" ".join(_qwords(o.get("quote"))))
+                    if t:
+                        o["reasked"], o["reask_merge"] = True, t
+                if info["removed"]:
+                    res["reask_removed"] = info["removed"]
             cp.write_text(json.dumps(res, indent=1, ensure_ascii=False))
             n += 1
     return n
@@ -2259,6 +2423,41 @@ def dated_deadline(text, base):
             if d >= b:
                 return d.isoformat(), "recurring"
     return None
+
+
+# B12 (Oct 27 2026): 'on and after July first in the year next succeeding the year in which this sentence shall take effect', 'by October first of the year
+# next succeeding the effective date' name a calendar date relative to the effective (or enactment) year: that date, one year on.
+_B12_ANCHOR = r"(?:the\s+)?(?:year\s+in\s+which\s+(?:this\s+\w+\s+(?:shall\s+)?(?:takes?|become[s]?|have\s+become)\s+(?:effect|a\s+law)|(?:it|the\s+act)\s+(?:shall\s+)?(?:takes?\s+effect|became\s+a\s+law))|effective\s+date|date\s+(?:on\s+which\s+)?this\s+\w+\s+(?:shall\s+)?takes?\s+effect|enactment|date\s+of\s+enactment)"
+B12_YEAR = re.compile(r"\b(?:" + efd.MONTH_RE + r")\s+(" + _DL_DAY + r")\s+(?:in|of)\s+the\s+(?:calendar\s+)?year\s+next\s+succeeding\s+" + _B12_ANCHOR, re.I)
+B12_MONTH_FIRST = re.compile(r"\bthe\s+(" + _DL_DAY + r")\s+day\s+of\s+(" + efd.MONTH_RE + r")\s+next\s+succeeding\s+" + _B12_ANCHOR, re.I)
+
+
+def year_relative_date(text, eff_base, enact_base):
+    """ISO date for 'MONTH DAY in/of the year next succeeding <effective year|enactment>' (year after the anchor) or 'the first day of MONTH next succeeding
+    <effective date>' (first such day after the anchor); None when the text names neither or the anchor date is unknown."""
+    t = re.sub(r"\s+", " ", re.sub(r"\{\{|\}\}", "", text or ""))
+    m = B12_YEAR.search(t) or B12_MONTH_FIRST.search(t)
+    if not m:
+        return None
+    if B12_YEAR.search(t):
+        mm = re.search(r"\b(" + efd.MONTH_RE + r")\s+(" + _DL_DAY + r")\s+(?:in|of)\s+the\s+(?:calendar\s+)?year", t, re.I)
+        mon, day = efd.MONTHS[mm.group(1).lower()], _dl_day(mm.group(2))
+        shift = 1
+    else:
+        mon, day = efd.MONTHS[m.group(2).lower()], _dl_day(m.group(1))
+        shift = 0
+    tail = t[m.start():m.end()]
+    base = enact_base if re.search(r"enact|become|became|law", tail, re.I) else eff_base
+    if not base:
+        return None
+    b = date.fromisoformat(base)
+    try:
+        if shift:
+            return date(b.year + 1, mon, day).isoformat()
+        d = date(b.year, mon, day)
+        return (d if d > b else date(b.year + 1, mon, day)).isoformat()
+    except (TypeError, ValueError):
+        return None
 
 
 # U5 (Oct 19 2026): 'within ninety days after the effective date' in deadline_text with kind none is a period deadline; 'after <date> no ...' is a cutoff and stays none.
@@ -2489,6 +2688,26 @@ def resolve_said_agency(recs, text):
     return n
 
 
+APPOINT_NEXT_PERIOD = re.compile(r"^\W*(?:\{\{)?\s*(?:[^.]{0,80}?\b(?:within|not later than)\s+[\w-]+(?:\s+[\w-]+){0,3}?\s+days?\s+(?:after|of|from)\s+the\s+(?:effective\s+date|date\s+(?:on\s+which\s+)?this\s+\w+\s+(?:shall\s+)?takes?\s+effect)[^.]*\.)", re.I)
+APPOINT_NEXT_SUBJ = re.compile(r"\bappoint(?:ment|ments|ed|ees?)?\b|\bmembers?\b|\bnominat\w+|\bdesignat\w+", re.I)
+
+
+def appointment_next_sentence_period(o, text):
+    """B3: the sentence right after an appointment duty (same subdivision) sets the period ('The appointments shall be made within ninety days of the
+    effective date', 'Not later than 90 days after the effective date, the members shall be named'). Returns the sentence or None."""
+    sp = locate_span(o.get("quote") or "", text)
+    if not sp:
+        return None
+    clean = re.sub(r"\{\{|\}\}", "", text[sp[1]:sp[1] + 500])
+    m = re.match(r"[^.\n]{0,25}\.\s+([^\n]*)", clean)          # the rest of the quote's sentence, then the next sentence on the same paragraph
+    if not m:
+        return None
+    nxt = APPOINT_NEXT_PERIOD.match(m.group(1))
+    if nxt and APPOINT_NEXT_SUBJ.search(nxt.group(0)) and re.search(r"\bwithin\b|\bnot later than\b", nxt.group(0), re.I):
+        return nxt.group(0).strip()
+    return None
+
+
 def appointment_period(recs, text):
     """R6c: an appointment duty takes the period of its appointment clause ('The appointments provided for in this section shall be made
     within ninety days of the effective date'): the next sentence in the text, else a sibling duty carrying that clause."""
@@ -2507,6 +2726,13 @@ def appointment_period(recs, text):
             if m and APPOINT_PERIOD.search(m.group(1)):
                 src = next(iter(donors), None)
         src = src or (donors[0] if donors else None)
+        if not src and not APPOINT_PERIOD.search(o.get("quote") or ""):          # B3: the next sentence itself sets the period
+            nsent = appointment_next_sentence_period(o, text)
+            pd_ = period_deadline(nsent, o.get("effective_date"), o.get("enactment_date")) if nsent else None
+            if pd_ and pd_[1] == "days_after_effective" and r6_ok("c2_appointment_next_sentence", o):
+                o["deadline_kind"], o["deadline_date"], o["deadline_text"] = pd_[1], pd_[0], nsent[:200]
+                o["deadline_from_appointment_clause"] = "next_sentence"; n += 1
+                continue
         if src and src is not o and r6_ok("c_appointment_period", o):
             for k in ("deadline_kind", "deadline_date", "deadline_text"):
                 o[k] = src.get(k)
@@ -2789,14 +3015,14 @@ def build_records(laws):
                 o["recurrence"] = "annual" if re.search(r"\bannual\s+election\b", quote, re.I) else "as-needed"; bump("m38_per_election_triggered")
             if kind == "duty" and o.get("deadline_kind") == "on_effective_date" and TRIGGER.search(quote) and not CAP_RE.search(quote):
                 o["deadline_kind"], o["deadline_date"] = "none", None; bump("setup_to_triggered")
-            elif (kind == "duty" and o.get("deadline_kind") == "on_effective_date" and PILOT_FOLLOW_ON.match(quote) and sp0
+            elif (kind == "duty" and o.get("deadline_kind") in ("on_effective_date", "none") and PILOT_FOLLOW_ON.match(quote) and sp0
                   and preceding_sentence_has_period(sp0, text)):          # S6a: 'Such pilot projects shall be designed ...' follows the sentence that sets the pilot's period
                 o["deadline_kind"], o["deadline_date"] = "none", None; bump("s6a_pilot_follow_on_triggered")
             elif (kind == "duty" and o.get("deadline_kind") == "on_effective_date" and EVENT_TIED.search(quote) and not CAP_RE.search(quote)
                   and r6_ok("d_event_tied", o)):          # R6d: 'at the time that the member takes the oath', 'after the completion of ...'
                 o["deadline_kind"], o["deadline_date"] = "none", None
             elif (kind == "duty" and o.get("deadline_kind") == "none" and o.get("recurrence") == "one-time"
-                  and o.get("deliverable_type") in SETUP_TYPES and not TRIGGER.search(quote) and not EVENT_TIED.search(quote) and not CAP_RE.search(quote)
+                  and (o.get("deliverable_type") in SETUP_TYPES or o.get("deliverable_type") == "signage or installation") and not TRIGGER.search(quote) and not EVENT_TIED.search(quote) and not CAP_RE.search(quote)
                   and not PROHIBITION.search(quote)):
                 o["deadline_kind"] = "on_effective_date"; bump("triggered_to_setup")
             if (kind == "duty" and o.get("recurrence") == "one-time" and re.search(r"installation and maintenance", quote, re.I)
@@ -2840,6 +3066,11 @@ def build_records(laws):
                     pd_ = period_deadline(o["deadline_text"], sec_date, law["enactment_date"])          # U5: 'within 90 days after the effective date'
                     if pd_:
                         o["deadline_kind"], o["deadline_date"] = pd_[1], pd_[0]; bump("u5_period_deadline")
+            if (kind == "duty" and not per_election and not CAP_RE.search(quote)
+                    and (o.get("deadline_kind") == "on_effective_date" or (o.get("deadline_kind") in (None, "none") and not o.get("deadline_date")))):
+                yrd = year_relative_date(o.get("deadline_text") or quote, sec_date or law["enactment_date"], law["enactment_date"])          # B12
+                if yrd:
+                    o["deadline_kind"], o["deadline_date"] = "fixed_date", yrd; bump("b12_year_next_succeeding_date")
             if kind == "duty" and o.get("deadline_kind") == "on_effective_date":
                 if o.get("deadline_date") != sec_date:
                     bump("on_effective_date_filled")
@@ -2867,8 +3098,9 @@ def build_records(laws):
             keep = []
             for jur in {(o.get("jurisdiction"), o.get("agency_unit")) for o in lst}:
                 grp = [o for o in lst if (o.get("jurisdiction"), o.get("agency_unit")) == jur]
-                eo.merge_split_list_duplicates(grp)
-                keep += grp
+                for part in merge_partitions(grp, text):          # B13: only records with the same citation and section merge
+                    eo.merge_split_list_duplicates(part)
+                    keep += part
             lst[:] = sorted(keep, key=lambda o: o["obligation_id"])
         kept = {o["obligation_id"] for o in law_d + law_p}
         dropped_ids = {d["obligation_id"] for d in DROPPED if d.get("matter_id") == law["key"]}

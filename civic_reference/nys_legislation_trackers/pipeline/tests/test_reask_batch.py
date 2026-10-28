@@ -74,9 +74,9 @@ for k in ("2011-A1", "2011-A2", "2011-A3"):
 (d / "results_reask" / "2011-A1.json").write_text(json.dumps(new))
 (d / "results_reask" / "2011-A2.json").write_text("{not json")
 (d / "reask" / "2011-A1.tag").write_text("T9\n")
-view, reasked = ed.reask_overlay(d, todo, tmp / "view")
+view, reasked = ed.reask_overlay(d, todo, tmp / "view", mode="replace")   # Oct 27 2026: default is merge; replace mode tested here
 rd = lambda k: json.loads((view / "results" / (k + ".json")).read_text())["effective_clause"]["text"]
-check("valid results_reask replaces results", rd("2011-A1") == "REASK" and reasked == {"2011-A1": "T9"})
+check("valid results_reask replaces results (replace mode)", rd("2011-A1") == "REASK" and reasked == {"2011-A1": "T9"})
 check("invalid results_reask falls back to the original", rd("2011-A2") == "ORIGINAL")
 check("no results_reask keeps the original", rd("2011-A3") == "ORIGINAL")
 check("originals on disk untouched", json.loads((d / "results" / "2011-A1.json").read_text())["effective_clause"]["text"] == "ORIGINAL")

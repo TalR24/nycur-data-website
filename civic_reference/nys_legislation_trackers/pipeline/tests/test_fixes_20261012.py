@@ -1,3 +1,4 @@
+import os
 """Plain script: the Oct 12 2026 audit fixes M14-M19 and J8. Uses stored data when present. Prints 'N passed, M failed'."""
 import json, os, sys
 from pathlib import Path
@@ -75,7 +76,12 @@ for q in ("All past service costs shall be borne by the village", "the fees shal
     check("M17 matches: %s" % q[:30], bool(ed.COST_BEARING.search(q)))
 check("M17 an unrelated payment does not match", not ed.COST_BEARING.search("the department shall pay the county within thirty days"))
 r = rec("2009-S7182-02")
-check("M17 stored 2009-S7182-02 none + ongoing", bool(r) and r["deadline_kind"] == "none" and r["recurrence"] == "ongoing" and not r.get("deadline_date"))
+import glob as _g
+_s7182 = [o for f in _g.glob(str(T / "data" / "duties" / "2009.json")) for o in json.load(open(f))["obligations"] if o["matter_id"] == "2009-S7182" and o["quote"].startswith("All past service costs")] if "T" in dir() else []
+if not _s7182:
+    _s7182 = [o for o in json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "data", "duties", "2009.json")))["obligations"] if o["matter_id"] == "2009-S7182" and o["quote"].startswith("All past service costs")]
+r = _s7182[0] if _s7182 else r
+check("M17 stored 2009-S7182 cost duty none + ongoing (by quote; the law was re-asked and renumbered)", bool(r) and r["deadline_kind"] == "none" and r["recurrence"] == "ongoing" and not r.get("deadline_date"))
 
 # M18. braced new matter that is only labels and numbers
 check("M18 labels and numbers", ed.label_only_braces("x {{(a)}} y {{(b)}} z {{2014}}"))
