@@ -1043,9 +1043,14 @@ CONDITION_PRECEDENT_M36 = re.compile(r"\bno\s+(?:expenditure|payment|disbursemen
 BENEFIT_WINDOW = re.compile(r"\bbenefits?\s+of\s+this\s+(?:sub)?(?:paragraph|section|subdivision|title|article|clause)\s+shall\s+be\s+available\b|\bshall\s+be\s+(?:eligible|entitled)\s+(?:for|to)\s+(?:the\s+)?(?:benefits|exemption)\b", re.I)
 
 
+BOARD_SALARY = re.compile(r"^\W*(?:the\s+)?(?:chairman|chairperson|chair|members?)\b[^.;]{0,140}?\bshall\s+receive\s+an?\s+(?:annual\s+)?(?:salary|stipend)\b", re.I)
+
+
 def salary_entitlement(q):
     """M32 (Oct 14 2026): 'the basic annual salary of officers and employees ... shall be increased by two percent': the salary is the
     subject, no government actor precedes the modal and none is named as the one who increases it."""
+    if BOARD_SALARY.search(q or ""):          # H1 (Oct 28 2026): 'the chairman and the members of the authority ... shall receive a salary' (2009-A4687-02)
+        return True
     m = SALARY_INCREASE.search(q or "")
     if not m or GOV_ACTOR.search(q[:m.start()]) or GOV_ACTOR.search(q[m.start():m.end()].replace("officers", "").replace("employees", "")):
         return False
@@ -1180,7 +1185,7 @@ def existing_actor_only(o, span, text):
 
 
 # V1-V3 (Oct 20 2026): the last not-real classes of the Oct 19 bulk verification
-CONTENT_LEAD = re.compile(r"\b(?:reports?|stud(?:y|ies)|plans?|applications?|notices?|statements?|proposals?|assessments?|analys[ie]s)\b[^.:;]{0,120}?\bshall\s+(?:include|contain|set\s+forth)\b[^.:;]{0,80}:\s*(?:\}\})?\s*$", re.I)
+CONTENT_LEAD = re.compile(r"\b(?:reports?|stud(?:y|ies)|plans?|applications?|notices?|statements?|proposals?|assessments?|analys[ie]s|process(?:es)?)\b[^.:;]{0,120}?\bshall\s+(?:include|contain|set\s+forth)\b[^.:;]{0,80}:\s*(?:\}\})?\s*$", re.I)
 CRITERIA_LEAD = re.compile(r"\bshall\s+(?:determine\s+whether|consider)\s*:\s*(?:\}\})?\s*$", re.I)          # V1B: 7 records database-wide incl. 2 gold-real (2011-A5318-09, -11); off
 CRITERIA_ITEM_MODAL = re.compile(r"\b(?:shall|must|may)\b", re.I)          # X1: a criteria item that states its own modal stays a record
 CONTENT_LEAD_NOT = re.compile(r"\b(?:powers?|dut(?:y|ies)|responsibilit\w+|functions?)\b", re.I)
@@ -1237,6 +1242,12 @@ def v_quote_rule(q):
 
 
 DEFINITION_PARA = re.compile(r"^\W*(?:\d+\W{0,3})?(?:\[?\d+\]\s*)?(?:\{\{\d+\}\}\W*)?(?:the\s+term\s+)?[\"“'][^\"”']{1,90}[\"”']\s+(?:shall\s+mean|means)\b", re.I)
+
+
+NOW_THEREFORE = re.compile(r"\bnow,?\s+therefore,?\s*$", re.I)
+
+
+WHICH_SATISFY = re.compile(r",?\s+which\s+shall\s+satisfy\b[^;]*", re.I)
 
 
 def inside_definition(q, span, text):
@@ -1305,6 +1316,8 @@ def gate_record(o, text, has_markers):
     span = locate_span(q, text)
     if span and inside_definition(q, span, text):
         return "definition", "a clause inside a definition paragraph ('shall mean ...'), not a duty or power"
+    if span and NOW_THEREFORE.search(text[max(0, span[0] - 40):span[0]]):          # H3 (Oct 28 2026)
+        return "legislative_findings", "the 'Now, therefore' resolving sentence of the legislative findings; the enacted duty is codified in the later section"
     # 3. no-record classes
     if STRONG_EXEMPT_RE.search(q) or (EXEMPT_RE.search(q) and not MANDATORY.search(EXEMPT_RE.sub(" ", q))):
         return "exemption_or_applicability", "exemption, residency or refund-review applicability clause, binds no government actor"
@@ -1383,7 +1396,7 @@ def gate_record(o, text, has_markers):
                     o["rescued_imperative_item"] = True; bump("b2_nomodal_actor_lead_in")
                 else:
                     return "designation_no_actor", "a designation or list entry with no lead-in duty or power"
-        if (APPLY_V1 or APPLY_V1B or APPLY_V2) and not VERBISH.search(q) and not VERBISH.search(sent):
+        if (APPLY_V1 or APPLY_V1B or APPLY_V2) and not VERBISH.search(WHICH_SATISFY.sub("", q)) and not VERBISH.search(WHICH_SATISFY.sub("", sent)):          # H2: ', which shall satisfy the ... component' is a tail, not the item's own duty
             vi = v_item_rule(o, span, text, hdr, sec)
             if vi:
                 return vi
