@@ -40,6 +40,8 @@ GROUPS = [
     (r"^(?:county )?boards? of elections?|^(?:central )?boards? of inspectors|^(?:the )?inspectors?(?: of election)?$|^(?:clerks or )?inspectors|^each polling place|^any polling place|^election inspectors|^bipartisan team of inspectors|^boards of election", "Boards of elections", "local", "local government group"),
     (r"^social services (?:district|official)", "Social services districts", "local", "local government group"),
     (r"^(?:the )?(?:courts?|court of this state|court having jurisdiction|courts having jurisdiction|new york state courts|judge|justice(?! center)|any judge|trier of fact|unspecified court)\b|^(?:courts|court)$|^(?:a )?court\b", "Unified Court System", "state", "judiciary"),   # Oct 27 2026: 'justice center' is the Justice Center, not a court
+    (r"^(?:(?:family|supreme|surrogate'?s|county|criminal|local criminal|sentencing|appointing|superior|human trafficking)\s+)+courts?\b|^(?:the )?sentencing court|^court of (?:competent jurisdiction|appeals)|^appellate (?:division|term)|^justices? of the supreme court", "Unified Court System", "state", "judiciary"),   # Oct 29 2026 K1
+    (r"^temporary president(?: of the senate)?$|^speaker(?: of the assembly)?$|^(?:minority|majority) leaders? of the (?:senate|assembly)$|^chairs? of the senate finance and (?:the )?assembly ways and means committees?$", "State Legislature", "state", "state agency group"),   # Oct 29 2026 K2
     (r"^sheriffs?\b", "Sheriffs", "local", "local government group"),
     (r"^boards? of cooperative educational|^boces", "BOCES", "local", "local government group"),
     (r"^(?:public )?employers?$|^(?:such )?public employers?|^each participating employer|^participating employers?", "Public employers", "state", "state agency group"),
@@ -657,9 +659,46 @@ def fix_city_school_board(o):
     return True
 
 
+# ---- Oct 29 2026 night (K1-K3) ----------------------------------------------------------------------------------------------
+COURT_Q = r"(?:family|supreme|surrogate'?s|county|criminal|local criminal|sentencing|appointing|superior|human trafficking)"
+K1_COURT = re.compile(r"^(?:(?:%s)\s+)+courts?\b(?:\s+(?:or|and)\s+(?:the\s+)?(?:%s\s+)+courts?)?\b|^courts? having jurisdiction\b|^court of (?:competent jurisdiction|appeals)\b|^appellate (?:division|term)\b|^justices? of the supreme court\b|^courts?$" % (COURT_Q, COURT_Q), re.I)
+K2_LEADER = re.compile(r"^(?:temporary president(?: of the senate)?|speaker(?: of the assembly)?|(?:minority|majority) leaders? of the (?:senate|assembly)|chairs? of the senate finance (?:committee )?and (?:the )?assembly ways and means committees?)$", re.I)
+K3_BODY = re.compile(r"^(?:applicable governing bod(?:y|ies) or (?:the )?tax departments?|governing body of (?:such|the) municipality)$", re.I)
+LOC_IN_TEXT = re.compile(r"\b(City|Town|Village|County) of ((?:[A-Z][\w.'-]*)(?: [A-Z][\w.'-]*){0,2})")
+
+
+def fix_20261029(o, by_canon, text=""):
+    """K1 court actors, K2 legislative leaders, K3 'governing body' phrases. Returns True when it set the agency."""
+    raw = strip_art(re.sub(r"\s+", " ", norm(o.get("actor_raw") or "")))
+    if not raw:
+        return False
+    if K1_COURT.match(raw):
+        if o.get("agency") not in LOCAL_COURT_GROUPS and o.get("agency") != "Unspecified":
+            return False
+        a = by_canon.get("Unified Court System") or {}
+        o.update(agency="Unified Court System", agency_full=a.get("full_name") or "Unified Court System", agency_matched=True, jurisdiction="state",
+                 agency_org_type=a.get("org_type") or "judiciary", agency_group=None, agency_unit=None, agency_source="court_actor_k1")
+        o.pop("actor_unresolved", None)
+        return True
+    if K2_LEADER.match(raw):
+        _set_group(o, "State Legislature", "state", "state agency group", o.get("agency_unit"), "legislative_leader_k2")
+        return True
+    if K3_BODY.match(raw):
+        # Narrowed Oct 29 2026: a locality named anywhere (stored unit, quote or law text) keeps its specific group and unit.
+        if o.get("agency_unit") or LOC_IN_TEXT.search(o.get("quote") or "") or LOC_IN_TEXT.search(text or ""):
+            return False
+        if o.get("agency") not in ("Villages", "Towns", "Cities", "Counties", "Unspecified"):
+            return False
+        _set_group(o, "Municipalities (all)", "local", "local government group", None, "governing_body_k3")
+        return True
+    return False
+
+
 def fix_20261027(o, text, lookup, by_canon, match):
     """One entry point for R1-R5 (and R3 unit casing). `match` is eo.match_agency. Returns the rule name or None."""
     rule = None
+    if fix_20261029(o, by_canon, text):
+        return o.get("agency_source")
     if fix_otb_branch(o):
         rule = "r1_otb_branch"
     elif fix_state_commission(o, lookup, by_canon, match):

@@ -1,0 +1,328 @@
+{
+ "_scoring": {
+  "auditor": "A",
+  "night": "20261029",
+  "laws": 11,
+  "stored_records": 9,
+  "correct": 8,
+  "wrong_fields": 1,
+  "not_real": 0,
+  "missed": 2,
+  "precision_strict": "8/9 = 88.9% (Wilson 95% 56.5-98.0)",
+  "precision_real": "9/9 = 100.0% (Wilson 95% 70.1-100.0)",
+  "recall": "9/11 = 81.8% (Wilson 95% 52.3-94.9)",
+  "effective_dates": "9/11 correct",
+  "calibration_laws": [
+   "2015-S4943",
+   "2011-S5157"
+  ],
+  "note": "Scoring covers the 11 sample laws only; calibration laws (2 stored records: 1 correct, 1 wrong; 0 missed; effective dates 2/2) are scored under their own keys."
+ },
+ "_classes": [
+  {
+   "name": "Court actors left Unspecified (actor_raw names a court, justice, judge or surrogate but agency is Unspecified instead of Unified Court System)",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2019-A4109-01"
+   ],
+   "rule": "re.search(r'\\bcourts?\\b|\\bjustices?\\b|\\bjudges?\\b|\\bsurrogate', actor_raw, re.I) and agency == 'Unspecified' over duties/*.json + powers/*.json (1 false positive in the matches: 'criminal justice agencies')",
+   "db_matches": 31,
+   "db_examples": [
+    "2009-A6192-02",
+    "2009-A9017-09",
+    "2009-A9017-11"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "Real list items under a mandatory lead-in dropped by designation_no_actor (leaflet content item under 'shall also include'; library added to the DASNY financing list)",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2019-A2770-02",
+    "2019-A10209-01"
+   ],
+   "rule": "dropped/*.json rule == 'designation_no_actor' AND (another stored record of the same matter_id quotes r'shall (also )?include' [55] OR agency == 'DASNY' [46] OR quote matches r'is amended by adding a new (subdivision|paragraph|clause|subparagraph)' [2]); union reported loosely, all 476 designation_no_actor drops need review against their lead-in",
+   "db_matches": 101,
+   "db_examples": [
+    "2009-A2209-111",
+    "2009-A10260-01",
+    "2019-A10209-01"
+   ],
+   "needs_judgment": true
+  },
+  {
+   "name": "Effective date unparsed for resolvable clauses ('the first of January, 2020'; 'same date as the reversion of ... section 10 of chapter 413 of the laws of 2003')",
+   "criteria": [
+    "8"
+   ],
+   "instances": [
+    "2019-A3009",
+    "2019-A3033"
+   ],
+   "rule": "effective_dates/*.json rule == 'unparsed' and raw_clause matches r'take effect on the (first|\\w+(st|nd|rd|th)) (day )?of (January|...|December),? \\d{4}' (1 law) or r'same date as the (reversion|expiration|repeal)' (4 laws); records carrying effective_rule unparsed: 131 (all unparsed laws: 140)",
+   "db_matches": 5,
+   "db_examples": [
+    "2019-A3009",
+    "2019-A3033",
+    "2011-S5106"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "Recipient body taken as actor's group with junk unit (dissolved library resolved to School districts, unit 'Transferred Oswego School District')",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2011-S5157-01"
+   ],
+   "rule": "re.match(r'^(Transferred|Awarded|Granted|Paid|Conveyed|Allocated|Distributed|Given)\\b', agency_unit) [1]; broader: actor_raw contains 'librar' and agency == 'School districts' [4: 2011-S5157-01, 2013-S2003-01, 2015-S7860-01, ...]",
+   "db_matches": 4,
+   "db_examples": [
+    "2011-S5157-01",
+    "2013-S2003-01",
+    "2015-S7860-01"
+   ],
+   "needs_judgment": true
+  }
+ ],
+ "2019-A4109": {
+  "records": {
+   "2019-A4109-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Unified Court System",
+     "actor_unresolved": false
+    },
+    "note": "'the appointing court ... may discharge or modify the powers of the guardian pursuant to section 81.36 of the mental hygiene law' - a court is the Unified Court System, stored agency Unspecified."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2019-12-06",
+   "computed": "2019-12-06",
+   "verdict": "correct",
+   "note": "'This act shall take effect immediately', signed 2019-12-06."
+  },
+  "_borderline_not_scored": "'the community guardian program shall obtain annually a statement prepared by a physician, psychologist, nurse clinician, or social worker' - holder may be a social services district or a nonprofit contractor under SSL 473-d; not counted as a miss (unverified whether the program is a government actor)."
+ },
+ "2019-A2770": {
+  "records": {
+   "2019-A2770-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "1-f leaflet content, leaflet 'designed by the commissioner'."
+   }
+  },
+  "missed": [
+   {
+    "blind": "b2",
+    "quote": "a statement that the medical assistance program provides coverage for all income-eligible pregnant women and children residing in the state regardless of immigration status",
+    "kind": "duty",
+    "agency": "DOH",
+    "dropped_by": "designation_no_actor",
+    "note": "New item (b) under lead-in 'The informational leaflet shall also include{{:}}'; same holder and lead-in as the stored 1-f record, so dropping it as a designation with no lead-in is wrong."
+   }
+  ],
+  "effective_date": {
+   "stored": "2021-02-20",
+   "computed": "2021-02-20",
+   "verdict": "correct",
+   "note": "sixtieth day after 2020-12-22."
+  },
+  "_borderline_not_scored": "'Such leaflet shall also be distributed to any expectant mother who presents at the hospital during pregnancy.' reads as a hospital (private) duty; 2509-b duties are on general hospitals (private); not counted."
+ },
+ "2019-A10209": {
+  "records": {},
+  "missed": [
+   {
+    "blind": "b1",
+    "quote": "54. Victor Farmington Library.",
+    "kind": "power",
+    "agency": "DASNY",
+    "dropped_by": "designation_no_actor",
+    "note": "Adds a library to section 5 of chapter 672 of 1993 (DASNY financing of library facilities): a class/place extension of an existing authority, which the pilot rules make a record with extends_existing true. The new matter is 3 words, below the 10-word quote floor, so the record needs the lead-in or a quote exception; dropped quote also carries the amending instruction ('is amended by adding a new subdivision 54 to read as follows')."
+   }
+  ],
+  "effective_date": {
+   "stored": "2020-08-24",
+   "computed": "2020-08-24",
+   "verdict": "correct",
+   "note": "immediately, signed 2020-08-24."
+  }
+ },
+ "2019-A5622": {
+  "records": {
+   "2019-A5622-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "DCL 276-a 'the justice or surrogate presiding at the trial shall fix the reasonable attorney's fees'; all other new matter binds creditors, debtors and transferees."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2020-04-04",
+   "computed": "2020-04-04",
+   "verdict": "correct",
+   "note": "one hundred twenty days after 2019-12-06."
+  }
+ },
+ "2019-A1641": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2019-12-15",
+   "computed": "2019-12-15",
+   "verdict": "correct",
+   "note": "'take effect December 15, 2019'. No records: new matter is only the deletion of the $1,000 threshold, widening a political committee (private) filing duty; the state board exemption power is reprinted unchanged."
+  }
+ },
+ "2019-A3033": {
+  "records": {
+   "2019-A3033-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "Braced sentence 'Such regulations shall take into account the need for claimants to provide child care'; commissioner of labor."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": null,
+   "computed": "unverified: reversion date of Labor Law 591(2) under section 10 of chapter 413 of 2003 as amended (not in data/chapter_index.json)",
+   "verdict": "wrong",
+   "note": "'take effect on the same date as the reversion of subdivision 2 of section 591 ... section 10 of chapter 413 of the laws of 2003, as amended' - a determinable date, stored null (rule unparsed)."
+  }
+ },
+ "2019-A10741": {
+  "records": {
+   "2019-A10741-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "'the department of education, in its discretion, may renew limited and provisional permits'."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2020-09-21",
+   "computed": "2020-09-21",
+   "verdict": "correct",
+   "note": "immediately."
+  }
+ },
+ "2017-S975": {
+  "records": {
+   "2017-S975-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "Prohibition on NYSCA with braced 'awarding'; extends_existing true is debatable (issuing->awarding neither widens nor is wholly new), not scored. (b)-(d) bind applicants (private) and 'shall be deemed ineligible' is a condition."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2016-11-28",
+   "computed": "2016-11-28",
+   "verdict": "correct",
+   "note": "same as chapter 474 of 2016 (S3339), effective immediately 2016-11-28; signed later amendment leaves that date standing (criterion 8)."
+  }
+ },
+ "2019-A6070": {
+  "records": {
+   "2019-A6070-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "'authorized and directed' -> duty; 12 months after effective date = 2021-12-15."
+   },
+   "2019-A6070-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "Joint actor 'in conjunction with the commissioner of the New York state department of state are hereby authorized and directed'."
+   },
+   "2019-A6070-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "Delivery to governor/leaders and website posting 'shall be posted on the department of financial services public website'; distinct deliverable."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2020-12-15",
+   "computed": "2020-12-15",
+   "verdict": "correct",
+   "note": "immediately."
+  }
+ },
+ "2019-A3009": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": null,
+   "computed": "2020-01-01",
+   "verdict": "wrong",
+   "note": "'This act shall take effect on the first of January, 2020' stored null (rule unparsed). No records: all new matter binds insurers and corporations (private)."
+  }
+ },
+ "2019-A6149": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2019-11-25",
+   "computed": "2019-11-25",
+   "verdict": "correct",
+   "note": "immediately. No records: the change is an applicant qualification (National Home Inspector exam); the deleted secretary-approval text narrows, never widens."
+  }
+ },
+ "2015-S4943": {
+  "records": {
+   "2015-S4943-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "Seneca County sunset extension 'ending November thirtieth, two thousand {{seventeen;}}', Counties / County of Seneca, extends_existing true."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2015-08-13",
+   "computed": "2015-08-13",
+   "verdict": "correct",
+   "note": "immediately."
+  }
+ },
+ "2011-S5157": {
+  "records": {
+   "2011-S5157-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "the Oswego City Library (dissolved body holding the assets; not School districts)",
+     "agency_unit": "Oswego City Library (not 'Transferred Oswego School District')"
+    },
+    "note": "'all assets ... owned in whole or in part by the Oswego City Library shall be transferred to the Oswego School District Public Library' - the school district library is the recipient, not the actor; unit string is junk parsed from 'transferred to the Oswego School District'."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2011-08-17",
+   "computed": "2011-08-17",
+   "verdict": "correct",
+   "note": "immediately."
+  }
+ }
+}

@@ -95,7 +95,9 @@ def reask_candidates(skip: set[str], data_dir: Path | None = None, packets_dir: 
                      sessions: tuple = (2009, 2011, 2013, 2015)) -> list[tuple[str, dict]]:
     """Laws in data/reask/{Y}.json that can still be re-asked, in reask_priority order. A law whose only reasons are mechanical checks is not a candidate.
     Skips deferred/skipped laws, laws without an original packet, and laws that already have a results_reask answer."""
+    import extract_duties as ed
     data_dir, packets_dir = data_dir or DATA, packets_dir or PACKETS
+    hist = ed.load_reask_history(data_dir / "reask_history.json")
     out = []
     for y in sessions:
         f = data_dir / "reask" / f"{y}.json"
@@ -104,7 +106,10 @@ def reask_candidates(skip: set[str], data_dir: Path | None = None, packets_dir: 
         for key, entry in json.load(open(f))["laws"].items():
             if key in skip or not live_reasons(entry) or not (packets_dir / str(y) / f"{key}.txt").exists() or (packets_dir / str(y) / "results_reask" / f"{key}.json").exists():
                 continue
-            out.append((key, entry))
+            kept, _ = ed.apply_reask_history(live_reasons(entry), hist.get(key))     # reasons already suppressed by the re-ask history never draw a law
+            if not kept:
+                continue
+            out.append((key, dict(entry, reasons=kept)))
     out.sort(key=lambda kv: reask_priority(*kv))
     return out
 

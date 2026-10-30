@@ -1,0 +1,597 @@
+{
+ "_scoring": {
+  "auditor": "B",
+  "night": "20261029",
+  "laws": 11,
+  "stored_records": 34,
+  "correct": 27,
+  "wrong_fields": 6,
+  "not_real": 1,
+  "missed": 3,
+  "precision_strict": "27/34 = 79.4% (Wilson 95% 63.2-89.7)",
+  "precision_real": "33/34 = 97.1% (Wilson 95% 85.1-99.5)",
+  "recall": "33/36 = 91.7% (Wilson 95% 78.2-97.1)",
+  "effective_dates": "11/11 correct",
+  "calibration_laws": [
+   "2015-S5903",
+   "2013-A9744"
+  ],
+  "calibration_tally": "stored 4, correct 3, wrong 1, not_real 0, missed 1, effective dates 2/2 (not included in the counts above)",
+  "unverified": "2019-A4109: 'the community guardian program shall obtain annually a statement' not counted as a miss: whether SSL 473-d community guardian programs are government actors or contracted nonprofits was not verifiable from the packet."
+ },
+ "_classes": [
+  {
+   "name": "duplicate_provision gate drops joint-actor records that share one quote (rule says one record per body, same quote allowed)",
+   "criteria": [
+    "3",
+    "9"
+   ],
+   "instances": [
+    "2019-A10629-04",
+    "2019-A10629-06"
+   ],
+   "rule": "dropped/*.json rule=='duplicate_provision' and dropped.quote[:150]==quote[:150] of the record named in reason 'overlaps <id>' (dropped rows carry no actor, so this is an upper bound; 4 of 5 random matches were real joint actors: 2015-S4472-15, 2019-A5762-05, 2009-S2849-26, 2011-S6736-15; 2011-A8496-11 looked a true duplicate)",
+   "db_matches": 196,
+   "db_examples": [
+    "2015-S4472-15",
+    "2019-A5762-05",
+    "2009-S2849-26"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "court and legislative-leader actors left Unspecified",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2019-A4109-01",
+    "2019-A10629-05"
+   ],
+   "rule": "agency=='Unspecified' and re.search(r'\\b(court|minority leader|majority leader|speaker|temporary president)\\b', actor_raw, I) (19 of the 30 are courts)",
+   "db_matches": 30,
+   "db_examples": [
+    "2009-A9017-09",
+    "2009-A9017-11",
+    "2011-A10415-05"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "list items under a mandatory passive lead-in ('The informational leaflet shall also include:') dropped as designation_no_actor",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2019-A2770-02"
+   ],
+   "rule": "dropped/*.json rule=='designation_no_actor' and agency not in (None,'Unspecified') (453 of 476; candidates, the real ones need reading of the lead-in)",
+   "db_matches": 453,
+   "db_examples": [
+    "2009-A10241-02",
+    "2009-A10260-01",
+    "2009-A10260-02"
+   ],
+   "needs_judgment": true
+  },
+  {
+   "name": "one-time setup duty with no stated deadline stored as deadline none (should be on_effective_date); same law gives sibling list items on_effective_date",
+   "criteria": [
+    "5"
+   ],
+   "instances": [
+    "2019-A10629-08",
+    "2019-A10629-10"
+   ],
+   "rule": "kind=='duty' and recurrence=='one-time' and deadline_kind=='none' and not deadline_text",
+   "db_matches": 746,
+   "db_examples": [
+    "2009-A10213-02",
+    "2009-A10355-09",
+    "2009-A10468-22"
+   ],
+   "needs_judgment": true
+  },
+  {
+   "name": "list item flipped to power by a 'may' inside a relative clause, against a 'The council shall:' lead-in (recurrence of the Oct 17 class)",
+   "criteria": [
+    "4"
+   ],
+   "instances": [
+    "2019-A10629-12"
+   ],
+   "rule": "kind=='power' and kind_list_item is True and kind_model=='duty'",
+   "db_matches": 100,
+   "db_examples": [
+    "2009-A10984-24",
+    "2009-A10984-25",
+    "2009-A10984-26"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "savings clause ('Nothing contained in this act shall be deemed to alter the authority of ...') stored as a record",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2019-A5806-02"
+   ],
+   "rule": "re.match(r'\\s*Nothing (contained )?in (this|such) (act|section|chapter|article|subdivision)[^.]{0,40}shall be (deemed|construed)', quote, I)",
+   "db_matches": 11,
+   "db_examples": [
+    "2011-S4772-01",
+    "2011-A7238-03",
+    "2011-S397-01"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "'the applicable governing body or tax department' in assessor special acts resolved inconsistently (Villages vs Counties for the same Nassau sentence)",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2017-S8798-03"
+   ],
+   "rule": "re.search('applicable governing body', actor_raw, I); agency spread Towns 41, Counties 24, Municipalities (all) 16, Cities 8, Villages 6, Unspecified 3; Villages rows are the likely errors",
+   "db_matches": 6,
+   "db_examples": [
+    "2011-A2603-04",
+    "2011-A6866-06",
+    "2013-A5678-06"
+   ],
+   "needs_judgment": true
+  },
+  {
+   "name": "local-option threshold ('as may be provided by local law') stored as a duty",
+   "criteria": [
+    "4"
+   ],
+   "instances": [
+    "2013-A9744-01"
+   ],
+   "rule": "kind=='duty' and re.search(r'as may be provided by (the )?local law', quote, I)",
+   "db_matches": 1,
+   "db_examples": [
+    "2013-A9744-01"
+   ],
+   "needs_judgment": false
+  }
+ ],
+ "2019-A4109": {
+  "records": {
+   "2019-A4109-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Unified Court System"
+    },
+    "note": "'the appointing court ... may discharge or modify the powers of the guardian': a court, resolved to Unspecified; quote, kind power, extends_existing true otherwise fine."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2019-12-06",
+   "computed": "2019-12-06",
+   "verdict": "correct",
+   "note": "'This act shall take effect immediately', signed 2019-12-06."
+  }
+ },
+ "2019-A2770": {
+  "records": {
+   "2019-A2770-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "1-f leaflet content duty of the commissioner who designs the leaflet."
+   }
+  },
+  "missed": [
+   {
+    "blind": "b1",
+    "quote": "a statement that the medical assistance program provides coverage for all income-eligible pregnant women and children residing in the state regardless of immigration status",
+    "kind": "duty",
+    "agency": "DOH",
+    "dropped_by": "designation_no_actor",
+    "note": "List item (b) under the mandatory lead-in 'The informational leaflet shall also include{{:}}'; the leaflet 'shall be designed by the commissioner', so the duty is DOH's, same as the kept 1-f record."
+   }
+  ],
+  "effective_date": {
+   "stored": "2021-02-20",
+   "computed": "2021-02-20",
+   "verdict": "correct",
+   "note": "sixtieth day after 2020-12-22."
+  }
+ },
+ "2019-A2625": {
+  "records": {
+   "2019-A2625-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "New matter 'but in no event more than sixty days ... unless the court grants an extension of time for good cause shown' changes the court's order power; power with extends_existing true accepted."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2020-12-11",
+   "computed": "2020-12-11",
+   "verdict": "correct",
+   "note": "thirtieth day after 2020-11-11."
+  }
+ },
+ "2017-S8798": {
+  "records": {
+   "2017-S8798-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2017-S8798-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2017-S8798-03": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Counties",
+     "agency_unit": "County of Nassau"
+    },
+    "note": "'the applicable governing body or tax department may ... provide for the refund': the taxes named are 'general taxes' and 'school taxes', no village tax; the identical sentence in 2019-A10587-04 resolves to County of Nassau."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2018-12-28",
+   "computed": "2018-12-28",
+   "verdict": "correct",
+   "note": "immediately, signed 2018-12-28."
+  }
+ },
+ "2019-A10629": {
+  "records": {
+   "2019-A10629-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "'within thirty days of the effective date' -> 2020-12-27."
+   },
+   "2019-A10629-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2019-A10629-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2019-A10629-05": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Legislature"
+    },
+    "note": "'one each shall be appointed by the minority leader of the assembly': legislative officer resolved to Unspecified while the speaker resolves to Legislature."
+   },
+   "2019-A10629-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2019-A10629-08": {
+    "verdict": "wrong",
+    "criteria": [
+     "5"
+    ],
+    "fields": {
+     "deadline_kind": "on_effective_date"
+    },
+    "note": "'(d) The council shall: (1) Identify evidence-based tools...' one-time duty, no event trigger; siblings -09 and -11 got on_effective_date."
+   },
+   "2019-A10629-09": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2019-A10629-10": {
+    "verdict": "wrong",
+    "criteria": [
+     "5"
+    ],
+    "fields": {
+     "deadline_kind": "on_effective_date"
+    },
+    "note": "'(3) Identify evidenced-based trauma-informed support resources' one-time duty under 'The council shall:', no trigger."
+   },
+   "2019-A10629-11": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2019-A10629-12": {
+    "verdict": "wrong",
+    "criteria": [
+     "4"
+    ],
+    "fields": {
+     "kind": "duty"
+    },
+    "note": "'(d) The council shall: ... (5) Consult with any organization ... that the council determines may be able to provide' : the 'may' belongs to the relative clause; lead-in is mandatory (kind_model duty, kind_rule flipped to power)."
+   },
+   "2019-A10629-13": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2019-A10629-14": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   }
+  },
+  "missed": [
+   {
+    "blind": "b5",
+    "quote": "six shall appointed by the temporary president of the senate",
+    "kind": "duty",
+    "agency": "Legislature",
+    "dropped_by": "duplicate_provision",
+    "note": "2019-A10629-04 dropped as 'overlaps 2019-A10629-03 by 70%+', but -03 is the speaker; separate appointing body."
+   },
+   {
+    "blind": "b6",
+    "quote": "one each shall be appointed by the minority leader of the assembly and the senate",
+    "kind": "duty",
+    "agency": "Legislature",
+    "dropped_by": "duplicate_provision",
+    "note": "2019-A10629-06 (senate minority leader) dropped as overlapping -05 (assembly minority leader)."
+   }
+  ],
+  "effective_date": {
+   "stored": "2020-11-27",
+   "computed": "2020-11-27",
+   "verdict": "correct",
+   "note": "immediately."
+  }
+ },
+ "2019-A6188": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2020-05-31",
+   "computed": "2020-05-31",
+   "verdict": "correct",
+   "note": "180th day after 2019-12-03 (leap year 2020); expires_rule with_referenced_section matches 'deemed repealed therewith'. No government-actor records: penal crimes on owners only."
+  }
+ },
+ "2019-A10587": {
+  "records": {
+   "2019-A10587-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2019-A10587-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2019-A10587-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2020-09-21",
+   "computed": "2020-09-21",
+   "verdict": "correct",
+   "note": "-02 dropped by reviewed_as_if_condition per Oct 16 decision."
+  }
+ },
+ "2017-S9021": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2018-12-21",
+   "computed": "2018-12-21",
+   "verdict": "correct",
+   "note": "Only new matter is the Troy parcel added to the ABC 101/106 tied-house exceptions and renumbering; no government actor in new matter."
+  }
+ },
+ "2019-A2575": {
+  "records": {
+   "2019-A2575-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "sunset extension '[eighteen] {{twenty}}' of a DEC licence cap or issuance rule, extends_existing true"
+   },
+   "2019-A2575-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "sunset extension '[eighteen] {{twenty}}' of a DEC licence cap or issuance rule, extends_existing true"
+   },
+   "2019-A2575-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "sunset extension '[eighteen] {{twenty}}' of a DEC licence cap or issuance rule, extends_existing true"
+   },
+   "2019-A2575-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "sunset extension '[eighteen] {{twenty}}' of a DEC licence cap or issuance rule, extends_existing true"
+   },
+   "2019-A2575-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "sunset extension '[eighteen] {{twenty}}' of a DEC licence cap or issuance rule, extends_existing true"
+   },
+   "2019-A2575-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "sunset extension '[eighteen] {{twenty}}' of a DEC licence cap or issuance rule, extends_existing true"
+   },
+   "2019-A2575-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "sunset extension '[eighteen] {{twenty}}' of a DEC licence cap or issuance rule, extends_existing true"
+   },
+   "2019-A2575-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "sunset extension '[eighteen] {{twenty}}' of a DEC licence cap or issuance rule, extends_existing true"
+   },
+   "2019-A2575-09": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "sunset extension '[eighteen] {{twenty}}' of a DEC licence cap or issuance rule, extends_existing true"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2019-03-25",
+   "computed": "2019-03-25",
+   "verdict": "correct",
+   "note": "immediately."
+  }
+ },
+ "2019-A5806": {
+  "records": {
+   "2019-A5806-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "added place, extends_existing true."
+   },
+   "2019-A5806-02": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "note": "'Nothing contained in this act shall be deemed to alter the authority of the department of transportation to establish maximum speed limits at the request of ...' is a savings clause; DOT's authority comes from VTL 1622, nothing is granted."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2019-12-10",
+   "computed": "2019-12-10",
+   "verdict": "correct",
+   "note": "sixtieth day after 2019-10-11."
+  }
+ },
+ "2019-A10316": {
+  "records": {
+   "2019-A10316-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "filing window is a cutoff, deadline none accepted."
+   },
+   "2019-A10316-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "cost-bearing, none/ongoing per rule."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2020-11-11",
+   "computed": "2020-11-11",
+   "verdict": "correct",
+   "note": "immediately."
+  }
+ },
+ "2015-S5903": {
+  "records": {
+   "2015-S5903-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S5903-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2015-S5903-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2016-11-28",
+   "computed": "2016-11-28",
+   "verdict": "correct",
+   "note": "immediately."
+  }
+ },
+ "2013-A9744": {
+  "records": {
+   "2013-A9744-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "4"
+    ],
+    "fields": {
+     "kind": "power"
+    },
+    "note": "New matter 'fifty thousand dollars beginning July first, two thousand fourteen, as May be provided by the local law, ordinance or resolution' raises the income ceiling at local option: a power of the municipality, extends_existing true (sections 1 and 2 are the pre- and post-reversion copies of one provision, one record correct)."
+   }
+  },
+  "missed": [
+   {
+    "blind": "b2",
+    "quote": "does not exceed fifty thousand dollars beginning July first, two thousand fourteen, as May be provided by local law",
+    "kind": "power",
+    "agency": "Cities",
+    "dropped_by": null,
+    "note": "Section 3, RPTL 467-c(1)(m): same local-option $50,000 ceiling for the 467-c exemption, a separate program from 467-b; no stored or dropped record."
+   }
+  ],
+  "effective_date": {
+   "stored": "2014-07-01",
+   "computed": "2014-07-01",
+   "verdict": "correct",
+   "note": "'shall take effect July 1, 2014'; signed 2014-07-22, so the stated date stands (retroactive)."
+  }
+ }
+}

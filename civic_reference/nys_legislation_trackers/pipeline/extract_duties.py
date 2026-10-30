@@ -1186,6 +1186,8 @@ def existing_actor_only(o, span, text):
 
 # V1-V3 (Oct 20 2026): the last not-real classes of the Oct 19 bulk verification
 CONTENT_LEAD = re.compile(r"\b(?:reports?|stud(?:y|ies)|plans?|applications?|notices?|statements?|proposals?|assessments?|analys[ie]s|process(?:es)?)\b[^.:;]{0,120}?\bshall\s+(?:include|contain|set\s+forth)\b[^.:;]{0,80}:\s*(?:\}\})?\s*$", re.I)
+# P1 (Oct 29 2026): more lead-in forms that describe the content of one deliverable
+CONTENT_LEAD_P1 = re.compile(r"(?:\bshall,?\s+at\s+a\s+minimum,?|\bprotocols?\s+shall\s+include\b|\bshall\s+also\s+include\b|\bthe\s+agreement\s+shall\s+include\b)[^.:;]{0,120}:\s*(?:\}\})?\s*$", re.I)
 CRITERIA_LEAD = re.compile(r"\bshall\s+(?:determine\s+whether|consider)\s*:\s*(?:\}\})?\s*$", re.I)          # V1B: 7 records database-wide incl. 2 gold-real (2011-A5318-09, -11); off
 CRITERIA_ITEM_MODAL = re.compile(r"\b(?:shall|must|may)\b", re.I)          # X1: a criteria item that states its own modal stays a record
 CONTENT_LEAD_NOT = re.compile(r"\b(?:powers?|dut(?:y|ies)|responsibilit\w+|functions?)\b", re.I)
@@ -1272,9 +1274,14 @@ def v_item_rule(o, span, text, hdr, sec):
     tail = lead[-220:]
     if APPLY_V2 and LIMITED_LEAD.search(tail):
         return "cap_not_duty", "a condition inside a cap ('shall be limited to:'); it limits an amount and binds no actor"
-    if ((APPLY_V1 and CONTENT_LEAD.search(tail)) or (APPLY_V1B and CRITERIA_LEAD.search(tail) and not CRITERIA_ITEM_MODAL.search(q))) and not CONTENT_LEAD_NOT.search(tail[-120:]):
+    if ((APPLY_V1 and CONTENT_LEAD.search(tail)) or (APPLY_P1 and CONTENT_LEAD_P1.search(tail)) or (APPLY_V1B and CRITERIA_LEAD.search(tail) and not CRITERIA_ITEM_MODAL.search(q))) and not CONTENT_LEAD_NOT.search(tail[-120:]):
         return "sub_item_of_parent", "a list item under a lead-in that describes the content of one deliverable; part of the parent record, not a record"
     return None
+
+
+CONSULT_CTX = re.compile(r"\b(?:in\s+consultation\s+with|with\s+the\s+approval\s+of|after\s+consult(?:ing|ation)(?:\s+with)?)\s+(?:the\s+)?$", re.I)
+CONSULT_BAD = re.compile(r"\d|\b(?:shall|must|may|can|will|required|authorized|empowered|directed|within|after|before|until|january|february|march|april|june|july|august|september|october|november|december|years?|days?|months?)\b", re.I)
+CONSULT_NEW = re.compile(r"^(?:[\w'&-]+\s+){0,7}[\w'&-]+$")
 
 
 def reprinted_name_swap(sent):
@@ -1287,9 +1294,40 @@ def reprinted_name_swap(sent):
     for m in pairs:
         old, new = m.group(1), m.group(2)
         nw = re.sub(r"^\W+|\W+$", "", new)
+        if APPLY_P3 and CONSULT_CTX.search(sent[:m.start()][-60:]):          # P3: a swapped consultee or approver in an otherwise unchanged duty
+            if len(old.split()) > 8 or CONSULT_BAD.search(new) or CONSULT_BAD.search(old) or not CONSULT_NEW.match(nw):
+                return False
+            continue
         if len(old.split()) > 4 or NAME_SWAP_BAD.search(new) or NAME_SWAP_BAD.search(old) or not NAME_SWAP_NEW.match(nw):
             return False
     return True
+
+
+# P5 (Oct 29 2026)
+SAVINGS_CLAUSE = re.compile(r"^\W*(?:\{\{)?\s*nothing\s+(?:contained\s+)?(?:in|herein)\b[^.;]{0,60}?\bshall\s+(?:be\s+)?(?:deemed|construed|interpreted|held|read)\s+to\b", re.I)
+# P2 (Oct 29 2026): a private body or person acts, no government actor named before the modal
+PRIVATE_ACTOR = re.compile(r"\b(?:district\s+management\s+association|not-for-profit\s+corporations?|cemetery\s+corporations?|religious\s+corporations?|applicants?|owners?|operators?|licensees?|employers?|insurers?|hospitals?|providers?)\b", re.I)
+PRIVATE_EMPLOYER_OK = re.compile(r"retirement and social security law|retirement program|participating employer|civil service law|public employer|state employ|public employee|taylor law|state as employer|the state, as an employer", re.I)
+
+
+def private_actor_record(o, q, text):
+    raw = re.sub(r"\s+", " ", o.get("actor_raw") or "")
+    pm = PRIVATE_ACTOR.search(raw)
+    if not pm or o.get("record_source") == "sunset_extension_from_title":
+        return False
+    if re.fullmatch(r"employers?", pm.group(0), re.I) and PRIVATE_EMPLOYER_OK.search(text):
+        return False
+    if re.search(r"\bof\s+(?:the\s+)?(?:state|department|office|division|commission|board|city|county|town|village)\b", raw[pm.end():], re.I) and not re.search(r"\bhospital|provider|owner|operator", pm.group(0), re.I):
+        return False
+    if GOV_ACTOR.search(PRIVATE_ACTOR.sub(" ", raw)):          # 'hospitals operated by the office of mental health': a government body is named in the actor
+        return False
+    mod = _norm_actor(o.get("actor_resolved_model"))
+    if mod and not PRIVATE_ACTOR.search(mod):
+        return False
+    m = MODAL_SENT.search(q)
+    pre = q[:m.start()] if m else q
+    pre = PRIVATE_ACTOR.sub(" ", pre)
+    return not GOV_ACTOR.search(pre)
 
 
 def gate_record(o, text, has_markers):
@@ -1297,6 +1335,10 @@ def gate_record(o, text, has_markers):
     if not o.get("quote_verified"):
         return "unverified_quote", "quote not found in the law text"
     q = o.get("quote") or ""
+    if APPLY_P5 and SAVINGS_CLAUSE.search(q):
+        return "savings_clause", "a savings clause ('nothing in this section shall be construed to ...'): it limits the reach of the law and binds no actor"
+    if APPLY_P2 and private_actor_record(o, q, text):
+        return "private_actor", "the acting party is a private body or person and the quote names no government actor before the modal"
     if BDC_NOTIFY.search(q):
         return "act_clause_boilerplate", "act-clause notice to the legislative bill drafting commission, a publishing courtesy that binds no program"
     if REVIEWED_AS_IF.search(q):
@@ -1591,6 +1633,8 @@ def merge_key(o, text):
     """B13 (Oct 27 2026): what two records must share to be one provision: the normalized citation (law name, section and sub-parts; empty matches empty only)
     and the act section the quote sits in. The same sentence enacted in different sections for different bodies, taxes or statutes stays as separate records."""
     cit = re.sub(r"[^a-z0-9]+", " ", (o.get("citation") or "").lower()).strip()
+    if APPLY_P4:          # P4: joint actors of one sentence (each appointing members) are separate records
+        return cit, act_section_of(o.get("quote") or "", text), _norm_actor(o.get("actor_resolved_model"))
     return cit, act_section_of(o.get("quote") or "", text)
 
 
@@ -1604,6 +1648,11 @@ def merge_partitions(grp, text):
     return list(parts.values())
 
 
+def _norm_actor(s):
+    s = re.sub(r"^(?:the\s+)+", "", re.sub(r"\s+", " ", (s or "").strip().lower()))
+    return "" if s in ("", "unspecified", "none", "null") else s
+
+
 def dedupe_law(lst):
     """Rule 4: same actor, quotes overlapping 70%+: keep the one with a stated deadline, else the longer quote. A deadline
     clause split off as its own duty ('The campaign shall begin no later than 90 days ...') merges into the main duty."""
@@ -1615,6 +1664,10 @@ def dedupe_law(lst):
             if b is a or b not in out or a not in out:
                 continue
             same_actor = (a.get("agency"), a.get("agency_unit")) == (b.get("agency"), b.get("agency_unit"))
+            if APPLY_P4 and same_actor:          # P4: joint actors of one sentence (Governor, Legislature, temporary president each appointing) are distinct records
+                ma, mb = _norm_actor(a.get("actor_resolved_model")), _norm_actor(b.get("actor_resolved_model"))
+                if ma and mb and ma != mb:
+                    bump("p4_joint_actor_kept"); same_actor = False
             if not same_actor:
                 continue
             if same_provision(a.get("quote"), b.get("quote")) and a.get("kind") == b.get("kind"):
@@ -1784,6 +1837,7 @@ COMPOUND_LOCAL = re.compile(r"\b(?:town|city|village|county)\b[^;]*?\band\b[^;]*
 PRE_2017 = range(2009, 2017)
 APPLY_M31 = True
 APPLY_V1 = APPLY_V2 = APPLY_V3 = True        # Oct 20 2026 closing fixes; a rule dropping over 40 records database-wide is set False
+APPLY_P1 = APPLY_P2 = APPLY_P3 = APPLY_P4 = APPLY_P5 = True          # Oct 29 2026 night gate fixes; a rule dropping over 40 records database-wide is set False
 APPLY_W3 = True          # Oct 20 2026
 APPOINT_RE = re.compile(r"\bthe\s+governor\s+shall\s+appoint|\bshall\s+be\s+appointed\s+by\s+the\s+governor|\bmembers?\s+(?:of\s+[^.;]{0,60}?)?shall\s+be\s+appointed", re.I)
 APPLY_V1B = True   # Oct 21 2026: on after adjudication; dry run 44 drops (37 V1 + 7 V1B), all criteria or content sub-items; cap exceeded by 4 knowingly        # V1 with 'shall determine whether:' / 'shall consider:' leads: with it V1 drops 41 (over the 40 cap) and 2 gold-real items
@@ -1968,7 +2022,61 @@ def split_mechanical(entries):
     return keep, mech
 
 
-def build_reask(todo, duties, powers, mechanical=None):
+REASK_HISTORY = DATA / "reask_history.json"     # Oct 29 2026: {law: {count, last_tag, checks, sentences, answered}}; a re-asked law is not re-queued for the same uncovered text
+ALWAYS_REQUEUE = frozenset({"audit_confirmed_miss", "sunset_extension_unnamed_holder"})
+JUDGMENT_REQUEUE_MAX_COUNT = 1                    # a judgment flag queues a law once more after its first re-ask, never after the second
+
+
+def load_reask_history(path=None):
+    path = path or REASK_HISTORY
+    return json.loads(path.read_text()) if path.exists() else {}
+
+
+def _norm_sent(s):
+    return re.sub(r"\s+", " ", s or "").strip()
+
+
+def update_reask_history(packets_root=None, entries=None, path=None, read_path=None):
+    """Count each results_reask answer once (keyed by file mtime), recording the checks and sentences of the reasons it answered.
+    Run at ingest BEFORE build_reask rewrites data/reask, so `entries` (load_reask()) still hold the reasons that were asked. Returns the history."""
+    path = path or REASK_HISTORY
+    packets_root = Path(packets_root) if packets_root else HERE / "cache" / "packets"
+    entries = load_reask() if entries is None else entries
+    hist = load_reask_history(read_path or path)
+    for f in sorted(packets_root.glob("*/results_reask/*.json")):
+        k, mt = f.stem, int(f.stat().st_mtime)
+        h = hist.get(k)
+        if h and h.get("answered") == mt:
+            continue
+        tf = f.parent.parent / "reask" / (k + ".tag")
+        rs = (entries.get(k) or {}).get("reasons", [])
+        sents = sorted(set((h or {}).get("sentences", [])) | {_norm_sent(x) for r in rs for x in r.get("sentences", [])})
+        hist[k] = {"count": (h["count"] if h else 0) + 1, "last_tag": tf.read_text().strip() if tf.exists() else (h or {}).get("last_tag", "unknown"),
+                   "checks": sorted(set((h or {}).get("checks", [])) | {r.get("check") for r in rs}), "sentences": sents, "answered": mt}
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(hist, indent=1, ensure_ascii=False))
+    return hist
+
+
+def apply_reask_history(fl, h):
+    """(kept, suppressed) reasons for a law with history h ({count, sentences}). Count 0: everything kept.
+    Coverage checks (a_..e_) stay only with a sentence not in the previous re-ask; judgment flags stay while count <= 1; ALWAYS_REQUEUE checks always stay."""
+    if not h or h.get("count", 0) < 1:
+        return fl, []
+    prev = {_norm_sent(x) for x in h.get("sentences", [])}
+    kept, sup = [], []
+    for r in fl:
+        c = r.get("check") or ""
+        if c in ALWAYS_REQUEUE:
+            kept.append(r)
+        elif re.match(r"^[a-e]_", c):
+            (kept if any(_norm_sent(x) not in prev for x in r.get("sentences", [])) else sup).append(r)
+        else:
+            (kept if h["count"] <= JUDGMENT_REQUEUE_MAX_COUNT else sup).append(r)
+    return kept, sup
+
+
+def build_reask(todo, duties, powers, mechanical=None, history=None):
     """data/reask.json content: {key: {reasons: [...]}} for the laws whose recall checks flag.
     Mechanical-only reasons (MECHANICAL_CHECKS) are left out and, when a dict is passed as `mechanical`, collected there."""
     by_law = defaultdict(list)
@@ -1978,7 +2086,8 @@ def build_reask(todo, duties, powers, mechanical=None):
     for d in DROPPED:
         if not (d.get("rule") or "").startswith("excluded_"):        # R3: excluded records are listed for audit but do not count as covered sentences for recall
             drops[d["matter_id"]].append(d)
-    out = {}
+    out, suppressed = {}, {}
+    history = load_reask_history() if history is None else history
     manual = json.loads(REASK_MANUAL.read_text()) if REASK_MANUAL.exists() else {}
     manual_confirmed = json.loads(REASK_MANUAL_DATA.read_text())["laws"] if REASK_MANUAL_DATA.exists() else {}
     for law, text in todo:
@@ -2008,9 +2117,16 @@ def build_reask(todo, duties, powers, mechanical=None):
                     sents.append(it["sentence"])
             fl.insert(0, {"check": "audit_confirmed_miss", "detail": "%d provisions the nightly audits confirmed missing (%s)" % (len(sents), ", ".join(sorted({it["night"] for it in manual_confirmed[law["key"]]}))),
                        "sentences": sents})
+        h = history.get(law["key"])
+        fl, sup = apply_reask_history(fl, h)
+        if sup:
+            suppressed[law["key"]] = {"reasons": [{"check": "reask_suppressed_after_%d" % h["count"], "detail": "%d reasons not re-queued after %d re-ask(s): %s" % (len(sup), h["count"], ", ".join(r["check"] for r in sup)),
+                                                    "sentences": [x for r in sup for x in r.get("sentences", [])][:12], "suppressed": sup}]}
         if fl:
             out[law["key"]] = {"reasons": fl}
     out, mech = split_mechanical(out)
+    for k, e in suppressed.items():     # nothing is lost: the suppressed reasons live with the mechanical flags
+        mech.setdefault(k, {"reasons": []})["reasons"] += e["reasons"]
     if mechanical is not None:
         mechanical.update(mech)
     return out
@@ -2767,11 +2883,17 @@ HOLDER_DEPT = re.compile(r"\bthe\s+(?:state\s+)?((?:department|office|division|c
 SUNSET_UNNAMED = {}           # law key -> {sentence, title}, filled by build_records, read by build_reask
 
 
+HOLDER_MULTI = re.compile(r"\b(?:counties|towns|cities|villages)\s+of\s+[A-Z][\w.'’-]*(?:\s+[A-Z][\w.'’-]*)?\s*(?:,|\band\b)", re.I)
+HOLDER_CHAPTERS = re.compile(r"\bchapter\s+\d+\s+of\s+the\s+laws\s+of\s+(?:19|20)\d{2}\b", re.I)
+
+
 def sunset_holder(*texts):
     """The single government body the act title or act clause names, as an actor_raw ('the town of Islip'), else None (none named, or several)."""
     found = {}
     for t in texts:
         t = re.sub(r"\s+", " ", t or "")
+        if APPLY_P5 and (HOLDER_MULTI.search(t) or len(HOLDER_CHAPTERS.findall(t)) >= 3):          # P5: a title that lists several places or amends several chapters names no single holder
+            return None
         for m in HOLDER_LOCAL.finditer(t):
             kind, name = m.group(1).lower(), m.group(2).strip(" .,;")
             if kind == "county":
@@ -3427,7 +3549,8 @@ def main():
                 json.dump({k: v for k, v in EFFECTIVE.items() if k.startswith("%d-" % y)}, open(out / "effective_dates" / ("%d.json" % y), "w"), separators=(",", ":"))
         stamp = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
         mech_flags = {}
-        reask = build_reask(todo, duties, powers, mech_flags)
+        hist = update_reask_history(path=out / "reask_history.json", read_path=REASK_HISTORY)      # before build_reask rewrites data/reask: the old reasons are what the answers addressed
+        reask = build_reask(todo, duties, powers, mech_flags, history=hist)
         print("re-ask merged %d records; recall checks flag %d laws" % (merged, len(reask)))
         sess = sorted({l["session"] for l, _ in todo})
         for sub_dir in ("reask", "dropped", "mechanical_flags"):

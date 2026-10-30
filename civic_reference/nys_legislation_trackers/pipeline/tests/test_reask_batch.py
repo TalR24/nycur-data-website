@@ -115,5 +115,32 @@ d = json.load(open(dp))["laws"]
 check("P4 deferred_skipped.json entry has the reason and keeps old rows", {"key": "2011-A1", "reason": "re-ask skipped twice"} in d and len(d) == 2)
 check("P4 not added twice", nb.defer_twice_skipped(pk, drp, dp) == [] and nb.deferred_skipped(dp) == {"2009-OLD", "2011-A1"})
 
+# Q: re-ask history (Oct 29 2026)
+S1, S2 = "The board must meet.", "The agency shall publish a list."
+cov = lambda *ss: {"check": "b_modal_sentence_coverage", "detail": "d", "sentences": list(ss)}
+jud = {"check": "passive_subject_actor", "detail": "d", "sentences": [S1]}
+h1 = {"count": 1, "sentences": [S1]}
+k, sup = ed.apply_reask_history([cov(S1)], h1)
+check("Q3 one prior re-ask, same coverage reasons: not queued, suppressed kept", k == [] and len(sup) == 1)
+k, sup = ed.apply_reask_history([cov(S1, S2)], h1)
+check("Q3 new uncovered sentence: queued", len(k) == 1 and sup == [])
+k, _ = ed.apply_reask_history([{"check": "audit_confirmed_miss", "detail": "d", "sentences": [S1]}, {"check": "sunset_extension_unnamed_holder", "detail": "d", "sentences": [S1]}], {"count": 3, "sentences": [S1]})
+check("Q3 audit_confirmed_miss and sunset_extension_unnamed_holder always queued", len(k) == 2)
+check("Q3 count 2 with only judgment flags: not queued", ed.apply_reask_history([jud], {"count": 2, "sentences": [S1]})[0] == [])
+check("Q3 count 1 judgment flag queues once more; count 0 keeps everything", len(ed.apply_reask_history([jud], h1)[0]) == 1 and len(ed.apply_reask_history([cov(S1)], None)[0]) == 1)
+dd2, pk2 = tmp / "data2", tmp / "packets2"
+(dd2 / "reask").mkdir(parents=True); (pk2 / "2011").mkdir(parents=True)
+ents2 = {"2011-H1": {"reasons": [jud, cov(S1)]}, "2011-H2": {"reasons": [cov(S1)]}, "2011-H3": {"reasons": [cov(S1, S2)]}, "2011-H4": {"reasons": [{"check": "audit_confirmed_miss", "detail": "d", "sentences": [S1]}]}}
+(dd2 / "reask" / "2011.json").write_text(json.dumps({"laws": ents2}))
+for k in ents2: (pk2 / "2011" / (k + ".txt")).write_text(packet(k))
+(dd2 / "reask_history.json").write_text(json.dumps({"2011-H1": {"count": 2, "sentences": [S1]}, "2011-H2": {"count": 1, "sentences": [S1]}, "2011-H3": {"count": 1, "sentences": [S1]}, "2011-H4": {"count": 5, "sentences": [S1]}}))
+c2 = {k: e for k, e in nb.reask_candidates(set(), dd2, pk2, sessions=(2011,))}
+check("Q2 reask_candidates skips laws whose reasons are all suppressed; new text and audit misses stay", sorted(c2) == ["2011-H3", "2011-H4"])
+# history update counts an answer once
+hp = tmp / "hist.json"
+ed.update_reask_history(pk, {"2011-A6": {"reasons": [cov(S1)]}}, hp)
+h = ed.update_reask_history(pk, {"2011-A6": {"reasons": [cov(S2)]}}, hp)
+check("Q1 history counts a results_reask file once and records its sentences", h["2011-A6"]["count"] == 1 and h["2011-A6"]["sentences"] == [S1])
+
 print("%d passed, %d failed" % (passed, failed))
 sys.exit(1 if failed else 0)
