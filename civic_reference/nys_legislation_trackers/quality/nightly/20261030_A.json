@@ -1,0 +1,539 @@
+{
+ "_scoring": {
+  "auditor": "A",
+  "night": "20261030",
+  "laws": 11,
+  "stored_records": 21,
+  "correct": 20,
+  "wrong_fields": 0,
+  "not_real": 1,
+  "missed": 3,
+  "precision_strict": "20/21 = 95.2% (Wilson 95% 77.3-99.2)",
+  "precision_real": "21/21 = 100.0% (Wilson 95% 84.5-100.0)",
+  "recall": "18/23 = 78.3% (Wilson 95% 58.1-90.3)",
+  "effective_dates": "11/11 correct",
+  "calibration_laws": [
+   "2013-A7175",
+   "2011-S6363"
+  ],
+  "calibration_scoring": {
+   "stored_records": 13,
+   "correct": 11,
+   "wrong_fields": 1,
+   "not_real": 1,
+   "missed": 2,
+   "precision_strict": "11/13 = 84.6% (Wilson 95% 57.8-95.7)",
+   "precision_real": "12/13 = 92.3% (Wilson 95% 66.7-98.6)",
+   "recall": "11/14 = 78.6% (Wilson 95% 52.4-92.4)",
+   "effective_dates": "2/2 correct"
+  },
+  "method": "blind list saved to /tmp/auditA/blind.json before opening stored records; sample totals exclude the 2 calibration laws"
+ },
+ "_classes": [
+  {
+   "name": "lead_in borrowed from a different act section (rescued list item gets the wrong lead-in, so kind/actor can come from the wrong provision)",
+   "criteria": [
+    "4",
+    "3"
+   ],
+   "instances": [
+    "2019-S1192-04",
+    "2013-A7175-11"
+   ],
+   "rule": "for records with lead_in: strip braces/brackets from packet LAW TEXT, find norm(lead_in)[:80]; flag when no occurrence of the lead_in is followed by norm(quote)[:80] without an intervening line-start '§ N.' (48 of the 54 carry rescued_imperative_item=true)",
+   "db_matches": 54,
+   "db_examples": [
+    "2009-A10984-19",
+    "2009-A2209-35",
+    "2013-A7175-11"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "'the city' in a New York City law resolved to Cities group (jurisdiction local, no unit) instead of New York City",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2013-A7175-09"
+   ],
+   "rule": "agency=='Cities' and not agency_unit and re.search(r'city of new york|\\bNYC\\b|new york city', law_title, I)",
+   "db_matches": 18,
+   "db_examples": [
+    "2013-A7175-09",
+    "2011-A6923-02",
+    "2009-S2871-01"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "benefit_entitlement gate drops grant caps and form-prescription sentences whose subject is not a beneficiary",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2019-S1192-03",
+    "2019-S1192-02"
+   ],
+   "rule": "dropped rule=='benefit_entitlement' and quote ~ r'no (grant|loan|award|contract)s? shall be (made|awarded)|prescribed by the (commissioner|department|superintendent|director|board)'",
+   "db_matches": 7,
+   "db_examples": [
+    "2017-A2279-05",
+    "2017-A2805-03",
+    "2019-A7289-12"
+   ],
+   "needs_judgment": true,
+   "note": "only S1192-03 (raised grant ceiling, an amount extension) is counted as a miss; -02 (forms prescribed by the {{commissioner}}) is a holder rename, judged not a record; the 7 matches need reading"
+  },
+  {
+   "name": "earlier chapter's sunset sentence amended inside the law (braced new date) with no extension record",
+   "criteria": [
+    "1",
+    "7"
+   ],
+   "instances": [
+    "2011-S6363 (ch 226 of 2003 s12, November 1 [2011] {{2013}})"
+   ],
+   "rule": "packet LAW TEXT has r'(deemed repealed|shall expire)[^.]{0,200}?\\{\\{' before the act's last 'This act shall take effect', with 'is amended to read' in the preceding 1500 chars, and no stored record of the law quotes /repeal|expire/ (law-level count)",
+   "db_matches": 523,
+   "db_examples": [
+    "2009-A10118",
+    "2009-A10848",
+    "2011-S6363"
+   ],
+   "needs_judgment": true,
+   "note": "upper bound: includes laws whose title names no government body (re-ask route sunset_extension_unnamed_holder); S6363 was re-asked 20261017, before the Oct 19 decision"
+  },
+  {
+   "name": "text of a State pledge/covenant ('the state will not take any action') stored as a record",
+   "criteria": [
+    "1",
+    "4"
+   ],
+   "instances": [
+    "2013-A7175-11"
+   ],
+   "rule": "quote ~ r'\\bstate (will|shall) not (take any action|limit or alter|impair)'",
+   "db_matches": 1,
+   "db_examples": [
+    "2013-A7175-11"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "one actor of a joint list left out (generic 'law enforcement authorities') or joint duty dropped as duplicate",
+   "criteria": [
+    "3",
+    "9"
+   ],
+   "instances": [
+    "2019-A6787 (law enforcement authorities)",
+    "2013-A7175-10 (state financing agency, dropped duplicate_provision)"
+   ],
+   "rule": "no mechanical rule; known class 'joint actors stored for one body' recurring",
+   "db_matches": 0,
+   "db_examples": [],
+   "needs_judgment": true
+  }
+ ],
+ "2019-S2403": {
+  "records": {
+   "2019-S2403-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "recurrence as-needed acceptable for 'periodically review'"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2019-12-12",
+   "computed": "2019-12-12",
+   "verdict": "correct",
+   "note": ""
+  }
+ },
+ "2019-A8078": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2020-08-24",
+   "computed": "2020-08-24",
+   "verdict": "correct",
+   "note": "no government duty: new matter only adds 4-H instructors to Penal Law exemption lists"
+  }
+ },
+ "2019-S2458": {
+  "records": {
+   "2019-S2458-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2019-11-20",
+   "computed": "2019-11-20",
+   "verdict": "correct",
+   "note": "s2 'shall dedicate' and s4 federal compliance are conditions of the authorization"
+  }
+ },
+ "2019-A9058": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2020-03-04",
+   "computed": "2020-03-04",
+   "verdict": "correct",
+   "note": "thirty days after 2020-02-03; GPS duty is on private operators; LBDC notice is boilerplate"
+  }
+ },
+ "2019-S1192": {
+  "records": {
+   "2019-S1192-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2019-S1192-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "fields correct; metadata lead_in is s211(6) 'Grants made pursuant to this section shall be subject to the following limitations:' while the quote is s212(2) (class 1)"
+   },
+   "2019-S1192-05": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "7"
+    ],
+    "fields": {},
+    "note": "only new matter is the subject rename '[Such reports] {{The report}} shall be made available to the public on the department's website'; the posting duty is reprinted unchanged"
+   },
+   "2019-S1192-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   }
+  },
+  "missed": [
+   {
+    "blind": "b4",
+    "quote": "no grant shall be made to any one or any consortium of career education agencies and not-for-profit corporations in excess of {{one hundred}} seventy-five thousand dollars",
+    "kind": "duty",
+    "agency": "ESD",
+    "dropped_by": "benefit_entitlement",
+    "note": "grant ceiling raised from 75,000 to 175,000: an amount extension, extends_existing true; the gate reason (subject is a beneficiary) does not fit"
+   },
+   {
+    "blind": "b3",
+    "quote": "{{permit a joint application from a consortium of career education agencies and not-for-profit corporations, or any combination thereof, for establishing a cooperative program; and}}",
+    "kind": "duty",
+    "agency": "ESD",
+    "dropped_by": null,
+    "note": "new class of eligible applicant under s211(3); borderline drafting (list item under 'Such application shall include')"
+   }
+  ],
+  "effective_date": {
+   "stored": "2019-09-13",
+   "computed": "2019-09-13",
+   "verdict": "correct",
+   "note": ""
+  }
+ },
+ "2019-A6787": {
+  "records": {
+   "2019-A6787-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2019-A6787-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2019-A6787-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2019-A6787-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2019-A6787-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2019-A6787-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2019-A6787-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2019-A6787-09": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2019-A6787-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "on_effective_date accepted: report is required before any authorization; not on blind list as a separate item"
+   }
+  },
+  "missed": [
+   {
+    "blind": "b4e",
+    "quote": "The office of information technology, the division of criminal justice services, law enforcement authorities and the state university of New York and the city university of New York shall, to the extent practicable, identify and provide representatives to the department",
+    "kind": "duty",
+    "agency": "unspecified (law enforcement authorities)",
+    "dropped_by": null,
+    "note": "four of the five named bodies stored (-05..-08); 'law enforcement authorities' has no record"
+   }
+  ],
+  "effective_date": {
+   "stored": "2020-12-22",
+   "computed": "2020-12-22",
+   "verdict": "correct",
+   "note": ""
+  }
+ },
+ "2019-S2109": {
+  "records": {
+   "2019-S2109-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2020-03-31",
+   "computed": "2020-03-31",
+   "verdict": "correct",
+   "note": "180th day after 2019-10-03"
+  }
+ },
+ "2019-S2877": {
+  "records": {
+   "2019-S2877-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "quote stops before 'and to lease such parklands to the Patchogue-Medford Library District'; acceptable"
+   },
+   "2019-S2877-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "'any facilities located thereon shall be adapted for public park and recreational purposes' after reversion to the town; passive, town is the plausible actor; not on blind list"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2019-09-13",
+   "computed": "2019-09-13",
+   "verdict": "correct",
+   "note": ""
+  }
+ },
+ "2019-A8222": {
+  "records": {
+   "2019-A8222-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2020-09-21",
+   "computed": "2020-09-21",
+   "verdict": "correct",
+   "note": "POL s3(70) residency exemption binds no actor, correctly absent"
+  }
+ },
+ "2019-S3409": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2019-11-08",
+   "computed": "2019-11-08",
+   "verdict": "correct",
+   "note": "both residency exemptions correctly dropped (exemption_or_applicability)"
+  }
+ },
+ "2019-A8300": {
+  "records": {
+   "2019-A8300-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2019-A8300-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2020-11-27",
+   "computed": "2020-11-27",
+   "verdict": "correct",
+   "note": ""
+  }
+ },
+ "2013-A7175": {
+  "records": {
+   "2013-A7175-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-A7175-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-A7175-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-A7175-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-A7175-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-A7175-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-A7175-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-A7175-12": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2013-A7175-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "separate clause (iii) of LFL 90.00(g)(3), its own braced 'fourteen'; not a duplicate of -06"
+   },
+   "2013-A7175-09": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "New York City",
+     "jurisdiction": "nyc",
+     "agency_group": "New York City"
+    },
+    "note": "'the state of New York hereby authorizes the city' in the NYC financial emergency act: the city is the City of New York, stored as Cities with no unit"
+   },
+   "2013-A7175-11": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "4"
+    ],
+    "fields": {},
+    "note": "'that the state will not take any action which will (a) substantially impair the authority of the board' is the content of the pledge the city/agency include, not a State duty or power; stored as power via a lead_in from s6 ('the mayor and comptroller of the city of New York may:')"
+   }
+  },
+  "missed": [
+   {
+    "blind": "b7b",
+    "quote": "the state of New York hereby authorizes the city and authorizes and requires such state financing agency to include a pledge and agreement of the state of New York",
+    "kind": "duty",
+    "agency": "State financing agencies (unspecified)",
+    "dropped_by": "duplicate_provision",
+    "note": "'authorizes and requires' is a duty of the state financing agency; dropped 2013-A7175-10 as 70% overlap with the city's power -09 (joint actors stored for one body)"
+   }
+  ],
+  "effective_date": {
+   "stored": "2013-06-30",
+   "computed": "2013-06-30",
+   "verdict": "correct",
+   "note": "s4 LFL 107.00 down-payment exemption judged not a record"
+  }
+ },
+ "2011-S6363": {
+  "records": {
+   "2011-S6363-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": ""
+   },
+   "2011-S6363-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "'such district shall be established ... on or before January 1, {{2014}}' passive, resolved to town of Oyster Bay; borderline real"
+   }
+  },
+  "missed": [
+   {
+    "blind": "b3",
+    "quote": "This act shall take effect immediately and shall be deemed repealed on November 1, {{2013}} if the creation of the Brookville library funding district shall not have been approved before November 1, {{2013}}",
+    "kind": "power",
+    "agency": "Towns (Town of Oyster Bay)",
+    "dropped_by": null,
+    "note": "earlier chapter's (ch 226 of 2003 s12) sunset amended inside this law: extension record per Oct 16/19 decisions, holder from title (town of Oyster Bay); not stored, not dropped"
+   }
+  ],
+  "effective_date": {
+   "stored": "2012-07-18",
+   "computed": "2012-07-18",
+   "verdict": "correct",
+   "note": ""
+  }
+ }
+}

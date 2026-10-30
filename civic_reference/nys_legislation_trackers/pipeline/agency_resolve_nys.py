@@ -667,11 +667,36 @@ K3_BODY = re.compile(r"^(?:applicable governing bod(?:y|ies) or (?:the )?tax dep
 LOC_IN_TEXT = re.compile(r"\b(City|Town|Village|County) of ((?:[A-Z][\w.'-]*)(?: [A-Z][\w.'-]*){0,2})")
 
 
+# K4 (Oct 30 2026): 'the city' / 'such city' / 'the mayor' in a law that names the city of New York and no other city is New York City, not the Cities group.
+K4_CITY_ACTOR = re.compile(r"^(?:(?:the|such|said) )?(?:city|mayor)(?:'?s)?$", re.I)
+K4_NYC_TEXT = re.compile(r"city of new york|new york city", re.I)
+K4_OTHER_CITY = re.compile(r"\b[Cc]ity of (?!New York\b)([A-Z][\w.'-]*)")
+
+
+def fix_city_is_nyc(o, by_canon, text=""):
+    """K4: True when a bare city/mayor actor in an NYC-only law was set to the New York City entry."""
+    raw = strip_art(re.sub(r"\s+", " ", norm(o.get("actor_raw") or "")))
+    if not K4_CITY_ACTOR.match(raw) or "New York City" not in by_canon:
+        return False
+    if o.get("agency") not in ("Cities", "Unspecified") or o.get("agency_unit"):
+        return False
+    blob = (text or "") + " " + (o.get("quote") or "")
+    if not K4_NYC_TEXT.search(blob) or K4_OTHER_CITY.search(blob):
+        return False
+    a = by_canon["New York City"]
+    o.update(agency="New York City", agency_full=a.get("full_name") or "New York City", agency_matched=True, jurisdiction="nyc",
+             agency_org_type=a.get("org_type") or "local government group", agency_group="New York City", agency_unit=None, agency_source="city_is_nyc_k4")
+    o.pop("actor_unresolved", None)
+    return True
+
+
 def fix_20261029(o, by_canon, text=""):
     """K1 court actors, K2 legislative leaders, K3 'governing body' phrases. Returns True when it set the agency."""
     raw = strip_art(re.sub(r"\s+", " ", norm(o.get("actor_raw") or "")))
     if not raw:
         return False
+    if fix_city_is_nyc(o, by_canon, text):
+        return True
     if K1_COURT.match(raw):
         if o.get("agency") not in LOCAL_COURT_GROUPS and o.get("agency") != "Unspecified":
             return False

@@ -142,5 +142,18 @@ ed.update_reask_history(pk, {"2011-A6": {"reasons": [cov(S1)]}}, hp)
 h = ed.update_reask_history(pk, {"2011-A6": {"reasons": [cov(S2)]}}, hp)
 check("Q1 history counts a results_reask file once and records its sentences", h["2011-A6"]["count"] == 1 and h["2011-A6"]["sentences"] == [S1])
 
+# Oct 30 2026: a second re-ask is drawn once the first answer is ingested (answer mtime == history "answered"); an un-ingested answer blocks the draw; sessions come from the queue files
+import os as _os
+dd3, pk3 = tmp / "data3", tmp / "packets3"
+(dd3 / "reask").mkdir(parents=True); (pk3 / "2017" / "results_reask").mkdir(parents=True)
+ents3 = {"2017-R1": {"reasons": [jud]}, "2017-R2": {"reasons": [jud]}}
+(dd3 / "reask" / "2017.json").write_text(json.dumps({"laws": ents3}))
+for k in ents3:
+    (pk3 / "2017" / (k + ".txt")).write_text(packet(k)); (pk3 / "2017" / "results_reask" / (k + ".json")).write_text("{}")
+mt1 = int((pk3 / "2017" / "results_reask" / "2017-R1.json").stat().st_mtime)
+(dd3 / "reask_history.json").write_text(json.dumps({"2017-R1": {"count": 1, "sentences": [S1], "answered": mt1}, "2017-R2": {"count": 1, "sentences": [S1], "answered": mt1 - 999}}))
+c3 = sorted(k for k, _ in nb.reask_candidates(set(), dd3, pk3))
+check("second-round draw: ingested answer may be re-asked, un-ingested answer is not; 2017 found without a sessions list", c3 == ["2017-R1"])
+
 print("%d passed, %d failed" % (passed, failed))
 sys.exit(1 if failed else 0)

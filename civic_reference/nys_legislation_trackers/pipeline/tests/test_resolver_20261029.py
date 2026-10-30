@@ -52,4 +52,16 @@ check("K3 law text names locality -> unchanged", o["agency"] == "Counties")
 o = rec("the governing body of the village", "Villages"); run(o)
 check("K3 leaves other governing-body phrases", o["agency"] == "Villages")
 
+# K4
+def run4(o, text): return ar.fix_20261027(o, text, ed.LOOKUP, ed.BY_CANON, ed.eo.match_agency)
+for raw in ["the city", "such city", "the city's", "the mayor"]:
+    o = rec(raw, "Cities"); run4(o, "the city of New York shall report; the city shall file")
+    check("K4 NYC-only moves " + raw, o["agency"] == "New York City" and o["jurisdiction"] == "nyc" and o["agency_unit"] is None)
+o = rec("the city", "Cities"); run4(o, "the city of New York and the city of Buffalo")
+check("K4 two cities stays", o["agency"] == "Cities")
+o = rec("the city", "Cities", agency_unit="City of Buffalo"); run4(o, "the city of Buffalo shall file")
+check("K4 Buffalo stays Cities with unit", o["agency"] == "Cities" and o["agency_unit"] == "City of Buffalo")
+o = rec("the city", "Cities"); run4(o, "Hudson city law, city of Hudson")
+check("K4 no NYC in text stays", o["agency"] == "Cities")
+
 print(f"{passed} passed, {failed} failed")

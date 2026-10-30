@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Draw the nightly 20-law audit sample (11 per auditor, 2 shared) plus 2 gold calibration laws per auditor.
-Usage: draw_sample.py --night YYYYMMDD [--source tonight|unaudited|gold] --out FILE [--packets DIR] [--data-dir DIR] [--nightly-dir DIR] [--gold PATH]
+Usage: draw_sample.py --night YYYYMMDD [--source tonight|unaudited|gold] [--batch TAG] --out FILE [--packets DIR] [--data-dir DIR] [--nightly-dir DIR] [--gold PATH]
 Seed = the night number (a trailing letter becomes a digit: 20261013b -> 202610132). Prints the JSON."""
 import argparse
 import glob
@@ -84,13 +84,13 @@ def calibration(gold, seed, exclude, per=2):
     return out
 
 
-def draw(night, source, packets, data_dir, nightly_dir, gold_path, size=20, shared=2):
+def draw(night, source, packets, data_dir, nightly_dir, gold_path, size=20, shared=2, batch_tag=None):
     seed = seed_of(night)
     gold = load(gold_path)
     if source == "gold":
         pool = sorted(gold["laws"])
     else:
-        batch = latest_batch(packets)
+        batch = os.path.join(packets, "batches", batch_tag) if batch_tag else latest_batch(packets)   # --batch: a re-ask-only batch may be the newest (Oct 30 2026)
         base = answered(packets, batch_laws(batch)) if batch else set()
         pool = base - deferred(data_dir)
         if source == "unaudited":
@@ -116,8 +116,9 @@ def main(argv=None):
     ap.add_argument("--data-dir", default=os.path.join(T, "data"))
     ap.add_argument("--nightly-dir", default=os.path.join(HERE, "nightly"))
     ap.add_argument("--gold", default=os.path.join(HERE, "gold.json"))
+    ap.add_argument("--batch", default=None, help="batch tag to draw from instead of the newest batch folder")
     a = ap.parse_args(argv)
-    res = draw(a.night, a.source, a.packets, a.data_dir, a.nightly_dir, a.gold)
+    res = draw(a.night, a.source, a.packets, a.data_dir, a.nightly_dir, a.gold, batch_tag=a.batch)
     # Blinding (Oct 20 2026): the auditors read a.out, so the gold verdicts of the calibration laws go to a sibling file
     # the orchestrator alone reads; the auditors' file names the calibration laws but never their verdicts.
     gv = (res.get("calibration") or {}).pop("gold_verdicts", None)

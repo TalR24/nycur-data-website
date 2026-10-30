@@ -92,20 +92,27 @@ def reask_priority(key: str, entry: dict) -> tuple:
 
 
 def reask_candidates(skip: set[str], data_dir: Path | None = None, packets_dir: Path | None = None,
-                     sessions: tuple = (2009, 2011, 2013, 2015)) -> list[tuple[str, dict]]:
+                     sessions: tuple | None = None) -> list[tuple[str, dict]]:
     """Laws in data/reask/{Y}.json that can still be re-asked, in reask_priority order. A law whose only reasons are mechanical checks is not a candidate.
-    Skips deferred/skipped laws, laws without an original packet, and laws that already have a results_reask answer."""
+    Skips deferred/skipped laws, laws without an original packet, and laws whose results_reask answer is not yet ingested
+    (its mtime differs from the history's `answered`); an ingested answer may be re-asked again when apply_reask_history keeps a reason
+    (Oct 30 2026: before this, 565 queued 2017/2019 laws were never looked at and 446 second-round laws were blocked by the answer file)."""
     import extract_duties as ed
     data_dir, packets_dir = data_dir or DATA, packets_dir or PACKETS
     hist = ed.load_reask_history(data_dir / "reask_history.json")
     out = []
+    if sessions is None:
+        sessions = tuple(sorted(int(f.stem) for f in (data_dir / "reask").glob("20??.json")))
     for y in sessions:
         f = data_dir / "reask" / f"{y}.json"
         if not f.exists():
             continue
         for key, entry in json.load(open(f))["laws"].items():
-            if key in skip or not live_reasons(entry) or not (packets_dir / str(y) / f"{key}.txt").exists() or (packets_dir / str(y) / "results_reask" / f"{key}.json").exists():
+            if key in skip or not live_reasons(entry) or not (packets_dir / str(y) / f"{key}.txt").exists():
                 continue
+            ans = packets_dir / str(y) / "results_reask" / f"{key}.json"
+            if ans.exists() and int(ans.stat().st_mtime) != (hist.get(key) or {}).get("answered"):
+                continue                                                              # answered but not ingested yet: never draw it twice in one cycle
             kept, _ = ed.apply_reask_history(live_reasons(entry), hist.get(key))     # reasons already suppressed by the re-ask history never draw a law
             if not kept:
                 continue

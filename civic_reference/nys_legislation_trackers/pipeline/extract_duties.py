@@ -495,6 +495,27 @@ TRIGGER = re.compile(r"\b(upon|whenever|when|promptly|as soon as|as needed|until
                      r"|\b(?:prior to|before) submitting\b|\b(?:wants?|wish(?:es)?|seeks?|elects?|chooses?) to\b|\bthat applies\b|\bprior to (?:the )?(?:filing|approval|issuance)\b"
                      r"|\bafter (?:the |such |each |any )[\w ]{0,30}?(?:is|are|has been|have been) (?:received|filed|submitted)\b", re.I)          # T7 (Oct 18 2026): 'after the notice is received'
 PROHIBITION = re.compile(r"\b(?:shall not|may not|must not)\b|^\s*no\b", re.I)
+B16_EXTRA_TRIGGER = re.compile(r"\b(?:if|unless|in the event|at the request|prior to|appointed by|immediately)\b|\bafter\s+(?:the |such |each |any |an? )?[\w ]{1,40}", re.I)          # B16 (Oct 30 2026): triggers the TRIGGER regex lacks
+OPERATION_OF_LAW = re.compile(r"\bshall (?:vest in and be possessed by|be transferred to and vested in)\b", re.I)          # B16: a transfer by operation of law binds no actor
+IMPERATIVE_B17 = re.compile(r"^\W*(?:\{\{)?\s*(?:To\s+[a-z]+|(?:Provide|Reimburse|Contract|Establish|Develop|Submit|Prepare|Seek|Assess|Require|Review|Implement|Maintain|Conduct|Coordinate|Ensure|Report|Make|Enter)\b|[a-z]{3,}\b)", re.I)
+B17_CONTENT_LEAD = re.compile(r"\b(?:report|study|plan|application)\b[^.:]{0,80}\bshall (?:include|contain)\b|\bat a minimum\b|\bshall include\b", re.I)
+B17_LIST_ENTRY = re.compile(r"\b(?:finance|financing|refinanc\w+)\b[^.]{0,40}\b(?:acquisition|construction)\b|^\W*(?:Not-for-profit members|[A-Z][\w.,' -]{2,60}(?:Inc\.?|School|Corporation)\b)|\b(?:Alosa|shad|river|rivers)\b|^\W*(?:\(?[a-z0-9]{1,2}\)?\.?\s+)?(?:the period commencing)\b|\buntil (?:[A-Z]|[a-z]+ (?:first|thirty)\b)", re.I)
+def b17_rescue(o, q, lead=None):
+    """B17: a 'To <verb>' / imperative / lower-case verb quote under a section subdivision, model agency a government body, is a record. Returns 'power' or 'duty', or None."""
+    if o.get("agency") in (None, "", "Unspecified"):
+        return None
+    cit = o.get("citation") or ""
+    if not ("(" in cit or "subdivision" in cit.lower() or re.search(r"§\s*[\w.-]*\d[\w.-]*\s*[A-Za-z0-9]", cit)):
+        return None
+    if re.match(r"^\W*(?:\{\{)?\s*Prescribing\b", q) or B17_CONTENT_LEAD.search(lead or "") or re.match(r"^\W*(?:\{\{)?\s*Include\b", q):
+        return None
+    if "1676" in cit or B17_LIST_ENTRY.search(q) or not IMPERATIVE_B17.match(q):
+        return None
+    if re.match(r"^\W*(?:\{\{)?\s*To\s+[a-z]+", q, re.I):
+        if lead:
+            return "power" if not MANDATORY.search(lead) else "duty"
+        return "power" if o.get("kind_model") == "power" else "duty"          # no lead-in found: the model's kind decides
+    return "duty"
 SETUP_TYPES = {"rulemaking", "plan or strategy", "program or service", "designation or staffing", "database or data publication", "notice or posting", "training", "outreach or education"}
 
 
@@ -898,6 +919,27 @@ def inline_lead_in(span, text):
     return lead, "{{" not in lead
 
 
+APPLY_G1 = True          # Oct 30 2026: a lead-in search stops at the act-section marker or the amend instruction above the item
+
+
+LEAD_SECTION_MARK = re.compile(r"^\s*(?:§|Section)\s*\d+\.")
+LEAD_AMEND_LINE = re.compile(r"\b(?:is|are) (?:hereby )?amended\b[^\n]*\bto read as follows\b|\bamended by adding\b[^\n]*\bto read as follows\b", re.I)
+
+
+def lead_floor(paras, idx, text):
+    """G1 (Oct 30 2026): the first paragraph index a lead-in search from paragraph idx may reach. The nearest preceding act-section marker line
+    ('§ 3.' / 'Section 3.', itself still a candidate) or amend instruction line ('is amended to read as follows:', itself excluded), whichever is closer."""
+    if not APPLY_G1:
+        return 0
+    for k in range(idx - 1, -1, -1):
+        t = text[paras[k][0]:paras[k][1]]
+        if LEAD_AMEND_LINE.search(t):
+            return k + 1
+        if LEAD_SECTION_MARK.match(t):
+            return k
+    return 0
+
+
 def list_lead_in(span, text):
     """For a lettered or numbered list entry: the lead-in paragraph above the list (ends with ':' or 'following'), else None."""
     paras = [(m.start(), m.end()) for m in re.finditer(r"[^\n]+", text)]
@@ -905,10 +947,11 @@ def list_lead_in(span, text):
     if idx is None or not ITEM_LABEL.match(text[paras[idx][0]:paras[idx][1]]):
         return None
     j = idx - 1
+    floor = lead_floor(paras, idx, text)
     # walk back over the other (parenthesised) list items; a numbered paragraph ("28. The center shall ...:") is the lead-in, not an item
-    while j >= 0 and (PAREN_ITEM.match(text[paras[j][0]:paras[j][1]]) or not text[paras[j][0]:paras[j][1]].strip()):
+    while j >= floor and (PAREN_ITEM.match(text[paras[j][0]:paras[j][1]]) or not text[paras[j][0]:paras[j][1]].strip()):
         j -= 1
-    if j < 0:
+    if j < floor:
         return None
     para = text[paras[j][0]:paras[j][1]]
     return para if re.search(r"(?:[:;]|\bfollowing|\bensuring|\bthat)\s*(?:\}\})?\s*$", para) else None
@@ -943,13 +986,14 @@ def imperative_lead_in(span, text):
         return None
     paren = bool(PAREN_ITEM.match(first))
     j = idx - 1
-    while j >= 0:
+    floor = lead_floor(paras, idx, text)
+    while j >= floor:
         t = text[paras[j][0]:paras[j][1]]
         if not t.strip() or (PAREN_ITEM.match(t) if paren else re.match(r"^\W*(?:\{\{)?\s*\d+\.\s", t) and not re.search(r":\s*(?:\}\})?\s*$", t)):
             j -= 1
         else:
             break
-    if j < 0:
+    if j < floor:
         return None
     lead = text[paras[j][0]:paras[j][1]]
     if re.search(r"(?:[:;]|\bfollowing|\binclude|\bensuring)\s*(?:\}\})?\s*$", lead) and GRANTING_LEAD.search(lead) and not AMEND_INSTR.search(lead):
@@ -973,7 +1017,8 @@ def scan_back_lead_in(span, text, max_paras=80):
     first = text[paras[idx][0]:paras[idx][1]]
     if not (ITEM_LABEL.match(first) or NUMBERED_ITEM.match(first)):
         return None
-    for j in range(idx - 1, max(-1, idx - max_paras), -1):
+    floor = lead_floor(paras, idx, text)
+    for j in range(idx - 1, max(floor - 1, idx - max_paras), -1):
         t = text[paras[j][0]:paras[j][1]]
         if not t.strip():
             continue
@@ -1003,7 +1048,8 @@ def nomodal_actor_lead_in(span, text, max_paras=80):
     first = text[paras[idx][0]:paras[idx][1]]
     if not (ITEM_LABEL.match(first) or NUMBERED_ITEM.match(first)):
         return None
-    for j in range(idx - 1, max(-1, idx - max_paras), -1):
+    floor = lead_floor(paras, idx, text)
+    for j in range(idx - 1, max(floor - 1, idx - max_paras), -1):
         t = text[paras[j][0]:paras[j][1]]
         if not t.strip():
             continue
@@ -1190,6 +1236,9 @@ CONTENT_LEAD = re.compile(r"\b(?:reports?|stud(?:y|ies)|plans?|applications?|not
 CONTENT_LEAD_P1 = re.compile(r"(?:\bshall,?\s+at\s+a\s+minimum,?|\bprotocols?\s+shall\s+include\b|\bshall\s+also\s+include\b|\bthe\s+agreement\s+shall\s+include\b)[^.:;]{0,120}:\s*(?:\}\})?\s*$", re.I)
 CRITERIA_LEAD = re.compile(r"\bshall\s+(?:determine\s+whether|consider)\s*:\s*(?:\}\})?\s*$", re.I)          # V1B: 7 records database-wide incl. 2 gold-real (2011-A5318-09, -11); off
 CRITERIA_ITEM_MODAL = re.compile(r"\b(?:shall|must|may)\b", re.I)          # X1: a criteria item that states its own modal stays a record
+APPLY_B30 = True          # Oct 30 2026; a rule dropping over 40 records database-wide is set False
+CONTENT_LEAD_B30 = re.compile(r"\b(?:agreement|contract|lease|procedures|protocols)\s+shall,?\s+(?:at\s+a\s+minimum,?\s*(?:include|contain)?|include|contain|set\s+forth)[^.:;]{0,40}:\s*(?:\}\})?\s*$", re.I)
+SECTION_SUNSET = re.compile(r"^\W*(?:and\s+)?provided\s+(?:further\s+)?that\s+(?:section|sections|subdivision)\s+[\w\s,and-]{1,40}\s+of\s+this\s+act\s+shall\s+expire\s+and\s+be\s+deemed\s+repealed\b", re.I)
 CONTENT_LEAD_NOT = re.compile(r"\b(?:powers?|dut(?:y|ies)|responsibilit\w+|functions?)\b", re.I)
 LIMITED_LEAD = re.compile(r"\b(?:shall|may)\s+(?:be\s+)?limited\s+to\s*:\s*(?:\}\})?\s*$", re.I)
 CAP_ITEM = re.compile(r"^\W*(?:\(?\w{1,4}[.)]\s*)?for\s+[^,;]{3,80},\s+(?:not\s+more\s+than|no\s+more\s+than|not\s+to\s+exceed)\b", re.I)
@@ -1213,7 +1262,8 @@ def item_lead_full(span, text, max_paras=60):
     first = text[paras[idx][0]:paras[idx][1]]
     if not (ITEM_LABEL.match(first) or NUMBERED_ITEM.match(first)):
         return None
-    for j in range(idx - 1, max(-1, idx - max_paras), -1):
+    floor = lead_floor(paras, idx, text)
+    for j in range(idx - 1, max(floor - 1, idx - max_paras), -1):
         t = text[paras[j][0]:paras[j][1]]
         if not t.strip():
             continue
@@ -1269,12 +1319,15 @@ def v_item_rule(o, span, text, hdr, sec):
     if APPLY_V2 and sec and FOIL_SECTION.search((hdr or "") + " " + sec[:300]) and not VERBISH.search(q):
         return "exemption_or_applicability", "a paragraph added to the FOIL exemption list (Public Officers Law section 87), binds no government actor"
     lead = item_lead_full(span, text)
-    if not lead or IMPERATIVE_ITEM.match(q) or INFINITIVE_ITEM.match(q):
+    if not lead:
         return None
     tail = lead[-220:]
+    b30 = APPLY_B30 and bool(CONTENT_LEAD_B30.search(tail))          # B30 (Oct 30 2026): 'the agreement shall, at a minimum:' lists the agreement's terms, imperative wording or not
+    if not lead or ((IMPERATIVE_ITEM.match(q) or INFINITIVE_ITEM.match(q)) and not b30):
+        return None
     if APPLY_V2 and LIMITED_LEAD.search(tail):
         return "cap_not_duty", "a condition inside a cap ('shall be limited to:'); it limits an amount and binds no actor"
-    if ((APPLY_V1 and CONTENT_LEAD.search(tail)) or (APPLY_P1 and CONTENT_LEAD_P1.search(tail)) or (APPLY_V1B and CRITERIA_LEAD.search(tail) and not CRITERIA_ITEM_MODAL.search(q))) and not CONTENT_LEAD_NOT.search(tail[-120:]):
+    if (b30 or (APPLY_V1 and CONTENT_LEAD.search(tail)) or (APPLY_P1 and CONTENT_LEAD_P1.search(tail)) or (APPLY_V1B and CRITERIA_LEAD.search(tail) and not CRITERIA_ITEM_MODAL.search(q))) and not CONTENT_LEAD_NOT.search(tail[-120:]):
         return "sub_item_of_parent", "a list item under a lead-in that describes the content of one deliverable; part of the parent record, not a record"
     return None
 
@@ -1330,6 +1383,117 @@ def private_actor_record(o, q, text):
     return not GOV_ACTOR.search(pre)
 
 
+# ── Oct 30 2026 backlog D1-D7 (builder D); a rule dropping over 40 records database-wide is set False ─────────────────────────
+APPLY_D2 = APPLY_D4 = APPLY_D5 = APPLY_D6 = APPLY_D7 = True          # dry run over the 5,943 stored laws: D2 32, D4 7, D5 1, D6 10, D7 6 drops
+APPLY_D1 = True          # Oct 30 2026: narrowed after a blind sample right on 8 of 12 ('plan' left the head list; award/let/make rules kept)
+APPLY_D3 = True   # Oct 30 2026: reworked (full-sentence brace test, real year only), 9 drops in the dry run; scored on gold the same night
+INSTRUMENT_HEAD = {"contract", "lease", "agreement", "abatement", "permit", "license", "memorandum"}
+INSTRUMENT_SUBJECT = re.compile(r"^\W*(?:notwithstanding\b[^,]{0,80},\s*)?any\s+(?:contract|lease|agreement)(?:\s+or\s+(?:contract|lease|agreement))?\b(?:(?!\bshall\b)[^.;]){0,250}?\bshall\b(?!\s+be\s+(?:awarded|let|made)\b)", re.I)          # H1: awarding rules bind the awarding entity
+
+
+def instrument_actor(o, q):
+    """D1: the record's actor is a document (the lease, such tax abatement, the trustees' lease or contract), or the quote's subject is 'Any contract or lease ... shall'."""
+    raw = re.sub(r"\([^()]*\)", " ", o.get("actor_raw") or "")
+    words = re.findall(r"[A-Za-z']+", raw)
+    return bool(INSTRUMENT_SUBJECT.search(q)) or bool(words and words[-1].lower() in INSTRUMENT_HEAD)
+
+
+# D2: a limitation period ('no assessment of additional tax shall be made after the expiration of ...') inside the section that grants a local tax power
+TAX_LIMITATION = re.compile(r"^\W*(?:except\b[^,;]{0,120},\s*)?no\s+[\w\s-]{1,50}?\bshall\s+be\s+(?:made|brought|commenced|instituted)\b[^.;]{0,100}?\bafter\b", re.I)
+
+# D3: a section whose only new matter is a year or date; its other records are reprints
+_DATE_TOK = _NUMW | _DATEW | {"on", "or", "before", "after", "of", "the"}
+
+
+def date_only_block(b, before=""):
+    """H2: a braced block is only new date matter when it holds a year (four digits) or the tail of a spelled year ('two thousand [thirteen] {{fourteen}}'); every token is date vocabulary."""
+    toks = re.findall(r"[A-Za-z0-9]+", b)
+    if not toks:
+        return False
+    year = any(re.fullmatch(r"(?:1[89]|20)\d\d", t) for t in toks) or bool(re.search(r"two\s+thousand\s*(?:\[[^\[\]]*\]\s*)?$", before, re.I) and any(t.lower() in _NUMW for t in toks))
+    vocab = _DATEW | {"on", "or", "before", "after", "of", "the"}
+    return year and all(t.lower() in vocab or t.lower() in _NUMW or re.fullmatch(r"\d+(?:st|nd|rd|th)?", t.lower()) for t in toks)
+
+
+SENT_BOUNDARY = BOUNDARY.replace("[.;]", "[.]")
+
+
+def full_sentence(span, text):
+    """H2: the whole sentence around the span; semicolons do not end it (context_sentence splits clauses there)."""
+    left = max((m.end() for m in re.finditer(SENT_BOUNDARY, text[:span[0] + 1]) if m.end() <= span[0]), default=0)
+    m = re.search(SENT_BOUNDARY, text[span[1]:])
+    return text[left:span[1] + m.start() + 1 if m else len(text)]
+
+
+def reprint_date_only(span, text, sec):
+    """D3/H2: every braced block of the section is a year (or date); neither the quote's whole sentence nor, for a list item, the sentence holding its lead holds braces."""
+    blocks = [(m.group(1), sec[:m.start()]) for m in re.finditer(r"\{\{(.*?)\}\}", sec, re.S)]
+    if not blocks or not all(date_only_block(b, bef) for b, bef in blocks):
+        return False
+    if "{{" in full_sentence(span, text):
+        return False
+    lead = item_lead_full(span, text) or list_lead_in(span, text)
+    if lead and "{{" in lead:
+        return False
+    return True
+
+
+# D4: nested content leads; an item whose only modal sits in a subordinate clause, or an imperative the Oct 29 list lacked, under 'Such procedures shall include:'
+IMPERATIVE_D4 = re.compile(r"^\W*(?:\{\{)?\s*(?:\(?\w{1,4}[.)]\s*)?(?:Indicate|Describe|Specify|State|List|Include)\b", re.I)
+SUBORDINATE_MARK = re.compile(r"\b(?:what|whether|which|that|when|where|how|if|who)\b", re.I)
+
+
+def d4_item(q, tail):
+    """The lead is a content lead (B30 forms) and the item states no modal of its own."""
+    if not CONTENT_LEAD_B30.search(tail) or CONTENT_LEAD_NOT.search(tail[-120:]):
+        return False
+    if IMPERATIVE_D4.match(q) or IMPERATIVE_ITEM.match(q) or INFINITIVE_ITEM.match(q):
+        return True
+    m = re.search(r"\b(?:shall|must|may)\b", q)
+    return not m or bool(SUBORDINATE_MARK.search(q[:m.start()]))
+
+
+# D5: '[attorney-general] {{Attorney general or a district Attorney}} shall': the first actor's duty is reprinted, the added actor keeps its own record
+def reprinted_swap_adds_actor(o, sent):
+    pairs = list(NAME_SWAP_PAIR.finditer(sent))
+    mm = re.search(r"\b(?:shall|must|may)\b", sent)
+    if not pairs or not mm or sent.count("{{") != len(pairs):
+        return False
+    norm = lambda x: re.sub(r"^(?:the|a|an|such|each|any)\s+", "", re.sub(r"[-\s]+", " ", x.lower().strip(" ,.")))
+    actor = norm(o.get("actor_raw") or "")
+    for m in pairs:
+        if m.end() > mm.start():
+            continue
+        old, new = norm(m.group(1)), norm(m.group(2))
+        if old and new.startswith(old) and re.match(r"^\s+(?:or|and)\s+(?:a|an|the)?\s*[\w ]{3,40}$", new[len(old):]) and actor == old:
+            return True
+    return False
+
+
+# D6: private actor, widened
+INDEF_PRIVATE = re.compile(r"^\W*an?\s+(?:[\w-]+\s+){0,2}?(?:applicants?|owners?|operators?|licensees?|employers?|insurers?|providers?)\b", re.I)
+
+
+def d6_private(o, q):
+    raw = re.sub(r"\s+", " ", o.get("actor_raw") or "").strip()
+    m = MODAL_SENT.search(q)
+    if not m or not raw:
+        return False
+    pre = q[:m.start()]
+    if INDEF_PRIVATE.match(raw) and PRIVATE_ACTOR.search(raw) and not GOV_ACTOR.search(PRIVATE_ACTOR.sub(" ", raw)) and not GOV_ACTOR.search(PRIVATE_ACTOR.sub(" ", pre)):
+        return True          # D6a: 'an applicant must file'
+    core = re.sub(r"^(?:the|a|an|such|each|any)\s+", "", re.sub(r"\([^()]*\)", "", raw).strip(), flags=re.I)
+    if len(core) < 4 or not PRIVATE_ACTOR.search(pre) or GOV_ACTOR.search(PRIVATE_ACTOR.sub(" ", pre)):
+        return False
+    if core.lower() in pre.lower():
+        return False
+    return bool(re.search(r"\b(?:approval|consent|permission|authorization|order|leave|direction)\s+(?:of|by)\s+(?:the\s+|a\s+|an\s+)?" + re.escape(core.lower()), q[m.start():].lower()))          # D6b
+
+
+# D7: officer qualifications are not duties
+QUALIFICATION = re.compile(r"\bshall\s+be\s+(?:a\s+)?(?:resident|citizen)s?\s+of\b|\bshall\s+be\s+at\s+least\s+[\w-]+(?:\s+[\w-]+)?\s+years\s+of\s+age\b|\bshall\s+possess\s+the\s+following\s+qualifications\b", re.I)
+
+
 def gate_record(o, text, has_markers):
     """Returns (rule, reason) when the record must be dropped, else None. Rules 1-3 of phase 3b."""
     if not o.get("quote_verified"):
@@ -1337,6 +1501,10 @@ def gate_record(o, text, has_markers):
     q = o.get("quote") or ""
     if APPLY_P5 and SAVINGS_CLAUSE.search(q):
         return "savings_clause", "a savings clause ('nothing in this section shall be construed to ...'): it limits the reach of the law and binds no actor"
+    if APPLY_D7 and QUALIFICATION.search(q):
+        return "qualification", "a qualification of an officer ('shall be a resident of', 'shall be at least N years of age'), not a duty or power"
+    if APPLY_D6 and d6_private(o, q):
+        return "private_actor", "the sentence subject is a private party; the government body appears only inside an approval phrase, or the actor is an indefinite 'an applicant'"
     if APPLY_P2 and private_actor_record(o, q, text):
         return "private_actor", "the acting party is a private body or person and the quote names no government actor before the modal"
     if BDC_NOTIFY.search(q):
@@ -1345,11 +1513,18 @@ def gate_record(o, text, has_markers):
         return "reviewed_as_if_condition", "'shall be reviewed as if it had been received on or before ...' is a condition of the accept-late-application power, not a duty of its own"
     if CONDITION_PRECEDENT.search(q) or (APPLY_M36 and CONDITION_PRECEDENT_M36.search(q)):
         return "condition_precedent", "an implementation precondition ('shall not be implemented until X shall have delivered ...'): a condition on another provision, not a duty of the certifying officials"
+    if APPLY_B30 and SECTION_SUNSET.match(q):
+        return "section_sunset", "a proviso that one section of the act expires on a date; the sunset is computed with the effective dates and binds no actor"
+    if OPERATION_OF_LAW.search(q):
+        bump("b16_operation_of_law")
+        return "operation_of_law", "a transfer of records, property and rights by operation of law (shall vest in / be transferred to and vested in): binds no actor"
     gw = goal_or_window(q)
     if gw:
         return gw
     if benefit_entitlement(o, q):
         return "benefit_entitlement", "the subject is the beneficiary (it receives, is entitled to or is exempt from), not a government actor"
+    if APPLY_D1 and instrument_actor(o, q):
+        return "instrument_term", "the actor is a document or instrument (a lease, contract, permit, abatement), not a body; the sentence states a term of the instrument"
     if APPLY_U9 and RESIDENCY_EXCEPTION.search(q):
         return "residency_exception", "a residency-rule exception ('may appoint a stenographer residing in ...') grants no power of its own"
     vq = v_quote_rule(q)
@@ -1371,7 +1546,9 @@ def gate_record(o, text, has_markers):
     if span and has_markers:          # G2
         if reprinted_name_swap(context_sentence(span, text)[0]):
             return "reprinted_name_swap", "the sentence is existing text; the only new matter is a word or office name replacing a deleted one"
-    if span and TAX_PROVISO.search(q):          # G1
+    if span and has_markers and APPLY_D5 and reprinted_swap_adds_actor(o, context_sentence(span, text)[0]):
+        return "reprinted_name_swap", "the sentence is existing text; the braces only add a second actor ('or a district Attorney'), whose own record carries the new duty"
+    if span and (TAX_PROVISO.search(q) or (APPLY_D2 and TAX_LIMITATION.search(q))):          # G1, D2
         hdr1, sec1 = section_of_span(span, text)
         if sec1 and TAX_POWER_GRANT.search(re.sub(r"\s+", " ", re.sub(r"\{\{|\}\}", "", sec1))):
             return "condition_of_tax_power", "a proviso inside the section that grants a local tax power (joinder of the fiscal officer, three-year limit): a condition of the power, not a record"
@@ -1436,8 +1613,23 @@ def gate_record(o, text, has_markers):
                     if subj:
                         o["lead_in_actor"] = subj
                     o["rescued_imperative_item"] = True; bump("b2_nomodal_actor_lead_in")
+                elif b17_rescue(o, q):
+                    o["kind_from_lead_in"] = b17_rescue(o, q)
+                    o["rescued_imperative_item"] = True; bump("b17_imperative_no_lead_in_rescue")
                 else:
+                    if IMPERATIVE_B17.match(q):
+                        bump("b17_imperative_exception_kept_dropped")
                     return "designation_no_actor", "a designation or list entry with no lead-in duty or power"
+        if APPLY_D3 and has_markers and sec and reprint_date_only(span, text, sec):
+            return "reprint_date_only", "the section's only new matter is a year or date; this record sits in reprinted text outside the sentence that holds the date"
+        if APPLY_D4:
+            lead4 = item_lead_full(span, text)
+            if lead4 and d4_item(q, lead4[-220:]):
+                return "sub_item_of_parent", "a list item under a nested content lead ('Such procedures shall include:'); part of the parent record, not a record"
+        if APPLY_B30 and (IMPERATIVE_ITEM.match(q) or INFINITIVE_ITEM.match(q)):          # B30: an imperative item under a content lead ('the agreement shall, at a minimum:') is a term of that agreement
+            vi = v_item_rule(o, span, text, hdr, sec)
+            if vi and vi[0] == "sub_item_of_parent":
+                return vi
         if (APPLY_V1 or APPLY_V1B or APPLY_V2) and not VERBISH.search(WHICH_SATISFY.sub("", q)) and not VERBISH.search(WHICH_SATISFY.sub("", sent)):          # H2: ', which shall satisfy the ... component' is a tail, not the item's own duty
             vi = v_item_rule(o, span, text, hdr, sec)
             if vi:
@@ -2775,6 +2967,9 @@ def reresolve_after_rescue(o, text, law):
 REL_MAY = re.compile(r"\b(?:which|that|as)\b(?:\s+[\w'-]+){0,8}?\s+may\b", re.I)
 
 
+REL_MAY_WIDE = re.compile(r"\b(?:which|that|as)\b(?:\s+[\w'-]+){0,14}?\s+may\b", re.I)
+
+
 def strip_relative_may(q):
     """O6 (Oct 16 2026): drop relative clauses ('duties which may be assigned', 'the manner in which such duties may be performed') so the
     item's own 'may' is the only one left to test."""
@@ -3057,6 +3252,10 @@ def build_records(laws):
                 kind = "duty"; o["kind_adjusted"] = "cost_duty"; bump("l3_cost_duty")
             if kind == "neither":
                 excluded += 1
+                if OPERATION_OF_LAW.search(o.get("quote") or ""):          # B16: a transfer by operation of law, whatever the model said
+                    bump("b16_operation_of_law")
+                    drop(o, "operation_of_law", "a transfer of records, property and rights by operation of law (shall vest in / be transferred to and vested in): binds no actor")
+                    continue
                 drop(o, "excluded_missing_provision_kind" if not o.get("provision_kind") else "excluded_neither",
                      "the model gave no provision kind" if not o.get("provision_kind") else "the model and the quote rule both say neither a duty nor a power")      # R3
                 continue
@@ -3119,6 +3318,9 @@ def build_records(laws):
                 uncapped = bool(lead) and o.get("kind_model") == "duty" and lead_in_makes_duty(lead)          # S3: the model said duty too, no cap
                 if uncapped:
                     bump("s3_shall_lead_in_duty_model_duty")
+                rel_only = bool(lead) and bool(GRANT_WORD.search(quote)) and lead_in_makes_duty(lead)          # B18 (Oct 30 2026): the only 'may' sits in a relative clause, so it is not the item's own modal; no cap
+                if rel_only and not uncapped:
+                    uncapped = True; bump("b18_relative_may_list_item_duty")
                 if lead and lead_in_makes_duty(lead) and (uncapped or r6_ok("a_shall_lead_in_duty", o)):
                     kind = "duty"; o["kind_adjusted"] = "shall_lead_in_duty"; o["lead_in"] = re.sub(r"\s+", " ", re.sub(r"\{\{|\}\}", "", lead)).strip()[:400]
             if kind == "duty" and VESTED_POWER.search(quote) and not re.search(r"\bshall\s+(?!have\b)\w+", quote, re.I):          # T5
@@ -3126,6 +3328,11 @@ def build_records(laws):
             # 3. a grant with no mandatory verb is a power
             sp = locate_span(quote, text)
             ctx = context_sentence(sp, text)[0] if sp else ""
+            if ctx and kind == "duty" and o.get("kind_list_item") and not o.get("kind_from_lead_in") and sp and (lambda ld: bool(ld) and lead_in_makes_duty(ld))(list_item_lead(sp, text)):          # B18 (Oct 30 2026): a 'may' inside a relative clause of the item's sentence ('in such a manner that the watchers may see') is not the item's own modal
+                ctx2 = REL_MAY_WIDE.sub(" ", ctx)
+                if ctx2 != ctx and grant_only(RELATIVE.sub(" ", ctx)) and not grant_only(RELATIVE.sub(" ", ctx2)):
+                    bump("b18_relative_may_list_item_duty")
+                ctx = ctx2
             if kind == "duty" and (grant_only(quote) or (ctx and grant_only(RELATIVE.sub(" ", ctx)))) and not CAP_RE.search(quote):
                 kind = "power"; o["kind_adjusted"] = "grant_only"; bump("grant_only_to_power")
             if APPLY_M35 and kind == "power" and (o.get("kind_model") == "duty" or o.get("kind_adjusted") == "model_power_kept" or o.get("kind_list_item")) and AUTH_DIRECTED.search(quote):          # M35: the rules above must not override the model's duty
@@ -3157,8 +3364,12 @@ def build_records(laws):
                   and r6_ok("d_event_tied", o)):          # R6d: 'at the time that the member takes the oath', 'after the completion of ...'
                 o["deadline_kind"], o["deadline_date"] = "none", None
             elif (kind == "duty" and o.get("deadline_kind") == "none" and o.get("recurrence") == "one-time"
-                  and (o.get("deliverable_type") in SETUP_TYPES or o.get("deliverable_type") == "signage or installation") and not TRIGGER.search(quote) and not EVENT_TIED.search(quote) and not CAP_RE.search(quote)
+                  and (o.get("deliverable_type") in SETUP_TYPES or o.get("deliverable_type") == "signage or installation"
+                       or (o.get("deliverable_type") not in (None, "", "other") and not B16_EXTRA_TRIGGER.search(quote) and not o.get("deadline_date")))
+                  and not TRIGGER.search(quote) and not EVENT_TIED.search(quote) and not CAP_RE.search(quote)
                   and not PROHIBITION.search(quote)):
+                if o.get("deliverable_type") not in SETUP_TYPES and o.get("deliverable_type") != "signage or installation":
+                    bump("b16_none_to_on_effective_date")
                 o["deadline_kind"] = "on_effective_date"; bump("triggered_to_setup")
             if (kind == "duty" and o.get("recurrence") == "one-time" and re.search(r"installation and maintenance", quote, re.I)
                     and re.search(r"\bsign(?:s|age)?\b", quote + " " + (law.get("title") or ""), re.I)):          # T7: a sign that is installed and maintained is a standing duty

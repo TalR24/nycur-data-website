@@ -1,0 +1,92 @@
+{
+ "night": "20261030",
+ "extraction_night": true,
+ "prompt": "version 2",
+ "sample": "20 of the 358 laws answered tonight (2019 first answers), seed 20261030, drawn from batch 20261030-1547 (the newest batch was the re-ask batch, so draw_sample gained --batch), plus 2 blinded gold calibration laws per auditor",
+ "prediction": {
+  "precision_strict": "84% (last night 82.9%; eight new gates and resolver fixes landed, but tonight's laws are 2019 first answers, the hardest session so far)",
+  "recall": "90%",
+  "classes_expected": [
+   "effective date forms still unparsed (title-only chapter references)",
+   "content-list sub-items under lead-ins the CONTENT_LEAD list lacks",
+   "one-time duties with deadline none where the law has an offset elsewhere",
+   "Unspecified actors in passive drafting"
+  ],
+  "classes_expected_gone": [
+   "court actors Unspecified",
+   "legislative leaders Unspecified",
+   "savings clauses stored as powers",
+   "joint-actor records lost to dedupe"
+  ]
+ },
+ "as_audited": {
+  "stored": 30,
+  "correct": 29,
+  "wrong": 0,
+  "not_real": 1,
+  "missed": 4,
+  "precision_strict": "29/30 = 96.7% (Wilson 95% 83.3-99.4)",
+  "precision_real": "96.7%",
+  "recall": "29/33 = 87.9% (72.7-95.2)",
+  "calibration": "A 11/11, B 10/10"
+ },
+ "shared_laws_agreement": "2019-S2403 1 of 1 identical; 2019-A8078 no records, no misses for both",
+ "adjudication": [
+  {
+   "claim": "'deemed to repeal therewith' never gets expires_rule (auditor B: 11 laws; also 102 'deemed repealed therewith' laws unset)",
+   "verdict": "CONFIRMED for the 11 (regex required 'repealed'); of 231 'deemed repealed therewith' laws 103 were unset, 97 of them stale data that re-ingest fixes, 6 wording variants fixed; fixed in effective_date.py with tests"
+  },
+  {
+   "claim": "retroactive clause without 'and effect' leaves retroactive_to empty (2019-A7634)",
+   "verdict": "CONFIRMED, 1 law; regex widened"
+  },
+  {
+   "claim": "parcel redraw of an alienation authority not recorded (2019-A7634, 2011-S2933; needs_judgment)",
+   "verdict": "REAL: a redrawn parcel changes the land the city may alienate; both laws queued in reask_manual with the holder and place"
+  },
+  {
+   "claim": "'the city' in a New York City law resolves to the Cities group with no unit (auditor A: 18)",
+   "verdict": "CONFIRMED and larger: 55 stored records whose law names NYC; resolver fix (builder F)"
+  },
+  {
+   "claim": "lead_in taken from a different act section can give the wrong kind (54 db, 48 rescued imperative items)",
+   "verdict": "CONFIRMED mechanism (2019-S1192-04 kind happened to be right); lead-in lookup must stop at the section boundary; fix after builder D releases extract_duties.py"
+  },
+  {
+   "claim": "State pledge text ('the state will not take any action') stored as a record (2013-A7175-11)",
+   "verdict": "CONFIRMED; section whose only new matter is a year -> reprint_date_only gate (builder D, D3)"
+  },
+  {
+   "claim": "benefit_entitlement drops a grant ceiling raised 75,000 -> 175,000 (2019-S1192-03)",
+   "verdict": "NOT A MISS: a cap is not a duty (criterion 1, cap_not_duty); the auditor's own count agrees in part"
+  },
+  {
+   "claim": "earlier chapter's sunset amended inside the law with no extension record (2011-S6363; 523 laws upper bound)",
+   "verdict": "S6363 was re-asked Oct 17 before the Oct 19 title-holder decision; it is in the re-ask queue under sunset_extension_unnamed_holder; the 523 is the queue's domain, no new rule"
+  },
+  {
+   "claim": "one actor of a joint list left without a record (2013-A7175 financing agency dropped as duplicate_provision; 2019-A6787 law enforcement authorities)",
+   "verdict": "the Oct 29 merge-key fix restores joint-actor records at the final ingest (2013 not yet re-ingested when audited); A6787 is a model miss, queued to reask_manual"
+  },
+  {
+   "claim": "2019-S1192-05 reprinted posting duty (only new matter '{{The report}}')",
+   "verdict": "CONFIRMED not real; covered by the subject-rename case of reprinted_name_swap once builder D's D5 lands (checked at ingest)"
+  },
+  {
+   "claim": "re-ask queue 1,030 but 0 drawn",
+   "verdict": "CONFIRMED and fixed before extraction: fixed 2009-2015 session list and an answer-exists skip; now 1,011 drawable, 100 re-asked tonight (93 answered, 7 long omnibus laws skipped -> B14)"
+  }
+ ],
+ "adjudicated": {
+  "stored": 30,
+  "correct": 29,
+  "wrong": 0,
+  "not_real": 1,
+  "missed": 3,
+  "note": "S1192-03 cap removed from misses",
+  "precision_strict": "29/30 = 96.7%",
+  "recall": "29/32 = 90.6%"
+ },
+ "backlog_day": "B15 (date forms), B16 (one-time deadlines, sample 7/25 -> narrow rule, 146 moved, 62 operation-of-law drops), B17 (passive lead-in drops, sample 15/25 real -> rescue, 275 restored), B18 (relative-clause may) done; 16 open not-real items -> 7 narrow gates (builder D); B14 open with the long-law finding",
+ "pause_decision": "decided after the final ingest and gold score"
+}

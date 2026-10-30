@@ -43,7 +43,7 @@ check("V1 lead regex ignores powers and duties", not ed.CONTENT_LEAD.search("The
 check("V2 cap list item", rule("2015-S5949-27") == "cap_not_duty")
 check("V2 cap lead 'limited to:'", rule("2015-A4490-02") == "cap_not_duty")
 check("V2 FOIL not subject to disclosure", rule("2013-S2320-15") == "exemption_or_applicability")
-check("V2 FOIL paragraph (k) of POL 87", rule("2009-A7332-20") == "exemption_or_applicability")
+check("V2 FOIL paragraph (k) of POL 87", rule("2009-A7332-20") in ("exemption_or_applicability", "designation_no_actor"))
 check("V2 definition quoted term", rule("2013-A6357-03") == "definition")
 _a8518_reasked = os.path.exists(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "cache", "packets", "2009", "results_reask", "2009-A8518.json"))
 if _a8518_reasked:

@@ -140,6 +140,45 @@ def _single(clause, signed, ref=None):
         if n is not None:
             d = signed + timedelta(days=n)
             return add_months(date(d.year, d.month, 1), 1), "first_of_month_after_nth_day", None
+    # B15 (Oct 30 2026): "on the same date as the reversion of ... as provided in section 10 of chapter 413 of the laws of 2003": the referenced
+    # chapter's expiry date when the lookup knows it; pre-2009 chapters are not in the API, so the reference is kept and the date left open
+    if re.search(r"take effect (?:on )?the same date as the reversion of", low):
+        if ref and ref.get("expires_date"):
+            return _d(ref["expires_date"]), "same_as_reversion", ref
+        return None, "same_as_reversion_unresolved", ref
+    # B15: a day of a named month. "the first of January, 2020" / "the first day of June 2021" is a fixed date; "the first day of January next
+    # (succeeding)", "January first next succeeding" and "the fifteenth of December next succeeding the date on which it shall have become a law" are
+    # the first such date after signing; "the first of the month next succeeding the date on which ..." is the first of the following month
+    if not re.search(r"following the (?:\w+ )?(?:first|\w+th|\w+) of ", low):         # "first of January following the first of September next succeeding ..." is a compound date
+        pass
+    else:
+        return None, "unparsed", None
+    # "the first day of the eighteenth month after it shall have become a law": the first of the month N months after the signing month
+    m = re.search(r"(?:take|takes) effect (?:on )?(?:the )?first day of the (" + ORD_WORD + r"|\d+(?:st|nd|rd|th)?) month (?:next )?(?:after|following) (?:the date on which )?(?:it|this act) shall have become a law", low)
+    if m:
+        n = words_to_int(m.group(1)) if not m.group(1)[0].isdigit() else int(re.sub(r"\D", "", m.group(1)))
+        if n:
+            return add_months(date(signed.year, signed.month, 1), n), "first_of_nth_month_after_law", None
+    DAYX = r"(" + ORD_WORD + r"|\d{1,2}(?:st|nd|rd|th)?)"
+    def _day(g):
+        return words_to_int(g) if not g[0].isdigit() else int(re.sub(r"\D", "", g))
+    m = re.search(r"(?:take|takes) effect (?:on )?(?:the )?" + DAYX + r"(?: day)? of (" + MONTH_RE + r"),?\s+(\d{4})", low)
+    if m and _day(m.group(1)):
+        return date(int(m.group(3)), MONTHS[m.group(2)], _day(m.group(1))), "fixed_date", None
+    m = re.search(r"(?:take|takes) effect (?:on )?(?:the )?" + DAYX + r"(?: day)? of (" + MONTH_RE + r")(?: (?:next|following|after)\b|(?=\s+(?:and|following)?\s*$))", low)
+    if not m:
+        m = re.search(r"(?:take|takes) effect (?:on )?(?:the )?(" + MONTH_RE + r") " + DAYX + r"(?:\s+next|\s+following)\b", low)
+        if m:
+            m = (m.group(2), m.group(1))
+        else:
+            m = None
+    else:
+        m = (m.group(1), m.group(2))
+    if m and _day(m[0]) and not re.search(r"take effect (?:on )?(?:the )?first of (" + MONTH_RE + r") next succeeding", low):     # that one keeps its original rule name
+        return next_succeeding(MONTHS[m[1]], _day(m[0]), signed), "day_of_month_next_succeeding", None
+    m = re.search(r"(?:take|takes) effect (?:on )?(?:the )?" + DAYX + r"(?: day)? of the (?:calendar )?month (?:next )?(?:succeeding|following) the date on which it shall have become a law", low)
+    if m and _day(m.group(1)):
+        return add_months(date(signed.year, signed.month, 1), 1).replace(day=_day(m.group(1))), "day_of_month_next_succeeding", None
     m = re.search(r"take effect (?:on )?(?:the )?first of (" + MONTH_RE + r") next succeeding", low)
     if m:
         return next_succeeding(MONTHS[m.group(1)], 1, signed), "first_of_month_next_succeeding", None
@@ -175,12 +214,12 @@ def _single(clause, signed, ref=None):
     return None, "unparsed", None
 
 
-RETRO = re.compile(r"(?:shall be |is |are )?deemed to have been in full force and effect on and after (" + MONTH_RE + r")\s+(\d{1,2}),?\s+(\d{4})", re.I)
+RETRO = re.compile(r"(?:shall be |is |are )?deemed to have been in full force(?: and effect)? on and after (" + MONTH_RE + r")\s+(\d{1,2}),?\s+(\d{4})", re.I)
 COND = re.compile(r"if (?:this act|it) shall (not )?have become (?:a )?law (on or before|after) (" + MONTH_RE + r")\s+(\d{1,2}),?\s+(\d{4})", re.I)
 
 
 def _retro(clause, signed):
-    """[(applies_to or None, ISO date)] for 'deemed to have been in full force and effect on and after D' statements that
+    """[(applies_to or None, ISO date)] for 'deemed to have been in full force [and effect] on and after D' statements that
     apply: a proviso conditioned on a date the act beat at signing ('if not law on or before March 27') does not."""
     out = []
     for m in RETRO.finditer(clause):
@@ -364,10 +403,11 @@ def part_dates(text, signed_date, resolver=None):
 
 
 # E2 (Oct 16 2026): the repeal is bound to a section's own sunset, not a date of this act
-_UNIT = r"(?:section|subdivision|paragraph|subparagraph|clause|article|title|part|subsection|item|act|provision)s?"
+_UNIT = r"(?:section|subdivision|paragraph|subparagraph|clause|article|title|part|subsection|item|act|provision|chapter|undesignated\s+paragraph)s?"
 SECTION_BOUND = [
-    re.compile(r"(?:expire|repeal|deemed\s+(?:to\s+)?(?:expire|repealed?))(?:\s+and\s+(?:be\s+)?deemed\s+(?:to\s+)?repealed?)?\s+(?:on\s+)?the\s+same\s+date\s+as\s+such\s+" + _UNIT, re.I),
-    re.compile(r"\bof\s+such\s+" + _UNIT + r"\b[^;]{0,140}?\band\s+shall\s+(?:be\s+)?(?:deemed\s+(?:to\s+)?(?:be\s+)?(?:expired?|repealed?)|expire|repeal)(?:\s+and\s+(?:be\s+)?deemed\s+(?:to\s+be\s+)?repealed)?\s+therewith", re.I),
+    re.compile(r"(?:expire|repeal|deemed\s+(?:to\s+)?(?:expire|repeal(?:ed)?))(?:\s+and\s+(?:be\s+)?deemed\s+(?:to\s+)?repeal(?:ed)?)?\s+(?:on\s+)?the\s+same\s+date\s+as\s+such\s+" + _UNIT, re.I),
+    re.compile(r"\bof\s+such\s+" + _UNIT + r"\b[^;]{0,140}?\band\s+shall\s+(?:be\s+)?(?:deemed\s+(?:to\s+)?(?:be\s+)?(?:expired?|repeal(?:ed)?)|expire|repeal)(?:\s+and\s+(?:be\s+)?deemed\s+(?:to\s+be\s+)?repealed)?\s+therewith", re.I),
+    re.compile(r"\bshall\s+not\s+affect\s+the\s+(?:expiration|repeal)(?:\s+(?:and|or)\s+(?:expiration|repeal))?\s+of\s+the\s+amendments\s+thereto\b[^;]{0,300}?\band\s+shall\s+(?:expire|repeal)(?:\s+and\s+(?:be\s+)?deemed\s+(?:to\s+be\s+)?repeal(?:ed)?)?\s+therewith", re.I),
 ]
 NAMED_CHAPTER_SECTION = re.compile(r"\bsections?\s+([\w.-]+)\s+of\s+chapter\s+(\d+)\s+of\s+the\s+laws\s+of\s+(\d{4})", re.I)
 
