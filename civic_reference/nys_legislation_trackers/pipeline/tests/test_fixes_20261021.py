@@ -42,8 +42,9 @@ check("X2a actor that also acts is not flagged", not ed.approver_only_actor({"ac
 
 # X2b: prepare record dropped when the dated submit record carries the same report
 _, _, obs = stored("2011-A10205-03")
-recs = [copy.deepcopy(x) for x in obs if x["obligation_id"] in ("2011-A10205-03", "2011-A10205-04")]
+_pq, _sq = "The commissioner of education, in consultation with participating boards", "The commissioner of education shall submit an interim report"      # by quote text: the re-ask renumbered the ids
+recs = [copy.deepcopy(x) for x in obs if x["quote"].startswith(_pq) or x["quote"].startswith(_sq)]
 out = ed.drop_prepare_duplicates(recs)
-check("X2b prepare dropped, submit kept", [x["obligation_id"] for x in out] == ["2011-A10205-04"])
+check("X2b prepare dropped, submit kept", len(recs) == 2 and [x["quote"][:60] for x in out] == [_sq[:60]])
 check("X2b prepare with no dated sibling kept", len(ed.drop_prepare_duplicates(recs[:1])) == 1)
 print("%d passed, %d failed" % (passed, failed))

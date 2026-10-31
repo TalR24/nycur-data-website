@@ -583,7 +583,9 @@ def _act_words(s):
     return " ".join(re.findall(r"[a-z0-9]+", (s or "").lower()))
 
 
-ACT_CLAUSE_START = re.compile(r"^(?:this act shall take effect|this act shall expire|provided,? however,? that the amendments made by section)")
+N2_ACT_PROVISO = re.compile(r"^provided,? (?:however,? )?that the provisions? of sections? [a-z0-9, ]{1,80}? of this act shall (?:remain in full force|be deemed to have been in full force|apply)")
+ACT_CLAUSE_START = re.compile(r"^(?:this act shall take effect|this act shall expire|provided,? however,? that the amendments made by section"
+                              r"|provided,? (?:however,? )?that the provisions? of sections? [a-z0-9, ]{1,80}? of this act shall (?:remain in full force|be deemed to have been in full force|apply))")      # N2 (Oct 31 2026)
 
 
 def is_act_clause_quote(quote, act_clause=None):
@@ -608,6 +610,9 @@ def own_act_clause_quote(quote, text, raw_clause=None, act_clause=None):
     if span is None:
         return True
     if in_braces(span[0], span[1], text):
+        ps = text.rfind("\n", 0, span[0]) + 1
+        if N2_ACT_PROVISO.match(" ".join(re.findall(r"[a-z0-9,]+", (quote or "").lower()))) and re.match(r"\W*(?:§\s*[\d-]+[a-z]?\.\s*)?this act shall take effect", text[ps:ps + 80], re.I):
+            return True          # N2 (Oct 31 2026): 'provided, that the provisions of sections one and two of this act shall remain in full force ... June {{23}}' inside the act's own effective-date paragraph
         return False
     q, raw = _act_words(quote), _act_words(raw_clause)
     if raw and len(raw) >= 20 and (q in raw or raw in q or q[:60] == raw[:60]):
@@ -1116,11 +1121,26 @@ def paid_entitlement(o, q):
     return o.get("agency") in (None, "Unspecified") or actor in ("", "state", "unspecified")
 
 
+PAYMENT_TIMING = re.compile(r"\b(?:amounts?|aid|grants?|apportionments?|reimbursements?|payments?)\b[^.;]{0,80}?\bshall\s+(?:be\s+payable\s+(?:on|in|within|by)\b|be\s+made\s+(?:on|in|within|by)\b[^.;]{0,120}?\bto\s+(?:the\s+|such\s+|each\s+|eligible\s+)?(?:recipients?|districts?|school|applicants?|grantees?|eligible|beneficiar))", re.I)
+
+
+def payment_timing_beneficiary(q):
+    """N3 (Oct 31 2026): 'Such approved amounts shall be payable on the same day in September' is a payment schedule for aid recipients; the amount is the
+    subject. 'the comptroller shall pay' keeps its record (a government noun precedes the modal)."""
+    m = PAYMENT_TIMING.search(q or "")
+    if not m:
+        return False
+    modal = re.search(r"\bshall\b", q[m.start():])
+    return not GOV_ACTOR.search(q[:m.start() + modal.start()])
+
+
 def benefit_entitlement(o, q):
     """M13 (Oct 11 2026). 'Eligible dwelling units ... shall receive a partial abatement', 'such property shall be exempt', 'the owner shall be
     entitled to': the grammatical subject is the beneficiary. Dropped when no government noun precedes the modal and the record's
     actor_raw does not appear in the quote."""
     if salary_entitlement(q) or paid_entitlement(o, q):
+        return True
+    if payment_timing_beneficiary(q):          # N3 (Oct 31 2026)
         return True
     am_ = AWARDED_BENEFIT.search(q or "")      # M27: 'shall be awarded' to a beneficiary; 'awarded by the board' / 'contracts shall be awarded' is the board's act
     if am_ and not GOV_ACTOR.search(q[:am_.start()]) and not re.search(r"\bcontracts?\b", q[:am_.start()], re.I):
@@ -1252,7 +1272,7 @@ OTHER_MODAL = re.compile(r"\b(?:shall|must|may|directed|authorized|empowered|req
 DUTY_NOUNS = re.compile(r"\b(?:powers?|dut(?:y|ies)|responsibilit\w+|functions?)\b", re.I)
 
 
-def item_lead_full(span, text, max_paras=60):
+def item_lead_full(span, text, max_paras=60, keep_markup=False):
     """V1: the complete lead-in of a list item. Walks back over the other list items (lettered, numbered, parenthesised) and blank lines to the first
     paragraph that is not an item, or the nearest item that itself ends with ':'; returns it only when it ends with ':' (o['lead_in'] keeps just 400 characters)."""
     paras = [(m.start(), m.end()) for m in re.finditer(r"[^\n]+", text)]
@@ -1268,7 +1288,7 @@ def item_lead_full(span, text, max_paras=60):
         if not t.strip():
             continue
         if SCAN_LEAD_END.search(t):
-            return None if AMEND_INSTR.search(t) else re.sub(r"\{\{|\}\}", "", t)
+            return None if AMEND_INSTR.search(t) else (t if keep_markup else re.sub(r"\{\{|\}\}", "", t))
         if ITEM_LABEL.match(t) or NUMBERED_ITEM.match(t):
             continue
         return None
@@ -1432,7 +1452,7 @@ def reprint_date_only(span, text, sec):
         return False
     if "{{" in full_sentence(span, text):
         return False
-    lead = item_lead_full(span, text) or list_lead_in(span, text)
+    lead = item_lead_full(span, text, keep_markup=True) or list_lead_in(span, text)      # N1 (Oct 31 2026): the lead must keep its {{ }} so new matter in it is seen
     if lead and "{{" in lead:
         return False
     return True
@@ -3355,6 +3375,26 @@ def build_records(laws):
                 per_election = True
                 o["deadline_kind"], o["deadline_date"] = "none", None
                 o["recurrence"] = "annual" if re.search(r"\bannual\s+election\b", quote, re.I) else "as-needed"; bump("m38_per_election_triggered")
+            # B16 ordering (Oct 31 2026): the specific deadline rules (M29, M37) run before the B16 default so a 'none' duty is not stamped on_effective_date first
+            if kind == "duty":
+                ssd = study_submission_date(o, text)
+                if ssd:
+                    o["deadline_kind"], o["deadline_date"], o["deadline_text"] = "fixed_date", ssd[0], ssd[1]; bump("m29_study_submission_date")
+            # 1. record dates per section; on_effective_date never null when the date is known
+            sec_date, sec_src = section_effective(o, text, eff)
+            if sec_src != "law":
+                bump("section_dates_applied")
+            if (APPLY_M37 and kind == "duty" and not per_election and o.get("deadline_kind") in (None, "none") and not o.get("deadline_date")
+                    and (o.get("deadline_text") or DL_START.search(quote)) and not CAP_RE.search(quote) and not COST_BEARING.search(quote)):
+                dd = dated_deadline(o.get("deadline_text") or quote, sec_date or law["enactment_date"])
+                if dd and not o.get("deadline_text") and dd[1] != "start":      # a stated date in the quote alone is only taken for a dated start
+                    dd = None
+                if dd and dd[0] >= law["enactment_date"]:
+                    o["deadline_kind"], o["deadline_date"] = "fixed_date", dd[0]; bump("m37_dated_deadline_" + dd[1])
+                elif not dd and APPLY_U5 and o.get("deadline_text") and not DL_CUTOFF.search(o["deadline_text"]):
+                    pd_ = period_deadline(o["deadline_text"], sec_date, law["enactment_date"])          # U5: 'within 90 days after the effective date'
+                    if pd_:
+                        o["deadline_kind"], o["deadline_date"] = pd_[1], pd_[0]; bump("u5_period_deadline")
             if kind == "duty" and o.get("deadline_kind") == "on_effective_date" and TRIGGER.search(quote) and not CAP_RE.search(quote):
                 o["deadline_kind"], o["deadline_date"] = "none", None; bump("setup_to_triggered")
             elif (kind == "duty" and o.get("deadline_kind") in ("on_effective_date", "none") and PILOT_FOLLOW_ON.match(quote) and sp0
@@ -3393,25 +3433,6 @@ def build_records(laws):
                     bump("m6_quote_relocated")
                 else:
                     bump("m6_quote_outside_unresolved")
-            if kind == "duty":
-                ssd = study_submission_date(o, text)
-                if ssd:
-                    o["deadline_kind"], o["deadline_date"], o["deadline_text"] = "fixed_date", ssd[0], ssd[1]; bump("m29_study_submission_date")
-            # 1. record dates per section; on_effective_date never null when the date is known
-            sec_date, sec_src = section_effective(o, text, eff)
-            if sec_src != "law":
-                bump("section_dates_applied")
-            if (APPLY_M37 and kind == "duty" and not per_election and o.get("deadline_kind") in (None, "none") and not o.get("deadline_date")
-                    and (o.get("deadline_text") or DL_START.search(quote)) and not CAP_RE.search(quote) and not COST_BEARING.search(quote)):
-                dd = dated_deadline(o.get("deadline_text") or quote, sec_date or law["enactment_date"])
-                if dd and not o.get("deadline_text") and dd[1] != "start":      # a stated date in the quote alone is only taken for a dated start
-                    dd = None
-                if dd and dd[0] >= law["enactment_date"]:
-                    o["deadline_kind"], o["deadline_date"] = "fixed_date", dd[0]; bump("m37_dated_deadline_" + dd[1])
-                elif not dd and APPLY_U5 and o.get("deadline_text") and not DL_CUTOFF.search(o["deadline_text"]):
-                    pd_ = period_deadline(o["deadline_text"], sec_date, law["enactment_date"])          # U5: 'within 90 days after the effective date'
-                    if pd_:
-                        o["deadline_kind"], o["deadline_date"] = pd_[1], pd_[0]; bump("u5_period_deadline")
             if (kind == "duty" and not per_election and not CAP_RE.search(quote)
                     and (o.get("deadline_kind") == "on_effective_date" or (o.get("deadline_kind") in (None, "none") and not o.get("deadline_date")))):
                 yrd = year_relative_date(o.get("deadline_text") or quote, sec_date or law["enactment_date"], law["enactment_date"])          # B12

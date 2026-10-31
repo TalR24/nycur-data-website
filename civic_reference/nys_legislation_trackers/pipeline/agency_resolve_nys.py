@@ -289,6 +289,7 @@ def fix_boces(o):
 # M15 (Oct 12 2026): actors the model left generic that the text resolves. Only records still stored as Unspecified are touched.
 BOROUGH_PRESIDENT = re.compile(r"^(?:the |such |each |every )?(?:borough presidents?|presidents? of the borough(?: of [A-Za-z ]+)?)$", re.I)
 ENFORCEMENT_ACTOR = re.compile(r"^(?:the |such |each |every |an? |any )?(?:(?:code )?enforcement (?:officers?|officials?)|officials? of this state\b[^.]*?\bcharged with the enforcement\b.*)$", re.I)
+STATE_OFFICIAL = re.compile(r"^(?:no |any |an? |the |each |every )?(?:(?:officials?|officers?) of (?:this|the) state(?: of new york)?|state (?:officials?|officers?))$", re.I)
 LOCAL_WORDS = re.compile(r"\b(?:cit(?:y|ies)|count(?:y|ies)|towns?|villages?|municipal(?:ity|ities)?|local)\b", re.I)
 
 
@@ -305,6 +306,11 @@ def fix_resolvable_actor(o, nyc_by):
                  agency_org_type=a.get("org_type"), agency_group=None, agency_unit=None, agency_source="borough_president")
         o.pop("actor_unresolved", None)
         return "m15_borough_president"
+    if STATE_OFFICIAL.match(raw):          # R10 (Oct 31 2026)
+        o.update(agency="State agencies", agency_full="State agencies", agency_matched=True, jurisdiction="state", agency_org_type="state agency group",
+                 agency_group=None, agency_unit=None, agency_source="state_official")
+        o.pop("actor_unresolved", None)
+        return "r10_state_official"
     if ENFORCEMENT_ACTOR.match(raw):
         ctx = (o.get("quote") or "") + " " + raw
         state, local = bool(re.search(r"\b(?:this state|state)\b", ctx, re.I)), bool(LOCAL_WORDS.search(ctx))
@@ -339,9 +345,13 @@ def fix_public_body(o):
 # 'the city school district of the city of New York'), the principal, board of education, chancellor and community superintendent are the
 # NYC Public Schools actors (NYC crosswalk NYCPS). A bare 'the chancellor' needs the city school district named: CUNY and SUNY have chancellors too.
 NYC_SCHOOL_LAW = re.compile(r"article\s+52-?A\b|\bsections?\s+2590(?:-\w+)?\b|city\s+school\s+district\s+of\s+the\s+city\s+of\s+new\s+york|city\s+school\s+district\s+having\s+a\s+population\s+of\s+(?:one\s+million|1,000,000)", re.I)
-NYC_SCHOOL_ACTOR = re.compile(r"^(?:the |such |each |said )?(?:principals?|board of education|chancellor|community superintendents?)$"
+NYC_SCHOOL_ACTOR = re.compile(r"^(?:the |such |each |said )?(?:principals?(?: of (?:each|any|such|the) (?:public )?schools?)?|board of education|chancellor|community superintendents?)$"
                               r"|^(?:the |such |said )?chancellor of the city school district(?: of the city of new york)?$|^the district$", re.I)          # T2 (Oct 18 2026): chancellor wording, 'the District'
 
+
+
+# R9 (Oct 31 2026): a named_body agency that is only a generic office phrase ('Principal of Each Public School') is not a named body.
+GENERIC_OFFICE_AGENCY = re.compile(r"^(?:the )?(?:principals?|superintendents?|chancellors?|commissioners?|directors?|board of education|board)\b(?:\s+of\s+(?:each|any|such|the|every)\b.*)?$", re.I)
 
 
 def fix_nyc_school_actor(o, text, nyc_by):
@@ -350,7 +360,8 @@ def fix_nyc_school_actor(o, text, nyc_by):
     raw = re.sub(r"\s+", " ", (o.get("actor_raw") or "").strip(" .,;:"))
     if not NYC_SCHOOL_ACTOR.match(raw) or "NYCPS" not in nyc_by:
         return None
-    if not (o.get("agency") == "Unspecified" or (o.get("agency") == "School districts" and not o.get("agency_unit"))):
+    generic_named = o.get("agency_source") == "named_body" and GENERIC_OFFICE_AGENCY.match(o.get("agency") or "")          # R9 (Oct 31 2026)
+    if not (o.get("agency") == "Unspecified" or generic_named or (o.get("agency") == "School districts" and not o.get("agency_unit"))):
         return None
     if not NYC_SCHOOL_LAW.search(text or ""):
         return None
@@ -690,8 +701,116 @@ def fix_city_is_nyc(o, by_canon, text=""):
     return True
 
 
-def fix_20261029(o, by_canon, text=""):
+# ---- Oct 31 2026 night: the agency field holds a raw office title instead of the body --------------------------------------
+OFFICE_TITLE = re.compile(r"^(?:the )?(?:commissioner|director|superintendent|president)\s+of\s+(?:the\s+)?(.+?)(?:\s+of\s+(?:the\s+)?(?:(city)|(state))(?:\s+of\s+new\s+york)?)?$", re.I)
+MWBD_DIVISION = re.compile(r"^(?:the )?(?:director of the )?division of minority and women(?:-owned business|'s business|’s business| owned business) development$", re.I)
+CHIEF_DIVERSITY = re.compile(r"^(?:the|an?)\s+chief diversity officer(?:\s+for\s+the\s+state)?$", re.I)
+OFPC_ACTOR = re.compile(r"^(?:the )?(?:office of fire prevention and control|state fire administrator)$", re.I)
+NAMED_LIBRARY = re.compile(r"^(?:([A-Za-z.'’-]+(?: [A-Za-z.'’-]+){0,3}?) (?:city |free |public )?library|public library of ([A-Za-z.'’ -]+))$", re.I)
+COUNTY_BOE = re.compile(r"^(?:the |each |a |such )?(?:county )?board of elections(?: of (?:the |each )?county(?: of ([A-Za-z .'-]+))?)?$", re.I)
+COUNTY_NAMED = re.compile(r"\b[Cc]ounty of ([A-Z][A-Za-z.'-]*(?: [A-Z][A-Za-z.'-]*){0,2})\b|\b([A-Z][A-Za-z.'-]*) [Cc]ounty\b")
+LOCALITY_NAMED = re.compile(r"\b([Cc]ity|[Tt]own|[Vv]illage|[Cc]ounty) of ((?:[A-Z][\w.'-]*)(?: [A-Z][\w.'-]*){0,2})")
+REGENTS_CHANCELLOR = re.compile(r"^(?:the )?chancellor(?: or the commissioner)?$|^(?:the )?chancellor of the (?:board of )?regents(?: of the university of the state of new york)?$", re.I)
+ASSESSING_ANY = re.compile(r"^(?:the |such |each |said |any |all |an? )?(?:legislative body of (?:the |such |each |said |any |an? )?)?(?:(?:approved|special|participating)\s+)?assessing\s+units?(?:\s+(?:that is not a city|which is a city|that is a city|(?:located )?in the county of [A-Za-z .'-]+?))?$|^(?:the )?(?:approved|special|participating)?\s*assessing units$", re.I)
+GOER_RE = re.compile(r"^governor(?:'|’)s office of employee relations$", re.I)
+_NYC_CW = {}
+
+
+def _nyc_cw():
+    if not _NYC_CW:
+        import json
+        from pathlib import Path
+        d = json.loads((Path(__file__).resolve().parent.parent.parent / "legislation_implementation_tracker" / "data" / "agency_crosswalk.json").read_text())
+        _NYC_CW.update(lookup=d["lookup"], by={a["canonical"]: a for a in d["agencies"]})
+    return _NYC_CW
+
+
+def _set_body(o, a, canon, jur, unit, rule):
+    o.update(agency=canon, agency_full=a.get("full_name") or canon, agency_matched=True, jurisdiction=jur, agency_org_type=a.get("org_type"),
+             agency_group=None, agency_unit=unit, agency_source=rule)
+    o.pop("actor_unresolved", None)
+    return True
+
+
+def fix_20261031(o, by_canon, lookup=None, text=""):
+    """R1-R3 (Oct 31 2026). Returns True when a raw office title in `agency` (or the chief diversity officer in actor_raw) was
+    replaced by the body it heads. Runs on matched and unmatched records; titles whose body the crosswalks cannot resolve are left alone."""
+    ag = re.sub(r"\s+", " ", (o.get("agency") or "").strip(" .,;:"))
+    raw = re.sub(r"\s+", " ", (o.get("actor_raw") or "").strip(" .,;:"))
+    if CHIEF_DIVERSITY.match(raw) and o.get("agency") in (None, "Unspecified") and "Governor" in by_canon:
+        return _set_body(o, by_canon["Governor"], "Governor", "state", "Chief Diversity Officer", "office_title_20261031")
+    if OFPC_ACTOR.match(raw) and "DHSES" in by_canon and (o.get("agency") in (None, "Unspecified", "DOS", "DHSES") or ag not in by_canon):
+        yr = (o.get("enactment_date") or "")[:4] or str(o.get("chapter_year") or "")
+        if yr.isdigit() and int(yr) >= 2010:
+            return _set_body(o, by_canon["DHSES"], "DHSES", "state", "Office of Fire Prevention and Control", "ofpc_to_dhses_r4")
+        return False
+    if COUNTY_BOE.match(raw) and o.get("agency") in ("Counties", "Unspecified"):
+        unit = None
+        for src in (raw, o.get("quote"), o.get("law_title"), text):
+            mm = COUNTY_NAMED.search(src or "")
+            if mm:
+                unit = "County of " + (mm.group(1) or mm.group(2)).strip()
+                break
+        unit = unit or o.get("agency_unit")
+        if unit and not str(unit).lower().startswith(("county of", "city of")):
+            unit = None
+        _set_group(o, "Boards of elections", "local", "local government group", unit, "county_boe_r6")
+        return True
+    if ASSESSING_ANY.match(raw) and o.get("agency") in ("Municipalities (all)", "Unspecified", "Counties", "Cities", "Towns", "Villages") and not (o.get("agency") == "Municipalities (all)" and o.get("agency_unit")):
+        unit = None
+        for src in (raw, o.get("quote"), o.get("law_title"), text):
+            mm = LOCALITY_NAMED.search(src or "")
+            if mm:
+                unit = mm.group(1).title() + " of " + mm.group(2).strip()
+                break
+            mm = COUNTY_NAMED.search(src or "")
+            if mm:
+                unit = "County of " + (mm.group(1) or mm.group(2)).strip()
+                break
+        if unit:
+            _set_group(o, "Municipalities (all)", "local", "local government group", unit, "assessing_unit_r7")
+            return True
+    if REGENTS_CHANCELLOR.match(raw or ag) and "Board of Regents" in by_canon and (o.get("agency") in (None, "Unspecified") or re.match(r"^chancellor of the (?:board of )?regents", ag, re.I)) \
+            and (re.search(r"regents", (o.get("quote") or "") + " " + ag, re.I)):
+        return _set_body(o, by_canon["Board of Regents"], "Board of Regents", "state", "Chancellor", "regents_chancellor_r8")
+    m5 = NAMED_LIBRARY.match(strip_art(raw)) if raw else None
+    if m5 and o.get("agency") in ("School districts", "Unspecified"):
+        name = (m5.group(1) or m5.group(2) or "").strip()
+        if name and not re.match(r"^(?:state|school|such|each|the|a|an|existing|public|free|city)$", name, re.I):
+            _set_group(o, "Public libraries", "local", "local government group", title_case(strip_art(raw)), "named_library_r5")
+            o["agency_group"] = "Public libraries"
+            return True
+    if not ag or ag in by_canon:
+        return False
+    if MWBD_DIVISION.match(ag) and "ESD" in by_canon:
+        return _set_body(o, by_canon["ESD"], "ESD", "state", "Division of Minority and Women-Owned Business Development", "office_title_20261031")
+    m = OFFICE_TITLE.match(ag)
+    if not m:
+        return False
+    x = m.group(1).strip().lower()
+    city = bool(m.group(2)) or o.get("jurisdiction") == "nyc"
+    if GOER_RE.match(x) and "OER" in by_canon:
+        return _set_body(o, by_canon["OER"], "OER", "state", None, "office_title_20261031")
+    cands = (x, "department of " + x, "office of " + x)
+    if city:
+        cw = _nyc_cw()
+        for c in cands:
+            k = cw["lookup"].get(c)
+            if k in cw["by"]:
+                return _set_body(o, cw["by"][k], k, "nyc", None, "office_title_20261031")
+        return False
+    lk = lookup if lookup is not None else __import__("extract_duties").LOOKUP
+    for c in cands:
+        k = lk.get(c)
+        if k in by_canon:
+            return _set_body(o, by_canon[k], k, by_canon[k].get("jurisdiction") or "state", None, "office_title_20261031")
+    return False
+
+
+def fix_20261029(o, by_canon, text="", lookup=None):
     """K1 court actors, K2 legislative leaders, K3 'governing body' phrases. Returns True when it set the agency."""
+    if fix_20261031(o, by_canon, lookup, text):
+        return True
     raw = strip_art(re.sub(r"\s+", " ", norm(o.get("actor_raw") or "")))
     if not raw:
         return False
@@ -722,7 +841,7 @@ def fix_20261029(o, by_canon, text=""):
 def fix_20261027(o, text, lookup, by_canon, match):
     """One entry point for R1-R5 (and R3 unit casing). `match` is eo.match_agency. Returns the rule name or None."""
     rule = None
-    if fix_20261029(o, by_canon, text):
+    if fix_20261029(o, by_canon, text, lookup):
         return o.get("agency_source")
     if fix_otb_branch(o):
         rule = "r1_otb_branch"

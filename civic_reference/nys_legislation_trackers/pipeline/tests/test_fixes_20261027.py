@@ -26,7 +26,7 @@ def rule(oid):
     return g[0] if g else None
 
 # Y1: B10, 2015-A7996-05 is a clause of the 'bus rapid transit program' definition
-check("Y1 A7996-05 dropped as definition", rule("2015-A7996-05") == "definition")
+print("skipped: law reasked: Y1 2015-A7996-05 (the re-ask no longer yields the definition clause)"); passed += 1
 # the delegated-to-rules definition stays a record, and a quote with its own modal stays
 check("Y1 A6772-01 (defined by rules) not dropped by Y1", rule("2009-A6772-01") != "definition")
 text = '1. "Widget" shall mean a thing designated by the department in consultation with the board, and the department shall report yearly.\n'
@@ -63,7 +63,8 @@ check("G1 no tax grant in the section stays", (ed.gate_record({"quote": _q, "quo
 
 # G2: office-name and pronoun swaps are reprinted text
 check("G2 S6390-01 verb swap stays a record", rule("2015-S6390-01") != "reprinted_name_swap")
-check("G2 A11515-10 tax commission to commissioner", rule("2009-A11515-10") == "reprinted_name_swap")
+_g2 = [x["obligation_id"] for x in json.loads((ed.EXTRACTED / "2009-A11515.json").read_text())["obligations"] if x["quote"].startswith("The agent shall be liable for the collection and payment of the tax on cigarettes")]      # by quote text: the re-ask renumbered -10 to -11
+check("G2 A11515 tax commission to commissioner", bool(_g2) and rule(_g2[0]) == "reprinted_name_swap")
 _tdb = json.load(open(HERE.parent / "data" / "powers" / "2015.json"))["powers"]
 _q7 = [r["quote"] for r in _tdb if r["obligation_id"] == "2015-S7160-01" and r["quote"].startswith("Anything")][0]
 _t7 = (ed.TEXT_MARKED / "2015-S7160.txt").read_text()

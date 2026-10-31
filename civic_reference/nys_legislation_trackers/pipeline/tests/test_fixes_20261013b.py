@@ -84,6 +84,12 @@ check("M29 not for another deliverable type", ed.study_submission_date({**o, "de
 check("M29 not past the next numbered subdivision", ed.study_submission_date(o, t.replace("{{(B)", "2. {{(B)")) is None)
 r = rec("2013-A814-01")
 check("M29 stored 2013-A814-01 -> 2016-11-01", bool(r) and r["deadline_kind"] == "fixed_date" and r["deadline_date"] == "2016-11-01")
+# Oct 31 2026: B16 (one-time, none -> on_effective_date) must not run before M29; rebuild the law from its cache file
+_laws = [l for l in ed.signed_laws(sessions=[2013]) if l["key"] == "2013-A814"]
+ed.EFFECTIVE.update(ed.effective_table(_laws))
+_d, _p, _ = ed.build_records(_laws)
+_b = {o["obligation_id"]: o for o in _d + _p}.get("2013-A814-01") or {}
+check("M29 rebuilt 2013-A814-01 -> fixed_date 2016-11-01 (before B16)", _b.get("deadline_kind") == "fixed_date" and _b.get("deadline_date") == "2016-11-01")
 
 # J11. aid recipient as actor
 o = {"actor_raw": "surviving municipalities", "quote": "surviving municipalities following a consolidation or dissolution shall be awarded additional annual aid"}
