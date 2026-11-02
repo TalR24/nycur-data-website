@@ -80,5 +80,23 @@ check("act clause counted apart", rx["act_clause_records"] == 1)
 check("new detail lists", all(k in rx for k in ("unmatched_stored", "field_mismatches", "unmatched_real_items")) and len(rx["unmatched_stored"]) == 1)
 check("agency match via normalisation", rx["field_accuracy"]["agency"]["k"] == 1 and rx["field_mismatches"] == [])
 
+# Nov 1 2026: NYC labels resolve through the Council crosswalk
+check("NYC label equals its Council code", agency_equal("DOF", "Department of Finance of New York City"))
+check("NYC code never equals a different group", not agency_equal("HPD", "Cities"))
+
+# Nov 1 2026 (B19): siblings sharing a quote each match their own gold item
+dq = tempfile.mkdtemp(); os.makedirs(dq + "/duties"); os.makedirs(dq + "/powers")
+SQ = "The commissioner and the board shall jointly adopt rules governing licences."
+json.dump({"obligations": [
+    {"matter_id": "2098-A1", "obligation_id": "2098-A1-01", "actor_raw": "a", "agency": "DOL", "kind": "duty", "quote": SQ},
+    {"matter_id": "2098-A1", "obligation_id": "2098-A1-02", "actor_raw": "b", "agency": "SED", "kind": "duty", "quote": SQ}]}, open(dq + "/duties/2098.json", "w"))
+json.dump({"powers": []}, open(dq + "/powers/2098.json", "w"))
+def gi(gid, ag):
+    return {"gold_id": gid, "source": {"obligation_id": "zz"}, "quote": SQ, "status": "real", "disputed": False, "classes": [], "expected_fields": {"agency": ag, "kind": "duty"}}
+gq = {"built_at": "t", "laws": {"2098-A1": {"items": [gi("g1", "SED"), gi("g2", "DOL")]}}}
+rq = score_gold.score(gq, dq)
+check("siblings match own gold item", rq["field_accuracy"]["agency"]["k"] == 2 and rq["field_mismatches"] == [])
+check("aliases resolve", agency_equal("Loft", "Loft Board of New York City") and agency_equal("Loft Board", "Loft Board of New York City") and agency_equal("DHSES", "State Office of Emergency Management"))
+
 print(f"{passed} passed, {failed} failed")
 sys.exit(1 if failed else 0)

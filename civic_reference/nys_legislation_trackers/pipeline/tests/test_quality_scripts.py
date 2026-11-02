@@ -149,5 +149,26 @@ check("trend includes gold history", "Gold set score history" in md and "| 20261
 check("trend types are extraction/pause/hold", all(t in md for t in ("| extraction |", "| pause |", "| hold |")))
 check("audit_trend.md written", (Q / "audit_trend.md").exists())
 
+# Q8 build_gold: audit quote matching and renumbered exclusion (Nov 1 2026)
+rd = os.path.join(tmp, "q8"); os.makedirs(os.path.join(rd, "data", "duties")); os.makedirs(os.path.join(rd, "nightly")); os.makedirs(os.path.join(rd, "packets", "2098", "results_reask"))
+QA = "The commissioner shall submit a written report to the governor on the status of the program by December first of each year"
+QB = "The board shall adopt rules establishing standards for the licensing of qualified inspectors within ninety days of the effective date"
+json.dump({"obligations": [{"obligation_id": "2098-A1-01", "quote": QB, "agency": "Board", "kind": "duty"},
+                           {"obligation_id": "2098-A1-02", "quote": QA, "agency": "DOH", "kind": "duty"},
+                           {"obligation_id": "2098-A2-01", "quote": QA, "agency": "DOH", "kind": "duty"},
+                           {"obligation_id": "2098-A3-01", "quote": QB, "agency": "Board", "kind": "duty"}]}, open(os.path.join(rd, "data", "duties", "x.json"), "w"))
+json.dump({"2098-A1": {"records": {"2098-A1-01": {"verdict": "correct", "quote": QA}}},
+           "2098-A2": {"records": {"2098-A2-01": {"verdict": "correct"}}},
+           "2098-A3": {"records": {"2098-A3-01": {"verdict": "correct", "note": "stored says: " + QB}}}}, open(os.path.join(rd, "nightly", "20260101_A.json"), "w"))
+for lw in ("2098-A2", "2098-A3"):
+    json.dump({}, open(os.path.join(rd, "packets", "2098", "results_reask", lw + ".json"), "w"))
+json.dump({}, open(os.path.join(rd, "ov.json"), "w"))
+g8 = build_gold.main(["--out", go, "--data-dir", os.path.join(rd, "data"), "--nightly-dir", os.path.join(rd, "nightly"), "--overrides", os.path.join(rd, "ov.json"),
+                      "--additions", os.path.join(rd, "none.json"), "--packets-dir", os.path.join(rd, "packets")])
+i8 = {i["gold_id"]: i for l in g8["laws"].values() for i in l["items"]}
+check("audit quote matches stored record by quote not id", i8["2098-A1-01"]["quote"] == QA and i8["2098-A1-01"]["expected_fields"].get("agency") == "DOH" and not i8["2098-A1-01"].get("excluded"))
+check("no quote on a law re-asked later is excluded as renumbered", "2098-A2" in g8["excluded_laws"] and g8["counts"]["excluded_renumbered"] == 1)
+check("note quoting the record verbatim is kept", not i8["2098-A3-01"].get("excluded") and i8["2098-A3-01"]["expected_fields"].get("agency") == "Board")
+
 print(f"{passed} passed, {failed} failed")
 sys.exit(1 if failed else 0)

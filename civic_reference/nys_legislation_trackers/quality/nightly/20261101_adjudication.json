@@ -1,0 +1,85 @@
+{
+ "night": "20261101",
+ "extraction_night": true,
+ "prompt": "version 2",
+ "sample": "20 of the 274 laws answered tonight (180 new 2019 laws + 93 re-asks), seed 20261101; 2013-S2605 (skipped, 174 KB) swapped for 2019-S7168 by a seeded draw; 2 blinded gold calibration laws per auditor",
+ "prediction": {
+  "precision_strict": "87% (last night 88.4%; 100 re-asks again mix 2009-2019 laws into the pool, and re-asked large laws carry unresolved actors until the resolver sees them)",
+  "recall": "92%",
+  "classes_expected": [
+   "raw office titles stored as agency in newly re-asked laws",
+   "content sub-items under new lead-in wordings",
+   "conditions of another record",
+   "Unspecified actors in passive drafting"
+  ],
+  "classes_expected_gone": [
+   "the city in NYC laws",
+   "OFPC under DOS",
+   "county boards of elections as Counties",
+   "study deadline overridden by the effective-date default",
+   "reprint gate on list items"
+  ]
+ },
+ "as_audited": {
+  "stored": 59,
+  "correct": 54,
+  "wrong": 3,
+  "not_real": 2,
+  "missed": 3,
+  "precision_strict": "54/59 = 91.5% (Wilson 95% 81.6-96.3)",
+  "precision_real": "96.6%",
+  "recall": "57/60 = 95.0% (86.3-98.3)",
+  "calibration": "A 2/2, B 2/2 (B's call that a sunset extension is a power is overruled by the adjudicated gold: duty)"
+ },
+ "shared_laws_agreement": "both shared laws have no records and no misses for either auditor",
+ "gold_before_fixes": "same 348-law build: strict 81.5 -> 78.0 after the re-asks; 50 new field mismatches, all in laws re-asked tonight. A blind adjudication of 66 of them: stored right 39, both labels right 10, gold right 16, neither 1. Root causes on the gold side: (1) build_gold copies expected fields for 'correct' items from the record currently stored under the audited id, which after a re-ask is a different record (fixed tonight: copy only when quotes match); (2) quote-only matching pairs a gold row with a sibling that shares the quote (B19, fixed tonight: tie-break on agency then kind); (3) NYC labels not equated (fixed: scorer resolves through the Council crosswalk; aliases for Loft Board and SOEM)",
+ "adjudication": [
+  {
+   "claim": "earlier chapter's sunset sentence dropped by the act_clause rule (2009-S6753-01, re-asked 4 times)",
+   "verdict": "CONFIRMED as a class with 2019-S6354: an amended earlier act clause ('is amended to read as follows: \u00a7 3. This act shall take effect ... [2019] {{2029}}') is mistaken for this law's own act clause; own clauses never carry brace markup; gate builder"
+  },
+  {
+   "claim": "sunset extension with an MTA holder in the amended act clause gets no record (2019-S6354; regex 118 laws, 14 answered)",
+   "verdict": "CONFIRMED, same class; the fallback must build the record with the holder from the amended chapter's description"
+  },
+  {
+   "claim": "approval conditions stored as BOCES duties (2011-A10205-02/-03)",
+   "verdict": "known conditions class; the two records go to the open not-real list via the audit file"
+  },
+  {
+   "claim": "referenced-section expiry keeps the old date when the same law moves it (2013-A9062 2014 -> 2019; 9 laws)",
+   "verdict": "CONFIRMED, 7 laws found; fixed in effective_date.py (amended_in_this_law)"
+  },
+  {
+   "claim": "sunset extension stored as duty should be power (2017-A10085-01; 75 db)",
+   "verdict": "REFUTED: the adjudicated gold and the Oct 19 decision make extension records duties"
+  },
+  {
+   "claim": "eligibility list item as actor / passive deeds sentence Unspecified (2011-S7000-38/-35)",
+   "verdict": "model-level; queued in reask_manual with the actor note"
+  },
+  {
+   "claim": "extends_existing wrong on 2019-S659-04",
+   "verdict": "CONFIRMED; queued in reask_manual"
+  },
+  {
+   "claim": "'the state' resolved to DHSES/SOEM in a mutual-aid law (2015-S5957-02/-04/-05); 'assisting local governments' Unspecified (-03)",
+   "verdict": "CONFIRMED from the mismatch adjudication; resolver R11/R12"
+  },
+  {
+   "claim": "extends_existing true on wholly new powers (2013-S2320-08/-09), false on a class widening (2015-S6503-01); a power's payment date dropped (2017-A11227-23); computation rule given on_effective_date (S2320-11)",
+   "verdict": "CONFIRMED singletons; backlog B22 (extends_existing on new sections) and re-ask notes"
+  }
+ ],
+ "adjudicated": {
+  "stored": 59,
+  "correct": 54,
+  "wrong": 3,
+  "not_real": 2,
+  "missed": 3,
+  "precision_strict": "54/59 = 91.5%",
+  "recall": "57/60 = 95.0%"
+ },
+ "span_merge": "B14 built behind NYS_REASK_MODE=span and measured in a sandbox: +173 records for +0.06 recall, strict 81.5 -> 78.2; stays off",
+ "pause_decision": "decided after the final ingest and gold rebuild with the matcher and builder fixes"
+}

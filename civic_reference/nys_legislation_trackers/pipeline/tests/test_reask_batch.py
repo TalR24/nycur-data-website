@@ -155,5 +155,16 @@ mt1 = int((pk3 / "2017" / "results_reask" / "2017-R1.json").stat().st_mtime)
 c3 = sorted(k for k, _ in nb.reask_candidates(set(), dd3, pk3))
 check("second-round draw: ingested answer may be re-asked, un-ingested answer is not; 2017 found without a sessions list", c3 == ["2017-R1"])
 
+# Nov 1 2026: an OLD re-ask answer (before the last two draws) no longer hides a double skip
+import os as _os2, time as _time2
+pk4, dp4, df4 = tmp / "packets4", tmp / "draws4.json", tmp / "deferred4.json"
+(pk4 / "2011" / "results_reask").mkdir(parents=True)
+old_ans = pk4 / "2011" / "results_reask" / "2011-Z1.json"; old_ans.write_text("{}")
+_os2.utime(old_ans, (_time2.mktime(_time2.strptime("20261017-1200", "%Y%m%d-%H%M")),) * 2)
+dp4.write_text(json.dumps({"2011-Z1": ["20261030-1549", "20261031-1547", "20261101-2126"], "2011-Z2": ["20261031-1547", "20261101-2126"]}))
+new_ans = pk4 / "2011" / "results_reask" / "2011-Z2.json"; new_ans.write_text("{}")   # answered now, after the draws
+added4 = nb.defer_twice_skipped(pk4, dp4, df4)
+check("double skip deferred despite an old answer; a fresh answer is not a skip", added4 == ["2011-Z1"])
+
 print("%d passed, %d failed" % (passed, failed))
 sys.exit(1 if failed else 0)

@@ -44,6 +44,9 @@ def wilson(k, n, z=1.96):
 
 # ---- agency normalisation (auditor free text vs crosswalk codes) ----
 _XWALK = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "agency_crosswalk_nys.json")
+# Nov 1 2026: NYC bodies are stored under the Council crosswalk's codes (DOF, HPD, DOHMH ...) while gold expectations copied from
+# older data spell them out ("Department of Finance of New York City"); the scorer resolves both through the same table.
+_XWALK_NYC = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "legislation_implementation_tracker", "data", "agency_crosswalk.json")
 # normalised auditor phrasing -> canonical name; keys and values go through _plain
 _ALIASES = {
     "education department": "SED",
@@ -54,6 +57,8 @@ _ALIASES = {
     "new york state teachers retirement system": "Teachers' Retirement System Board",
     "teachers retirement system of the state of new york": "Teachers' Retirement System Board",
     "office of the state comptroller": "State Comptroller",
+    "loft board of new york city": "Loft",
+    "state office of emergency management": "DHSES",
 }
 _index = None
 
@@ -77,6 +82,16 @@ def _build_index():
                     _index.setdefault(_plain(n), c)
         for k, c in x.get("lookup", {}).items():
             _index.setdefault(_plain(k), c)
+        if os.path.exists(_XWALK_NYC):                                   # NYC labels after the NYS ones: a shared code keeps the NYS entry
+            with open(_XWALK_NYC) as f:
+                nyc = json.load(f)
+            for a in nyc.get("agencies", []):
+                c = a["canonical"]
+                for n in [c, a.get("full_name"), a.get("display_name"), (a.get("full_name") or "") + " of New York City", "New York City " + (a.get("full_name") or "")] + list(a.get("variants") or []):
+                    if n and n.strip():
+                        _index.setdefault(_plain(n), c)
+            for k, c in nyc.get("lookup", {}).items():
+                _index.setdefault(_plain(k), c)
         for k, c in _ALIASES.items():
             _index[_plain(k)] = c
         for c in set(_ALIASES.values()):

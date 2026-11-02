@@ -38,22 +38,40 @@ def quote_only_law(law_recs, items):
     return any(i and i not in have for i in ids)
 
 
-def best_match(rec, items, quote_only=False):
-    """Item for a stored record: same-generation id first (skipped when quote_only), else best quote overlap >= 0.5."""
+def _candidates(rec, items, quote_only=False):
+    """Gold items that match a stored record: same-generation id first (skipped when quote_only), else every item with quote overlap >= 0.5."""
     qs = [q for q in (rec.get("quote"), rec.get("quote_original")) if q]
-    for it in ([] if quote_only else items):
-        s = it["source"]
-        if s.get("obligation_id") == rec["obligation_id"]:
-            if it["quote"] is None or any(quotes_match(q, it["quote"]) for q in qs):
-                return it
-    best, bs = None, 0.0
+    if not quote_only:
+        for it in items:
+            if it["source"].get("obligation_id") == rec["obligation_id"] and (it["quote"] is None or any(quotes_match(q, it["quote"]) for q in qs)):
+                return [(it, 1.0)]
+    out = []
     for it in items:
         if not it["quote"]:
             continue
         sc = max((quote_score(q, it["quote"]) for q in qs), default=0.0)
-        if sc >= 0.5 and sc > bs:
-            best, bs = it, sc
-    return best
+        if sc >= 0.5:
+            out.append((it, sc))
+    return out
+
+
+def best_match(rec, items, quote_only=False, taken=None):
+    """Item for a stored record. Among items with the best quote score (siblings sharing a quote), prefer the one whose expected agency
+    equals the record's agency (Nov 1 2026, B19), then the one whose kind matches, then the first; items in `taken` are skipped while another remains."""
+    cands = _candidates(rec, items, quote_only)
+    if not cands:
+        return None
+    top = max(sc for _, sc in cands)
+    tied = [it for it, sc in cands if sc >= top - 1e-9]
+    if taken:
+        free = [it for it in tied if it["gold_id"] not in taken]
+        tied = free or tied
+    for pred in (lambda it: agency_equal(norm(rec.get("agency")), norm((it.get("expected_fields") or {}).get("agency")), rec.get("agency_full")) and bool((it.get("expected_fields") or {}).get("agency")),
+                 lambda it: (it.get("expected_fields") or {}).get("kind") == rec.get("kind")):
+        for it in tied:
+            if pred(it):
+                return it
+    return tied[0]
 
 
 def norm(v):
@@ -91,11 +109,14 @@ def score(gold, data_dir):
         live = lambda i: not i.get("excluded") and not i["disputed"]
         total_real += sum(1 for i in items if live(i) and i["status"] == "real")
         qonly = quote_only_law(by_law.get(law, []), items)
+        taken_ids = set()
         for r in by_law.get(law, []):
             if is_act_clause(r.get("quote")):
                 act_clause += 1
                 continue
-            it = best_match(r, items, qonly)
+            it = best_match(r, items, qonly, taken_ids)
+            if it is not None:
+                taken_ids.add(it["gold_id"])
             if it is not None and not live(it):
                 ignored += 1
                 continue

@@ -1,0 +1,326 @@
+{
+ "_scoring": {
+  "auditor": "A",
+  "night": "20261101",
+  "laws": 11,
+  "stored_records": 11,
+  "correct": 9,
+  "wrong_fields": 0,
+  "not_real": 2,
+  "missed": 2,
+  "precision_strict": "9/11 = 81.8% (Wilson 95% 52.3-94.9)",
+  "precision_real": "9/11 = 81.8% (Wilson 95% 52.3-94.9)",
+  "recall": "7/11 = 63.6% (Wilson 95% 35.4-84.8) [literal formula: 7 blind items matched / (9 blind + 2 stored correct records the blind pass missed: 2011-A10205-04, -06); counting those 2 in the numerator gives 9/11 = 81.8% (52.3-94.9)]",
+  "effective_dates": "11/11 correct",
+  "calibration_laws": [
+   "2015-S6497",
+   "2009-A4216"
+  ],
+  "calibration_summary": "2 stored records, 2 correct, 0 missed, effective dates 2/2 correct (not included in the counts above)"
+ },
+ "_classes": [
+  {
+   "name": "act_clause drop rule removes an EARLIER chapter's sunset-extension sentence (Oct 16 decision: that is an extension record)",
+   "criteria": [
+    "1",
+    "7"
+   ],
+   "instances": [
+    "2009-S6753-01"
+   ],
+   "rule": "for each dropped record with rule=='act_clause', locate the de-braced quote in the packet LAW TEXT; flag when it sits before the law's own final '§ N. This act shall take effect' section (i.e. inside an amended chapter section)",
+   "db_matches": 1,
+   "db_examples": [
+    "2009-S6753-01"
+   ],
+   "needs_judgment": false,
+   "note": "single DB instance but recurs: reask_history shows 4 re-asks (last 20261101-2126), audit_confirmed_miss since 20261012, reask now suppressed; the model answers it every time and ingest drops it"
+  },
+  {
+   "name": "earlier-chapter sunset extension with a government holder named in the act clause/title produces no record (sunset_extension_from_title did not fire)",
+   "criteria": [
+    "1",
+    "7"
+   ],
+   "instances": [
+    "2019-S6354"
+   ],
+   "rule": "packet LAW TEXT amends 'chapter N of the laws of YYYY', every {{...}} span is a year/date, a braced span sits in an expire/'full force and effect until'/'deemed repealed' sentence, act_clause+title match /authority|city of|county of|town of|village of|department|commission|board|office|district|corporation/, and the law has no stored record with extends_existing true",
+   "db_matches": 118,
+   "db_examples": [
+    "2021-S2689",
+    "2025-S7525",
+    "2025-A7374"
+   ],
+   "needs_judgment": false,
+   "note": "118 laws match; 14 of them have an answer file on disk (e.g. 2013-A6709, 2015-A7641, 2017-A4889), the rest may be unanswered; regex is a recall-oriented screen and includes some private-holder titles"
+  },
+  {
+   "name": "approval conditions and contract-form requirements stored as BOCES duties",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2011-A10205-02",
+    "2011-A10205-03"
+   ],
+   "rule": "duties where quote matches /^(To be approved by|Contracts? must be executed by)|shall demonstrate that/i",
+   "db_matches": 2,
+   "db_examples": [
+    "2011-A10205-02",
+    "2011-A10205-03"
+   ],
+   "needs_judgment": false,
+   "note": "same family as the known 'conditions precedent' and 'approvers as actors' classes; counted as a recurrence"
+  }
+ ],
+ "2011-S6219": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2012-05-18",
+   "computed": "2012-05-18",
+   "verdict": "correct",
+   "note": "immediately; extended authority belongs to residential property owners (private), no government record"
+  }
+ },
+ "2013-A5057": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2013-05-22",
+   "computed": "2013-05-22",
+   "verdict": "correct",
+   "note": "immediately; check-cashing exemption limit for national banks binds private entities, title names no government holder"
+  }
+ },
+ "2019-S6497": {
+  "records": {
+   "2019-S6497-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "'shall be established by the commissioner of finance by rule' for 2014 through 2020; DOF/nyc, extends_existing true",
+    "quote": "The date or dates by which applications for an abatement pursuant to this section shall be made for the fiscal years beginning in calendar years two thousand fourteen through two thousand twenty shall be established by the commissioner of finance by rule"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2019-07-03",
+   "computed": "2019-07-03",
+   "verdict": "correct",
+   "note": "§ 4 immediately; §§1-2 abatement extensions are entitlements, no record"
+  }
+ },
+ "2011-A8007": {
+  "records": {
+   "2011-A8007-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "'{{where a grant or gift is of money, the chief administrator shall dispose of same as provided in section eleven of the state finance law.}}'",
+    "quote": "where a grant or gift is of money, the chief administrator shall dispose of same as provided in section eleven of the state finance law."
+   },
+   "2011-A8007-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "deletion '[with the approval of the chairmen of the senate finance committee ...]' widens the accept power; extends_existing true",
+    "quote": "Accept as agent of the state any grant or gift for the purpose of executing the functions of his or her office"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2011-07-20",
+   "computed": "2011-07-20",
+   "verdict": "correct",
+   "note": ""
+  }
+ },
+ "2009-S6753": {
+  "records": {},
+  "missed": [
+   {
+    "blind": "b1",
+    "quote": "provided that the provisions of sections one, two and four of this act shall remain in full force and effect until and including June 30, {{2014}}",
+    "kind": "power",
+    "agency": "New York City (model's resolution; act clause/title name no body, chapter 449 of 1986 PHFL initial rents)",
+    "dropped_by": "act_clause",
+    "note": "sentence is § 5 of chapter 449 of 1986 reprinted inside the amendment, not this law's own § 2 act clause; Oct 16 decision makes an earlier chapter's sunset an extension record; holder unnamed, so per Oct 19 it belongs in re-ask, but re-ask is suppressed after 4 tries"
+   }
+  ],
+  "effective_date": {
+   "stored": "2010-06-29",
+   "computed": "2010-06-29",
+   "verdict": "correct",
+   "note": "immediately; signed 2010-06-29, before the June 30 2010 deemed-effective date, so no retroactivity"
+  }
+ },
+ "2011-A10205": {
+  "records": {
+   "2011-A10205-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "'{{to enter into contracts of no more than two years ... with out-of-state school districts}}' BOCES power",
+    "quote": "to enter into contracts of no more than two years and subject to the sunset date of this subparagraph, with out-of-state school districts for special Education and/or career and technical Education services"
+   },
+   "2011-A10205-02": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "note": "'Contracts must be executed by the board of cooperative educational services and the trustees or boards of Education' is a condition on the contract power (-01), not a separate duty",
+    "quote": "Contracts must be executed by the board of cooperative educational services and the trustees or boards of Education of such out-of-state school districts"
+   },
+   "2011-A10205-03": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "note": "'To be approved by the commissioner, the contract and any business plan, shall demonstrate...' is a condition of approval of the contract power",
+    "quote": "To be approved by the commissioner, the contract and any business plan, shall demonstrate that any services provided to out-of-state schools pursuant to this subparagraph shall not result in any additional costs being imposed on component school districts"
+   },
+   "2011-A10205-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "'payments ... that exceed any cost ... shall be applied to reduce the costs of aidable shared services' substantive BOCES spending rule (passive, actor BOCES); not on blind list, accepted on review",
+    "quote": "any payments received by the board of cooperative educational services for services provided in this subparagraph that exceed any cost to the board of cooperative educational services for providing such services shall be applied to reduce the costs of aidable shared services allocated to component school districts"
+   },
+   "2011-A10205-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "'Services provided ... to component districts ... shall not be reduced or eliminated solely due to' BOCES prohibition",
+    "quote": "Services provided by a board of cooperative educational services to component districts at the time of approval of a contract under this paragraph shall not be reduced or eliminated solely due to a board of cooperative educational services' performance of services to out-of-state districts pursuant to this paragraph."
+   },
+   "2011-A10205-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "'{{No service provided to an out-of-state school district ... shall be eligible for aid.}}' in a paragraph limiting the commissioner's aid approvals; not on blind list, accepted on review",
+    "quote": "No service provided to an out-of-state school district pursuant to subparagraph ten of paragraph h of this subdivision shall be eligible for aid."
+   },
+   "2011-A10205-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "§ 3 interim report by April 15, 2013 and final by December 15, 2013; fixed_date 2013-04-15; -07 'prepare' correctly dropped as duplicate_prepare_report",
+    "quote": "The commissioner of education shall submit an interim report to the board of regents, the governor and the legislature by no later than April 15, 2013 and a final report by no later than December 15, 2013"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2012-08-17",
+   "computed": "2012-08-17",
+   "verdict": "correct",
+   "note": "immediately; expires 2014-07-01 stored correctly"
+  }
+ },
+ "2019-S5936": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2019-11-20",
+   "computed": "2019-11-20",
+   "verdict": "correct",
+   "note": "residency/elector rule for town of Pavilion officers, criterion 1 excludes residency rules"
+  }
+ },
+ "2019-S6250": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2019-08-30",
+   "computed": "2019-08-30",
+   "verdict": "correct",
+   "note": "immediately, retroactive_to 2017-11-29 stored; new metes-and-bounds description of the same Tax Block 2018 Lot 1 (same 43,515 sq ft), not a widening; reversion clause binds no actor"
+  }
+ },
+ "2019-S6354": {
+  "records": {},
+  "missed": [
+   {
+    "blind": "b1",
+    "quote": "This act shall take effect immediately and shall expire December 31, 2029 when upon such date the provisions of this act shall be deemed repealed",
+    "kind": "power",
+    "agency": "Metropolitan Transportation Authority (act clause: 'establishing the metropolitan transportation authority small business mentoring program')",
+    "dropped_by": null,
+    "note": "earlier chapter (206 of 2010) sunset extended [2019]->{{2029}}; Oct 19 rule: holder from act clause, kind power, extends_existing true, record_source sunset_extension_from_title; no stored and no dropped record despite re-ask check a_numbers_only_fewer_extends"
+   }
+  ],
+  "effective_date": {
+   "stored": "2019-08-30",
+   "computed": "2019-08-30",
+   "verdict": "correct",
+   "note": ""
+  }
+ },
+ "2013-A7101": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2013-07-12",
+   "computed": "2013-07-12",
+   "verdict": "correct",
+   "note": "immediately; three-line angling authorization belongs to individual anglers (private)"
+  }
+ },
+ "2019-S7168": {
+  "records": {
+   "2019-S7168-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "'the office may ... make an award for the unreimbursed counseling expenses of the eligible spouse, {{domestic partner,}}' OVS power, extends_existing true",
+    "quote": "the office may, without regard to the financial difficulty of the claimant, make an award for the unreimbursed counseling expenses of the eligible spouse, domestic partner, parents, brothers, sisters or children of such victim, and/or the reasonable burial expenses incurred by the claimant."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2020-06-17",
+   "computed": "2020-06-17",
+   "verdict": "correct",
+   "note": "same as chapter 690 of 2019 (A2566, signed 2019-12-20, 180th day after = 2020-06-17); this act signed 2020-04-17, before that date"
+  }
+ },
+ "2015-S6497": {
+  "records": {
+   "2015-S6497-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "'The commissioner of transportation shall provide for the installation and maintenance of adequate signing' on_effective_date, ongoing",
+    "quote": "The commissioner of transportation shall provide for the installation and maintenance of adequate signing of the state highway system as designated pursuant to section one of this act."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2016-09-29",
+   "computed": "2016-09-29",
+   "verdict": "correct",
+   "note": ""
+  }
+ },
+ "2009-A4216": {
+  "records": {
+   "2009-A4216-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "'any specific rules and regulations the commissioner may adopt, with the advice and consent of the transplant council' DOH power",
+    "quote": "including any specific rules and regulations the commissioner may adopt, with the advice and consent of the transplant council, with respect to such conditional donations."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2009-08-26",
+   "computed": "2009-08-26",
+   "verdict": "correct",
+   "note": ""
+  }
+ }
+}

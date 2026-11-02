@@ -599,6 +599,23 @@ def is_act_clause_quote(quote, act_clause=None):
     return len(q) >= 25 and q in a
 
 
+AMENDED_READ = re.compile(r"\bis\s+(?:hereby\s+)?amended\s+to\s+read\s+as\s+follows\s*:?\s*$", re.I)
+
+
+def in_amended_act_clause(span, text):
+    """Q5 (Nov 1 2026): the 'This act shall take effect' paragraph holding span belongs to an EARLIER chapter this law amends: it follows an
+    'is amended to read as follows:' line or carries [deleted] markup. This law's own act clause carries neither."""
+    ps = text.rfind("\n", 0, span[0]) + 1
+    pe = text.find("\n", span[0]); pe = len(text) if pe < 0 else pe
+    para = text[ps:pe]
+    if not re.match(r"\W*(?:§\s*[\d-]+[a-z]?\.\s*)?(?:\{\{)?\s*this act shall take effect", para, re.I):
+        return False
+    if re.search(r"\[[^\[\]]{2,}\]", para):
+        return True
+    prev = [x for x in text[:ps].split("\n") if x.strip()]
+    return bool(prev) and bool(AMENDED_READ.search(prev[-1].strip()))
+
+
 def own_act_clause_quote(quote, text, raw_clause=None, act_clause=None):
     """R1 (Oct 16 2026): drop an act-clause-looking quote only when it is the law's OWN clause: the located span lies outside {{ }}
     new matter AND (the quote overlaps the law's own raw_clause, or the span sits in the act's final section when that section
@@ -611,6 +628,8 @@ def own_act_clause_quote(quote, text, raw_clause=None, act_clause=None):
         return True
     if in_braces(span[0], span[1], text):
         ps = text.rfind("\n", 0, span[0]) + 1
+        if APPLY_Q5 and in_amended_act_clause(span, text):
+            return False          # Q5: an earlier chapter's amended clause is not this law's own
         if N2_ACT_PROVISO.match(" ".join(re.findall(r"[a-z0-9,]+", (quote or "").lower()))) and re.match(r"\W*(?:§\s*[\d-]+[a-z]?\.\s*)?this act shall take effect", text[ps:ps + 80], re.I):
             return True          # N2 (Oct 31 2026): 'provided, that the provisions of sections one and two of this act shall remain in full force ... June {{23}}' inside the act's own effective-date paragraph
         return False
@@ -860,6 +879,7 @@ CONDITION_RE = re.compile(r"^\W*(?:no\b[^.;]{0,160}\bunless\b|subject to\b|provi
 REVIEW_DUTY_RE = re.compile(r"\bshall be subject to (?:the )?(?:\w+ )?(?:review|audit)\b", re.I)         # "subject to review/audit by X" is X's review duty
 APPROVAL_COND_RE = re.compile(r"\bsubject to (?:the )?(?:prior |written |advance )?(?:approval|consent|authorization)\b", re.I)
 ITEM_LABEL = re.compile(r"^\W*(?:\{\{)?\(?[A-Za-z0-9]{1,3}[.)]\s")
+ITEM_LABEL_ROMAN = re.compile(r"^\W*(?:\{\{)?\(?[ivxlc]{4,6}[.)]\s", re.I)
 VERBISH = re.compile(r"\b(shall|must|may|required|authorized|empowered|directed|power|duty|responsible|is to|are to|shall be)\b", re.I)
 RELATIVE = re.compile(r"\b(?:which|that|who|whom|whose)\s+(?:\w+\s+){0,3}?(?:shall|must)\b", re.I)
 STOP_KEYWORDS = {"department", "commissioner", "effective", "provisions", "section", "subdivision", "program", "agency", "authority", "service", "services"}
@@ -1279,8 +1299,9 @@ def item_lead_full(span, text, max_paras=60, keep_markup=False):
     idx = next((i for i, (x, y) in enumerate(paras) if x <= span[0] < y), None)
     if idx is None:
         return None
+    il = (lambda x: ITEM_LABEL.match(x) or (APPLY_Q1 and ITEM_LABEL_ROMAN.match(x)))          # Q1: 'viii.' / 'xiii.' labels have four characters
     first = text[paras[idx][0]:paras[idx][1]]
-    if not (ITEM_LABEL.match(first) or NUMBERED_ITEM.match(first)):
+    if not (il(first) or NUMBERED_ITEM.match(first)):
         return None
     floor = lead_floor(paras, idx, text)
     for j in range(idx - 1, max(floor - 1, idx - max_paras), -1):
@@ -1289,7 +1310,7 @@ def item_lead_full(span, text, max_paras=60, keep_markup=False):
             continue
         if SCAN_LEAD_END.search(t):
             return None if AMEND_INSTR.search(t) else (t if keep_markup else re.sub(r"\{\{|\}\}", "", t))
-        if ITEM_LABEL.match(t) or NUMBERED_ITEM.match(t):
+        if il(t) or NUMBERED_ITEM.match(t):
             continue
         return None
     return None
@@ -1514,6 +1535,31 @@ def d6_private(o, q):
 QUALIFICATION = re.compile(r"\bshall\s+be\s+(?:a\s+)?(?:resident|citizen)s?\s+of\b|\bshall\s+be\s+at\s+least\s+[\w-]+(?:\s+[\w-]+)?\s+years\s+of\s+age\b|\bshall\s+possess\s+the\s+following\s+qualifications\b", re.I)
 
 
+# Nov 1 2026 night gate fixes Q1-Q5 (Oct 31 bulk verification); a rule dropping over 40 records database-wide is set False
+APPLY_Q1 = APPLY_Q2 = APPLY_Q3 = APPLY_Q4 = APPLY_Q5 = True
+APPLY_Q5_SUCH = False          # 'Such' swap reprints (2 ids): set aside when the amended-act-clause rule Q5 took its place in the five
+Q1_LEAD = re.compile(r"(?:\b(?:shall|must|will)\s+(?:consist|be\s+composed|be\s+comprised)\s+of\b[^\n]{0,400}:|\bmembers?\b[^:.]{0,60}\bappointed\s+as\s+follows:|\bfollowing\s+(?:cases|actions|proceedings|matters)\s+are\s+(?:not\s+)?(?:included|excluded|covered):|\breport\b[^:]{0,200}\bshall\s+(?:\w+,\s+)*(?:consider|evaluate|address|examine|analyze)\b[^:]{0,100}\b(?:concerning|regarding):)\s*$", re.I)
+Q2_AMOUNT = re.compile(r"\bshall\s+be\s+eligible\s+for\s+aid\b|\bfunding\s+levels\b[^.]{0,120}\bshall\s+be\s+continued\b|\bshall\s+be\s+deter-?\s*mined\s+by\s+(?:first\s+)?calculating\b|\bpercent\s+collected\s+or\s+received\s+under\s+those\s+sections\s+must\s+be\s+deposited\b", re.I)
+Q3_CONDITION = re.compile(r"^\W*(?:a\s+contracting\s+agency\s+that\s+elects\s+to\s+proceed\b[^.;]{0,120}\bshall\s+be\s+precluded\s+from\b|[\w\s-]{0,60}\bshall\s+be\s+issued\b[^.;]{0,100}\bfor\s+a\s+fee\s+in\s+the\s+amount\s+of\b[^.;]{0,60}\band\s+shall\s+be\s+valid\s+for\b|no\s+monies\s+shall\s+be\s+disbursed\b[^.;]{0,80}\bexcept\s+after\s+audit\b|any\s+member\s+chosen\s+to\s+fill\s+a\s+vacancy\b[^.;]{0,100}\bshall\s+be\s+appointed\s+for\s+the\s+unexpired\s+term\b|vacancies\b[^.;]{0,80}\bshall\s+be\s+filled\s+in\s+the\s+same\s+manner\s+as\s+original\s+appointments\b)", re.I)
+Q4_NO_POWER = re.compile(r"\bshall,[^,]{0,120},\s+by\s+virtue\s+thereof\s+(?:also\s+)?hold\b|\bALL\s+that\s+certain\s+(?:piece|plot|parcel|tract)\b[^.]{0,120}\bbounded\s+and\s+described\b|^\W*deeds?\s+of\s+conveyance\s+shall\s+be\s+executed\s+and\s+filed\b")
+Q5_BLOCK = re.compile(r"^(?:such|if\s+[^{}]{5,200},|of\s+that\s+year\.?)$", re.I)
+
+
+def q1_item(q, lead):
+    """Q1: a list item with no modal of its own under a membership / scope / report-content lead is part of the parent record."""
+    if not lead or not Q1_LEAD.search(re.sub(r"\s+", " ", lead.strip())[-700:]):
+        return False
+    m = re.search(r"\b(?:shall|must|may|will)\b", q)
+    return not m or bool(SUBORDINATE_MARK.search(q[:m.start()]))
+
+
+def q5_such_swap(sent):
+    """Q5: the sentence's new matter is only 'Such' swaps, a leading 'if ...' condition and 'of that year', over existing text."""
+    blocks = [b.strip() for b in re.findall(r"\{\{(.*?)\}\}", sent, re.S)]
+    return bool(blocks) and any(b.lower() == "such" for b in blocks) and all(Q5_BLOCK.match(b) for b in blocks)
+
+
+
 def gate_record(o, text, has_markers):
     """Returns (rule, reason) when the record must be dropped, else None. Rules 1-3 of phase 3b."""
     if not o.get("quote_verified"):
@@ -1538,6 +1584,12 @@ def gate_record(o, text, has_markers):
     if OPERATION_OF_LAW.search(q):
         bump("b16_operation_of_law")
         return "operation_of_law", "a transfer of records, property and rights by operation of law (shall vest in / be transferred to and vested in): binds no actor"
+    if APPLY_Q4 and Q4_NO_POWER.search(q):
+        return "no_duty_or_power", "holding office by operation of law, a parcel boundary description or a passive conveyance filing: states no duty or power of an actor"
+    if APPLY_Q2 and Q2_AMOUNT.search(q):
+        return "amount_not_duty", "an amount, funding level or aid-eligibility statement that no actor carries out"
+    if APPLY_Q3 and Q3_CONDITION.search(q):
+        return "condition_of_other_record", "a condition or consequence attached to another record (a bar after electing a remedy, a permit fee and term, an audit precondition, a vacancy term)"
     gw = goal_or_window(q)
     if gw:
         return gw
@@ -1566,6 +1618,8 @@ def gate_record(o, text, has_markers):
     if span and has_markers:          # G2
         if reprinted_name_swap(context_sentence(span, text)[0]):
             return "reprinted_name_swap", "the sentence is existing text; the only new matter is a word or office name replacing a deleted one"
+    if span and has_markers and APPLY_Q5_SUCH and q5_such_swap(context_sentence(span, text)[0]):
+        return "reprinted_name_swap", "the sentence is existing text; the only new matter is 'Such' replacing a word, a leading 'if' condition and 'of that year'"
     if span and has_markers and APPLY_D5 and reprinted_swap_adds_actor(o, context_sentence(span, text)[0]):
         return "reprinted_name_swap", "the sentence is existing text; the braces only add a second actor ('or a district Attorney'), whose own record carries the new duty"
     if span and (TAX_PROVISO.search(q) or (APPLY_D2 and TAX_LIMITATION.search(q))):          # G1, D2
@@ -1646,6 +1700,8 @@ def gate_record(o, text, has_markers):
             lead4 = item_lead_full(span, text)
             if lead4 and d4_item(q, lead4[-220:]):
                 return "sub_item_of_parent", "a list item under a nested content lead ('Such procedures shall include:'); part of the parent record, not a record"
+            if APPLY_Q1 and lead4 and q1_item(q, lead4):
+                return "sub_item_of_parent", "a list item under a membership, scope or report-content lead ('shall consist of ... as follows:'); part of the parent record, not a record"
         if APPLY_B30 and (IMPERATIVE_ITEM.match(q) or INFINITIVE_ITEM.match(q)):          # B30: an imperative item under a content lead ('the agreement shall, at a minimum:') is a term of that agreement
             vi = v_item_rule(o, span, text, hdr, sec)
             if vi and vi[0] == "sub_item_of_parent":
@@ -2525,7 +2581,7 @@ def reask_packet_text(packet, key, entry, stored, out_path):
             "to the exact path " + str(out_path) + " (never to results/):\n" + schema_json)
 
 
-REASK_MODE = "replace"   # Oct 28 2026: merge mode added 3,940 records from 810 re-asks (reworded quotes failed the 0.5 match) and cut gold strict 83.4 -> 78.7; back to replace until the merge matches on located text spans (backlog B14)            # "merge": the original answer plus the re-ask's additions and fixes; "replace": the re-ask answer stands alone
+REASK_MODE = os.environ.get("NYS_REASK_MODE") or "replace"   # "span" (Nov 1 2026, B14): match records on located text spans; set NYS_REASK_MODE=span to try it. Oct 28 2026: merge mode added 3,940 records from 810 re-asks (reworded quotes failed the 0.5 match) and cut gold strict 83.4 -> 78.7; back to replace until the merge matches on located text spans (backlog B14)            # "merge": the original answer plus the re-ask's additions and fixes; "replace": the re-ask answer stands alone
 REASK_FIX_CHECKS = {"passive_subject_actor", "approver_as_actor", "joint_actor_single", "aid_recipient_as_actor", "identifiable_actor_unspecified",
                     "municipality_defined_narrowly", "compound_local_actor", "d_actor_unresolved", "a_numbers_only_fewer_extends", "condition_only_new_matter"}
 REASK_MERGE_INFO = {}           # law key -> {"tags": {normalised quote: tag}, "removed": [quotes]}, filled by reask_overlay, read by mark_reasked
@@ -2605,12 +2661,60 @@ def merge_reask_answer(key, orig, reask, entry):
     return merged, tags, removed
 
 
+def _rec_span(rec, text):
+    return locate_span(rec.get("quote") or "", text) if text else None
+
+
+def _span_overlap(a, b):
+    """Overlap of two (start, end) spans as a fraction of the shorter one."""
+    inter = min(a[1], b[1]) - max(a[0], b[0])
+    return inter / max(1, min(a[1] - a[0], b[1] - b[0])) if inter > 0 else 0.0
+
+
+def merge_reask_span(key, orig, reask, entry, text, min_overlap=0.5):
+    """B14 span merge. A re-ask record replaces every first-answer record whose located span overlaps it by >= min_overlap of the shorter
+    span; first-answer records nothing overlaps are kept (this includes the packet's listed misses); re-ask records with no overlap are added.
+    A quote that fails to locate keeps its record; an unlocated re-ask record falls back to the 0.5 quote match against unlocated originals.
+    Order: first-answer order (a replacement sits at its first replaced original), then additions. Returns (merged, tags, removed=[])."""
+    oo, ro = list(orig.get("obligations", [])), list(reask.get("obligations", []))
+    ospan = [_rec_span(o, text) for o in oo]
+    slot, hit = {}, set()       # first-answer index -> list of re-ask records sitting there
+    added = []
+    for r in ro:
+        rs = _rec_span(r, text)
+        idx = [i for i, sp in enumerate(ospan) if rs and sp and _span_overlap(rs, sp) >= min_overlap]
+        if not rs:
+            best = max(((_qscore(r.get("quote"), o.get("quote")), i) for i, o in enumerate(oo) if ospan[i] is None), default=(0, None))
+            idx = [best[1]] if best[0] >= 0.5 else []
+        if idx:
+            hit.update(idx)
+            slot.setdefault(min(idx), []).append(r)
+        else:
+            added.append(r)
+    out, tags = [], {}
+    for i, o in enumerate(oo):
+        if i in slot:
+            for r in slot[i]:
+                out.append(dict(r)); tags[" ".join(_qwords(r.get("quote")))] = "reask_fields"
+        elif i in hit:
+            continue
+        else:
+            out.append(dict(o)); tags[" ".join(_qwords(o.get("quote")))] = "kept_original"
+    for r in added:
+        out.append(dict(r)); tags[" ".join(_qwords(r.get("quote")))] = "added"
+    merged = {**orig, "obligations": out}
+    if _effective_unparsed(orig.get("effective_clause")):
+        merged["effective_clause"] = reask.get("effective_clause", orig.get("effective_clause"))
+    return merged, tags, []
+
+
 def reask_overlay(d, todo, tmp, schema=None, mode=None, entries=None):
     """Packet-results view for eo.ingest_packets: for each law, results_reask/{key}.json (when it parses and fits the schema)
     is merged into results/{key}.json (REASK_MODE "merge", the default) or stands in for it ("replace"); otherwise the
     original answer stands. Returns (overlay_dir, {key: tag}); merge details go to REASK_MERGE_INFO."""
     d, tmp = Path(d), Path(tmp)
     mode = mode or REASK_MODE
+    texts = {l["key"]: t for l, t in todo}
     REASK_MERGE_INFO.clear()
     if entries is None and mode == "merge":
         entries = load_reask()
@@ -2631,13 +2735,16 @@ def reask_overlay(d, todo, tmp, schema=None, mode=None, entries=None):
         if not eo.validate_against_schema(raw, schema or SCHEMA):
             continue
         op = d / "results" / (k + ".json")
-        if mode == "merge" and op.exists():
+        if mode in ("merge", "span") and op.exists():
             try:
                 orig = json.loads(op.read_text())
             except json.JSONDecodeError:
                 orig = None
             if orig is not None and eo.validate_against_schema(orig, schema or SCHEMA):
-                raw, tags, removed = merge_reask_answer(k, orig, raw, (entries or {}).get(k))
+                if mode == "span":
+                    raw, tags, removed = merge_reask_span(k, orig, raw, (entries or {}).get(k), texts.get(k))
+                else:
+                    raw, tags, removed = merge_reask_answer(k, orig, raw, (entries or {}).get(k))
                 REASK_MERGE_INFO[k] = {"tags": tags, "removed": removed}
         (tmp / "results" / (k + ".json")).write_text(json.dumps(raw))
         tf = d / "reask" / (k + ".tag")
@@ -3119,6 +3226,8 @@ def sunset_holder(*texts):
             cn = agency_resolve_nys.county_name(m.group(1))
             if cn:
                 found.setdefault(("county of %s" % cn).lower(), "the county of %s" % cn)
+        if APPLY_Q5 and re.search(r"\bmetropolitan transportation authority\b", t, re.I):          # Q5: a named public authority
+            found.setdefault("metropolitan transportation authority", "the Metropolitan Transportation Authority")
         for m in HOLDER_DEPT.finditer(t.lower()):
             found.setdefault(m.group(1), "the " + m.group(1))
     return next(iter(found.values())) if len(found) == 1 else None
@@ -3179,6 +3288,15 @@ def sunset_extension_sentences(text):
     return [(q, c) for q, c, _ in sunset_extension_sentences_pos(text)]
 
 
+def amending_description(text, pos):
+    """Q5: the amending sentence ('Section 3 of chapter 206 of the laws of 2010, amending the ... law relating to ..., is amended to read as follows:') above the braced date at pos."""
+    last = None
+    for m in SUNSET_AMEND.finditer(text):
+        if m.start(4) <= pos:
+            last = m
+    return re.sub(r"\s+", " ", text[last.start():last.start(4)]) if last else None
+
+
 def sunset_extension_records(law, text, eff, existing, res):
     """U1: (records, unnamed) where records are new power records for the sunset sentences no stored record covers, and unnamed is
     {sentence, title} for the first such sentence when the law's title names no single government body."""
@@ -3186,6 +3304,7 @@ def sunset_extension_records(law, text, eff, existing, res):
     law_holder = sunset_holder(law.get("title"), law.get("act_clause"))
     multi_part = bool(part_starts(text))
     for q, c, pos in sunset_extension_sentences_pos(text):
+        amend_desc = amending_description(text, pos) if APPLY_Q5 else None
         if any(overlap(q, r.get("quote") or "") >= 0.6 for r in existing):
             continue
         if multi_part:          # G3: the holder is the Part's own, never the whole act's title
@@ -3194,6 +3313,10 @@ def sunset_extension_records(law, text, eff, existing, res):
                 bump("g3_holder_from_part")
         else:
             holder = law_holder
+        if not holder and amend_desc:          # Q5: the amended chapter's own description in the amending sentence names the body
+            holder = sunset_holder(amend_desc)
+            if holder:
+                bump("q5_holder_from_amended_chapter")
         if holder:
             sents.append((q, c, holder))
         elif unnamed is None:
@@ -3267,6 +3390,11 @@ def build_records(laws):
             if own_act_clause_quote(o.get("quote"), text, eff.get("raw_clause"), law.get("act_clause")):      # L2, narrowed by R1
                 drop(o, "act_clause", "the quote is the act's effective-date or sunset clause, computed separately")
                 continue
+            if APPLY_Q5 and is_act_clause_quote(o.get("quote"), law.get("act_clause")) and N2_ACT_PROVISO.match(" ".join(re.findall(r"[a-z0-9,]+", (o.get("quote") or "").lower()))):          # only the proviso form N2 used to drop; braced sunset records stay
+                sp5 = locate_span(o.get("quote") or "", text)
+                if sp5 and in_amended_act_clause(sp5, text):
+                    drop(o, "amended_act_clause", "the quote sits in an earlier chapter's act clause this law amends; the sunset-extension record carries the new date")
+                    continue
             kind = eo._kind(o)
             if kind == "neither" and o.get("kind_model") == "neither" and COST_DUTY.search(o.get("quote") or ""):      # L3
                 kind = "duty"; o["kind_adjusted"] = "cost_duty"; bump("l3_cost_duty")

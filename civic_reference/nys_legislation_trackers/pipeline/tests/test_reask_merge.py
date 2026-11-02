@@ -76,4 +76,34 @@ ex = tmp / "ex"; ex.mkdir()
 check("mark_reasked stamps", ed.mark_reasked(reasked, {key}, ex) == 1)
 res = json.loads((ex / (key + ".json")).read_text())
 check("obligations stamped with reask_merge", [o["reask_merge"] for o in res["obligations"]] == ["kept_original", "added"] and all(o["reasked"] for o in res["obligations"]))
+
+# ── span mode (B14) ──
+T = "Section 1. " + Q1 + ". " + Q2 + ". " + Q3 + ". " + Q4 + "."
+sorig = {"effective_clause": EC, "obligations": [rec(Q1), rec(Q2), rec(Q3)]}
+Q2r = "The commissioner of health shall adopt rules for the licensing of clinics throughout the state"   # reworded, no quote match
+sre = {"effective_clause": EC, "obligations": [rec(Q1, "cities"), rec(Q2r, "towns"), rec(Q4)]}
+print_q = lambda m: [o["quote"] for o in m["obligations"]]
+check("reworded Q2 does not locate verbatim", ed.locate_span(Q2r, T) is None)
+sre["obligations"][1]["quote"] = "commissioner of health shall adopt rules governing licensing of clinics"   # substring, locates, overlaps Q2 fully
+sm, st, sr = ed.merge_reask_span(key, sorig, sre, {}, T)
+check("span: 4 records (Q1, Q2 replaced, Q3 kept, Q4 added)", len(sm["obligations"]) == 4)
+check("span: Q1 replaced by the re-ask record", sm["obligations"][0]["actor_raw"] == "cities")
+check("span: reworded Q2 replaces, not duplicates", [o["actor_raw"] for o in sm["obligations"]].count("towns") == 1 and Q2 not in print_q(sm))
+check("span: omitted Q3 kept", Q3 in print_q(sm) and sm["obligations"][2]["quote"] == Q3)
+check("span: new Q4 added last", sm["obligations"][3]["quote"] == Q4 and st[" ".join(ed._qwords(Q4))] == "added")
+# 50% rule: re-ask covers 40% of the shorter original span -> not a replacement; 60% -> replacement
+w2, w3 = Q2.split(), Q3.split()
+for nb, expect in ((2, 2), (6, 1)):      # re-ask quote = tail of Q2 plus the first nb words of Q3; shorter span is the re-ask quote or Q3
+    part = " ".join(w2[-4:] + w3[:nb])
+    a = ed.locate_span(part, T); b = ed.locate_span(Q3, T)
+    inter = min(a[1], b[1]) - max(a[0], b[0])
+    frac = inter / min(a[1] - a[0], b[1] - b[0])
+    m5, _, _ = ed.merge_reask_span(key, {"obligations": [rec(Q3)]}, {"obligations": [rec(part, "x")]}, {}, T)
+    check("span: overlap %.2f -> %d record(s)" % (frac, expect), len(m5["obligations"]) == expect and (frac >= 0.5) == (expect == 1))
+# unlocated first-answer record is kept
+m6, _, _ = ed.merge_reask_span(key, {"obligations": [rec("Quote that never appears in the law text at all")]}, {"obligations": [rec(Q4)]}, {}, T)
+check("span: unlocated original kept, re-ask added", len(m6["obligations"]) == 2)
+ov4 = tmp / "ov4"
+ed.reask_overlay(d, [({"key": key}, T)], ov4, mode="span", entries={})
+check("overlay span mode runs", len(json.loads((ov4 / "results" / (key + ".json")).read_text())["obligations"]) >= 3)
 print("%d passed, %d failed" % (passed, failed))

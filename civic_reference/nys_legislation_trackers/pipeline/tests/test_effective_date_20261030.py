@@ -83,5 +83,17 @@ check("E3 'amendments thereto' is section-bound", e.get("expires_rule") == "with
 _, _, e = eff("§ 2. This act shall take effect immediately; the amendments to section 1680 of the public authorities law shall not affect the expiration and repeal of such undesignated paragraphs pursuant to section 5 of chapter 371 of the laws of 1998, as amended, and shall expire and be deemed repealed therewith.")
 check("E3 'such undesignated paragraphs' is section-bound", e.get("expires_rule") == "with_referenced_section", e.get("expires_rule"))
 
+# N1 (night 20261101): the law's own marked text moves the referenced section's expiry
+CL = "§ 4. This act shall take effect immediately, provided, however, that the amendments to section 1950 of the education law made by section one of this act and the amendments to section 3 of chapter 396 of the laws of 2012 made by section three of this act shall not affect the repeal of such provisions and shall be deemed repealed therewith."
+AM = "§ 2. Section 4 of chapter 396 of the laws of 2012, amending the education law, is amended to read as follows:\n\n § 4. This act shall take effect immediately and shall expire and be deemed repealed July 1, [2014] {{2019}}.\n\n"
+def idx(bills=None, chapter=None, year=None):
+    return {"chapter": chapter, "year": year, "signed_date": "2012-07-01", "effective_date": "2012-07-01", "rule": "immediately", "expires_date": "2014-07-01"}
+e = parse_effective(AM + CL, "2013-12-01", resolver=idx, _parts=False)
+check("N1 amended expiry wins over chapter index", e["expires_date"] == "2019-07-01" and e.get("expires_source") == "amended_in_this_law", (e["expires_date"], e.get("expires_source")))
+e = parse_effective(CL, "2013-12-01", resolver=idx, _parts=False)
+check("N1 not amended in this law: index date stays", e["expires_date"] == "2014-07-01" and not e.get("expires_source"), (e["expires_date"], e.get("expires_source")))
+e = parse_effective(AM.replace("chapter 396", "chapter 111") + CL, "2013-12-01", resolver=idx, _parts=False)
+check("N1 other chapter amended: index date stays", e["expires_date"] == "2014-07-01", e["expires_date"])
+
 print("%d passed, %d failed" % (passed, failed))
 sys.exit(1 if failed else 0)

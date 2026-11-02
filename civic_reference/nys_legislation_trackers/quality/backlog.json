@@ -150,7 +150,8 @@
    "rule": "merge_reask_answer must match re-ask records to originals by overlapping located spans in the law text (and by citation), not by quote Jaccard; only truly new spans are added; test on 2011-A2411 and 2011-S2704; score on gold before enabling",
    "status": "open",
    "notes": [
-    "Oct 30 2026: 7 of 100 re-asks skipped because replace mode needs the whole law re-emitted (77-177 KB omnibus laws with 26-101 records: 2011-A55, 2009-S8314, 2011-S6732, 2013-S6358, 2011-S6255, 2013-S2605, 2013-S6357); a span-based additive merge would let a narrow re-ask answer only the listed sentences"
+    "Oct 30 2026: 7 of 100 re-asks skipped because replace mode needs the whole law re-emitted (77-177 KB omnibus laws with 26-101 records: 2011-A55, 2009-S8314, 2011-S6732, 2013-S6358, 2011-S6255, 2013-S2605, 2013-S6357); a span-based additive merge would let a narrow re-ask answer only the listed sentences",
+    "Nov 1 2026: span merge built behind NYS_REASK_MODE=span (merge_reask_span; 27 tests). Sandbox on 2009/2011/2013: strict 81.5 -> 78.2, real 95.0 -> 92.7, recall 77.75 -> 77.81, +173 records, unmatched 15 -> 49. NOT the default. Next: drop first-answer records whose sentence the re-ask packet flagged but the re-ask omitted (the re-ask judged them), then re-measure; also inspect the 34 new unmatched before any further rule."
    ]
   },
   {
@@ -238,6 +239,19 @@
    ],
    "count": 11,
    "rule": "if no: drop actors that are multi-state compact commissions (keep bi-state NY authorities like the Port Authority); if yes: add a crosswalk entry",
+   "status": "open"
+  },
+  {
+   "id": "B22",
+   "added": "20261101",
+   "class": "extends_existing set true on wholly new sections and false on class widenings",
+   "instances": [
+    "2013-S2320-08/-09 (new)",
+    " 2015-S6503-01 (widening)",
+    " 2019-S659-04"
+   ],
+   "count": 3,
+   "rule": "sample 25 blind: extends_existing true iff the quote's sentence contains [ ] or {{ }} inside existing text; a sentence wholly inside a new section is false",
    "status": "open"
   }
  ]

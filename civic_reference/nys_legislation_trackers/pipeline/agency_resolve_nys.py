@@ -288,8 +288,8 @@ def fix_boces(o):
 
 # M15 (Oct 12 2026): actors the model left generic that the text resolves. Only records still stored as Unspecified are touched.
 BOROUGH_PRESIDENT = re.compile(r"^(?:the |such |each |every )?(?:borough presidents?|presidents? of the borough(?: of [A-Za-z ]+)?)$", re.I)
-ENFORCEMENT_ACTOR = re.compile(r"^(?:the |such |each |every |an? |any )?(?:(?:code )?enforcement (?:officers?|officials?)|officials? of this state\b[^.]*?\bcharged with the enforcement\b.*)$", re.I)
-STATE_OFFICIAL = re.compile(r"^(?:no |any |an? |the |each |every )?(?:(?:officials?|officers?) of (?:this|the) state(?: of new york)?|state (?:officials?|officers?))$", re.I)
+ENFORCEMENT_ACTOR = re.compile(r"^(?:the |such |each |every |an? |any )?(?:(?:code )?enforcement (?:officers?|officials?)|officials? of this state\b[^.]*?\bcharged with (?:the )?enforcement\b.*)$", re.I)
+STATE_OFFICIAL = re.compile(r"^(?:no |any |an? |the |each |every )?(?:(?:officials?|officers?) of (?:this|the) state(?: of new york)?|state (?:officials?|officers?))(?:\s+charged with (?:the )?enforcement\b.*)?$", re.I)   # Nov 1 2026: 'any official of this state charged with enforcement' (2013-S3810-11)
 LOCAL_WORDS = re.compile(r"\b(?:cit(?:y|ies)|count(?:y|ies)|towns?|villages?|municipal(?:ity|ities)?|local)\b", re.I)
 
 
@@ -732,11 +732,27 @@ def _set_body(o, a, canon, jur, unit, rule):
     return True
 
 
+# R11/R12 (Nov 1 2026)
+ACTING_THROUGH = re.compile(r"\bthe state,?\s+(?:acting\s+)?(?:through|by and through|by)\s+(?:the|its)\b", re.I)
+ASSISTING_LOCAL = re.compile(r"^(?:the |any |an? |all |each )?assisting (?:state or )?local governments?$", re.I)
+
+
 def fix_20261031(o, by_canon, lookup=None, text=""):
     """R1-R3 (Oct 31 2026). Returns True when a raw office title in `agency` (or the chief diversity officer in actor_raw) was
     replaced by the body it heads. Runs on matched and unmatched records; titles whose body the crosswalks cannot resolve are left alone."""
     ag = re.sub(r"\s+", " ", (o.get("agency") or "").strip(" .,;:"))
     raw = re.sub(r"\s+", " ", (o.get("actor_raw") or "").strip(" .,;:"))
+    if STATE_ACTOR.match(raw) and o.get("agency") in (None, "Unspecified", "DHSES") and not ACTING_THROUGH.search(o.get("quote") or ""):
+        if o.get("agency") == "DHSES" and o.get("agency_source") not in (None, "unresolved", "state_actor", "model"):
+            pass                                              # a rule that named DHSES from the sentence keeps it
+        else:
+            o.update(agency="State agencies", agency_full="State agencies", agency_matched=True, jurisdiction="state", agency_org_type="state agency group",
+                     agency_group=None, agency_unit="State of New York", agency_source="state_actor_r11")
+            o.pop("actor_unresolved", None)
+            return True
+    if ASSISTING_LOCAL.match(raw) and o.get("agency") in (None, "Unspecified"):
+        _set_group(o, "Municipalities (all)", "local", "local government group", None, "assisting_local_r12")
+        return True
     if CHIEF_DIVERSITY.match(raw) and o.get("agency") in (None, "Unspecified") and "Governor" in by_canon:
         return _set_body(o, by_canon["Governor"], "Governor", "state", "Chief Diversity Officer", "office_title_20261031")
     if OFPC_ACTOR.match(raw) and "DHSES" in by_canon and (o.get("agency") in (None, "Unspecified", "DOS", "DHSES") or ag not in by_canon):

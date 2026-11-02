@@ -121,6 +121,15 @@ def reask_candidates(skip: set[str], data_dir: Path | None = None, packets_dir: 
     return out
 
 
+def _tag_time(tag: str) -> float:
+    """Epoch seconds of a batch tag YYYYMMDD-HHMM (local time); 0 when the tag is not in that form."""
+    import time as _t
+    try:
+        return _t.mktime(_t.strptime(tag[:13], "%Y%m%d-%H%M"))
+    except ValueError:
+        return 0.0
+
+
 def defer_twice_skipped(packets_dir: Path | None = None, draws_path: Path | None = None, deferred_path: Path | None = None) -> list[str]:
     """A law drawn for re-ask in two different batches with no results_reask file afterwards was skipped by an agent twice:
     add it to data/deferred_skipped.json (reason "re-ask skipped twice") so it is not redrawn. Returns the keys added."""
@@ -132,8 +141,11 @@ def defer_twice_skipped(packets_dir: Path | None = None, draws_path: Path | None
     have = {x["key"] for x in dj["laws"]}
     added = []
     for key, tags in sorted(draws.items()):
-        if key in have or len(set(tags)) < 2 or (packets_dir / key.split("-")[0] / "results_reask" / f"{key}.json").exists():
+        if key in have or len(set(tags)) < 2:
             continue
+        ans = packets_dir / key.split("-")[0] / "results_reask" / f"{key}.json"
+        if ans.exists() and ans.stat().st_mtime >= _tag_time(sorted(set(tags))[-2]):
+            continue                      # answered after the second-to-last draw: not a double skip (Nov 1 2026: an older answer used to hide three omnibus laws skipped every night)
         dj["laws"].append({"key": key, "reason": "re-ask skipped twice"})
         added.append(key)
     if added:

@@ -11,7 +11,7 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-from gold_lib import SCORED_FIELDS, quotes_match
+from gold_lib import SCORED_FIELDS, quotes_match, quote_score
 
 T = os.path.dirname(HERE)
 ID_RE = re.compile(r"\b(\d{4}-[AS]\d+-\d+)\b")
@@ -37,6 +37,43 @@ def stored_index(data_dir):
         for r in load(p)["dropped"]:
             dropped[r["obligation_id"]] = r
     return recs, dropped
+
+
+def _words(t):
+    return re.findall(r"[a-z0-9]+", (t or "").lower())
+
+
+def note_quotes(note, quote, n=8):
+    """True when the note repeats >= n consecutive words of the quote verbatim."""
+    q, nt = _words(quote), _words(note)
+    if len(q) < n or len(nt) < n:
+        return False
+    grams = {tuple(nt[i:i + n]) for i in range(len(nt) - n + 1)}
+    return any(tuple(q[i:i + n]) in grams for i in range(len(q) - n + 1))
+
+
+def match_by_quote(law, quote, recs, dropped):
+    """Best stored (or dropped) record of the law whose quote matches the audit quote."""
+    for pool in (recs, dropped):
+        best, bs = None, 0.0
+        for oid, r in pool.items():
+            if law_of(oid) != law or not r.get("quote"):
+                continue
+            sc = quote_score(quote, r["quote"])
+            if sc >= 0.5 and sc > bs:
+                best, bs = r, sc
+        if best:
+            return best
+    return None
+
+
+def reasked_after(law, night, packets_dir, history):
+    """True when the law was re-asked after the audit night (night tag YYYYMMDD[letter])."""
+    day = night[:8]
+    pf = os.path.join(packets_dir, law[:4], "results_reask", law + ".json")
+    if os.path.exists(pf) and datetime.datetime.fromtimestamp(os.path.getmtime(pf)).strftime("%Y%m%d") > day:
+        return True
+    return str((history.get(law) or {}).get("last_tag", ""))[:8] > day
 
 
 def read_night(path, skipped):
@@ -70,6 +107,8 @@ def main(argv=None):
     ap.add_argument("--data-dir", default=os.path.join(T, "data"))
     ap.add_argument("--nightly-dir", default=os.path.join(HERE, "nightly"))
     ap.add_argument("--overrides", default=os.path.join(HERE, "gold_overrides.json"))
+    ap.add_argument("--packets-dir", default=os.path.join(T, "pipeline", "cache", "packets"))
+    ap.add_argument("--reask-history", default=None)
     ap.add_argument("--additions", default=os.path.join(HERE, "gold_verified_additions.json"))
     a = ap.parse_args(argv)
 
@@ -78,6 +117,8 @@ def main(argv=None):
     excl_classes = set(ov.get("exclude_classes", []))
     kept = ov.get("kept_not_real", {})  # Oct 19 2026: not_real items kept on purpose; treated as real
     recs, dropped = stored_index(a.data_dir)
+    hp = a.reask_history or os.path.join(a.data_dir, "reask_history.json")
+    history = load(hp) if os.path.exists(hp) else {}
 
     files = sorted(glob.glob(os.path.join(a.nightly_dir, "*_[AB].json")))
     nights = sorted({os.path.basename(f).rsplit("_", 1)[0] for f in files})
@@ -124,7 +165,7 @@ def main(argv=None):
                     report["adjudication_not_applied"].append(tag)
 
     gold_laws = {}
-    counts = {"excluded_override": 0, "excluded_class": 0, "excluded_commission": 0, "excluded_unresolved": 0, "disputed": 0}
+    counts = {"excluded_override": 0, "excluded_class": 0, "excluded_commission": 0, "excluded_unresolved": 0, "excluded_renumbered": 0, "disputed": 0}
 
     def law_bucket(law):
         return gold_laws.setdefault(law, {"session": int(law[:4]), "items": [], "effective_date": None})
@@ -159,22 +200,33 @@ def main(argv=None):
         if oid in kept and excluded is None:
             verdict, disputed, fields = "correct", False, {}
         classes = class_of.get(oid, [])
-        cur_rec = recs.get(oid)
-        drop_rec = dropped.get(oid)
-        src = cur_rec or drop_rec
-        quote = src.get("quote") if src else None
+        audit_quote = next((e.get("quote") for _, _, e in cur if isinstance(e, dict) and e.get("quote")), None)
+        if audit_quote:  # auditor's own quote: locate the stored record by quote, not by id
+            cur_rec = match_by_quote(law, audit_quote, recs, {})
+            drop_rec = None if cur_rec else match_by_quote(law, audit_quote, {}, dropped)
+            src = cur_rec or drop_rec
+            quote = audit_quote
+        else:
+            cur_rec = recs.get(oid)
+            drop_rec = dropped.get(oid)
+            src = cur_rec or drop_rec
+            quote = src.get("quote") if src else None
+            note = " ".join(str(e.get("note") or "") for _, _, e in cur if isinstance(e, dict))
+            if excluded is None and src and reasked_after(law, latest, a.packets_dir, history) and not note_quotes(note, quote):
+                excluded = "renumbered: law re-asked after the audit and no audit quote"
+                counts["excluded_renumbered"] += 1
         if excluded is None and any(c in excl_classes for c in classes):
             excluded = "class: " + ",".join(c for c in classes if c in excl_classes)
             counts["excluded_class"] += 1
         elif excluded is None and quote and re.search(r"reviewed as if it had been received", quote, re.I) and "reviewed_as_if" in excl_classes:
             excluded = "class: reviewed_as_if (quote)"
             counts["excluded_class"] += 1
-        elif excluded:
+        elif excluded and not excluded.startswith("renumbered:"):
             counts["excluded_override"] += 1
         if excluded is None and quote and re.search(r"legislative bill drafting commission", quote, re.I):
             excluded = "policy: legislative bill drafting commission"
             counts["excluded_commission"] += 1
-        if excluded is None and not src:
+        if excluded is None and not src and not audit_quote:
             excluded = "unresolved: record not in current duties, powers or dropped data"
             counts["excluded_unresolved"] += 1
         if disputed:

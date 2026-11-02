@@ -1,0 +1,628 @@
+{
+ "_scoring": {
+  "auditor": "B",
+  "night": "20261101",
+  "laws": 11,
+  "stored_records": 48,
+  "correct": 43,
+  "wrong_fields": 3,
+  "not_real": 0,
+  "missed": 1,
+  "precision_strict": "43/48 = 89.6% (Wilson 95% 77.8-95.5)",
+  "precision_real": "46/48 = 95.8% (Wilson 95% 86.0-98.8)",
+  "recall": "46/47 = 97.9% (Wilson 95% 88.9-99.6)",
+  "effective_dates": "11/11 correct (2013-A9062 expires_date wrong, see class C5)",
+  "calibration_laws": [
+   "2013-S6687",
+   "2017-A10085"
+  ],
+  "calibration_result": "2 stored records: 1 correct (2013-S6687-01), 1 wrong kind (2017-A10085-01); 0 missed; effective dates 2/2 correct; not included in the counts above",
+  "method": "blind list saved to /tmp/audB/blind_20261101_B.txt before stored records were opened; recall in record units (stored real records + missed)"
+ },
+ "_classes": [
+  {
+   "name": "stale_with_referenced_section_expiry",
+   "criteria": [
+    "8"
+   ],
+   "instances": [
+    "2013-A9062"
+   ],
+   "rule": "effective_dates entries with expires_rule=='with_referenced_section' and an expires_date whose year is lower than the max {{YYYY}} that the same packet's LAW TEXT puts after '[old]' in a 'deemed repealed'/'shall expire' sentence (the law itself extends the referenced chapter's sunset, but the stored expiry is the pre-extension date)",
+   "db_matches": 9,
+   "db_examples": [
+    "2013-A6539",
+    "2013-A8611",
+    "2013-A9062"
+   ],
+   "needs_judgment": false,
+   "note": "9 laws, 5 stored records carry the stale law_expires_date (2013-A9062-02, 2019-S2411-01, 2019-S2411-02, ...). 2013-A9062: stored expires 2014-07-01, but its section 2 sets ch 396/2012 to 'expire and be deemed repealed July 1, [2014] {{2019}}', so the provisions deemed repealed therewith expire 2019-07-01"
+  },
+  {
+   "name": "sunset_extension_stored_as_duty",
+   "criteria": [
+    "4"
+   ],
+   "instances": [
+    "2017-A10085-01"
+   ],
+   "rule": "kind=='duty' and extends_existing and re.search(r'(shall expire|deemed repealed)', quote, re.I) and not re.search(r'\\bshall (not )?(issue|submit|report|file)', quote)",
+   "db_matches": 75,
+   "db_examples": [
+    "2009-A10741-01",
+    "2009-A11515-07",
+    "2009-A6825-01"
+   ],
+   "needs_judgment": false,
+   "note": "candidate rule: Oct 19 decision gives kind power to a holderless sunset extension; some of the 75 extend a real duty and keep kind duty, so the rule over-matches (2011-A10690-01 is the same Nassau sentence as the calibration miss)"
+  },
+  {
+   "name": "eligibility_list_item_as_actor (aid recipient as actor, known class)",
+   "criteria": [
+    "2",
+    "3",
+    "4"
+   ],
+   "instances": [
+    "2011-S7000-38"
+   ],
+   "rule": "re.match(r'^\\s*(the|such)\\s+following\\b', actor_raw, re.I); plus len(quote.split())<10 for the short-quote side (12 records: 2017-S6861-02, 2009-A7344-01, 2009-A8477-01)",
+   "db_matches": 1,
+   "db_examples": [
+    "2011-S7000-38"
+   ],
+   "needs_judgment": false,
+   "note": "recurrence of the known aid-recipients-as-actors class; the short-quote condition alone matches 12 records"
+  },
+  {
+   "name": "passive_sentence_actor_unspecified",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2011-S7000-35"
+   ],
+   "rule": "agency=='Unspecified' and actor_raw.lower() in ('unspecified','')",
+   "db_matches": 8,
+   "db_examples": [
+    "2009-A11308-28",
+    "2009-A11308-32",
+    "2009-A7333-07"
+   ],
+   "needs_judgment": false,
+   "note": "recurrence of the Oct 17 fixed class (model-named actor left Unspecified on a passive sentence); here actor_raw itself is 'unspecified'"
+  },
+  {
+   "name": "sunset_extension_missed_when_law_also_amends_the_substantive_section",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2013-A9062"
+   ],
+   "rule": "no mechanical rule yet: needs packet sections that amend an earlier chapter's own expiry sentence with no stored or dropped record quoting it, excluding the act's own clause",
+   "db_matches": 0,
+   "db_examples": [],
+   "needs_judgment": true,
+   "note": "affects 2013-A9062 (section 2: 'shall expire and be deemed repealed July 1, [2014] {{2019}}')"
+  }
+ ],
+ "2011-S6219": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2012-05-18",
+   "computed": "2012-05-18",
+   "verdict": "correct",
+   "note": "immediately, applied to signing date"
+  }
+ },
+ "2013-A5057": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2013-05-22",
+   "computed": "2013-05-22",
+   "verdict": "correct",
+   "note": "immediately, applied to signing date"
+  }
+ },
+ "2019-S659": {
+  "records": {
+   "2019-S659-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "The superintendent shall promulgate regulations establishing a process, including timeframes, for an insured, an insured's designee or an insured's health care provider to request coverage of a non-covered contraceptive drug, device, or product."
+   },
+   "2019-S659-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "The superintendent shall promulgate regulations establishing a process, including timeframes, for an insured, an insured's designee or an insured's health care provider to request coverage of a non-covered contraceptive drug, device, or product."
+   },
+   "2019-S659-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "The superintendent shall promulgate regulations establishing a process, including timeframes, for an insured, an insured's designee or an insured's health care provider to request coverage of a non-covered contraceptive drug, device, or product."
+   },
+   "2019-S659-04": {
+    "verdict": "wrong",
+    "criteria": [
+     "7"
+    ],
+    "fields": {
+     "extends_existing": true
+    },
+    "note": "SSL 365-a(3)(d) already covers 'family planning services and ... supplies'; this law adds '{{twelve months of}}' and the twelve-month-supply sentence, a changed amount on an existing duty",
+    "quote": "Coverage of prescription contraceptives shall include a twelve-month supply that may be dispensed at one time or up to twelve times within one year from the date of the prescription."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2020-01-01",
+   "computed": "2020-01-01",
+   "verdict": "correct",
+   "note": "'This act shall take effect January 1, 2020.'"
+  }
+ },
+ "2019-S6939": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2019-12-16",
+   "computed": "2019-12-16",
+   "verdict": "correct",
+   "note": "same as ch 671 of 2019 (S4046, 'take effect immediately', signed 2019-12-16); new matter only changes manufacturers' limits ('{{contains}}', '{{0.01% (100}}'), no government record"
+  }
+ },
+ "2013-A9062": {
+  "records": {
+   "2013-A9062-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "To enter into contracts of no more than five years and subject to the sunset date of this subparagraph, with out-of-state school districts for special education and/or career and technical education services"
+   },
+   "2013-A9062-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "The commissioner of education shall submit an interim report to the board of regents, the governor and the legislature by no later than April 15, 2018 and a final report by no later than December 15, 2018, with recommendations on whether and under what conditions such contracts should continue to be authorized beyond the expiration date provided herein."
+   }
+  },
+  "missed": [
+   {
+    "blind": "b2",
+    "quote": "This act shall take effect immediately and shall expire and be deemed repealed July 1, 2019.",
+    "kind": "power",
+    "agency": "BOCES",
+    "dropped_by": null,
+    "note": "section 2 extends ch 396 of 2012 (BOCES out-of-state contracts) from [2014] to {{2019}}; an earlier chapter's sunset sentence inside an amendment is an extension record (Oct 16/19), extends_existing true"
+   }
+  ],
+  "effective_date": {
+   "stored": "2014-06-19",
+   "computed": "2014-06-19",
+   "verdict": "correct",
+   "note": "effective date right; stored expires_date 2014-07-01 is wrong, should be 2019-07-01 (class stale_with_referenced_section_expiry)"
+  }
+ },
+ "2009-A10118": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2010-07-15",
+   "computed": "2010-07-15",
+   "verdict": "correct",
+   "note": "immediately, applied to signing date"
+  }
+ },
+ "2019-S6405": {
+  "records": {
+   "2019-S6405-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "the person is related to the child as described under paragraph (a), (b), or (c) of subdivision three of section four hundred fifty-eight-a of the social services law"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2019-10-29",
+   "computed": "2019-10-29",
+   "verdict": "correct",
+   "note": "immediately, applied to signing date"
+  }
+ },
+ "2009-A4687": {
+  "records": {
+   "2009-A4687-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "NYC mayor stored as New York City, matching 51 other records",
+    "quote": "on and after July first in the year next succeeding the year in which this sentence shall take effect, the authority shall consist of two additional members who shall be appointed by the mayor."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2010-09-17",
+   "computed": "2010-09-17",
+   "verdict": "correct",
+   "note": "immediately, applied to signing date"
+  }
+ },
+ "2019-S6940": {
+  "records": {
+   "2019-S6940-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "The department is authorized to promulgate such rules and regulations as it shall deem necessary to implement the provisions of this section, including rules and regulations with respect to any allowable trace concentrations."
+   },
+   "2019-S6940-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "The department is authorized to promulgate such rules and regulations as it shall deem necessary to implement the provisions of this section, including rules and regulations with respect to any allowable trace concentrations."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2022-01-01",
+   "computed": "2022-01-01",
+   "verdict": "correct",
+   "note": "same as ch 613 of 2019 (S4389-B, 'take effect January 1, 2022'); amendment signed 2020-04-17 before that date"
+  }
+ },
+ "2019-S6476": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2019-07-03",
+   "computed": "2019-07-03",
+   "verdict": "correct",
+   "note": "immediately, applied to signing date"
+  }
+ },
+ "2011-S7000": {
+  "records": {
+   "2011-S7000-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "Upon receipt of a petition signed by not less than twenty-five voters qualified to vote at a general election in the town, the board of trustees of the existing Grinnell library shall conduct an election at which the issues shall be:"
+   },
+   "2011-S7000-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "The board of trustees of the existing Grinnell library shall give notice of such election by publication of notice at least twice in one or more newspapers having a general circulation in the district to be served."
+   },
+   "2011-S7000-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "In addition, the board of trustees of the existing Grinnell library shall cause copies of such notice to be posted conspicuously in three public places in the district at least thirteen days prior to the date of such election."
+   },
+   "2011-S7000-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "The board of trustees of the existing Grinnell library shall designate a resident qualified voter of such district to act as chairperson of any election of such district and shall designate not less than two nor more than four resident qualified voters to act as election inspectors and ballot clerks at such election."
+   },
+   "2011-S7000-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "The board of trustees of the existing Grinnell library may adopt a resolution providing that such chairperson, election inspectors and ballot clerks shall be paid reasonable compensation for their respective services at such election."
+   },
+   "2011-S7000-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "The board of trustees of the existing Grinnell library may, to the extent authorized by law, authorize the use of absentee ballots for the election."
+   },
+   "2011-S7000-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "In the event that the district is created, there shall be an annual election conducted by the board of trustees of the Grinnell public library district in accordance with the provisions of subdivision one of this section at a time to be set by the board of trustees of the district"
+   },
+   "2011-S7000-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "At the first regular meeting of the board of trustees of the district, the trustees shall determine when the terms of office of each member shall expire as follows:"
+   },
+   "2011-S7000-09": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "All other vacancies caused by resignation, removal, death, or inability to serve shall be filled by appointment by the board of trustees of the district until the next election, at which time the vacancy shall be filled by election for the remaining portion of the term."
+   },
+   "2011-S7000-10": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "The board of trustees at its first meeting after each annual election shall elect or appoint a president and vice-president, who shall be members of the board, and a secretary, treasurer, and such other officers as they deem necessary."
+   },
+   "2011-S7000-11": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "If the board so determines, the offices of secretary and treasurer may be held by individuals who are not members of the board of trustees and, in that event, such officers may, if the board so determines, receive compensation as fixed by resolution of the board."
+   },
+   "2011-S7000-12": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "Funds voted for library purposes at the initial election and at all future elections shall be considered an annual appropriation therefor and shall be levied and collected yearly by the town and the village for the district in the same manner and at the same time as other taxes in the town and the village."
+   },
+   "2011-S7000-13": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "Funds voted for library purposes at the initial election and at all future elections shall be considered an annual appropriation therefor and shall be levied and collected yearly by the town and the village for the district in the same manner and at the same time as other taxes in the town and the village."
+   },
+   "2011-S7000-14": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "The board of trustees of the district shall annually file with the clerks of the town and the village on or before the first day of November an estimate of the proposed budget including costs of library services to be raised by levy for the library district"
+   },
+   "2011-S7000-15": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "The town or the village shall not make any change in the estimate of revenues or expenditures submitted by the board of the district in preparation of its preliminary budget."
+   },
+   "2011-S7000-16": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "The town or the village shall not make any change in the estimate of revenues or expenditures submitted by the board of the district in preparation of its preliminary budget."
+   },
+   "2011-S7000-17": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "The town board of the town shall levy a tax against all of the real property lying within the Grinnell public library district except the real property lying within the village,"
+   },
+   "2011-S7000-18": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "the village board of the village shall levy a tax against the remainder of the real property lying within the Grinnell public library district,"
+   },
+   "2011-S7000-19": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "The town board and village board shall each annually pay over to the treasurer of the Grinnell public library district on or before the thirtieth day after their respective tax collection period ends, the full amount of the levy due from the parcels subject to their respective levy."
+   },
+   "2011-S7000-20": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "If necessary to meet this schedule, the town board and village board may each issue tax anticipation notes pursuant to article ii of the local finance law to obtain the necessary moneys therefor."
+   },
+   "2011-S7000-21": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "The town board and village board shall each annually pay over to the treasurer of the Grinnell public library district on or before the thirtieth day after their respective tax collection period ends, the full amount of the levy due from the parcels subject to their respective levy."
+   },
+   "2011-S7000-22": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "If necessary to meet this schedule, the town board and village board may each issue tax anticipation notes pursuant to article ii of the local finance law to obtain the necessary moneys therefor."
+   },
+   "2011-S7000-23": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "The town board of the town shall have the power to authorize, sell, and issue bonds, notes, and other evidences of indebtedness pursuant to the local finance law in order to permit the district to provide facilities or improved facilities for library purposes."
+   },
+   "2011-S7000-24": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "Upon written request from the board of trustees of the Grinnell public library district, after approval by the qualified voters of such district, the town board shall authorize, sell, and issue such bonds, notes, or other evidences of indebtedness as are necessary to accomplish the improvements specified in the notice."
+   },
+   "2011-S7000-25": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "The proceeds of such bonds, notes, or other evidences of indebtedness shall be paid to the treasurer of the Grinnell public library district and maintained in a segregated account in accordance with section 165.00 of the local finance law"
+   },
+   "2011-S7000-26": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "The board of trustees of the Grinnell public library district may accept on behalf of the district any absolute gift, devise, or bequest of real or personal property"
+   },
+   "2011-S7000-27": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "The treasurer of the Grinnell public library district shall be custodian of all funds of the district, including gifts and trust funds paid over to the trustees."
+   },
+   "2011-S7000-28": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "The board of trustees may authorize the investment of funds in the custody of the treasurer in the same manner in which town funds may be invested."
+   },
+   "2011-S7000-29": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "The town and the village shall promptly pay over to the district all monies which belong to or are raised for the district."
+   },
+   "2011-S7000-30": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "The town and the village shall promptly pay over to the district all monies which belong to or are raised for the district."
+   },
+   "2011-S7000-31": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "No monies shall be disbursed by the treasurer of the district except after audit by the board of trustees."
+   },
+   "2011-S7000-32": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "The board of trustees of the Grinnell public library district shall audit all claims and shall order the payment thereof, except as otherwise provided by this section."
+   },
+   "2011-S7000-33": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "The treasurer shall keep such records in such manner as the board of trustees may require."
+   },
+   "2011-S7000-34": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "The initially elected trustees of the Grinnell public library district shall, within ninety days from the date of approval of the district by the voters of the district, apply to the board of regents for a charter as a public library."
+   },
+   "2011-S7000-36": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "the town and the village are hereby authorized to assess, levy, and collect the necessary expenses of operation, maintenance, and repair of such facilities and services and such capital improvements, including debt service on bonds, notes, or other evidences of indebtedness of the town"
+   },
+   "2011-S7000-37": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "the town and the village are hereby authorized to assess, levy, and collect the necessary expenses of operation, maintenance, and repair of such facilities and services and such capital improvements, including debt service on bonds, notes, or other evidences of indebtedness of the town"
+   },
+   "2011-S7000-35": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Public libraries",
+     "agency_unit": "Existing Grinnell Library"
+    },
+    "note": "'deeds of conveyance shall be executed and filed for any parcels of real property' is done by the transferor, the existing Grinnell library, not Unspecified",
+    "quote": "deeds of conveyance shall be executed and filed for any parcels of real property."
+   },
+   "2011-S7000-38": {
+    "verdict": "wrong",
+    "criteria": [
+     "2",
+     "3",
+     "4"
+    ],
+    "fields": {
+     "agency": "Dormitory Authority",
+     "kind": "power",
+     "quote": "must contain the new item '44. Grinnell Public Library District' with the lead-in, 10+ words, without the unchanged item 43"
+    },
+    "note": "'44. {{Grinnell Public Library District}}' adds an eligible library for DASNY financing under title 4 of article 8 PAL; the library is the recipient, the power holder is DASNY; quote '43. Ethelbert B. Crawford Public Library District 44. Grinnell Public Library District' is 9 words and reprints item 43",
+    "quote": "43. Ethelbert B. Crawford Public Library District 44. Grinnell Public Library District"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2012-07-18",
+   "computed": "2012-07-18",
+   "verdict": "correct",
+   "note": "main clause immediate; proviso (d) (item 44 on district creation) and (b)/(c) same-as-chapter are not in section_dates, known proviso parser gap"
+  }
+ },
+ "2013-S6687": {
+  "records": {
+   "2013-S6687-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "To facilitate the marketing of any issue of serial bonds or notes of the county of Erie issued on or before June thirtieth, two thousand fifteen such county may, notwithstanding any limitations on private sales of bonds provided by law, and subject to approval by the state comptroller of the terms and conditions of such sale"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2014-06-30",
+   "computed": "2014-06-30",
+   "verdict": "correct",
+   "note": "immediately, applied to signing date"
+  }
+ },
+ "2017-A10085": {
+  "records": {
+   "2017-A10085-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "4"
+    ],
+    "fields": {
+     "kind": "power"
+    },
+    "note": "holderless sunset extension 'on June 30, [2018] {{2020}}, the amendments ... shall be deemed repealed'; Oct 19 decision: holder from title (county of Nassau), kind power, extends_existing true",
+    "quote": "Notwithstanding the foregoing provisions of this act, on June 30, 2020, the amendments of sections 6-2.1 and 6-13.0 of the Nassau county administrative code, made by sections two and four of this act, and section 6-24.1 of such code, as added by section seven of this act, shall be deemed repealed."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2018-07-01",
+   "computed": "2018-07-01",
+   "verdict": "correct",
+   "note": "immediately, applied to signing date"
+  }
+ }
+}

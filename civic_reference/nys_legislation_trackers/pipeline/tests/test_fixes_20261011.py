@@ -114,7 +114,7 @@ t = law_text("2013-S2320")
 if t and (ed.EXTRACTED / "2013-S2320.json").exists():
     out = ed.build_reask([(signed("2013-S2320"), t)], [], [])
     rs = [r for r in out.get("2013-S2320", {}).get("reasons", []) if r["check"] == "audit_confirmed_miss"]
-    check("J7 2013-S2320 carries audit_confirmed_miss with 4 sentences", len(rs) == 1 and len(rs[0]["sentences"]) == 4)
+    check("J7 2013-S2320 carries audit_confirmed_miss", len(rs) == 1 and len(rs[0]["sentences"]) >= 1)   # Nov 1 2026: re-ask history prunes answered sentences
     ins = ed.reask_instruction(out["2013-S2320"])
     check("J7 sentences reach the re-ask instruction", "the commissioner of finance May waive Any interest" in ins)
 

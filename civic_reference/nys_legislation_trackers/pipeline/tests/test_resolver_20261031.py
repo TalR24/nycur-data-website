@@ -106,4 +106,18 @@ for raw in ("No official of this state", "officers of the state", "a state offic
     check("R10 " + raw, r and o["agency"] == "State agencies" and o["agency_unit"] is None and o["jurisdiction"] == "state" and not o.get("actor_unresolved"))
 o = rec("Unspecified", raw="any city, county, town or village", quote=q)
 check("R10 local sibling untouched by state rule", not ar.STATE_OFFICIAL.match(o["actor_raw"]))
+# R11 bare "the state" is State agencies / State of New York; R12 assisting local governments
+q = "the state or any requesting local government requesting assistance under this program shall be liable"
+o = rec("DHSES", raw="the state", quote=q, agency_unit="State Office of Emergency Management", agency_source=None)
+check("R11 call", ar.fix_20261031(o, ed.BY_CANON, ed.LOOKUP, "") and o["agency"] == "State agencies" and o["agency_unit"] == "State of New York")
+o = rec("DHSES", raw="The state of New York", quote=q, agency_unit="State Office of Emergency Management", agency_source=None)
+ar.fix_20261031(o, ed.BY_CANON, ed.LOOKUP, ""); check("R11 state of NY", o["agency"] == "State agencies")
+o = rec("DHSES", raw="the state", quote="the state, acting through the division of homeland security, shall adopt rules", agency_unit="Division of Homeland Security", agency_source=None)
+ar.fix_20261031(o, ed.BY_CANON, ed.LOOKUP, ""); check("R11 acting through keeps DHSES", o["agency"] == "DHSES")
+for raw in ("Assisting local governments", "Any assisting local government", "the assisting state or local government"):
+    o = rec("Unspecified", raw=raw, quote="x", actor_unresolved=True)
+    check("R12 " + raw, ar.fix_20261031(o, ed.BY_CANON, ed.LOOKUP, "") and o["agency"] == "Municipalities (all)" and o["jurisdiction"] == "local" and not o.get("actor_unresolved"))
+# Nov 1 2026: trailing "charged with enforcement" on a state official (2013-S3810-11)
+check("state official charged with enforcement -> State agencies", bool(ar.STATE_OFFICIAL.match("any official of this state charged with enforcement")))
+
 print("%d passed, %d failed" % (passed, failed))

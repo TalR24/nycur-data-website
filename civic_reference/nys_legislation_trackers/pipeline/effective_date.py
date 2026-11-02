@@ -411,8 +411,29 @@ SECTION_BOUND = [
 ]
 NAMED_CHAPTER_SECTION = re.compile(r"\bsections?\s+([\w.-]+)\s+of\s+chapter\s+(\d+)\s+of\s+the\s+laws\s+of\s+(\d{4})", re.I)
 
+AMENDED_EXPIRY = re.compile(r"(?is)\bsections?\s+[\w.-]+\s+of\s+chapter\s+(\d+)\s+of\s+the\s+laws\s+of\s+(\d{4})\b[^§]{0,400}?is\s+amended\s+to\s+read\s+as\s+follows:\s*(?:§\s*[\w.-]+\.\s*)?([^§]{0,500})")
+_EXP_MD = r"(" + MONTH_RE + r")\s+(\d{1,2}),\s*"
 
-def section_bound_expiry(clause, resolver=None):
+
+def amended_expiry_in_text(text, chapter, year):
+    """N1 (night 20261101). The act may rewrite the referenced chapter's own expiry sentence ('Section 4 of chapter 396 of the laws of 2012 ...
+    is amended to read as follows: § 4. This act shall ... expire and be deemed repealed July 1, [2014] {{2019}}'): the braced date wins over the
+    chapter index. -> ISO date or None."""
+    for m in AMENDED_EXPIRY.finditer(text or ""):
+        if int(m.group(1)) != chapter or int(m.group(2)) != year:
+            continue
+        body = m.group(3)
+        mm = re.search(r"(?:expire|repealed)\b[^.{}\[]{0,80}?" + _EXP_MD + r"(?:\[[^\]]*\]\s*)?\{\{\s*(\d{4})\s*\}\}", body, re.I) \
+            or re.search(r"(?:expire|repealed)\b[^.{}\[]{0,80}?(?:\[[^\]]*\]\s*)?\{\{\s*(" + MONTH_RE + r")\s+(\d{1,2}),\s*(\d{4})\s*\}\}", body, re.I)
+        if mm:
+            try:
+                return date(int(mm.group(3)), MONTHS[mm.group(1).lower()], int(mm.group(2))).isoformat()
+            except (ValueError, KeyError):
+                return None
+    return None
+
+
+def section_bound_expiry(clause, resolver=None, text=None):
     """-> None, or {"expires_rule": "with_referenced_section", "expires_date": ISO|None, "reference": {...}|None}. The date is filled only
     when the clause names 'section N of chapter M of the laws of YYYY' and resolver(chapter=M, year=YYYY) returns that chapter's own
     expiry (record key expires_date, or a section_expiry entry for section N in its section_dates)."""
@@ -425,11 +446,11 @@ def section_bound_expiry(clause, resolver=None):
         return None
     out = {"expires_rule": "with_referenced_section", "expires_date": None, "reference": None}
     named = list(NAMED_CHAPTER_SECTION.finditer(clause[max(0, hit.start() - 400):hit.end()]))
-    if named and resolver:
+    if named:
         sec, ch, yr = named[-1].group(1), int(named[-1].group(2)), int(named[-1].group(3))
         rec = None
         try:
-            rec = resolver(bills=[], chapter=ch, year=yr)
+            rec = resolver(bills=[], chapter=ch, year=yr) if resolver else None
         except Exception:
             rec = None
         out["reference"] = {"section": sec, "chapter": ch, "year": yr}
@@ -441,6 +462,10 @@ def section_bound_expiry(clause, resolver=None):
                     if mm and sec.lower() in [w.strip().lower() for w in re.split(r",|\band\b", mm.group(1))]:
                         exp = x["expires_date"]
             out["expires_date"] = exp
+    if out["reference"] and text:
+        amended = amended_expiry_in_text(text, out["reference"]["chapter"], out["reference"]["year"])
+        if amended:
+            out["expires_date"], out["expires_source"] = amended, "amended_in_this_law"
     return out
 
 
@@ -529,12 +554,14 @@ def parse_effective(text, signed_date, resolver=None, _parts=True):
            "other_dates": [x for x in sections if x["rule"] != "retroactive"], "section_dates": sections, "raw_clause": clause}
     out["expires_rule"] = None
     if not out["expires_date"]:
-        sb = section_bound_expiry(clause, resolver)
+        sb = section_bound_expiry(clause, resolver, text)
         if not sb and _parts:        # the proviso may sit in a lettered list before the closing clause: scan the act's tail for "made by section N of this act ..."
             tail = re.sub(r"\s+", " ", (text or "")[-6000:].replace("{{", "").replace("}}", ""))
-            sb = section_bound_expiry(tail, resolver)
+            sb = section_bound_expiry(tail, resolver, text)
         if sb:
             out["expires_rule"], out["expires_date"] = sb["expires_rule"], sb["expires_date"]
+            if sb.get("expires_source"):
+                out["expires_source"] = sb["expires_source"]
             if sb["reference"]:
                 out["expires_reference"] = sb["reference"]
     if _parts:
