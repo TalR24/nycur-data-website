@@ -994,6 +994,23 @@ def _deadline_fields(fields: dict, target: dict) -> dict:
     return fields
 
 
+def is_override_add_product(o: dict, matter_id: str, overrides: dict | None = None) -> bool:
+    """True when `o` is the record a record_overrides.json `add` entry creates
+    (same normalized quote prefix, same agency). Its fields are the judge's, so
+    neither the per-record agency rules nor a `set`/`remove` for the same quote
+    may rewrite it (Nov 2 2026: 3331734's NYCPS add was retagged DOT by the
+    code-title rule on every rebuild and re-added as a new -ovNN)."""
+    ov = (overrides if overrides is not None else RECORD_OVERRIDES).get(str(matter_id)) or {}
+    if not ov.get("add"):
+        return False
+    q = normalize_quote(o.get("quote", ""))
+    for e in ov["add"]:
+        pre = normalize_quote(e.get("quote", ""))[:80]
+        if pre and q.startswith(pre) and o.get("agency") == e.get("agency"):
+            return True
+    return False
+
+
 def apply_record_overrides(records: list[dict], matter_id: str,
                            overrides: dict | None = None
                            ) -> tuple[list[dict], list[dict]]:
@@ -1016,9 +1033,20 @@ def apply_record_overrides(records: list[dict], matter_id: str,
     added: list[dict] = []
     report: list[dict] = []
 
+    # records an `add` entry produces are left alone by `set` and `remove`
+    # (Nov 2 2026): a set that retags agency A -> B, next to an add that
+    # creates an A record for the same quote, retagged the previous build's
+    # added record on every rebuild, so the add never found it and minted a
+    # new -ovNN each month (5534259, 4908135, 3331734 churned ov04 -> ov07)
+    def _is_add_product(o: dict) -> bool:
+        return is_override_add_product(o, matter_id, overrides)
+
     for entry in ov.get("set", []):
         prefix = entry.get("quote_prefix", "")
-        cands = _find_candidates(records, prefix, entry.get("agency"))
+        all_cands = _find_candidates(records, prefix, entry.get("agency"))
+        cands = [c for c in all_cands if not _is_add_product(c)]
+        if all_cands and not cands:
+            continue          # only the add's own record matches: nothing to set
         if not cands:
             report.append({"matter_id": matter_id, "action": "set",
                           "status": "stale", **entry})
@@ -1044,7 +1072,10 @@ def apply_record_overrides(records: list[dict], matter_id: str,
                 _resolve_override_agency(target)
     for entry in ov.get("remove", []):
         prefix = entry.get("quote_prefix", "")
-        cands = _find_candidates(records, prefix, entry.get("agency"))
+        all_cands = _find_candidates(records, prefix, entry.get("agency"))
+        cands = [c for c in all_cands if not _is_add_product(c)]
+        if all_cands and not cands:
+            continue          # the matching record is one an add creates: keep it
         if not cands:
             report.append({"matter_id": matter_id, "action": "remove",
                           "status": "already_absent", **entry})
@@ -2600,28 +2631,31 @@ def main() -> None:
                 excluded.append(o["obligation_id"])
                 continue
             o.setdefault("agency_source", "model" if o.get("agency_matched") else None)
-            # Precedence (Sep 27 2026, audit 4): a per-law curated unit
-            # (agency_units.json by_matter) outranks everything; then this
-            # law's own definitions of a generic title; then the code-title
-            # rule (TITLE_DEPARTMENT); then the generic curated unit map
-            # (agency_units.json by_name); then the citywide/mayor rules.
-            if apply_agency_units(o, mid, lookup, agencies_by_canon, stage="by_matter"):
-                units_applied += 1
-                o["agency_source"] = "unit_name"
-            elif apply_law_definitions(o, definitions_by_matter(mid), lookup, agencies_by_canon):
-                definitions_applied += 1
-            else:
-                title_fix = fix_actor(o, lookup, agencies_by_canon, stage="title")
-                if title_fix == "resolved":
-                    actors_resolved += 1
-                    o["agency_source"] = "code_title"
-            if apply_agency_units(o, mid, lookup, agencies_by_canon, stage="by_name"):
-                units_applied += 1
-                if o.get("agency_source") in (None, "model"):
+            # a record an override `add` created keeps the judge's agency: the
+            # rules below re-resolved it on every rebuild (Nov 2 2026, 3331734)
+            if not is_override_add_product(o, mid):
+                # Precedence (Sep 27 2026, audit 4): a per-law curated unit
+                # (agency_units.json by_matter) outranks everything; then this
+                # law's own definitions of a generic title; then the code-title
+                # rule (TITLE_DEPARTMENT); then the generic curated unit map
+                # (agency_units.json by_name); then the citywide/mayor rules.
+                if apply_agency_units(o, mid, lookup, agencies_by_canon, stage="by_matter"):
+                    units_applied += 1
                     o["agency_source"] = "unit_name"
-            if apply_unspecified_agency_rules(o, agencies_by_canon):
-                unspecified_resolved += 1
-                o["agency_source"] = "rule"
+                elif apply_law_definitions(o, definitions_by_matter(mid), lookup, agencies_by_canon):
+                    definitions_applied += 1
+                else:
+                    title_fix = fix_actor(o, lookup, agencies_by_canon, stage="title")
+                    if title_fix == "resolved":
+                        actors_resolved += 1
+                        o["agency_source"] = "code_title"
+                if apply_agency_units(o, mid, lookup, agencies_by_canon, stage="by_name"):
+                    units_applied += 1
+                    if o.get("agency_source") in (None, "model"):
+                        o["agency_source"] = "unit_name"
+                if apply_unspecified_agency_rules(o, agencies_by_canon):
+                    unspecified_resolved += 1
+                    o["agency_source"] = "rule"
             # the extraction's own unit (actor_unit, Sep 27 2026 prompt) when
             # no curated rule named one and the unit is not itself an agency
             mu = o.pop("model_unit", None)

@@ -293,6 +293,18 @@ def cmd_apply() -> None:
     RECORD_OVERRIDES_PATH.write_text(json.dumps(overrides, indent=1))
     print(f"wrote {RECORD_OVERRIDES_PATH}: {n_set} set, {n_add} add, {n_remove} remove, "
           f"{n_skipped} already present (idempotent)")
+    # standing check (Nov 2 2026): an override that contradicts a gold-correct
+    # entry is two blind verdicts that disagree; list them for the gold
+    # tiebreak instead of letting score_gold.py report them as regressions
+    quality = HERE.parent.parent / "nyc_council_legislation_trackers" / "quality"
+    sys.path.insert(0, str(quality))
+    from score_gold import override_gold_conflicts  # noqa: E402
+    conflicts = [c for c in override_gold_conflicts(overrides)
+                 if c.get("override_source") == f"reconcile {today}"]
+    (quality / "gold_conflicts.json").write_text(json.dumps(conflicts, indent=1, ensure_ascii=False))
+    if conflicts:
+        print(f"WARNING: {len(conflicts)} of today's overrides contradict a gold-correct entry; "
+              f"judge them blind (gold tiebreak) before rebuilding: {quality / 'gold_conflicts.json'}")
 
 
 def main() -> None:
