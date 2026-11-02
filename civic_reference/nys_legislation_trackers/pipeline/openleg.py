@@ -1,10 +1,11 @@
 """Small NY Senate Open Legislation v3 client. Never exposes or logs the API key."""
-import os, time, json, threading
+import os, time, json, threading, random
 import urllib.request, urllib.parse, urllib.error
 
 BASE = "https://legislation.nysenate.gov"
 KEYFILE = os.path.expanduser("~/.config/nycur/openleg_key")
-MIN_INTERVAL = 0.27  # about 3.7 requests per second
+MIN_INTERVAL = 0.27  # about 3.7 requests per second; the per-key cap from Dec 1 2026 is 10/s and 4 in flight
+# (getting_started.html#rate-limits). Single-threaded on purpose: alerts, index refresh and backfills share one key.
 _lock = threading.Lock()
 _last = [0.0]
 STATS = {"requests": 0, "throttled_429": 0, "server_5xx": 0, "retries": 0}
@@ -43,14 +44,20 @@ def get(path, params=None, retries=6, raw=False):
     for attempt in range(retries + 1):
         _pace()
         STATS["requests"] += 1
+        wait = None
         try:
-            with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": "nycur-nys-tracker"}), timeout=60) as r:
+            # A timed-out request still counts against the 4-in-flight cap until the server finishes it, so wait long.
+            with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": "nycur-nys-tracker"}), timeout=120) as r:
                 body = r.read().decode("utf-8")
                 return body if raw else json.loads(body)
         except urllib.error.HTTPError as e:
             last_err = "HTTP %s" % e.code
             if e.code == 429:
                 STATS["throttled_429"] += 1
+                try:
+                    wait = float(e.headers.get("Retry-After") or 0) + random.uniform(0.2, 1.5)
+                except ValueError:
+                    wait = None
             elif e.code >= 500:
                 STATS["server_5xx"] += 1
             elif e.code == 404:
@@ -60,7 +67,7 @@ def get(path, params=None, retries=6, raw=False):
         except Exception as e:  # network errors: report the type only, never the URL
             last_err = type(e).__name__
         STATS["retries"] += 1
-        time.sleep(delay)
+        time.sleep(max(delay, wait or 0))
         delay = min(delay * 2, 60)
     raise RuntimeError("Failed after retries (%s): %s" % (last_err, path))
 

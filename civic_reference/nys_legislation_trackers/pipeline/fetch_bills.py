@@ -127,8 +127,10 @@ def fetch_one(session, print_no, signed_hint=False):
 
 
 # ── Full-session mode (phase 3a) ────────────────────────────────────────────────────────────────────────────────────
-# The listing endpoint with full=true returns every field the tracker needs for 1,000 bills per request (about 36 KB a bill
-# with both text formats, 7 s a page); per-bill calls would be one request per bill at 3.7 requests a second.
+# From Dec 1 2026 OpenLeg rejects full=true on bill listings (HTTP 400; migration.html). The listing now gives summaries
+# (status, actions, signed flag, no amendments), so each bill is fetched on its own: signed bills with both text formats
+# (text and memo cache), the rest with view=no_fulltext. normalize() gives identical records either way (checked
+# 2023-A5872, Nov 2 2026). One request per bill at openleg's pace: about 1.8 h for a 24,000-bill session.
 COLS = ["session", "print_no", "base_print_no", "chamber", "is_resolution", "title", "sponsor_id", "sponsor", "cosponsors",
         "committee", "status", "status_date", "signed", "chapter", "chapter_year", "vetoed", "same_as", "law_section", "published"]
 PAGE = 1000
@@ -193,18 +195,22 @@ def run_session(session, resume=False, limit=None):
         want = PAGE if limit is None else min(PAGE, limit - done)
         if want <= 0:
             break
-        raw = openleg.get("/api/3/bills/%d" % session, {"limit": want, "offset": done + 1, "full": "true",
-                                                         "fullTextFormat": ["HTML", "PLAIN"]}, raw=True)
+        d = openleg.get("/api/3/bills/%d" % session, {"limit": want, "offset": done + 1})
         calls += 1
-        nbytes += len(raw)
-        d = json.loads(raw)
         total = d.get("total", total)
         items = ((d.get("result") or {}).get("items")) or []
         if not items:
             break
         lines = []
         for it in items:
-            item = it.get("result", it)
+            summ = it.get("result", it)
+            params = {"fullTextFormat": ["HTML", "PLAIN"]} if summ.get("signed") else {"view": "no_fulltext"}
+            raw = openleg.get("/api/3/bills/%d/%s" % (session, summ["basePrintNo"]), params, raw=True)
+            calls += 1
+            if raw is None:
+                raise RuntimeError("bill %d-%s listed but returned 404" % (session, summ["basePrintNo"]))
+            nbytes += len(raw)
+            item = json.loads(raw)["result"]
             rec = normalize(item)
             rec["text_cached"] = cache_signed_text(item, rec)
             lines.append(json.dumps(rec, separators=(",", ":")))
