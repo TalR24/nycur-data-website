@@ -121,20 +121,29 @@ def nycuriosity_theme():
 
 
 def sce_theme(sce_root):
-    """The SCE site's own palette (it sits outside the NYCuriosity brand), read
-    from the :root block of its homepage so the email follows the site."""
-    T = css_vars((Path(sce_root) / "index.html").read_text(encoding="utf-8"))
+    """The SCE site's own palette (it sits outside the NYCuriosity brand). Since the
+    Oct 15 2026 redesign the tokens live in assets/sce.css (cream, ink, paper, line,
+    gold, bronze, muted; Carlito), so read them there; the homepage's own style
+    block is merged first only as a fallback for anything sce.css lacks."""
+    root = Path(sce_root)
+    T = css_vars((root / "index.html").read_text(encoding="utf-8"))
+    css = root / "assets" / "sce.css"
+    if css.exists():
+        T.update(css_vars(css.read_text(encoding="utf-8")))
+    g = lambda *keys: next(T[k] for k in keys if k in T)  # first token that exists, new names first
+    cream, paper, ink = g("cream", "bg"), g("paper", "surface"), g("ink", "text")
+    line, gold, bronze, muted = g("line", "border"), g("gold", "blue-mid"), g("bronze", "blue"), g("muted", "text-mid")
+    font = g("font") if "font" in T else "Carlito, Calibri, 'Segoe UI', sans-serif"
     return {
         "kicker": "State Capacity Ecosystem monthly report",
-        "page": T["bg"], "surface": T["surface"], "soft": T["blue-light"],
-        "ink": T["text"], "ink2": T["text-mid"], "ink3": T["text-muted"], "line": T["border"],
-        "link": T["blue-hover"], "accent": T["blue"], "dark": T["text"], "on_dark": T["bg"],
-        "good": T["blue"], "bad": T["blue-hover"], "warm": T["blue"],
-        "tags": {"Fix first": (T["blue-hover"], T["surface"]), "Revert?": (T["blue-hover"], T["surface"]),
-                 "Quick win": (T["blue-mid"], T["text"]), "Opportunity": (T["blue-light"], T["text"]),
-                 "Check": (T["border"], T["text"]), "Review": (T["blue-mid"], T["text"])},
-        "sans": "Inter, -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
-        "display": "Inter, -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif",
+        "page": cream, "surface": paper, "soft": cream,
+        "ink": ink, "ink2": muted, "ink3": muted, "line": line,
+        "link": bronze, "accent": gold, "dark": ink, "on_dark": cream,
+        "good": bronze, "bad": ink, "warm": bronze,
+        "tags": {"Fix first": (ink, paper), "Revert?": (ink, paper),
+                 "Quick win": (gold, ink), "Opportunity": (cream, ink),
+                 "Check": (line, ink), "Review": (gold, ink)},
+        "sans": font, "display": font,
         "mono": "'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, monospace",
         "memo_note": None,
         "footer": "Sent by the sce_monthly Action in TalR24/nycur-data-website (data_website/seo/sce_monthly.py): "
