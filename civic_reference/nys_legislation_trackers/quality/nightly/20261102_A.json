@@ -1,0 +1,523 @@
+{
+ "_scoring": {
+  "auditor": "A",
+  "night": "20261102",
+  "laws": 11,
+  "calibration_laws": [
+   "2009-A8392",
+   "2009-S7182"
+  ],
+  "stored_records": 25,
+  "correct": 14,
+  "wrong_fields": 10,
+  "not_real": 1,
+  "missed": 4,
+  "precision_strict": "14/25 = 56.0% (Wilson 95% 37.1-73.3)",
+  "precision_real": "24/25 = 96.0% (Wilson 95% 80.5-99.3)",
+  "recall": "23/28 = 82.1% (Wilson 95% 64.4-92.1)",
+  "effective_dates": "11/11 correct (calibration 2/2)",
+  "note": "scores cover the 11 laws plus the 2 calibration laws (13 laws, 25 stored records); blind items 27, matched 23, plus 1 stored correct record the blind pass missed (2009-A8392-02)"
+ },
+ "_classes": [
+  {
+   "name": "stated period stored as on_effective_date",
+   "criteria": [
+    "5"
+   ],
+   "instances": [
+    "2019-S7172-02",
+    "2019-S7172-04",
+    "2009-A8392-01"
+   ],
+   "rule": "deadline_kind == 'on_effective_date' and re.search(r'\\b(no later than|not later than|within|over a period of)\\b[^.;]{0,40}?\\b(\\d+|one|two|...|one hundred eighty)\\b[^.;]{0,10}?\\b(days?|months?|years?)\\b', quote, re.I) (misses S7172-02 whose deadline is in the next sentence)",
+   "db_matches": 29,
+   "db_examples": [
+    "2009-A5667-01",
+    "2011-A8265-04",
+    "2019-S8129-01"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "extends_existing wrong on widened limits / new clauses",
+   "criteria": [
+    "7"
+   ],
+   "instances": [
+    "2011-S2704-01",
+    "2011-S2704-02",
+    "2011-S2704-03",
+    "2011-S2704-04",
+    "2011-S2704-05",
+    "2021-A1029-01"
+   ],
+   "rule": "no mechanical rule: whether braced text widens an existing authority vs. is wholly new needs the pre-amendment text",
+   "db_matches": null,
+   "db_examples": [],
+   "needs_judgment": true,
+   "laws": [
+    "2011-S2704",
+    "2021-A1029"
+   ]
+  },
+  {
+   "name": "passive actor stored Unspecified (recurrence of Oct 17 fix)",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2009-S7188-02"
+   ],
+   "rule": "agency == 'Unspecified' and re.search(r'passive|not stated', actor_raw, re.I)",
+   "db_matches": 17,
+   "db_examples": [
+    "2009-S3860-01",
+    "2009-S5114-01",
+    "2009-S6699-01"
+   ],
+   "needs_judgment": false,
+   "note": "all Unspecified records: 503"
+  },
+  {
+   "name": "'may so elect by filing' stored as a second power beside the authorization",
+   "criteria": [
+    "1",
+    "9"
+   ],
+   "instances": [
+    "2009-S7182-02"
+   ],
+   "rule": "kind == 'power' and re.search(r'\\bmay (so )?elect\\b[^.]{0,40}\\bby filing\\b', quote, re.I) and another power of the same matter_id and agency_unit quotes 'authorized'",
+   "db_matches": 57,
+   "db_examples": [
+    "2009-A10268-02",
+    "2009-A3078-02",
+    "2009-A6731-02"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "earlier-chapter sunset extension with unnamed holder left with no record after re-ask",
+   "criteria": [
+    "1",
+    "7"
+   ],
+   "instances": [
+    "2015-A6242 b1",
+    "2009-S7188 b3"
+   ],
+   "rule": "law-level: packet LAW TEXT matches r'(expire|deemed repealed)[^.]{0,80}\\[[^\\]]{1,40}\\]\\s*\\{\\{[^}]{1,40}\\}\\}' and no stored record of the matter_id quotes /expire|deemed repealed/ (upper bound: some laws carry the extension on the substantive sentence instead)",
+   "db_matches": 512,
+   "db_examples": [
+    "2013-A9498",
+    "2013-A9739",
+    "2013-A4989"
+   ],
+   "needs_judgment": false,
+   "note": "counts laws, not records; 473 of the 512 have zero stored records"
+  }
+ ],
+ "2021-A1029": {
+  "records": {
+   "2021-A1029-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "7"
+    ],
+    "fields": {
+     "extends_existing": false
+    },
+    "quote": "unless the insured elects, in writing and in such form as the superintendent determines, to decline and refuse such coverage in his or her policy",
+    "note": "Braced clause \"unless the insured elects, in writing and in such form as the superintendent determines\" is a wholly new decline-form power; the deleted text \"pursuant to regulations promulgated by the superintendent\" does not make it an extension."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2023-01-01",
+   "computed": "2023-01-01",
+   "verdict": "correct",
+   "note": "first of January next succeeding 2022-12-23"
+  }
+ },
+ "2011-S2704": {
+  "records": {
+   "2011-S2704-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "7"
+    ],
+    "fields": {
+     "extends_existing": true
+    },
+    "quote": "in the case of a license issued to a new applicant, the superintendent may issue a license for a term of more than two years, provided however, Such term shall not exceed thirty months.",
+    "note": "Superintendent already issued these licences for two-year terms; new matter \"may issue a license for a term of more than two years ... shall not exceed thirty months\" widens the term (amount/limit), so extends_existing is true (criterion 7, prompt rule 56)."
+   },
+   "2011-S2704-02": {
+    "verdict": "wrong",
+    "criteria": [
+     "7"
+    ],
+    "fields": {
+     "extends_existing": true
+    },
+    "quote": "In the case of a license issued to a new applicant, the superintendent may issue a license for a term of more than two years, provided however, Such term shall not exceed thirty months.",
+    "note": "Superintendent already issued these licences for two-year terms; new matter \"may issue a license for a term of more than two years ... shall not exceed thirty months\" widens the term (amount/limit), so extends_existing is true (criterion 7, prompt rule 56)."
+   },
+   "2011-S2704-03": {
+    "verdict": "wrong",
+    "criteria": [
+     "7"
+    ],
+    "fields": {
+     "extends_existing": true
+    },
+    "quote": "In the case of a license issued to a new applicant, the superintendent may issue a license for a term of more than two years, provided however, Such term shall not exceed thirty months.",
+    "note": "Superintendent already issued these licences for two-year terms; new matter \"may issue a license for a term of more than two years ... shall not exceed thirty months\" widens the term (amount/limit), so extends_existing is true (criterion 7, prompt rule 56)."
+   },
+   "2011-S2704-04": {
+    "verdict": "wrong",
+    "criteria": [
+     "7"
+    ],
+    "fields": {
+     "extends_existing": true
+    },
+    "quote": "In the case of a license issued to a new applicant, the superintendent may issue a license for a term of more than two years, provided however, Such term shall not exceed thirty months.",
+    "note": "Superintendent already issued these licences for two-year terms; new matter \"may issue a license for a term of more than two years ... shall not exceed thirty months\" widens the term (amount/limit), so extends_existing is true (criterion 7, prompt rule 56)."
+   },
+   "2011-S2704-05": {
+    "verdict": "wrong",
+    "criteria": [
+     "7"
+    ],
+    "fields": {
+     "extends_existing": true
+    },
+    "quote": "In the case of a license issued to a new applicant, the superintendent may issue a license for a term of more than two years, provided however, Such term shall not exceed thirty months.",
+    "note": "Superintendent already issued these licences for two-year terms; new matter \"may issue a license for a term of more than two years ... shall not exceed thirty months\" widens the term (amount/limit), so extends_existing is true (criterion 7, prompt rule 56)."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2012-11-15",
+   "computed": "2012-11-15",
+   "verdict": "correct",
+   "note": "90th day after 2012-08-17"
+  }
+ },
+ "2019-S8400": {
+  "records": {
+   "2019-S8400-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The city of New York may establish and maintain a revenue stabilization fund pursuant to section fifteen hundred twenty-eight of the New York city charter.",
+    "note": ""
+   },
+   "2019-S8400-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "shall be deposited into such revenue stabilization fund as soon as practicable, and such deposits shall not be deemed expenses of the city in the fiscal years during which such deposits are made",
+    "note": "passive surplus-deposit duty resolved to New York City; as soon as practicable -> none"
+   }
+  },
+  "missed": [
+   {
+    "blind": "b3",
+    "quote": "surpluses of such city, whether accumulated from fiscal years ending prior to the effective date of the chapter of the laws of two thousand twenty that amended this paragraph or existing at the close of any fiscal year ending after such effective date, shall be deposited into such revenue stabilization fund as soon as practicable",
+    "kind": "duty",
+    "agency": "New York City",
+    "dropped_by": null,
+    "note": "Parallel surplus-deposit duty enacted in a second statute (Financial Emergency Act s8(1)(a), section 2 of the act); -02 covers only GML s25(2). Parallel sections are separate records (prompt rule 69)."
+   },
+   {
+    "blind": "b4",
+    "quote": "deposits into and withdrawals from such fund may be made by means of the procedures set forth in such charter for adoption or modification of the expense budget of such city, as applicable",
+    "kind": "power",
+    "agency": "New York City",
+    "dropped_by": null,
+    "note": "Passive power of the City to deposit into and withdraw from the fund (50% cap absent a mayoral certification is a condition of it). Lower confidence: may be read as part of -01."
+   }
+  ],
+  "effective_date": {
+   "stored": "2020-06-17",
+   "computed": "2020-06-17",
+   "verdict": "correct",
+   "note": "immediately"
+  }
+ },
+ "2015-A6242": {
+  "records": {},
+  "missed": [
+   {
+    "blind": "b1",
+    "quote": "This act shall take effect immediately and shall expire and be deemed repealed June 30, 2020.",
+    "kind": "duty",
+    "agency": "Workers' Compensation Board",
+    "dropped_by": null,
+    "note": "Earlier chapter's (ch 606 of 2006) sunset extended [2015] {{2020}}: an extension record per the Oct 19 decision (extends_existing true). Title names no government body (sunset_extension_unnamed_holder); law was re-asked tonight and still has no record and no dropped entry. Holder is needs_judgment: the lung-disability presumption is applied by the Workers' Compensation Board under the Volunteer Firefighters' Benefit Law."
+   }
+  ],
+  "effective_date": {
+   "stored": "2015-06-30",
+   "computed": "2015-06-30",
+   "verdict": "correct",
+   "note": "immediately"
+  }
+ },
+ "2013-A9062": {
+  "records": {
+   "2013-A9062-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "To enter into contracts of no more than five years and subject to the sunset date of this subparagraph, with out-of-state school districts for special education and/or career and technical education services",
+    "note": "quote carries braced 'five'"
+   },
+   "2013-A9062-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner of education shall submit an interim report to the board of regents, the governor and the legislature by no later than April 15, 2018 and a final report by no later than December 15, 2018",
+    "note": "interim and final report in one record; deadline first date 2018-04-15 (final 2018-12-15 not separately stored, acceptable)"
+   },
+   "2013-A9062-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "This act shall take effect immediately and shall expire and be deemed repealed July 1, 2019.",
+    "note": "earlier chapter sunset [2014] {{2019}}, holder BOCES from act clause"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2014-06-19",
+   "computed": "2014-06-19",
+   "verdict": "correct",
+   "note": "immediately; amendments expire with referenced sections (2019-07-01) stored"
+  }
+ },
+ "2019-S8539": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2021-04-01",
+   "computed": "2021-04-01",
+   "verdict": "correct",
+   "note": "same as ch 104 of 2020 (S3595-C), first of April next succeeding 2020-06-16. Only new matter is the covered-agency definition; dropped 2019-S8539-01 (designation_no_actor) is a definition, correctly dropped."
+  }
+ },
+ "2009-S7188": {
+  "records": {
+   "2009-S7188-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "real property tax payments on Oneida Indian Nation taxable property until such time as the Oneida county treasurer certifies to the state comptroller that no unpaid taxes remain due on the lands of the Oneida Indian Nation of New York which have been subjected to taxation, or until June thirtieth, two thousand twelve, whichever comes first.",
+    "note": ""
+   },
+   "2009-S7188-02": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Counties",
+     "agency_unit": "Oneida County",
+     "jurisdiction": "local"
+    },
+    "quote": "Such disregard shall continue until such time as the Oneida county treasurer certifies to the state comptroller that no unpaid taxes remain due on the lands of the Oneida Indian Nation of New York which have been subjected to taxation, or until June 30, 2012, whichever comes first.",
+    "note": "\"Such disregard shall continue ... until June 30, 2012\": the bodies \"determining real property tax rates ... and local tax distribution within the county of Oneida\" act; the passive sentence was stored as Unspecified (actor_raw \"not stated (passive)\")."
+   }
+  },
+  "missed": [
+   {
+    "blind": "b3",
+    "quote": "This act shall take effect immediately and shall expire June 30, 2012 when upon such date the provisions of this act shall be deemed repealed.",
+    "kind": "power",
+    "agency": "State Comptroller",
+    "dropped_by": null,
+    "note": "Section 3 extends ch 521 of 2005 s4 sunset [2010] {{2012}}; earlier chapter's sunset inside an amendment is an extension record (Oct 16/19 decisions). Title names no government body; holder needs_judgment (comptroller fund custody or Oneida County)."
+   }
+  ],
+  "effective_date": {
+   "stored": "2010-06-29",
+   "computed": "2010-06-29",
+   "verdict": "correct",
+   "note": "immediately"
+  }
+ },
+ "2019-S7172": {
+  "records": {
+   "2019-S7172-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The department of health, in collaboration with the department of financial services, shall convene a workgroup of individuals with expertise in rare diseases, including physicians, nurses and other health care professionals with experience researching, diagnosing or treating rare diseases",
+    "note": ""
+   },
+   "2019-S7172-02": {
+    "verdict": "wrong",
+    "criteria": [
+     "5"
+    ],
+    "fields": {
+     "deadline_kind": "days_after_effective",
+     "deadline_offset": "2 years",
+     "deadline_date": "2021-12-20",
+     "deadline_text": "no later than two years following the effective date of this act"
+    },
+    "quote": "The department of health shall prepare a written report summarizing opinions and recommendations from the workgroup which includes a list of existing, publicly accessible resources on research, diagnosis, treatment, coverage options and education relating to rare diseases",
+    "note": "\"This report shall be submitted ... no later than two years following the effective date of this act\": stated period, stored on_effective_date."
+   },
+   "2019-S7172-04": {
+    "verdict": "wrong",
+    "criteria": [
+     "5"
+    ],
+    "fields": {
+     "deadline_kind": "days_after_effective",
+     "deadline_offset": "2 years",
+     "deadline_date": "2021-12-20",
+     "deadline_text": "no later than two years following the effective date of this act"
+    },
+    "quote": "This report shall be submitted to the governor, speaker of the assembly and temporary president of the senate no later than two years following the effective date of this act and shall be posted on the department of health's website",
+    "note": "Quote itself holds \"no later than two years following the effective date of this act\" but deadline_kind is on_effective_date with deadline_text null."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2019-12-20",
+   "computed": "2019-12-20",
+   "verdict": "correct",
+   "note": "same as ch 719 of 2019 (A5762), immediately. Section 2 sunset (two years after, 2021-12-20) not stored: known section-scoped sunset gap."
+  }
+ },
+ "2019-S8485": {
+  "records": {
+   "2019-S8485-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner of general services is authorized and empowered to convey state property, as further described in this act and commonly referred to as 1024 Fulton Street, Brooklyn, New York",
+    "note": ""
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2020-10-07",
+   "computed": "2020-10-07",
+   "verdict": "correct",
+   "note": "immediately; expires 2022-10-07 stored"
+  }
+ },
+ "2021-A10178": {
+  "records": {
+   "2021-A10178-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "This act shall take effect on the sixtieth day after it shall have become a law; provided that paragraph c-1 of section 11-0903 of the environmental conservation law as added by section one of this act shall expire and be deemed repealed on December 31, 2025.",
+    "note": "sunset_extension_from_title, DEC, [2022] {{2025}}"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2022-06-30",
+   "computed": "2022-06-30",
+   "verdict": "correct",
+   "note": "immediately"
+  }
+ },
+ "2021-A10088": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2022-06-30",
+   "computed": "2022-06-30",
+   "verdict": "correct",
+   "note": "immediately; xvii amendment deemed repealed with the referenced subparagraph (stored with_referenced_section). New matter is a parcel added to the ABC 106(13) exception plus a licensee proviso ('such retail licensee may not purchase'): private party/exemption, no government verb in new matter; no record expected."
+  }
+ },
+ "2009-S7182": {
+  "records": {
+   "2009-S7182-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "is hereby authorized to make participation in such plan available to Patricia Willard, Jill Nye, Seth Armstrong and Michael Lug, police officers employed by the village of Cornwall-on-Hudson",
+    "note": ""
+   },
+   "2009-S7182-02": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "9"
+    ],
+    "fields": {},
+    "quote": "The village of Cornwall-on-Hudson may so elect by filing with the state comptroller, on or before December 31, 2010, a resolution of its governing body together with certification",
+    "note": "\"The village of Cornwall-on-Hudson may so elect by filing with the state comptroller, on or before December 31, 2010, a resolution\" is the procedure for exercising -01 (\"is hereby authorized to make participation in such plan available\"), a condition of that record, not a second power."
+   },
+   "2009-S7182-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "All past service costs associated with implementing the provisions of this act shall be borne by the village of Cornwall-on-Hudson over a period of ten years.",
+    "note": "cost-bearing duty, none/ongoing"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2010-09-17",
+   "computed": "2010-09-17",
+   "verdict": "correct",
+   "note": "immediately"
+  }
+ },
+ "2009-A8392": {
+  "records": {
+   "2009-A8392-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "5"
+    ],
+    "fields": {
+     "deadline_kind": "days_after_effective",
+     "deadline_offset": "2 years",
+     "deadline_date": "2012-09-12"
+    },
+    "quote": "The law revision commission shall, over a period of two years, study all aspects of the implementation of title 15 of article 5 of the general obligations law, as amended by chapter 644 of the laws of 2008 and this act.",
+    "note": "\"The law revision commission shall, over a period of two years, study\": a stated period after the effective date is an offset (criterion 5), stored on_effective_date."
+   },
+   "2009-A8392-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Such commission shall consult with individuals and entities regularly engaged in the utilization of such title, and those individuals and entities affected by the provisions of such title.",
+    "note": "separate consult duty; my blind pass folded it into the study (counted as a stored correct record my blind pass missed)"
+   },
+   "2009-A8392-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "On or before September 1, 2010, the law revision commission shall submit a preliminary report of its findings, conclusions and recommendations to the governor and the legislature regarding the statutory gifts rider.",
+    "note": ""
+   },
+   "2009-A8392-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the law revision commission shall, on or before January 1, 2012, submit a report of its findings, conclusions and recommendations to the governor and the legislature.",
+    "note": ""
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2010-09-12",
+   "computed": "2010-09-12",
+   "verdict": "correct",
+   "note": "30th day after 2010-08-13; retroactive_to 2009-09-01 stored"
+  }
+ }
+}

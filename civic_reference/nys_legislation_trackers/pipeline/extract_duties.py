@@ -992,11 +992,21 @@ POWER_LEAD = re.compile(r"\bshall\s+have\s+(?:the\s+)?(?:following\s+|general\s+
 
 def infinitive_lead_kind(lead):
     """S4: 'shall have the following powers:' / 'may:' / 'is authorized to:' make the infinitive items powers; 'shall:' and 'powers and duties' make them duties."""
-    last = re.sub(r"\{\{|\}\}", "", lead or "")[-300:]
+    last = re.sub(r"\{\{|\}\}", "", lead or "")
+    if APPLY_X3:          # X3 (Nov 2 2026): a lead paragraph that also holds item 1 ('... powers and duties: 1. to promulgate regulations ... which may be assigned') is judged on the clause before the first item only
+        m3 = re.match(r"(.*?:)\s*(?:\d+|\([\w]{1,4}\))\.?\s", last, re.S)
+        if m3:
+            last = m3.group(1)
+    last = last[-300:]
     if POWER_LEAD.search(last):
         return "power"
     return "duty" if MANDATORY.search(last) else "power"
 LEAD_SUBJECT = re.compile(r"(?:^|[.:;]\s+|\}\}\s*)((?:the|a|an|each|such)\s+[\w-]+(?:\s+[\w-]+){0,5}?)(?:['’]s\s+(?:responsibilit\w+|dut\w+|powers?|functions?))?\s+(?:shall|may|must)\b", re.I)
+
+
+# X3 (Nov 2 2026): numbered item labels as they print in an amended list: '2.', '3.]', '[4] {{3}}.', '[6] {{5}}.'
+NUM_LABEL_X3 = re.compile(r"^[\[\{\s]*\d+[\]\}\s]*(?:\{\{\s*\d+\s*\}\}|\d+)?[\]\}\s]*\.\]?\s")
+NUM_OLD = re.compile(r"^\W*(?:\{\{)?\s*\d+\.\s")
 
 
 def imperative_lead_in(span, text):
@@ -1007,14 +1017,14 @@ def imperative_lead_in(span, text):
     if idx is None:
         return None
     first = text[paras[idx][0]:paras[idx][1]]
-    if not ITEM_LABEL.match(first) and not re.match(r"^\W*(?:\{\{)?\s*\d+\.\s", first):
+    if not ITEM_LABEL.match(first) and not (NUM_LABEL_X3 if APPLY_X3 else NUM_OLD).match(first):
         return None
     paren = bool(PAREN_ITEM.match(first))
     j = idx - 1
     floor = lead_floor(paras, idx, text)
     while j >= floor:
         t = text[paras[j][0]:paras[j][1]]
-        if not t.strip() or (PAREN_ITEM.match(t) if paren else re.match(r"^\W*(?:\{\{)?\s*\d+\.\s", t) and not re.search(r":\s*(?:\}\})?\s*$", t)):
+        if not t.strip() or (PAREN_ITEM.match(t) if paren else (NUM_LABEL_X3 if APPLY_X3 else NUM_OLD).match(t) and not re.search(r":\s*(?:\}\})?\s*$", t)):
             j -= 1
         else:
             break
@@ -1560,6 +1570,79 @@ def q5_such_swap(sent):
 
 
 
+APPLY_R1 = APPLY_R2 = APPLY_R4 = True          # Nov 2 2026 closing-class rules, dry run over stored ids: R1 1, R2 1, R4 4
+APPLY_R3 = False          # no-modal fragments: 2,094 stored ids match, far over the cap of 40; left off
+R1_PLEDGE = re.compile(r"^\W*that\s+the\s+state\s+(?:will|shall)\s+not\s+(?:take|limit|alter|impair)\b", re.I)
+R2_SUNSET = re.compile(r"^\W*the\s+provisions?\s+of\s+(?:sections?|subdivisions?|parts?)\s+[\w\s,-]{1,60}\s+of\s+this\s+act\s+shall\s+expire\b", re.I)
+R3_MODAL = re.compile(r"\b(shall|must|may|will|can|required|authorized|empowered|directed|is to|are to)\b", re.I)
+R4_FORM = re.compile(r"^\W*(?:contracts?\s+must\s+be\s+executed\s+by\b|to\s+be\s+approved\s+by\s+the\s+commissioner,\s+the\s+contract\b[^.]{0,80}\bshall\s+demonstrate\b|such\s+application\s+shall\s+be\s+made\s+by\s+an?\s+[a-z ]{3,40},\s+after\b)", re.I)
+
+
+APPLY_X1 = APPLY_X2 = APPLY_X3 = APPLY_X4 = True          # Nov 2 2026: X1 next-sentence deadline for a one-time duty, X2 'may so elect by filing' procedure
+X4_EVENT_PERIOD = re.compile(r"\b(?:within|no later than|not later than|not more than)\s+[\w-]+(?:\s+[\w-]+){0,3}?\s+(?:days?|weeks?|months?|years?)\s+(?:after|following)\s+(?!(?:the\s+)?(?:effective|enactment|date\s+(?:on\s+which\s+|of\s+)?(?:this\s+act|enactment)|this\s+act|such\s+effective)\b)[^,;.]{3,80}", re.I)          # X4: a period counted from an undated event ('after the adjournment of the 2020 session')
+X1_NOT_LATER = re.compile(r"\b(?:no|not)\s+later\s+than\b", re.I)
+X1_SUBJ = re.compile(r"^\W*(?:on or before [^,]{3,25},\s*(?:\d{4},\s*)?)?(?:such|this|the)\s+([a-z-]+(?:\s+[a-z-]+){0,3})\s+(?:shall|must)\b", re.I)
+X2_SO_ELECT = re.compile(r"\b(?:may|shall)\s+so\s+elect\s+by\s+filing\b", re.I)
+X2_GRANT = re.compile(r"\b(?:elect|authorized|option|entitled|eligible)\w*", re.I)
+
+
+def _x1_deadline(sent, eff_base, enact_base):
+    """(date, kind, text) for a period ('within|no later than N units after the effective date') or 'on or before <date>' in one sentence."""
+    s = X1_NOT_LATER.sub("within", re.sub(r"\s+", " ", sent or ""))
+    pd_ = period_deadline(s, eff_base, enact_base)
+    if pd_:
+        m = DL_PERIOD.search(s)
+        return pd_[0], pd_[1], m.group(0)
+    if re.search(r"\bon or before\b", s, re.I):
+        dd = dated_deadline(s, eff_base or enact_base)
+        if dd and dd[1] == "full":
+            return dd[0], "fixed_date", None
+    return None
+
+
+def next_sentence_deadline(o, text, eff_base, enact_base):
+    """X1: the quote's own 'no later than N years after the effective date', else a period or date in one of the next three sentences
+    of the same paragraph whose subject ('such report', 'the commission shall') is the quote's deliverable or actor."""
+    q = o.get("quote") or ""
+    own = _x1_deadline(q, eff_base, enact_base) if X1_NOT_LATER.search(q) else None          # a plain 'within N' in the quote is read by the U5/M37 rules
+    if own:
+        return own
+    span = locate_span(q, text)
+    if not span:
+        return None
+    rest = re.sub(r"^[.;\s]+", "", text[span[1]:span[1] + 1800])
+    rest = re.split(r"\u00a7\s*\d", rest)[0]
+    sents = [x for x in re.split(r"(?<=[.])\s+(?=[A-Z{])", rest.strip()) if x.strip()][:3]
+    ql = q.lower()
+    actor = " ".join(re.sub(r"^the\s+", "", ql).split()[:3]).rstrip(",;")
+    for sn in sents:
+        m = X1_SUBJ.match(sn)
+        if not m:
+            continue
+        if not re.match(r"^\W*(?:on or before|such|this)\b", sn, re.I):          # a plain 'The X shall' sentence may be a different deliverable of the same actor
+            continue
+        noun = m.group(1).lower().split()[-1]
+        if (noun in ql or (actor and actor in sn.lower())) and not re.search(r"\b(?:if|unless|upon)\b", sn[:m.end()], re.I):
+            r = _x1_deadline(sn, eff_base, enact_base)
+            if r and _x1_before_enactment(r, enact_base, eff_base):
+                continue                                     # Nov 2 2026: 'on or before June 30, 2008' in a 2019 law is reprinted history (2019-S218-10)
+            if r:
+                return r
+    return None
+
+
+def _x1_before_enactment(r, enact_base, eff_base):
+    """True when r carries a fixed date earlier than the law's enactment or effective base (either may be None)."""
+    d = r.get("deadline_date") if isinstance(r, dict) else (r[0] if isinstance(r, (tuple, list)) and r and r[1:2] == ["fixed_date"] else None)
+    if not d:
+        return False
+    for b in (enact_base, eff_base):
+        bs = b.isoformat() if hasattr(b, "isoformat") else (str(b)[:10] if b else None)
+        if bs and str(d)[:10] < bs:
+            return True
+    return False
+
+
 def gate_record(o, text, has_markers):
     """Returns (rule, reason) when the record must be dropped, else None. Rules 1-3 of phase 3b."""
     if not o.get("quote_verified"):
@@ -1581,6 +1664,20 @@ def gate_record(o, text, has_markers):
         return "condition_precedent", "an implementation precondition ('shall not be implemented until X shall have delivered ...'): a condition on another provision, not a duty of the certifying officials"
     if APPLY_B30 and SECTION_SUNSET.match(q):
         return "section_sunset", "a proviso that one section of the act expires on a date; the sunset is computed with the effective dates and binds no actor"
+    if APPLY_R1 and R1_PLEDGE.search(q):
+        return "state_pledge", "the text of a State pledge or covenant to bond holders ('the state will not take any action'), an existing-law term that binds no program duty"
+    if APPLY_R2 and R2_SUNSET.search(q):
+        return "section_sunset", "a proviso that sections of the act expire on a date; the sunset is computed with the effective dates and binds no actor"
+    if APPLY_R3 and not R3_MODAL.search(q):
+        return "no_modal_fragment", "a list-item fragment with no modal verb (an eligibility or recipient list), stating no duty or power"
+    if APPLY_R4 and R4_FORM.search(q):
+        return "contract_form_condition", "an approval condition, contract-form requirement or applicant procedure, a term of the instrument or claim, not an actor duty"
+    if APPLY_X2 and X2_SO_ELECT.search(q):
+        sp_x = locate_span(q, text)
+        if sp_x:
+            prev = text[max(0, sp_x[0] - 700):sp_x[0]]
+            if X2_GRANT.search(re.split(BOUNDARY, prev.rstrip())[-2] if len(re.split(BOUNDARY, prev.rstrip())) > 1 else prev):
+                return "condition_of_other_record", "the procedure for exercising an election granted in the previous sentence ('may so elect by filing ...'), not a second power"
     if OPERATION_OF_LAW.search(q):
         bump("b16_operation_of_law")
         return "operation_of_law", "a transfer of records, property and rights by operation of law (shall vest in / be transferred to and vested in): binds no actor"
@@ -3506,8 +3603,25 @@ def build_records(laws):
             # B16 ordering (Oct 31 2026): the specific deadline rules (M29, M37) run before the B16 default so a 'none' duty is not stamped on_effective_date first
             if kind == "duty":
                 ssd = study_submission_date(o, text)
+                if ssd and str(ssd[0])[:10] < str(law["enactment_date"])[:10]:
+                    ssd = None; bump("m29_date_before_enactment_skipped")          # Nov 2 2026: a submission date before enactment is reprinted history (2019-S218-10)
                 if ssd:
                     o["deadline_kind"], o["deadline_date"], o["deadline_text"] = "fixed_date", ssd[0], ssd[1]; bump("m29_study_submission_date")
+            x4 = bool(kind == "duty" and APPLY_X4 and X4_EVENT_PERIOD.search(quote) and not CAP_RE.search(quote))
+            if kind == "duty" and APPLY_X1 and o.get("recurrence") == "one-time" and o.get("deadline_kind") in (None, "none", "on_effective_date") and not CAP_RE.search(quote) and not per_election:
+                nsd = next_sentence_deadline(o, text, eff.get("effective_date") if isinstance(eff, dict) else None, law["enactment_date"])
+                if nsd and nsd[1] == "fixed_date" and str(nsd[0])[:10] < str(law["enactment_date"])[:10]:
+                    nsd = None; bump("x1_date_before_enactment_skipped")
+                if nsd:
+                    o["deadline_kind"], o["deadline_date"] = nsd[1], nsd[0]
+                    if nsd[2]: o["deadline_text"] = nsd[2]
+                    bump("x1_next_sentence_deadline")
+                    x4 = False
+            if x4 and o.get("deadline_kind") in (None, "none", "on_effective_date"):
+                o["deadline_kind"], o["deadline_date"] = "none", None
+                if not o.get("deadline_text"):
+                    o["deadline_text"] = X4_EVENT_PERIOD.search(quote).group(0).strip()
+                bump("x4_event_tied_period")
             # 1. record dates per section; on_effective_date never null when the date is known
             sec_date, sec_src = section_effective(o, text, eff)
             if sec_src != "law":
@@ -3535,7 +3649,7 @@ def build_records(laws):
                   and (o.get("deliverable_type") in SETUP_TYPES or o.get("deliverable_type") == "signage or installation"
                        or (o.get("deliverable_type") not in (None, "", "other") and not B16_EXTRA_TRIGGER.search(quote) and not o.get("deadline_date")))
                   and not TRIGGER.search(quote) and not EVENT_TIED.search(quote) and not CAP_RE.search(quote)
-                  and not PROHIBITION.search(quote)):
+                  and not PROHIBITION.search(quote) and not x4):
                 if o.get("deliverable_type") not in SETUP_TYPES and o.get("deliverable_type") != "signage or installation":
                     bump("b16_none_to_on_effective_date")
                 o["deadline_kind"] = "on_effective_date"; bump("triggered_to_setup")
