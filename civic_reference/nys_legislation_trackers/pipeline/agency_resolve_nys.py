@@ -737,12 +737,81 @@ ACTING_THROUGH = re.compile(r"\bthe state,?\s+(?:acting\s+)?(?:through|by and th
 ASSISTING_LOCAL = re.compile(r"^(?:the |any |an? |all |each )?assisting (?:state or )?local governments?$", re.I)
 
 
+DISTRICT_INSPECTORS = re.compile(r"^(?:the )?(?:election )?inspectors(?: of election)?(?: and the ballot clerks)?$", re.I)
+
+
+def fix_district_election_inspectors(o, text=""):
+    """R13 (Nov 3 2026): 'the election inspectors and the ballot clerks' of a library, school or fire district special election are the
+    district's own appointees, not the county board of elections; when the law names no board of elections, the record takes the
+    district body named in the law (Public libraries / School districts / Fire districts) or stays Unspecified. 3 records."""
+    raw = re.sub(r"\s+", " ", (o.get("actor_raw") or "").strip(" .,;:"))
+    if o.get("agency") != "Boards of elections" or not DISTRICT_INSPECTORS.match(raw):
+        return False
+    t = (text or "")[:200000]
+    if re.search(r"\bboard of elections\b", t, re.I):
+        return False
+    low = t.lower()
+    if "library" in low:
+        grp, unit = "Public libraries", None
+        m = re.search(r"\b([A-Z][\w'.-]+(?: [A-Z][\w'.-]+)* (?:Free |Public |Memorial )?Library(?: District)?)\b", t)
+        unit = m.group(1) if m else None
+    elif "school district" in low:
+        grp, unit = "School districts", None
+    elif "fire district" in low:
+        grp, unit = "Fire districts", None
+    else:
+        o.update(agency="Unspecified", agency_matched=False, agency_source="district_inspectors_r13", agency_unit=None); return True
+    _set_group(o, grp, "local", "local government group", unit, "district_inspectors_r13")
+    return True
+
+
+# R14/R15 (Nov 3 2026)
+GENERIC_AGENCY = re.compile(r"^(?:applicable|such|said|the following|duties of|powers of|head of the|any|each|every|all|other)\b|\bor (?:systems|agencies|departments)$", re.I)
+RETIRE_ACTOR = re.compile(r"^(?:the |such |said |each )?(?:applicable )?(?:retirement systems?(?: or systems)?|board of trustees)$", re.I)
+ADMIN_13 = re.compile(r"Administrative Code[^§]*§\s*13-(\d)\d\d", re.I)
+# Admin Code Title 13 chapters: 1 NYCERS, 2 Police Pension Fund, 3 Fire Department Pension Fund, 5 TRS, 6 BERS. Law text anchors: 2011-A5744 s.13-256.1
+# "creditable police service" (2xx), 2011-A5744 s.13-361.1 "creditable fire uniformed force service" and 2015-S8015 s.13-316 "the New York fire
+# department pension fund" (3xx); 1xx, 5xx, 6xx are not named in the packets read (2009-A40026 s.13-582 amends a TRS/BERS act). 13-63x sections
+# (13-638.2 'each retirement system') apply to all systems and are not mapped.
+ADMIN_13_SYSTEM = {"1": "NYCERS", "2": "PPF", "3": "Fire Pension Fund", "5": "TRS", "6": "BERS"}
+ADMIN_13_ALL = re.compile(r"§\s*13-63\d", re.I)
+
+
+def fix_retirement_by_section(o):
+    """R15: a generic retirement-system actor in a record citing NYC Administrative Code 13-NNN takes the system whose chapter holds that section."""
+    raw = re.sub(r"\s+", " ", (o.get("actor_raw") or "").strip(" .,;:"))
+    m = ADMIN_13.search(o.get("citation") or "")
+    if not m or not RETIRE_ACTOR.match(raw) or m.group(1) not in ADMIN_13_SYSTEM or ADMIN_13_ALL.search(o.get("citation") or ""):
+        return False
+    cw = _nyc_cw()
+    canon = ADMIN_13_SYSTEM[m.group(1)]
+    if canon not in cw["by"]:
+        return False
+    return _set_body(o, cw["by"][canon], canon, "nyc", None, "retirement_section_r15")
+
+
+def fix_generic_named_body(o, nyc_by=None):
+    """R14: a generic actor phrase stored as a named-body agency is re-resolved through the actor rules, else Unspecified (generic_phrase_r14)."""
+    ag = re.sub(r"\s+", " ", (o.get("agency") or "").strip())
+    if o.get("agency_source") != "named_body" or not GENERIC_AGENCY.search(ag):
+        return False
+    o.update(agency="Unspecified", agency_full="Unspecified", agency_matched=False, jurisdiction=None, agency_org_type=None,
+             agency_group=None, agency_unit=None, actor_unresolved=True, agency_source="generic_phrase_r14")
+    if fix_generic_role(o) or fix_state_actor(o) or fix_public_body(o) or fix_resolvable_actor(o, nyc_by if nyc_by is not None else _nyc_cw()["by"]):
+        return True
+    return True
+
+
 def fix_20261031(o, by_canon, lookup=None, text=""):
     """R1-R3 (Oct 31 2026). Returns True when a raw office title in `agency` (or the chief diversity officer in actor_raw) was
     replaced by the body it heads. Runs on matched and unmatched records; titles whose body the crosswalks cannot resolve are left alone."""
+    if fix_district_election_inspectors(o, text):
+        return True
+    if fix_retirement_by_section(o) or fix_generic_named_body(o):
+        return True
     ag = re.sub(r"\s+", " ", (o.get("agency") or "").strip(" .,;:"))
     raw = re.sub(r"\s+", " ", (o.get("actor_raw") or "").strip(" .,;:"))
-    if STATE_ACTOR.match(raw) and o.get("agency") in (None, "Unspecified", "DHSES") and not ACTING_THROUGH.search(o.get("quote") or ""):
+    if STATE_ACTOR.match(raw) and (o.get("agency") in (None, "Unspecified", "DHSES") or o.get("agency_source") == "named_body") and not ACTING_THROUGH.search(o.get("quote") or ""):   # Nov 3 2026: a bare "the state" had taken a named body from the law's context (2015-S5957 -> SOEM)
         if o.get("agency") == "DHSES" and o.get("agency_source") not in (None, "unresolved", "state_actor", "model"):
             pass                                              # a rule that named DHSES from the sentence keeps it
         else:

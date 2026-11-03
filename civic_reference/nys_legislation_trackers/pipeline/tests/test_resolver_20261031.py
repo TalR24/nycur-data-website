@@ -120,4 +120,38 @@ for raw in ("Assisting local governments", "Any assisting local government", "th
 # Nov 1 2026: trailing "charged with enforcement" on a state official (2013-S3810-11)
 check("state official charged with enforcement -> State agencies", bool(ar.STATE_OFFICIAL.match("any official of this state charged with enforcement")))
 
+# Nov 3 2026: a bare "the state" stored as a named body from the law's context resolves to State agencies
+_o = {"actor_raw": "the state", "agency": "State Office of Emergency Management", "agency_source": "named_body", "quote": "the state or any requesting local government requesting assistance under this program shall reimburse"}
+ar.fix_20261031(_o, {}, None, "")
+check("bare state over named_body -> State agencies", _o["agency"] == "State agencies" and _o.get("agency_unit") == "State of New York")
+
+# Nov 3 2026 R13: district election inspectors are not the county board of elections
+_o = {"actor_raw": "the election inspectors and the ballot clerks", "agency": "Boards of elections", "agency_source": "group", "quote": "After the polls have closed at such election, the election inspectors and the ballot clerks shall count the ballots"}
+ar.fix_district_election_inspectors(_o, "An act to establish the Grinnell Library district ... a special district election shall be held ...")
+check("district inspectors -> Public libraries", _o["agency"] == "Public libraries")
+_o2 = {"actor_raw": "the election inspectors", "agency": "Boards of elections", "agency_source": "group", "quote": "the election inspectors shall certify"}
+check("inspectors stay BOE when the law names a board of elections", not ar.fix_district_election_inspectors(_o2, "the county board of elections shall appoint election inspectors"))
+
+# Nov 3 2026 R14: generic actor phrases are not named bodies
+for ph, raw in (("Applicable Retirement System Or Systems", "the applicable retirement system or systems"), ("Duties of the Office", "duties of the office"), ("The Following Libraries", "the following libraries")):
+    _o = {"actor_raw": raw, "agency": ph, "agency_full": ph, "agency_source": "named_body", "agency_matched": True, "quote": "x"}
+    ar.fix_20261031(_o, ed.BY_CANON, ed.LOOKUP, "")
+    check("R14 " + ph, _o["agency"] == "Unspecified" and _o["agency_source"] == "generic_phrase_r14" and _o["actor_unresolved"])
+_o = {"actor_raw": "the such retirement system", "agency": "Such Retirement System", "agency_source": "named_body", "quote": "x"}
+ar.fix_20261031(_o, ed.BY_CANON, ed.LOOKUP, ""); check("R14 Such Retirement System", _o["agency"] == "Unspecified")
+_o = {"actor_raw": "the Battery Park City Authority", "agency": "Battery Park City Authority", "agency_source": "named_body", "quote": "x"}
+ar.fix_20261031(_o, ed.BY_CANON, ed.LOOKUP, ""); check("R14 real body unchanged", _o["agency"] == "Battery Park City Authority" and _o["agency_source"] == "named_body")
+
+# Nov 3 2026 R15: NYC retirement systems by Admin Code section
+for sec, canon in (("13-582(o)", "TRS"), ("13-649(a)", "BERS"), ("13-149.1(5)", "NYCERS"), ("13-361.1(A)", "Fire Pension Fund"), ("13-316(e)(1)", "Fire Pension Fund"), ("13-256.1(A)", "PPF"), ("13-244.1(5)", "PPF")):
+    _o = {"actor_raw": "the applicable retirement system or systems", "agency": "Police Pension Fund of the City of New York", "agency_source": "named_body", "citation": "Administrative Code of the City of New York § " + sec, "quote": "x"}
+    ar.fix_20261031(_o, ed.BY_CANON, ed.LOOKUP, ""); check("R15 " + sec, _o["agency"] == canon and _o["jurisdiction"] == "nyc" and _o["agency_source"] == "retirement_section_r15")
+_o = {"actor_raw": "the applicable retirement system or systems", "agency": "Applicable Retirement System Or Systems", "agency_source": "named_body", "citation": "Retirement and Social Security Law § 61-b(d)", "quote": "x"}
+ar.fix_20261031(_o, ed.BY_CANON, ed.LOOKUP, ""); check("R15 state RSSL section not mapped", _o["agency_source"] == "generic_phrase_r14")
+
+_o = {"actor_raw": "the retirement system", "agency": "TRS", "agency_source": "named_body", "citation": "Administrative Code of the City of New York § 13-638.2(b)(2)", "quote": "x"}
+ar.fix_20261031(_o, ed.BY_CANON, ed.LOOKUP, ""); check("R15 13-638.2 (each retirement system) not mapped", _o["agency_source"] != "retirement_section_r15")
+for ph, raw in (("Head of the Retirement System", "the head of the retirement system"), ("Such Retirement System", "such retirement system")):
+    _o = {"actor_raw": raw, "agency": ph, "agency_source": "named_body", "quote": "x"}
+    ar.fix_20261031(_o, ed.BY_CANON, ed.LOOKUP, ""); check("R14b " + ph, _o["agency"] == "Unspecified" and _o["agency_source"] == "generic_phrase_r14")
 print("%d passed, %d failed" % (passed, failed))

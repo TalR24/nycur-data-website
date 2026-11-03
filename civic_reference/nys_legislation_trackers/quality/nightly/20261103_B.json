@@ -1,0 +1,1183 @@
+{
+ "_scoring": {
+  "auditor": "B",
+  "night": "20261103",
+  "laws": 11,
+  "stored_records": 93,
+  "correct": 75,
+  "wrong_fields": 17,
+  "not_real": 1,
+  "missed": 2,
+  "precision_strict": "75/93 = 80.6% (Wilson 95% 71.5-87.4)",
+  "precision_real": "92/93 = 98.9% (Wilson 95% 94.2-99.8)",
+  "recall": "92/94 = 97.9% (Wilson 95% 92.6-99.4)",
+  "effective_dates": "11/11 correct",
+  "calibration_laws": [
+   "2011-S5547",
+   "2013-S2372"
+  ],
+  "calibration": {
+   "laws": 2,
+   "stored_records": 10,
+   "correct": 7,
+   "wrong_fields": 3,
+   "not_real": 0,
+   "missed": 1,
+   "precision_strict": "7/10 = 70.0% (Wilson 95% 39.7-89.2)",
+   "precision_real": "10/10 = 100.0% (Wilson 95% 72.2-100.0)",
+   "recall": "10/11 = 90.9% (Wilson 95% 62.3-98.4)",
+   "effective_dates": "2/2 correct"
+  },
+  "notes": "Sample scoring covers the 11 B laws only; calibration laws scored separately. 2021-A3988 effective date correct but expires_date stored null although the clause expires the act on 2022-12-31 (not counted as an effective-date error)."
+ },
+ "_classes": [
+  {
+   "name": "Kind taken from a sibling list item instead of the real lead-in",
+   "criteria": [
+    "4"
+   ],
+   "instances": [
+    "2013-S2372-01"
+   ],
+   "rule": "kind_list_item true AND lead_in present AND lead_in does not end with ':' AND kind_from_lead_in != kind_model (lead_in is a preceding item, not the colon lead-in)",
+   "db_matches": 55,
+   "db_examples": [
+    "2009-S2813-04",
+    "2009-S6888-22",
+    "2009-S6888-24"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "Generic actor phrase title-cased into agency",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2013-S2372-02",
+    "2021-A3988-01",
+    "2021-A3988-02",
+    "2021-A3988-03",
+    "2021-A3988-04",
+    "2021-A3988-07"
+   ],
+   "rule": "agency matches ^(Applicable|Duties of|Head of the|Such|Each|Any|The ) (case-insensitive); top values 'Applicable Retirement System Or Systems' 11, 'Duties of the Task Force' 7, 'Head of the Retirement System' 3",
+   "db_matches": 25,
+   "db_examples": [
+    "2013-S2372-02",
+    "2013-S6357-50",
+    "2013-S6357-51"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "NYC retirement system assigned by position, not by code section, in parallel COVID benefit sections",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2021-A3988-06",
+    "2021-A3988-09",
+    "2021-A3988-10",
+    "2021-A3988-11"
+   ],
+   "rule": "citation Admin Code 13-1xx/13-2xx/13-3xx/13-5xx or Education Law 2575 AND agency is a retirement/pension body AND agency does not match NYCERS|Employees / PPF|Police / Fire / Teachers|TRS / Board of Education|BERS respectively",
+   "db_matches": 8,
+   "db_examples": [
+    "2019-S8427-06",
+    "2019-S8427-09",
+    "2019-S8427-10"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "grant_only gate flips a duty to power when the quote has no grant word (list item or mandated statement text)",
+   "criteria": [
+    "4"
+   ],
+   "instances": [
+    "2021-A2574-05",
+    "2021-A2574-07"
+   ],
+   "rule": "kind_adjusted=='grant_only' AND kind_model=='duty' AND kind=='power' AND quote, after removing uppercase statement runs of 15+ chars, has no may|authorized|empowered|power|discretion",
+   "db_matches": 28,
+   "db_examples": [
+    "2009-A40012-44",
+    "2009-S5847-04",
+    "2011-A8691-08"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "Grant cap on the granting agency dropped as benefit_entitlement",
+   "criteria": [
+    "1",
+    "7"
+   ],
+   "instances": [
+    "2019-S1192-04 (dropped)"
+   ],
+   "rule": "dropped rule=='benefit_entitlement' AND quote matches ^no (grant|award|loan|payment|contract|bond)s? .{0,40} shall",
+   "db_matches": 2,
+   "db_examples": [
+    "2017-A2805-04",
+    "2019-S1192-04"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "Event-triggered deadline stored on_effective_date",
+   "criteria": [
+    "5"
+   ],
+   "instances": [
+    "2011-S7000-08"
+   ],
+   "rule": "deadline_kind=='on_effective_date' AND quote matches within N hours|days|months thereafter/after the|such|receipt|each, upon receipt|request|the filing, or thereafter",
+   "db_matches": 6,
+   "db_examples": [
+    "2011-A8068-08",
+    "2011-S7000-08",
+    "2015-A10707-06"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "Named body left Unspecified",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2021-A2574-13",
+    "2021-A3988-12"
+   ],
+   "rule": "agency=='Unspecified' AND actor_raw contains county|city|department|division|board|commissioner|governor|task force|retirement system|court AND not designat|such/any agency|officer|board (passive-subject case 2013-S6655-02 is the known class, not counted here)",
+   "db_matches": 87,
+   "db_examples": [
+    "2009-A10770-03",
+    "2009-A11144-33",
+    "2009-A3563-01"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "Special-act district election workers mapped to Boards of elections",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2011-S7000-07"
+   ],
+   "rule": "agency=='Boards of elections' AND actor_raw matches inspector|ballot clerk|chairperson AND citation lacks 'Election Law'",
+   "db_matches": 3,
+   "db_examples": [
+    "2011-A8068-07",
+    "2011-S7000-07",
+    "2013-S5560-07"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "Reprinted duty with only a wording change in new matter stored as a record",
+   "criteria": [
+    "1",
+    "2"
+   ],
+   "instances": [
+    "2019-S1192-06"
+   ],
+   "rule": "none mechanical: needs comparing braced span to the operative verb",
+   "db_matches": 0,
+   "db_examples": [],
+   "needs_judgment": true,
+   "laws": [
+    "2019-S1192"
+   ]
+  }
+ ],
+ "2011-S7000": {
+  "records": {
+   "2011-S7000-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Upon receipt of a petition signed by not less than twenty-five voters qualified to vote at a general election in the town, the board of trustees of the existing Grinnell library shall conduct an election at which the issues shall be:",
+    "note": ""
+   },
+   "2011-S7000-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The board of trustees of the existing Grinnell library shall give notice of such election by publication of notice at least twice in one or more newspapers having a general circulation in the district to be served.",
+    "note": ""
+   },
+   "2011-S7000-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "In addition, the board of trustees of the existing Grinnell library shall cause copies of such notice to be posted conspicuously in three public places in the district at least thirteen days prior to the date of such election.",
+    "note": ""
+   },
+   "2011-S7000-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The board of trustees of the existing Grinnell library shall designate a resident qualified voter of such district to act as chairperson of any election of such district and shall designate not less than two nor more than four resident qualified voters to act as election inspectors and ballot clerks at such election.",
+    "note": ""
+   },
+   "2011-S7000-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The board of trustees of the existing Grinnell library may adopt a resolution providing that such chairperson, election inspectors and ballot clerks shall be paid reasonable compensation for their respective services at such election.",
+    "note": ""
+   },
+   "2011-S7000-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The board of trustees of the existing Grinnell library may, to the extent authorized by law, authorize the use of absentee ballots for the election.",
+    "note": ""
+   },
+   "2011-S7000-07": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Public libraries",
+     "agency_unit": "Existing Grinnell Library"
+    },
+    "quote": "After the polls have closed at such election, the election inspectors and the ballot clerks shall immediately canvass publicly the ballots cast and the chairperson of the election shall publicly announce the result.",
+    "note": "Inspectors are designated by the library board (\"The board of trustees of the existing Grinnell library shall designate ... election inspectors and ballot clerks\"); not a county board of elections."
+   },
+   "2011-S7000-08": {
+    "verdict": "wrong",
+    "criteria": [
+     "5"
+    ],
+    "fields": {
+     "deadline_kind": "none",
+     "deadline_date": null
+    },
+    "quote": "Within seventy-two hours thereafter, the chairperson, election inspectors and ballot clerks shall execute and file a certificate of the result of the canvass with the board of trustees of the existing Grinnell library and the town and village clerks.",
+    "note": "\"Within seventy-two hours thereafter\" runs from the close of the polls at an undated election: event-triggered, not on_effective_date."
+   },
+   "2011-S7000-09": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "In the event that the district is created, there shall be an annual election conducted by the board of trustees of the Grinnell public library district in accordance with the provisions of subdivision one of this section at a time to be set by the board of trustees of the district",
+    "note": ""
+   },
+   "2011-S7000-10": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "At the first regular meeting of the board of trustees of the district, the trustees shall determine when the terms of office of each member shall expire as follows:",
+    "note": ""
+   },
+   "2011-S7000-11": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "All other vacancies caused by resignation, removal, death, or inability to serve shall be filled by appointment by the board of trustees of the district until the next election, at which time the vacancy shall be filled by election for the remaining portion of the term.",
+    "note": ""
+   },
+   "2011-S7000-12": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The board of trustees at its first meeting after each annual election shall elect or appoint a president and vice-president, who shall be members of the board, and a secretary, treasurer, and such other officers as they deem necessary.",
+    "note": ""
+   },
+   "2011-S7000-13": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "If the board so determines, the offices of secretary and treasurer may be held by individuals who are not members of the board of trustees and, in that event, such officers may, if the board so determines, receive compensation as fixed by resolution of the board.",
+    "note": ""
+   },
+   "2011-S7000-14": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Funds voted for library purposes at the initial election and at all future elections shall be considered an annual appropriation therefor and shall be levied and collected yearly by the town and the village for the district in the same manner and at the same time as other taxes in the town and the village.",
+    "note": ""
+   },
+   "2011-S7000-15": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Funds voted for library purposes at the initial election and at all future elections shall be considered an annual appropriation therefor and shall be levied and collected yearly by the town and the village for the district in the same manner and at the same time as other taxes in the town and the village.",
+    "note": ""
+   },
+   "2011-S7000-16": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The board of trustees of the district shall annually file with the clerks of the town and the village on or before the first day of November an estimate of the proposed budget including costs of library services to be raised by levy for the library district",
+    "note": ""
+   },
+   "2011-S7000-17": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The town or the village shall not make any change in the estimate of revenues or expenditures submitted by the board of the district in preparation of its preliminary budget.",
+    "note": ""
+   },
+   "2011-S7000-18": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The town or the village shall not make any change in the estimate of revenues or expenditures submitted by the board of the district in preparation of its preliminary budget.",
+    "note": ""
+   },
+   "2011-S7000-19": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The town board of the town shall levy a tax against all of the real property lying within the Grinnell public library district except the real property lying within the village,",
+    "note": ""
+   },
+   "2011-S7000-20": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the village board of the village shall levy a tax against the remainder of the real property lying within the Grinnell public library district,",
+    "note": ""
+   },
+   "2011-S7000-21": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The town board and village board shall each annually pay over to the treasurer of the Grinnell public library district on or before the thirtieth day after their respective tax collection period ends, the full amount of the levy due from the parcels subject to their respective levy.",
+    "note": ""
+   },
+   "2011-S7000-22": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "If necessary to meet this schedule, the town board and village board may each issue tax anticipation notes pursuant to article ii of the local finance law to obtain the necessary moneys therefor.",
+    "note": ""
+   },
+   "2011-S7000-23": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The town board and village board shall each annually pay over to the treasurer of the Grinnell public library district on or before the thirtieth day after their respective tax collection period ends, the full amount of the levy due from the parcels subject to their respective levy.",
+    "note": ""
+   },
+   "2011-S7000-24": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "If necessary to meet this schedule, the town board and village board may each issue tax anticipation notes pursuant to article ii of the local finance law to obtain the necessary moneys therefor.",
+    "note": ""
+   },
+   "2011-S7000-25": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The town board of the town shall have the power to authorize, sell, and issue bonds, notes, and other evidences of indebtedness pursuant to the local finance law in order to permit the district to provide facilities or improved facilities for library purposes.",
+    "note": ""
+   },
+   "2011-S7000-26": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Upon written request from the board of trustees of the Grinnell public library district, after approval by the qualified voters of such district, the town board shall authorize, sell, and issue such bonds, notes, or other evidences of indebtedness as are necessary to accomplish the improvements specified in the notice.",
+    "note": ""
+   },
+   "2011-S7000-27": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The proceeds of such bonds, notes, or other evidences of indebtedness shall be paid to the treasurer of the Grinnell public library district and maintained in a segregated account in accordance with section 165.00 of the local finance law",
+    "note": ""
+   },
+   "2011-S7000-28": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The board of trustees of the Grinnell public library district may accept on behalf of the district any absolute gift, devise, or bequest of real or personal property",
+    "note": ""
+   },
+   "2011-S7000-29": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The treasurer of the Grinnell public library district shall be custodian of all funds of the district, including gifts and trust funds paid over to the trustees.",
+    "note": ""
+   },
+   "2011-S7000-30": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The board of trustees may authorize the investment of funds in the custody of the treasurer in the same manner in which town funds may be invested.",
+    "note": ""
+   },
+   "2011-S7000-31": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The town and the village shall promptly pay over to the district all monies which belong to or are raised for the district.",
+    "note": ""
+   },
+   "2011-S7000-32": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The town and the village shall promptly pay over to the district all monies which belong to or are raised for the district.",
+    "note": ""
+   },
+   "2011-S7000-34": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The board of trustees of the Grinnell public library district shall audit all claims and shall order the payment thereof, except as otherwise provided by this section.",
+    "note": ""
+   },
+   "2011-S7000-35": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The treasurer shall keep such records in such manner as the board of trustees may require.",
+    "note": ""
+   },
+   "2011-S7000-36": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The initially elected trustees of the Grinnell public library district shall, within ninety days from the date of approval of the district by the voters of the district, apply to the board of regents for a charter as a public library.",
+    "note": ""
+   },
+   "2011-S7000-38": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the town and the village are hereby authorized to assess, levy, and collect the necessary expenses of operation, maintenance, and repair of such facilities and services and such capital improvements, including debt service on bonds, notes, or other evidences of indebtedness of the town issued for the purpose of the Grinnell public library district",
+    "note": ""
+   },
+   "2011-S7000-39": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the town and the village are hereby authorized to assess, levy, and collect the necessary expenses of operation, maintenance, and repair of such facilities and services and such capital improvements, including debt service on bonds, notes, or other evidences of indebtedness of the town issued for the purpose of the Grinnell public library district",
+    "note": ""
+   },
+   "2011-S7000-40": {
+    "verdict": "wrong",
+    "criteria": [
+     "4",
+     "2"
+    ],
+    "fields": {
+     "kind": "power",
+     "actor_raw": "dormitory authority (eligible public libraries for title 4 of article 8 of the public authorities law)"
+    },
+    "quote": "43. Ethelbert B. Crawford Public Library District 44. Grinnell Public Library District",
+    "note": "\"The following libraries shall be eligible public libraries\" adds a class to DASNY financing authority: a power, extends_existing true; quote also carries reprinted item \"43. Ethelbert B. Crawford Public Library District\" (only \"{{Grinnell Public Library District}}\" is new)."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2012-07-18",
+   "computed": "2012-07-18",
+   "verdict": "correct",
+   "note": "immediately; provisos only on subdivisions of ch 672/1993 list"
+  }
+ },
+ "2013-S6655": {
+  "records": {
+   "2013-S6655-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "or until June thirtieth, two thousand sixteen, whichever comes first",
+    "note": ""
+   },
+   "2013-S6655-02": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "actor_raw": "governments determining tax rates, equalization rates and aid within the county of Oneida",
+     "agency": "Counties",
+     "agency_unit": "Oneida County"
+    },
+    "quote": "Such disregard shall continue until such time as the Oneida county treasurer certifies to the state comptroller that no unpaid taxes remain due on the lands of the Oneida Indian Nation of New York which have been subjected to taxation, or until June 30, 2016, whichever comes first.",
+    "note": "Passive subject \"Such disregard shall continue ... until June 30, 2016\" stored as actor with agency Unspecified; the disregard is applied by the bodies \"determining real property tax rates ... within the county of Oneida\"."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2014-06-30",
+   "computed": "2014-06-30",
+   "verdict": "correct",
+   "note": "immediately; expires with referenced section 2016-06-30"
+  }
+ },
+ "2017-A6893": {
+  "records": {
+   "2017-A6893-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner, or his or her designee, who shall serve as chairperson;",
+    "note": ""
+   },
+   "2017-A6893-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Ten additional members, each of whom shall be appointed by the governor, in accordance with the following categories:",
+    "note": ""
+   },
+   "2017-A6893-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Forthwith upon the passage of this article, the members of the task force shall meet at the call of the chairperson and organize.",
+    "note": ""
+   },
+   "2017-A6893-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Thereafter, the task force shall meet at the call of the chairperson or three members of the task force.",
+    "note": ""
+   },
+   "2017-A6893-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "All departments and agencies of the state shall furnish such reasonable advice and information, documentation, and otherwise to the task force and its agents as is deemed necessary or desirable by the task force to facilitate the purposes of this article.",
+    "note": ""
+   },
+   "2017-A6893-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The task force shall support and work collaboratively with the New York fishing community to promote the marketing and sustainability of New York seafood",
+    "note": ""
+   },
+   "2017-A6893-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Identify barriers that prevent and/or inhibit local seafood marketing initiatives and growth;",
+    "note": ""
+   },
+   "2017-A6893-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Identify and facilitate opportunities to increase consumer demand for local seafood;",
+    "note": ""
+   },
+   "2017-A6893-09": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Identify and facilitate opportunities to establish agreements with local fishermen and seafood dealers for potential seafood marketplace expansion;",
+    "note": ""
+   },
+   "2017-A6893-10": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Identify and work with federal and state entities to prevent seafood mislabeling and keep illegally caught fish out of New York's seafood markets, while providing more information to consumers about their seafood purchases;",
+    "note": ""
+   },
+   "2017-A6893-11": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Review and identify existing studies, pilot programs and initiatives of this state and other states regarding best seafood-marketing practices;",
+    "note": ""
+   },
+   "2017-A6893-12": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Provide educational opportunities for consumers and the seafood and aquaculture community regarding the importance of New York's seafood industry and seafood issues and initiatives;",
+    "note": ""
+   },
+   "2017-A6893-13": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Identify funding sources available to the fishing community to support seafood marketing;",
+    "note": ""
+   },
+   "2017-A6893-14": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Issue recommendations necessary to achieve these goals; 9. Identify opportunities for potential funding to support New York seafood marketing efforts and initiatives.",
+    "note": ""
+   },
+   "2017-A6893-15": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Identify opportunities for potential funding to support New York seafood marketing efforts and initiatives.",
+    "note": ""
+   },
+   "2017-A6893-16": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The task force shall provide a report of its findings addressing the research, marketing, expansion and funding opportunities for local seafood. Such report shall be provided to the governor and the state legislature by December thirty-first, two thousand eighteen.",
+    "note": ""
+   },
+   "2017-A6893-17": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Thereafter, the task force shall report to the governor and the state legislature, no later than December thirty-first of each year, on the progress made in achieving the goals and objectives set forth in this article.",
+    "note": ""
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2017-12-18",
+   "computed": "2017-12-18",
+   "verdict": "correct",
+   "note": "act clause applied to signing date"
+  }
+ },
+ "2021-A3964": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2022-11-01",
+   "computed": "2022-11-01",
+   "verdict": "correct",
+   "note": "first of November next succeeding 2022-08-12"
+  }
+ },
+ "2019-S1192": {
+  "records": {
+   "2019-S1192-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "(a) require that each support center program provide at least sixty hours of instruction for each participant and that each program be supplemented by ongoing technical assistance for business development for those who have completed the program;",
+    "note": ""
+   },
+   "2019-S1192-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Evaluate the entrepreneurial assistance centers established under this article and report annually, on or before January first, two thousand twenty, and on or before each January first thereafter, and submit the results of such evaluation to the governor and the legislature.",
+    "note": ""
+   },
+   "2019-S1192-06": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "2"
+    ],
+    "fields": {},
+    "quote": "The report shall be made available to the public on the department's website.",
+    "note": "\"[Such reports] {{The report}} shall be made available to the public on the department's website\": the posting duty is reprinted; only the subject words changed, nothing widened."
+   },
+   "2019-S1192-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Such evaluation shall be submitted by January first, two thousand twenty-one and by January first every two years thereafter.",
+    "note": ""
+   }
+  },
+  "missed": [
+   {
+    "blind": "b4",
+    "quote": "no grant shall be made to any one or any consortium of career education agencies and not-for-profit corporations in excess of one hundred seventy-five thousand dollars",
+    "kind": "duty",
+    "agency": "ESD",
+    "dropped_by": "benefit_entitlement",
+    "note": "Grant cap raised from $75,000 ({{one hundred}} seventy-five thousand): an amount extension of the department's grant authority, extends_existing true; the subject is the granting department, not a beneficiary."
+   }
+  ],
+  "effective_date": {
+   "stored": "2019-09-13",
+   "computed": "2019-09-13",
+   "verdict": "correct",
+   "note": "act clause applied to signing date"
+  }
+ },
+ "2021-A2580": {
+  "records": {
+   "2021-A2580-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "This act shall take effect immediately, and shall expire and be deemed repealed July 31, 2023.",
+    "note": ""
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2021-04-06",
+   "computed": "2021-04-06",
+   "verdict": "correct",
+   "note": "act clause applied to signing date"
+  }
+ },
+ "2021-A459": {
+  "records": {
+   "2021-A459-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "a motion under this paragraph, and all pertinent papers and documents, shall be confidential and may not be made available to any person or public or private entity except where specifically authorized by the court",
+    "note": ""
+   },
+   "2021-A459-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "when a motion is filed under this paragraph, the court may, upon the consent of the petitioner and all of the state and local prosecutorial agencies that prosecuted each matter, consolidate into one proceeding a motion to vacate judgments imposed by distinct or multiple criminal courts",
+    "note": ""
+   },
+   "2021-A459-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "In the case of a motion granted under paragraph (i) of subdivision one of this section, the court must vacate the judgment on the merits because the defendant's participation in the offense was a result of having been a victim of trafficking.",
+    "note": ""
+   }
+  },
+  "missed": [
+   {
+    "blind": "b0",
+    "quote": "The judgment is a conviction where the defendant's participation in the offense was a result of having been a victim of sex trafficking under section 230.34 of the penal law",
+    "kind": "power",
+    "agency": "Unified Court System",
+    "dropped_by": null,
+    "note": "Deletion of \"[the arresting charge was under section 240.37 ... or 230.03 ... of the penal law, and]\" widens the court's vacatur power to any offense: deletion-that-widens record, extends_existing true (needs judgment: the widening text is a deletion, the quote is reprinted)."
+   }
+  ],
+  "effective_date": {
+   "stored": "2021-11-16",
+   "computed": "2021-11-16",
+   "verdict": "correct",
+   "note": "immediately; subpara (ii) 60th day = 2022-01-15"
+  }
+ },
+ "2021-A2505": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2021-12-03",
+   "computed": "2021-12-03",
+   "verdict": "correct",
+   "note": "30th day after 2021-11-03"
+  }
+ },
+ "2021-A2574": {
+  "records": {
+   "2021-A2574-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "shall provide to the state board of elections voter registration qualification information associated with each person who submits an application for services or assistance at such agency, including a renewal, recertification, or reexamination transaction at such agency, and each person who submits a change of address or name form.",
+    "note": ""
+   },
+   "2021-A2574-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "include a statement of the eligibility requirements for voter registration and shall require the applicant to attest by the applicant's signature that the applicant meets those requirements under penalty of perjury and is applying to register or pre-register to vote unless such applicant declines such registration",
+    "note": ""
+   },
+   "2021-A2574-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "if the applicant signs the application and does not check the box declining to register to vote, such applicant thereby consents to the use of any information required to complete the voter registration application;",
+    "note": ""
+   },
+   "2021-A2574-05": {
+    "verdict": "wrong",
+    "criteria": [
+     "4",
+     "2"
+    ],
+    "fields": {
+     "kind": "duty",
+     "quote": "include a space for the applicant to indicate the applicant's choice of party enrollment, with a clear alternative provided for the applicant to decline to affiliate with any party and the following statement in prominent type \"ONLY ENROLLED MEMBERS OF A POLITICAL PARTY MAY VOTE IN THAT PARTY'S PRIMARIES\""
+    },
+    "quote": "include a space for the applicant to indicate the applicant's choice of party enrollment, with a clear alternative provided for the applicant to decline to affiliate with any party and the following statement in prominent type",
+    "note": "Item (e) sits under \"6. The voter registration related portion of each agency's integrated application ... shall:\" -> duty; grant_only flip with no grant word. Quote omits the new statement, which is the only substantive new matter."
+   },
+   "2021-A2574-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Every other year, the governor shall conduct a review of each participating agency under section 5-211 of this article not already designated as an automatic voter registration agency pursuant to this subdivision in order to determine whether designation is appropriate.",
+    "note": ""
+   },
+   "2021-A2574-07": {
+    "verdict": "wrong",
+    "criteria": [
+     "4",
+     "2"
+    ],
+    "fields": {
+     "kind": "duty",
+     "quote": "Such notice shall offer the voter the opportunity to enroll with a party or to decline to enroll with a party and contain the following statement in prominent type \"ONLY ENROLLED MEMBERS OF A POLITICAL PARTY MAY VOTE IN THAT PARTY'S PRIMARIES.\""
+    },
+    "quote": "ONLY ENROLLED MEMBERS OF A POLI- TICAL PARTY MAY VOTE IN THAT PARTY'S PRIMARIES.",
+    "note": "\"The board of elections shall ... send ... a notice\"; the \"MAY\" is inside the mandated statement text, not a grant. Quote is statement text only and keeps the line-break hyphen \"POLI- TICAL\"."
+   },
+   "2021-A2574-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Beginning January first, two thousand twenty-three, designated agencies for purposes of this section shall include the department of motor vehicles",
+    "note": ""
+   },
+   "2021-A2574-09": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Beginning January first, two thousand twenty-four, designated agencies for the purposes of this section shall also include the department of health, the office of temporary and disability assistance, the department of labor, the office of adult career and continuing education services - vocational rehabilitation, county and city departments of social services, and the New York city housing authority",
+    "note": ""
+   },
+   "2021-A2574-10": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Beginning January first, two thousand twenty-four, designated agencies for the purposes of this section shall also include the department of health, the office of temporary and disability assistance, the department of labor, the office of adult career and continuing education services - vocational rehabilitation, county and city departments of social services, and the New York city housing authority",
+    "note": ""
+   },
+   "2021-A2574-11": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Beginning January first, two thousand twenty-four, designated agencies for the purposes of this section shall also include the department of health, the office of temporary and disability assistance, the department of labor, the office of adult career and continuing education services - vocational rehabilitation, county and city departments of social services, and the New York city housing authority",
+    "note": ""
+   },
+   "2021-A2574-12": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Beginning January first, two thousand twenty-four, designated agencies for the purposes of this section shall also include the department of health, the office of temporary and disability assistance, the department of labor, the office of adult career and continuing education services - vocational rehabilitation, county and city departments of social services, and the New York city housing authority",
+    "note": ""
+   },
+   "2021-A2574-13": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Counties",
+     "agency_unit": "county and city departments of social services (NYC: Cities / HRA)"
+    },
+    "quote": "Beginning January first, two thousand twenty-four, designated agencies for the purposes of this section shall also include the department of health, the office of temporary and disability assistance, the department of labor, the office of adult career and continuing education services - vocational rehabilitation, county and city departments of social services, and the New York city housing authority",
+    "note": "\"county and city departments of social services\" names local governments; stored agency Unspecified."
+   },
+   "2021-A2574-14": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Beginning January first, two thousand twenty-four, designated agencies for the purposes of this section shall also include the department of health, the office of temporary and disability assistance, the department of labor, the office of adult career and continuing education services - vocational rehabilitation, county and city departments of social services, and the New York city housing authority",
+    "note": ""
+   },
+   "2021-A2574-15": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Beginning January first, two thousand twenty-five, designated agencies for the purposes of this section shall also include the state university of New York.",
+    "note": ""
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2023-01-01",
+   "computed": "2023-01-01",
+   "verdict": "correct",
+   "note": "same as ch 350 of 2020 (S8806), effective January 1, 2023"
+  }
+ },
+ "2021-A3988": {
+  "records": {
+   "2021-A3988-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "NYS and Local Employees' Retirement System"
+    },
+    "quote": "the applicable retirement system or systems are authorized to promulgate rules and regulations to administer this benefit including, but not limited to, requiring a statement to be filed confirming the member contracted COVID-19",
+    "note": "Stored agency \"Applicable Retirement System Or Systems\" is the generic phrase title-cased; RSSL article 2 (§61-b) identifies the system."
+   },
+   "2021-A3988-02": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "NYS and Local Police and Fire Retirement System"
+    },
+    "quote": "the applicable retirement system or systems are authorized to promulgate rules and regulations to administer this benefit including, but not limited to, requiring a statement to be filed confirming the member contracted COVID-19",
+    "note": "Stored agency \"Applicable Retirement System Or Systems\" is the generic phrase title-cased; RSSL article 8 (§361-b) identifies the system."
+   },
+   "2021-A3988-03": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Public retirement systems (all systems covering article 11 members)"
+    },
+    "quote": "the applicable retirement system or systems are authorized to promulgate rules and regulations to administer this benefit including, but not limited to, requiring a statement to be filed confirming the member contracted COVID-19",
+    "note": "Stored agency \"Applicable Retirement System Or Systems\" is the generic phrase title-cased; RSSL article 11 (§509-a) identifies the system."
+   },
+   "2021-A3988-04": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Public retirement systems (all systems covering article 15 members)"
+    },
+    "quote": "the applicable retirement system or systems are authorized to promulgate rules and regulations to administer this benefit including, but not limited to, requiring a statement to be filed confirming the member contracted COVID-19",
+    "note": "Stored agency \"Applicable Retirement System Or Systems\" is the generic phrase title-cased; RSSL article 15 (§607-i) identifies the system."
+   },
+   "2021-A3988-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the applicable retirement system or systems are authorized to promulgate rules and regulations to administer this benefit including, but not limited to, requiring a statement to be filed confirming the member contracted COVID-19",
+    "note": ""
+   },
+   "2021-A3988-06": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Board of Education Retirement System of the City of New York"
+    },
+    "quote": "the applicable retirement system or systems are authorized to promulgate rules and regulations to administer this benefit including, but not limited to, requiring a statement to be filed confirming the member contracted COVID-19",
+    "note": "Citation Education Law § 2575(26)(d) is BERS; stored TRS of the City of New York."
+   },
+   "2021-A3988-07": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "MTA (pension plan under Public Authorities Law §1266-h)"
+    },
+    "quote": "the applicable retirement system or systems are authorized to promulgate rules and regulations to administer this benefit including, but not limited to, requiring a statement to be filed confirming the member contracted COVID-19",
+    "note": "Stored agency \"Applicable Retirement System Or Systems\" is the generic phrase title-cased; PAL §1266-h identifies the system."
+   },
+   "2021-A3988-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the applicable retirement system or systems are authorized to promulgate rules and regulations to administer this benefit including, but not limited to, requiring a statement to be filed confirming the member contracted COVID-19",
+    "note": ""
+   },
+   "2021-A3988-09": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Police Pension Fund of the City of New York"
+    },
+    "quote": "the applicable retirement system or systems are authorized to promulgate rules and regulations to administer this benefit including, but not limited to, requiring a statement to be filed confirming the member contracted COVID-19",
+    "note": "Citation Admin Code § 13-244.1 is in the Police Pension Fund chapter (13-2xx, cf. PPF records at 13-228/13-252); stored TRS of NYC."
+   },
+   "2021-A3988-10": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "New York City Fire Department Pension Fund"
+    },
+    "quote": "the applicable retirement system or systems are authorized to promulgate rules and regulations to administer this benefit including, but not limited to, requiring a statement to be filed confirming the member contracted COVID-19",
+    "note": "Citation Admin Code § 13-347.1 is in the Fire Department Pension Fund chapter (13-3xx); stored BERS."
+   },
+   "2021-A3988-11": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Teachers' Retirement System of the City of New York"
+    },
+    "quote": "the applicable retirement system or systems are authorized to promulgate rules and regulations to administer this benefit including, but not limited to, requiring a statement to be filed confirming the member contracted COVID-19",
+    "note": "Citation Admin Code § 13-544.1 is in the TRS chapter (13-5xx); stored Police Pension Fund."
+   },
+   "2021-A3988-12": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Public retirement systems (the eleven systems in sections 1-11)"
+    },
+    "quote": "The heads and boards of the retirement systems described herein are hereby authorized to promulgate rules and regulations to implement the provisions of this act, including guidance on what shall constitute a positive diagnosis of COVID-19",
+    "note": "\"The heads and boards of the retirement systems described herein\" are determinable (the systems of sections 1-11); stored Unspecified."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2021-03-12",
+   "computed": "2021-03-12",
+   "verdict": "correct",
+   "note": "immediately, retroactive to 2020-03-01, expires 2022-12-31 (stored expires_date null though clause says \"expire and be deemed repealed on December 31, 2022\")"
+  }
+ },
+ "2021-A2679": {
+  "records": {
+   "2021-A2679-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner, in consultation with the electronic facilitator as defined in section three hundred three of the state technology law, shall promulgate rules and regulations authorizing the use of electronic records or signatures on a voluntary basis by tenants",
+    "note": ""
+   },
+   "2021-A2679-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The division shall also develop a form in the top six languages other than English spoken in the state according to the latest available data from the U.S. Bureau of Census that confirms a tenant's affirmative consent to the use of electronic records.",
+    "note": ""
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2021-12-21",
+   "computed": "2021-12-21",
+   "verdict": "correct",
+   "note": "act clause applied to signing date"
+  }
+ },
+ "2011-S5547": {
+  "records": {
+   "2011-S5547-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the city of Oswego is hereby further authorized and empowered to adopt and amend local laws, ordinances or resolutions imposing such taxes at a rate which is one percent additional to the three percent rate authorized above in this paragraph for such city for the period beginning September first, two thousand four, and ending November thirtieth, two thousand thirteen;",
+    "note": ""
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2011-07-28",
+   "computed": "2011-07-28",
+   "verdict": "correct",
+   "note": "act clause applied to signing date"
+  }
+ },
+ "2013-S2372": {
+  "records": {
+   "2013-S2372-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "4"
+    ],
+    "fields": {
+     "kind": "duty"
+    },
+    "quote": "Assist, support and encourage contact and cooperation between, and the cooperative sharing of resources between community Garden groups, school Garden programs and local voluntary food assistance programs, such as community food pantries, soup kitchens, and other community and not-for-profit organizations",
+    "note": "Item E falls under \"2. The duties of the office shall include:\"; kind_from_lead_in took sibling item d (\"Seek and provide such assistance ... may become available\") as the lead-in."
+   },
+   "2013-S2372-02": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "actor_raw": "the office",
+     "agency": "DAM",
+     "agency_unit": "Office of Community Gardens"
+    },
+    "quote": "Assist, support and encourage communication, and the sharing of resources between community Garden organizations and the new york harvest for new york kids week program established by the department pursuant to subdivision five-b of section sixteen of this chapter, and individual farm-to-school and school Garden programs.",
+    "note": "Agency \"Duties of the Office\" is the lead-in phrase; the holder is the office of community gardens in the department of agriculture and markets."
+   },
+   "2013-S2372-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Serve as a coordinator on behalf of interested community groups and the appropriate state or local agencies to facilitate the use of vacant public lands for community garden use for not less than one growing season by receiving and forwarding with recommendation completed applications to the appropriate state or municipal agency.",
+    "note": ""
+   },
+   "2013-S2372-04": {
+    "verdict": "wrong",
+    "criteria": [
+     "7"
+    ],
+    "fields": {
+     "extends_existing": false
+    },
+    "quote": "Provided, further, that the office may develop a single recommended application form to be used by community groups when applying to state agencies or municipalities for use of vacant public land for community Garden purposes;",
+    "note": "\"{{Provided, further, that the office may develop a single recommended application form ...}}\" is a wholly new power."
+   },
+   "2013-S2372-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Any state agency or Municipality with title in fee or of a lesser interest to vacant public land may permit community organizations to use such lands for community gardening purposes.",
+    "note": ""
+   },
+   "2013-S2372-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "State agencies and municipalities which have received an application for use of public lands for community garden purposes shall respond to the applicant within thirty days and make a final determination within one hundred eighty days.",
+    "note": ""
+   },
+   "2013-S2372-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner may convene a community gardens task force to identify and develop ways to encourage state agencies, municipalities and private parties to establish and expand community gardens",
+    "note": ""
+   },
+   "2013-S2372-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The task force shall be chaired by the commissioner, or by such officer or employee of the department as shall be designated by the commissioner.",
+    "note": ""
+   },
+   "2013-S2372-09": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner, may request the assistance of state agencies to carry out the work of the task force.",
+    "note": ""
+   }
+  },
+  "missed": [
+   {
+    "blind": "b5b",
+    "quote": "Any state agency or Municipality with title in fee or of a lesser interest to vacant public land may permit community organizations to use such lands for community gardening purposes.",
+    "kind": "power",
+    "agency": "State agencies",
+    "dropped_by": null,
+    "note": "{{in fee or of a lesser interest}} widens the existing State-agency power too; only the Municipalities record (-05) was stored (joint actors stored for one body)."
+   }
+  ],
+  "effective_date": {
+   "stored": "2014-01-01",
+   "computed": "2014-01-01",
+   "verdict": "correct",
+   "note": "first of January next succeeding 2013-12-18"
+  }
+ }
+}

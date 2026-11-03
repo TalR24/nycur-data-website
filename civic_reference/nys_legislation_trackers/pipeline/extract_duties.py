@@ -1578,6 +1578,14 @@ R3_MODAL = re.compile(r"\b(shall|must|may|will|can|required|authorized|empowered
 R4_FORM = re.compile(r"^\W*(?:contracts?\s+must\s+be\s+executed\s+by\b|to\s+be\s+approved\s+by\s+the\s+commissioner,\s+the\s+contract\b[^.]{0,80}\bshall\s+demonstrate\b|such\s+application\s+shall\s+be\s+made\s+by\s+an?\s+[a-z ]{3,40},\s+after\b)", re.I)
 
 
+APPLY_S1 = APPLY_S2 = APPLY_S3 = True          # Nov 3 2026 closing-class rules; dry run over stored ids in the Nov 3 report
+S1_PROVISO_ORDER = re.compile(r"^\W*provided,?\s+however,?\s+that\s+such\s+order\s+may\b", re.I)
+S2_NO_REFUND = re.compile(r"^\W*no\s+contributions\s+made\s+to\s+the\b[^.]{0,120}\bshall\s+be\s+returned\s+to\s+(?:her|him|them)\s+pursuant\s+to\s+this\s+act", re.I)
+S3_CONDITION = re.compile(r"^\W*(?:if\s+approved,\s+such\s+(?:lump\s+sum\s+)?payments\b[^.]{0,200}\bshall\s+be\s+made\s+to\b"
+                          r"|any\s+contract\s+executed\s+on\s+or\s+after\s+[A-Z][a-z]+\s+\d+,\s+\d{4}\s+must\s+receive\s+the\s+prior\s+approval\b"
+                          r"|any\s+assisting\s+local\s+government\s+requesting\s+reimbursement\b[^.]{0,300}\bshall\s+make\b)", re.I)
+
+
 APPLY_X1 = APPLY_X2 = APPLY_X3 = APPLY_X4 = True          # Nov 2 2026: X1 next-sentence deadline for a one-time duty, X2 'may so elect by filing' procedure
 X4_EVENT_PERIOD = re.compile(r"\b(?:within|no later than|not later than|not more than)\s+[\w-]+(?:\s+[\w-]+){0,3}?\s+(?:days?|weeks?|months?|years?)\s+(?:after|following)\s+(?!(?:the\s+)?(?:effective|enactment|date\s+(?:on\s+which\s+|of\s+)?(?:this\s+act|enactment)|this\s+act|such\s+effective)\b)[^,;.]{3,80}", re.I)          # X4: a period counted from an undated event ('after the adjournment of the 2020 session')
 X1_NOT_LATER = re.compile(r"\b(?:no|not)\s+later\s+than\b", re.I)
@@ -1672,6 +1680,12 @@ def gate_record(o, text, has_markers):
         return "no_modal_fragment", "a list-item fragment with no modal verb (an eligibility or recipient list), stating no duty or power"
     if APPLY_R4 and R4_FORM.search(q):
         return "contract_form_condition", "an approval condition, contract-form requirement or applicant procedure, a term of the instrument or claim, not an actor duty"
+    if APPLY_S1 and S1_PROVISO_ORDER.search(q):
+        return "sub_item_of_parent", "a proviso content sub-item of the court order ('such order may: (A) include ...'), part of the order's own record"
+    if APPLY_S2 and S2_NO_REFUND.search(q):
+        return "benefit_entitlement", "limits one member's retirement benefit ('no contributions ... shall be returned to her'); sets no action for the system"
+    if APPLY_S3 and S3_CONDITION.search(q):
+        return "condition_of_other_record", "a condition or claim procedure attached to another record (bonus payment eligibility, prior approval of a contract, a reimbursement claim)"
     if APPLY_X2 and X2_SO_ELECT.search(q):
         sp_x = locate_span(q, text)
         if sp_x:
@@ -3448,6 +3462,24 @@ def sunset_extension_records(law, text, eff, existing, res):
     return out, unnamed
 
 
+APPLY_X5 = True          # Nov 3 2026: live-path fix for 'shall have the following powers and duties: 1. to ...' items (2011-S4376)
+MANDATORY_LEAD_X5 = re.compile(r"\bshall\s+have\s+(?:the\s+)?following\s+powers\s+and\s+(?:duties|responsibilities)\b", re.I)
+
+
+def x5_infinitive_lead(span, text):
+    """X5: the lead of an infinitive list item. Item 1 sits in the lead paragraph itself ('... powers and duties: 1. to promulgate'), the others are
+    numbered paragraphs under it; the walked-back lead of items 2+ is item 1's paragraph, which infinitive_lead_kind cuts at the first label."""
+    a = text.rfind("\n", 0, span[0]) + 1
+    pre = text[a:span[0]]
+    if re.search(r":\s*(?:\{\{)?\s*\[?\d+\.\]?\s*(?:\{\{)?\s*$", pre):
+        return pre
+    for fn in (list_lead_in, imperative_lead_in, scan_back_lead_in):
+        ld = fn(span, text)
+        if ld and MANDATORY_LEAD_X5.search(re.sub(r"\{\{|\}\}", "", ld)) and infinitive_lead_kind(ld) == "duty":
+            return ld
+    return None
+
+
 def build_records(laws):
     by_key = {l["key"]: l for l in laws}
     STATS.clear()
@@ -3551,6 +3583,10 @@ def build_records(laws):
                 o["extends_existing"] = True; bump("m18_label_only_braces_extends")
             if not o["extends_existing"] and (PLACE_EXCEPTION.search(quote) or (sp0 and PLACE_EXCEPTION.search(re.sub(r"\{\{|\}\}", "", context_sentence(sp0, text)[0])))):          # M3: a 200-foot-rule place exception widens an existing authority
                 o["extends_existing"] = True; bump("m3_place_exception_extends")
+            if APPLY_X5 and not o.get("kind_from_lead_in") and INFINITIVE_ITEM.match(quote) and sp0:
+                ld5 = x5_infinitive_lead(sp0, text)          # X5 (Nov 3 2026): an infinitive item whose quote holds a 'may' skips the lead-in branch above and was kept a power
+                if ld5 and infinitive_lead_kind(ld5) == "duty" and MANDATORY_LEAD_X5.search(re.sub(r"\{\{|\}\}", "", ld5)):
+                    o["kind_from_lead_in"] = "duty"; o["x5_lead"] = True; o["lead_in"] = re.sub(r"\s+", " ", re.sub(r"\{\{|\}\}", "", ld5)).strip()[:400]; bump("x5_infinitive_item_mandatory_lead")
             if o.get("kind_from_lead_in"):
                 kind = o["kind_from_lead_in"]
             if (kind == "duty" and o.get("kind_model") == "power" and o.get("kind_list_item") and not o.get("kind_from_lead_in")
@@ -3578,7 +3614,7 @@ def build_records(laws):
                 if ctx2 != ctx and grant_only(RELATIVE.sub(" ", ctx)) and not grant_only(RELATIVE.sub(" ", ctx2)):
                     bump("b18_relative_may_list_item_duty")
                 ctx = ctx2
-            if kind == "duty" and (grant_only(quote) or (ctx and grant_only(RELATIVE.sub(" ", ctx)))) and not CAP_RE.search(quote):
+            if kind == "duty" and (grant_only(quote) or (ctx and grant_only(RELATIVE.sub(" ", ctx)))) and not CAP_RE.search(quote) and not o.get("x5_lead"):
                 kind = "power"; o["kind_adjusted"] = "grant_only"; bump("grant_only_to_power")
             if APPLY_M35 and kind == "power" and (o.get("kind_model") == "duty" or o.get("kind_adjusted") == "model_power_kept" or o.get("kind_list_item")) and AUTH_DIRECTED.search(quote):          # M35: the rules above must not override the model's duty
                 kind = "duty"; o["kind_adjusted"] = "authorized_and_directed"; bump("m35_authorized_and_directed_duty")
