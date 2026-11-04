@@ -1586,6 +1586,39 @@ S3_CONDITION = re.compile(r"^\W*(?:if\s+approved,\s+such\s+(?:lump\s+sum\s+)?pay
                           r"|any\s+assisting\s+local\s+government\s+requesting\s+reimbursement\b[^.]{0,300}\bshall\s+make\b)", re.I)
 
 
+APPLY_T1 = APPLY_T2 = APPLY_T3 = APPLY_T4 = True          # Nov 4 2026 closing-class rules; dry run over stored ids in the Nov 4 report
+T1_SUCH_REGS = re.compile(r"^\W*such\s+regulations\s+shall\s+include\s+a\s+requirement\s+that\b", re.I)
+T2_USE_DEVICES = re.compile(r"^\W*every\s+\w+\s+person\b.{0,60}\bauthorized\s+to\s+possess\s+and\s+use\b[^.]{0,80}\bshall\s+use,\s+maintain\s+and\s+dispose\s+of\s+such\s+devices\b", re.I)
+T3_SUNSET = re.compile(r"\bprovided\s+further\s+that\s+(?:section|sections|subdivision)\s+[\w\s,and-]{1,40}\s+of\s+this\s+act\s+shall\s+expire\s+and\s+be\s+deemed\s+repealed\b", re.I)          # mid-quote proviso only: 'This act shall ... expire' extending a county tax is a real record
+T4_CONTINUE_APPLY = re.compile(r"^\W*(?:(?:and\s+)?provided,?\s+however,?\s+that\s+)?the\s+amendments\s+to\s+(?:the\s+)?law\s+effected\s+by\s+(?:sections?)\s+[\w\s,-]{1,60}\s+of\s+this\s+act\b[^.]{0,40}\bshall\s+continue\s+to\s+apply\b", re.I)
+
+
+APPLY_F1 = APPLY_F3 = APPLY_F4 = True          # Nov 4 2026 audit classes; F1 sunset extensions bypass the benefit gates, F3 unlocated deadline_text cleared, F4 repeated month offsets
+SUNSET_WORDS = re.compile(r"\b(?:shall\s+(?:remain\s+in\s+full\s+force\s+and\s+effect|expire)|deemed\s+repealed)\b", re.I)
+SUNSET_SWAP = re.compile(r"\[[^\[\]]*\d[^\[\]]*\]\s*\{\{[^{}]*\d[^{}]*\}\}")
+
+
+def sunset_date_swapped(sent):
+    """F1: the marked sentence replaces a year inside an expiry clause ('until June 30, [2010] {{2014}}'): a sunset extension of an earlier chapter."""
+    return bool(SUNSET_SWAP.search(sent or "") and SUNSET_WORDS.search(re.sub(r"\{\{|\}\}|\[[^\]]*\]", "", sent)))
+
+
+def deadline_text_located(dt, text):
+    """F3: True when the deadline_text phrase appears in the law text (marks and whitespace ignored)."""
+    norm = lambda x: re.sub(r"\s+", " ", re.sub(r"\{\{|\}\}|\[[^\]]*\]", "", x or "")).strip().lower()
+    return norm(dt) in norm(text)
+
+
+APPLY_F2 = True          # Nov 4 2026: a list item with its own governing 'may' keeps kind power under a mandatory lead
+ITEM_OWN_MAY = re.compile(r"^\W*(?:\d+\.|\([a-z0-9]+\))?\W*(?:\{\{)?\s*may\b(?!\s+not)", re.I)
+
+
+def item_own_may(q):
+    """F2: the item opens with its own 'may' (not a relative-clause 'which may be assigned') and has no 'shall'/'must' of its own."""
+    return bool(ITEM_OWN_MAY.search(q or "")) and not MANDATORY.search(strip_relative_may(q))
+
+
+
 APPLY_X1 = APPLY_X2 = APPLY_X3 = APPLY_X4 = True          # Nov 2 2026: X1 next-sentence deadline for a one-time duty, X2 'may so elect by filing' procedure
 X4_EVENT_PERIOD = re.compile(r"\b(?:within|no later than|not later than|not more than)\s+[\w-]+(?:\s+[\w-]+){0,3}?\s+(?:days?|weeks?|months?|years?)\s+(?:after|following)\s+(?!(?:the\s+)?(?:effective|enactment|date\s+(?:on\s+which\s+|of\s+)?(?:this\s+act|enactment)|this\s+act|such\s+effective)\b)[^,;.]{3,80}", re.I)          # X4: a period counted from an undated event ('after the adjournment of the 2020 session')
 X1_NOT_LATER = re.compile(r"\b(?:no|not)\s+later\s+than\b", re.I)
@@ -1686,6 +1719,14 @@ def gate_record(o, text, has_markers):
         return "benefit_entitlement", "limits one member's retirement benefit ('no contributions ... shall be returned to her'); sets no action for the system"
     if APPLY_S3 and S3_CONDITION.search(q):
         return "condition_of_other_record", "a condition or claim procedure attached to another record (bonus payment eligibility, prior approval of a contract, a reimbursement claim)"
+    if APPLY_T1 and T1_SUCH_REGS.search(q):
+        return "sub_item_of_parent", "a content item of the regulations the superintendent is already directed to promulgate ('such regulations shall include a requirement'), part of that record"
+    if APPLY_T2 and T2_USE_DEVICES.search(q):
+        return "condition_of_other_record", "a condition on who may possess and use the devices ('shall use, maintain and dispose of such devices pursuant to regulations'), attached to the authorization record"
+    if APPLY_T3 and T3_SUNSET.search(q):
+        return "section_sunset", "a sunset proviso (a section or the act expires on a date); computed with the effective dates and binds no actor"
+    if APPLY_T4 and T4_CONTINUE_APPLY.search(q):
+        return "act_clause_boilerplate", "an act-clause saying the amendments continue to apply to commitments in force on a date, a transition term that binds no actor"
     if APPLY_X2 and X2_SO_ELECT.search(q):
         sp_x = locate_span(q, text)
         if sp_x:
@@ -1701,10 +1742,14 @@ def gate_record(o, text, has_markers):
         return "amount_not_duty", "an amount, funding level or aid-eligibility statement that no actor carries out"
     if APPLY_Q3 and Q3_CONDITION.search(q):
         return "condition_of_other_record", "a condition or consequence attached to another record (a bar after electing a remedy, a permit fee and term, an audit precondition, a vacancy term)"
-    gw = goal_or_window(q)
+    f1_ext = False
+    if APPLY_F1 and (o.get("extends_existing") or str(o.get("record_source") or "").startswith("sunset_extension") or SUNSET_WORDS.search(q)):
+        sp_f1 = locate_span(q, text)
+        f1_ext = bool(sp_f1 and sunset_date_swapped(context_sentence(sp_f1, text)[0]))          # F1: an earlier chapter's sunset extended ('[2010] {{2014}}') is a real record
+    gw = None if f1_ext else goal_or_window(q)
     if gw:
         return gw
-    if benefit_entitlement(o, q):
+    if not f1_ext and benefit_entitlement(o, q):
         return "benefit_entitlement", "the subject is the beneficiary (it receives, is entitled to or is exempt from), not a government actor"
     if APPLY_D1 and instrument_actor(o, q):
         return "instrument_term", "the actor is a document or instrument (a lease, contract, permit, abatement), not a body; the sentence states a term of the instrument"
@@ -2907,6 +2952,8 @@ def calendar_deadline(o, bases):
     if o.get("deadline_kind") not in ("days_after_effective", "days_after_enactment") or not o.get("deadline_date"):
         return None
     ms = [m for m in DL_OFFSET.findall(o.get("deadline_text") or "") if m[0].strip()]
+    if APPLY_F4 and len(ms) > 1 and len({(a.strip().lower(), b.lower().rstrip("s")) for a, b in ms}) == 1:
+        ms = ms[:1]          # F4: 'six months from the effective date, and every six months thereafter' is one offset
     if len(ms) != 1 or re.search(r"\bdays?\b", o.get("deadline_text") or "", re.I):
         return None
     n = efd.words_to_int(ms[0][0]) if not ms[0][0].isdigit() else int(ms[0][0])
@@ -3587,6 +3634,8 @@ def build_records(laws):
                 ld5 = x5_infinitive_lead(sp0, text)          # X5 (Nov 3 2026): an infinitive item whose quote holds a 'may' skips the lead-in branch above and was kept a power
                 if ld5 and infinitive_lead_kind(ld5) == "duty" and MANDATORY_LEAD_X5.search(re.sub(r"\{\{|\}\}", "", ld5)):
                     o["kind_from_lead_in"] = "duty"; o["x5_lead"] = True; o["lead_in"] = re.sub(r"\s+", " ", re.sub(r"\{\{|\}\}", "", ld5)).strip()[:400]; bump("x5_infinitive_item_mandatory_lead")
+            if APPLY_F2 and o.get("kind_from_lead_in") == "duty" and item_own_may(quote):
+                o["kind_from_lead_in"] = "power"; bump("f2_item_own_may_stays_power")          # F2: '3. may waive ...' under a 'shall have the following powers and duties' lead is a power
             if o.get("kind_from_lead_in"):
                 kind = o["kind_from_lead_in"]
             if (kind == "duty" and o.get("kind_model") == "power" and o.get("kind_list_item") and not o.get("kind_from_lead_in")
@@ -3658,6 +3707,8 @@ def build_records(laws):
                 if not o.get("deadline_text"):
                     o["deadline_text"] = X4_EVENT_PERIOD.search(quote).group(0).strip()
                 bump("x4_event_tied_period")
+            if APPLY_F3 and o.get("deadline_text") and not deadline_text_located(o["deadline_text"], text):
+                o["deadline_text"] = None; bump("f3_unlocated_deadline_text_cleared")          # F3: only a phrase found in the law text
             # 1. record dates per section; on_effective_date never null when the date is known
             sec_date, sec_src = section_effective(o, text, eff)
             if sec_src != "law":

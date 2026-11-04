@@ -1,0 +1,552 @@
+{
+ "_scoring": {
+  "auditor": "A",
+  "night": "20261104",
+  "laws": 11,
+  "stored_records": 30,
+  "correct": 22,
+  "wrong_fields": 5,
+  "not_real": 3,
+  "missed": 1,
+  "precision_strict": "22/30 = 73.3% (Wilson 95% 55.6-85.8%)",
+  "precision_real": "27/30 = 90.0% (Wilson 95% 74.4-96.5%)",
+  "recall": "21/27 = 77.8% (Wilson 95% 59.2-89.4%) [brief formula: 21 blind items matched / (22 blind + 5 stored correct records my blind pass missed: 2009-A10507-03,-06,-07,-08, 2021-A7818-04); counting those 5 as found gives 26/27 = 96.3% (Wilson 95% 81.7-99.3%)]",
+  "effective_dates": "11/11 correct",
+  "calibration_laws": [
+   "2009-S6753",
+   "2019-A8222"
+  ],
+  "calibration_scoring": {
+   "stored_records": 1,
+   "correct": 1,
+   "wrong_fields": 0,
+   "not_real": 0,
+   "missed": 1,
+   "effective_dates": "2/2 correct",
+   "note": "scored separately; not included in the 11-law figures above"
+  }
+ },
+ "_classes": [
+  {
+   "name": "month offset stored as 30-day units in deadline_date",
+   "criteria": [
+    "5"
+   ],
+   "instances": [
+    "2009-A40011-06"
+   ],
+   "rule": "deadline_kind in (days_after_effective, days_after_enactment) and deadline_text has 'N month(s)'; flag when deadline_date != (effective_date or enactment_date) + N calendar months",
+   "db_matches": 1,
+   "db_examples": [
+    "2009-A40011-06"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "junk agency_unit from a generic determiner ('At School District')",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2009-A10507-05"
+   ],
+   "rule": "agency_unit matches ^(At|Any|Such|Each|Every|The|A|All|Said)\\s",
+   "db_matches": 1,
+   "db_examples": [
+    "2009-A10507-05"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "'may' list item forced to duty under a mandatory lead-in",
+   "criteria": [
+    "4"
+   ],
+   "instances": [
+    "2021-A7818-05"
+   ],
+   "rule": "kind_list_item true and kind_model=='power' and kind=='duty' and quote has \\bmay\\b and no \\b(shall|must)\\b",
+   "db_matches": 6,
+   "db_examples": [
+    "2011-A55-32",
+    "2019-A4481-03",
+    "2019-A4481-04"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "invented deadline_text 'on the effective date'",
+   "criteria": [
+    "5"
+   ],
+   "instances": [
+    "2021-A7818-02"
+   ],
+   "rule": "deadline_text (case-insensitive, trimmed) == 'on the effective date' (phrase absent from the law text); a broader 'deadline_text not a substring of the packet law text' test matched 128 but is noisy (pre-2017 dates normalised)",
+   "db_matches": 4,
+   "db_examples": [
+    "2019-S6588-01",
+    "2019-S6588-05",
+    "2021-A7933-04"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "State aid formula provision stored as an SED duty (passive 'Aid shall be provided')",
+   "criteria": [
+    "1",
+    "3"
+   ],
+   "instances": [
+    "2021-A7021-01"
+   ],
+   "rule": "kind=='duty' and (actor_raw matches ^(state )?aid$ or quote matches ^(state )?aid shall be (provided|paid|payable)), case-insensitive",
+   "db_matches": 3,
+   "db_examples": [
+    "2011-A113-01",
+    "2015-S4299-01",
+    "2021-A7021-01"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "reprinted duty/power whose only new matter is a technical cross-reference or approval-standard change",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2009-A10507-02",
+    "2021-A7021-02"
+   ],
+   "rule": "no reliable field test; partial: quote matches ^which .{0,60}shall be approved by (1 match: 2021-A7021-02)",
+   "db_matches": 1,
+   "db_examples": [
+    "2021-A7021-02"
+   ],
+   "needs_judgment": true,
+   "laws": [
+    "2009-A10507",
+    "2021-A7021"
+   ]
+  },
+  {
+   "name": "earlier-chapter sunset extension dropped as benefit_window instead of stored or sent to re-ask (calibration)",
+   "criteria": [
+    "1",
+    "7"
+   ],
+   "instances": [
+    "2009-S6753-01 (dropped)"
+   ],
+   "rule": "over data/dropped/*.json: rule=='benefit_window' and quote matches 'remain in full force and effect until' and the packet law text contains 'section N of chapter N of the laws of YYYY' plus 'is amended to read'",
+   "db_matches": 10,
+   "db_examples": [
+    "2009-S6753-01",
+    "2011-A8508-02",
+    "2011-A8511-02"
+   ],
+   "needs_judgment": false
+  }
+ ],
+ "2021-A597": {
+  "records": {
+   "2021-A597-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The authority shall make available to the public on its public website a daily updated list of all open license and permit applications received by the authority, in the order that they are received.",
+    "note": "110-c(2) braced new matter; daily recurring posting, kind none acceptable; section 1 date 2022-12-22 correct"
+   },
+   "2021-A597-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The authority shall maintain a record of the number of licenses or permits applied for and the length of time required for the approval or denial of such licenses or permits on its public website.",
+    "note": "110-c(3) braced; 'Such records shall be updated at least monthly'"
+   },
+   "2021-A597-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "If an applicant's estimated time for a final application determination is modified from the original estimate as provided for in subdivision one of section one hundred fourteen-a of this article, then the authority shall immediately notify the applicant.",
+    "note": "110-c(4) braced; triggered, deadline none"
+   },
+   "2021-A597-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The authority upon acceptance of any payment by an applicant for a license or permit issued under this chapter shall furnish such applicant with a receipt within fifteen days",
+    "note": "114-a(1) braced; per-payment trigger, deadline none; section 2 date 2022-02-20"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2022-02-20 (s1 2022-12-22)",
+   "computed": "2022-02-20 (sixtieth day after 2021-12-22); section one 2022-12-22 ('one year after it shall have become a law')",
+   "verdict": "correct",
+   "note": ""
+  }
+ },
+ "2021-A7021": {
+  "records": {
+   "2021-A7021-01": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "3"
+    ],
+    "fields": {},
+    "quote": "Aid shall be provided on approved expenses incurred during the period commencing July first and ending June thirtieth for up to four years, or until the project is completed, whichever occurs first.",
+    "note": "Aid-period change in a State aid formula ('for up to [three] {{four}} years'), an aid entitlement of the library, not a concrete duty of SED; actor_raw 'State aid' is the passive subject. Judgment call: same shape as 2011-A113-01, 2015-S4299-01"
+   },
+   "2021-A7021-02": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "which plan shall be approved by the commissioner pursuant to the commissioner's regulations",
+    "note": "'which plan shall be approved by the commissioner {{pursuant to the commissioner's regulations}}': approval is a condition of central library services aid and the approval duty is reprinted; new matter only changes the approval standard"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2021-04-01 (retroactive_to 2021-04-01; ss1-2 retro 2020-04-01)",
+   "computed": "signed 2021-11-03 after April 1 2021 -> 'shall take effect immediately and shall be deemed to have been in full force and effect on and after April 1, 2021'; sections one and two from 2020-04-01",
+   "verdict": "correct",
+   "note": ""
+  }
+ },
+ "2021-A7240": {
+  "records": {
+   "2021-A7240-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner of health shall review the rates of reimbursement made through the Medicaid program for ambulette transportation for rate adequacy.",
+    "note": "Section 1 free-standing; one-time review, on_effective_date acceptable"
+   },
+   "2021-A7240-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner of health shall report such findings of the rate adequacy review to the temporary president of the senate and the speaker of the assembly within one year after this section shall have become a law.",
+    "note": "'within one year after this section shall have become a law' -> days_after_enactment 2022-11-22"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2021-11-22",
+   "computed": "2021-11-22 (immediately)",
+   "verdict": "correct",
+   "note": ""
+  }
+ },
+ "2021-A7667": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2021-12-01",
+   "computed": "2021-12-01 (immediately)",
+   "verdict": "correct",
+   "note": "Law only binds owners ('It shall be unlawful for any owner to interrupt...') and gives occupants a private action; no government record expected, none stored, none dropped"
+  }
+ },
+ "2021-A8021": {
+  "records": {
+   "2021-A8021-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "a school district may provide educational services in the 2021-22 and 2022-23 school years to a student who turned twenty-one years old during the 2019-20 or 2020-21 school years and was enrolled in the school district",
+    "note": "'a school district may provide educational services in the 2021-22 and 2022-23 school years'; extends_existing true defensible (widens the class of students served past 21)"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2021-06-29 (expires 2023-06-30)",
+   "computed": "2021-06-29, 'shall expire and be deemed repealed June 30, 2023'",
+   "verdict": "correct",
+   "note": ""
+  }
+ },
+ "2009-A40011": {
+  "records": {
+   "2009-A40011-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The department may authorize a term appointment without examination to a temporary position requiring special expertise or qualifications in Information Technology.",
+    "note": ""
+   },
+   "2009-A40011-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "At least fifteen days prior to making a term appointment pursuant to this section the appointing authority shall publicly and conspicuously post in its offices information about the temporary position and the required qualifications and shall allow any qualified employee to apply for said position.",
+    "note": "per-appointment trigger, deadline none"
+   },
+   "2009-A40011-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "A temporary position established pursuant to subdivision one of this section may be abolished for reasons of economy, consolidation or abolition of functions, curtailment of activities or otherwise.",
+    "note": "passive 'may be abolished'; holder the appointing authority, State agencies"
+   },
+   "2009-A40011-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "In the event of a reduction of workforce pursuant to section eighty of this chapter affecting information Technology positions, the term appointments pursuant to this section at an agency shall be abolished prior to the abolition of permanent competitive class Information Technology positions at such agency involving comparable skills and responsibilities.",
+    "note": ""
+   },
+   "2009-A40011-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the department of civil service may limit certification from the following eligible lists to those eligibles identified as having knowledge, skills or certifications, or any combination thereof, identified by the appointing authority as necessary to perform the duties of certain positions",
+    "note": "s2 free-standing; 'may limit certification'"
+   },
+   "2009-A40011-06": {
+    "verdict": "wrong",
+    "criteria": [
+     "5"
+    ],
+    "fields": {
+     "deadline_date": "2010-06-04"
+    },
+    "quote": "Six months from the effective date of this act, and every six months thereafter, the director of the budget will report to the speaker of the assembly and the temporary president of the senate",
+    "note": "'Six months from the effective date of this act' with effective date 2009-12-04 is 2010-06-04; stored 2010-06-02 is 180 days, not six months"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2009-12-04 (ss1,3 and s2 expire 2011-12-31)",
+   "computed": "2009-12-04 (immediately); sections one and three expire 2011-12-31; section two 2011-12-31 or new lists",
+   "verdict": "correct",
+   "note": ""
+  }
+ },
+ "2021-A6052": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2023-02-05",
+   "computed": "2023-02-05 (sixtieth day after 2022-12-07)",
+   "verdict": "correct",
+   "note": "New matter binds residential health care facilities (private providers): '{{and to update all residents ... within twelve hours}}'; none stored, none dropped"
+  }
+ },
+ "2021-A7377": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2021-08-02",
+   "computed": "2021-08-02 (immediately)",
+   "verdict": "correct",
+   "note": "Incorporates a private not-for-profit benevolent association; no government record; none stored, none dropped"
+  }
+ },
+ "2009-A10507": {
+  "records": {
+   "2009-A10507-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "4"
+    ],
+    "fields": {
+     "kind": "power"
+    },
+    "quote": "Such modifications may include the use of voting machines, as provided in subdivision one of section two thousand thirty-five of this chapter, and shall include the use of absentee ballots as provided under section two thousand eighteen-a or two thousand eighteen-b of this chapter, whichever shall apply.",
+    "note": "New matter '{{as provided in subdivision one of section two thousand thirty-five of this chapter,}}' sits in the may-clause 'Such modifications may include the use of voting machines'; the 'shall include the use of absentee ballots' clause is reprinted, so the record is a power of the commissioner (extends_existing true)"
+   },
+   "2009-A10507-02": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "The commissioner of education may order such modifications in the manner of voting on the resolution described in subdivision two of section eighteen hundred three of this article and for the election described in subdivision seven of this section as are customary in school district elections in the community affected by such vote.",
+    "note": "Only new matter is 'this [chapter] {{article}}', a technical cross-reference fix; the 'may order such modifications' power is reprinted unchanged and nothing widens (the widening is in -03's sentence)"
+   },
+   "2009-A10507-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Such modifications may include the use of voting machines, as provided in subdivision one of section two thousand thirty-five of this chapter, and the use of nominating petitions.",
+    "note": "cross-reference brings §2035(1) lever machines into modifications; power, ext true"
+   },
+   "2009-A10507-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "If the board of cooperative educational services shall so determine, voting machines, including lever voting machines, may be used for recording the vote at such meeting.",
+    "note": "'voting machines, {{including lever voting machines,}} may be used'"
+   },
+   "2009-A10507-05": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency_unit": null
+    },
+    "quote": "If the trustees or board of education of any school district shall so determine, voting machines, including lever voting machines, may be used for recording the vote on elections and questions, or either, at the school district meetings or elections, annual and special, or either, in such district.",
+    "note": "'the trustees or board of education of any school district' names no locality; agency_unit 'At School District' is a junk unit and should be null"
+   },
+   "2009-A10507-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Voting for the election of members of such board of education shall be by voting machine, as provided in subdivision one of section two thousand thirty-five of this chapter, and shall be governed by the applicable provisions of the election law with respect to voting machines.",
+    "note": "cross-reference to §2035(1) (now incl. lever machines) widens §2502(9)(l); not on my blind list"
+   },
+   "2009-A10507-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Voting for the election of members of such board of education shall be by voting machine, as provided in subdivision one of section two thousand thirty-five of this chapter, and shall be governed by the applicable provisions of the election law with respect to voting machines",
+    "note": "§2502(9-a)(l) names 'the school district of the city of Rensselaer'; not on my blind list"
+   },
+   "2009-A10507-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Voting for the election of members of such board of education shall be by voting machine, as provided in subdivision one of section two thousand thirty-five of this chapter, and shall be governed by the applicable provisions of the election law with respect to voting machines.",
+    "note": "§2553(10)(l) parallel; not on my blind list"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2010-08-13 (expires 2012-12-31)",
+   "computed": "2010-08-13 (immediately), 'shall expire and be deemed repealed December 31, 2012'",
+   "verdict": "correct",
+   "note": ""
+  }
+ },
+ "2021-A7818": {
+  "records": {
+   "2021-A7818-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The authority shall require any person with a license to sell alcoholic beverages for consumption on the premises who indicated, pursuant to paragraph (f) of subdivision one of section one hundred ten of this chapter",
+    "note": ""
+   },
+   "2021-A7818-02": {
+    "verdict": "wrong",
+    "criteria": [
+     "5"
+    ],
+    "fields": {
+     "deadline_text": null
+    },
+    "quote": "The authority shall make any designated sign or poster available for download from its website or from one or more links posted on its website",
+    "note": "deadline_text 'on the effective date' does not appear in the law; no deadline phrase is stated, so deadline_text must be null (kind on_effective_date is right)"
+   },
+   "2021-A7818-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the authority shall notify each licensee that is subject to the posting requirement of this section of the change",
+    "note": ""
+   },
+   "2021-A7818-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "shall require the display of one or more signs or posters with the new toll free number within thirty days of such notification",
+    "note": "second verb of the same clause ('and shall require the display ... within thirty days'), distinct duty, not a duplicate; triggered, none"
+   },
+   "2021-A7818-05": {
+    "verdict": "wrong",
+    "criteria": [
+     "4"
+    ],
+    "fields": {
+     "kind": "power"
+    },
+    "quote": "A licensee may be required to display signs or posters in other languages as determined by the authority.",
+    "note": "'A licensee may be required to display signs or posters in other languages as determined by the authority' is discretionary for the authority (kind_model power); kind_list_item flipped it to duty under the 'At a minimum, the licensee shall be required' lead-in"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2022-08-19",
+   "computed": "2022-08-19 (thirtieth day after 2022-07-20)",
+   "verdict": "correct",
+   "note": ""
+  }
+ },
+ "2021-A8009": {
+  "records": {
+   "2021-A8009-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the commissioner shall designate such local social services district to make vouchers available to eligible families under the family homelessness and eviction prevention supplement (\"FHEPS\") program",
+    "note": ""
+   },
+   "2021-A8009-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The state shall reimburse the local social services district for payments made under the FHEPS program in a manner consistent with title two of this article.",
+    "note": "'The state shall reimburse' -> State agencies / State of New York per Oct 16 decision"
+   }
+  },
+  "missed": [
+   {
+    "blind": "b2",
+    "quote": "the commissioner shall designate such local social services district to make vouchers available to eligible families under the family homelessness and eviction prevention supplement (\"FHEPS\") program, and to administer the program in accordance with a plan approved pursuant to 18 N.Y.C.R.R.",
+    "kind": "duty",
+    "agency": "Department of Social Services (NYC) / Human Resources Administration",
+    "dropped_by": null,
+    "note": "The designated NYC district (population five million or more) must make FHEPS vouchers available and administer the program, with maximum rent 'set at the United States department of housing and urban development's fair market rent level'; not stored, not dropped. Judgment: the duty flows through the designation"
+   }
+  ],
+  "effective_date": {
+   "stored": "2021-12-10",
+   "computed": "2021-12-10 (immediately)",
+   "verdict": "correct",
+   "note": ""
+  }
+ },
+ "2009-S6753": {
+  "records": {},
+  "missed": [
+   {
+    "blind": "b1",
+    "quote": "the provisions of sections one, two and four of this act shall remain in full force and effect until and including June 30, 2014",
+    "kind": "power",
+    "agency": "unverified (title names no government body; model said New York City)",
+    "dropped_by": "benefit_window",
+    "note": "§5 of chapter 449 of 1986 is amended '[2010] {{2014}}': an earlier chapter's sunset sentence inside an amendment IS an extension record (Oct 16), extends_existing true. Title 'establishing rents in respect of certain loans to owners of multiple dwellings' names no holder, so per Oct 19 it should go to re-ask (sunset_extension_unnamed_holder), not be dropped as benefit_window"
+   }
+  ],
+  "effective_date": {
+   "stored": "2010-06-29",
+   "computed": "2010-06-29 (immediately; signed before June 30 2010 so the retroactivity proviso does not apply)",
+   "verdict": "correct",
+   "note": ""
+  }
+ },
+ "2019-A8222": {
+  "records": {
+   "2019-A8222-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the village board of trustees of the incorporated village of Riverside, Steuben county, may, by resolution, provide that the village clerk/treasurer and code enforcement officer of the village of Riverside, Steuben county, need not be a resident of such village",
+    "note": "§3-300(30) power of the Riverside village board; §2 Public Officers Law residency exemption correctly not stored"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2020-09-21",
+   "computed": "2020-09-21 (immediately)",
+   "verdict": "correct",
+   "note": ""
+  }
+ }
+}
