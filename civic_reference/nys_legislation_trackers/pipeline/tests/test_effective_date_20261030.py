@@ -95,5 +95,20 @@ check("N1 not amended in this law: index date stays", e["expires_date"] == "2014
 e = parse_effective(AM.replace("chapter 396", "chapter 111") + CL, "2013-12-01", resolver=idx, _parts=False)
 check("N1 other chapter amended: index date stays", e["expires_date"] == "2014-07-01", e["expires_date"])
 
+# N2 (night 20261105): this law amends the referenced chapter's act clause; the date is recomputed from the amended clause
+def idx2(bills=None, chapter=None, year=None):
+    return {"chapter": 743, "year": 2021, "signed_date": "2021-12-22", "effective_date": "2022-06-20", "rule": "nth_day_after_law"}
+T4 = "§ 4. This act shall take effect immediately; provided, however, sections one and two of this act shall take effect on the same date and in the same manner as a chapter of the laws of 2021, amending the public health law, as proposed in legislative bills numbers S. 5973 and A. 6392, takes effect."
+A3 = "§ 3. Section 3 of a chapter of the laws of 2021, amending the public health law, as proposed in legislative bills numbers S. 5973 and A. 6392, is amended to read as follows:\n\n § 3. This act shall take effect [on the one hundred eightieth day] {{one year}} after it shall have become a law[; provided, however, that if chapter 149 of the laws of 2020 shall not have taken effect then this act shall take effect on the same date]. {{Effective immediately, rules may be made.}}\n\n"
+e = parse_effective(A3 + T4, "2022-02-24", resolver=idx2, _parts=False)
+sd = [x for x in e["section_dates"] if x["rule"] == "same_as_chapter"]
+check("N2 amended clause recomputed from chapter signing date", sd and sd[0]["effective_date"] == "2022-12-22" and sd[0].get("effective_source") == "amended_in_this_law", sd)
+e = parse_effective(T4, "2022-02-24", resolver=idx2, _parts=False)
+sd = [x for x in e["section_dates"] if x["rule"] == "same_as_chapter"]
+check("N2 not amended: index date stays", sd and sd[0]["effective_date"] == "2022-06-20" and "effective_source" not in sd[0], sd)
+e = parse_effective(A3.replace("a chapter of the laws of 2021", "chapter 111 of the laws of 2021") + T4, "2022-02-24", resolver=idx2, _parts=False)
+sd = [x for x in e["section_dates"] if x["rule"] == "same_as_chapter"]
+check("N2 other chapter amended: index date stays", sd and sd[0]["effective_date"] == "2022-06-20", sd)
+
 print("%d passed, %d failed" % (passed, failed))
 sys.exit(1 if failed else 0)

@@ -23,6 +23,9 @@ def load(p):
         return json.load(f)
 
 
+FROZEN_FIELDS = ("agency", "kind", "deadline_kind", "extends_existing", "agency_unit")
+
+
 def law_of(oid):
     return oid[: oid.rindex("-")]
 
@@ -165,7 +168,8 @@ def main(argv=None):
                     report["adjudication_not_applied"].append(tag)
 
     gold_laws = {}
-    counts = {"excluded_override": 0, "excluded_class": 0, "excluded_commission": 0, "excluded_unresolved": 0, "excluded_renumbered": 0, "disputed": 0}
+    counts = {"excluded_override": 0, "excluded_class": 0, "excluded_commission": 0, "excluded_unresolved": 0, "excluded_renumbered": 0, "disputed": 0, "fields_frozen_now": 0, "fields_unfrozen": 0}
+    freeze_writes = {}  # (night, aud) -> [(law, oid, fields)]
 
     def law_bucket(law):
         return gold_laws.setdefault(law, {"session": int(law[:4]), "items": [], "effective_date": None})
@@ -234,10 +238,21 @@ def main(argv=None):
         exp, other = {}, {}
         for k, val in fields.items():
             (exp if k in SCORED_FIELDS else other)[k] = val
-        if verdict == "correct" and cur_rec:
-            for k in ("agency", "kind", "deadline_kind", "extends_existing", "agency_unit"):
-                if k in cur_rec:
-                    exp[k] = cur_rec[k]
+        if verdict == "correct":
+            # Freeze the expected fields at the audit (Nov 5 2026): the gold is rebuilt nightly, so copying the
+            # current record would make a later change to it look like a mismatch against its own earlier value.
+            frozen = next((e["fields_at_audit"] for _, _, e in cur if isinstance(e, dict) and isinstance(e.get("fields_at_audit"), dict)), None)
+            if frozen is not None:
+                exp.update({k: v for k, v in frozen.items() if k in FROZEN_FIELDS})
+            elif cur_rec:
+                snap = {k: cur_rec[k] for k in FROZEN_FIELDS if k in cur_rec}
+                exp.update(snap)
+                if reasked_after(law, latest, a.packets_dir, history):
+                    counts["fields_unfrozen"] += 1  # snapshot is post-re-ask, the audit-time values are not recoverable
+                for n_, au_, e_ in cur:
+                    if isinstance(e_, dict) and VERDICTS.get(e_.get("verdict"), e_.get("verdict")) == "correct":
+                        freeze_writes.setdefault((n_, au_), []).append((law, oid, snap))
+                        counts["fields_frozen_now"] += 1
         n0, a0, _ = cur[0]
         item = {
             "gold_id": oid,
@@ -338,6 +353,16 @@ def main(argv=None):
     for law in audited:
         law_bucket(law)
 
+    for (n_, au_), lst_ in freeze_writes.items():
+        fp = os.path.join(a.nightly_dir, f"{n_}_{au_}.json")
+        d_ = load(fp)
+        for law_, oid_, snap_ in lst_:
+            ent = d_["stored"].get(oid_) if "stored" in d_ and "auditor" in d_ else ((d_.get(law_) or {}).get("records") or {}).get(oid_)
+            if isinstance(ent, dict) and "fields_at_audit" not in ent:
+                ent["fields_at_audit"] = snap_
+        with open(fp, "w") as f:
+            json.dump(d_, f, indent=1)
+
     excluded_laws = sorted(l for l, v in gold_laws.items() if v["items"] and not [i for i in v["items"] if not i.get("excluded")] and not v["effective_date"])
     out = {
         "built_at": datetime.datetime.now().isoformat(timespec="seconds"),
@@ -359,6 +384,7 @@ def main(argv=None):
     print(f"gold: {len(out['laws'])} laws ({len(excluded_laws)} excluded of {len(audited)} audited), {len(items)} items: "
           f"real {sum(i['status']=='real' for i in live)}, not_real {sum(i['status']=='not_real' for i in live)}, "
           f"disputed {sum(i['disputed'] for i in items)}, excluded {sum(1 for i in items if i.get('excluded'))} -> {a.out}")
+    print("counts:", json.dumps(counts))
     return out
 
 

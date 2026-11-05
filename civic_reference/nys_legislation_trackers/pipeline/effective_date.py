@@ -314,6 +314,36 @@ def _amended_reference(text, ref, signed):
     return {**ref, "effective_date": amended.isoformat(), "original_effective_date": ref["effective_date"], "amended_clause_applied": True}
 
 
+AMENDS_CLAUSE = re.compile(r"(?is)\bsection\s+\d+\s+of\s+(?:chapter\s+(\d+)\s+of\s+the\s+laws\s+of\s+(\d{4})|a\s+chapter\s+of\s+the\s+laws\s+of\s+(\d{4}))\b[^§]{0,700}?is\s+amended\s+to\s+read\s+as\s+follows:\s*\n+\s*(?:§\s*\d+\.\s*)?(This act shall take effect[^\n]*)")
+
+
+def _amended_clause_reference(text, ref, signed):
+    """N2 (night 20261105). The act that says 'same date as chapter N' may rewrite chapter N's own act clause ('Section 3 of chapter 743 of the
+    laws of 2021 ... is amended to read as follows: § 3. This act shall take effect [six months] {{one year}} after it shall have become a law').
+    The amended clause is parsed against the referenced chapter's signing date and overrides the index (effective_source amended_in_this_law).
+    As in D1, an amendment made after the original effective date leaves the original standing. A reference by bill numbers only ('a chapter of
+    the laws of 2021') matches on the year. Returns the reference."""
+    if not ref.get("effective_date") or not ref.get("signed_date"):
+        return ref
+    for m in AMENDS_CLAUSE.finditer(text or ""):
+        if m.group(1):
+            if int(m.group(1)) != ref.get("chapter") or int(m.group(2)) != ref.get("year"):
+                continue
+        elif int(m.group(3)) != ref.get("year"):
+            continue
+        sent = re.sub(r"\s+", " ", re.sub(r"\[[^\]]*\]", " ", m.group(4)).replace("{{", "").replace("}}", "")).strip()
+        csigned = _d(ref["signed_date"])
+        eff, rule, _ = _single(sent, csigned, None)
+        if not eff or rule in ("same_as_chapter", "same_as_chapter_unresolved", "unparsed"):
+            continue
+        if eff.isoformat() == ref["effective_date"]:
+            return ref
+        if signed is not None and signed > _d(ref["effective_date"]):
+            return {**ref, "amended_clause_ignored": True, "amended_fixed_date": eff.isoformat()}
+        return {**ref, "effective_date": eff.isoformat(), "original_effective_date": ref["effective_date"], "effective_source": "amended_in_this_law"}
+    return ref
+
+
 AMENDS_EFFECT = re.compile(r"(?is)\bsection\s+\d+\s+of\s+chapter\s+(\d+)\s+of\s+the\s+laws\s+of\s+(\d{4})\b[^§]{0,400}?is\s+amended\s+to\s+read\s+as\s+follows:\s*\n+\s*(?:§\s*\d+\.\s*)?(This act shall take effect[^\n]*)")
 
 
@@ -487,8 +517,10 @@ def parse_effective(text, signed_date, resolver=None, _parts=True):
         if refinfo and refinfo.get("unresolved"):
             refinfo = {"effective_date": None, "signed_date": None, **refinfo}
     if refinfo and refinfo.get("effective_date") and refinfo.get("signed_date"):
-        refinfo = _amended_reference(text, refinfo, signed)
-        refinfo = _amended_fixed_reference(text, refinfo, signed)
+        refinfo = _amended_clause_reference(text, refinfo, signed)
+        if refinfo.get("effective_source") != "amended_in_this_law" and not refinfo.get("amended_clause_ignored"):
+            refinfo = _amended_reference(text, refinfo, signed)
+            refinfo = _amended_fixed_reference(text, refinfo, signed)
     eff, rule, ref_used = _single(clause, signed, refinfo)
     if rule == "unparsed" and not re.search(r"take effect|takes effect", text or "", re.I):
         rule = "text_truncated"           # M19 (Oct 12 2026): the cached text ends before the act clause (budget schedules) or is empty
@@ -507,6 +539,8 @@ def parse_effective(text, signed_date, resolver=None, _parts=True):
         sub = "This act " + part[part.lower().find("shall take effect"):]
         e2, r2, _ = _single(sub, signed, refinfo)
         sections.append({"applies_to": re.sub(r"^that\s+", "", (sect.group(1) if sect else part[:80]).strip()), "effective_date": e2.isoformat() if e2 else None, "rule": r2})
+        if r2 == "same_as_chapter" and refinfo and refinfo.get("effective_source"):
+            sections[-1]["effective_source"] = refinfo["effective_source"]
     # M20 (Oct 13 2026): "...provided, however, that: 1. ...; 2. sections three, four and five of this act shall take effect January 1, 2012;"
     # a numbered or lettered proviso names the sections and carries its own date
     seen = {(x["applies_to"], x["effective_date"]) for x in sections}
@@ -575,5 +609,5 @@ def parse_effective(text, signed_date, resolver=None, _parts=True):
         out["reference"] = {"tried": "concurrent resolution, no chapter: Open Legislation API search of the session's bills by its subject returned no resolution, "
                                      "and /api/3/resolutions/{session}/search returned 404; date left open"}
     if ref_used:
-        out["reference"] = {k: ref_used.get(k) for k in ("bill", "chapter", "year", "signed_date", "effective_date", "rule", "tried") if k in ref_used}
+        out["reference"] = {k: ref_used.get(k) for k in ("bill", "chapter", "year", "signed_date", "effective_date", "rule", "tried", "effective_source") if k in ref_used}
     return out

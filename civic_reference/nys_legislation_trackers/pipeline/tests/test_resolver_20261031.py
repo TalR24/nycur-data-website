@@ -154,4 +154,23 @@ ar.fix_20261031(_o, ed.BY_CANON, ed.LOOKUP, ""); check("R15 13-638.2 (each retir
 for ph, raw in (("Head of the Retirement System", "the head of the retirement system"), ("Such Retirement System", "such retirement system")):
     _o = {"actor_raw": raw, "agency": ph, "agency_source": "named_body", "quote": "x"}
     ar.fix_20261031(_o, ed.BY_CANON, ed.LOOKUP, ""); check("R14b " + ph, _o["agency"] == "Unspecified" and _o["agency_source"] == "generic_phrase_r14")
+# Nov 5 2026 R16: a unit cut at the first "acting by/through" phrase
+for u, want in (("Town of Smithtown Acting By", "Town of Smithtown"), ("Town of Islip Acting Through Its Legislative Body", "Town of Islip"), ("Town of Greenburgh Acting By And Through Its Town Board", "Town of Greenburgh"), ("Town of Smithtown", "Town of Smithtown"), ("Village of Port Chester Acting Police Justices", "Village of Port Chester Acting Police Justices")):
+    _o = {"actor_raw": "the town of Smithtown acting by and through its governing body", "agency": "Towns", "agency_unit": u, "agency_source": "group", "quote": "x"}
+    ar.fix_20261031(_o, ed.BY_CANON, ed.LOOKUP, ""); check("R16 " + u, _o["agency_unit"] == want)
+
+# Nov 5 2026 R17: county vocational education and extension boards
+for raw in ("county vocational education and extension boards", "the county vocational education and extension board"):
+    _o = {"actor_raw": raw, "agency": "Unspecified", "agency_source": "unresolved", "actor_unresolved": True, "quote": "each county vocational education and extension board of Oneida county shall"}
+    ar.fix_20261031(_o, ed.BY_CANON, ed.LOOKUP, "")
+    check("R17 " + raw, _o["agency"] == "Vocational Education and Extension Board" and _o["agency_unit"] == "County of Oneida" and "actor_unresolved" not in _o)
+_o = {"actor_raw": "county vocational education and extension boards", "agency": "Unspecified", "agency_source": "unresolved", "quote": "x"}
+ar.fix_20261031(_o, ed.BY_CANON, ed.LOOKUP, ""); check("R17 no county named", _o["agency"] == "Vocational Education and Extension Board" and _o["agency_unit"] is None)
+# Nov 5 2026 R18: any agency of the state -> State agencies
+for raw in ("any agency of the state", "any state agency", "each agency of the state", "all agencies of the state"):
+    _o = {"actor_raw": raw, "agency": "Unspecified", "agency_source": "unresolved", "actor_unresolved": True, "quote": "x"}
+    ar.fix_20261031(_o, ed.BY_CANON, ed.LOOKUP, "")
+    check("R18 " + raw, _o["agency"] == "State agencies" and _o["agency_unit"] is None and _o["agency_source"] == "state_agencies_r18" and "actor_unresolved" not in _o)
+_o = {"actor_raw": "any agency of the state", "agency": "Unspecified", "agency_source": "unresolved", "quote": "the state, acting through the department of health, shall"}
+ar.fix_20261031(_o, ed.BY_CANON, ed.LOOKUP, ""); check("R18 acting through left alone", _o["agency_source"] != "state_agencies_r18")
 print("%d passed, %d failed" % (passed, failed))

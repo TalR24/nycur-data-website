@@ -802,10 +802,69 @@ def fix_generic_named_body(o, nyc_by=None):
     return True
 
 
+# R16/R17 (Nov 5 2026)
+UNIT_CUT = re.compile(r"\s*(?:,\s*by\b|\s(?:acting\s+by\s+and\s+through|acting\s+through|acting\s+by|by\s+and\s+through|by\s+its|through\s+its)\b).*$", re.I)
+UNIT_TAIL = re.compile(r"(?:\s+(?:acting|by|through|and|its))+$", re.I)
+VOC_BOARD = re.compile(r"^(?:the )?(?:county )?vocational education and extension boards?$", re.I)
+
+
+def clean_unit_r16(o):
+    """R16: a unit built from an actor phrase stops at the first 'acting by/through', 'by and through', 'by its', ', by', 'through its'."""
+    u = o.get("agency_unit")
+    if not u or not isinstance(u, str):
+        return False
+    cut = UNIT_CUT.sub("", u)
+    if cut == u:
+        return False
+    new = UNIT_TAIL.sub("", cut).strip(" ,.;")
+    if new:
+        o["agency_unit"] = new
+        return True
+    return False
+
+
+def fix_vocational_board(o, text=""):
+    """R17: 'county vocational education and extension board(s)' resolves to the Vocational Education and Extension Board (a named body, as elsewhere), unit = the county the law names."""
+    raw = re.sub(r"\s+", " ", (o.get("actor_raw") or "").strip(" .,;:"))
+    if not VOC_BOARD.match(raw) or o.get("agency") not in (None, "Unspecified"):
+        return False
+    unit = None
+    for src in (o.get("quote"), o.get("law_title"), text):
+        mm = COUNTY_NAMED.search(src or "")
+        if mm:
+            c = county_name((mm.group(1) or mm.group(2)).strip())
+            if c:
+                unit = "County of " + c
+                break
+    o.update(agency="Vocational Education and Extension Board", agency_full="Vocational Education and Extension Board", agency_matched=True, jurisdiction="state",
+             agency_org_type="board/commission", agency_group=None, agency_unit=unit, agency_source="vocational_board_r17")
+    o.pop("actor_unresolved", None)
+    return True
+
+
+# R18 (Nov 5 2026)
+ANY_STATE_AGENCY = re.compile(r"^(?:(?:any|each|every|all|the) )?(?:state agenc(?:y|ies)|agenc(?:y|ies) of (?:the|this) state(?: of new york)?)$", re.I)
+
+
+def fix_any_state_agency(o):
+    """R18: 'any agency of the state' and its variants are the State agencies group, unless the sentence names the acting body."""
+    raw = re.sub(r"\s+", " ", (o.get("actor_raw") or "").strip(" .,;:"))
+    if not ANY_STATE_AGENCY.match(raw) or o.get("agency") not in (None, "Unspecified") or ACTING_THROUGH.search(o.get("quote") or "") \
+            or re.search(r"\bacting\s+(?:by and )?through\b", o.get("quote") or "", re.I):
+        return False
+    o.update(agency="State agencies", agency_full="State agencies", agency_matched=True, jurisdiction="state", agency_org_type="state agency group",
+             agency_group=None, agency_unit=None, agency_source="state_agencies_r18")
+    o.pop("actor_unresolved", None)
+    return True
+
+
 def fix_20261031(o, by_canon, lookup=None, text=""):
     """R1-R3 (Oct 31 2026). Returns True when a raw office title in `agency` (or the chief diversity officer in actor_raw) was
     replaced by the body it heads. Runs on matched and unmatched records; titles whose body the crosswalks cannot resolve are left alone."""
+    clean_unit_r16(o)
     if fix_district_election_inspectors(o, text):
+        return True
+    if fix_vocational_board(o, text) or fix_any_state_agency(o):
         return True
     if fix_retirement_by_section(o) or fix_generic_named_body(o):
         return True

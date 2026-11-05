@@ -1593,6 +1593,40 @@ T3_SUNSET = re.compile(r"\bprovided\s+further\s+that\s+(?:section|sections|subdi
 T4_CONTINUE_APPLY = re.compile(r"^\W*(?:(?:and\s+)?provided,?\s+however,?\s+that\s+)?the\s+amendments\s+to\s+(?:the\s+)?law\s+effected\s+by\s+(?:sections?)\s+[\w\s,-]{1,60}\s+of\s+this\s+act\b[^.]{0,40}\bshall\s+continue\s+to\s+apply\b", re.I)
 
 
+APPLY_Y2 = True                     # Nov 5 2026 closing-class rules (named Y: APPLY_U1/U4 are older flags); dry run over stored ids: Y2 (aid provided) 1
+APPLY_Y1 = False                    # Nov 5 2026: OFF. "provisions of this act shall remain in full force until [2010] {{2014}}" inside an amended earlier act clause is a sunset EXTENSION (real; Nov 4 F1 restored 15); W2 sets its holder or routes it to re-ask
+APPLY_Y3 = APPLY_Y4 = False          # which-approved clause and individual service bar, 1 id each: set aside for W1/W2 (coordinator, Nov 5 2026)
+U1_FORCE_UNTIL = re.compile(r"^\W*the\s+provisions?\s+of\s+(?:this\s+act,\s+and\s+all\s+regulations,\s+orders\s+and\s+requirements\s+thereunder|(?:sections?|subdivisions?)\s+[\w\s,-]{1,60}\s+of\s+this\s+act)\s+shall\s+remain\s+in\s+full\s+force\s+and\s+effect\s+(?:only\s+)?until\s+and\s+including\b", re.I)          # 'of this act' only: 'subdivision 6 of section 12 of the emergency housing rent control law, as added by this act' stays
+U2_AID_PROVIDED = re.compile(r"^\W*aid\s+shall\s+be\s+provided\s+on\s+approved\s+expenses\b", re.I)
+U3_WHICH_APPROVED = re.compile(r"^\W*which\s+(?:plan|application|contract|proposal)\s+shall\s+be\s+approved\s+by\s+the\s+commissioner\s+pursuant\s+to\b", re.I)
+U4_SERVICE_BAR = re.compile(r"^\W*no\s+(?:trustee|member)\s+of\s+(?:the\s+)?[a-z ]{3,60}\s+shall\s+serve\s+as\b", re.I)
+
+
+APPLY_W1 = True          # Nov 5 2026: a proviso whose main clause grants a 'governing/legislative body' a power stays a record (dry run: see the Nov 5 report)
+W1_BODY_ACTOR = re.compile(r"\b(?:governing|legislative)\s+bod(?:y|ies)\b", re.I)
+
+APPLY_W2 = True          # Nov 5 2026: the subject of an expiry sentence ('the provisions of this act shall remain in force until') is never the holder
+W2_SUBJECT = re.compile(r"^\W*(?:the\s+provisions?\s+of\b|such\s+provisions?\b)", re.I)
+
+
+def w2_extension_holder(o, text, law):
+    """W2: for a record whose actor_raw is the provisions that expire, take the holder from the act title / amended chapter
+    (sunset_holder); returns 'moved', 'unnamed' or None. 'unnamed' means the caller drops it as extension_holder_unnamed and flags the re-ask."""
+    if not (APPLY_W2 and W2_SUBJECT.search(o.get("actor_raw") or "") and (o.get("extends_existing") or SUNSET_WORDS.search(o.get("quote") or ""))):
+        return None
+    if o.get("agency") not in (None, "Unspecified") and o.get("agency_matched"):
+        return None
+    sp = locate_span(o.get("quote") or "", text)
+    holder = sunset_holder(law.get("title"), law.get("act_clause"))
+    if not holder and sp:
+        holder = sunset_holder(amending_description(text, sp[0]))
+    if not holder:
+        return "unnamed"
+    canon, full = eo.match_agency(holder, LOOKUP, BY_CANON)
+    o.update(actor_raw=holder, agency=canon or holder, agency_full=full or holder, agency_matched=bool(canon), actor_unresolved=False)
+    return "moved"
+
+
 APPLY_F1 = APPLY_F3 = APPLY_F4 = True          # Nov 4 2026 audit classes; F1 sunset extensions bypass the benefit gates, F3 unlocated deadline_text cleared, F4 repeated month offsets
 SUNSET_WORDS = re.compile(r"\b(?:shall\s+(?:remain\s+in\s+full\s+force\s+and\s+effect|expire)|deemed\s+repealed)\b", re.I)
 SUNSET_SWAP = re.compile(r"\[[^\[\]]*\d[^\[\]]*\]\s*\{\{[^{}]*\d[^{}]*\}\}")
@@ -1727,6 +1761,14 @@ def gate_record(o, text, has_markers):
         return "section_sunset", "a sunset proviso (a section or the act expires on a date); computed with the effective dates and binds no actor"
     if APPLY_T4 and T4_CONTINUE_APPLY.search(q):
         return "act_clause_boilerplate", "an act-clause saying the amendments continue to apply to commitments in force on a date, a transition term that binds no actor"
+    if APPLY_Y1 and U1_FORCE_UNTIL.search(q):
+        return "benefit_window", "an availability or expiry window for a law's own provisions ('shall remain in full force and effect until a date'); the F1 sunset bypass let these past the N2 gate"
+    if APPLY_Y2 and U2_AID_PROVIDED.search(q):
+        return "amount_not_duty", "a State aid formula term ('aid shall be provided on approved expenses'): an entitlement no actor carries out"
+    if APPLY_Y3 and U3_WHICH_APPROVED.search(q):
+        return "condition_of_other_record", "an approval clause attached to another record ('which plan shall be approved by the commissioner pursuant to regulations')"
+    if APPLY_Y4 and U4_SERVICE_BAR.search(q):
+        return "no_duty_or_power", "a bar on an individual trustee serving in a role (qualification of an officer), not a duty or power of the board"
     if APPLY_X2 and X2_SO_ELECT.search(q):
         sp_x = locate_span(q, text)
         if sp_x:
@@ -1899,6 +1941,8 @@ def drop_conditions(lst):
             bump("review_duty_kept"); continue
         if re.match(r"^\W*provided", q, re.I) and ms and GOV_ACTOR.search(q[max(0, ms.start() - 140):ms.start()]):
             continue            # a proviso with its own grant or mandate aimed at the actor is a separate provision
+        if APPLY_W1 and re.match(r"^\W*provided", q, re.I) and ms and W1_BODY_ACTOR.search(q[max(0, ms.start() - 220):ms.start()]):
+            bump("w1_proviso_body_grant_kept"); continue          # W1 (Nov 5 2026): 'the governing body ... may waive' is a power of a named body (2017-A10355)
         own_modal = any(not re.match(r"\s+(?:also\s+)?be subject to\b", q[m.end():]) for m in re.finditer(r"\b(?:shall|must|may)\b", q))
         approval = bool(APPROVAL_COND_RE.search(q)) and not own_modal
         for o in out:
@@ -3611,6 +3655,13 @@ def build_records(laws):
                     bump("dtf_to_unspecified")
             run_agency_fixes(o, text, law)
             quote = o.get("quote") or ""
+            w2 = w2_extension_holder(o, text, law)
+            if w2 == "unnamed":
+                SUNSET_UNNAMED.setdefault(law["key"], {"sentence": quote, "title": law.get("title") or ""})
+                drop(o, "extension_holder_unnamed", "an expiry sentence whose subject is the provisions that expire and whose act title names no single holder; routed to the sunset_extension_unnamed_holder re-ask")
+                continue
+            if w2 == "moved":
+                bump("w2_holder_from_title")
             g = gate_record(o, text, "{{" in text)
             if g:
                 drop(o, g[0], g[1])

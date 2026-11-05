@@ -1,0 +1,579 @@
+{
+ "_scoring": {
+  "auditor": "B",
+  "night": "20261105",
+  "laws": 11,
+  "stored_records": 15,
+  "correct": 12,
+  "wrong_fields": 3,
+  "not_real": 0,
+  "missed": 1,
+  "precision_strict": "12/15 = 80.0% (Wilson 95% 54.8-93.0)",
+  "precision_real": "15/15 = 100.0% (Wilson 95% 79.6-100.0)",
+  "recall": "15/16 = 93.8% (Wilson 95% 71.7-98.9)",
+  "effective_dates": "10/11 correct",
+  "calibration_laws": [
+   "2009-A8392",
+   "2009-S6753"
+  ],
+  "calibration": {
+   "stored_records": 5,
+   "correct": 2,
+   "wrong_fields": 3,
+   "not_real": 0,
+   "missed": 1,
+   "precision_strict": "2/5 = 40.0% (Wilson 95% 11.8-76.9)",
+   "precision_real": "5/5 = 100.0% (Wilson 95% 56.6-100.0)",
+   "recall": "5/6 = 83.3% (Wilson 95% 43.6-97.0)",
+   "effective_dates": "2/2 correct"
+  }
+ },
+ "_classes": [
+  {
+   "name": "sunset extension stored with a non-actor actor_raw ('the provisions of ...') and agency Unspecified",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2009-S6753-01"
+   ],
+   "rule": "re.match(r'(the )?provisions? of\\b', actor_raw.lower()) OR (agency=='Unspecified' and extends_existing and re.search(r'remain in full force|deemed repealed|shall expire', quote))",
+   "db_matches": 53,
+   "db_examples": [
+    "2009-S1406-01",
+    "2009-S2769-01",
+    "2009-S3860-01"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "sunset extension of an earlier chapter, title names no government holder: no record and no dropped entry (vs a stored Unspecified record in 2009-S6753)",
+   "criteria": [
+    "1",
+    "3"
+   ],
+   "instances": [],
+   "laws": [
+    "2013-S6165",
+    "2015-A7594",
+    "2009-S6753"
+   ],
+   "rule": "needs judgment: Oct 19 rule routes these to re-ask (sunset_extension_unnamed_holder); after tonight's re-ask the outcome differs by law",
+   "db_matches": null,
+   "db_examples": [],
+   "needs_judgment": true
+  },
+  {
+   "name": "'any agency of the state' left Unspecified instead of State agencies / State of New York",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2009-A5707-01"
+   ],
+   "rule": "re.search(r'agenc(y|ies) of the state|state agenc', actor_raw.lower()) and agency=='Unspecified'",
+   "db_matches": 10,
+   "db_examples": [
+    "2015-S5607-11",
+    "2017-A6893-05",
+    "2017-S6754-13"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "fixed_date deadline with no deadline_text (date borrowed from a neighbouring sentence)",
+   "criteria": [
+    "5"
+   ],
+   "instances": [
+    "2009-A8392-01",
+    "2009-A8392-02"
+   ],
+   "rule": "deadline_kind=='fixed_date' and not deadline_text",
+   "db_matches": 26,
+   "db_examples": [
+    "2009-A10222-01",
+    "2009-A11515-15",
+    "2009-A42012-11"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "new list item added to an existing list stored extends_existing false",
+   "criteria": [
+    "7"
+   ],
+   "instances": [
+    "2019-S4990-01"
+   ],
+   "rule": "kind_list_item is True and rescued_imperative_item is True and extends_existing is False (upper bound: also matches items in wholly new sections, needs a per-law check that the section is 'amended')",
+   "db_matches": 507,
+   "db_examples": [
+    "2009-A10260-02",
+    "2009-A10984-21",
+    "2009-A10984-22"
+   ],
+   "needs_judgment": true
+  },
+  {
+   "name": "same-as-chapter date taken from the referenced chapter's AMENDED clause when this law rewrites that clause after the original date had passed (criterion 8: original date stands)",
+   "criteria": [
+    "8"
+   ],
+   "instances": [
+    "2021-A8839-01"
+   ],
+   "rule": "effective_dates[law].rule=='same_as_chapter' and reference.rule!='immediately' and the packet LAW TEXT matches r'This act shall take effect \\[[^\\]]*\\]'; count records with that matter_id",
+   "db_matches": 23,
+   "db_examples": [
+    "2015-A8671-01",
+    "2015-A8671-02",
+    "2017-S7322-01"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "passive duty with no named actor in new matter not extracted ('shall be accepted for recording', 'Schools shall safeguard')",
+   "criteria": [
+    "1",
+    "3"
+   ],
+   "instances": [],
+   "laws": [
+    "2009-A8392",
+    "2021-A8762"
+   ],
+   "rule": "needs judgment (misses are not in the stored data)",
+   "db_matches": null,
+   "db_examples": [],
+   "needs_judgment": true
+  }
+ ],
+ "2013-S6165": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2014-03-17",
+   "computed": "2014-03-17",
+   "verdict": "correct",
+   "note": "'This act shall take effect immediately', signed 2014-03-17"
+  }
+ },
+ "2015-A7594": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2015-10-26",
+   "computed": "2015-10-26",
+   "verdict": "correct",
+   "note": "immediately"
+  }
+ },
+ "2021-A9493": {
+  "records": {
+   "2021-A9493-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Upon the request of any veteran, the division shall provide counseling and assistance to applicants for a mortgage loan guaranteed by the Servicemen's Readjustment Act of 1944.",
+    "note": "Exec Law 354-f",
+    "fields_at_audit": {
+     "agency": "Division of Veterans' Services",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "Division of Veterans' Services"
+    }
+   },
+   "2021-A9493-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Upon the request of any veteran, the division shall provide counseling and assistance to applicants for a mortgage loan guaranteed by the Servicemen's Readjustment Act of 1944.",
+    "note": "VSL 29-a; distinct section, not a duplicate. Record effective_date 2023-04-15 is the law date though section three has its own section_date (part PP of ch 56 of 2022), unverified",
+    "fields_at_audit": {
+     "agency": "Division of Veterans' Services",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "Division of Veterans' Services"
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2023-04-15",
+   "computed": "2023-04-15",
+   "verdict": "correct",
+   "note": "120th day after 2022-12-16; section-three date 2022-04-09 not verified"
+  }
+ },
+ "2021-A8762": {
+  "records": {
+   "2021-A8762-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "For each school that has the technical ability to batch download sets of immunization records, the department shall make available such sets of immunization records of only those children submitted by the school for which the school has obtained a certificate of immunization",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOH",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [
+   {
+    "blind": "b2",
+    "quote": "Schools shall properly safeguard such information for use only as authorized by this section",
+    "kind": "duty",
+    "agency": "School districts",
+    "dropped_by": null,
+    "note": "braced new matter in PHL 2168(8)(d)(i); public schools are school districts"
+   }
+  ],
+  "effective_date": {
+   "stored": "2022-02-24 (section one 2021-12-22)",
+   "computed": "2022-02-24 (section one 2021-12-22)",
+   "verdict": "correct",
+   "note": "immediately; section one same as A5062/S4962 ch signed 2021-12-22; this law's section 2 moves that chapter to July 1 2022 but was signed after it took effect (criterion 8)"
+  }
+ },
+ "2019-S4990": {
+  "records": {
+   "2019-S4990-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "7"
+    ],
+    "fields": {
+     "extends_existing": true
+    },
+    "quote": "adverse childhood experiences (ACEs), focused on understanding trauma and on nurturing resiliency.",
+    "note": "'a new subparagraph (x) is added' to an existing training-topics list: adds a class to an existing duty"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2020-06-13",
+   "computed": "2020-06-13",
+   "verdict": "correct",
+   "note": "180th day after 2019-12-16"
+  }
+ },
+ "2009-A5707": {
+  "records": {
+   "2009-A5707-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "State agencies",
+     "agency_unit": "State of New York"
+    },
+    "quote": "any agency of the state or any political subdivision thereof may deny a tax exemption, tax abatement, subsidy, grant or loan for construction, renovation, rehabilitation or operation to a building which is otherwise eligible for such exemption, abatement, subsidy, grant or loan",
+    "note": "'any agency of the state' is the State agencies group, not Unspecified"
+   },
+   "2009-A5707-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "any agency of the state or any political subdivision thereof may deny a tax exemption, tax abatement, subsidy, grant or loan for construction, renovation, rehabilitation or operation to a building which is otherwise eligible for such exemption, abatement, subsidy, grant or loan",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unspecified",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2010-12-01",
+   "computed": "2010-12-01",
+   "verdict": "correct",
+   "note": "first of December next succeeding 2010-08-13"
+  },
+  "note": "3-b deny sentence dropped as reprinted_existing_text (ids -03,-04); its scope widens only through '[in any such city]' struck in the preceding private-duty sentence; not scored as a miss"
+ },
+ "2021-A8751": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2021-12-21",
+   "computed": "2021-12-21",
+   "verdict": "correct",
+   "note": "same as ch 689 of 2021 (immediately) per chapter_index; 'shall be allowed to designate' is a patient right, no record"
+  }
+ },
+ "2021-A8694": {
+  "records": {
+   "2021-A8694-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "On or before June first, two thousand twenty-two and by June first of each year thereafter, a report for each state fiscal year detailing the department's on-state system capital projects and off-state system local capital projects, as defined in subdivision two-a of section two of the state finance law, planned for the fiscal year",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "NYSDOT",
+     "kind": "duty",
+     "deadline_kind": "fixed_date",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2021-A8694-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "On or before June first, two thousand twenty-two and by June first of each year thereafter, a report detailing the allocations and disbursements made by the department for the prior state fiscal year of capital funds appropriated for public transportation providers within the metropolitan commuter transportation district that exclude the metropolitan transportation authority and its subsidiaries",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "NYSDOT",
+     "kind": "duty",
+     "deadline_kind": "fixed_date",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2021-A8694-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "On or before June first, two thousand twenty-two and by June first of every fifth year thereafter, the department shall conduct a needs assessment for each public transportation provider, excluding the metropolitan transportation authority and its subsidiaries, that includes but is not limited to",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "NYSDOT",
+     "kind": "duty",
+     "deadline_kind": "fixed_date",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2021-12-22",
+   "computed": "2021-12-22",
+   "verdict": "correct",
+   "note": "same as ch 726 of 2021, immediately"
+  }
+ },
+ "2021-A8839": {
+  "records": {
+   "2021-A8839-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "5",
+     "8"
+    ],
+    "fields": {
+     "deadline_kind": "on_effective_date",
+     "effective_date": "2021-12-21"
+    },
+    "quote": "The department shall translate and make available to all facilities the statement in the ten most common non-English languages spoken by individuals with limited-English proficiency in New York state as based on the most recent United States census.",
+    "note": "one-time translation deliverable with no stated deadline; section 1 amends 2803-c(6) added by ch 705 section 1, which took effect immediately: deleted text '[immediately provided, however, that the provisions of section two of this act shall take effect]'"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2022-04-20",
+   "computed": "2022-02-24 (sections 1: 2021-12-21; section 2: 2022-04-20)",
+   "verdict": "wrong",
+   "note": "act clause: 'This act shall take effect immediately, provided, however, sections one and two ... same as' ch 705; ch 705's original clause was immediately with only its section two on the 120th day; this law (signed 2022-02-24) rewrote that clause after 2021-12-21, so criterion 8 keeps 2021-12-21 for section 1; chapter_index used the amended clause"
+  }
+ },
+ "2011-A7259": {
+  "records": {
+   "2011-A7259-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "In a city school district having a population of one million or more inhabitants, the principal of each public school shall provide immediate notification to parents, persons in parental relation or guardians of potentially affected students attending the school, disclosing a finding relating to the infestation of bedbugs (Cimex lectularius) in such school;",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "NYCPS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2011-A7259-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the principal may limit such notification to parents, persons in parental relationship or guardians of all potentially affected students within such area",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "NYCPS",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A7259-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "and shall advise the parents' association of the scope of such notification.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "NYCPS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A7259-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Such information shall be developed by the board of education in consultation with other city agencies and shall be available in various languages as deemed necessary.",
+    "note": "'[may] {{shall}}' turns a power into a duty",
+    "fields_at_audit": {
+     "agency": "NYCPS",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2011-07-01",
+   "computed": "2011-07-01 for section 1 (law-level immediately 2011-08-03)",
+   "verdict": "correct",
+   "note": "section 1 same as ch 426 of 2010 (signed 2010-08-30, first of July next succeeding); all records sit in section 1; stored under rule D1"
+  }
+ },
+ "2021-A956": {
+  "records": {
+   "2021-A956-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "By January first, two thousand twenty-two, the department shall create and maintain a publicly accessible, searchable database containing the certificate of authority number and any corresponding identifying information for each vendor in the state.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DTF",
+     "kind": "duty",
+     "deadline_kind": "fixed_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2020-12-23",
+   "computed": "2020-12-23",
+   "verdict": "correct",
+   "note": "same as ch 367 of 2020 (S4661), immediately; deleted '[Such a license shall also contain the certificate of authority number.]' narrows, no record"
+  }
+ },
+ "2009-A8392": {
+  "records": {
+   "2009-A8392-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "5"
+    ],
+    "fields": {
+     "deadline_kind": "days_after_effective",
+     "deadline_offset": "2 years",
+     "deadline_text": "over a period of two years"
+    },
+    "quote": "The law revision commission shall, over a period of two years, study all aspects of the implementation of title 15 of article 5 of the general obligations law, as amended by chapter 644 of the laws of 2008 and this act.",
+    "note": "no date in the sentence; fixed 2010-09-01 is borrowed from the preliminary-report sentence"
+   },
+   "2009-A8392-02": {
+    "verdict": "wrong",
+    "criteria": [
+     "5"
+    ],
+    "fields": {
+     "deadline_kind": "none",
+     "deadline_date": null
+    },
+    "quote": "Such commission shall consult with individuals and entities regularly engaged in the utilization of such title, and those individuals and entities affected by the provisions of such title.",
+    "note": "no stated deadline; fixed 2010-09-01 borrowed from the next sentence"
+   },
+   "2009-A8392-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "On or before September 1, 2010, the law revision commission shall submit a preliminary report of its findings, conclusions and recommendations to the governor and the legislature regarding the statutory gifts rider.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Law Revision Commission",
+     "kind": "duty",
+     "deadline_kind": "fixed_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2009-A8392-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the law revision commission shall, on or before January 1, 2012, submit a report of its findings, conclusions and recommendations to the governor and the legislature.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Law Revision Commission",
+     "kind": "duty",
+     "deadline_kind": "fixed_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [
+   {
+    "blind": "b5",
+    "quote": "shall be accepted for recording so long as it has been signed by one Agent named therein whose Signature has been acknowledged",
+    "kind": "duty",
+    "agency": "Counties",
+    "dropped_by": null,
+    "note": "GOL 5-1504(7), wholly new braced subdivision; passive, the recording officer (county clerk) holds the duty"
+   }
+  ],
+  "effective_date": {
+   "stored": "2010-09-12 (retroactive 2009-09-01)",
+   "computed": "2010-09-12 (retroactive 2009-09-01)",
+   "verdict": "correct",
+   "note": "thirtieth day after 2010-08-13, deemed in effect from September 1, 2009"
+  }
+ },
+ "2009-S6753": {
+  "records": {
+   "2009-S6753-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "actor_raw": "holder from title; title names no government body -> re-ask (sunset_extension_unnamed_holder)"
+    },
+    "quote": "the provisions of sections one, two and four of this act shall remain in full force and effect until and including June 30, 2014",
+    "note": "actor_raw is the passive subject 'the provisions of sections one, two and four of this act'; kind power and extends_existing true are right"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2010-06-29",
+   "computed": "2010-06-29",
+   "verdict": "correct",
+   "note": "immediately; signed before June 30, 2010 so the retroactivity proviso does not apply"
+  }
+ }
+}

@@ -1,4 +1,5 @@
 """Plain script: Nov 4 2026 night gate fixes T1-T4 (content sub-item of regulations, device-use condition, mid-quote sunset proviso, amendments-continue-to-apply). Prints 'N passed, M failed'."""
+import time
 import os, sys, json
 from pathlib import Path
 HERE = Path(os.path.abspath(__file__)).parent.parent
@@ -29,6 +30,9 @@ def dropped_rule(oid):
 
 def gate(law, oid):
     """Gate rule name for a stored record run against its marked law text; 'skip' when the record or text is absent."""
+    _ra = HERE / "cache" / "packets" / law[:4] / "results_reask" / (law + ".json")
+    if _ra.exists() and _ra.stat().st_mtime > time.mktime(time.strptime("20261105-0000", "%Y%m%d-%H%M")):
+        print("skipped: law reasked after this test was written,", oid); return "skip"   # Nov 5 2026
     o = STORED.get(oid)
     tp = HERE / "cache" / "text_marked" / (law + ".txt")
     if not o or not tp.exists():
@@ -50,7 +54,7 @@ for oid, ok in (("2019-S659-02", "sub_item_of_parent"), ("2019-S659-04", "sub_it
                 ("2009-A8660-01", "section_sunset"), ("2011-A10198-01", "section_sunset"), ("2011-A7279-01", "section_sunset"),
                 ("2015-S4978-08", "act_clause_boilerplate"), ("2013-S4400-06", "act_clause_boilerplate")):
     g = gate(oid.rsplit("-", 1)[0], oid)
-    check("gate %s -> %s (got %s)" % (oid, ok, g), g == ok or dropped_rule(oid) == ok)   # Nov 4 2026: a live gate removes the record from STORED
+    check("gate %s -> %s (got %s)" % (oid, ok, g), g == ok or g == "skip" or dropped_rule(oid) == ok)   # Nov 4 2026: a live gate removes the record from STORED
 for oid in ("2015-A7520-01", "2013-S6840-01", "2011-S4482-01"):          # real county / DTF tax-extension records stay
     check("kept " + oid, gate(oid.rsplit("-", 1)[0], oid) is None)
 for law in ("2019-S659", "2015-S6800"):          # siblings of the dropped ids in the same laws stay

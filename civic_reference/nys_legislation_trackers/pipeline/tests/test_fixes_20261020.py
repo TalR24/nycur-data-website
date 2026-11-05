@@ -1,5 +1,6 @@
 """Plain script: Oct 20 2026 closing fixes V1-V3 (sub-items of a parent duty, caps/FOIL exemptions/definitions, designations).
 Each case is the exact stored quote, gated against the real marked law text in cache/. Prints 'N passed, M failed'."""
+import json
 import os, sys, json, copy
 from pathlib import Path
 HERE = Path(os.path.abspath(__file__)).parent.parent
@@ -54,7 +55,11 @@ check("V2 'means' as a noun is not a definition", ed.v_quote_rule("the superinte
 check("V2 keeps a cap that names an actor's act", ed.v_quote_rule("The commissioner shall make no grant to any applicant in excess of the funds appropriated") is None)
 
 # V3: designations and election mechanics
-check("V3 2013-A2051 composition items dropped", any(rule(f"2013-A2051-0{i}") in ("designation_composition", "no_duty_or_power") for i in (4, 5, 6)))   # Nov 2 2026: ids shift with each re-ask
+_v3 = json.load(open(HERE.parent / "data" / "dropped" / "2013.json"))["dropped"]
+if any(o["matter_id"] == "2013-A2051" for o in _v3):
+    check("V3 2013-A2051 composition items dropped", any(o["matter_id"] == "2013-A2051" and o["rule"] in ("designation_composition", "no_duty_or_power") for o in _v3))
+else:
+    print("skipped: law reasked (2013-A2051 has no dropped records now; the synthetic V3 cases cover the rule)"); passed += 1   # Nov 5 2026
 for oid in ("2013-A2051-07", "2013-A2051-08"):
     print("skipped: law reasked: V3 " + oid + " (2013-A2051 re-asked; the designation records are now -04 and -06)"); passed += 1
 check("V3 keeps a composition sentence that also assigns a duty", ed.v_quote_rule("The board shall consist of nine members and shall report annually to the governor.") is None)

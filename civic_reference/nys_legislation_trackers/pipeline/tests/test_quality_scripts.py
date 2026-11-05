@@ -170,5 +170,21 @@ check("audit quote matches stored record by quote not id", i8["2098-A1-01"]["quo
 check("no quote on a law re-asked later is excluded as renumbered", "2098-A2" in g8["excluded_laws"] and g8["counts"]["excluded_renumbered"] == 1)
 check("note quoting the record verbatim is kept", not i8["2098-A3-01"].get("excluded") and i8["2098-A3-01"]["expected_fields"].get("agency") == "Board")
 
+# Q8b build_gold: expected fields frozen at the audit (Nov 5 2026)
+def _q8b(agency):
+    rb = os.path.join(tmp, "q8b"); os.makedirs(os.path.join(rb, "data", "duties"), exist_ok=True); os.makedirs(os.path.join(rb, "nightly"), exist_ok=True); os.makedirs(os.path.join(rb, "packets"), exist_ok=True)
+    json.dump({"obligations": [{"obligation_id": "2097-A1-01", "quote": QA, "agency": agency, "kind": "duty", "deadline_kind": "none"}]}, open(os.path.join(rb, "data", "duties", "x.json"), "w"))
+    if not os.path.exists(os.path.join(rb, "nightly", "20260101_A.json")):
+        json.dump({"2097-A1": {"records": {"2097-A1-01": {"verdict": "correct"}}}}, open(os.path.join(rb, "nightly", "20260101_A.json"), "w"))
+    json.dump({}, open(os.path.join(rb, "ov.json"), "w"))
+    g = build_gold.main(["--out", go, "--data-dir", os.path.join(rb, "data"), "--nightly-dir", os.path.join(rb, "nightly"), "--overrides", os.path.join(rb, "ov.json"),
+                         "--additions", os.path.join(rb, "none.json"), "--packets-dir", os.path.join(rb, "packets")])
+    return rb, {i["gold_id"]: i for l in g["laws"].values() for i in l["items"]}, g
+rb, ib, gb = _q8b("DOH")
+fa = json.load(open(os.path.join(rb, "nightly", "20260101_A.json")))["2097-A1"]["records"]["2097-A1-01"].get("fields_at_audit")
+check("fields_at_audit written to the audit entry", fa and fa.get("agency") == "DOH" and gb["counts"]["fields_frozen_now"] == 1)
+rb, ib, gb = _q8b("Board")
+check("later build with a changed record keeps the frozen value", ib["2097-A1-01"]["expected_fields"]["agency"] == "DOH" and gb["counts"]["fields_frozen_now"] == 0)
+
 print(f"{passed} passed, {failed} failed")
 sys.exit(1 if failed else 0)

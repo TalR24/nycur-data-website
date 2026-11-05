@@ -1,0 +1,673 @@
+{
+ "_scoring": {
+  "auditor": "A",
+  "night": "20261105",
+  "laws": 11,
+  "stored_records": 24,
+  "correct": 20,
+  "wrong_fields": 4,
+  "not_real": 0,
+  "missed": 3,
+  "precision_strict": "20/24 = 83.3% (Wilson 95% 64.1-93.3)",
+  "precision_real": "24/24 = 100.0% (Wilson 95% 86.2-100.0)",
+  "recall": "24/27 = 88.9% (Wilson 95% 71.9-96.1)",
+  "effective_dates": "10/11 correct",
+  "calibration_laws": [
+   "2017-A10192",
+   "2009-A3169"
+  ],
+  "calibration_scoring": {
+   "stored_records": 1,
+   "correct": 1,
+   "wrong_fields": 0,
+   "not_real": 0,
+   "missed": 2,
+   "precision_strict": "1/1 = 100.0% (Wilson 95% 20.7-100.0)",
+   "precision_real": "1/1 = 100.0% (Wilson 95% 20.7-100.0)",
+   "recall": "1/3 = 33.3% (Wilson 95% 6.1-79.2)",
+   "effective_dates": "2/2 correct"
+  },
+  "recall_method": "blind items matched by stored records (correct or wrong) / (matched + missed); 2013-S6165 and 2015-A7594 sunset extensions not counted as misses (holder not a verified government body)"
+ },
+ "_classes": [
+  {
+   "name": "Real waiver/grant power dropped as condition_of_other_record when the sentence opens \"Provided, however, that if\"",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2017-A10355 (dropped 2017-A10355-01, -02)"
+   ],
+   "rule": "data/dropped/*.json: rule==\"condition_of_other_record\" and re.match(r\"(?i)provided,? however,? that if\", quote)",
+   "db_matches": 2,
+   "db_examples": [
+    "2017-A10355-01",
+    "2017-A10355-02"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "Posting duty dropped as instrument_term",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2017-A10192 (dropped 2017-A10192-01)"
+   ],
+   "rule": "data/dropped/*.json: rule==\"instrument_term\" and re.search(r\"(?i)shall be posted|shall post|website\", quote)",
+   "db_matches": 1,
+   "db_examples": [
+    "2017-A10192-01"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "Junk agency_unit carrying \"Acting By\" from \"acting by and through its governing body\" (non-NYC locality)",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2021-A9335-02"
+   ],
+   "rule": "re.search(r\"\\bActing\\b\", agency_unit) over duties+powers",
+   "db_matches": 6,
+   "db_examples": [
+    "2011-S5571-03",
+    "2011-S5571-05",
+    "2011-S5571-09"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "County-level body (county vocational education and extension board etc.) left agency Unspecified",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2015-S6800-06",
+    "2015-S6800-07"
+   ],
+   "rule": "agency==\"Unspecified\" and re.search(r\"(?i)\\bcount(y|ies)\\b\", actor_raw)",
+   "db_matches": 20,
+   "db_examples": [
+    "2009-A8827-08",
+    "2011-A9539-15",
+    "2013-A5503-04"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "Designation/approval authority stored as duty (quote has may/authorized/\"designated or approved\" and no mandatory word)",
+   "criteria": [
+    "4"
+   ],
+   "instances": [
+    "2015-S6800-01"
+   ],
+   "rule": "duties only: re.search(r\"(?i)\\b(may|authorized|empowered|designated or approved)\\b\", quote) and not re.search(r\"(?i)\\b(shall|must|required|directed|obligated|responsible|duty)\\b\", quote)",
+   "db_matches": 76,
+   "db_examples": [
+    "2009-A10096-01",
+    "2009-A10096-02",
+    "2009-A11144-33"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "same_as_chapter section date ignores this law's own rewrite of the referenced chapter's effective clause",
+   "criteria": [
+    "8"
+   ],
+   "instances": [
+    "2021-A8732"
+   ],
+   "rule": "effective_dates with a same_as_chapter section/other date AND packet LAW TEXT matches r\"is amended to read as follows:\\s*\u00a7 ?\\d+\\. This act shall take effect [^\\n]*\\[[^\\]]*(day|month|year|immediately)[^\\]]*\\]\" (candidate set; confirm by recomputing the referenced chapter date)",
+   "db_matches": 101,
+   "db_examples": [
+    "2009-A11678",
+    "2013-A2087",
+    "2015-S6386"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "New generic government class added to an eligible-entity list with no stored power",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2015-S6800"
+   ],
+   "rule": "needs_judgment",
+   "db_matches": 0,
+   "db_examples": [],
+   "needs_judgment": true
+  }
+ ],
+ "2013-S6165": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2014-03-17",
+   "computed": "2014-03-17",
+   "verdict": "correct",
+   "note": "immediately"
+  },
+  "note": "0 stored, 0 dropped. Only new matter extends ch.274/2010 sunset \"[March] {{July 1}}, [2014] {{2016}}\"; title names no government body and the underlying container-repair authority could not be read from this packet (unverified whether it is a DEC power); not scored as a miss"
+ },
+ "2015-A7594": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2015-10-26",
+   "computed": "2015-10-26",
+   "verdict": "correct",
+   "note": "immediately"
+  },
+  "note": "0 stored. Sunset \"[3] {{6}} years\" of ch.451/2012 permitted wage deductions: an employer (private) authority; 0 expected"
+ },
+ "2021-A9967": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2022-11-21",
+   "computed": "2022-11-21",
+   "verdict": "correct",
+   "note": "immediately"
+  },
+  "note": "0 stored; deletion of \"[clinically-based]\" is an applicant qualification, dropped designation_composition; agree no record"
+ },
+ "2013-A7099": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2013-06-30",
+   "computed": "2013-06-30",
+   "verdict": "correct",
+   "note": "immediately"
+  },
+  "note": "0 stored; Local Finance Law period of probable usefulness extension, criterion 1 excludes; agree"
+ },
+ "2021-A9282": {
+  "records": {
+   "2021-A9282-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner shall consult and cooperate with the New York state urban development corporation, the New York state hemp workgroup created pursuant to section one hundred eight of the cannabis law, and representatives of industries that currently use, or may potentially use, industrial hemp in their products, with respect to the funding and support of research",
+    "note": "deletion of \"[To the extent the commissioner believes it to be necessary, the]\" turns discretion into a duty; extends_existing true correct",
+    "fields_at_audit": {
+     "agency": "DAM",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2022-11-21",
+   "computed": "2022-11-21",
+   "verdict": "correct",
+   "note": "immediately"
+  }
+ },
+ "2021-A9974": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2023-06-14",
+   "computed": "2023-06-14",
+   "verdict": "correct",
+   "note": "nth_day_after_law"
+  },
+  "note": "0 stored; duty is on private hospitals, act-clause DOH regs sentence is boilerplate; agree"
+ },
+ "2021-S1078": {
+  "records": {
+   "2021-S1078-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner shall provide in the pre-licensing course, set forth in paragraph (b) of this subdivision, a mandatory component in \"Pedestrian and Bicyclist Safety\" awareness education as a prerequisite for obtaining a license to operate a motor vehicle.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DMV",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S1078-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner shall establish a curriculum for the \"Pedestrian and Bicyclist Safety\" awareness component which shall include but not be limited to:",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DMV",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S1078-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Such test may include one or more questions concerning pedestrian and bicyclist safety. Such test shall be administered by the commissioner.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DMV",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S1078-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "instructional handbooks outlining the content of the entire curriculum of the pre-licensing course including the information required to be included in the course pursuant to paragraphs (c), (c-1), (c-2), (c-3) , (c-4) and (c-5) of this subdivision.",
+    "note": "quote trimmed (60-word rule) so it starts at \"instructional handbooks\" and drops \"The commissioner shall make available for distribution\"; accepted under the Oct 16 trim decision",
+    "fields_at_audit": {
+     "agency": "DMV",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2021-S1078-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner shall also provide for the additional training of the instructors necessary for the competent instruction of the alcohol and drug education, \"Road Rage\" awareness, \"Work Zone Safety\" awareness, \"Motorcycle Safety\" awareness , \"School Bus Safety\" awareness and \"Pedestrian and Bicyclist Safety\" awareness subject matters of the pre-licensing course.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DMV",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2023-01-11",
+   "computed": "2023-01-11",
+   "verdict": "correct",
+   "note": "nth_day_after_law"
+  }
+ },
+ "2015-S6800": {
+  "records": {
+   "2015-S6800-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "4"
+    ],
+    "fields": {
+     "provision_kind": "power",
+     "deliverable_type": "designation or staffing"
+    },
+    "quote": "any other person or entity designated or approved, or in a category designated or approved pursuant to regulations of the commissioner in consultation with other appropriate agencies",
+    "note": "\"any other person or entity designated or approved, or in a category designated or approved pursuant to regulations of the commissioner\": a designation/approval authority, no shall; power, not duty"
+   },
+   "2015-S6800-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Any eligible person or entity may purchase, acquire, possess and use epinephrine auto-injector devices for Emergency treatment of a person appearing to experience anaphylactic symptoms, under This section.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "School districts",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2015-S6800-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "An Eligible person or entity shall designate one or more individuals who have completed the training required by paragraph (c) of This subdivision to be responsible for the storage, maintenance, control, and general oversight of the epinephrine auto-injectors acquired by the Eligible person or entity.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "School districts",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-S6800-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Any eligible person or entity may purchase, acquire, possess and use epinephrine auto-injector devices for Emergency treatment of a person appearing to experience anaphylactic symptoms, under This section.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "School districts",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2015-S6800-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "An Eligible person or entity shall designate one or more individuals who have completed the training required by paragraph (c) of This subdivision to be responsible for the storage, maintenance, control, and general oversight of the epinephrine auto-injectors acquired by the Eligible person or entity.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "School districts",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-S6800-06": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Counties",
+     "agency_unit": "county vocational education and extension board"
+    },
+    "quote": "Any eligible person or entity may purchase, acquire, possess and use epinephrine auto-injector devices for Emergency treatment of a person appearing to experience anaphylactic symptoms, under This section.",
+    "note": "\"county vocational education and extension board\" is a county body; agency Unspecified is wrong"
+   },
+   "2015-S6800-07": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Counties",
+     "agency_unit": "county vocational education and extension board"
+    },
+    "quote": "An Eligible person or entity shall designate one or more individuals who have completed the training required by paragraph (c) of This subdivision to be responsible for the storage, maintenance, control, and general oversight of the epinephrine auto-injectors acquired by the Eligible person or entity.",
+    "note": "same actor as -06; agency Unspecified"
+   }
+  },
+  "missed": [
+   {
+    "blind": "b3g",
+    "quote": "A {{sports, entertainment, amusement, education, government, day care or retail facility",
+    "kind": "power",
+    "agency": "Unspecified (government facilities)",
+    "dropped_by": null,
+    "note": "new class \"government ... facility\" made an eligible entity that \"may purchase, acquire, possess and use epinephrine auto-injector devices\"; stored powers cover only school districts, BOCES, county vocational boards. Judgment call: holder is generic"
+   }
+  ],
+  "effective_date": {
+   "stored": "2017-03-28",
+   "computed": "2017-03-28",
+   "verdict": "correct",
+   "note": "nth_day_after_law"
+  }
+ },
+ "2021-A9335": {
+  "records": {
+   "2021-A9335-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the county of Suffolk acting by and through its governing body is hereby authorized and empowered to convey the property described in section two of this act, which was heretofore used by such county for park and/or recreational purposes, upon terms agreed upon between the parties, to the town of Smithtown",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Counties",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "County of Suffolk"
+    }
+   },
+   "2021-A9335-02": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency_unit": "Town of Smithtown"
+    },
+    "quote": "the town of Smithtown acting by and through its governing body is hereby authorized and empowered to convey the property described in section three of this act, which was heretofore used by such town for park and/or recreational purposes, upon terms agreed upon between the parties, to the county of Suffolk",
+    "note": "actor_raw \"the town of Smithtown acting by and through its governing body\" normalised to junk unit \"Town of Smithtown Acting By\""
+   },
+   "2021-A9335-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the town of Smithtown shall continue to provide access to such parkland and/or recreational facilities to all residents of the county of Suffolk and that such town shall not enact any fees or charges which are higher for such access for county residents who are not town residents",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Towns",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "Town of Smithtown"
+    }
+   },
+   "2021-A9335-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the county of Suffolk shall continue to provide access to such parkland and/or recreational facilities to all residents of the town of Smithtown and that such county shall not enact any fees or charges for such access which are higher for town residents.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Counties",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "County of Suffolk"
+    }
+   },
+   "2021-A9335-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "shall be maintained, owned and operated for park purposes by the county of Suffolk for lands acquired pursuant to subdivision (b) of section one of this act, and the town of Smithtown, located in the county of Suffolk for lands acquired pursuant to subdivision (a) of section one of this act.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Counties",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "County of Suffolk"
+    }
+   },
+   "2021-A9335-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "shall be maintained, owned and operated for park purposes by the county of Suffolk for lands acquired pursuant to subdivision (b) of section one of this act, and the town of Smithtown, located in the county of Suffolk for lands acquired pursuant to subdivision (a) of section one of this act.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Counties",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "County of Suffolk"
+    }
+   },
+   "2021-A9335-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The use of such parkland and facilities shall continue to be made available to the general public of the state of New York, including all residents of the county of Suffolk and the town of Smithtown, located in the county of Suffolk.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Counties",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "County of Suffolk"
+    }
+   },
+   "2021-A9335-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The use of such parkland and facilities shall continue to be made available to the general public of the state of New York, including all residents of the county of Suffolk and the town of Smithtown, located in the county of Suffolk.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Counties",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "County of Suffolk"
+    }
+   },
+   "2021-A9335-09": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Where the availability of such facilities is limited, use of such facilities shall be determined by an equitable method.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Counties",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "County of Suffolk"
+    }
+   },
+   "2021-A9335-10": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Where the availability of such facilities is limited, use of such facilities shall be determined by an equitable method.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Counties",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "County of Suffolk"
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2022-11-21",
+   "computed": "2022-11-21",
+   "verdict": "correct",
+   "note": "immediately"
+  }
+ },
+ "2021-A8732": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2022-02-24 section_dates [{\"applies_to\": \"sections one and two of this act\", \"effective_date\": \"2022-06-20\", \"rule\": \"same_as_chapter\"}]",
+   "computed": "2022-02-24; ss.1-2 2022-12-22",
+   "verdict": "wrong",
+   "note": "ss.1-2 take effect same as ch.743 of 2021 (A6392, signed 2021-12-22); this act s.3 rewrites that chapter's clause \"[on the one hundred eightieth day] {{one year}} after it shall have become a law\" before the original 2022-06-20 date arrived, so the referenced chapter now takes effect 2022-12-22; stored section_dates keep 2022-06-20"
+  },
+  "note": "0 stored; narrowing edits and effective-clause change only; agree"
+ },
+ "2017-A10355": {
+  "records": {
+   "2017-A10355-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "two thousand twenty-one, for up to six urban development action area projects in any calendar year, the construction of up to ninety dwelling units financed by the federal government and restricted to occupancy by the elderly or by persons with disabilities without any change in land use permitted by local zoning, a municipality may dispose of the real property",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Municipalities (all)",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [
+   {
+    "blind": "b1",
+    "quote": "the governing body, or the commission where so authorized to act by the governing body, may waive the area designation requirement",
+    "kind": "power",
+    "agency": "Municipalities (all)",
+    "dropped_by": "condition_of_other_record",
+    "note": "GML 693: sunset \"until June thirtieth, two thousand [eighteen] {{twenty-one}}\" extended; the dropped sentence IS the waiver power, not a condition; extends_existing true"
+   },
+   {
+    "blind": "b2",
+    "quote": "the governing body, or the commission where so authorized to act by the governing body, may waive any such standards and procedures required by local law or charter",
+    "kind": "power",
+    "agency": "Municipalities (all)",
+    "dropped_by": "condition_of_other_record",
+    "note": "GML 694(5): same 2018->2021 extension; dropped as a condition though it is the operative power"
+   }
+  ],
+  "effective_date": {
+   "stored": "2018-07-01 retroactive_to 2018-06-30",
+   "computed": "2018-07-01, retroactive to 2018-06-30",
+   "verdict": "correct",
+   "note": "signed 2018-07-01 after June 30 2018, so retroactive clause applies; stored retroactive_to 2018-06-30"
+  }
+ },
+ "2017-A10192": {
+  "records": {},
+  "missed": [
+   {
+    "blind": "b1",
+    "quote": "Any agreement related to the installation authorized by this paragraph between the trust and the Whitney museum, or its representative, shall be posted on the Hudson river park website under \"NY State Required Reports and Information\", for public review for the duration of such agreement",
+    "kind": "duty",
+    "agency": "Hudson River Park Trust",
+    "dropped_by": "instrument_term",
+    "note": "all new matter; a posting duty of the trust (passive, trust maintains the website), not an instrument term"
+   },
+   {
+    "blind": "b2",
+    "quote": "The art installation authorized by this paragraph shall not be materially altered, sold, leased, exchanged, donated, other than the donation authorized by this paragraph from the museum to the trust, subjected to concession agreement, or used for other than its original purpose without the express authority of an act of the legislature",
+    "kind": "duty",
+    "agency": "Hudson River Park Trust",
+    "dropped_by": null,
+    "note": "prohibition binding the trust as owner after donation; borderline (passive), lower confidence"
+   }
+  ],
+  "effective_date": {
+   "stored": "2018-07-31",
+   "computed": "2018-07-31",
+   "verdict": "correct",
+   "note": "immediately"
+  }
+ },
+ "2009-A3169": {
+  "records": {
+   "2009-A3169-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "When a public body has the ability to do so, notice of the time and place of a meeting given in accordance with subdivision one or two of this section, shall also be conspicuously posted on the public body's internet website.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State and local bodies",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2009-05-12",
+   "computed": "2009-05-12",
+   "verdict": "correct",
+   "note": "immediately"
+  }
+ }
+}
