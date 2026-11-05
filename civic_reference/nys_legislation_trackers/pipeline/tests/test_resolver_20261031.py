@@ -173,4 +173,31 @@ for raw in ("any agency of the state", "any state agency", "each agency of the s
     check("R18 " + raw, _o["agency"] == "State agencies" and _o["agency_unit"] is None and _o["agency_source"] == "state_agencies_r18" and "actor_unresolved" not in _o)
 _o = {"actor_raw": "any agency of the state", "agency": "Unspecified", "agency_source": "unresolved", "quote": "the state, acting through the department of health, shall"}
 ar.fix_20261031(_o, ed.BY_CANON, ed.LOOKUP, ""); check("R18 acting through left alone", _o["agency_source"] != "state_agencies_r18")
+# Nov 5 2026 R19: interstate compact bodies are multi-state New York actors
+_o = {"actor_raw": "the interstate commission", "agency": "Interstate Commission", "agency_source": "named_body", "law_title": "Adopts the interstate compact for juveniles; repealer", "quote": "The commission shall meet at least once each calendar year."}
+ar.fix_20261031(_o, ed.BY_CANON, ed.LOOKUP, ""); check("R19 2011-A55 interstate commission", _o["agency"] == "Interstate Commission for Juveniles" and _o["multi_state"] is True and _o["agency_org_type"] == "multi-state compact body" and _o["jurisdiction"] == "state" and _o["agency_group"] is None)
+_o = {"actor_raw": "the interstate commission", "agency": "Unspecified", "agency_source": "unresolved", "law_title": "Adopts the interstate compact for adult offender supervision", "quote": "x"}
+ar.fix_20261031(_o, ed.BY_CANON, ed.LOOKUP, ""); check("R19 ICAOS by law title", _o["agency"] == "Interstate Commission for Adult Offender Supervision" and _o["multi_state"])
+for nm in ("Delaware River Basin Commission", "the Susquehanna River Basin Commission", "Interstate Environmental Commission", "Northeast Interstate Low-Level Radioactive Waste Commission", "Appalachian Regional Commission", "Great Lakes Commission", "Waterfront Commission of New York Harbor"):
+    _o = {"actor_raw": nm, "agency": "Unspecified", "agency_source": "unresolved", "actor_unresolved": True, "quote": "x"}
+    ar.fix_20261031(_o, ed.BY_CANON, ed.LOOKUP, ""); check("R19 " + nm, _o["agency"] == nm.replace("the ", "").replace("Susquehanna", "Susquehanna") and _o["multi_state"] and "actor_unresolved" not in _o and nm.replace("the ", "").lower() in ed.LOOKUP)
+_o = {"actor_raw": "the commission", "agency": "Unspecified", "agency_source": "unresolved", "law_title": "Relates to the powers of the state commission of correction", "quote": "x"}
+ar.fix_20261031(_o, ed.BY_CANON, ed.LOOKUP, ""); check("R19 the commission, non-compact law unchanged", "multi_state" not in _o and _o["agency"] == "Unspecified")
+_o = {"actor_raw": "the commission", "agency": "Unspecified", "agency_source": "unresolved", "law_title": "Adopts the interstate compact for juveniles", "quote": "x"}
+ar.fix_20261031(_o, ed.BY_CANON, ed.LOOKUP, ""); check("R19 the commission, compact law", _o["agency"] == "Interstate Commission for Juveniles" and _o["multi_state"])
+_o = {"actor_raw": "the Port Authority of New York and New Jersey", "agency": "Port Authority of New York and New Jersey", "agency_source": "named_body", "law_title": "Adopts the interstate compact for juveniles", "quote": "x"}
+_b = dict(_o); ar.fix_20261031(_o, ed.BY_CANON, ed.LOOKUP, ""); check("R19 Port Authority unchanged", _o == _b)
+# Nov 5 2026 R19 follow-ups: military-children compact, generic "Interstate Commission", compact officers
+MIL = "Relates to educational opportunities for military children; in-state tuition at colleges and universities"
+for raw, ag in (("The interstate commission", "Interstate Commission"), ("the interstate commission", "Interstate Commission on Educational Opportunity for Military Children")):
+    _o = {"actor_raw": raw, "agency": ag, "agency_source": "named_body", "law_title": MIL, "quote": "x"}
+    ar.fix_20261031(_o, ed.BY_CANON, ed.LOOKUP, ""); check("R19 military " + ag, _o["agency"] == "Interstate Commission on Educational Opportunity for Military Children" and _o["multi_state"] is True and _o["agency_org_type"] == "multi-state compact body")
+ICJ = "Adopts the interstate compact for juveniles; repealer"
+for raw, ag, unit in (("The chairperson", "Interstate Commission for Juveniles", "Chairperson"), ("The executive Committee", "Interstate Commission for Juveniles", "Executive Committee"),
+                      ("a commissioner", "Commissioner for the Interstate Compact for Juveniles", "Commissioner"), ("the compact administrator", "Unspecified", "Compact Administrator")):
+    _o = {"actor_raw": raw, "agency": ag, "agency_source": "named_body", "law_title": ICJ, "quote": "x"}
+    ar.fix_20261031(_o, ed.BY_CANON, ed.LOOKUP, ""); check("R19 officer " + raw, _o["agency"] == "Interstate Commission for Juveniles" and _o["agency_unit"] == unit and _o["multi_state"] is True)
+for raw in ("the chairperson", "a commissioner", "the compact administrator", "the executive committee"):
+    _o = {"actor_raw": raw, "agency": "Unspecified", "agency_source": "unresolved", "law_title": "Relates to the powers of the state commission of correction", "quote": "x"}
+    ar.fix_20261031(_o, ed.BY_CANON, ed.LOOKUP, ""); check("R19 officer in non-compact law unchanged " + raw, "multi_state" not in _o and _o["agency"] == "Unspecified")
 print("%d passed, %d failed" % (passed, failed))

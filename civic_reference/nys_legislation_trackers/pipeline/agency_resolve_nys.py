@@ -858,10 +858,71 @@ def fix_any_state_agency(o):
     return True
 
 
+# R19 (Nov 5 2026): interstate compact bodies New York joins count as New York actors, labelled multi-state. Bi-state authorities are untouched.
+MULTI_STATE_ORG_TYPE = "multi-state compact body"
+MULTI_STATE_BODIES = {   # canonical -> regex on the normalised actor or agency naming the body itself
+    "Interstate Commission for Juveniles": r"interstate commission for juveniles|interstate compact for juveniles commission",
+    "Interstate Commission for Adult Offender Supervision": r"interstate commission for adult offender supervision",
+    "Delaware River Basin Commission": r"delaware river basin commission",
+    "Susquehanna River Basin Commission": r"susquehanna river basin commission",
+    "Interstate Environmental Commission": r"interstate environmental commission",
+    "Northeast Interstate Low-Level Radioactive Waste Commission": r"northeast interstate low-level radioactive waste commission",
+    "Appalachian Regional Commission": r"appalachian regional commission",
+    "Great Lakes Commission": r"great lakes commission",
+    "Interstate Commission on Educational Opportunity for Military Children": r"interstate commission on educational opportunity for military children",
+    "Waterfront Commission of New York Harbor": r"waterfront commission of new york harbor",
+}
+MULTI_STATE_RE = [(re.compile(r"^(?:the )?(?:%s)$" % p, re.I), c) for c, p in MULTI_STATE_BODIES.items()]
+MULTI_STATE_COMPACT = [   # law text naming the compact -> the body its generic 'interstate commission' / 'compact administrator' means
+    (re.compile(r"interstate compact for juveniles", re.I), "Interstate Commission for Juveniles"),
+    (re.compile(r"interstate compact for adult offender supervision", re.I), "Interstate Commission for Adult Offender Supervision"),
+    (re.compile(r"interstate compact on educational opportunity for military children|educational opportunit(?:y|ies) for military children", re.I), "Interstate Commission on Educational Opportunity for Military Children"),
+]
+MULTI_STATE_OFFICERS = [   # follow-up (Nov 5 2026): officers and organs of the compact body, kept as agency_unit
+    (re.compile(r"^(?:the )?chair(?:person|man|woman)?$", re.I), "Chairperson"),
+    (re.compile(r"^(?:the )?executive committee$", re.I), "Executive Committee"),
+    (re.compile(r"^(?:a|the|each) commissioner$", re.I), "Commissioner"),
+    (re.compile(r"^(?:the )?compact administrator$", re.I), "Compact Administrator"),
+]
+MULTI_STATE_GENERIC = re.compile(r"^(?:the )?(?:interstate commission|commission)$", re.I)
+
+
+def fix_multi_state(o, by_canon, text=""):
+    """R19: a named compact body, or a generic 'the interstate commission' / 'the commission' / 'the compact administrator' in a law that
+    names that compact, resolves to the compact body (jurisdiction state, multi_state true)."""
+    raw = re.sub(r"\s+", " ", (o.get("actor_raw") or "").strip(" .,;:"))
+    ag = re.sub(r"\s+", " ", (o.get("agency") or "").strip(" .,;:"))
+    canon, unit = None, None
+    officer = next((u for rx, u in MULTI_STATE_OFFICERS if rx.match(raw)), None)
+    for rx, c in MULTI_STATE_RE:
+        if rx.match(raw) or rx.match(ag):
+            canon = c
+            unit = officer if rx.match(ag) and not rx.match(raw) else None
+            break
+    src = " ".join(str(o.get(k) or "") for k in ("law_title", "quote", "citation")) + " " + (text or "")
+    generic_ok = o.get("agency") in (None, "Unspecified") or o.get("agency_source") == "named_body"
+    if canon is None and generic_ok:
+        if MULTI_STATE_GENERIC.match(raw) or officer:
+            if re.match(r"^(?:the )?commission$", raw, re.I) and o.get("agency") not in (None, "Unspecified") and not re.match(r"^interstate commission", ag, re.I):
+                return False
+            hits = {c for rx, c in MULTI_STATE_COMPACT if rx.search(src)}
+            if len(hits) == 1:
+                canon, unit = hits.pop(), officer
+    if canon is None or canon not in by_canon:
+        return False
+    a = by_canon[canon]
+    o.update(agency=canon, agency_full=a.get("full_name") or canon, agency_matched=True, jurisdiction="state", agency_org_type=MULTI_STATE_ORG_TYPE,
+             agency_group=None, agency_unit=unit or o.get("agency_unit"), multi_state=True, agency_source="multi_state_r19")
+    o.pop("actor_unresolved", None)
+    return True
+
+
 def fix_20261031(o, by_canon, lookup=None, text=""):
     """R1-R3 (Oct 31 2026). Returns True when a raw office title in `agency` (or the chief diversity officer in actor_raw) was
     replaced by the body it heads. Runs on matched and unmatched records; titles whose body the crosswalks cannot resolve are left alone."""
     clean_unit_r16(o)
+    if fix_multi_state(o, by_canon, text):
+        return True
     if fix_district_election_inspectors(o, text):
         return True
     if fix_vocational_board(o, text) or fix_any_state_agency(o):

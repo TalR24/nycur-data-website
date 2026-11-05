@@ -44,3 +44,4 @@ Copied verbatim from the 20261019 audit brief and the nys-legislation-trackers s
   comes from the act's title or act clause ("relating to authorizing the town of Islip to impose a hotel tax" -> the town of
   Islip), kind power, extends_existing true, record_source sunset_extension_from_title; when the title names no government
   body the law goes to re-ask (check sunset_extension_unnamed_holder). 734 packet laws carry such sentences.
+- Decided Nov 5 2026 (Tal): a multi-state compact body in which New York participates (Interstate Commission for Juveniles, river basin commissions, the Waterfront Commission) counts as a government actor; its records carry agency_org_type 'multi-state compact body' and multi_state true.

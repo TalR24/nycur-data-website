@@ -19,7 +19,7 @@ OUT = os.path.join(DATA, "agency_crosswalk_nys.json")
 SNAP = os.path.join(HERE, "cache", "agency_sources")
 SOURCES = [("kjw8-pupa", "agency"), ("xzfr-sv3m", None)]
 ORG_TYPES = ["executive agency", "department", "division", "office", "board/commission", "public authority",
-             "statewide elected official", "judiciary", "legislature", "local government group"]
+             "statewide elected official", "judiciary", "legislature", "local government group", "multi-state compact body"]
 
 
 def norm(s):  # must match extract_obligations.norm_lookup_key
@@ -135,6 +135,17 @@ CURATED = [
     ("Villages", "Villages", "local government group", ["village", "villages", "each village", "any village", "village board", "village board of trustees", "village board of trustees of the village"]),
     ("School districts", "School districts", "local government group", ["school district", "school districts", "board of education", "boards of education", "board of cooperative educational services", "boces", "central school district", "union free school district", "trustees of the school district", "superintendent of schools", "school board"]),
     ("New York City", "New York City", "local government group", ["new york city", "city of new york", "the city of new york", "nyc", "mayor of the city of new york", "city of new york (nyc)"]),
+    # R19 (Nov 5 2026): interstate compact bodies New York joins (multi_state true on the record)
+    ('Interstate Commission for Juveniles', 'Interstate Commission for Juveniles', "multi-state compact body", ['ICJ', 'Interstate Compact for Juveniles Commission']),
+    ('Interstate Commission for Adult Offender Supervision', 'Interstate Commission for Adult Offender Supervision', "multi-state compact body", ['ICAOS', 'Interstate Compact for Adult Offender Supervision Commission']),
+    ('Delaware River Basin Commission', 'Delaware River Basin Commission', "multi-state compact body", ['DRBC']),
+    ('Susquehanna River Basin Commission', 'Susquehanna River Basin Commission', "multi-state compact body", ['SRBC']),
+    ('Interstate Environmental Commission', 'Interstate Environmental Commission', "multi-state compact body", ['IEC', 'Tri-State Environmental Commission']),
+    ('Northeast Interstate Low-Level Radioactive Waste Commission', 'Northeast Interstate Low-Level Radioactive Waste Commission', "multi-state compact body", ['Northeast Interstate Low Level Radioactive Waste Commission']),
+    ('Appalachian Regional Commission', 'Appalachian Regional Commission', "multi-state compact body", ['ARC']),
+    ('Great Lakes Commission', 'Great Lakes Commission', "multi-state compact body", ['GLC']),
+    ('Waterfront Commission of New York Harbor', 'Waterfront Commission of New York Harbor', "multi-state compact body", ['Waterfront Commission of New York Harbour', 'Waterfront Commission of New York and New Jersey']),
+    ('Interstate Commission on Educational Opportunity for Military Children', 'Interstate Commission on Educational Opportunity for Military Children', "multi-state compact body", ["Military Interstate Children's Compact Commission", 'MIC3']),
 ]
 
 
@@ -171,6 +182,8 @@ def main():
 
     for canon, full, otype, extra in CURATED:
         add(canon, full, otype, extra, "curated")
+        if otype == "multi-state compact body":
+            by_canon[canon]["multi_state"] = True
         if otype == "local government group":
             by_canon[canon]["jurisdiction"] = "nyc" if canon == "New York City" else "local"
     # official lists: attach as variants to a curated entry when any name already resolves, else add a new entry
