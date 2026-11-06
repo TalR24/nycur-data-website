@@ -1,0 +1,78 @@
+{
+ "night": "20261106",
+ "extraction_night": true,
+ "prompt": "version 2",
+ "sample": "20 of the 300 laws answered tonight (209 new 2021 laws; 91 re-asks), seed 20261106; 10 of the 20 are re-asked laws; 2 blinded gold calibration laws per auditor",
+ "prediction": {
+  "precision_strict": "85% (last night 82.1%; the gold is now frozen at audit time, so the field disagreements that remain are mostly real pipeline errors on re-asked laws)",
+  "recall": "92%",
+  "classes_expected": [
+   "quotes over 60 words (B28)",
+   "next-sentence fixed_date without deadline_text (B31)",
+   "sunset extensions stored as duty (B24)",
+   "Unspecified actors in passive drafting"
+  ],
+  "classes_expected_gone": [
+   "junk 'Acting By' units",
+   "county vocational boards Unspecified",
+   "'any agency of the state' Unspecified",
+   "same_as_chapter ignoring this law's rewrite",
+   "extension records with 'the provisions of' as actor"
+  ]
+ },
+ "as_audited": {
+  "stored": 87,
+  "correct": 72,
+  "wrong": 6,
+  "not_real": 9,
+  "missed": 10,
+  "precision_strict": "72/87 = 82.8%",
+  "precision_real": "89.7%",
+  "recall": "78/88 = 88.6%",
+  "calibration": "A 2/2 (+1 miss), B 4/4"
+ },
+ "gold_before_fixes": "same 423-law build: 81.0 -> 80.2 (within tolerance); 14 new mismatches in re-asked laws; 3 unmatched records verified blind (1 real, 2 not real) and folded. Root cause of the nightly churn on re-asked gold laws found: the always-requeue checks are never suppressed, so 97 laws have been re-asked 3+ nights (64 of them 9 times), most of each night's 100 re-ask slots; capped tonight at 4 (Z1)",
+ "adjudication": [
+  {
+   "claim": "sunset extension records with no holder stored Unspecified (2011-A2289 x8; 39 db; A: 17 with a chapter citation as actor)",
+   "verdict": "CONFIRMED; gate Z3 widens last night's holder rule to every Unspecified extension record (holder from title or amending sentence, else dropped and routed to re-ask)"
+  },
+  {
+   "claim": "'costs shall be borne by' stored as a duty (2; 141 regex)",
+   "verdict": "CONFIRMED recurrence of the adjudicated COST_BEARING class; gate Z4 extends the regex"
+  },
+  {
+   "claim": "task-force list items with continuing verbs stamped on_effective_date (2017-A6893-07 etc.)",
+   "verdict": "CONFIRMED; gate Z2 makes them ongoing/none; the law was also re-asked 8 nights running (Z1 cap)"
+  },
+  {
+   "claim": "line-break hyphen left in quotes (2; 24 db)",
+   "verdict": "CONFIRMED mechanical; backlog B35 (dehyphenate wrapped words when storing quotes)"
+  },
+  {
+   "claim": "prescribed-format clause stored as power (2015-A1327-01/-02; 2 db); conditional cutoff stored as fixed_date deadline (2009-A10213-02; 1 db); 'shall be based on' entitlement as duty (2)",
+   "verdict": "singletons; backlog B36 as one sampled item"
+  },
+  {
+   "claim": "real duty dropped by benefit_entitlement or designation_no_actor (3; 53 dropped, needs judgment)",
+   "verdict": "B29/B17 territory; sample before any rescue"
+  },
+  {
+   "claim": "missed widenings with no operative verb (2009-A10213 \u00a73 sunset; 2021-S1560 definition)",
+   "verdict": "queued for re-ask with notes"
+  },
+  {
+   "claim": "parallel provisions collapsed (2009-A11514-02 appears five times; 566 noisy)",
+   "verdict": "known dedupe class; B23 owns it"
+  }
+ ],
+ "adjudicated": {
+  "stored": 87,
+  "correct": 72,
+  "wrong": 6,
+  "not_real": 9,
+  "missed": 10,
+  "precision_strict": "72/87 = 82.8%"
+ },
+ "pause_decision": "decided after the final ingest with tonight's gates and the re-ask cap"
+}

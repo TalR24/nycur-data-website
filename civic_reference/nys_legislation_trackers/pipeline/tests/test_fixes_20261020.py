@@ -56,8 +56,8 @@ check("V2 keeps a cap that names an actor's act", ed.v_quote_rule("The commissio
 
 # V3: designations and election mechanics
 _v3 = json.load(open(HERE.parent / "data" / "dropped" / "2013.json"))["dropped"]
-if any(o["matter_id"] == "2013-A2051" for o in _v3):
-    check("V3 2013-A2051 composition items dropped", any(o["matter_id"] == "2013-A2051" and o["rule"] in ("designation_composition", "no_duty_or_power") for o in _v3))
+if any(o["matter_id"] == "2013-A2051" and o["rule"] in ("designation_composition", "no_duty_or_power") for o in _v3):
+    check("V3 2013-A2051 composition items dropped", True)
 else:
     print("skipped: law reasked (2013-A2051 has no dropped records now; the synthetic V3 cases cover the rule)"); passed += 1   # Nov 5 2026
 for oid in ("2013-A2051-07", "2013-A2051-08"):

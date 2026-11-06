@@ -7,6 +7,18 @@ import extract_duties as ed
 import effective_date as efd
 import agency_resolve_nys as ar
 
+def _capped(law):
+    """Nov 6 2026: an always-requeue check is capped after 4 re-asks and surfaced in data/mechanical_flags/{Y}.json instead of data/reask."""
+    import json as _j
+    from pathlib import Path as _P
+    p = _P(__file__).resolve().parents[2] / "data" / "mechanical_flags" / (law[:4] + ".json")
+    if not p.exists():
+        return False
+    v = _j.load(open(p)).get("laws", {}).get(law) or {}
+    return "requeue_capped" in _j.dumps(v)
+
+
+
 passed = failed = 0
 def check(name, cond):
     global passed, failed
@@ -119,7 +131,7 @@ check("J10 the four laws carry night 20261013", all(any(x["night"] == "20261013"
 p = DATA / "reask" / "2009.json"
 if p.exists():
     ent = json.load(open(p))["laws"].get("2009-S3780")
-    check("J10 2009-S3780 in data/reask with audit_confirmed_miss", bool(ent) and any(r["check"] == "audit_confirmed_miss" for r in ent["reasons"]))
+    check("J10 2009-S3780 in data/reask with audit_confirmed_miss (or requeue-capped)", _capped("2009-S3780") or bool(ent) and any(r["check"] == "audit_confirmed_miss" for r in ent["reasons"]))
 
 print("%d passed, %d failed" % (passed, failed))
 sys.exit(1 if failed else 0)

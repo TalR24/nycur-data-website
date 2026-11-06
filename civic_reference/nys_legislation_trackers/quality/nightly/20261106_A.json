@@ -1,0 +1,1298 @@
+{
+ "_scoring": {
+  "auditor": "A",
+  "night": "20261106",
+  "laws": 11,
+  "stored_records": 75,
+  "correct": 65,
+  "wrong_fields": 5,
+  "not_real": 5,
+  "missed": 8,
+  "precision_strict": "65/75 = 86.7% (Wilson 95% 77.2-92.6)",
+  "precision_real": "70/75 = 93.3% (Wilson 95% 85.3-97.1)",
+  "recall": "70/78 = 89.7% (Wilson 95% 81.0-94.7)",
+  "effective_dates": "11/11 correct",
+  "calibration_laws": [
+   "2019-A2770",
+   "2019-S6497"
+  ],
+  "calibration": {
+   "stored_records": 2,
+   "correct": 2,
+   "wrong_fields": 0,
+   "not_real": 0,
+   "missed": 1,
+   "precision_strict": "2/2 = 100.0% (Wilson 95% 34.2-100.0)",
+   "recall": "2/3 = 66.7% (Wilson 95% 20.8-93.9)",
+   "effective_dates": "2/2 correct"
+  },
+  "method_note": "Blind lists saved to /tmp/auditA_20261106/blind_part1.txt before stored records were opened. 2009-A11514 and 2013-S2320 blind passes used a modal-sentence scan rather than a full read, so their recall is an upper bound. Recall computed as (correct+wrong)/(correct+wrong+missed); every stored correct record the blind pass did not list (e.g. 2009-A10507-03/-06/-07/-08) is in both numerator and denominator."
+ },
+ "_classes": [
+  {
+   "name": "line-break hyphen left in quote",
+   "criteria": [
+    "2"
+   ],
+   "instances": [
+    "2009-A11514-03",
+    "2009-A11514-08"
+   ],
+   "rule": "re.search(r'[a-z]- [a-z]{2,}', quote) and not prefix (non|self|pre|re|co|multi|anti|semi|post|mid)- ; over duties+powers all sessions",
+   "db_matches": 24,
+   "db_examples": [
+    "2009-A11514-03",
+    "2009-A11514-08",
+    "2013-A1869-05"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "condition, consideration or approval clause stored as a duty",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2021-S1594-08",
+    "2009-A11514-07"
+   ],
+   "rule": "kind=='duty' and re.search(r'shall be taken into consideration|must approve|shall approve the release', quote, re.I)",
+   "db_matches": 7,
+   "db_examples": [
+    "2009-A11514-07",
+    "2009-A8501-24",
+    "2009-A8501-61"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "'shall be based on' entitlement computation stored as duty",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2013-S2320-11",
+    "2013-S2320-12"
+   ],
+   "rule": "kind=='duty' and re.search(r'\\b(abatement|exemption|credit|benefit)s?\\b[^.]{0,120}shall be based on', quote, re.I)",
+   "db_matches": 2,
+   "db_examples": [
+    "2013-S2320-11",
+    "2013-S2320-12"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "local government actor left Unspecified",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2009-A11514-16"
+   ],
+   "rule": "agency=='Unspecified' and re.search(r'local sponsor|\\bcount(y|ies)\\b|\\bcit(y|ies)\\b|\\btowns?\\b|\\bvillages?\\b|school district', actor_raw, re.I) (over-matches actor_raw mentioning a city incidentally)",
+   "db_matches": 52,
+   "db_examples": [
+    "2009-A10770-03",
+    "2009-A8827-08",
+    "2011-A8068-24"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "sunset extension with chapter citation as actor_raw and agency Unspecified (watch, not scored wrong)",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2011-A2289-04",
+    "2011-A2289-06",
+    "2011-A2289-08",
+    "2011-A2289-09",
+    "2011-A2289-10",
+    "2011-A2289-11",
+    "2011-A2289-12",
+    "2011-A2289-13"
+   ],
+   "rule": "agency=='Unspecified' and re.search(r'(chapter|section) [\\w-]+ of (the laws|part|chapter)', actor_raw, re.I)",
+   "db_matches": 17,
+   "db_examples": [
+    "2019-A4959-01",
+    "2021-A9971-01",
+    "2009-A10118-01"
+   ],
+   "needs_judgment": true
+  },
+  {
+   "name": "citation-only new matter with reprinted operative text stored as record",
+   "criteria": [
+    "1",
+    "4"
+   ],
+   "instances": [
+    "2009-A10507-01",
+    "2009-A10507-02"
+   ],
+   "rule": "needs a braced-span check against the packet (record's only braced overlap is a cross-reference or a single citation word such as {{article}}); regex proxy r'as provided in subdivision \\w+ of section [\\w -]+ of this chapter,? and shall include' finds 1",
+   "db_matches": 1,
+   "db_examples": [
+    "2009-A10507-01"
+   ],
+   "needs_judgment": true
+  },
+  {
+   "name": "real government duty dropped by benefit_entitlement or designation_no_actor",
+   "criteria": [
+    "1",
+    "3"
+   ],
+   "instances": [
+    "2021-S1594 (dropped 'Living donor expenses shall be reimbursed')",
+    "2019-A2770 (dropped leaflet item (b))",
+    "2009-A11514 (dropped DOT service and usage formula)"
+   ],
+   "rule": "dropped rule in (benefit_entitlement, designation_no_actor) and re.search(r'(commissioner|department|director of|comptroller|informational leaflet|shall be reimbursed|shall be distributed)', quote, re.I)",
+   "db_matches": 53,
+   "db_examples": [
+    "2009-A10260 designation_no_actor 'For the purpose of providing construction related'",
+    "2009-A10847 designation_no_actor 'be transferred by the comptroller as expenditures'",
+    "2009-A11514 designation_no_actor 'in accordance with the service and usage formula'"
+   ],
+   "needs_judgment": true
+  },
+  {
+   "name": "parallel provisions collapsed (known class, recurrence)",
+   "criteria": [
+    "9"
+   ],
+   "instances": [
+    "2009-A11514-02"
+   ],
+   "rule": "record quote (first 120 chars, braces stripped, whitespace normalised) occurs more than once in the packet LAW TEXT while only one record carries that quote; over-matches repeated boilerplate",
+   "db_matches": 566,
+   "db_examples": [
+    "2009-A1002-03",
+    "2009-A10260-02",
+    "2009-A10468-05"
+   ],
+   "needs_judgment": true
+  }
+ ],
+ "2021-S133": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2022-12-10",
+   "computed": "2022-12-10",
+   "verdict": "correct",
+   "note": "one year after signing 2021-12-10"
+  }
+ },
+ "2013-A4528": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2013-05-22",
+   "computed": "2013-05-22",
+   "verdict": "correct",
+   "note": "immediately"
+  },
+  "note": "only new matter is '[2013] {{2015}}' in the sunset of ch 223 of 1996 (banking law permissible fees on open end loans); the fee authority belongs to private lenders and the title names no government body, so no record (Oct 19 rule: unnamed holder goes to re-ask)."
+ },
+ "2013-S7799": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2014-06-30",
+   "computed": "2014-06-30",
+   "verdict": "correct",
+   "note": "immediately"
+  },
+  "note": "new matter only re-times effective dates of ch 549 of 2013 NFP law 713 amendments; no duty or power."
+ },
+ "2009-A10507": {
+  "records": {
+   "2009-A10507-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "4",
+     "1"
+    ],
+    "fields": {
+     "kind": "power"
+    },
+    "quote": "Such modifications may include the use of voting machines, as provided in subdivision one of section two thousand thirty-five of this chapter, and shall include the use of absentee ballots as provided under section two thousand eighteen-a or two thousand eighteen-b of this chapter, whichever shall apply.",
+    "note": "Only new matter is the cross-reference '{{as provided in subdivision one of section two thousand thirty-five of this chapter,}}' inside 'Such modifications may include the use of voting machines'; the duty half 'and shall include the use of absentee ballots' is reprinted. Judgment: an extension of the may-include power, so kind power."
+   },
+   "2009-A10507-02": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "The commissioner of education may order such modifications in the manner of voting on the resolution described in subdivision two of section eighteen hundred three of this article and for the election described in subdivision seven of this section as are customary in school district elections in the community affected by such vote.",
+    "note": "Only change is '[chapter] {{article}}' in 'The commissioner of education may order such modifications'; reprinted power with a citation fix, nothing widened."
+   },
+   "2009-A10507-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Such modifications may include the use of voting machines, as provided in subdivision one of section two thousand thirty-five of this chapter, and the use of nominating petitions.",
+    "note": "Judgment: braced cross-reference imports subdivision 1 of 2035, which now includes lever machines; accepted as extension.",
+    "fields_at_audit": {
+     "agency": "SED",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2009-A10507-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "If the board of cooperative educational services shall so determine, voting machines, including lever voting machines, may be used for recording the vote at such meeting.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "BOCES",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2009-A10507-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "If the trustees or board of education of any school district shall so determine, voting machines, including lever voting machines, may be used for recording the vote on elections and questions, or either, at the school district meetings or elections, annual and special, or either, in such district.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "School districts",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2009-A10507-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Voting for the election of members of such board of education shall be by voting machine, as provided in subdivision one of section two thousand thirty-five of this chapter, and shall be governed by the applicable provisions of the election law with respect to voting machines",
+    "note": "Judgment, same cross-reference extension as -03 (\u00a75).",
+    "fields_at_audit": {
+     "agency": "School districts",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2009-A10507-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Voting for the election of members of such board of education shall be by voting machine, as provided in subdivision one of section two thousand thirty-five of this chapter, and shall be governed by the applicable provisions of the election law with respect to voting machines",
+    "note": "\u00a76 Rensselaer, sub 9-a.",
+    "fields_at_audit": {
+     "agency": "School districts",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2009-A10507-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Voting for the election of members of such board of education shall be by voting machine, as provided in subdivision one of section two thousand thirty-five of this chapter, and shall be governed by the applicable provisions of the election law with respect to voting machines",
+    "note": "\u00a77, section 2553.",
+    "fields_at_audit": {
+     "agency": "School districts",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2010-08-13",
+   "computed": "2010-08-13",
+   "verdict": "correct",
+   "note": "immediately; expires 2012-12-31 stored correctly"
+  }
+ },
+ "2021-S2074": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2020-11-11",
+   "computed": "2020-11-11",
+   "verdict": "correct",
+   "note": "same as chapter of 2020 S8748/A10674-A = ch 265 of 2020 (2019-A10674, signed 2020-11-11 per data/signed/2019.json); its stored effective date 2020-11-11 stands under criterion 8 because this amendment was signed 2021-03-25. Referenced chapter's own act clause not read."
+  },
+  "note": "new matter changes whom the employer notifies ('{{of the site of employment at}}'); employer duty, private."
+ },
+ "2021-S2951": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2023-01-01",
+   "computed": "2023-01-01",
+   "verdict": "correct",
+   "note": "fixed date"
+  },
+  "note": "new matter changes deadlines in 'Completed application forms ... shall entitle the applicant to vote' (entitlement); board of elections duties in the section are reprinted."
+ },
+ "2009-A4687": {
+  "records": {
+   "2009-A4687-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "on and after July first in the year next succeeding the year in which this sentence shall take effect, the authority shall consist of two additional members who shall be appointed by the mayor.",
+    "note": "'the authority shall consist of two additional members who shall be appointed by the mayor'; July 1 of next year after 2010 = 2011-07-01.",
+    "fields_at_audit": {
+     "agency": "New York City",
+     "kind": "duty",
+     "deadline_kind": "fixed_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2010-09-17",
+   "computed": "2010-09-17",
+   "verdict": "correct",
+   "note": "immediately"
+  },
+  "note": "dropped salary sentence correctly dropped as entitlement."
+ },
+ "2021-S1594": {
+  "records": {
+   "2021-S1594-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The living donor support program is hereby established in the department.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOH",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S1594-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the program shall pay the living donor expenses for living donors who are residents of the state and make a living donation in which the ultimate recipient, either directly or through paired donation is a resident of the state.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOH",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S1594-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner through regulations shall establish eligible living donor expenses that are eligible for reimbursement under the program which shall include at a minimum:",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOH",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S1594-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The program shall not pay reimbursement for expenses paid or required to be paid for by any third-party payer",
+    "note": "prohibition on the government payer; duty.",
+    "fields_at_audit": {
+     "agency": "DOH",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S1594-08": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "Factors such as cost to the state, ease of use for the living donor, and ease of use for transplant center hospitals shall be taken into consideration when awarding such contract.",
+    "note": "'Factors such as cost to the state ... shall be taken into consideration when awarding such contract' is a condition of the contract power (-07), not its own record."
+   },
+   "2021-S1594-09": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner shall make regulations to implement this section.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOH",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S1594-10": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "In implementing this paragraph, the department shall consult with the transplant council in the department",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOH",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S1594-11": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "actor_raw": "the department of health (medical assistance program)"
+    },
+    "quote": "Services for that person covered under that section that would otherwise be health care services under this article shall be paid for under this article and not under such section, provided federal financial participation is available.",
+    "note": "actor_raw 'Services' is the passive subject of 'Services ... shall be paid for under this article'; agency DOH right (known class passive-subject actors, recurrence)."
+   },
+   "2021-S1594-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner may by regulation impose a limitation on: (i) the amount of lost wages for a living donor making an income in excess of an annual rate of one hundred twenty-five thousand dollars; or (ii) the amount of living donor expenses above fourteen thousand dollars for any single living donor;",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOH",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S1594-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner may contract for the administration of reimbursement under the program.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOH",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [
+   {
+    "blind": "b6",
+    "quote": "Living donor expenses shall be reimbursed as close in time as possible to their being incurred by the donor, including by pre-payment where practicable.",
+    "kind": "duty",
+    "agency": "DOH",
+    "dropped_by": "benefit_entitlement",
+    "note": "timing duty on the State payer (the program in the department), not a beneficiary entitlement."
+   }
+  ],
+  "effective_date": {
+   "stored": "2023-04-01",
+   "computed": "2023-04-01",
+   "verdict": "correct",
+   "note": "first of April next succeeding 2022-12-29"
+  },
+  "note": "Unverified: \u00a75 \u00a7207(1)(d) new content ('including living donation'; transplant information) may be a DOH extension record, but the lead-in of subdivision 1 is not in the text, so not counted as a miss."
+ },
+ "2011-A2289": {
+  "records": {
+   "2011-A2289-14": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the commissioner of education shall allocate school bus driver training grants to school districts and boards of cooperative education services pursuant to sections 3650-a, 3650-b and 3650-c of the education law",
+    "note": ""
+   },
+   "2011-A2289-15": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The moneys appropriated for the support of public libraries by chapter 53 of the laws of 2010 which enacts the education, labor and family assistance budget shall be apportioned for 2010--2011 in accordance with the provisions of sections 271, 272, 273, 282, 284, and 285 of the education law",
+    "note": ""
+   },
+   "2011-A2289-16": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "pursuant to a plan developed by the commissioner of education and approved by the director of the budget, the aid payable to libraries and library systems pursuant to such appropriations shall be reduced proportionately to assure that the total amount of aid payable does not exceed the total appropriations for such purpose",
+    "note": ""
+   },
+   "2011-A2289-17": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "on the audit and warrant of the state comptroller on vouchers certified or approved by the commissioner of education in the manner prescribed by law from moneys in the state lottery fund and from the general fund",
+    "note": ""
+   },
+   "2011-A2289-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "and in state fiscal year two thousand nine--two thousand ten eight million dollars and in state fiscal year two thousand ten--two thousand eleven eight million dollars subject to an appropriation for formula grants to public library systems, reference and research library resources systems, and school library systems operating under an approved plan of service.",
+    "note": ""
+   },
+   "2011-A2289-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "receiving a grant pursuant to this section may use no more than eighty percent of such grant funds for any recruitment, retention and certification costs associated with transitional certification of teacher candidates for the school years two thousand one--two thousand two through two thousand ten--two thousand eleven.",
+    "note": ""
+   },
+   "2011-A2289-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "such boards of education shall, during the school years nineteen hundred ninety-five--ninety-six through June thirtieth, two thousand eleven of the two thousand ten--two thousand eleven school year, be authorized to increase class sizes in special classes containing students with disabilities",
+    "note": ""
+   },
+   "2011-A2289-21": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "any moneys appropriated to the state education department may be suballocated to other state departments or agencies, as needed, to accomplish the intent of the specific appropriations contained therein",
+    "note": ""
+   },
+   "2011-A2289-22": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "localities shall be available for payment of aid heretofore or hereafter to accrue and may be suballocated to other departments and agencies to accomplish the intent of the specific appropriations contained therein.",
+    "note": ""
+   },
+   "2011-A2289-23": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "moneys appropriated to the state education department for general support for public schools may be interchanged with any other item of appropriation for general support for public schools within the general fund local assistance account elementary, middle, secondary and continuing education program.",
+    "note": ""
+   },
+   "2011-A2289-24": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the city school district of the city of Rochester, upon the consent of the board of cooperative educational services of the supervisory district serving its geographic region may purchase from such board for the 2010-11 school year, as a non-component school district, services required by article 19 of the education law.",
+    "note": ""
+   },
+   "2011-A2289-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "This act shall take effect July 1, 2002 and shall expire and be deemed repealed June 30, 2011.",
+    "note": ""
+   },
+   "2011-A2289-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "This act shall take effect on the same date as chapter 180 of the laws of 2000 takes effect, and shall expire July 1, 2011 when upon such date the provisions of this act shall be deemed repealed.",
+    "note": ""
+   },
+   "2011-A2289-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "This act shall take effect July 1, 1992, and shall be deemed repealed on June 30, 2011.",
+    "note": "Earlier chapter's sunset sentence quoted inside an amendment: extension record (Oct 16). actor_raw is the chapter citation and agency Unspecified; the act title names no government holder, which the Oct 19 rule routes to re-ask, so accepted; see class C5."
+   },
+   "2011-A2289-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "This act shall take effect immediately; provided that sections one, two and three of this act shall expire and be deemed repealed on June 30, 2011.",
+    "note": "Earlier chapter's sunset sentence quoted inside an amendment: extension record (Oct 16). actor_raw is the chapter citation and agency Unspecified; the act title names no government holder, which the Oct 19 rule routes to re-ask, so accepted; see class C5."
+   },
+   "2011-A2289-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "section 23 of this act shall take effect July 1, 2008 and shall expire and be deemed repealed June 30, 2012",
+    "note": "Earlier chapter's sunset sentence quoted inside an amendment: extension record (Oct 16). actor_raw is the chapter citation and agency Unspecified; the act title names no government holder, which the Oct 19 rule routes to re-ask, so accepted; see class C5."
+   },
+   "2011-A2289-09": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "and provided, further that this act shall be deemed repealed on and after January 1, 2015.",
+    "note": "Earlier chapter's sunset sentence quoted inside an amendment: extension record (Oct 16). actor_raw is the chapter citation and agency Unspecified; the act title names no government holder, which the Oct 19 rule routes to re-ask, so accepted; see class C5."
+   },
+   "2011-A2289-10": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "section seventy-one of this act shall expire and be deemed repealed June 30, 2011",
+    "note": "Earlier chapter's sunset sentence quoted inside an amendment: extension record (Oct 16). actor_raw is the chapter citation and agency Unspecified; the act title names no government holder, which the Oct 19 rule routes to re-ask, so accepted; see class C5."
+   },
+   "2011-A2289-11": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "and provided further that sections three, fifteen, seventeen, twenty, twenty-two and twenty-three of this act shall expire and be deemed repealed on March 31, 2012.",
+    "note": "Earlier chapter's sunset sentence quoted inside an amendment: extension record (Oct 16). actor_raw is the chapter citation and agency Unspecified; the act title names no government holder, which the Oct 19 rule routes to re-ask, so accepted; see class C5."
+   },
+   "2011-A2289-12": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "section one hundred thirteen of this act shall remain in full force and effect until July 1, 2011 at which time it shall be deemed repealed",
+    "note": "Earlier chapter's sunset sentence quoted inside an amendment: extension record (Oct 16). actor_raw is the chapter citation and agency Unspecified; the act title names no government holder, which the Oct 19 rule routes to re-ask, so accepted; see class C5."
+   },
+   "2011-A2289-13": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "provided further, however, that the amendments made pursuant to section one hundred nineteen of this act shall be deemed to be repealed on and after July 1, 2011",
+    "note": "Earlier chapter's sunset sentence quoted inside an amendment: extension record (Oct 16). actor_raw is the chapter citation and agency Unspecified; the act title names no government holder, which the Oct 19 rule routes to re-ask, so accepted; see class C5."
+   }
+  },
+  "missed": [
+   {
+    "blind": "b16",
+    "quote": "an amount equal to the amount paid to a school district pursuant to subdivisions a and b of this section shall first be deducted from the following payments due the school district",
+    "kind": "duty",
+    "agency": "SED",
+    "dropped_by": null,
+    "note": "\u00a715 c, special apportionment for salary expenses: deduction duty on the State payer."
+   },
+   {
+    "blind": "b17",
+    "quote": "an amount equal to the amount paid to a school district pursuant to subdivisions a and b of this section shall first be deducted from the following payments due the school district",
+    "kind": "duty",
+    "agency": "SED",
+    "dropped_by": null,
+    "note": "\u00a716 c, parallel provision for public pension accruals; parallel sections are separate records."
+   }
+  ],
+  "effective_date": {
+   "stored": "2011-02-14",
+   "computed": "2011-02-14",
+   "verdict": "correct",
+   "note": "immediately; retroactive_to 2010-04-01 stored correctly"
+  }
+ },
+ "2009-A11514": {
+  "records": {
+   "2009-A11514-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The comptroller is hereby authorized and directed to utilize this appropriation for the purpose of making payments for nonpersonal service liabilities incurred by the judiciary from April 1 through June 27, 2010",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State Comptroller",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2009-A11514-09": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The total amount of funds provided herein shall be distributed to school-based health center providers based on the ratio of each provider's total enrollment for all sites to the total enrollment of all providers.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOH",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2009-A11514-12": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The comptroller is hereby authorized and directed to utilize this appropriation for the purpose of making mandated payments to the state fiscal year beginning April 1, 2010 for the 2009-2010 school year for support for excess cost aid payments",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State Comptroller",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2009-A11514-13": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The comptroller is hereby authorized and directed to utilize this appropriation for the purposes of making statutorily required June payments to school districts on or before June 30, 2010",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State Comptroller",
+     "kind": "duty",
+     "deadline_kind": "fixed_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2009-A11514-14": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The comptroller is hereby authorized and directed to utilize this appropriation for the purpose of repaying the city of New York for advances made for the State share of operating expenses of city university of New York community colleges",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State Comptroller",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2009-A11514-15": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The comptroller is hereby authorized and directed to utilize this appropriation for the purpose of repaying the city of New York for advances made for the State share of operating expenses of city university of New York senior colleges",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State Comptroller",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2009-A11514-17": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "be transferred by the comptroller as expenditures and disbursements to such appropriations for all state departments, agencies, the legislature and the judiciary, as applicable, in amounts equal to the amounts charged against the appropriations in this act",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State Comptroller",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2009-A11514-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the moneys hereby appropriated may be increased or decreased by interchange or transfer with any appropriation of the department of health or by transfer or suballocation to any appropriation of the department of insurance",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOH",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2009-A11514-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "At the direction of the director of the budget, funds may also be transferred directly to the general fund for the purpose of repaying a draw on the tobacco revenue guarantee fund.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOB",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2009-A11514-10": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "notwithstanding any contrary provision of law, the commissioner of health may establish minimum and maximum awards for providers",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOH",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2009-A11514-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the commissioner of health shall be authorized to continue contracts with community service programs, multi-service agencies and community development initiatives for all such contracts which were executed on or before March 31, 2010",
+    "note": "correct, but the same sentence appears 5 times in the text for different program schedules (count of 'shall be authorized to continue contracts' = 5 after rejoining), stored once; parallel collapse, misses listed.",
+    "fields_at_audit": {
+     "agency": "DOH",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2009-A11514-03": {
+    "verdict": "wrong",
+    "criteria": [
+     "2"
+    ],
+    "fields": {
+     "quote": "The department subject to the approval of the director of the division of budget, shall develop an allocation methodology taking into account financial status of the facility as well as resident needs."
+    },
+    "quote": "The department subject to the approval of the director of the divi- sion of budget, shall develop an allo- cation methodology taking into account financial status of the facility as well as resident needs.",
+    "note": "line-break hyphens left in the quote ('divi- sion', 'allo- cation'); pilot rule rejoins them."
+   },
+   "2009-A11514-08": {
+    "verdict": "wrong",
+    "criteria": [
+     "2"
+    ],
+    "fields": {
+     "quote": "such distributions shall be limited to providers or programs where, as determined by the commissioner of health, emergency assistance is vital to protect the life or safety of patients"
+    },
+    "quote": "such distrib- utions shall be limited to providers or programs where, as determined by the commissioner of health, emergency assist- ance is vital to protect the life or safe- ty of patients",
+    "note": "line-break hyphens left in quote ('distrib- utions', 'assist- ance', 'safe- ty')."
+   },
+   "2009-A11514-16": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Counties",
+     "agency_unit": null
+    },
+    "quote": "local sponsors may use funds contained in reserves for excess student revenue for operating support of a community college program even though said expenditures may cause expenses and student revenues to exceed one-third of the college's net operating costs for the college fiscal year 2010-11",
+    "note": "'local sponsors may use funds contained in reserves for excess student revenue for operating support of a community college program': local sponsors are the sponsoring local governments, not Unspecified."
+   },
+   "2009-A11514-07": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "3"
+    ],
+    "fields": {},
+    "quote": "the director of the budget must approve the release of any request for proposal or request for application or any other procurement initiatives issued on or after April 1, 2007.",
+    "note": "'Provided, however, that the director of the budget must approve the release of any request for proposal' is an approval condition on the program's procurements (known class: approvers as actors)."
+   }
+  },
+  "missed": [
+   {
+    "blind": "b5a",
+    "quote": "the commissioner of health shall be authorized to continue contracts with community service programs, multi-service agencies and community development initiatives for all such contracts which were executed on or before March 31, 2010",
+    "kind": "power",
+    "agency": "DOH",
+    "dropped_by": null,
+    "note": "parallel repeat 2 of 5 in a different program schedule"
+   },
+   {
+    "blind": "b5b",
+    "quote": "the commissioner of health shall be authorized to continue contracts with community service programs, multi-service agencies and community development initiatives for all such contracts which were executed on or before March 31, 2010",
+    "kind": "power",
+    "agency": "DOH",
+    "dropped_by": null,
+    "note": "parallel repeat 3 of 5"
+   },
+   {
+    "blind": "b5c",
+    "quote": "the commissioner of health shall be authorized to continue contracts with community service programs, multi-service agencies and community development initiatives for all such contracts which were executed on or before March 31, 2010",
+    "kind": "power",
+    "agency": "DOH",
+    "dropped_by": null,
+    "note": "parallel repeat 4 of 5"
+   },
+   {
+    "blind": "b5d",
+    "quote": "the commissioner of health shall be authorized to continue contracts with community service programs, multi-service agencies and community development initiatives for all such contracts which were executed on or before March 31, 2010",
+    "kind": "power",
+    "agency": "DOH",
+    "dropped_by": null,
+    "note": "parallel repeat 5 of 5"
+   },
+   {
+    "blind": "b11",
+    "quote": "in accordance with the service and usage formula to be established by the commissioner of transportation with the approval of the director of the budget",
+    "kind": "duty",
+    "agency": "DOT",
+    "dropped_by": "designation_no_actor",
+    "note": "actor named (commissioner of transportation); a second occurrence for upstate bus systems is not stored either, counted here once."
+   }
+  ],
+  "effective_date": {
+   "stored": "2010-06-21",
+   "computed": "2010-06-21",
+   "verdict": "correct",
+   "note": "immediately; retroactive_to 2010-04-01 stored correctly"
+  },
+  "note": "Appropriation extender; amount and date changes in amended sections 2-9 are appropriation amounts (no record) except the judiciary 'authorized and directed' sentence (-01). Blind pass covered sections 9-c to 20 by sentence scan, so recall here is an upper bound."
+ },
+ "2013-S2320": {
+  "records": {
+   "2013-S2320-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Any local law or ordinance providing for benefits pursuant to this section must also provide the Following with respect to conversions, alterations or improvements completed on or after December thirty-first, two thousand eleven",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Cities",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-S2320-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Any local law or ordinance providing for benefits pursuant to this section must also provide, with respect to conversions, alterations or improvements for which application was made after the effective date of this subdivision",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Cities",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-S2320-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the local housing agency shall require the Applicant to pay two times the actual cost for Any additional inspections needed to verify the completion of such conversion, alteration or improvement.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Cities",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-S2320-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The date or dates by which applications for an abatement pursuant to this section shall be made for the fiscal Year beginning in calendar Year two thousand fourteen shall be established by the commissioner of finance by rule, provided that such date or dates shall not be later than the fifteenth day of February for such calendar Year.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOF",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-S2320-20": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the department of housing preservation and development of New York City shall impose a requirement and either certify (i) that twenty percent of the units on site are affordable to households of low and moderate income pursuant to subdivision 7 of section 421-a of the real property tax law",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "HPD",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-S2320-21": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The Department of Housing Preservation and Development shall make information relating to the provisions of this section available on the department's website, and shall provide a contact phone number allowing tenants to determine benefits available pursuant to this section.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "HPD",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-S2320-22": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The Department shall convene a task force that shall examine and report on methods to improve the transparency of the program established pursuant to this section.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "HPD",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-S2320-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Any city to which the multiple dwelling law is applicable, acting through its local legislative body or other governing agency, is hereby authorized and empowered, to and including January first, two thousand fifteen, to adopt and amend local laws or ordinances",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Cities",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2013-S2320-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "provided that, in addition, the commissioner of finance May by rule designate the owner of a dwelling unit as an Applicant.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOF",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2013-S2320-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the commissioner of finance May by rule require the owner of a dwelling unit to submit an application to supplement information contained in the application submitted by the board of managers of a condominium or the board of directors of a cooperative apartment corporation",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOF",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2013-S2320-09": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "May by rule apply and adjust, as appropriate, Any provisions of this section that relate to applications submitted by such boards to applications submitted by such Owners.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOF",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2013-S2320-13": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the commissioner of finance May require each Applicant for an abatement for the fiscal years commencing in calendar years two thousand twelve and two thousand thirteen to submit an application by a date and in a form determined by such commissioner",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOF",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-S2320-14": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "such commissioner May deny abatements pursuant to this section for failure to submit such application by such date provided that such date shall be no earlier than thirty days Following the date on which the commissioner releases the application form.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOF",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-S2320-16": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Notwithstanding Any other provision of law to the contrary, such Rules May include, but need not be limited to, denial, termination or revocation of Any abatement pursuant to this section",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOF",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-S2320-17": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner of finance shall be authorized to prepare and submit amended tax bills to taxpayers to reflect Any adjustments necessary to apply the Partial abatement received pursuant to this section.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOF",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-S2320-18": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "If a condominium or cooperative has paid an amount that is different than the amount due on Any amended tax bill, the commissioner of finance May waive Any interest otherwise due on such amount.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOF",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-S2320-19": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the loft board May by rule exempt categories of units or buildings from such use incompatibility determinations including but not limited to residentially occupied units or subcategories of such units, and provided, further that",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Loft Board",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-S2320-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the Department May require that the applications for Exemption or abatement under this section that are filed on or after a date specified in such local law or ordinance be filed electronically.",
+    "note": "agency Unspecified for 'the Department May require ... filed electronically' (RPTL 489 sub 20); no definition of 'Department' in the marked text, so not scored wrong; likely NYC HPD, unverified.",
+    "fields_at_audit": {
+     "agency": "Unspecified",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-S2320-11": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "did not include an election by the board of directors of such cooperative apartment corporation that such information return be deemed an application for an abatement pursuant to this section for such fiscal Year, shall be based on the information contained in the application submitted in two thousand eleven or on the information contained in such information return",
+    "note": "'the abatement for the fiscal Year commencing in calendar Year two thousand twelve ... shall be based on the information contained in the application submitted in two thousand eleven': subject is the abatement, a computation rule of the entitlement, no government actor named."
+   },
+   "2013-S2320-12": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "then the abatement for the fiscal Year commencing in calendar Year two thousand twelve for such condominium shall be based on the information contained in the application submitted in two thousand eleven",
+    "note": "'the abatement for the fiscal Year commencing in calendar Year two thousand twelve ... shall be based on the information contained in the application submitted in two thousand eleven': subject is the abatement, a computation rule of the entitlement, no government actor named."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2013-01-30",
+   "computed": "2013-01-30",
+   "verdict": "correct",
+   "note": "immediately; retroactive_to 2012-06-01 stored correctly"
+  },
+  "note": "Blind pass by sentence scan of braced modal sentences plus free-standing sections 13, 14 and 25; loft-law sections 21-24 checked only for the stored loft board power."
+ },
+ "2019-A2770": {
+  "records": {
+   "2019-A2770-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The informational leaflet shall also include information relating to pre-term labor and premature birth, including but not limited to definitions and information on the risks that pre-term labor and premature birth pose to the expectant mother and fetus.",
+    "note": "new subdivision 1-f; the leaflet is designed by the commissioner ('Such leaflet shall be designed by the commissioner').",
+    "fields_at_audit": {
+     "agency": "DOH",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [
+   {
+    "blind": "b1",
+    "quote": "The informational leaflet shall also include: (a) an explanation ... (b) a statement that the medical assistance program provides coverage for all income-eligible pregnant women and children residing in the state regardless of immigration status.",
+    "kind": "duty",
+    "agency": "DOH",
+    "dropped_by": "designation_no_actor",
+    "note": "list item under the lead-in 'The informational leaflet shall also include', the same structure as 1-f, which was kept; extends_existing true."
+   }
+  ],
+  "effective_date": {
+   "stored": "2021-02-20",
+   "computed": "2021-02-20",
+   "verdict": "correct",
+   "note": "sixtieth day after 2020-12-22"
+  },
+  "note": "\u00a72509-b duties fall on general hospitals (private) and are correctly absent."
+ },
+ "2019-S6497": {
+  "records": {
+   "2019-S6497-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The date or dates by which applications for an abatement pursuant to this section shall be made for the fiscal years beginning in calendar years two thousand fourteen through two thousand twenty shall be established by the commissioner of finance by rule",
+    "note": "'shall be established by the commissioner of finance by rule' with '{{through two thousand twenty}}'; extends_existing true correct. Abatement-year extensions are entitlements, correctly absent.",
+    "fields_at_audit": {
+     "agency": "DOF",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2019-07-03",
+   "computed": "2019-07-03",
+   "verdict": "correct",
+   "note": "immediately"
+  }
+ }
+}

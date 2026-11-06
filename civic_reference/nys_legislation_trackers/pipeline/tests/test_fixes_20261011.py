@@ -111,7 +111,7 @@ if t:
 man = json.load(open(DATA / "reask_manual.json"))
 check("J7 file lists the seven laws (later nights append more)", set(man["laws"]) >= {"2011-A8496", "2013-S2320", "2013-S5236", "2009-A2021", "2011-A8007", "2009-A163", "2009-A40011"} and man["laws"]["2011-A8496"][0]["night"] == "20261011")
 t = law_text("2013-S2320")
-if t and (ed.EXTRACTED / "2013-S2320.json").exists():
+if t and (ed.EXTRACTED / "2013-S2320.json").exists() and (ed.load_reask_history().get("2013-S2320") or {}).get("count", 0) < ed.REQUEUE_CAP_COUNT:          # Nov 6 2026: an always-requeue check is capped after 4 re-asks
     out = ed.build_reask([(signed("2013-S2320"), t)], [], [])
     rs = [r for r in out.get("2013-S2320", {}).get("reasons", []) if r["check"] == "audit_confirmed_miss"]
     check("J7 2013-S2320 carries audit_confirmed_miss", len(rs) == 1 and len(rs[0]["sentences"]) >= 1)   # Nov 1 2026: re-ask history prunes answered sentences

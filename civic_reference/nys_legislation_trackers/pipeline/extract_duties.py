@@ -1595,7 +1595,7 @@ T4_CONTINUE_APPLY = re.compile(r"^\W*(?:(?:and\s+)?provided,?\s+however,?\s+that
 
 APPLY_Y2 = True                     # Nov 5 2026 closing-class rules (named Y: APPLY_U1/U4 are older flags); dry run over stored ids: Y2 (aid provided) 1
 APPLY_Y1 = False                    # Nov 5 2026: OFF. "provisions of this act shall remain in full force until [2010] {{2014}}" inside an amended earlier act clause is a sunset EXTENSION (real; Nov 4 F1 restored 15); W2 sets its holder or routes it to re-ask
-APPLY_Y3 = APPLY_Y4 = False          # which-approved clause and individual service bar, 1 id each: set aside for W1/W2 (coordinator, Nov 5 2026)
+APPLY_Y3 = APPLY_Y4 = True          # which-approved clause and individual service bar, 1 id each: set aside for W1/W2 (coordinator, Nov 5 2026)
 U1_FORCE_UNTIL = re.compile(r"^\W*the\s+provisions?\s+of\s+(?:this\s+act,\s+and\s+all\s+regulations,\s+orders\s+and\s+requirements\s+thereunder|(?:sections?|subdivisions?)\s+[\w\s,-]{1,60}\s+of\s+this\s+act)\s+shall\s+remain\s+in\s+full\s+force\s+and\s+effect\s+(?:only\s+)?until\s+and\s+including\b", re.I)          # 'of this act' only: 'subdivision 6 of section 12 of the emergency housing rent control law, as added by this act' stays
 U2_AID_PROVIDED = re.compile(r"^\W*aid\s+shall\s+be\s+provided\s+on\s+approved\s+expenses\b", re.I)
 U3_WHICH_APPROVED = re.compile(r"^\W*which\s+(?:plan|application|contract|proposal)\s+shall\s+be\s+approved\s+by\s+the\s+commissioner\s+pursuant\s+to\b", re.I)
@@ -1609,10 +1609,25 @@ APPLY_W2 = True          # Nov 5 2026: the subject of an expiry sentence ('the p
 W2_SUBJECT = re.compile(r"^\W*(?:the\s+provisions?\s+of\b|such\s+provisions?\b)", re.I)
 
 
+# Nov 6 2026 night (Z): closing-class rules from the open not-real list. Z1 turns on the older Y3/Y4 (their W1/W2 wait is over); dry run in tests/test_fixes_20261106.py
+APPLY_Z1 = True          # Y3 (which-approved clause) and Y4 (individual service bar) go live
+APPLY_Z2 = False   # Nov 6 2026: OFF pending a blind sample (B37): comptroller "audit and warrant" payment sentences were judged real by auditor B (2011-A2289-17) and a condition by the Oct 31 verifier (-19)
+Z2_AUDIT_WARRANT = re.compile(r"\bon\s+the\s+audit\s+and\s+warrant\s+of\s+the\s+(?:state\s+)?comptroller\s+on\s+vouchers\s+(?:certified|approved)\b", re.I)
+APPLY_Z3 = True          # a proviso that fixes an amount by reference ('the maximum rent for such vouchers shall be set at ... fair market rent level')
+Z3_SET_AT = re.compile(r"^\W*(?:and\s+)?provided,?\s+however,?\s+that\s+the\s+(?:maximum|minimum)\s+\w+(?:\s+\w+){0,4}\s+shall\s+be\s+set\s+at\b", re.I)
+APPLY_Z4 = True          # allocation of cost: 'shall be the responsibility of X and not the responsibility of the state'
+Z4_RESPONSIBILITY = re.compile(r"\bshall\s+be\s+the\s+responsibility\s+of\b[^.]{0,200}\band\s+not\s+the\s+responsibility\s+of\b", re.I)
+
+
+APPLY_W2B = True          # Nov 6 2026: W2 widened; an expiry sentence whose actor is a chapter, section or 'this act' reference (2011-A2289-04/-06/-08..-13) takes its holder from the title, else is dropped and flagged
+W2B_SUBJECT = re.compile(r"^\W*(?:(?:sections?|subdivisions?|parts?)\s+[\w\s,-]{1,60}?\s+of\s+)?(?:chapter\s+\d+|this\s+act|the\s+act)\b", re.I)
+W2B_EXPIRY = re.compile(r"\b(?:shall\s+(?:expire|remain\s+in\s+full\s+force\s+and\s+effect)|deemed\s+repealed)\b", re.I)
+
+
 def w2_extension_holder(o, text, law):
     """W2: for a record whose actor_raw is the provisions that expire, take the holder from the act title / amended chapter
     (sunset_holder); returns 'moved', 'unnamed' or None. 'unnamed' means the caller drops it as extension_holder_unnamed and flags the re-ask."""
-    if not (APPLY_W2 and W2_SUBJECT.search(o.get("actor_raw") or "") and (o.get("extends_existing") or SUNSET_WORDS.search(o.get("quote") or ""))):
+    if not (APPLY_W2 and (W2_SUBJECT.search(o.get("actor_raw") or "") or (APPLY_W2B and W2B_SUBJECT.search(o.get("actor_raw") or "") and W2B_EXPIRY.search(o.get("quote") or ""))) and (o.get("extends_existing") or SUNSET_WORDS.search(o.get("quote") or ""))):
         return None
     if o.get("agency") not in (None, "Unspecified") and o.get("agency_matched"):
         return None
@@ -1718,6 +1733,26 @@ def _x1_before_enactment(r, enact_base, eff_base):
     return False
 
 
+APPLY_ONGOING_LEAD = True          # Nov 6 2026: list items under a standing body's 'The task force shall:' lead whose verb is a continuing function are ongoing, never on_effective_date
+ONGOING_VERB = re.compile(r"^\W*(?:identify|facilitate|support|promote|advise|monitor|coordinate|review|encourage|assist|develop\s+and\s+maintain)\b", re.I)
+ONGOING_BODY = re.compile(r"\b(?:task\s+force|commission|council|committee|board)\b", re.I)
+ONGOING_DELIVERABLE = re.compile(r"\b(?:report|submit|no\s+later\s+than|within\s+\w+(?:\s+\w+)?\s+(?:days|months|years)|on\s+or\s+before)\b", re.I)
+
+
+def ongoing_lead_item(o, text):
+    """True for a list item with a continuing-function verb under a standing body's lead ('The task force shall support ..., including but not limited to:')
+    that states no deliverable or date; such an item is an ongoing duty, not a one-time setup duty."""
+    q = o.get("quote") or ""
+    if not (APPLY_ONGOING_LEAD and o.get("kind_list_item") and ONGOING_VERB.search(q)) or ONGOING_DELIVERABLE.search(q):
+        return False
+    sp = locate_span(q, text)
+    if not sp:
+        return False
+    leads = re.findall(r"[^\n]*:\s*(?:\}\})?\s*$", text[:sp[0]].rstrip(), re.M)
+    lead = leads[-1] if leads else ""
+    return bool(lead and ONGOING_BODY.search(lead) and re.search(r"\bshall\b", lead, re.I))
+
+
 def gate_record(o, text, has_markers):
     """Returns (rule, reason) when the record must be dropped, else None. Rules 1-3 of phase 3b."""
     if not o.get("quote_verified"):
@@ -1769,6 +1804,12 @@ def gate_record(o, text, has_markers):
         return "condition_of_other_record", "an approval clause attached to another record ('which plan shall be approved by the commissioner pursuant to regulations')"
     if APPLY_Y4 and U4_SERVICE_BAR.search(q):
         return "no_duty_or_power", "a bar on an individual trustee serving in a role (qualification of an officer), not a duty or power of the board"
+    if APPLY_Z2 and Z2_AUDIT_WARRANT.search(q):
+        return "amount_not_duty", "the standard payment mechanics of an appropriation ('on the audit and warrant of the state comptroller on vouchers certified or approved by'): no new duty of the comptroller"
+    if APPLY_Z3 and Z3_SET_AT.search(q):
+        return "condition_of_other_record", "a proviso that fixes an amount for another provision ('the maximum rent shall be set at ...'), not a duty or power of its own"
+    if APPLY_Z4 and Z4_RESPONSIBILITY.search(q):
+        return "amount_not_duty", "an allocation of cost between governments ('shall be the responsibility of X and not the responsibility of the state'): no actor carries it out"
     if APPLY_X2 and X2_SO_ELECT.search(q):
         sp_x = locate_span(q, text)
         if sp_x:
@@ -2491,6 +2532,8 @@ def split_mechanical(entries):
 
 
 REASK_HISTORY = DATA / "reask_history.json"     # Oct 29 2026: {law: {count, last_tag, checks, sentences, answered}}; a re-asked law is not re-queued for the same uncovered text
+APPLY_REQUEUE_CAP = True          # Nov 6 2026
+REQUEUE_CAP_COUNT = 4
 ALWAYS_REQUEUE = frozenset({"audit_confirmed_miss", "sunset_extension_unnamed_holder"})
 JUDGMENT_REQUEUE_MAX_COUNT = 1                    # a judgment flag queues a law once more after its first re-ask, never after the second
 
@@ -2536,7 +2579,11 @@ def apply_reask_history(fl, h):
     for r in fl:
         c = r.get("check") or ""
         if c in ALWAYS_REQUEUE:
-            kept.append(r)
+            if APPLY_REQUEUE_CAP and h["count"] >= REQUEUE_CAP_COUNT:          # Nov 6 2026: 2017-A6893 was re-asked 8 nights running with no change
+                sup.append({"check": "requeue_capped_after_%d" % h["count"], "detail": "%s not re-queued after %d re-asks" % (c, h["count"]),
+                            "sentences": list(r.get("sentences", [])), "reasons": [r]})
+            else:
+                kept.append(r)
         elif re.match(r"^[a-e]_", c):
             (kept if any(_norm_sent(x) not in prev for x in r.get("sentences", [])) else sup).append(r)
         else:
@@ -3143,7 +3190,7 @@ ELECTION_TRIGGER = re.compile(r"\b(?:at|prior to|before|for|during|after|in adva
 
 
 # M17 (Oct 12 2026): who bears a cost is a standing allocation, never a one-time deliverable due on the effective date
-COST_BEARING = re.compile(r"\bshall be borne by\b|\bshall be paid by\b(?!\s+(?:\d|(?:january|february|march|april|may|june|july|august|september|october|november|december)\b))|\bshall bear the (?:cost|costs|expense|expenses)\b|\bat the expense of\b", re.I)
+COST_BEARING = re.compile(r"\bshall\s+(?:be|thereafter\s+be)\s+borne\s+(?:(?:equally|solely|entirely|exclusively|initially)\s+)?by\b|\bshall be paid by\b(?!\s+(?:\d|(?:january|february|march|april|may|june|july|august|september|october|november|december)\b))|\bshall bear the (?:cost|costs|expense|expenses)\b|\bat the expense of\b", re.I)
 # Switched off (Oct 12 2026): the literal rule flipped 312 records across 2009-2015 (73, 65, 163, 11), over the 80 the orders allow; Tal decides.
 APPLY_M18 = False
 
@@ -3775,6 +3822,8 @@ def build_records(laws):
                     pd_ = period_deadline(o["deadline_text"], sec_date, law["enactment_date"])          # U5: 'within 90 days after the effective date'
                     if pd_:
                         o["deadline_kind"], o["deadline_date"] = pd_[1], pd_[0]; bump("u5_period_deadline")
+            if kind == "duty" and o.get("deadline_kind") in (None, "none", "on_effective_date") and not o.get("deadline_date") and ongoing_lead_item(o, text):
+                o["deadline_kind"], o["recurrence"] = "none", "ongoing"; bump("ongoing_lead_item")
             if kind == "duty" and o.get("deadline_kind") == "on_effective_date" and TRIGGER.search(quote) and not CAP_RE.search(quote):
                 o["deadline_kind"], o["deadline_date"] = "none", None; bump("setup_to_triggered")
             elif (kind == "duty" and o.get("deadline_kind") in ("on_effective_date", "none") and PILOT_FOLLOW_ON.match(quote) and sp0

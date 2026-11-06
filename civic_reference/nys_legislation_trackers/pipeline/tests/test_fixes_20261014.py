@@ -6,6 +6,18 @@ sys.path.insert(0, str(HERE))
 import extract_duties as ed
 import agency_resolve_nys as ar
 
+def _capped(law):
+    """Nov 6 2026: an always-requeue check is capped after 4 re-asks and surfaced in data/mechanical_flags/{Y}.json instead of data/reask."""
+    import json as _j
+    from pathlib import Path as _P
+    p = _P(__file__).resolve().parents[2] / "data" / "mechanical_flags" / (law[:4] + ".json")
+    if not p.exists():
+        return False
+    v = _j.load(open(p)).get("laws", {}).get(law) or {}
+    return "requeue_capped" in _j.dumps(v)
+
+
+
 passed = failed = 0
 def check(name, cond):
     global passed, failed
@@ -96,6 +108,6 @@ m = json.load(open(DATA / "reask_manual.json"))["laws"]
 for k in ("2011-S6960", "2013-S4800", "2011-A7259", "2013-A371", "2011-A9012", "2009-A8956", "2011-S5157"):
     check("J14 manual misses for " + k, any(i["night"] == "20261014" for i in m.get(k, [])))
 if ru.exists():
-    check("J14 2011-S6960 in data/reask with audit_confirmed_miss", any(x["check"] == "audit_confirmed_miss" for x in json.load(open(ru))["laws"]["2011-S6960"]["reasons"]))
+    check("J14 2011-S6960 in data/reask with audit_confirmed_miss (or requeue-capped)", _capped("2011-S6960") or any(x["check"] == "audit_confirmed_miss" for x in json.load(open(ru))["laws"].get("2011-S6960", {}).get("reasons", [])))
 
 print("%d passed, %d failed" % (passed, failed))

@@ -9,6 +9,18 @@ import agency_resolve_nys as ar
 import effective_date as efd
 import chapter_lookup as cl
 
+def _capped(law):
+    """Nov 6 2026: an always-requeue check is capped after 4 re-asks and surfaced in data/mechanical_flags/{Y}.json instead of data/reask."""
+    import json as _j
+    from pathlib import Path as _P
+    p = _P(__file__).resolve().parents[2] / "data" / "mechanical_flags" / (law[:4] + ".json")
+    if not p.exists():
+        return False
+    v = _j.load(open(p)).get("laws", {}).get(law) or {}
+    return "requeue_capped" in _j.dumps(v)
+
+
+
 passed = failed = 0
 def check(name, cond):
     global passed, failed
@@ -138,6 +150,6 @@ for k in ("2011-S7000", "2009-A11514", "2013-S3816", "2015-A7677"):
 check("J16 2009-A11514 capped at 10", len([i for i in m["2009-A11514"] if i["night"] == "20261015"]) <= 10)
 ru = DATA / "reask" / "2011.json"
 if ru.exists():
-    check("J16 2011-S7000 in data/reask with audit_confirmed_miss", any(x["check"] == "audit_confirmed_miss" for x in json.load(open(ru))["laws"]["2011-S7000"]["reasons"]))
+    check("J16 2011-S7000 in data/reask with audit_confirmed_miss (or requeue-capped)", _capped("2011-S7000") or any(x["check"] == "audit_confirmed_miss" for x in json.load(open(ru))["laws"].get("2011-S7000", {}).get("reasons", [])))
 
 print("%d passed, %d failed" % (passed, failed))

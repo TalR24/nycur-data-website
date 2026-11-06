@@ -125,7 +125,9 @@ check("Q3 one prior re-ask, same coverage reasons: not queued, suppressed kept",
 k, sup = ed.apply_reask_history([cov(S1, S2)], h1)
 check("Q3 new uncovered sentence: queued", len(k) == 1 and sup == [])
 k, _ = ed.apply_reask_history([{"check": "audit_confirmed_miss", "detail": "d", "sentences": [S1]}, {"check": "sunset_extension_unnamed_holder", "detail": "d", "sentences": [S1]}], {"count": 3, "sentences": [S1]})
-check("Q3 audit_confirmed_miss and sunset_extension_unnamed_holder always queued", len(k) == 2)
+check("Q3 audit_confirmed_miss and sunset_extension_unnamed_holder queued below 4 re-asks", len(k) == 2)
+k, sup = ed.apply_reask_history([{"check": "audit_confirmed_miss", "detail": "d", "sentences": [S1]}, {"check": "sunset_extension_unnamed_holder", "detail": "d", "sentences": [S1]}], {"count": 4, "sentences": [S1]})
+check("Q3 always-requeue checks capped at 4 re-asks into requeue_capped_after_4", k == [] and [x["check"] for x in sup] == ["requeue_capped_after_4"] * 2)
 check("Q3 count 2 with only judgment flags: not queued", ed.apply_reask_history([jud], {"count": 2, "sentences": [S1]})[0] == [])
 check("Q3 count 1 judgment flag queues once more; count 0 keeps everything", len(ed.apply_reask_history([jud], h1)[0]) == 1 and len(ed.apply_reask_history([cov(S1)], None)[0]) == 1)
 dd2, pk2 = tmp / "data2", tmp / "packets2"
@@ -133,7 +135,7 @@ dd2, pk2 = tmp / "data2", tmp / "packets2"
 ents2 = {"2011-H1": {"reasons": [jud, cov(S1)]}, "2011-H2": {"reasons": [cov(S1)]}, "2011-H3": {"reasons": [cov(S1, S2)]}, "2011-H4": {"reasons": [{"check": "audit_confirmed_miss", "detail": "d", "sentences": [S1]}]}}
 (dd2 / "reask" / "2011.json").write_text(json.dumps({"laws": ents2}))
 for k in ents2: (pk2 / "2011" / (k + ".txt")).write_text(packet(k))
-(dd2 / "reask_history.json").write_text(json.dumps({"2011-H1": {"count": 2, "sentences": [S1]}, "2011-H2": {"count": 1, "sentences": [S1]}, "2011-H3": {"count": 1, "sentences": [S1]}, "2011-H4": {"count": 5, "sentences": [S1]}}))
+(dd2 / "reask_history.json").write_text(json.dumps({"2011-H1": {"count": 2, "sentences": [S1]}, "2011-H2": {"count": 1, "sentences": [S1]}, "2011-H3": {"count": 1, "sentences": [S1]}, "2011-H4": {"count": 3, "sentences": [S1]}}))
 c2 = {k: e for k, e in nb.reask_candidates(set(), dd2, pk2, sessions=(2011,))}
 check("Q2 reask_candidates skips laws whose reasons are all suppressed; new text and audit misses stay", sorted(c2) == ["2011-H3", "2011-H4"])
 # history update counts an answer once
