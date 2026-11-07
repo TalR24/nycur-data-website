@@ -1,0 +1,736 @@
+{
+ "_scoring": {
+  "auditor": "A",
+  "night": "20261107",
+  "laws": 11,
+  "stored_records": 28,
+  "correct": 23,
+  "wrong_fields": 5,
+  "not_real": 0,
+  "missed": 4,
+  "precision_strict": "23/28 = 82.1% (Wilson 95% 64.4-92.1)",
+  "precision_real": "28/28 = 100.0% (Wilson 95% 87.9-100.0)",
+  "recall": "28/32 = 87.5% (Wilson 95% 71.9-95.0)",
+  "effective_dates": "11/11 correct",
+  "calibration_laws": [
+   "2015-S8077",
+   "2019-S6497"
+  ],
+  "calibration": {
+   "stored_records": 2,
+   "correct": 2,
+   "wrong_fields": 0,
+   "not_real": 0,
+   "missed": 0,
+   "precision_strict": "2/2 = 100.0% (Wilson 95% 34.2-100.0)",
+   "precision_real": "2/2 = 100.0% (Wilson 95% 34.2-100.0)",
+   "recall": "2/2 = 100.0% (Wilson 95% 34.2-100.0)",
+   "effective_dates": "2/2 correct"
+  },
+  "method": "blind list saved to /tmp/auditA/blind.txt before opening stored records; class rules run with python over data/duties/*.json + data/powers/*.json (9 sessions, 22794 records) and data/dropped/*.json (1897 dropped)"
+ },
+ "_classes": [
+  {
+   "name": "local assessor stored under group 'Assessors (local)' instead of the locality",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2021-S6469-13",
+    "2021-S6469-14"
+   ],
+   "rule": "agency == 'Assessors (local)'",
+   "db_matches": 107,
+   "db_examples": [
+    "2009-A1808-01",
+    "2009-A2089-13",
+    "2009-A2089-14"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "title or application phrase parsed into agency_unit as a junk locality",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2021-S4645-04"
+   ],
+   "rule": "';' in agency_unit and re.search(r'\\b(for|to|from) (a|an|the) |Exemption|Application', agency_unit, re.I)",
+   "db_matches": 6,
+   "db_examples": [
+    "2011-A7387-03",
+    "2013-S5255-03",
+    "2017-S7773-04"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "local-option exemption authorization (town/county may adopt a local law) dropped as an exemption",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2021-S6469-01 (dropped)"
+   ],
+   "rule": "dropped rule startswith 'exemption' and quote ~ r'authorized to adopt a local law|may,? by local law|by resolution, exempt|may adopt a local law'",
+   "db_matches": 3,
+   "db_examples": [
+    "2009-A6273-01",
+    "2013-A9719-01",
+    "2021-S6469-01"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "'as may be prescribed by' form authority stored as a duty",
+   "criteria": [
+    "4"
+   ],
+   "instances": [
+    "2021-S6469-04"
+   ],
+   "rule": "kind == 'duty' and quote ~ r'as may be prescribed by|as may be required by' (over-matches where the sentence also imposes a duty; review hits)",
+   "db_matches": 11,
+   "db_examples": [
+    "2009-A11515-11",
+    "2009-A11515-13",
+    "2009-A2089-07"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "quote truncated at a line wrap of appropriation-table text (ends on a function word)",
+   "criteria": [
+    "2"
+   ],
+   "instances": [
+    "2021-S50002-01"
+   ],
+   "rule": "quote.strip() ~ r'\\b(the|of|to|and|a|an|for|by|that|such|in)$' (143 all laws; 9 where law_title ~ appropriat|budget)",
+   "db_matches": 143,
+   "db_examples": [
+    "2009-A10410-02",
+    "2009-A11515-15",
+    "2009-A2209-69"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "extends_existing true on wholly new matter inside a replaced appropriation item",
+   "criteria": [
+    "7"
+   ],
+   "instances": [
+    "2021-S50002-01"
+   ],
+   "rule": "no mechanical rule (needs judgment of whether the braced text replaces or widens)",
+   "db_matches": 0,
+   "db_examples": [],
+   "needs_judgment": true,
+   "laws": [
+    "2021-S50002"
+   ]
+  },
+  {
+   "name": "sunset extension missed when the title names a private beneficiary but the act names the State actor",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2017-S8074 (missed)"
+   ],
+   "rule": "no mechanical rule; candidate: laws with zero records whose text contains 'deemed repealed' with braced date and an act section naming 'dormitory authority'",
+   "db_matches": 0,
+   "db_examples": [],
+   "needs_judgment": true,
+   "laws": [
+    "2017-S8074"
+   ]
+  }
+ ],
+ "2021-S6521": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2021-07-01",
+   "computed": "2021-07-01",
+   "verdict": "correct",
+   "note": "immediately, signed 2021-07-01; no government actor: new matter lets documents 'be signed by written instrument or the use of an electronic signature'"
+  }
+ },
+ "2021-S5581": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2021-08-20",
+   "computed": "2021-08-20",
+   "verdict": "correct",
+   "note": "immediately; sunset extensions '[seven] {{ten}} years' of ch 588/589 of 2015 concern insurer coverage, title names no government body, no record expected"
+  }
+ },
+ "2021-S6035": {
+  "records": {
+   "2021-S6035-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the assessor of the town of Hempstead, county of Nassau, is hereby authorized to accept from the Bellmore Fire District, an application for exemption from real property taxes pursuant to section 464 of the real property tax law",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Towns",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "Town of Hempstead"
+    }
+   },
+   "2021-S6035-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the assessor, upon approval by the Nassau county legislature, may grant exemption from all taxation and make appropriate corrections to the subject roll.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Towns",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "Town of Hempstead"
+    }
+   },
+   "2021-S6035-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the applicable governing body or tax department may, in its sole discretion, provide for the refund of the taxes paid, along with any fines or penalties paid, and cancel any taxes, fines, penalties, interest, or tax liens remaining unpaid.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Towns",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "Town of Hempstead"
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2022-07-21",
+   "computed": "2022-07-21",
+   "verdict": "correct",
+   "note": "signed 2022-07-21 ch 440 of 2022; -02 reviewed_as_if dropped per Oct 16 decision"
+  }
+ },
+ "2015-S4739": {
+  "records": {
+   "2015-S4739-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "If the commissioner of health determines that there is an outbreak of disease, or that there is the imminent threat of an outbreak of disease, then the commissioner of health may issue a non-patient specific regimen applicable statewide.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOH",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-S4739-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner of health, in consultation with the superintendent of financial services and the commissioner of education, shall prepare and submit a report to the governor and to the temporary president of the senate and the speaker of the assembly, on or before October first, two thousand nineteen",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOH",
+     "kind": "duty",
+     "deadline_kind": "fixed_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-S4739-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner of health, superintendent of financial services and the commissioner of education may require pharmacists, private insurers, public insurers and others to submit information necessary to the completion of the report.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOH",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-S4739-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner of health, superintendent of financial services and the commissioner of education may require pharmacists, private insurers, public insurers and others to submit information necessary to the completion of the report.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOH",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-S4739-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner of health, superintendent of financial services and the commissioner of education may require pharmacists, private insurers, public insurers and others to submit information necessary to the completion of the report.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOH",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2015-06-30",
+   "computed": "2015-06-30",
+   "verdict": "correct",
+   "note": "immediately with proviso (f) 180th day for 6801(2)(a); sunset extensions of ch 563/2008 and ch 116/2012 extend pharmacist and physician authority (private), not counted"
+  }
+ },
+ "2017-S8074": {
+  "records": {},
+  "missed": [
+   {
+    "blind": "b1",
+    "quote": "\u00a7 5. This act shall take effect immediately and shall expire and be deemed repealed on December 31, 2023.",
+    "kind": "power",
+    "agency": "Dormitory Authority (DASNY)",
+    "dropped_by": null,
+    "note": "earlier chapter's sunset extended [2018] {{2023}}; act \u00a72 names the holder: 'Any contracts entered into by the dormitory authority pursuant to this act shall be deemed state contracts'; extends_existing true"
+   }
+  ],
+  "effective_date": {
+   "stored": "2018-12-21",
+   "computed": "2018-12-21",
+   "verdict": "correct",
+   "note": ""
+  }
+ },
+ "2021-S6582": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2021-08-02",
+   "computed": "2021-08-02",
+   "verdict": "correct",
+   "note": "only actor is the private benevolent association ('Such corporation shall collect')"
+  }
+ },
+ "2021-S50002": {
+  "records": {
+   "2021-S50002-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "2",
+     "7"
+    ],
+    "fields": {
+     "quote": "provided further that the commissioner shall report to the speaker of the assembly and the temporary president of the senate when such reallocations are made and the reasons for such reallocations",
+     "extends_existing": false
+    },
+    "quote": "provided further that the commissioner shall report to the speaker of the",
+    "note": "quote stops mid-phrase at a line wrap ('...report to the speaker of the'); the reallocation and report text is wholly new braced matter replacing the bracketed item, not a widening"
+   }
+  },
+  "missed": [
+   {
+    "blind": "b1",
+    "quote": "provided however in no case shall the commissioner make such reallocation earlier than ninety days after the date when applications begin to be accepted",
+    "kind": "duty",
+    "agency": "OTDA",
+    "dropped_by": null,
+    "note": "prohibition on the commissioner's reallocation ('Until such time as the commissioner determines that the need justifies a reallocation'); a prohibition on a government actor is a duty. Not counted: 'The plan for such funds shall grant priority to areas where access to free legal assistance ... is not already provided' (plan author unnamed, needs judgment)"
+   }
+  ],
+  "effective_date": {
+   "stored": "2021-09-02",
+   "computed": "2021-09-02",
+   "verdict": "correct",
+   "note": "immediately, retroactive_to 2021-04-01 stored correctly"
+  }
+ },
+ "2021-S4645": {
+  "records": {
+   "2021-S4645-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the Nassau county assessor is hereby authorized to accept from the town of Oyster Bay, a municipal corporation, an application for exemption from real property taxes pursuant to section 406 of the real property tax law",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Counties",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "County of Nassau"
+    }
+   },
+   "2021-S4645-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the assessor, upon approval by the Nassau county legislature, may make appropriate correction to the subject rolls.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Counties",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "County of Nassau"
+    }
+   },
+   "2021-S4645-04": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Counties",
+     "agency_unit": "County of Nassau"
+    },
+    "quote": "the applicable governing body or tax department may, in its sole discretion, provide for the refund of those taxes paid and cancel those taxes, fines, penalties, liens or interest remaining unpaid.",
+    "note": "agency_unit carries junk 'Town of Oyster Bay for a Real Property Tax Exemption' from the title; the Town of Oyster Bay is the applicant ('accept from the town of Oyster Bay'), not the refunding body; the applicable governing body is Nassau County as in -01/-03 (Municipalities (all) acceptable only without the junk units)"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2021-08-02",
+   "computed": "2021-08-02",
+   "verdict": "correct",
+   "note": ""
+  }
+ },
+ "2021-S4481": {
+  "records": {
+   "2021-S4481-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "and the Carmel central school district may establish insurance reserve funds in compliance with this section and article seventy-four of the education law",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "School districts",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": "Carmel Central School District"
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2021-07-16",
+   "computed": "2021-07-16",
+   "verdict": "correct",
+   "note": ""
+  }
+ },
+ "2017-A10758": {
+  "records": {
+   "2017-A10758-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "This act shall take effect immediately and shall expire June 30, 2021 when upon such date the provisions of this act shall be deemed repealed.",
+    "note": "holder DOH inferred: title names no government body ('residential care off-site facility demonstration project'); unverified from text, accepted as reasonable",
+    "fields_at_audit": {
+     "agency": "DOH",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2018-07-01",
+   "computed": "2018-07-01",
+   "verdict": "correct",
+   "note": ""
+  }
+ },
+ "2021-S6469": {
+  "records": {
+   "2021-S6469-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "A county having a population of not less than three hundred thousand and not more than three hundred seven thousand based upon and recorded in the two thousand ten federal census may, by local law,",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Counties",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S6469-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "may, by resolution, exempt such property from its taxation in the same manner and to the same extent as such town has done.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "School districts",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S6469-04": {
+    "verdict": "wrong",
+    "criteria": [
+     "4"
+    ],
+    "fields": {
+     "kind": "power"
+    },
+    "quote": "Such proposal shall be submitted in such a manner and form as may be prescribed by the conservation board of such town.",
+    "note": "'in such a manner and form as may be prescribed by the conservation board' grants the board discretion; the submitting party is the private owner"
+   },
+   "2021-S6469-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Upon receipt of such proposal, the town board shall convey the proposal to the conservation board of such town.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Towns",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S6469-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Such conservation board shall investigate the area to determine if the proposal would be of benefit to the people of the town",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Towns",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S6469-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "and may negotiate the terms and conditions of the offer.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Towns",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S6469-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "If the conservation board determines that it is in the public interest to accept such proposal, it shall recommend to the town board that it hold a public hearing",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Towns",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S6469-09": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The town board shall, within thirty days of receipt of such advisory opinion, hold a public hearing concerning such proposal at a place within the town.",
+    "note": "'within thirty days of receipt of such advisory opinion' is event-triggered; none per criterion 5",
+    "fields_at_audit": {
+     "agency": "Towns",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S6469-10": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "At least ten days notice of the time and place of such hearing shall be published in a paper of general circulation in such town, and a written notice of such proposal shall be given to all adjacent property owners",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Towns",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S6469-11": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "may adopt the proposal or any modification thereof it deems appropriate or may reject it in its entirety.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Towns",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S6469-12": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Such exemption shall be granted only upon application by the owner or owners of such real property on a form prescribed by the commissioner.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DTF",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S6469-13": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Towns"
+    },
+    "quote": "If satisfied that the applicant is entitled to an exemption pursuant to this section, the assessor shall approve the application",
+    "note": "'the assessor shall approve the application' is the town's assessor ('filed with the assessor of the town'); a locality's assessor is the locality"
+   },
+   "2021-S6469-14": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Towns"
+    },
+    "quote": "Whenever a conservation easement encumbers only a portion of a parcel, the assessor shall henceforth enter that portion of the parcel encumbered by such easement as a separate parcel on all subsequent assessment rolls.",
+    "note": "same: town assessor, not 'Assessors (local)'"
+   },
+   "2021-S6469-15": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Payments shall be added by or on behalf of each taxing jurisdiction to the taxes levied on the assessment roll prepared on the basis of the first taxable status date after there is a violation",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Municipalities (all)",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [
+   {
+    "blind": "b1",
+    "quote": "is hereby authorized to adopt a local law to provide that, real property whose interests or rights have been acquired for the purpose of the preservation of an open space or an open area",
+    "kind": "power",
+    "agency": "Towns",
+    "dropped_by": "exemption_or_applicability",
+    "note": "the town's local-option power to grant the exemption, the parallel county (-02) and school district (-03) powers are stored; this one is not a cap or residency exemption binding no actor"
+   },
+   {
+    "blind": "b15",
+    "quote": "The assessed value of any exemption granted pursuant to this section shall be entered by the assessor on the assessment roll with the taxable property, with the amount of the exemption shown in a separate column.",
+    "kind": "duty",
+    "agency": "Towns",
+    "dropped_by": null,
+    "note": "distinct from -13 approval and -14 separate-parcel duty"
+   }
+  ],
+  "effective_date": {
+   "stored": "2021-07-01",
+   "computed": "2021-07-01",
+   "verdict": "correct",
+   "note": ""
+  }
+ },
+ "2015-S8077": {
+  "records": {
+   "2015-S8077-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner shall not apply arbitrary criteria, or criteria that create unreasonable barriers for wic participants to access specialty infant formula, and shall only apply criteria that are reasonably related to and consistent with: (A) promoting wic beneficiary access to specialty infant formula; And (b) administration of wic with integrity, efficiency and security.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOH",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2017-06-29",
+   "computed": "2017-06-29",
+   "verdict": "correct",
+   "note": "180th day after 2016-12-31; act-clause 'commissioner of health shall make regulations' is early-rulemaking boilerplate; 'unless specifically limited or barred by the commissioner' read as an exception, not counted"
+  },
+  "calibration": true
+ },
+ "2019-S6497": {
+  "records": {
+   "2019-S6497-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The date or dates by which applications for an abatement pursuant to this section shall be made for the fiscal years beginning in calendar years two thousand fourteen through two thousand twenty shall be established by the commissioner of finance by rule",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOF",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2019-07-03",
+   "computed": "2019-07-03",
+   "verdict": "correct",
+   "note": "abatement extensions are entitlements ('shall be eligible to receive a partial abatement'), no record"
+  },
+  "calibration": true
+ }
+}

@@ -1,0 +1,554 @@
+{
+ "_scoring": {
+  "laws": 11,
+  "stored_records": 14,
+  "correct": 9,
+  "wrong_fields": 4,
+  "not_real": 1,
+  "missed": 3,
+  "precision_strict": "9/14 = 64.3% (Wilson 95% 38.8-83.7%)",
+  "precision_real": "13/14 = 92.9% (Wilson 95% 68.5-98.7%)",
+  "recall": "13/16 = 81.2% (Wilson 95% 57.0-93.4%)",
+  "effective_dates": "11/11 correct",
+  "auditor": "B",
+  "night": "20261107",
+  "calibration_laws": [
+   "2015-A5652",
+   "2015-S6601"
+  ],
+  "calibration": {
+   "laws": 2,
+   "stored_records": 5,
+   "correct": 4,
+   "wrong_fields": 0,
+   "not_real": 1,
+   "missed": 0,
+   "precision_strict": "4/5 = 80.0% (Wilson 95% 37.6-96.4%)",
+   "precision_real": "4/5 = 80.0% (Wilson 95% 37.6-96.4%)",
+   "recall": "4/4 = 100.0% (Wilson 95% 51.0-100.0%)",
+   "effective_dates": "2/2 correct"
+  },
+  "recall_method": "blind items counted 16 (S8093 b3,b4; S4471 3; S5753 1; A10830 1; S4866 2; A4637 3; S523 4); 13 matched; no stored correct record outside the blind list. Unnamed-holder sunset extensions (S8093 s1,s2,s5,s6; A4959; S5581; A10615) are not counted per the Oct 19 re-ask rule."
+ },
+ "_classes": [
+  {
+   "name": "named authority in a Public Authorities Law section resolved to the generic 'Local agencies and authorities' group",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2021-S4471-02",
+    "2021-S4471-03"
+   ],
+   "rule": "re.fullmatch(r'(the|such) authority', actor_raw, I) and agency=='Local agencies and authorities' and 'Public Authorities Law' in citation",
+   "db_matches": 28,
+   "db_examples": [
+    "2009-A40012-66",
+    "2009-A40012-71",
+    "2009-A5877-66"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "grant_only kind gate flips a cap or prohibition ('no ... may', 'no more than ... may') from duty to power",
+   "criteria": [
+    "4"
+   ],
+   "instances": [
+    "2021-A4637-01",
+    "2021-S5753-01"
+   ],
+   "rule": "kind_adjusted=='grant_only' and kind_model=='duty' and re.search(r'\\b(no|not|no more than)\\b[^.;]{0,120}\\bmay\\b|\\bmay not\\b', quote, I)",
+   "db_matches": 44,
+   "db_examples": [
+    "2009-S6041-07",
+    "2011-A7836-13",
+    "2011-A8510-87"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "reprinted actor kept when braces only add a second actor (AG copy survives while reprinted_name_swap drops its sibling)",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2015-A5652-02"
+   ],
+   "rule": "stored record whose (matter_id, agency) matches a dropped reprinted_name_swap record and whose exact quote is shared, in the same law, with a stored record of a different agency",
+   "db_matches": 3,
+   "db_examples": [
+    "2015-A5652-02",
+    "2019-S6529-01",
+    "2019-S6529-05"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "sunset-extension law left with zero extends records after re-ask (a_numbers_only_fewer_extends), incl. holders named in the act clause",
+   "criteria": [
+    "1",
+    "7"
+   ],
+   "instances": [
+    "2017-S8093",
+    "2019-A4959",
+    "2021-S5581"
+   ],
+   "rule": "law keys in data/reask/*.json with check a_numbers_only_fewer_extends and no stored record with extends_existing true (count is laws, examples are law keys)",
+   "db_matches": 164,
+   "db_examples": [
+    "2011-S6547",
+    "2013-S7845",
+    "2015-A6950"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "condition_of_other_record drops a main 'shall' duty (S523 'a court of this state shall recognize')",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2021-S523-01"
+   ],
+   "rule": "dropped rule=='condition_of_other_record' and quote has 'shall' and lacks until|unless|approval|approved|subject to (dropped ids, candidates for review)",
+   "db_matches": 31,
+   "db_examples": [
+    "2009-A11523-02",
+    "2009-A8376-01",
+    "2009-A8501-74"
+   ],
+   "needs_judgment": true
+  },
+  {
+   "name": "reworded reprint of an existing power stored as a record",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2021-S523-04"
+   ],
+   "rule": "needs_judgment",
+   "db_matches": 0,
+   "db_examples": [],
+   "needs_judgment": true,
+   "laws": [
+    "2021-S523"
+   ]
+  }
+ ],
+ "2021-S6521": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2021-07-01",
+   "computed": "2021-07-01",
+   "verdict": "correct",
+   "note": "immediately; signed 2021-07-01. No records stored, none expected: 'may be signed by written instrument or the use of an electronic signature' is an option of private signers."
+  }
+ },
+ "2021-S5581": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2021-08-20",
+   "computed": "2021-08-20",
+   "verdict": "correct",
+   "note": "immediately. No records; sunset moves '[seven] {{ten}} years' on insurer catastrophic coverage chapters, title names no government holder (Oct 19 rule: re-ask, not scored as a miss)."
+  }
+ },
+ "2017-A10615": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2018-12-07",
+   "computed": "2018-12-07",
+   "verdict": "correct",
+   "note": "immediately. No records; 'deemed repealed [6] {{8}} years' on employer wage-deduction rules (private; unnamed holder)."
+  }
+ },
+ "2017-S8093": {
+  "records": {},
+  "missed": [
+   {
+    "blind": "b3",
+    "quote": "An additional demonstration period shall commence April first, two thousand eighteen and terminate on July first, two thousand twenty-three provided, however, that the commissioner may prescribe requirements for the continuation of such demonstration program",
+    "kind": "power",
+    "agency": "DOH (commissioner of health)",
+    "dropped_by": null,
+    "note": "extension record, extends_existing true; holder named in the sentence; zero stored and zero dropped records for this law after tonight's re-ask"
+   },
+   {
+    "blind": "b4",
+    "quote": "5. section thirty-eight of this act shall expire and be deemed repealed July 1, 2021;",
+    "kind": "power",
+    "agency": "DOH (commissioner of health)",
+    "dropped_by": null,
+    "note": "earlier chapter's sunset extended; act clause names the holder: 'energy audits and/or disaster preparedness reviews of residential healthcare facilities by the commissioner' (Oct 19 sunset_extension_from_title)"
+   }
+  ],
+  "effective_date": {
+   "stored": "2018-07-01",
+   "computed": "2018-07-01",
+   "verdict": "correct",
+   "note": "immediately; ss1,2,4 retroactive to 2018-03-31 stored; s3 same_as_chapter 2018-04-12 stored as section date. Sections 1, 2, 5, 6 extend sunsets whose titles name no body (needs_judgment, not counted as misses)."
+  }
+ },
+ "2021-S4471": {
+  "records": {
+   "2021-S4471-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "A notification of the expiration of such agreement shall be delivered to the affected tax jurisdiction two years prior to the expiration of such agreement and immediately upon early termination of an agreement",
+    "note": "GML 858(15) IDA notice; deadline none (event-anchored) is right",
+    "fields_at_audit": {
+     "agency": "Industrial development agencies",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S4471-02": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "the named public authority created by Public Authorities Law \u00a7 1953 (name not in this law's text; unverified)",
+     "agency_unit": "that authority's name"
+    },
+    "quote": "A notification of the expiration of such agreement shall be delivered to the affected tax jurisdiction two years prior to the expiration of such agreement and immediately upon early termination of an agreement",
+    "note": "PAL \u00a7 1953(14) 'the authority' is one named authority, not the generic 'Local agencies and authorities' group; actor_resolved_model was 'unspecified'"
+   },
+   "2021-S4471-03": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Auburn Industrial Development Authority"
+    },
+    "quote": "A notification of the expiration of such agreement shall be delivered to the affected tax jurisdiction two years prior to the expiration of such agreement and immediately upon early termination of an agreement",
+    "note": "PAL \u00a7 2306(14) 'the authority'; the DB's own 2013-S5800 records resolve PAL \u00a7 2306 'the authority' to Auburn Industrial Development Authority"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2023-02-14",
+   "computed": "2023-02-14",
+   "verdict": "correct",
+   "note": "sixtieth day after 2022-12-16"
+  }
+ },
+ "2021-S5753": {
+  "records": {
+   "2021-S5753-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "4",
+     "3"
+    ],
+    "fields": {
+     "kind": "duty",
+     "agency_unit": null
+    },
+    "quote": "No more than fifty percent of the total funds appropriated to a library system in subdivision six of this section may be used to support the total costs for projects that would receive state aid beyond seventy-five percent of the total project approved costs.",
+    "note": "'No more than {{fifty}} percent ... may be used' is a cap (prompt: a cap is a duty, deadline none); model said duty, gate kind_adjusted grant_only flipped it to power. agency_unit 'Library' names no body (the law names no specific library system)."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2021-11-15",
+   "computed": "2021-11-15",
+   "verdict": "correct",
+   "note": "immediately; expires_rule with_referenced_section correct"
+  }
+ },
+ "2017-A10830": {
+  "records": {
+   "2017-A10830-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "This act shall take effect immediately and shall expire and be deemed repealed July 1, 2023.",
+    "note": "earlier chapter's sunset '[2018] {{2023}}' quoted inside an amendment is an extension record; DOH power, extends_existing true",
+    "fields_at_audit": {
+     "agency": "DOH",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2018-07-01",
+   "computed": "2018-07-01",
+   "verdict": "correct",
+   "note": "immediately"
+  }
+ },
+ "2021-S4866": {
+  "records": {
+   "2021-S4866-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner of environmental conservation shall inform the public of the importance of protecting endangered and threatened species.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DEC",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S4866-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Such commissioner shall also publicize the laws protecting such species.",
+    "note": "separate sentence 'Such commissioner shall also publicize the laws', not a duplicate",
+    "fields_at_audit": {
+     "agency": "DEC",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2021-08-02",
+   "computed": "2021-08-02",
+   "verdict": "correct",
+   "note": "immediately. Penalty amount increases in s1 not counted (penalties on violators)."
+  }
+ },
+ "2021-A4637": {
+  "records": {
+   "2021-A4637-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "4",
+     "7"
+    ],
+    "fields": {
+     "kind": "duty",
+     "extends_existing": false
+    },
+    "quote": "no such exceptions may be determined to be warranted in special groundwater protection areas designated pursuant to article fifty-five of this chapter or in Nassau or Suffolk counties where such discharges will impact marine waters within ten years or less",
+    "note": "'no such exceptions may be determined to be warranted in special groundwater protection areas' is a prohibition on the commissioner (prompt: a prohibition is a duty; model said duty, gate grant_only flipped it). It narrows the exception power, so extends_existing false."
+   },
+   "2021-A4637-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "In such areas, the best available technology shall be applied with special emphasis on reducing nitrogen pollution.",
+    "note": "agency DEC right; actor_raw holds the passive clause 'the best available technology shall be applied' rather than an entity (known passive-subject class)",
+    "fields_at_audit": {
+     "agency": "DEC",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A4637-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "and (vi) the extent to which such projects reflect county-wide or regional wastewater planning;",
+    "note": "list item (vi) under an existing 'shall include' lead-in; adds a class, extends_existing true",
+    "fields_at_audit": {
+     "agency": "DEC",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2021-12-29",
+   "computed": "2021-12-29",
+   "verdict": "correct",
+   "note": "immediately"
+  }
+ },
+ "2019-A4959": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2019-07-03",
+   "computed": "2019-07-03",
+   "verdict": "correct",
+   "note": "immediately. No records; NYC LNG moratorium extended '[2019] {{2021}}', title names no holder (needs_judgment, not counted)."
+  }
+ },
+ "2021-S523": {
+  "records": {
+   "2021-S523-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "A court of this state may not recognize a foreign country judgment if: 1. the judgment was rendered under a judicial system that does not provide impartial tribunals or procedures compatible with the requirements of due process of law;",
+    "note": "'A court of this state may not recognize' prohibition = duty; new ground 3 added",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2021-S523-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "A court of this state need not recognize a foreign country judgment if:",
+    "note": "'need not recognize' = power; lead_in field shows subdivision (a) text, harmless",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2021-S523-04": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "The courts of this state may recognize bases of personal jurisdiction other than those listed in subdivision (a) of this section as sufficient to support a foreign country judgment.",
+    "note": "prior law already read 'The courts of this state may recognize [other] bases of jurisdiction'; braces only add 'personal' and restate 'other than those listed in subdivision (a)', a reworded reprint that widens nothing"
+   },
+   "2021-S523-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "If a party establishes that an appeal from a foreign country judgment is pending or will be taken, the court may stay any proceeding with regard to the foreign country judgment until the appeal is concluded",
+    "note": "stay power widened from the defendant to 'a party' and to an appeal that 'will be taken'; extends_existing true",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [
+   {
+    "blind": "b1",
+    "quote": "Except as is otherwise provided in section fifty-three hundred four of this article or any controlling law of the United States, a court of this state shall recognize a foreign country judgment to which this article applies as conclusive between the parties",
+    "kind": "duty",
+    "agency": "Unified Court System",
+    "dropped_by": "condition_of_other_record",
+    "note": "the braced 'a court of this state shall recognize' is the article's main duty; the -02 non-recognition grounds are exceptions to it, not the reverse"
+   }
+  ],
+  "effective_date": {
+   "stored": "2021-06-11",
+   "computed": "2021-06-11",
+   "verdict": "correct",
+   "note": "immediately"
+  }
+ },
+ "2015-A5652": {
+  "records": {
+   "2015-A5652-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The department of state shall have the power to issue separate Licenses to bail enforcement agents and to watch, guard or patrol agencies.",
+    "note": "power struck from s70 and re-enacted in new s70-a; re-enacted copy is the record",
+    "fields_at_audit": {
+     "agency": "DOS",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-A5652-02": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "Criminal action for violation of this article shall be prosecuted by the Attorney general, his or her deputy, or a district attorney, in the name of the people of the state",
+    "note": "AG prosecution duty is existing text ('shall be prosecuted by the [attorney-general] {{Attorney general,}}' is a capitalisation swap); only 'or a district attorney' is new, recorded in -03. Same logic the ingest applied when it dropped the AG copy of the report sentence (2015-A5652-04, reprinted_name_swap)."
+   },
+   "2015-A5652-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Criminal action for violation of this article shall be prosecuted by the Attorney general, his or her deputy, or a district attorney, in the name of the people of the state",
+    "note": "DA prosecution, extends_existing true",
+    "fields_at_audit": {
+     "agency": "Attorney General",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2015-A5652-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The Attorney general or a district Attorney shall, upon a conviction for a violation of any provision of this article and within ten days thereafter, make and file with the department of state a detailed report showing the date of such conviction, the name of the person convicted and the nature of the charge.",
+    "note": "'or a district Attorney shall ... within ten days thereafter' after a conviction: deadline none correct",
+    "fields_at_audit": {
+     "agency": "District Attorneys",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2016-08-13",
+   "computed": "2016-08-13",
+   "verdict": "correct",
+   "note": "one year after 2015-08-13"
+  }
+ },
+ "2015-S6601": {
+  "records": {
+   "2015-S6601-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "With respect to dividends to shareholders distributed pursuant to paragraph two of this subsection, the superintendent may limit or disallow dividends if the superintendent determines that the:",
+    "note": "new paragraph (8) power",
+    "fields_at_audit": {
+     "agency": "DFS",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2015-12-28",
+   "computed": "2015-12-28",
+   "verdict": "correct",
+   "note": "same as ch 586 of 2015 (S1380), effective 2015-12-28; signed 2016-02-12 after it, so that date stands (criterion 8)"
+  }
+ }
+}

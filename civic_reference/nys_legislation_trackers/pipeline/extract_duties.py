@@ -478,8 +478,14 @@ GRANT_PHRASE = re.compile(r"\b(?:shall be|is|are) (?:hereby )?(?:further )?(?:au
 AUTH_DIRECTED = re.compile(r"\b(?:authorized|empowered)\s+and\s+(?:directed|required)\b|\b(?:directed|required)\s+and\s+(?:authorized|empowered)\b", re.I)
 
 
+APPLY_V2_NEG = True      # Nov 7 2026 (coordinator V2): 'No <body> may ...' / 'no such exceptions may be ...' is a prohibition or cap, never a grant; stays a duty
+NEG_LEAD_MODAL = re.compile(r"^\W*(?:\{\{)?\s*no\b[^.;]{0,160}?\b(?:may|shall)\b", re.I)
+
+
 def grant_only(quote):
     """A grant with no 'shall' aimed at the actor ('is hereby further authorized and empowered to ...', 'may ...')."""
+    if APPLY_V2_NEG and NEG_LEAD_MODAL.search(quote or ""):
+        return False
     q = GRANT_PHRASE.sub(" ", quote or "")
     q = re.sub(r"\b(?:which|that|who|whom|whose)\s+(?:\w+\s+){0,3}?(?:shall|must)\b", " ", q)
     return bool(GRANT_WORD.search(quote or "")) and not MANDATORY.search(q)
@@ -1505,13 +1511,21 @@ def d4_item(q, tail):
 
 
 # D5: '[attorney-general] {{Attorney general or a district Attorney}} shall': the first actor's duty is reprinted, the added actor keeps its own record
+APPLY_V3_INSERT = True
+INSERTED_ACTOR = re.compile(r"\{\{\s*(?:or|and)\s+(?:a|an|the)\s+[^{}]{3,50}\}\}", re.I)
+
+
 def reprinted_swap_adds_actor(o, sent):
     pairs = list(NAME_SWAP_PAIR.finditer(sent))
     mm = re.search(r"\b(?:shall|must|may)\b", sent)
-    if not pairs or not mm or sent.count("{{") != len(pairs):
-        return False
     norm = lambda x: re.sub(r"^(?:the|a|an|such|each|any)\s+", "", re.sub(r"[-\s]+", " ", x.lower().strip(" ,.")))
     actor = norm(o.get("actor_raw") or "")
+    if APPLY_V3_INSERT and pairs and mm and INSERTED_ACTOR.search(sent):          # V3 (Nov 7 2026): '[attorney-general] {{Attorney general,}} ... {{or a district attorney,}}': the existing actor is only re-capitalised, a second actor is inserted
+        for m in pairs:
+            if norm(m.group(1)) == norm(m.group(2)) == actor:
+                return True
+    if not pairs or not mm or sent.count("{{") != len(pairs):
+        return False
     for m in pairs:
         if m.end() > mm.start():
             continue
@@ -1738,6 +1752,19 @@ ONGOING_VERB = re.compile(r"^\W*(?:identify|facilitate|support|promote|advise|mo
 ONGOING_BODY = re.compile(r"\b(?:task\s+force|commission|council|committee|board)\b", re.I)
 ONGOING_DELIVERABLE = re.compile(r"\b(?:report|submit|no\s+later\s+than|within\s+\w+(?:\s+\w+)?\s+(?:days|months|years)|on\s+or\s+before)\b", re.I)
 
+# Nov 7 2026 night (AA): closing-class rules from the open not-real list; dry run over stored ids in tests/test_fixes_20261107.py
+APPLY_V1_ADOPT = True     # Nov 7 2026 (coordinator V1): 'is hereby authorized to adopt a local law to provide that ... exempt from taxation' is the body's power, kept; eligibility sentences still drop
+V1_ADOPT_POWER = re.compile(r"\b(?:is|are)\s+hereby\s+(?:authorized|empowered)\s+to\s+(?:adopt|enact)\s+a\s+local\s+law\b|\bmay\s+(?:adopt|enact)\s+a\s+local\s+law\b", re.I)
+APPLY_AA1 = False         # OFF: 115 stored ids match, over the cap of 40 (Nov 7 2026); cost allocation: 'All ... costs associated with implementing this act shall be borne by X'
+AA1_COSTS_BORNE = re.compile(r"\bcosts?\b[^.]{0,120}\bassociated\s+with\b[^.]{0,120}\bshall\s+be\s+borne\s+by\b", re.I)
+APPLY_AA2 = True          # an abatement or benefit computed from stored information ('shall be based on the information contained in the application')
+AA2_BASED_ON = re.compile(r"\bshall\s+be\s+based\s+on\s+the\s+information\s+contained\s+in\b", re.I)
+APPLY_AA3 = True          # a consideration factor list and a budget-director approval of procurement releases: conditions on another record
+AA3_CONSIDERATION = re.compile(r"^\W*factors\s+such\s+as\b[^.]{0,200}\bshall\s+be\s+taken\s+into\s+consideration\b|\bdirector\s+of\s+the\s+budget\s+must\s+approve\s+the\s+release\s+of\s+any\s+request\s+for\s+proposal\b", re.I)
+APPLY_AA4 = True          # a 'where the enrollee ... has, in a format prescribed by the superintendent, certified' condition fragment
+AA4_PRESCRIBED_FORMAT = re.compile(r"^\W*where\s+the\s+(?:enrollee|insured)\b[^.]{0,120}\bin\s+a\s+format\s+prescribed\s+by\b", re.I)
+
+
 
 def ongoing_lead_item(o, text):
     """True for a list item with a continuing-function verb under a standing body's lead ('The task force shall support ..., including but not limited to:')
@@ -1810,6 +1837,14 @@ def gate_record(o, text, has_markers):
         return "condition_of_other_record", "a proviso that fixes an amount for another provision ('the maximum rent shall be set at ...'), not a duty or power of its own"
     if APPLY_Z4 and Z4_RESPONSIBILITY.search(q):
         return "amount_not_duty", "an allocation of cost between governments ('shall be the responsibility of X and not the responsibility of the state'): no actor carries it out"
+    if APPLY_AA1 and AA1_COSTS_BORNE.search(q):
+        return "amount_not_duty", "an allocation of implementation cost ('all costs associated with implementing this act shall be borne by X'): no actor carries it out"
+    if APPLY_AA2 and AA2_BASED_ON.search(q):
+        return "amount_not_duty", "a computation rule ('the abatement shall be based on the information contained in the application'): an entitlement term, no actor carries it out"
+    if APPLY_AA3 and AA3_CONSIDERATION.search(q):
+        return "condition_of_other_record", "a consideration factor list or an approval step attached to another record (awarding the contract, issuing procurement), not a duty of its own"
+    if APPLY_AA4 and AA4_PRESCRIBED_FORMAT.search(q):
+        return "condition_of_other_record", "a condition fragment ('where the enrollee has, in a format prescribed by the superintendent, certified'), part of the exception it qualifies"
     if APPLY_X2 and X2_SO_ELECT.search(q):
         sp_x = locate_span(q, text)
         if sp_x:
@@ -1847,7 +1882,7 @@ def gate_record(o, text, has_markers):
     if span and NOW_THEREFORE.search(text[max(0, span[0] - 40):span[0]]):          # H3 (Oct 28 2026)
         return "legislative_findings", "the 'Now, therefore' resolving sentence of the legislative findings; the enacted duty is codified in the later section"
     # 3. no-record classes
-    if STRONG_EXEMPT_RE.search(q) or (EXEMPT_RE.search(q) and not MANDATORY.search(EXEMPT_RE.sub(" ", q))):
+    if STRONG_EXEMPT_RE.search(q) or (EXEMPT_RE.search(q) and not MANDATORY.search(EXEMPT_RE.sub(" ", q)) and not (APPLY_V1_ADOPT and V1_ADOPT_POWER.search(q))):
         return "exemption_or_applicability", "exemption, residency or refund-review applicability clause, binds no government actor"
     if span and has_markers:          # S5: the only new matter in the quoted sentence is a gender-neutral pronoun edit ('his or her', 'or she')
         sent0 = context_sentence(span, text)[0]
@@ -3231,6 +3266,24 @@ def r6_ok(rule, o):
     return True
 
 
+_PAL_MAP = None
+
+
+def pal_map():
+    """R22 (Nov 7 2026): PAL section -> its one named authority, built once per run from the stored duties and powers of ALL sessions, before any session is rewritten."""
+    global _PAL_MAP
+    if _PAL_MAP is None:
+        recs = []
+        for d, key in (("duties", "obligations"), ("powers", "powers")):
+            for f in sorted((DATA / d).glob("*.json")):
+                try:
+                    recs += json.load(open(f)).get(key, [])
+                except (OSError, ValueError):
+                    pass
+        _PAL_MAP = agency_resolve_nys.build_pal_map_r22(recs)
+    return _PAL_MAP
+
+
 def run_agency_fixes(o, text, law, _model_pass=False):
     """Second-pass agency resolver and the actor fixes M8-M39, O2. Used on every record, and again after a gate rescue (O4)."""
     if not o.get("agency_matched") and o.get("agency") != "All agencies":      # fix 2b, 3: second-pass resolver
@@ -3259,6 +3312,8 @@ def run_agency_fixes(o, text, law, _model_pass=False):
     r27 = agency_resolve_nys.fix_20261027(o, text, LOOKUP, BY_CANON, eo.match_agency)      # R1, R2, R4 (Oct 27 2026)
     if r27:
         bump(r27)
+    if agency_resolve_nys.fix_pal_section_r22(o, pal_map()):      # R22 (Nov 7 2026)
+        bump("r22_pal_section")
     if agency_resolve_nys.fix_title_authority(o, (law or {}).get("title"), LOOKUP, BY_CANON):      # U3
         bump("u3_title_authority")
     if agency_resolve_nys.fix_ida_agency(o, text, (law or {}).get("title"), BY_CANON):      # T1

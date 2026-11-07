@@ -200,4 +200,25 @@ for raw, ag, unit in (("The chairperson", "Interstate Commission for Juveniles",
 for raw in ("the chairperson", "a commissioner", "the compact administrator", "the executive committee"):
     _o = {"actor_raw": raw, "agency": "Unspecified", "agency_source": "unresolved", "law_title": "Relates to the powers of the state commission of correction", "quote": "x"}
     ar.fix_20261031(_o, ed.BY_CANON, ed.LOOKUP, ""); check("R19 officer in non-compact law unchanged " + raw, "multi_state" not in _o and _o["agency"] == "Unspecified")
+# Nov 7 2026 R20: local assessor unit names the locality; R21: unit cut at title/application phrases
+_o = {"actor_raw": "the assessor of the town of Hempstead", "agency": "Assessors (local)", "agency_group": "Assessors (local)", "agency_unit": None, "law_title": "x", "quote": "x"}
+ar.fix_20261031(_o, ed.BY_CANON, ed.LOOKUP, ""); check("R20 actor names town", _o["agency_unit"] == "Town of Hempstead" and _o["agency"] == "Assessors (local)")
+_o = {"actor_raw": "the assessor", "agency": "Assessors (local)", "agency_group": "Assessors (local)", "agency_unit": None, "law_title": "Relates to conservation easement agreement exemptions for certain towns", "quote": "x"}
+ar.fix_20261031(_o, ed.BY_CANON, ed.LOOKUP, "Section 1. The assessor of the Town of Southold shall approve. The Town of Southold may adopt."); check("R20 2021-S6469 from law text", _o["agency_unit"] == "Town of Southold")
+_o = {"actor_raw": "the assessor", "agency": "Assessors (local)", "agency_unit": None, "law_title": "Relates to exemptions", "quote": "x"}
+ar.fix_20261031(_o, ed.BY_CANON, ed.LOOKUP, "the Town of Southold and the Village of Greenport"); check("R20 two localities stay None", _o["agency_unit"] is None)
+_o = {"actor_raw": "the assessor", "agency": "Assessors (local)", "agency_unit": None, "law_title": "Relates to real property tax exemption", "quote": "x"}
+ar.fix_20261031(_o, ed.BY_CANON, ed.LOOKUP, "Section 1. Subdivision 2 of section 485 of the real property tax law is amended."); check("R20 statewide RPTL stays None", _o["agency_unit"] is None)
+for u, want in (("Town of Oyster Bay for a Real Property Tax Exemption", "Town of Oyster Bay"), ("Village of Foo relating to taxes", "Village of Foo"), ("Town of Bar to provide notice", "Town of Bar"), ("Town of Baz for the purpose of x", "Town of Baz")):
+    _o = {"actor_raw": "x", "agency": "Towns", "agency_unit": u, "quote": "x"}
+    ar.clean_unit_r16(_o); check("R21 " + u, _o["agency_unit"] == want)
+_o = {"actor_raw": "x", "agency": "Towns", "agency_unit": "County of Nassau; Village of Roslyn; Village of Roslyn An Application for An Exemption; Village of Roslyn Would Otherwise Be Entitled", "quote": "x"}
+ar.clean_unit_r16(_o); check("R21 semicolon list", _o["agency_unit"] == "County of Nassau; Village of Roslyn")
+# Nov 7 2026 R22: PAL section -> its one named local authority
+_named = lambda ag, sec: {"agency": ag, "agency_full": ag, "jurisdiction": "state", "agency_org_type": "public authority", "agency_group": None, "agency_unit": None, "citation": "Public Authorities Law \u00a7 %s(1)" % sec}
+_map = ar.build_pal_map_r22([_named("Auburn Industrial Development Authority", "2306"), _named("Oswego IDA", "2400"), _named("Other IDA", "2400")])
+_o = {"actor_raw": "the authority", "agency": "Local agencies and authorities", "agency_group": "Local agencies and authorities", "agency_unit": None, "agency_source": "group", "citation": "Public Authorities Law \u00a7 2306(14)", "quote": "x"}
+check("R22 2306 -> Auburn IDA", ar.fix_pal_section_r22(_o, _map) and _o["agency"] == "Auburn Industrial Development Authority" and _o["agency_source"] == "pal_section_r22" and _o["agency_group"] is None)
+_o = {"actor_raw": "the authority", "agency": "Local agencies and authorities", "agency_group": "Local agencies and authorities", "agency_unit": None, "citation": "Public Authorities Law \u00a7 2400(1)", "quote": "x"}
+check("R22 two candidates unchanged", not ar.fix_pal_section_r22(_o, _map) and _o["agency"] == "Local agencies and authorities")
 print("%d passed, %d failed" % (passed, failed))

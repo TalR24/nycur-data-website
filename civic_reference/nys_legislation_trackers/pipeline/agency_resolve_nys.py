@@ -804,7 +804,8 @@ def fix_generic_named_body(o, nyc_by=None):
 
 # R16/R17 (Nov 5 2026)
 UNIT_CUT = re.compile(r"\s*(?:,\s*by\b|\s(?:acting\s+by\s+and\s+through|acting\s+through|acting\s+by|by\s+and\s+through|by\s+its|through\s+its)\b).*$", re.I)
-UNIT_TAIL = re.compile(r"(?:\s+(?:acting|by|through|and|its))+$", re.I)
+UNIT_TAIL = re.compile(r"(?:\s+(?:acting|by|through|and|its|for|to|of|in))+$", re.I)
+UNIT_CUT_R21 = re.compile(r"\s+(?:an\s+application\b|would\s|for\s+an?\s|for\s+the\s+purpose|to\s+provide\b|relating\s+to\b|in\s+relation\s+to\b|concerning\b).*$", re.I)
 VOC_BOARD = re.compile(r"^(?:the )?(?:county )?vocational education and extension boards?$", re.I)
 
 
@@ -813,7 +814,12 @@ def clean_unit_r16(o):
     u = o.get("agency_unit")
     if not u or not isinstance(u, str):
         return False
-    cut = UNIT_CUT.sub("", u)
+    parts = []
+    for part in u.split(";"):          # R21 (Nov 7 2026): also cut each unit at title/application phrases; drop duplicates the cut creates
+        c = UNIT_CUT_R21.sub("", UNIT_CUT.sub("", part.strip())).strip()
+        if c and c not in parts:
+            parts.append(c)
+    cut = "; ".join(parts)
     if cut == u:
         return False
     new = UNIT_TAIL.sub("", cut).strip(" ,.;")
@@ -821,6 +827,59 @@ def clean_unit_r16(o):
         o["agency_unit"] = new
         return True
     return False
+
+
+def fix_local_assessor_r20(o, text=""):
+    """R20 (Nov 7 2026): a local assessor keeps the group 'Assessors (local)' but the unit names the locality, taken from the actor text,
+    else the law title, else the law text. Two or more distinct localities (or none) leave the unit None."""
+    if o.get("agency") != "Assessors (local)" or o.get("agency_unit"):
+        return False
+    for src in (o.get("actor_raw"), o.get("law_title"), text):
+        found = {}
+        for mm in LOCALITY_NAMED.finditer(src or ""):
+            if mm.group(1).lower() == "town" and mm.group(2).lower().startswith(("and ", "or ")):
+                continue
+            found[(mm.group(1).lower(), mm.group(2).strip().lower())] = mm.group(1).title() + " of " + mm.group(2).strip()
+        if len(found) == 1:
+            o["agency_unit"] = next(iter(found.values()))
+            return True
+        if len(found) > 1:
+            return False
+    return False
+
+
+PAL_SECTION = re.compile(r"Public Authorities Law\s*§+\s*(\d+(?:-[a-z])?)", re.I)
+GENERIC_PAL = {None, "Unspecified", "Local agencies and authorities", "State authorities", "State agencies", "Municipalities (all)"}
+
+
+def pal_section(o):
+    m = PAL_SECTION.search(o.get("citation") or "")
+    return m.group(1).lower() if m else None
+
+
+def build_pal_map_r22(records):
+    """R22 (Nov 7 2026): PAL section -> its one named authority, taken from stored records that carry that citation with a named (non-group) agency."""
+    seen = {}
+    for r in records:
+        sec = pal_section(r)
+        a = r.get("agency")
+        if not sec or a in GENERIC_PAL or r.get("agency_group") or "group" in (r.get("agency_org_type") or ""):
+            continue
+        if r.get("agency_org_type") not in ("public authority", "local authority", "industrial development agency"):      # state-agency sections (DOS, Comptroller) name the regulator, not a subject
+            continue
+        seen.setdefault(sec, {})[a] = r
+    return {sec: next(iter(v.values())) for sec, v in seen.items() if len(v) == 1}
+
+
+def fix_pal_section_r22(o, pal_map):
+    sec = pal_section(o)
+    if not sec or sec not in pal_map or o.get("agency") != "Local agencies and authorities" or o.get("agency_unit"):
+        return False
+    t = pal_map[sec]
+    o.update(agency=t["agency"], agency_full=t.get("agency_full") or t["agency"], agency_matched=True, jurisdiction=t.get("jurisdiction") or o.get("jurisdiction"),
+             agency_org_type=t.get("agency_org_type"), agency_group=t.get("agency_group"), agency_unit=t.get("agency_unit"), agency_source="pal_section_r22")
+    o.pop("actor_unresolved", None)
+    return True
 
 
 def fix_vocational_board(o, text=""):
@@ -921,6 +980,7 @@ def fix_20261031(o, by_canon, lookup=None, text=""):
     """R1-R3 (Oct 31 2026). Returns True when a raw office title in `agency` (or the chief diversity officer in actor_raw) was
     replaced by the body it heads. Runs on matched and unmatched records; titles whose body the crosswalks cannot resolve are left alone."""
     clean_unit_r16(o)
+    fix_local_assessor_r20(o, text)
     if fix_multi_state(o, by_canon, text):
         return True
     if fix_district_election_inspectors(o, text):
