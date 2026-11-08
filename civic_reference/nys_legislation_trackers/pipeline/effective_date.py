@@ -218,6 +218,9 @@ RETRO = re.compile(r"(?:shall be |is |are )?deemed to have been in full force(?:
 COND = re.compile(r"if (?:this act|it) shall (not )?have become (?:a )?law (on or before|after) (" + MONTH_RE + r")\s+(\d{1,2}),?\s+(\d{4})", re.I)
 
 
+AFTER_SUCH_DATE = re.compile(r"(?:if|in the event(?: that)?)\s+(?:this act|it) shall (?:have )?become (?:a )?law (?:after|subsequent to) such date,? (?:then )?(?:it|this act) shall take effect immediately", re.I)
+
+
 def _retro(clause, signed):
     """[(applies_to or None, ISO date)] for 'deemed to have been in full force [and effect] on and after D' statements that
     apply: a proviso conditioned on a date the act beat at signing ('if not law on or before March 27') does not."""
@@ -522,6 +525,11 @@ def parse_effective(text, signed_date, resolver=None, _parts=True):
             refinfo = _amended_reference(text, refinfo, signed)
             refinfo = _amended_fixed_reference(text, refinfo, signed)
     eff, rule, ref_used = _single(clause, signed, refinfo)
+    cond_retro = None
+    if rule == "fixed_date" and eff and signed > eff and AFTER_SUCH_DATE.search(clause):
+        # night 20261108: "shall take effect D; provided that if this act shall have become a law after such date it shall take effect immediately
+        # and shall be deemed to have been in full force and effect on and after D": signed after D, so the signing date is the effective date
+        cond_retro, eff, rule = eff, signed, "immediately_after_date"
     if rule == "unparsed" and not re.search(r"take effect|takes effect", text or "", re.I):
         rule = "text_truncated"           # M19 (Oct 12 2026): the cached text ends before the act clause (budget schedules) or is empty
     retros = _retro(clause, signed)
@@ -582,6 +590,8 @@ def parse_effective(text, signed_date, resolver=None, _parts=True):
             expires = date.fromisoformat(sect_exp[0]["expires_date"])
             sect_exp[0]["rule"] = "section_expiry_whole_act"
     retro = min({d for ap, d in retros if not ap}, default=None)
+    if cond_retro:
+        retro = cond_retro
     out = {"effective_date": eff.isoformat() if eff else None, "rule": rule,
            "expires_date": expires.isoformat() if expires else None,
            "retroactive_to": retro.isoformat() if retro else None,

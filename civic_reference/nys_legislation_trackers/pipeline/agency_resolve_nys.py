@@ -976,11 +976,69 @@ def fix_multi_state(o, by_canon, text=""):
     return True
 
 
+def _group_term_r23(canon):
+    c = canon.lower()
+    return re.compile(r"\b" + (c[:-3] + "(?:y|ies)" if c.endswith("ies") else c[:-1] + "s?" if c.endswith("s") else c) + r"\b", re.I)
+
+
+def fix_model_group_r23(o, by_canon):
+    """R23 (Nov 8 2026): a record stored as the generic 'Municipalities (all)' (no locality unit) whose model actor is a specific local
+    group in the crosswalk (School districts, Fire districts, Counties ...) keeps that group, provided the quote or actor names it.
+    A model that only said 'municipality' stays generic."""
+    if o.get("agency") != "Municipalities (all)" or o.get("agency_unit") or str(o.get("agency_source") or "").startswith("assessing_unit"):
+        return False
+    m = strip_art(norm(o.get("actor_resolved_model") or ""))
+    if not m:
+        return False
+    canon = ALIASES.get(m)
+    if not canon:
+        canon = next((a for a in by_canon if a.lower() == m), None)
+    if not canon:
+        canon = next((c for rx, c, j, t in GROUP_REGEX if rx.search(m) and t == "local government group"), None)
+    a = by_canon.get(canon) if canon else None
+    if not a or canon == "Municipalities (all)" or a.get("org_type") != "local government group":
+        return False
+    if not _group_term_r23(canon).search((o.get("actor_raw") or "") + " " + (o.get("quote") or "")):
+        return False
+    o.update(agency=canon, agency_full=a.get("full_name") or canon, agency_matched=True, jurisdiction=a.get("jurisdiction") or "local",
+             agency_org_type="local government group", agency_group=canon, agency_unit=None, agency_source="model_group_r23")
+    o.pop("actor_unresolved", None)
+    return True
+
+
+BARE_STATE_R24 = re.compile(r"^(?:the |a |an |any |each |every |all )?(?:state|state of new york|new york state)(?: (?:agenc(?:y|ies)|department|departments|entit(?:y|ies)|authorit(?:y|ies)))?$", re.I)
+
+
+def fix_model_state_entry_r24(o, by_canon, lookup):
+    """R24 (Nov 8 2026): a record stored as the 'State agencies' group whose model actor resolves to a specific State crosswalk entry
+    keeps that entry. Bare 'the state' / 'state agencies' wording (actor or model) stays the group."""
+    if o.get("agency") != "State agencies" or not lookup or str(o.get("agency_source") or "").startswith("state_actor"):
+        return False
+    m = re.sub(r"\s+", " ", (o.get("actor_resolved_model") or "").strip(" .,;:"))
+    if not m or m.lower() in ("unspecified", "not stated", "n/a") or BARE_STATE_R24.match(strip_art(m)) or BARE_STATE_R24.match(re.sub(r"\s+", " ", (o.get("actor_raw") or "").strip(" .,;:"))):
+        return False
+    import extract_obligations as eo
+    canon = None
+    for v in (m, re.sub(r"^new york state\s+", "state ", m, flags=re.I)):
+        canon, _ = eo.match_agency(norm(v), lookup, by_canon)
+        if canon:
+            break
+    a = by_canon.get(canon) if canon else None
+    if not a or canon == "State agencies" or a.get("jurisdiction") != "state" or "group" in (a.get("org_type") or ""):
+        return False
+    o.update(agency=canon, agency_full=a.get("full_name") or canon, agency_matched=True, jurisdiction="state", agency_org_type=a.get("org_type"),
+             agency_group=None, agency_unit=None, agency_source="model_entry_r24")
+    o.pop("actor_unresolved", None)
+    return True
+
+
 def fix_20261031(o, by_canon, lookup=None, text=""):
     """R1-R3 (Oct 31 2026). Returns True when a raw office title in `agency` (or the chief diversity officer in actor_raw) was
     replaced by the body it heads. Runs on matched and unmatched records; titles whose body the crosswalks cannot resolve are left alone."""
     clean_unit_r16(o)
     fix_local_assessor_r20(o, text)
+    if fix_model_group_r23(o, by_canon) or fix_model_state_entry_r24(o, by_canon, lookup):
+        return True
     if fix_multi_state(o, by_canon, text):
         return True
     if fix_district_election_inspectors(o, text):

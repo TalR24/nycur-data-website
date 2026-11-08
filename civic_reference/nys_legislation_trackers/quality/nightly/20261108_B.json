@@ -1,0 +1,596 @@
+{
+ "_scoring": {
+  "auditor": "B",
+  "night": "20261108",
+  "laws": 11,
+  "stored_records": 18,
+  "correct": 15,
+  "wrong_fields": 3,
+  "not_real": 0,
+  "missed": 3,
+  "precision_strict": "15/18 = 83.3% (Wilson 95% 60.8-94.2%)",
+  "precision_real": "18/18 = 100.0% (Wilson 95% 82.4-100.0%)",
+  "recall": "18/21 = 85.7% (Wilson 95% 65.4-95.0%)",
+  "effective_dates": "11/11 correct",
+  "calibration_laws": [
+   "2021-A459",
+   "2015-S6426"
+  ],
+  "calibration": {
+   "stored_records": 5,
+   "correct": 4,
+   "wrong_fields": 1,
+   "not_real": 0,
+   "missed": 1,
+   "precision_strict": "4/5 = 80.0% (Wilson 95% 37.6-96.4%)",
+   "precision_real": "5/5 = 100.0% (Wilson 95% 56.6-100.0%)",
+   "recall": "5/6 = 83.3% (Wilson 95% 43.6-97.0%)",
+   "effective_dates": "2/2 correct (law level)"
+  },
+  "notes": "Sample scores cover the 11 B laws only; calibration laws scored separately under 'calibration'. Blind items: 21 sample, 6 calibration."
+ },
+ "_classes": [
+  {
+   "name": "grant_only kind adjustment flips a 'The office shall' duty to power when the quote starts after 'shall'",
+   "criteria": [
+    "4"
+   ],
+   "instances": [
+    "2021-S7019-02"
+   ],
+   "rule": "kind_adjusted=='grant_only' and kind_model=='duty' and kind=='power' (stricter variant without may/authoriz/empower/permit in quote: 40)",
+   "db_matches": 192,
+   "db_examples": [
+    "2009-A11523-03",
+    "2009-A2209-12",
+    "2009-A3661-08"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "list item under a conditional power lead-in ('The powers granted by this subdivision may be exercised only if') forced to duty by rescued_imperative_item",
+   "criteria": [
+    "4"
+   ],
+   "instances": [
+    "2021-S7149-02",
+    "2021-S7149-03"
+   ],
+   "rule": "rescued_imperative_item==True and kind_model=='power' and kind=='duty'",
+   "db_matches": 156,
+   "db_examples": [
+    "2009-A10260-02",
+    "2009-A4097-08",
+    "2009-A4617-01"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "model names a specific agency but agency resolves to the 'State agencies' group",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2021-S7149-02"
+   ],
+   "rule": "agency=='State agencies' and actor_resolved_model not generic (not matching state agenc|unspecified|state of new york|the state)",
+   "db_matches": 107,
+   "db_examples": [
+    "2009-A11144-20",
+    "2009-A11144-21",
+    "2009-A4092-01"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "second distinct duty in one sentence (develop criteria vs regularly review/revise, different recurrence) dropped as duplicate_provision",
+   "criteria": [
+    "9",
+    "6"
+   ],
+   "instances": [
+    "2021-S772 (dropped duplicate_provision vs 2021-S772-06)"
+   ],
+   "rule": "dropped rule=='duplicate_provision' whose first 150 chars of quote equal the kept record's quote named in reason 'overlaps <id>' (of 263 duplicate_provision drops)",
+   "db_matches": 84,
+   "db_examples": [
+    "2009-A10468-12",
+    "2009-A10468-13",
+    "2009-A10468-14"
+   ],
+   "needs_judgment": true
+  },
+  {
+   "name": "sunset extension of an earlier chapter with no record: dropped extension_holder_unnamed, or silent (no stored and no dropped record)",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2021-S6607 (dropped extension_holder_unnamed)",
+    "2017-S7950 (silent, re-ask law)"
+   ],
+   "rule": "(a) dropped rule=='extension_holder_unnamed' [14 records]; (b) packet LAW TEXT matches (deemed repealed|expire|remain in full force and effect)[^.]{0,200}\\[..\\d{4}\\] \\{\\{..\\d{4}\\}\\} and law has no stored and no dropped record [laws, not records]; db_matches counts laws for (b); (a) adds 14 dropped records, e.g. 2009-A10118-01",
+   "db_matches": 345,
+   "db_examples": [
+    "2013-A7101",
+    "2013-A8479",
+    "2013-A7819"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "record-level effective_date ignores a section-scoped effective date for the subparagraph the record quotes",
+   "criteria": [
+    "8"
+   ],
+   "instances": [
+    "2021-A459-01 (calibration)"
+   ],
+   "rule": "upper bound: record effective_date == law effective_date while the law's effective_dates entry has non-empty section_dates; deciding which records sit in the scoped section needs judgment",
+   "db_matches": 3656,
+   "db_examples": [
+    "2009-A10355-01",
+    "2009-A10355-02",
+    "2009-A10355-03"
+   ],
+   "needs_judgment": true
+  }
+ ],
+ "2021-S7019": {
+  "records": {
+   "2021-S7019-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "quote": "The office shall, within twenty-four hours following the discovery of a data breach or network security breach or receiving notice of a data breach or network security breach, notify the chief information officer, and where appropriate, the chief information security officer, of any state entity with which it shares data",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "ITS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S7019-02": {
+    "verdict": "wrong",
+    "criteria": [
+     "4"
+    ],
+    "quote": "notify the chief information officer, and where appropriate, the chief information security officer, of such state entity with which it shares data, provides networked services or shares a network connection and whose data is or may have been the subject of such breach, of its plan for remediation of the breach and future protection of such data and network.",
+    "note": "Law: '{{2. The office shall, in addition to the provisions of subdivision one of this section, notify ...}}'; kind_adjusted grant_only turned a shall-duty into a power",
+    "fields": {
+     "kind": "duty"
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2021-12-22",
+   "computed": "2021-12-22",
+   "verdict": "correct",
+   "note": "'This act shall take effect immediately', signed 2021-12-22"
+  }
+ },
+ "2021-S7399": {
+  "records": {
+   "2021-S7399-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "quote": "The governing board of a political subdivision may extend the maximum number of years for which a participant may receive credit for a year of ambulance service for up to an additional ten years, to a maximum of fifty years",
+    "note": "extends_existing false accepted: wholly new grant of power; arguable as an amount widening"
+   },
+   "2021-S7399-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "quote": "The governing board of a political subdivision may extend the maximum number of years of service for which a participant may receive a contribution for up to an additional ten years, to a maximum of fifty years",
+    "note": ""
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2022-11-23",
+   "computed": "2022-11-23",
+   "verdict": "correct",
+   "note": ""
+  }
+ },
+ "2015-A7640": {
+  "records": {
+   "2015-A7640-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "quote": "This act shall take effect thirty days after it shall have become a law and shall expire and be deemed repealed October 1, 2020.",
+    "note": "earlier chapter's sunset '[2015] {{2020}}' is an extension record (Oct 16); agency PSC not stated in the text, actor_raw names the account, not a body (title names no holder)",
+    "fields_at_audit": {
+     "agency": "PSC",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2015-08-13",
+   "computed": "2015-08-13",
+   "verdict": "correct",
+   "note": ""
+  }
+ },
+ "2021-S7149": {
+  "records": {
+   "2021-S7149-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "quote": "The length of any loan provided under this article shall not exceed forty years.",
+    "note": "'[thirty] {{forty}} years'",
+    "fields_at_audit": {
+     "agency": "Housing Trust Fund Corporation",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2021-S7149-02": {
+    "verdict": "wrong",
+    "criteria": [
+     "3",
+     "4"
+    ],
+    "quote": "governmental agency of the United States, which for purposes of this subdivision, include the federal home loan mortgage corporation, the federal national mortgage association, the governmental national mortgage association, and any successor of the foregoing, or any wholly-owned subsidiary or combination thereof",
+    "note": "Lead-in: 'The powers granted by this subdivision may be exercised only if (a) obligations of the agency...' in PHFL 44; widened purchaser class widens HFA's power",
+    "fields": {
+     "agency": "HFA (New York State Housing Finance Agency)",
+     "kind": "power"
+    }
+   },
+   "2021-S7149-03": {
+    "verdict": "wrong",
+    "criteria": [
+     "4"
+    ],
+    "quote": "governmental agency of the United States, which for purposes of this subdivision, include the federal home loan mortgage corporation, the federal national mortgage association, the governmental national mortgage association, and any successor of the foregoing, or any wholly-owned subsidiary or combination thereof",
+    "note": "PHFL 654(23-c)(3): 'The powers granted by this subdivision may be exercised only if ...'",
+    "fields": {
+     "kind": "power"
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2021-07-01",
+   "computed": "2021-07-01",
+   "verdict": "correct",
+   "note": "immediately; expires_rule with_referenced_section matches 'deemed to be repealed therewith'"
+  }
+ },
+ "2021-S7191": {
+  "records": {
+   "2021-S7191-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "quote": "A write-in ballot cast in a party primary for a candidate not enrolled in such party shall be void and not counted.",
+    "note": "boards of elections as canvassing body accepted; actor_raw is an annotation, not the law's words",
+    "fields_at_audit": {
+     "agency": "Boards of elections",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2021-10-08",
+   "computed": "2021-10-08",
+   "verdict": "correct",
+   "note": ""
+  }
+ },
+ "2021-S7497": {
+  "records": {
+   "2021-S7497-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "quote": "The commissioner of transportation shall provide for the installation and maintenance of adequate signing of the state highway system as designated pursuant to section one of this act.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "NYSDOT",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2022-06-30",
+   "computed": "2022-06-30",
+   "verdict": "correct",
+   "note": ""
+  }
+ },
+ "2017-S7950": {
+  "records": {},
+  "missed": [
+   {
+    "blind": "b1",
+    "quote": "provided, however, that the amendments made by sections one, two and three of this act shall be deemed repealed on December 31, 2021.",
+    "kind": "power",
+    "agency": "DEC (Department of Environmental Conservation), migratory game bird management under the ECL",
+    "dropped_by": null,
+    "note": "'[2018] {{2021}}' extension of chapter 84 of 2010; no stored and no dropped record (silent), re-ask law; title names no body"
+   }
+  ],
+  "effective_date": {
+   "stored": "2018-12-28",
+   "computed": "2018-12-28",
+   "verdict": "correct",
+   "note": ""
+  }
+ },
+ "2021-S6783": {
+  "records": {
+   "2021-S6783-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "quote": "In accord with the intent of this section, an adjustment and/or exemption to the mandatory continuing education requirement may be granted by the department for reasons of health certified by an appropriate health care professional",
+    "note": "'{{an}} adjustment {{and/or exemption}}' widens SED power, extends_existing true",
+    "fields_at_audit": {
+     "agency": "SED",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2023-05-03",
+   "computed": "2023-05-03",
+   "verdict": "correct",
+   "note": "eighteen months after 2021-11-03"
+  }
+ },
+ "2021-S772": {
+  "records": {
+   "2021-S772-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "quote": "There is established within the division a blue alert system to aid in the identification, location and apprehension of any individual or individuals suspected of killing or seriously wounding any police officer.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DCJS",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S772-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "quote": "Upon the request of a law enforcement agency having jurisdiction, the division shall issue a blue alert when public dissemination of available information may help avert further harm or accelerate apprehension of the suspect.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DCJS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S772-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "quote": "The division shall coordinate with the department of transportation, the division of state police, and police agencies, and may also coordinate with public commercial television and radio broadcaster organizations, to effectuate notifications under the blue alert system.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DCJS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S772-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "quote": "The division shall coordinate with the department of transportation, the division of state police, and police agencies, and may also coordinate with public commercial television and radio broadcaster organizations, to effectuate notifications under the blue alert system.",
+    "note": "separate 'may also coordinate with ... broadcaster organizations' power, same quote allowed",
+    "fields_at_audit": {
+     "agency": "DCJS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S772-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "quote": "The division may coordinate with additional state agencies capable of providing urgent and timely information to the public, together with television and radio broadcasters and other private entities, where appropriate",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DCJS",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S772-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "quote": "The division shall develop criteria and procedures for activation of the blue alert system, and shall regularly review the function of the blue alert system and revise its criteria and procedures to provide for efficient and effective public notifications.",
+    "note": "covers the one-time develop duty only",
+    "fields_at_audit": {
+     "agency": "DCJS",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S772-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "quote": "The division is hereby authorized to promulgate rules and regulations for the implementation of the blue alert system pursuant to this section.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DCJS",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [
+   {
+    "blind": "b7",
+    "quote": "shall regularly review the function of the blue alert system and revise its criteria and procedures to provide for efficient and effective public notifications",
+    "kind": "duty",
+    "agency": "DCJS",
+    "dropped_by": "duplicate_provision",
+    "note": "distinct ongoing review/revise duty, dropped as 'overlaps 2021-S772-06 by 70%+'"
+   }
+  ],
+  "effective_date": {
+   "stored": "2023-03-16",
+   "computed": "2023-03-16",
+   "verdict": "correct",
+   "note": "ninetieth day after 2022-12-16"
+  }
+ },
+ "2021-S7052": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2021-12-31",
+   "computed": "2021-12-31",
+   "verdict": "correct",
+   "note": "all new duties fall on defendants (private parties)"
+  }
+ },
+ "2021-S6607": {
+  "records": {},
+  "missed": [
+   {
+    "blind": "b1",
+    "quote": "provided that the provisions of sections three, four and five of this act shall remain in full force and effect until and including June 30, 2024.",
+    "kind": "power",
+    "agency": "unresolved (title names no holder; small loans to owners of multiple dwellings, PHFL)",
+    "dropped_by": "extension_holder_unnamed",
+    "note": "'[2021] {{2024}}' extension, routed to sunset_extension_unnamed_holder re-ask (Oct 19 rule)"
+   }
+  ],
+  "effective_date": {
+   "stored": "2021-06-29",
+   "computed": "2021-06-29",
+   "verdict": "correct",
+   "note": "immediately; signed before the June 30 2021 retroactivity trigger"
+  }
+ },
+ "2021-A459": {
+  "calibration": true,
+  "records": {
+   "2021-A459-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "8"
+    ],
+    "quote": "a motion under this paragraph, and all pertinent papers and documents, shall be confidential and may not be made available to any person or public or private entity except where specifically authorized by the court",
+    "note": "Act clause: 'subparagraph (ii) of paragraph (i) ... shall take effect on the sixtieth day after it shall have become a law'; this record quotes {{(ii) a motion under this paragraph ... confidential}}",
+    "fields": {
+     "effective_date": "2022-01-15"
+    }
+   },
+   "2021-A459-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "quote": "when a motion is filed under this paragraph, the court may, upon the consent of the petitioner and all of the state and local prosecutorial agencies that prosecuted each matter, consolidate into one proceeding a motion to vacate judgments imposed by distinct or multiple criminal courts",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A459-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "quote": "In the case of a motion granted under paragraph (i) of subdivision one of this section, the court must vacate the judgment on the merits because the defendant's participation in the offense was a result of having been a victim of trafficking.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [
+   {
+    "blind": "b4",
+    "quote": "The judgment is a conviction where the defendant's participation in the offense was a result of having been a victim of sex trafficking under section 230.34 of the penal law",
+    "kind": "power",
+    "agency": "Unified Court System",
+    "dropped_by": null,
+    "note": "deletion '[the arresting charge was under section 240.37 ... or 230.03 ... of the penal law, and]' widens the court's vacatur ground to any offense; extends_existing true"
+   }
+  ],
+  "effective_date": {
+   "stored": "2021-11-16",
+   "computed": "2021-11-16",
+   "verdict": "correct",
+   "note": "immediately; section date 2022-01-15 for subparagraph (ii) also stored"
+  }
+ },
+ "2015-S6426": {
+  "calibration": true,
+  "records": {
+   "2015-S6426-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "quote": "The corporation is authorized to provide financial assistance in the form of grants to not-for-profit corporations that provide direct services or benefits to the residents of Roosevelt Island, the totality of such grants not to exceed 3% per annum of the operating budget of the corporation",
+    "note": "effective 2015-12-03 = chapter 517 of 2015 (S5813) signed and effective immediately",
+    "fields_at_audit": {
+     "agency": "RIOC",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2015-S6426-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "quote": "annually, within ninety days after the end of the fiscal year of the corporation, the corporation shall post a report on its website that shall list and identify each grant recipient in such fiscal year, the amount provided to each recipient, and a general description of the public benefit of each grant.",
+    "note": "deadline none accepted: fiscal-year end not dated in the text",
+    "fields_at_audit": {
+     "agency": "RIOC",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2016-04-08 (sections 1 and 3: 2015-12-03)",
+   "computed": "2016-04-08; sections 1 and 3 same as chapter 517 of 2015 = 2015-12-03",
+   "verdict": "correct",
+   "note": "criterion 8: amendment signed after the referenced chapter's effective date leaves 2015-12-03"
+  }
+ }
+}

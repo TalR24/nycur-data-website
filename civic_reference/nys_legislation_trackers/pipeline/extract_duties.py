@@ -1763,7 +1763,78 @@ APPLY_AA3 = True          # a consideration factor list and a budget-director ap
 AA3_CONSIDERATION = re.compile(r"^\W*factors\s+such\s+as\b[^.]{0,200}\bshall\s+be\s+taken\s+into\s+consideration\b|\bdirector\s+of\s+the\s+budget\s+must\s+approve\s+the\s+release\s+of\s+any\s+request\s+for\s+proposal\b", re.I)
 APPLY_AA4 = True          # a 'where the enrollee ... has, in a format prescribed by the superintendent, certified' condition fragment
 AA4_PRESCRIBED_FORMAT = re.compile(r"^\W*where\s+the\s+(?:enrollee|insured)\b[^.]{0,120}\bin\s+a\s+format\s+prescribed\s+by\b", re.I)
+APPLY_AB1 = True          # Nov 8 2026: an appropriation proviso capping spending ('provided however that no more than $1,000,000 shall be used for ...')
+AB1_SPEND_CAP = re.compile(r"^\W*provided,?\s+however,?\s+that\s+no\s+more\s+than\s+\$[\d,]+\s+shall\s+be\s+(?:used|expended|spent)\s+for\b", re.I)
+APPLY_AB2 = True          # Nov 8 2026: an owner's liability for penalties under a schedule set elsewhere ('An owner liable for a violation ... shall be liable for monetary penalties in accordance with a schedule')
+AB2_OWNER_LIABLE = re.compile(r"^\W*an\s+owner\s+liable\s+for\b[^.]{0,200}\bshall\s+be\s+liable\s+for\s+(?:monetary\s+)?penalties\b", re.I)
+APPLY_AB3 = True          # Nov 8 2026: a deeming rule for pay ('shall be considered to have worked a minimum of 4 hours'): an entitlement term, no actor acts
+AB3_DEEMED_HOURS = re.compile(r"\bshall\s+be\s+considered\s+to\s+have\s+worked\s+a\s+minimum\s+of\b", re.I)
 
+
+
+APPLY_AC1 = True          # Nov 8 2026 (coordinator AC1): a quote cut before its 'shall' keeps kind duty when the located sentence carries the 'shall' ahead of the quote
+def ac1_shall_before_quote(span, text, quote):
+    """True when the quote has no mandatory modal of its own but the full sentence holds one before the quote starts ('The entity shall <quote>')."""
+    if not APPLY_AC1 or MANDATORY.search(quote or ""):
+        return False
+    sent, (left, _r) = context_sentence(span, text)
+    prefix = RELATIVE.sub(" ", text[left:span[0]])
+    return bool(MANDATORY.search(prefix))
+
+
+APPLY_AC2 = True          # Nov 8 2026 (coordinator AC2): a sunset sentence reprinted with bracket or brace markup is an EARLIER chapter's extension, never this act's own clause; not dropped as section_sunset or act-clause boilerplate
+def earlier_chapter_sunset(q, text):
+    """True when the located quote (or its sentence) says 'shall expire' and carries [deleted] or {{new}} markup, or follows an 'is amended to read as follows:' line."""
+    if not APPLY_AC2 or not re.search(r"\bshall\s+expire\b", q or "", re.I):
+        return False
+    sp = locate_span(q, text)
+    if not sp:
+        return False
+    seg = text[sp[0]:sp[1]] + " " + context_sentence(sp, text)[0]
+    if re.search(r"\{\{|\[[^\[\]]{2,}\]", seg):
+        return True
+    ps = text.rfind("\n", 0, sp[0]) + 1
+    prev = [x for x in text[:ps].split("\n") if x.strip()]
+    return bool(prev) and bool(AMENDED_READ.search(prev[-1].strip()))
+
+
+APPLY_AC3 = True          # Nov 8 2026 (coordinator AC3): the lead's own modal decides a list item's kind: a 'may' / 'is authorized' lead makes power items, a 'shall' lead duties, no modal leaves the item's own modal in charge
+AC3_MARK = re.compile(r"\(\s*(?:a|A|1|i)\s*\)")
+AC3_PERMISSIVE = re.compile(r"\bmay\b(?!\s+not)|\b(?:is|are)\s+(?:hereby\s+)?(?:authorized|empowered|permitted)\b", re.I)
+def lead_modal_kind(span, text):
+    """'power' / 'duty' / None: the modal of the lead that introduces the list the span belongs to (inline '(a)' list in the same paragraph, or the ':' lead)."""
+    ps = text.rfind("\n", 0, span[0]) + 1
+    prefix = text[ps:span[0]]
+    m = AC3_MARK.search(prefix)
+    lead = prefix[:m.start()] if m else (prefix[:prefix.rfind(":") + 1] if ":" in prefix else "")
+    lead = RELATIVE.sub(" ", re.sub(r"\{\{|\}\}", "", lead))
+    if not lead.strip() or not re.search(r"(?:\bonly\s+if|\bfollowing|\bif|:)\s*$", lead.strip(), re.I):
+        return None
+    if MANDATORY.search(lead):
+        return "duty"
+    return "power" if AC3_PERMISSIVE.search(lead) else None
+
+
+_YEAR_WORDS = {"ten": 10, "eleven": 11, "twelve": 12, "thirteen": 13, "fourteen": 14, "fifteen": 15, "sixteen": 16, "seventeen": 17, "eighteen": 18, "nineteen": 19,
+               "twenty": 20, "thirty": 30, "forty": 40, "fifty": 50, "one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7, "eight": 8, "nine": 9}
+def _marked_year(s):
+    m = re.search(r"\b(\d{4})\b", s)
+    if m:
+        return int(m.group(1))
+    ws = re.findall(r"[a-z]+", s.lower())
+    tot = [_YEAR_WORDS[w] for w in ws if w in _YEAR_WORDS]
+    return 2000 + sum(tot) if tot and "thousand" not in ws or (tot and 2000 + sum(tot) < 2100) else None
+def sunset_shortened(q, text):
+    """True when the amended expiry sentence carries a bracketed old year and a braced new year and the new year is earlier (the amendment shortens the sunset)."""
+    sp = locate_span(q, text)
+    if not (APPLY_AC2 and sp):
+        return False
+    seg = text[sp[0]:sp[1]] + " " + context_sentence(sp, text)[0]
+    m = re.search(r"\[([^\[\]]{2,})\]\s*\{\{([^{}]{2,})\}\}", seg)
+    if not m or not re.search(r"\bshall\s+expire\b", seg, re.I):
+        return False
+    old, new = _marked_year(m.group(1)), _marked_year(m.group(2))
+    return bool(old and new and new < old)
 
 
 def ongoing_lead_item(o, text):
@@ -1793,17 +1864,20 @@ def gate_record(o, text, has_markers):
         return "private_actor", "the sentence subject is a private party; the government body appears only inside an approval phrase, or the actor is an indefinite 'an applicant'"
     if APPLY_P2 and private_actor_record(o, q, text):
         return "private_actor", "the acting party is a private body or person and the quote names no government actor before the modal"
-    if BDC_NOTIFY.search(q):
+    ac2_keep = earlier_chapter_sunset(q, text)
+    if ac2_keep and sunset_shortened(q, text):
+        return "sunset_shortened", "an amendment that moves an earlier chapter's sunset to an earlier date: it shortens the authority, so no record is created"
+    if BDC_NOTIFY.search(q) and not ac2_keep:
         return "act_clause_boilerplate", "act-clause notice to the legislative bill drafting commission, a publishing courtesy that binds no program"
     if REVIEWED_AS_IF.search(q):
         return "reviewed_as_if_condition", "'shall be reviewed as if it had been received on or before ...' is a condition of the accept-late-application power, not a duty of its own"
     if CONDITION_PRECEDENT.search(q) or (APPLY_M36 and CONDITION_PRECEDENT_M36.search(q)):
         return "condition_precedent", "an implementation precondition ('shall not be implemented until X shall have delivered ...'): a condition on another provision, not a duty of the certifying officials"
-    if APPLY_B30 and SECTION_SUNSET.match(q):
+    if APPLY_B30 and SECTION_SUNSET.match(q) and not ac2_keep:
         return "section_sunset", "a proviso that one section of the act expires on a date; the sunset is computed with the effective dates and binds no actor"
     if APPLY_R1 and R1_PLEDGE.search(q):
         return "state_pledge", "the text of a State pledge or covenant to bond holders ('the state will not take any action'), an existing-law term that binds no program duty"
-    if APPLY_R2 and R2_SUNSET.search(q):
+    if APPLY_R2 and R2_SUNSET.search(q) and not ac2_keep:
         return "section_sunset", "a proviso that sections of the act expire on a date; the sunset is computed with the effective dates and binds no actor"
     if APPLY_R3 and not R3_MODAL.search(q):
         return "no_modal_fragment", "a list-item fragment with no modal verb (an eligibility or recipient list), stating no duty or power"
@@ -1819,7 +1893,7 @@ def gate_record(o, text, has_markers):
         return "sub_item_of_parent", "a content item of the regulations the superintendent is already directed to promulgate ('such regulations shall include a requirement'), part of that record"
     if APPLY_T2 and T2_USE_DEVICES.search(q):
         return "condition_of_other_record", "a condition on who may possess and use the devices ('shall use, maintain and dispose of such devices pursuant to regulations'), attached to the authorization record"
-    if APPLY_T3 and T3_SUNSET.search(q):
+    if APPLY_T3 and T3_SUNSET.search(q) and not ac2_keep:
         return "section_sunset", "a sunset proviso (a section or the act expires on a date); computed with the effective dates and binds no actor"
     if APPLY_T4 and T4_CONTINUE_APPLY.search(q):
         return "act_clause_boilerplate", "an act-clause saying the amendments continue to apply to commitments in force on a date, a transition term that binds no actor"
@@ -1845,6 +1919,12 @@ def gate_record(o, text, has_markers):
         return "condition_of_other_record", "a consideration factor list or an approval step attached to another record (awarding the contract, issuing procurement), not a duty of its own"
     if APPLY_AA4 and AA4_PRESCRIBED_FORMAT.search(q):
         return "condition_of_other_record", "a condition fragment ('where the enrollee has, in a format prescribed by the superintendent, certified'), part of the exception it qualifies"
+    if APPLY_AB1 and AB1_SPEND_CAP.search(q):
+        return "amount_not_duty", "a spending cap inside an appropriation ('provided however that no more than $N shall be used for'): an amount limit, no actor duty"
+    if APPLY_AB2 and AB2_OWNER_LIABLE.search(q):
+        return "no_duty_or_power", "a private owner's liability for penalties under a schedule set elsewhere: the schedule is the agency's record, this sentence binds the owner"
+    if APPLY_AB3 and AB3_DEEMED_HOURS.search(q):
+        return "amount_not_duty", "a deeming rule for overtime pay ('shall be considered to have worked a minimum of 4 hours'): an entitlement term, no actor carries it out"
     if APPLY_X2 and X2_SO_ELECT.search(q):
         sp_x = locate_span(q, text)
         if sp_x:
@@ -3816,8 +3896,10 @@ def build_records(laws):
                 if ctx2 != ctx and grant_only(RELATIVE.sub(" ", ctx)) and not grant_only(RELATIVE.sub(" ", ctx2)):
                     bump("b18_relative_may_list_item_duty")
                 ctx = ctx2
-            if kind == "duty" and (grant_only(quote) or (ctx and grant_only(RELATIVE.sub(" ", ctx)))) and not CAP_RE.search(quote) and not o.get("x5_lead"):
+            if kind == "duty" and (grant_only(quote) or (ctx and grant_only(RELATIVE.sub(" ", ctx)))) and not CAP_RE.search(quote) and not o.get("x5_lead") and not (sp and ac1_shall_before_quote(sp, text, quote)):
                 kind = "power"; o["kind_adjusted"] = "grant_only"; bump("grant_only_to_power")
+            if APPLY_AC3 and kind == "duty" and o.get("kind_list_item") and sp and not MANDATORY.search(quote) and not o.get("kind_from_lead_in") and lead_modal_kind(sp, text) == "power":
+                kind = "power"; o["kind_adjusted"] = "permissive_lead"; bump("ac3_permissive_lead_power")
             if APPLY_M35 and kind == "power" and (o.get("kind_model") == "duty" or o.get("kind_adjusted") == "model_power_kept" or o.get("kind_list_item")) and AUTH_DIRECTED.search(quote):          # M35: the rules above must not override the model's duty
                 kind = "duty"; o["kind_adjusted"] = "authorized_and_directed"; bump("m35_authorized_and_directed_duty")
             # 4. D3: bond caps and issuance cutoffs are duties (a prohibition on the actor) with no deadline

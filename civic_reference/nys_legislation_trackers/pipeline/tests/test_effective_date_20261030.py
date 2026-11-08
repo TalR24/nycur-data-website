@@ -110,5 +110,15 @@ e = parse_effective(A3.replace("a chapter of the laws of 2021", "chapter 111 of 
 sd = [x for x in e["section_dates"] if x["rule"] == "same_as_chapter"]
 check("N2 other chapter amended: index date stays", sd and sd[0]["effective_date"] == "2022-06-20", sd)
 
+# N3 (night 20261108): "take effect D; provided that if this act shall have become a law after such date it shall take effect immediately and ... deemed in full force on and after D"
+CD = "§ 3. This act shall take effect July 1, 2021; provided, however, that if this act shall have become a law after such date it shall take effect immediately and shall be deemed to have been in full force and effect on and after July 1, 2021."
+e = parse_effective(CD, "2021-12-22", _parts=False)
+check("N3 signed after the date: effective = signing", e["effective_date"] == "2021-12-22" and e["rule"] == "immediately_after_date" and e["retroactive_to"] == "2021-07-01", (e["effective_date"], e["rule"], e["retroactive_to"]))
+e = parse_effective(CD, "2021-06-15", _parts=False)
+check("N3 signed before the date: fixed date unchanged", e["effective_date"] == "2021-07-01" and e["rule"] == "fixed_date", (e["effective_date"], e["rule"]))
+
+e = parse_effective("§ 5. This act shall take effect July 1, 2021, except that if it shall have become a law subsequent to such date, this act shall take effect immediately and be deemed to have been in full force and effect on and after July 1, 2021.", "2021-12-22", _parts=False)
+check("N3 2021-S7159 clause (subsequent to)", e["effective_date"] == "2021-12-22" and e["rule"] == "immediately_after_date" and e["retroactive_to"] == "2021-07-01", (e["effective_date"], e["rule"], e["retroactive_to"]))
+
 print("%d passed, %d failed" % (passed, failed))
 sys.exit(1 if failed else 0)

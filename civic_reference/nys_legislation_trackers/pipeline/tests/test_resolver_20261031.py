@@ -221,4 +221,21 @@ _o = {"actor_raw": "the authority", "agency": "Local agencies and authorities", 
 check("R22 2306 -> Auburn IDA", ar.fix_pal_section_r22(_o, _map) and _o["agency"] == "Auburn Industrial Development Authority" and _o["agency_source"] == "pal_section_r22" and _o["agency_group"] is None)
 _o = {"actor_raw": "the authority", "agency": "Local agencies and authorities", "agency_group": "Local agencies and authorities", "agency_unit": None, "citation": "Public Authorities Law \u00a7 2400(1)", "quote": "x"}
 check("R22 two candidates unchanged", not ar.fix_pal_section_r22(_o, _map) and _o["agency"] == "Local agencies and authorities")
+# Nov 8 2026 R23: specific model group kept over Municipalities (all)
+_q = "It shall be the duty and responsibility of the municipality, school district and/or fire district which adopts a local law, ordinance or resolution pursuant to this section to determine the procedure for certification."
+_o = {"actor_raw": "the municipality, school district and/or fire district which adopts a local law, ordinance or resolution", "actor_resolved_model": "school districts", "agency": "Municipalities (all)", "agency_full": "Municipalities (all)", "agency_group": "Municipalities (all)", "agency_unit": None, "jurisdiction": "local", "quote": _q}
+check("R23 2021-S6676-04 keeps School districts", ar.fix_20261031(_o, ed.BY_CANON, ed.LOOKUP, "") and _o["agency"] == "School districts" and _o["agency_group"] == "School districts" and _o["agency_unit"] is None and _o["agency_source"] == "model_group_r23")
+_o = {"actor_raw": "the municipality", "actor_resolved_model": "municipalities", "agency": "Municipalities (all)", "agency_unit": None, "quote": "The municipality shall adopt."}
+ar.fix_20261031(_o, ed.BY_CANON, ed.LOOKUP, ""); check("R23 model said municipality stays generic", _o["agency"] == "Municipalities (all)")
+_o = {"actor_raw": "the municipality", "actor_resolved_model": "school districts", "agency": "Municipalities (all)", "agency_unit": None, "quote": "The municipality shall adopt."}
+ar.fix_20261031(_o, ed.BY_CANON, ed.LOOKUP, ""); check("R23 quote contradicts, stays generic", _o["agency"] == "Municipalities (all)")
+_o = {"actor_raw": "the legislative body", "actor_resolved_model": "towns", "agency": "Municipalities (all)", "agency_unit": "County of Suffolk", "agency_source": "assessing_unit_r7", "quote": "towns"}
+ar.fix_20261031(_o, ed.BY_CANON, ed.LOOKUP, ""); check("R23 unit record untouched", _o["agency"] == "Municipalities (all)")
+# Nov 8 2026 R24: model's specific State entry kept over the State agencies group
+_o = {"actor_raw": "the agency", "actor_resolved_model": "New York state housing finance agency", "agency": "State agencies", "agency_full": "State agencies", "agency_group": None, "agency_unit": None, "agency_source": "group", "jurisdiction": "state", "agency_org_type": "state agency group", "quote": "x"}
+check("R24 2021-S7149-02 keeps HFA", ar.fix_20261031(_o, ed.BY_CANON, ed.LOOKUP, "") and _o["agency"] == "New York State Housing Finance Agency" and _o["agency_source"] == "model_entry_r24" and _o["jurisdiction"] == "state")
+_o = {"actor_raw": "the state", "actor_resolved_model": "state of new york", "agency": "State agencies", "agency_group": None, "agency_unit": None, "agency_source": "group", "quote": "x"}
+ar.fix_20261031(_o, ed.BY_CANON, ed.LOOKUP, ""); check("R24 bare the state stays group", _o["agency"] == "State agencies")
+_o = {"actor_raw": "state agencies", "actor_resolved_model": "state agencies", "agency": "State agencies", "agency_group": None, "agency_unit": None, "agency_source": "group", "quote": "x"}
+ar.fix_20261031(_o, ed.BY_CANON, ed.LOOKUP, ""); check("R24 state agencies stays group", _o["agency"] == "State agencies")
 print("%d passed, %d failed" % (passed, failed))

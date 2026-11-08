@@ -1,0 +1,458 @@
+{
+ "_scoring": {
+  "auditor": "A",
+  "night": "20261108",
+  "laws": 11,
+  "stored_records": 10,
+  "correct": 6,
+  "wrong_fields": 4,
+  "not_real": 0,
+  "missed": 2,
+  "precision_strict": "6/10 = 60.0% (Wilson 95% 31.3-83.2%)",
+  "precision_real": "10/10 = 100.0% (Wilson 95% 72.2-100.0%)",
+  "recall": "7/9 = 77.8% (Wilson 95% 45.3-93.7%)",
+  "effective_dates": "10/11 correct",
+  "method": "blind list saved to /tmp/auditA/blind_20261108_A.txt before records were opened; stored records filtered by matter_id from data/duties/{Y}.json and data/powers/{Y}.json; recall = 7 blind items matched / (9 blind items + 0 unlisted correct records)",
+  "calibration_laws": [
+   "2013-S5236",
+   "2009-A8898"
+  ],
+  "calibration_scoring": {
+   "laws": 2,
+   "stored_records": 3,
+   "correct": 3,
+   "wrong_fields": 0,
+   "not_real": 0,
+   "missed": 0,
+   "precision_strict": "3/3 = 100.0% (Wilson 95% 43.8-100.0%)",
+   "precision_real": "3/3 = 100.0% (Wilson 95% 43.8-100.0%)",
+   "recall": "3/3 = 100.0% (Wilson 95% 43.8-100.0%)",
+   "effective_dates": "2/2 correct"
+  }
+ },
+ "_classes": [
+  {
+   "name": "quote clipped before its modal, so kind gate grant_only flips a 'shall' duty to power",
+   "criteria": [
+    "2",
+    "4"
+   ],
+   "instances": [
+    "2021-S7019-02"
+   ],
+   "rule": "kind=='power' and kind_model=='duty' and kind_adjusted=='grant_only' and not re.search(r'\\b(may|authori[sz]|empower|power|permit)', quote, re.I)",
+   "db_matches": 37,
+   "db_examples": [
+    "2009-A40012-44",
+    "2009-S5847-04",
+    "2011-A8691-08"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "earlier chapter's sunset extension (amended act clause of a prior chapter) dropped as section_sunset or act_clause_boilerplate (Oct 16 decision says it IS a record)",
+   "criteria": [
+    "1",
+    "7"
+   ],
+   "instances": [
+    "2015-S5149-01 (dropped)",
+    "2017-S7601-01 (dropped)"
+   ],
+   "rule": "over data/dropped/*.json: rule in (section_sunset, act_clause_boilerplate, act_clause) and quote ~ /expire|repeal|in full force and effect until/ and the packet text before the law's own final 'This act shall take effect' clause matches /of chapter \\d+ of the laws of (19|20)\\d\\d[^.]{0,300}is (hereby )?amended to read/ and holds braces",
+   "db_matches": 8,
+   "db_examples": [
+    "2009-A6923-01",
+    "2017-A2820-01",
+    "2009-S8314-58"
+   ],
+   "needs_judgment": false,
+   "note": "counted in dropped, not in duties/powers (8 dropped records, 8 laws: 6 section_sunset, 2 act_clause_boilerplate)"
+  },
+  {
+   "name": "per-group joint actor resolved by model but stored agency collapsed to Municipalities (all)",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2021-S6676-04"
+   ],
+   "rule": "agency=='Municipalities (all)' and actor_resolved_model.lower() in {school districts, counties, towns, villages, cities, fire districts}",
+   "db_matches": 7,
+   "db_examples": [
+    "2013-A9751-01",
+    "2017-S8932-01",
+    "2019-A7646-01"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "raised cap or maximum on an existing program stored extends_existing false",
+   "criteria": [
+    "7"
+   ],
+   "instances": [
+    "2021-S7399-01",
+    "2021-S7399-02"
+   ],
+   "rule": "extends_existing is False and re.search(r'(to a maximum of|up to an additional|increase[sd]? the maximum|extend the maximum)', quote, re.I)",
+   "db_matches": 21,
+   "db_examples": [
+    "2009-A4718-10",
+    "2009-A4768-09",
+    "2009-A5222-07"
+   ],
+   "needs_judgment": true,
+   "note": "regex is a candidate filter; whether a new power to raise an existing cap counts as widening needs judgment per match"
+  },
+  {
+   "name": "'take effect DATE, except that if it shall have become a law subsequent to such date ... immediately' stored as the pre-signing date",
+   "criteria": [
+    "8"
+   ],
+   "instances": [
+    "2021-S7159 (effective)"
+   ],
+   "rule": "effective_dates: rule=='fixed_date' and effective_date < signed_date and raw_clause ~ /subsequent to such date|after such date/",
+   "db_matches": 14,
+   "db_examples": [
+    "2009-A8564",
+    "2009-A8400",
+    "2009-A8894"
+   ],
+   "needs_judgment": false,
+   "note": "14 laws (47 stored records on them); retroactive_to is already stored, so the fix is effective_date = signing date"
+  }
+ ],
+ "2021-S7019": {
+  "records": {
+   "2021-S7019-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The office shall, within twenty-four hours following the discovery of a data breach or network security breach or receiving notice of a data breach or network security breach, notify the chief information officer, and where appropriate, the chief information security officer, of any state entity with which it shares data",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "ITS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S7019-02": {
+    "verdict": "wrong",
+    "criteria": [
+     "4",
+     "2"
+    ],
+    "fields": {
+     "kind": "duty",
+     "kind_rule": "duty",
+     "quote": "The office shall, in addition to the provisions of subdivision one of this section, notify the chief information officer, and where appropriate, the chief information security officer, of such state entity with which it shares data, provides networked services or shares a network connection"
+    },
+    "quote": "notify the chief information officer, and where appropriate, the chief information security officer, of such state entity with which it shares data, provides networked services or shares a network connection and whose data is or may have been the subject of such breach, of its plan for remediation of the breach and future protection of such data and network.",
+    "note": "law reads '2. The office shall, in addition to the provisions of subdivision one of this section, notify ... of its plan for remediation'; the quote starts at 'notify', dropping 'The office shall', and the grant_only gate stored a duty as a power"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2021-12-22",
+   "computed": "2021-12-22",
+   "verdict": "correct",
+   "note": "'This act shall take effect immediately', signed 2021-12-22"
+  }
+ },
+ "2021-S7399": {
+  "records": {
+   "2021-S7399-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "7"
+    ],
+    "fields": {
+     "extends_existing": true
+    },
+    "quote": "The governing board of a political subdivision may extend the maximum number of years for which a participant may receive credit for a year of ambulance service for up to an additional ten years, to a maximum of fifty years",
+    "note": "prior text 'The maximum number of years ... shall be forty years'; new matter lets the board raise it 'to a maximum of fifty years' (amount widened); judgment call"
+   },
+   "2021-S7399-02": {
+    "verdict": "wrong",
+    "criteria": [
+     "7"
+    ],
+    "fields": {
+     "extends_existing": true
+    },
+    "quote": "The governing board of a political subdivision may extend the maximum number of years of service for which a participant may receive a contribution for up to an additional ten years, to a maximum of fifty years",
+    "note": "prior text 'maximum number of years for which a participant may receive a contribution shall be forty years'; raised 'to a maximum of fifty years'"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2022-11-23",
+   "computed": "2022-11-23",
+   "verdict": "correct",
+   "note": "'shall take effect immediately', signed 2022-11-23"
+  }
+ },
+ "2021-S6676": {
+  "records": {
+   "2021-S6676-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "provided that the governing body of a city, village, town, school district, fire district or county, after a public hearing, adopts a local law, ordinance or resolution providing therefor",
+    "note": "city/village/town/county under Municipalities (all) acceptable; fire districts and counties not stored as their own groups (known joint-actor class, recurrence only)",
+    "fields_at_audit": {
+     "agency": "Municipalities (all)",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S6676-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "provided that the governing body of a city, village, town, school district, fire district or county, after a public hearing, adopts a local law, ordinance or resolution providing therefor",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Municipalities (all)",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S6676-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "It shall be the duty and responsibility of the municipality, school district and/or fire district which adopts a local law, ordinance or resolution pursuant to this section to determine the procedure for certification.",
+    "note": "deadline none correct: triggered by adoption of a local law",
+    "fields_at_audit": {
+     "agency": "Municipalities (all)",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S6676-04": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "School districts",
+     "agency_group": "School districts"
+    },
+    "quote": "It shall be the duty and responsibility of the municipality, school district and/or fire district which adopts a local law, ordinance or resolution pursuant to this section to determine the procedure for certification.",
+    "note": "actor_resolved_model 'school districts' but agency stored 'Municipalities (all)', making it an apparent duplicate of -03; law: 'the municipality, school district and/or fire district which adopts'"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2022-01-01",
+   "computed": "2022-01-01",
+   "verdict": "correct",
+   "note": "'first of January next succeeding the date on which it shall have become a law', signed 2021-12-01"
+  }
+ },
+ "2021-S6896": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2021-06-29",
+   "computed": "2021-06-29",
+   "verdict": "correct",
+   "note": "immediately"
+  },
+  "note": "UNVERIFIED: extends to July 1 2023 the expiry of PHL 2510(9)(c)(iii) and 2511(2)(g),(h); those provisions' content is not in the packet and the title names no government body, so whether they hold a DOH duty/power could not be checked; not counted as a miss"
+ },
+ "2021-S7159": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2021-07-01",
+   "computed": "2021-08-02 (retroactive to 2021-07-01)",
+   "verdict": "wrong",
+   "note": "'shall take effect July 1, 2021, except that if it shall have become a law subsequent to such date, this act shall take effect immediately and be deemed ... in full force and effect on and after July 1, 2021'; signed 2021-08-02"
+  },
+  "note": "rate tables ('such special interest shall be allowed') are entitlements; dropped by designation_no_actor, correctly no records"
+ },
+ "2021-S7714": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2022-12-10",
+   "computed": "2022-12-10",
+   "verdict": "correct",
+   "note": "same as ch 668 of 2021 (S3467), 'one year after it shall have become a law', signed 2021-12-10"
+  }
+ },
+ "2015-S5149": {
+  "records": {},
+  "missed": [
+   {
+    "blind": "b1",
+    "quote": "provided further that section ten of this act shall expire and be deemed repealed on June 30, 2020.",
+    "kind": "power",
+    "agency": "holder unnamed in title ('Extends the regional transportation systems pilot program'); route to sunset_extension_unnamed_holder re-ask",
+    "dropped_by": "section_sunset",
+    "note": "amends section 11 of chapter 378 of the laws of 2010, '[2015] {{2020}}': an earlier chapter's sunset extended, a record under the Oct 16 decision"
+   }
+  ],
+  "effective_date": {
+   "stored": "2015-06-30",
+   "computed": "2015-06-30",
+   "verdict": "correct",
+   "note": "immediately"
+  }
+ },
+ "2021-S7711": {
+  "records": {
+   "2021-S7711-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The president of the state civil service commission within the department of civil service is hereby directed to study and publish annual reports recording available data relating to diversity within executive state agencies, authorities, boards, bureaus, commissions, departments and divisions under executive control.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2021-S7711-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Such reports shall be sent to the chair of the senate standing committee on investigations and government operations and to the chair of the assembly standing committee on governmental employees no later than the first of July in each year.",
+    "note": "'[February] {{July}}'; deadline 2022-07-01 is the first July 1 after effective date 2021-11-15",
+    "fields_at_audit": {
+     "agency": "DCS",
+     "kind": "duty",
+     "deadline_kind": "fixed_date",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2021-11-15",
+   "computed": "2021-11-15",
+   "verdict": "correct",
+   "note": "same as ch 615 of 2021 (A2439), immediately, signed 2021-11-15; this amendment signed 2022-03-18 leaves that date standing"
+  }
+ },
+ "2021-S7231": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2021-06-11",
+   "computed": "2021-06-11",
+   "verdict": "correct",
+   "note": "immediately"
+  }
+ },
+ "2017-S7601": {
+  "records": {},
+  "missed": [
+   {
+    "blind": "b1",
+    "quote": "this act shall expire and be deemed repealed eight years after the commencement of the operation of a video lottery facility at Aqueduct racetrack",
+    "kind": "power",
+    "agency": "New York State Thoroughbred Breeding & Development Fund",
+    "dropped_by": "act_clause_boilerplate",
+    "note": "amends section 2 of chapter 473 of the laws of 2010, '[seven] {{eight}} years'; the LBDC notice in the same model quote triggered the boilerplate drop, but the earlier chapter's sunset extension is a record (Oct 16); extends_existing true"
+   }
+  ],
+  "effective_date": {
+   "stored": "2018-11-05",
+   "computed": "2018-11-05",
+   "verdict": "correct",
+   "note": "immediately"
+  }
+ },
+ "2019-S6100": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2019-07-03",
+   "computed": "2019-07-03",
+   "verdict": "correct",
+   "note": "immediately"
+  },
+  "note": "extends ch 223 of 1996 open-end loan fee provisions, which bind private lenders; title names no government body; no record expected"
+ },
+ "2013-S5236": {
+  "records": {
+   "2013-S5236-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "on or before October first, two thousand seventeen the superintendent shall require the association to report to him or her as to the number of policies written pursuant to this subsection and paragraph three of subsection (f) of section five thousand four hundred five of this article, and any other information the superintendent may require.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DFS",
+     "kind": "duty",
+     "deadline_kind": "fixed_date",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2013-S5236-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "On or before January first, two thousand eighteen, the superintendent shall report to the governor and the legislature regarding the number of policies issued pursuant to this section and such paragraph and shall include recommendations as to the continuation of such insurance offerings.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DFS",
+     "kind": "duty",
+     "deadline_kind": "fixed_date",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2013-12-18",
+   "computed": "2013-12-18",
+   "verdict": "correct",
+   "note": "immediately"
+  }
+ },
+ "2009-A8898": {
+  "records": {
+   "2009-A8898-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The city university of New York is hereby authorized to implement the terms of the written agreement between the city university of New York, as a public employer, and its employee organization, the international brotherhood of teamsters local 237",
+    "note": "section 2 certificate = condition precedent, sections 3-4 appropriations: correctly no records",
+    "fields_at_audit": {
+     "agency": "CUNY",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2009-07-11",
+   "computed": "2009-07-11",
+   "verdict": "correct",
+   "note": "immediately, signed 2009-07-11"
+  }
+ }
+}
