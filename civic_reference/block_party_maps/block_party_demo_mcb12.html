@@ -114,6 +114,7 @@ body.nopanel #panel{display:none} body.nopanel .ptoggle{right:8px;transform:none
 .seg button{flex:1;border:0;background:transparent;padding:7px 5px;border-radius:7px;font-weight:600;font-size:12px;color:var(--muted);cursor:pointer;font-family:inherit;transition:.15s;white-space:nowrap}
 .seg button.on{background:#fff;color:var(--ink);box-shadow:0 2px 6px rgba(0,0,0,.07)}
 .chips{display:flex;flex-wrap:wrap;gap:5px} .chips.hide{display:none}
+.ocnote{font-size:11px;line-height:1.4;color:var(--muted,#6b6b6b);margin:2px 0 8px}
 .fhead{cursor:pointer} .fhead .fx{display:flex;align-items:center;gap:9px} .fhead .cv2{font-size:11px;color:var(--muted)}
 .filthead{display:flex;align-items:center;gap:8px;margin:14px 0 4px;padding-bottom:7px;border-bottom:1.5px solid var(--line)}
 .filthead .ftl{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--ink)}
@@ -327,6 +328,7 @@ body.nopanel #panel{display:none} body.nopanel .ptoggle{right:8px;transform:none
 .act .top{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:7px}
 .act time{font-family:var(--mono);font-size:11px;color:var(--muted);font-weight:600}
 .ocpill{font-size:10.5px;font-weight:700;padding:2px 9px;border-radius:999px;color:var(--oc);background:color-mix(in srgb,var(--oc) 15%,#fff)}
+.bchip{font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;background:#eef2f7;color:#4b5c6e;margin-right:6px;white-space:nowrap}
 .act .role{font-family:var(--mono);font-size:10px;color:var(--muted)}
 .act h3{font-family:var(--disp);font-size:16.5px;margin:0 0 9px;line-height:1.3;font-weight:600}
 .act p{margin:0 0 9px;font-size:13.5px;line-height:1.62;color:#36343e}
@@ -445,6 +447,7 @@ a{cursor:pointer} .leaflet-interactive{cursor:pointer}
      <div class="lukey" id="luKey"></div>
      <div class="filthead" id="filtHead"><span class="ftl">Filters</span><span class="fbadge hide" id="filtN">0</span><button class="clrall2" id="clrAllBtn">Clear all</button></div>
      <div class="lt fhead" data-sec="oc"><span>Filter by outcome</span><span class="fx"><span class="mini rst" id="ocClear">reset</span><span class="cv2">▾</span></span></div><div class="chips" id="ocChips"></div>
+     <div class="ocnote" id="ocNote">Boards word conditional decisions differently. “Opposed with conditions” can mean the board opposes unless changes are made, or opposes for now pending more information. Read the resolution for the board's exact terms.</div>
      <div class="lt fhead" data-sec="dec"><span>Filter by decision <span class="cnt" id="decCnt"></span></span><span class="fx"><span class="mini rst" id="decClear">reset</span><span class="cv2">▾</span></span></div><div class="chips" id="decChips"></div>
      <div class="lt fhead" data-sec="tp"><span>Filter by committee <span class="cnt" id="tpCnt"></span></span><span class="fx"><span class="mini rst" id="tpClear">reset</span><span class="cv2">▸</span></span></div><div class="chips hide" id="tpChips"></div>
      <div class="lt fhead" data-sec="dist"><span>Filter by district</span><span class="fx"><span class="mini rst" id="distClear">reset</span><span class="cv2">▾</span></span></div><div class="chips" id="distChips"></div>
@@ -489,25 +492,17 @@ function hatch(l,oc){l.on('add',()=>{const set=pth=>{if(pth){pth.setAttribute('f
   if(l._path)set(l._path); else if(l.eachLayer)l.eachLayer(x=>set(x._path));});}
 function temoji(t){return TMETA[t]||'📍';}
 function demoji(d){return DMETA[d]||'▪';}   // tier-1 decision emoji
-function outcomeFor(t,hasCommit){t=(t||'').toLowerCase();
-  // Read the VERDICT first, then whether conditions are attached — so the CB12 norm "recommend DENIAL
-  // unless the applicant signs stipulations" is a conditional denial, NOT "supported with conditions".
-  // Conditions = the words in the text OR extracted commitments/stipulations (hasCommit) — so a plain
-  // "backs the plan" that carries 3 stipulations reads as "supported WITH conditions", not a clean yes.
-  const cond=!!hasCommit || /stipulat|with conditions?|\bunless\b/.test(t);
-  const deny=/den(y|ial|ied)|oppos|against|disapprov|reject/.test(t);
-  const appr=/approv|grant|\bsupport|in favor|endors|adopt|\bbacks?\b/.test(t);
-  if(deny) return cond?'denystip':'denied';    // "deny unless stipulations" (the CB12 SLA norm) vs a flat denial
-  if(appr) return cond?'stip':'approved';       // "support WITH conditions" vs a clean support
-  if(cond) return'stip';                        // conditions but no explicit verdict → lean support-with-conditions
-  return'neutral';}   // "Requested action" — board urged/requested an agency act (no verdict on an application)
+function outcomeFor(r){   // board position is computed in Python (geo_layer/outcome_rule.py) and shipped as r.oc
+  return (r&&r.oc&&OLAB[r.oc])?r.oc:'neutral';}   // "Requested action" — board urged/requested an agency act (no verdict on an application)
 function years(){const s=new Set();PLACES.forEach(p=>p.resolutions.forEach(r=>{if(r.date)s.add(+r.date.slice(0,4));}));return[...s].sort();}
 const YEARS=years(),YMIN=YEARS[0],YMAX=YEARS[YEARS.length-1];
-PLACES.forEach((p,i)=>{p._i=i;p._oc=outcomeFor((p.resolutions[0].title||'')+' '+(p.resolutions[0].action||''),(p.resolutions[0].commitments||[]).length);});
+PLACES.forEach((p,i)=>{p._i=i;p._oc=outcomeFor(p.resolutions[0]);});
 
-// Full tile URLs per base. (Bug fix: CARTO "voyager" lives under rastertiles/, not the root — that
-// wrong path is why Streets showed blank tiles.) Satellite is Esri World Imagery: free, no key, and
-// unlike Google's tiles it's actually licensed for embedding without an API key + billing.
+// Full tile URLs per base. NO CARTO: in Sep 2026 Carto started watermarking keyless tile
+// requests with a diagonal "API KEY REQUIRED" across every tile, which broke the published
+// maps. Every base here is keyless: Esri gray canvas for light/dark (native to z16, Leaflet
+// upscales to 20 via maxNative), OpenStreetMap for streets (z19), Esri World Imagery for
+// satellite — free and actually licensed for embedding without an API key + billing.
 const BASES={
   light:{url:'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',attr:'© Esri · © OpenStreetMap contributors',max:20,maxNative:16},
   streets:{url:'https://tile.openstreetmap.org/{z}/{x}/{y}.png',attr:'© OpenStreetMap contributors',max:19},
@@ -773,10 +768,10 @@ function showPlace(p,res){
     ? `<span class="ent ag" onclick="focusAgency('${jsq(e.name)}')">🏛 ${esc(e.name)}</span>`
     : `<span class="ent">${esc(e.name)}</span>`).join('');
   const acts=res.map(r=>{
-    const o=outcomeFor((r.title||'')+' '+(r.action||''),(r.commitments||[]).length);
+    const o=outcomeFor(r);
     const oLab=OLAB[o];
     return `<article class="act" style="--oc:${OCOL[o]}">
-      <div class="top"><time>${fmtDate(r.date)}</time><span class="ocpill">${oLab}</span></div>
+      <div class="top">${r.board?`<span class="bchip">${esc(r.board)}</span>`:''}<time>${fmtDate(r.date)}</time><span class="ocpill">${oLab}</span></div>
       <h3>${esc(r.title||'Untitled board action')}</h3>
       ${r.context?`<p>${esc(r.context)}</p>`:''}
       ${r.action?`<p class="did">${esc(r.action)}</p>`:''}
@@ -902,6 +897,7 @@ function welcome(){
       <div class="poslegend"><span class="csw" style="background:${OCOL.denystip}"></span><div><b>Opposed with conditions</b> — recommends <i>denial unless</i> the applicant signs stipulations (the common CB12 licensing move). Whether they ultimately agree is decided later at the State Liquor Authority, not in these minutes.</div></div>
       <div class="poslegend"><span class="csw" style="background:${OCOL.denied}"></span><div><b>Opposed without conditions</b> — recommended denial outright</div></div>
       <div class="poslegend"><span class="csw" style="background:${OCOL.neutral}"></span><div><b>Requested action</b> — the board urged or asked an agency to act (e.g. "urge DOT to add a bike lane")</div></div>
+      <p class="dnote">Boards word conditional decisions differently. “Opposed with conditions” can mean the board opposes unless changes are made, or opposes for now pending more information. Read the resolution for the board's exact terms.</p>
       <p class="dnote">Colours are colour-blind-safe; hover any pin and its position is also spelled out in words.</p></div>
 
     <div class="info"><h3>The confidence meter</h3>
@@ -1424,7 +1420,7 @@ if(!location.hash)setTimeout(startIntro,350);
     return {desc:'⬠ area ≈ '+fArea(m2)+' · perimeter '+fLen(per), center};
   }
   function nearestName(c){let best=null,bd=1e15;PLACES.forEach(p=>{const d=map.distance(c,[p.lat,p.lon]);if(d<bd){bd=d;best=p;}});return best?best.name:'';}
-  const ocOf=r=>outcomeFor((r.title||'')+' '+(r.action||''),(r.commitments||[]).length);
+  const ocOf=r=>outcomeFor(r);
   // a location counts if its representative point is inside the drawn shape;
   // circle = within its radius (easier to draw than a polygon), rect/polygon = ray-cast.
   // RESPECTS the live map state: it starts from currentView() (facets + search + out-of-district + year)
