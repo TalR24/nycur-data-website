@@ -1,0 +1,633 @@
+{
+ "_scoring": {
+  "laws": 11,
+  "stored_records": 28,
+  "correct": 18,
+  "wrong_fields": 4,
+  "not_real": 6,
+  "missed": 2,
+  "precision_strict": "18/28 = 64.3% (Wilson 95% 45.8-79.3)",
+  "precision_real": "22/28 = 78.6% (Wilson 95% 60.5-89.8)",
+  "recall": "22/24 = 91.7% (Wilson 95% 74.2-97.7) (blind items 24, extra stored-correct not on blind list 0)",
+  "effective_dates": "11/11 correct",
+  "auditor": "B",
+  "night": "20261109",
+  "calibration_laws": [
+   "2021-S7191",
+   "2019-S8400"
+  ],
+  "calibration": {
+   "laws": 2,
+   "stored_records": 3,
+   "correct": 3,
+   "wrong_fields": 0,
+   "not_real": 0,
+   "missed": 0,
+   "precision_strict": "3/3 = 100.0% (Wilson 95% 43.8-100.0)",
+   "precision_real": "3/3 = 100.0% (Wilson 95% 43.8-100.0)",
+   "recall": "3/3 = 100.0% (Wilson 95% 43.8-100.0) (blind items 3, extra stored-correct not on blind list 0)",
+   "effective_dates": "2/2 correct",
+   "note": "blind items: S7191 b1 boards of elections; S8400 b1 power to establish fund, b2 deposit surpluses"
+  },
+  "sample_note": "blind items 24: S7103 1, A7964 1, S6607 1, S8273 1, S8581 1, S8084 16, S873 3; matched 22 (S873 review matched by the wrong-actor record -01)"
+ },
+ "_classes": [
+  {
+   "name": "authority_to_stored_as_duty",
+   "criteria": [
+    "4"
+   ],
+   "instances": [
+    "2021-S8084-08",
+    "2021-S8084-15"
+   ],
+   "rule": "kind=='duty' and re.search(r'\\b(has|have|shall have) (the |full )?(authority|power) to\\b', quote, I) and not re.search(r'\\b(power|authority) and (the )?duty\\b|\\bshall (?!have)\\w+', quote, I)",
+   "needs_judgment": false,
+   "db_matches": 6,
+   "db_examples": [
+    "2009-S66002-04",
+    "2011-S4313-20",
+    "2021-S7194-27"
+   ]
+  },
+  {
+   "name": "consulted_agencies_stored_as_joint_actors",
+   "criteria": [
+    "3",
+    "9"
+   ],
+   "instances": [
+    "2021-S873-01",
+    "2021-S873-02",
+    "2021-S873-03",
+    "2021-S873-04"
+   ],
+   "rule": "locate quote in packet law text (brackets removed, braces stripped); sentence prefix before quote contains 'in consultation|coordination with', no shall/may/must between that phrase and the quote, the quote has no shall/may/must, and actor_raw (minus leading article) appears after the phrase. Candidate filter: 2021-S873-05 is a known false positive",
+   "needs_judgment": true,
+   "db_matches": 10,
+   "db_examples": [
+    "2009-A7742-02",
+    "2015-A4347-02",
+    "2019-A8645-01"
+   ]
+  },
+  {
+   "name": "eligibility_sentence_stored_with_unspecified_actor",
+   "criteria": [
+    "1",
+    "3"
+   ],
+   "instances": [
+    "2021-S8887-01"
+   ],
+   "rule": "agency in ('Unspecified','',None) and re.search(r'\\b(may|shall) be eligible\\b', quote, I)",
+   "needs_judgment": false,
+   "db_matches": 1,
+   "db_examples": [
+    "2021-S8887-01"
+   ]
+  },
+  {
+   "name": "nothing_shall_preclude_savings_clause_as_record",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2021-S8084-17"
+   ],
+   "rule": "re.search(r'^\\W*Nothing\\b.{0,40}\\b(preclude|limit|be construed|prevent)', quote, I) (candidates; some may be real prohibitions)",
+   "needs_judgment": false,
+   "db_matches": 26,
+   "db_examples": [
+    "2009-A7917-01",
+    "2009-A8568-05",
+    "2011-A8445-20"
+   ]
+  },
+  {
+   "name": "recurring_posting_split_into_initial_and_update_records",
+   "criteria": [
+    "6",
+    "9"
+   ],
+   "instances": [
+    "2021-S873-06",
+    "2021-S873-07"
+   ],
+   "rule": "no mechanical rule tested",
+   "needs_judgment": true,
+   "db_matches": null,
+   "db_examples": [],
+   "laws": [
+    "2021-S873"
+   ]
+  },
+  {
+   "name": "unnamed_holder_sunset_extension_left_without_record",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2017-A7964 (miss)",
+    "2021-S6607 (miss)"
+   ],
+   "rule": "law key in data/reask/*.json or data/mechanical_flags/*.json ['laws'] with a reason check in (sunset_extension_unnamed_holder, a_numbers_only_fewer_extends) and zero stored duties/powers; counts LAWS, not records",
+   "needs_judgment": false,
+   "db_matches": 305,
+   "db_examples": [
+    "2009-A10118",
+    "2009-A10238",
+    "2009-A10875"
+   ]
+  }
+ ],
+ "2021-S7103": {
+  "records": {
+   "2021-S7103-01": {
+    "verdict": "correct",
+    "quote": "This act shall take effect immediately; provided that paragraph (n) of subdivision 2 of section 212 of the judiciary law, as added by section one of this act, shall expire and be deemed repealed September 1, 2023.",
+    "note": "Earlier chapter's sunset sentence quoted inside the amendment: 'shall expire and be deemed repealed September 1, [2021] {{2023}}'; holder from title (chief administrator of the courts); extends_existing true.",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2021-07-16",
+   "computed": "2021-07-16",
+   "verdict": "correct",
+   "note": "'\u00a7 2. This act shall take effect immediately.' signed 2021-07-16"
+  }
+ },
+ "2017-A7964": {
+  "records": {},
+  "missed": [
+   {
+    "blind": "b1",
+    "quote": "subdivisions 4 and 5 of section 209-a of the civil service law, as added by section one of this act, shall expire and be deemed repealed on June 30, 2019.",
+    "kind": "power",
+    "agency": "undetermined from text (title names no government body: 'relating to injunctive relief in improper practice cases')",
+    "dropped_by": null,
+    "note": "Sunset extension [2017] {{2019}} is a record (criterion 1, extends_existing true); no stored or dropped record. Law sits in data/reask with sunset_extension_unnamed_holder and mechanical_flags reask_suppressed_after_3, so it will stay empty."
+   }
+  ],
+  "effective_date": {
+   "stored": "2017-06-29",
+   "computed": "2017-06-29",
+   "verdict": "correct",
+   "note": "'\u00a7 2. This act shall take effect immediately.' signed 2017-06-29"
+  }
+ },
+ "2019-A7006": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2019-10-23",
+   "computed": "2019-10-23",
+   "verdict": "correct",
+   "note": "immediately; signed 2019-10-23. Only actor is 'owners of residential real property' (private), so no record expected."
+  }
+ },
+ "2021-S7796": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2021-11-01",
+   "computed": "2021-11-01",
+   "verdict": "correct",
+   "note": "same as chapter 518 of 2021 (A6522), 'first of November next succeeding the date on which it shall have become a law' -> 2021-11-01; this amendment signed 2022-02-24 after that date, so it stands (criterion 8). Penal Law definition and crime only, no government actor."
+  }
+ },
+ "2021-S8887": {
+  "records": {
+   "2021-S8887-01": {
+    "verdict": "not_real",
+    "quote": "For each county, new shared services actions in an approved and submitted plan pursuant to this section or part BBB of chapter fifty-nine of the laws of two thousand seventeen, may be eligible for funding to match savings from such action, subject to available appropriation.",
+    "criteria": [
+     "1",
+     "3"
+    ],
+    "note": "Subject is the beneficiary: 'new shared services actions in an approved and submitted plan ... may be eligible for funding to match savings from such action, subject to available appropriation' is an aid-eligibility statement naming no acting government body (actor stored Unspecified). If counted real, the payer would be the State (Department of State per subd. 7 'transmitted to the secretary of state'), not Unspecified. Judgment call."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2022-12-16",
+   "computed": "2022-12-16",
+   "verdict": "correct",
+   "note": "immediately; signed 2022-12-16"
+  }
+ },
+ "2021-S78": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2022-10-17",
+   "computed": "2022-10-17",
+   "verdict": "correct",
+   "note": "immediately; signed 2022-10-17. New matter is only the 'greatest social need' definition and Older/Act capitalisation, no record expected."
+  }
+ },
+ "2021-S6607": {
+  "records": {},
+  "missed": [
+   {
+    "blind": "b1",
+    "quote": "This act shall take effect immediately; provided that the provisions of sections three, four and five of this act shall remain in full force and effect until and including June 30, 2024.",
+    "kind": "power",
+    "agency": "undetermined from text (title 'relating to small loans to owners of multiple dwellings' names no government body)",
+    "dropped_by": null,
+    "note": "Sunset extension [2021] {{2024}} of an earlier chapter is a record (criterion 1, extends_existing true); nothing stored or dropped; flagged in data/reask/2021.json (a_numbers_only_fewer_extends)."
+   }
+  ],
+  "effective_date": {
+   "stored": "2021-06-29",
+   "computed": "2021-06-29",
+   "verdict": "correct",
+   "note": "immediately; signed 2021-06-29, before the June 30 2021 retroactivity trigger, so no retroactive date"
+  }
+ },
+ "2021-S8273": {
+  "records": {
+   "2021-S8273-01": {
+    "verdict": "correct",
+    "quote": "The commissioner of transportation shall provide for the installation and maintenance of adequate signing of the state highway system as designated pursuant to section one of this act.",
+    "fields_at_audit": {
+     "agency": "NYSDOT",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2022-09-09",
+   "computed": "2022-09-09",
+   "verdict": "correct",
+   "note": "immediately; signed 2022-09-09"
+  }
+ },
+ "2021-S8084": {
+  "records": {
+   "2021-S8084-01": {
+    "verdict": "correct",
+    "quote": "The department shall, to the extent practicable, share data and documentation related to an agricultural research pilot program with the office of cannabis management.",
+    "fields_at_audit": {
+     "agency": "DAM",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S8084-02": {
+    "verdict": "correct",
+    "quote": "The office shall set out specific terms and conditions setting out requirements necessary to be awarded and maintain a conditional adult-use cultivator license, including but not limited to the requirement that a licensee agrees to participate in an environmental sustainability program and a social equity mentorship program.",
+    "fields_at_audit": {
+     "agency": "OCM",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S8084-03": {
+    "verdict": "correct",
+    "quote": "The board shall establish a non-refundable application and license fee, in a manner consistent with section sixty-three of this article, for the conditional adult-use cultivator license.",
+    "fields_at_audit": {
+     "agency": "Cannabis Control Board",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S8084-04": {
+    "verdict": "correct",
+    "quote": "No such license shall be issued after December thirty-first, two thousand twenty-two and such license shall only be valid through June thirtieth, two thousand twenty-four.",
+    "fields_at_audit": {
+     "agency": "Cannabis Control Board",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S8084-05": {
+    "verdict": "correct",
+    "quote": "as determined in the discretion of the executive director in a written notice, effective upon delivery to the licensee at the licensee's last known address on file with the office, for reasons including but not limited to:",
+    "fields_at_audit": {
+     "agency": "OCM",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S8084-06": {
+    "verdict": "correct",
+    "quote": "Upon review by the board, the board shall issue a final written determination which may then be reviewed pursuant to section one hundred thirty-five of this chapter and article seventy-eight of the civil practice law and rules.",
+    "fields_at_audit": {
+     "agency": "Cannabis Control Board",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S8084-07": {
+    "verdict": "correct",
+    "quote": "No later than ninety days before the expiration of a conditional adult-use cultivator license, the office shall, pursuant to a request by the licensee, review the conditional adult-use cultivator licensee to determine whether they are in good standing with the office.",
+    "fields_at_audit": {
+     "agency": "OCM",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S8084-08": {
+    "verdict": "wrong",
+    "quote": "For the purposes of this section, the office has the authority to define terms including but not limited to \"greenhouse\", \"immature plant\", \"flowering canopy\" as part of the terms and conditions of the conditional adult-use cultivator license.",
+    "criteria": [
+     "4"
+    ],
+    "fields": {
+     "kind": "power"
+    },
+    "note": "'the office has the authority to define terms including but not limited to \"greenhouse\"' grants authority, stored as duty."
+   },
+   "2021-S8084-09": {
+    "verdict": "correct",
+    "quote": "The office shall set out specific terms and conditions setting out requirements necessary to be awarded and maintain a conditional adult-use processor license, including but not limited to the requirement that a licensee agrees to participate in an environmental sustainability program and a social equity mentorship program.",
+    "fields_at_audit": {
+     "agency": "OCM",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S8084-10": {
+    "verdict": "correct",
+    "quote": "The board shall establish a non-refundable application and license fee, in a manner consistent with section sixty-three of this article, for the conditional adult-use processor license.",
+    "fields_at_audit": {
+     "agency": "Cannabis Control Board",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S8084-11": {
+    "verdict": "correct",
+    "quote": "No such license shall be issued after December thirty-first, two thousand twenty-two and such license shall only be valid through June thirtieth, two thousand twenty-four.",
+    "fields_at_audit": {
+     "agency": "Cannabis Control Board",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S8084-12": {
+    "verdict": "correct",
+    "quote": "as determined in the discretion of the executive director in a written notice, effective upon delivery to the licensee at the licensee's last known address on file with the office, for reasons including but not limited to:",
+    "fields_at_audit": {
+     "agency": "OCM",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S8084-13": {
+    "verdict": "correct",
+    "quote": "Upon review by the board, the board shall issue a final written determination which may then be reviewed pursuant to section one hundred thirty-five of this chapter and article seventy-eight of the civil practice law and rules.",
+    "fields_at_audit": {
+     "agency": "Cannabis Control Board",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S8084-14": {
+    "verdict": "correct",
+    "quote": "No later than ninety days before the expiration of a conditional adult-use processor license, the office shall, pursuant to a request by the licensee, review the conditional adult-use processor licensee to determine whether they are in good standing with the office.",
+    "fields_at_audit": {
+     "agency": "OCM",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S8084-15": {
+    "verdict": "wrong",
+    "quote": "For the purposes of this section, the office has the authority to define terms including but not limited to \"extraction\" as part of the terms and conditions of the conditional adult-use processor license.",
+    "criteria": [
+     "4"
+    ],
+    "fields": {
+     "kind": "power"
+    },
+    "note": "'the office has the authority to define terms including but not limited to \"extraction\"' grants authority, stored as duty."
+   },
+   "2021-S8084-16": {
+    "verdict": "correct",
+    "quote": "The cannabis control board shall provide a report on the conditional cultivator and processor licenses as provided for by this act.",
+    "fields_at_audit": {
+     "agency": "Cannabis Control Board",
+     "kind": "duty",
+     "deadline_kind": "fixed_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S8084-17": {
+    "verdict": "not_real",
+    "quote": "Nothing shall preclude the office from providing such reporting as part of the annual report required by the board pursuant to section ten of the cannabis law",
+    "criteria": [
+     "1"
+    ],
+    "note": "'Nothing shall preclude the office from providing such reporting as part of the annual report' is a savings clause on the manner of the \u00a7 5 report (stored as 2021-S8084-16), not a grant of power; recurrence 'annual' also wrong."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2022-02-22",
+   "computed": "2022-02-22",
+   "verdict": "correct",
+   "note": "immediately; sections two and four expire June 30, 2024 (stored expires 2024-06-30 for those sections, correct)"
+  }
+ },
+ "2021-S8581": {
+  "records": {
+   "2021-S8581-01": {
+    "verdict": "correct",
+    "quote": "The commissioner of transportation shall provide for the installation and maintenance of adequate signing of the state highway system as designated pursuant to section one of this act.",
+    "fields_at_audit": {
+     "agency": "NYSDOT",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2022-07-21",
+   "computed": "2022-07-21",
+   "verdict": "correct",
+   "note": "immediately; signed 2022-07-21"
+  }
+ },
+ "2021-S873": {
+  "records": {
+   "2021-S873-01": {
+    "verdict": "wrong",
+    "quote": "the commissioner of the department of health, the commissioner of the office of children and family services, the commissioner of the New York city department of homeless services, and the commissioner of the New York city department of health and mental hygiene, conduct a review of information",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "actor_raw": "the commissioner",
+     "agency": "OTDA",
+     "deliverable_type": "study or audit"
+    },
+    "note": "After '[shall collect] {{conduct a review of}}' the listed commissioners sit inside the 'in consultation with each local health department {{and each social services district}} ..., the commissioner of the department of health, {{the commissioner of the office of children and family services,}} ...' phrase; 'conduct a review of' is a list item under the commissioner's lead-in, parallel to (3) 'post the report on the office of temporary and disability assistance's website'. Holder is the OTDA commissioner."
+   },
+   "2021-S873-02": {
+    "verdict": "not_real",
+    "quote": "the commissioner of the office of children and family services, the commissioner of the New York city department of homeless services, and the commissioner of the New York city department of health and mental hygiene, conduct a review of information",
+    "criteria": [
+     "3",
+     "9"
+    ],
+    "note": "OCFS commissioner is a consulted party in '(d-1)(1) in consultation with ... {{the commissioner of the office of children and family services,}} ... conduct a review of information'; consulted agencies are not duty-holders."
+   },
+   "2021-S873-03": {
+    "verdict": "not_real",
+    "quote": "the commissioner of the New York city department of homeless services, and the commissioner of the New York city department of health and mental hygiene, conduct a review of information, to the extent such information is known and available after making all diligent efforts, regarding the homeless population in publicly funded shelters",
+    "criteria": [
+     "3",
+     "9"
+    ],
+    "note": "NYC DHS commissioner is in the same consultation list ('in consultation with ... the commissioner of the {{New York city}} department of homeless services'); not a duty-holder."
+   },
+   "2021-S873-04": {
+    "verdict": "not_real",
+    "quote": "and the commissioner of the New York city department of health and mental hygiene, conduct a review of information, to the extent such information is known and available after making all diligent efforts, regarding the homeless population in publicly funded shelters",
+    "criteria": [
+     "3",
+     "9"
+    ],
+    "note": "NYC DOHMH commissioner is in the same consultation list; not a duty-holder."
+   },
+   "2021-S873-05": {
+    "verdict": "correct",
+    "quote": "utilizing the information reviewed pursuant to paragraph (1) of this subdivision and to the extent that confidentiality requirements set forth in law and regulation are maintained publish a report containing such information aggregated by county",
+    "note": "'[, the commissioners shall] publish a report' now falls to the commissioner (OTDA); braced 'reviewed' and confidentiality clause in quote.",
+    "fields_at_audit": {
+     "agency": "OTDA",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2021-S873-06": {
+    "verdict": "wrong",
+    "quote": "post the report on the office of temporary and disability assistance's website within sixty days of the effective date of this paragraph",
+    "criteria": [
+     "6"
+    ],
+    "fields": {
+     "recurrence": "quarterly"
+    },
+    "note": "'post the report ... within sixty days of the effective date of this paragraph and update the report at least every three months thereafter' is one recurring posting duty; one-time understates it (rule: a recurring report is ONE record with its recurrence)."
+   },
+   "2021-S873-07": {
+    "verdict": "not_real",
+    "quote": "update the report at least every three months thereafter during the state disaster emergency declared pursuant to executive order two hundred two of two thousand twenty or any extension or subsequent executive order issued",
+    "criteria": [
+     "9"
+    ],
+    "note": "'update the report at least every three months thereafter' is the recurrence of the same posting duty stored as 2021-S873-06 in the same sentence of paragraph (3)."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2020-12-15",
+   "computed": "2020-12-15",
+   "verdict": "correct",
+   "note": "same as chapter 331 of 2020 (A10566), immediately, signed 2020-12-15; S873 signed 2021-01-28 after that date, so 2020-12-15 stands (criterion 8). Deadline 2021-02-13 = +60 days, correct."
+  }
+ },
+ "2021-S7191": {
+  "records": {
+   "2021-S7191-01": {
+    "verdict": "correct",
+    "quote": "A write-in ballot cast in a party primary for a candidate not enrolled in such party shall be void and not counted.",
+    "note": "'{{A write-in ballot cast in a party primary for a candidate not enrolled in such party shall be void and not counted.}}' passive sentence; acting body boards of elections, duty, deadline none.",
+    "fields_at_audit": {
+     "agency": "Boards of elections",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2021-10-08",
+   "computed": "2021-10-08",
+   "verdict": "correct",
+   "note": "immediately; signed 2021-10-08"
+  }
+ },
+ "2019-S8400": {
+  "records": {
+   "2019-S8400-01": {
+    "verdict": "correct",
+    "quote": "The city of New York may establish and maintain a revenue stabilization fund pursuant to section fifteen hundred twenty-eight of the New York city charter.",
+    "fields_at_audit": {
+     "agency": "New York City",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S8400-02": {
+    "verdict": "correct",
+    "quote": "shall be deposited into such revenue stabilization fund as soon as practicable, and such deposits shall not be deemed expenses of the city in the fiscal years during which such deposits are made",
+    "note": "GML \u00a7 25(2) copy ('fiscal years during which'); the parallel FEA \u00a7 8 sentence is the same duty, not a separate miss. The 50% withdrawal limit is a cap (criterion 1), no record.",
+    "fields_at_audit": {
+     "agency": "New York City",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2020-06-17",
+   "computed": "2020-06-17",
+   "verdict": "correct",
+   "note": "immediately; signed 2020-06-17"
+  }
+ }
+}

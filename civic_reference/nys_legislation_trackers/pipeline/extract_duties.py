@@ -1415,6 +1415,8 @@ def reprinted_name_swap(sent):
 
 # P5 (Oct 29 2026)
 SAVINGS_CLAUSE = re.compile(r"^\W*(?:\{\{)?\s*nothing\s+(?:contained\s+)?(?:in|herein)\b[^.;]{0,60}?\bshall\s+(?:be\s+)?(?:deemed|construed|interpreted|held|read)\s+to\b", re.I)
+APPLY_AE3 = True          # Nov 9 2026 (coordinator AE3): 'Nothing [in this section] shall preclude / prevent / prohibit X from ...' is a savings clause; 'No agency shall ...' is not matched
+AE3_NOTHING_PRECLUDE = re.compile(r"^\W*(?:\{\{)?\s*nothing\b(?:\s+(?:contained\s+)?(?:in|herein)\b[^.;]{0,60}?)?\s+shall\s+(?:preclude|prevent|prohibit)\b", re.I)
 # P2 (Oct 29 2026): a private body or person acts, no government actor named before the modal
 PRIVATE_ACTOR = re.compile(r"\b(?:district\s+management\s+association|not-for-profit\s+corporations?|cemetery\s+corporations?|religious\s+corporations?|applicants?|owners?|operators?|licensees?|employers?|insurers?|hospitals?|providers?)\b", re.I)
 PRIVATE_EMPLOYER_OK = re.compile(r"retirement and social security law|retirement program|participating employer|civil service law|public employer|state employ|public employee|taylor law|state as employer|the state, as an employer", re.I)
@@ -1763,6 +1765,44 @@ APPLY_AA3 = True          # a consideration factor list and a budget-director ap
 AA3_CONSIDERATION = re.compile(r"^\W*factors\s+such\s+as\b[^.]{0,200}\bshall\s+be\s+taken\s+into\s+consideration\b|\bdirector\s+of\s+the\s+budget\s+must\s+approve\s+the\s+release\s+of\s+any\s+request\s+for\s+proposal\b", re.I)
 APPLY_AA4 = True          # a 'where the enrollee ... has, in a format prescribed by the superintendent, certified' condition fragment
 AA4_PRESCRIBED_FORMAT = re.compile(r"^\W*where\s+the\s+(?:enrollee|insured)\b[^.]{0,120}\bin\s+a\s+format\s+prescribed\s+by\b", re.I)
+APPLY_AD1 = True          # Nov 9 2026: a classification clause ('Any contracts entered into by the authority pursuant to this act shall be deemed state contracts within the meaning of ...'): it labels the contracts for another article and binds no actor
+AD1_DEEMED_CONTRACTS = re.compile(r"\bcontracts?\b[^.]{0,160}?\bshall\s+be\s+(?:deemed|considered)\s+(?:to\s+be\s+)?state\s+contracts?\b", re.I)
+APPLY_AE1 = True          # Nov 9 2026 (coordinator AE1): 'has / shall have the authority to ...' and 'is hereby authorized and empowered to ...' make kind power even when the list lead or the model said duty
+AE1_AUTHORITY = re.compile(r"\b(?:(?:shall\s+)?(?:has|have)\s+the\s+(?:power|authority)\s+to|is\s+hereby\s+authorized\s+and\s+empowered\s+to)\b", re.I)
+def ae1_authority_power(q):
+    """True when the quote's operative phrase is an authority grant and no other mandatory modal is aimed at the actor."""
+    return bool(APPLY_AE1 and q and AE1_AUTHORITY.search(q) and not MANDATORY.search(AE1_AUTHORITY.sub(" ", q)) and not CAP_RE.search(q))
+
+
+APPLY_AE2 = False   # Nov 9 2026: OFF after a blind sample (1/23 right): the consultee span swallows the main subject before the modal; rework as B46
+AE2_CONSULT = re.compile(r"\b(?:in|after)\s+consultation\s+with\b", re.I)
+def consultee_only(o, text):
+    """True when every mention of the record's actor_raw in its located sentence lies inside a consultation phrase, which runs up to the first mandatory/permissive modal."""
+    if not APPLY_AE2:
+        return False
+    actor = re.sub(r"^(?:the|a|an|such|each|any)\s+", "", (o.get("actor_raw") or "").strip().lower())
+    sp = locate_span(o.get("quote") or "", text)
+    if len(actor) < 4 or not sp:
+        return False
+    sent, (left, _r) = context_sentence(sp, text)
+    flat = re.sub(r"\{\{|\}\}", "", re.sub(r"\[[^\]]*\]", " ", sent)).lower()          # deleted words in [brackets] are not in the enacted sentence
+    spans = []
+    for m in AE2_CONSULT.finditer(flat):
+        mm = MODAL_SENT.search(flat, m.end())
+        spans.append((m.end(), mm.start() if mm else len(flat)))
+    hits = [m.start() for m in re.finditer(re.escape(actor), flat)]
+    return bool(spans and hits and all(any(a_ <= h < b_ for a_, b_ in spans) for h in hits)) and bool(MODAL_SENT.search(flat))
+
+
+APPLY_AE4 = True   # Nov 9 2026: ON after a blind sample (24/25): a subordinate-clause may does not make a list item a power
+AE4_SUBORDINATE_MAY = re.compile(r"\b(?:whether|which)\b[^;.]{0,80}?\bmay\b", re.I)
+def ae4_subordinate_only(o, quote, ctx):
+    if not (APPLY_AE4 and o.get("kind_list_item") and o.get("kind_model") == "duty"):
+        return False
+    strip = lambda t: AE4_SUBORDINATE_MAY.sub(" ", strip_relative_may(t or ""))
+    return not grant_only(strip(quote)) and (not ctx or not grant_only(strip(RELATIVE.sub(" ", ctx))))
+
+
 APPLY_AB1 = True          # Nov 8 2026: an appropriation proviso capping spending ('provided however that no more than $1,000,000 shall be used for ...')
 AB1_SPEND_CAP = re.compile(r"^\W*provided,?\s+however,?\s+that\s+no\s+more\s+than\s+\$[\d,]+\s+shall\s+be\s+(?:used|expended|spent)\s+for\b", re.I)
 APPLY_AB2 = True          # Nov 8 2026: an owner's liability for penalties under a schedule set elsewhere ('An owner liable for a violation ... shall be liable for monetary penalties in accordance with a schedule')
@@ -1856,8 +1896,10 @@ def gate_record(o, text, has_markers):
     if not o.get("quote_verified"):
         return "unverified_quote", "quote not found in the law text"
     q = o.get("quote") or ""
-    if APPLY_P5 and SAVINGS_CLAUSE.search(q):
+    if APPLY_P5 and (SAVINGS_CLAUSE.search(q) or (APPLY_AE3 and AE3_NOTHING_PRECLUDE.search(q))):
         return "savings_clause", "a savings clause ('nothing in this section shall be construed to ...'): it limits the reach of the law and binds no actor"
+    if APPLY_AE2 and consultee_only(o, text):
+        return "consultee_only", "the body appears in the sentence only as a consultee ('in consultation with X'); the body that acts carries the record"
     if APPLY_D7 and QUALIFICATION.search(q):
         return "qualification", "a qualification of an officer ('shall be a resident of', 'shall be at least N years of age'), not a duty or power"
     if APPLY_D6 and d6_private(o, q):
@@ -1913,6 +1955,8 @@ def gate_record(o, text, has_markers):
         return "amount_not_duty", "an allocation of cost between governments ('shall be the responsibility of X and not the responsibility of the state'): no actor carries it out"
     if APPLY_AA1 and AA1_COSTS_BORNE.search(q):
         return "amount_not_duty", "an allocation of implementation cost ('all costs associated with implementing this act shall be borne by X'): no actor carries it out"
+    if APPLY_AD1 and AD1_DEEMED_CONTRACTS.search(q):
+        return "definition", "a classification clause ('contracts ... shall be deemed state contracts within the meaning of article 15-A'): it labels the contracts for another law, no actor carries it out"
     if APPLY_AA2 and AA2_BASED_ON.search(q):
         return "amount_not_duty", "a computation rule ('the abatement shall be based on the information contained in the application'): an entitlement term, no actor carries it out"
     if APPLY_AA3 and AA3_CONSIDERATION.search(q):
@@ -3896,8 +3940,10 @@ def build_records(laws):
                 if ctx2 != ctx and grant_only(RELATIVE.sub(" ", ctx)) and not grant_only(RELATIVE.sub(" ", ctx2)):
                     bump("b18_relative_may_list_item_duty")
                 ctx = ctx2
-            if kind == "duty" and (grant_only(quote) or (ctx and grant_only(RELATIVE.sub(" ", ctx)))) and not CAP_RE.search(quote) and not o.get("x5_lead") and not (sp and ac1_shall_before_quote(sp, text, quote)):
+            if kind == "duty" and (grant_only(quote) or (ctx and grant_only(RELATIVE.sub(" ", ctx)))) and not CAP_RE.search(quote) and not o.get("x5_lead") and not (sp and ac1_shall_before_quote(sp, text, quote)) and not ae4_subordinate_only(o, quote, ctx):
                 kind = "power"; o["kind_adjusted"] = "grant_only"; bump("grant_only_to_power")
+            if kind == "duty" and not o.get("x5_lead") and ae1_authority_power(quote):
+                kind = "power"; o["kind_adjusted"] = "authority_grant"; bump("ae1_authority_power")
             if APPLY_AC3 and kind == "duty" and o.get("kind_list_item") and sp and not MANDATORY.search(quote) and not o.get("kind_from_lead_in") and lead_modal_kind(sp, text) == "power":
                 kind = "power"; o["kind_adjusted"] = "permissive_lead"; bump("ac3_permissive_lead_power")
             if APPLY_M35 and kind == "power" and (o.get("kind_model") == "duty" or o.get("kind_adjusted") == "model_power_kept" or o.get("kind_list_item")) and AUTH_DIRECTED.search(quote):          # M35: the rules above must not override the model's duty

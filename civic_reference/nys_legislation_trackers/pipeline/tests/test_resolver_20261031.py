@@ -238,4 +238,13 @@ _o = {"actor_raw": "the state", "actor_resolved_model": "state of new york", "ag
 ar.fix_20261031(_o, ed.BY_CANON, ed.LOOKUP, ""); check("R24 bare the state stays group", _o["agency"] == "State agencies")
 _o = {"actor_raw": "state agencies", "actor_resolved_model": "state agencies", "agency": "State agencies", "agency_group": None, "agency_unit": None, "agency_source": "group", "quote": "x"}
 ar.fix_20261031(_o, ed.BY_CANON, ed.LOOKUP, ""); check("R24 state agencies stays group", _o["agency"] == "State agencies")
+# Nov 9 2026 R25: "All agencies" in the agency field
+_o = {"actor_raw": "All agencies", "agency": "All agencies", "agency_unit": None, "law_title": "Makes provisions regarding the siting of environmental facilities in minority communities", "quote": "All agencies shall consider."}
+check("R25 2021-S8830 All agencies -> State agencies", ar.fix_20261031(_o, ed.BY_CANON, ed.LOOKUP, "") and _o["agency"] == "State agencies" and _o["agency_unit"] is None and _o["agency_source"] == "all_agencies_r25" and _o["jurisdiction"] == "state")
+_o = {"actor_raw": "Each agency of the state", "agency": "Each agency of the state", "agency_unit": None, "quote": "x"}
+ar.fix_20261031(_o, ed.BY_CANON, ed.LOOKUP, ""); check("R25 each agency of the state", _o["agency"] == "State agencies")
+_o = {"actor_raw": "All agencies of the city", "agency": "All agencies of the city", "agency_unit": None, "law_title": "Relates to the city of New York", "quote": "x"}
+ar.fix_20261031(_o, ed.BY_CANON, ed.LOOKUP, "the city of New York shall"); check("R25 NYC law all agencies of the city -> NYC", _o["agency"] == "New York City" and _o["jurisdiction"] == "nyc" and _o["agency_source"] == "all_agencies_r25")
+_o = {"actor_raw": "All agencies of the city", "agency": "All agencies of the city", "agency_unit": None, "law_title": "x", "quote": "x"}
+ar.fix_20261031(_o, ed.BY_CANON, ed.LOOKUP, "the city of Albany"); check("R25 non-NYC all agencies of the city -> Municipalities", _o["agency"] == "Municipalities (all)")
 print("%d passed, %d failed" % (passed, failed))

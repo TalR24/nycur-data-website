@@ -1,0 +1,1068 @@
+{
+ "_scoring": {
+  "auditor": "A",
+  "night": "20261109",
+  "laws": 11,
+  "stored_records": 16,
+  "correct": 14,
+  "wrong_fields": 2,
+  "not_real": 0,
+  "missed": 3,
+  "precision_strict": "14/16 = 87.5% (Wilson 95% 64.0-96.5%)",
+  "precision_real": "16/16 = 100.0% (Wilson 95% 80.6-100.0%)",
+  "recall": "16/19 = 84.2% (Wilson 95% 62.4-94.5%)",
+  "effective_dates": "10/11 correct",
+  "calibration_laws": [
+   "2015-S6503",
+   "2013-S3810"
+  ],
+  "calibration": {
+   "laws": 2,
+   "stored_records": 37,
+   "correct": 33,
+   "wrong_fields": 1,
+   "not_real": 3,
+   "missed": 1,
+   "precision_strict": "33/37 = 89.2% (Wilson 95% 75.3-95.7%)",
+   "precision_real": "34/37 = 91.9% (Wilson 95% 78.7-97.2%)",
+   "recall": "23/29 = 79.3% (Wilson 95% 61.6-90.2%)",
+   "effective_dates": "2/2 correct",
+   "note": "recall = 23 blind items matched / (24 blind items + 5 stored correct records the blind pass missed: 2015-S6503-13, 2015-S6503-21, 2013-S3810-02, 2013-S3810-03, 2013-S3810-08)"
+  },
+  "recall_method": "sample: 19 blind items, 16 matched, 0 stored-correct records outside the blind list"
+ },
+ "_classes": [
+  {
+   "name": "list item under a mandatory lead-in overridden to power by ingest (model said duty)",
+   "criteria": [
+    "4"
+   ],
+   "instances": [
+    "2021-S8830-01",
+    "2021-S8830-03"
+   ],
+   "rule": "powers/*.json: kind=='power' and kind_list_item is True and kind_model=='duty'",
+   "db_matches": 137,
+   "db_examples": [
+    "2009-A10984-24",
+    "2009-A10984-25",
+    "2009-A10984-26"
+   ],
+   "needs_judgment": false,
+   "note": "recurrence of the Oct 17 'list items held as powers against a mandatory lead-in' class; here the gate flipped the model's correct duty. S8830-01 is item (l) under 'All agencies ... shall prepare ... Such a statement shall include'"
+  },
+  {
+   "name": "sunset extension of an earlier chapter with no stored and no dropped record",
+   "criteria": [
+    "1",
+    "7"
+   ],
+   "instances": [
+    "2017-A7964 (PERB, CSL 209-a(4),(5) to 2019)",
+    "2021-A9589 (cancer incidence map, ch 77 of 2010, to May 1 2028)"
+   ],
+   "rule": "packet LAW TEXT matches (expire|deemed repealed|repealed)[^.;]{0,120}\\[[^\\]]{0,40}\\]\\s*\\{\\{[^}]{0,40}\\d{4} and the law key has no record in duties, powers or dropped",
+   "db_matches": 295,
+   "db_examples": [
+    "2011-S6153",
+    "2011-S5704",
+    "2011-S6219"
+   ],
+   "needs_judgment": false,
+   "note": "upper bound: includes laws whose holder is a private party (2015-S7332 matches and correctly has no record); both sample misses have titles naming no government body, so the Oct 19 rule routes them to re-ask, yet they were answered tonight and still store nothing"
+  },
+  {
+   "name": "deleted sunset (permanence) not recorded as an extension",
+   "criteria": [
+    "1",
+    "7"
+   ],
+   "instances": [
+    "2021-S8591 \u00a73: '[and shall expire and be deemed repealed December 31, 2022]'"
+   ],
+   "rule": "packet LAW TEXT matches \\[\\s*(and |provided[^\\]]{0,40})?shall expire and be deemed repealed[^\\]]*\\] and no stored record of the law has extends_existing true",
+   "db_matches": 12,
+   "db_examples": [
+    "2009-A8611",
+    "2009-A10266",
+    "2009-S7556"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "applicant licensing condition or manner clause stored as a government record",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2013-S3810-06",
+    "2013-S3810-09",
+    "2015-S6503-04"
+   ],
+   "rule": "quote matches (?i)as determined by the (department|committee|board)|only after obtaining|^\\W*character:",
+   "db_matches": 13,
+   "db_examples": [
+    "2009-S7827-02",
+    "2013-A9570-02",
+    "2013-S3810-06"
+   ],
+   "needs_judgment": false,
+   "note": "all three instances are calibration laws"
+  },
+  {
+   "name": "SEQRA 'all agencies' stored under non-group label 'All agencies'",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2021-S8830-01"
+   ],
+   "rule": "agency=='All agencies'",
+   "db_matches": 10,
+   "db_examples": [
+    "2009-A6382-01",
+    "2009-A7246-03",
+    "2009-S8314-13"
+   ],
+   "needs_judgment": false,
+   "note": "same law resolves 'the responsible agency' to 'State and local bodies' (-02)"
+  },
+  {
+   "name": "effective date: 'immediately, provided that sections ... take effect on the Nth day' stored as the proviso date with no section_dates (known proviso parser gap, recurrence)",
+   "criteria": [
+    "8"
+   ],
+   "instances": [
+    "2021-S8591"
+   ],
+   "rule": "effective_dates: raw_clause matches 'take effect immediately[,;]? (provided|except)' and rule!='immediately' and section_dates empty",
+   "db_matches": 45,
+   "db_examples": [
+    "2009-A8219",
+    "2009-A7617",
+    "2011-A3882"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "extends_existing false where new matter widens an existing power's class",
+   "criteria": [
+    "7"
+   ],
+   "instances": [
+    "2015-S6503-01"
+   ],
+   "rule": "none mechanical",
+   "db_matches": null,
+   "db_examples": [],
+   "needs_judgment": true,
+   "laws": [
+    "2015-S6503"
+   ]
+  }
+ ],
+ "2021-S7103": {
+  "records": {
+   "2021-S7103-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "This act shall take effect immediately; provided that paragraph (n) of subdivision 2 of section 212 of the judiciary law, as added by section one of this act, shall expire and be deemed repealed September 1, 2023.",
+    "note": "sunset extension 'September 1, [2021] {{2023}}' of ch 363 of 2010, holder from title (chief administrator of the courts)",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2021-07-16",
+   "computed": "2021-07-16",
+   "verdict": "correct",
+   "note": "\u00a7 2 immediately; signed 2021-07-16"
+  }
+ },
+ "2017-A7964": {
+  "records": {},
+  "missed": [
+   {
+    "blind": "b1",
+    "quote": "subdivisions 4 and 5 of section 209-a of the civil service law, as added by section one of this act, shall expire and be deemed repealed on June 30, 2019",
+    "kind": "power",
+    "agency": "Public Employment Relations Board",
+    "dropped_by": null,
+    "note": "extension '[2017] {{2019}}' of ch 695 of 1994 (injunctive relief in improper practice cases); title names no government body; no stored or dropped record"
+   }
+  ],
+  "effective_date": {
+   "stored": "2017-06-29",
+   "computed": "2017-06-29",
+   "verdict": "correct",
+   "note": ""
+  }
+ },
+ "2021-S8881": {
+  "records": {
+   "2021-S8881-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the assessor of the town of Ramapo, county of Rockland, is hereby authorized to accept from the Spring Valley Church of the Nazarene, Inc. an application for exemption from real property taxes pursuant to section 420-a of the real property tax law",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Towns",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "Town of Ramapo"
+    }
+   },
+   "2021-S8881-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the assessor, upon approval by the Town Board of Ramapo, may grant exemption from all taxation and make appropriate corrections to the subject roll.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Towns",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "Town of Ramapo"
+    }
+   },
+   "2021-S8881-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the governing body or tax department may, in its sole discretion, provide for the refund of those taxes paid and cancel any taxes, fines, penalties, interest, or tax liens remaining unpaid.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Towns",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "Town of Ramapo"
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2022-07-21",
+   "computed": "2022-07-21",
+   "verdict": "correct",
+   "note": ""
+  },
+  "note": "'shall be reviewed as if it had been received' correctly dropped (reviewed_as_if_condition)"
+ },
+ "2021-S7882": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2021-12-31",
+   "computed": "2021-12-31",
+   "verdict": "correct",
+   "note": "\u00a7 1 same as ch 832 of 2021 (S7052), effective 2021-12-31 per chapter_index; amendment signed 2022-02-24 leaves that date standing (criterion 8)"
+  },
+  "note": "all new matter binds private defendants"
+ },
+ "2021-S9230": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2022-12-23",
+   "computed": "2022-12-23",
+   "verdict": "correct",
+   "note": ""
+  },
+  "note": "definition only"
+ },
+ "2021-A9589": {
+  "records": {},
+  "missed": [
+   {
+    "blind": "b1",
+    "quote": "This act shall take effect immediately and shall expire and be deemed repealed May 1, 2028.",
+    "kind": "power",
+    "agency": "Department of Health",
+    "dropped_by": null,
+    "note": "extension '[March 31, 2022] {{May 1, 2028}}' of ch 77 of 2010 (environmental facility and cancer incidence map); title names no holder; holder inferred (PHL map) and unverified"
+   }
+  ],
+  "effective_date": {
+   "stored": "2022-05-09",
+   "computed": "2022-05-09",
+   "verdict": "correct",
+   "note": ""
+  }
+ },
+ "2021-S8733": {
+  "records": {
+   "2021-S8733-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the assessor of the town of Islip, county of Suffolk, is hereby authorized to accept from the Iglesia Del Dios Vivo Col y Apoyo Dela Verdad La Luz Mundo an application for exemption from real property taxes pursuant to section 420-a of the real property tax law",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Towns",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "Town of Islip"
+    }
+   },
+   "2021-S8733-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the assessor, upon approval by the town board of Islip, may make appropriate correction to the subject rolls.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Towns",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "Town of Islip"
+    }
+   },
+   "2021-S8733-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the applicable governing body or tax department may, in its sole discretion, provide for the refund of those taxes paid and cancel those taxes, fines, penalties, liens or interest remaining unpaid",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Towns",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "Town of Islip"
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2022-11-22",
+   "computed": "2022-11-22",
+   "verdict": "correct",
+   "note": ""
+  }
+ },
+ "2021-S8591": {
+  "records": {
+   "2021-S8591-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The fund administrator shall provide qualified plaintiffs with an explanation of benefits form which shall include an identification of the service for which the claim was made",
+    "note": "PHL 2999-k EOB duty; DFS as fund administrator not verifiable from this text (2999-i not reprinted)",
+    "fields_at_audit": {
+     "agency": "DFS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [
+   {
+    "blind": "b2",
+    "quote": "provided that the amendments to subdivision 4 of section 2999-j of the public health law made by section two of this act shall take effect on June 30, 2017",
+    "kind": "duty",
+    "agency": "fund administrator (Medical Indemnity Fund)",
+    "dropped_by": null,
+    "note": "\u00a7 3 deletes '[and shall expire and be deemed repealed December 31, 2022]' from ch 517 of 2016: a deletion that widens (criterion 7); the operative text has no braces, so the quote rule cannot be met verbatim"
+   }
+  ],
+  "effective_date": {
+   "stored": "2023-01-27",
+   "computed": "2022-12-28 (sections 1-2: 2023-01-27)",
+   "verdict": "wrong",
+   "note": "'This act shall take effect immediately, provided however that sections one and two of this act shall take effect on the thirtieth day'; stored law date is the proviso date with no section_dates (\u00a7 3 is immediate)"
+  }
+ },
+ "2021-S7069": {
+  "records": {
+   "2021-S7069-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "This act shall take effect immediately and shall expire on July 31, 2031 when upon such date the provisions of this act shall be deemed repealed.",
+    "note": "extension 'July 31, [2021] {{2031}}' of ch 626 of 1996 (LIPOs, Local Finance Law); Municipalities group accepted",
+    "fields_at_audit": {
+     "agency": "Municipalities (all)",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2021-06-11",
+   "computed": "2021-06-11",
+   "verdict": "correct",
+   "note": ""
+  }
+ },
+ "2015-S7332": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2016-07-21",
+   "computed": "2016-07-21",
+   "verdict": "correct",
+   "note": ""
+  },
+  "note": "extension of a private owners' authorization (reed cutting); no government holder"
+ },
+ "2021-S8830": {
+  "records": {
+   "2021-S8830-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "In making such determination for any proposed action that is not a minor project as defined in subdivision three of section 70-0105 of this chapter the responsible agency shall consider whether such action may cause or increase a disproportionate or inequitable or both disproportionate and inequitable burden on a disadvantaged community",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State and local bodies",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S8830-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Such criteria shall include consideration of the extent to which a proposed action may reasonably be expected to cause or increase a disproportionate or inequitable or both disproportionate and inequitable burden on disadvantaged communities;",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DEC",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S8830-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the department shall prepare or cause to be prepared an existing burden report and shall consider such report in determining whether such project may cause or contribute to, either directly or indirectly, a disproportionate or inequitable or both disproportionate and inequitable pollution burden on a disadvantaged community.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DEC",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S8830-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "No permit shall be approved or renewed by the department if it may cause or contribute to, either directly or indirectly, a disproportionate or inequitable or both disproportionate and inequitable pollution burden on a disadvantaged community.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DEC",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S8830-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Such rules and regulations shall also include the form and content of an existing burden report which shall, at a minimum, include baseline monitoring data collected in the affected disadvantaged community within two years of the application for a permit or approval and shall identify:",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DEC",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S8830-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "4",
+     "3",
+     "7"
+    ],
+    "fields": {
+     "kind": "duty",
+     "agency": "State and local bodies",
+     "extends_existing": true
+    },
+    "quote": "effects of any proposed action on disadvantaged communities, including whether the action may cause or increase a disproportionate or inequitable or both disproportionate and inequitable pollution burden on a disadvantaged community.",
+    "note": "item (l) sits under 'All agencies ... shall prepare ... an environmental impact statement ... Such a statement shall include'; kind_model was duty, ingest flipped to power; adds a class to the EIS contents"
+   },
+   "2021-S8830-03": {
+    "verdict": "wrong",
+    "criteria": [
+     "4",
+     "5"
+    ],
+    "fields": {
+     "kind": "duty",
+     "deadline_kind": "on_effective_date"
+    },
+    "quote": "Actions or classes of actions that are likely to require preparation of environmental impact statements, including actions which may cause or increase, either directly or indirectly, a disproportionate or inequitable or both disproportionate and inequitable pollution burden on a disadvantaged community;",
+    "note": "8-0113(2)(c)(i) is a required element of the commissioner's SEQR regulations (mandatory lead-in); kind_model duty flipped to power; sibling -04 correctly duty with on_effective_date"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2023-06-28",
+   "computed": "2023-06-28",
+   "verdict": "correct",
+   "note": "180th day after 2022-12-30"
+  }
+ },
+ "2015-S6503": {
+  "records": {
+   "2015-S6503-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Notice of time and place for all regular public meetings of the board of regents and any Committee, subcommittee, task force, or other subgroups thereof shall be publicly provided at least seven days in advance of such meeting.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Board of Regents",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-S6503-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Such notice of time, place and agenda shall be distributed via the board's official internet website and specifically distributed by united states postal service to all regents at their usual addresses",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Board of Regents",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-S6503-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "An agenda for a regular public meeting of the board shall be comprised of a list of all items to be considered with a description of the subject Matter of each such item and shall be posted at least three days in advance of the meeting",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Board of Regents",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-S6503-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Provided however, that in an instance of a health or public safety emergency, the board may include additional items to the agenda with less than three days notice.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Board of Regents",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-S6503-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "In an instance of a health or public safety emergency, the board shall use best efforts to make public any changes to the agenda prior to the regular meeting.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Board of Regents",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-S6503-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The chancellor or the commissioner, or any five regents, may at any time call a special meeting of the board of regents and fix the time and place therefor.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Board of Regents",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-S6503-09": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The chancellor or the commissioner, or any five regents, may at any time call a special meeting of the board of regents and fix the time and place therefor.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Board of Regents",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-S6503-11": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Notice of time, place and agenda for all special public meetings of the board of regents shall be publicly provided at least three days in advance of such meeting.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Board of Regents",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-S6503-12": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Such notice of time, place and agenda shall be distributed via the board's official internet website and specifically circulated according to the rules and regulations of the regents to all regents.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Board of Regents",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-S6503-13": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The board of regents special public meeting agenda shall be comprised of a list of all items to be considered with a description of the subject Matter of each such item",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Board of Regents",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-S6503-14": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Provided however, that in an instance of a health or public safety emergency, the board may include additional items to the agenda with less than three days notice.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Board of Regents",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-S6503-15": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "In an instance of a health or public safety emergency, the board shall use best efforts to make public any changes to the agenda prior to the special meeting.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Board of Regents",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-S6503-16": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Any meeting of the board of regents and any Committee, subcommittee, task force, or other subgroups thereof shall be conducted in accordance with article seven of the public officers law.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Board of Regents",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-S6503-17": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "A summary of Committee reports, any other minutes, and attendance of the board of regents for either regular or special meetings shall be electronically available on the board of regents website at the close of each board meeting and shall be considered a public record.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Board of Regents",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-S6503-18": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The video recording of any regular full board meeting shall be posted no later than five days following the meeting of the board.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Board of Regents",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-S6503-19": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Any meeting summaries and actions taken shall be posted on the board of regents website within five days of approval by the board.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Board of Regents",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-S6503-20": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Information posted on the board of regents website shall remain on the site as archived data for a minimum of ten years.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Board of Regents",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-S6503-21": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "If any regent shall fail to attend three consecutive meetings, without excuse accepted as satisfactory by the regents, that regent may be deemed to have resigned",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Board of Regents",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-S6503-22": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the regents shall then report the vacancy to the legislature which shall fill it.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Board of Regents",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-S6503-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "7"
+    ],
+    "fields": {
+     "extends_existing": true
+    },
+    "quote": "The regents may provide for regular meetings of the board of regents and any Committee, subcommittee, task force, or other subgroups thereof.",
+    "note": "'The regents may provide for regular meetings' is reprinted; new matter '{{of the board of regents and any Committee, subcommittee...}}' widens the class"
+   },
+   "2015-S6503-04": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "if a meeting of a Committee, subcommittee, task force, or other subgroups thereof, by such means, including but not limited to the united states postal service or electronic means, as determined by the Committee, subcommittee, task force, or other subgroups thereof.",
+    "note": "'by such means ... as determined by the Committee' is the manner clause of the notice-distribution duty (-03), not an operative grant"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2016-12-08",
+   "computed": "2016-12-08",
+   "verdict": "correct",
+   "note": "90th day after 2016-09-09"
+  },
+  "calibration": true
+ },
+ "2013-S3810": {
+  "records": {
+   "2013-S3810-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "land surveying and geology shall be appointed by the board of regents on recommendation of the commissioner for the purpose of assisting the board of regents and the department on matters of professional licensing and professional conduct in accordance with section sixty-five hundred eight of this title.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Board of Regents",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2013-S3810-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "not less than two land surveyors and not less than two Professional geologists licensed in this state.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Board of Regents",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2013-S3810-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "An executive secretary to the board shall be appointed by the board of regents on recommendation of the commissioner and shall be a professional engineer , land surveyor or Professional geologist licensed in this state.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Board of Regents",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2013-S3810-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "A limited permit to practice as a professional engineer , land surveyor or Professional geologist in this state may be issued by the department to a person not a resident in this state and having no established place of practice in this state, when such practice does not aggregate more than thirty days in any calendar year",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "SED",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2013-S3810-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "On recommendation of the board, the department may issue a limited permit to practice geology to a geologist not a resident of this state and having no established place of practice in this state who is legally qualified to practice as such in his or her own country or state",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "SED",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-S3810-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "twelve years of practical experience in geological work of a grade and character satisfactory to the board may be accepted by the department.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "SED",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-S3810-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "provided that admission to the examination may be given when the applicant is within twenty credits of the completion of the requirements of the bachelor's degree",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "SED",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-S3810-10": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "No official of this state, or of any city, county, town or village therein, charged with the enforcement of laws, ordinances or regulations shall accept or approve any plans , specifications, or geologic drawings or reports that are not stamped:",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State agencies",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2013-S3810-11": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "No official of this state, or of any city, county, town or village therein, charged with the enforcement of laws, ordinances or regulations shall accept or approve any plans , specifications, or geologic drawings or reports that are not stamped:",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State agencies",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2013-S3810-12": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "No official of this state, or of any city, county, town or village therein, charged with the enforcement of laws, ordinances or regulations shall accept or approve any plans , specifications, or geologic drawings or reports that are not stamped:",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State agencies",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2013-S3810-13": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "No official of this state, or of any city, county, town or village therein, charged with the enforcement of laws, ordinances or regulations shall accept or approve any plans , specifications, or geologic drawings or reports that are not stamped:",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State agencies",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2013-S3810-14": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "No official of this state, or of any city, county, town or village therein, charged with the enforcement of laws, ordinances or regulations shall accept or approve any plans , specifications, or geologic drawings or reports that are not stamped:",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State agencies",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2013-S3810-15": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the state education department and the department of state shall allow an existing professional service corporation organized under this article and practicing professional engineering, architecture, landscape architecture, geology or land surveying, or practicing any combination of such professions to become a design professional service corporation as defined in this article",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "SED",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2013-S3810-16": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the state education department and the department of state shall allow an existing professional service corporation organized under this article and practicing professional engineering, architecture, landscape architecture, geology or land surveying, or practicing any combination of such professions to become a design professional service corporation as defined in this article",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "SED",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2013-S3810-06": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "Character: Be of good moral character as determined by the department",
+    "note": "'(F) Character: Be of good moral character as determined by the department' is an applicant licensing requirement (condition), not a department duty"
+   },
+   "2013-S3810-09": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "may offer to provide or provide professional engineering , land surveying or Professional geology services only after obtaining a certificate of authorization from the department",
+    "note": "7210(1): entities 'may offer to provide ... only after obtaining a certificate of authorization from the department' binds private firms; no government grant"
+   }
+  },
+  "missed": [
+   {
+    "blind": "c7",
+    "quote": "Up to one year of experience may be credited for an advanced degree (masters, doctorate or an equivalent thereof) in accordance With the commissioner's regulations",
+    "kind": "power",
+    "agency": "SED",
+    "dropped_by": null,
+    "note": "passive grant parallel to stored -08 ('admission to the examination may be given')"
+   }
+  ],
+  "effective_date": {
+   "stored": "2016-11-21",
+   "computed": "2016-11-21",
+   "verdict": "correct",
+   "note": "'two years after the date on which it shall have become a law', signed 2014-11-21"
+  },
+  "calibration": true
+ }
+}

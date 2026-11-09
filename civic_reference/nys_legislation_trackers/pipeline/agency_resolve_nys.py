@@ -1032,11 +1032,38 @@ def fix_model_state_entry_r24(o, by_canon, lookup):
     return True
 
 
+# R25 (Nov 9 2026): the agency field holds "All agencies" / "Every state agency" / "Each agency of the state", not a crosswalk entry. State agencies group
+# (unit None), unless the string says city/local: "all agencies of the city" is New York City in an NYC law (K4 text test), else Municipalities (all).
+ALL_AGENCIES = re.compile(r"^(?:(?:all|every|each|any)\s+)?(?:(?:state|city|local)\s+)?agenc(?:y|ies)(?:\s+(?:of|in)\s+(?:the|this)\s+(state|city)(?:\s+of\s+new\s+york)?)?$", re.I)
+
+
+def fix_all_agencies_r25(o, text=""):
+    ag = re.sub(r"\s+", " ", (o.get("agency") or "").strip(" .,;:"))
+    m = ALL_AGENCIES.match(ag)
+    if not m or not re.match(r"^(?:all|every|each)\b", ag, re.I) or o.get("agency_unit"):
+        return False
+    local = (m.group(1) or "").lower() == "city" or re.match(r"^(?:all|every|each)\s+(?:city|local)\b", ag, re.I)
+    if not local:
+        o.update(agency="State agencies", agency_full="State agencies", agency_matched=True, jurisdiction="state", agency_org_type="state agency group",
+                 agency_group=None, agency_unit=None, agency_source="all_agencies_r25")
+    else:
+        blob = (text or "") + " " + (o.get("quote") or "") + " " + (o.get("law_title") or "")
+        if K4_NYC_TEXT.search(blob) and not K4_OTHER_CITY.search(blob):
+            o.update(agency="New York City", agency_full="New York City", agency_matched=True, jurisdiction="nyc", agency_org_type="local government group",
+                     agency_group="New York City", agency_unit=None, agency_source="all_agencies_r25")
+        else:
+            _set_group(o, "Municipalities (all)", "local", "local government group", None, "all_agencies_r25")
+    o.pop("actor_unresolved", None)
+    return True
+
+
 def fix_20261031(o, by_canon, lookup=None, text=""):
     """R1-R3 (Oct 31 2026). Returns True when a raw office title in `agency` (or the chief diversity officer in actor_raw) was
     replaced by the body it heads. Runs on matched and unmatched records; titles whose body the crosswalks cannot resolve are left alone."""
     clean_unit_r16(o)
     fix_local_assessor_r20(o, text)
+    if fix_all_agencies_r25(o, text):
+        return True
     if fix_model_group_r23(o, by_canon) or fix_model_state_entry_r24(o, by_canon, lookup):
         return True
     if fix_multi_state(o, by_canon, text):
