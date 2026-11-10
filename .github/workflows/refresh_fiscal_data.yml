@@ -84,7 +84,19 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
+      # finding 14 (Nov 10 2026): on the daily resume cron the whole job
+      # (apt, pip, tests, validator, snapshots, commit) is skipped unless a
+      # batch is pending. Later steps run only when idle != 'true'.
+      - name: Skip the resume-day run when no batch is pending
+        id: idle
+        run: |
+          if [ "${{ github.event.schedule }}" = "0 12 2-7 * *" ] && [ ! -f pipeline/fiscal_batch_state.json ]; then
+            echo "no pending batch; nothing to do"
+            echo "idle=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Set up Python 3.11
+        if: steps.idle.outputs.idle != 'true'
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
@@ -92,6 +104,7 @@ jobs:
           cache-dependency-path: pipeline/requirements.txt
 
       - name: Install Python dependencies
+        if: steps.idle.outputs.idle != 'true'
         # antiword reads the legacy .doc statements (Oct 6 2026); pypdf the PDFs
         run: |
           # bounded and non-fatal (Oct 7 2026: an apt hang stalled the daily run for two hours);
@@ -101,13 +114,14 @@ jobs:
 
       # before any paid call (round 2): a broken rule fails here, not after the extraction
       - name: Fiscal rule tests
+        if: steps.idle.outputs.idle != 'true'
         run: python pipeline/tests/test_fiscal_rules.py
 
       # Resume-only path (the cheap daily cron, days 2-7): exits immediately
       # if no batch is pending, otherwise polls/finishes it. Never runs on
       # the monthly cron or a manual dispatch.
       - name: Resume a pending batch (daily check)
-        if: ${{ github.event.schedule == '0 12 2-7 * *' }}
+        if: ${{ steps.idle.outputs.idle != 'true' && (github.event.schedule == '0 12 2-7 * *') }}
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           CLAUDE_BATCH: "1"   # must match the mode the batch was submitted under
@@ -123,7 +137,7 @@ jobs:
       # extracted this month (pipeline/max_refresh.json) — normally all of
       # them, so this step makes zero API calls.
       - name: Run fiscal impacts pipeline
-        if: ${{ github.event.schedule != '0 12 2-7 * *' }}
+        if: ${{ steps.idle.outputs.idle != 'true' && (github.event.schedule != '0 12 2-7 * *') }}
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           CLAUDE_BATCH: ${{ (github.event_name == 'workflow_dispatch' && github.event.inputs.sync == 'true') && '0' || '1' }}
@@ -151,7 +165,7 @@ jobs:
           python pipeline/fetch_fiscal_impacts.py $FLAGS
 
       - name: Legistar REST enumeration (optional, workflow_dispatch only)
-        if: ${{ github.event.inputs.rest_years != '' }}
+        if: ${{ steps.idle.outputs.idle != 'true' && (github.event.inputs.rest_years != '') }}
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           LEGISTAR_TOKEN: ${{ secrets.LEGISTAR_TOKEN }}
@@ -174,13 +188,14 @@ jobs:
       # no API key. Re-reads Legistar's status for every non-enacted record,
       # then fills any missing summary from the cached or downloaded statement.
       - name: Refresh bill status and fill summaries (no model calls)
-        if: ${{ github.event.schedule != '0 12 2-7 * *' }}
+        if: ${{ steps.idle.outputs.idle != 'true' && (github.event.schedule != '0 12 2-7 * *') }}
         continue-on-error: false
         run: |
           python pipeline/fetch_fiscal_impacts.py --refresh-status
           python pipeline/fetch_fiscal_impacts.py --backfill-summary
 
       - name: Regenerate agency chart data
+        if: steps.idle.outputs.idle != 'true'
         run: python pipeline/regenerate_agency_data.py
 
       # fiscal audit (Oct 6 2026): the validator ran without --strict under
@@ -188,15 +203,18 @@ jobs:
       # the 25 rule tests ran nowhere. Both now block the push; the data
       # still survives as the fiscal-data artifact below (if: always()).
       - name: Data validator (a hard failure blocks the commit)
+        if: steps.idle.outputs.idle != 'true'
         run: python pipeline/validate_fiscal_impacts.py --strict
 
       - name: Pre-render static snapshots (overview + hub, readable without JS)
+        if: steps.idle.outputs.idle != 'true'
         run: |
           python pipeline/build_fiscal_static_snapshots.py
           # the umbrella hub's fiscal stat pills read fiscal_impacts.json too
           python civic_reference/legislation_implementation_tracker/pipeline/build_static_snapshots.py
 
       - name: Commit and push updated data
+        if: steps.idle.outputs.idle != 'true'
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -244,7 +262,7 @@ jobs:
       # copy the three files into place, re-run regenerate_agency_data.py,
       # commit, push.
       - name: Upload data files as artifact
-        if: always()
+        if: ${{ always() && steps.idle.outputs.idle != 'true' }}
         uses: actions/upload-artifact@v4
         with:
           name: fiscal-data

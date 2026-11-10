@@ -179,8 +179,17 @@ jobs:
             civic_reference/nyc_council_legislation_trackers/data/council_members.json
           retention-days: 30
 
+      # finding 9 (Nov 10 2026): obligations data never commits unvalidated.
+      # A hard failure fails this step, and the commit step below is skipped;
+      # the re-extraction artifact above still preserves the output.
+      - name: Data validator (a hard failure blocks the commit)
+        id: validate
+        if: ${{ always() && (inputs.task == 'reextract_obligations' || inputs.task == 'label_kinds' || inputs.task == 'verify_obligations') }}
+        working-directory: civic_reference/legislation_implementation_tracker
+        run: python3 pipeline/validate_obligations.py --strict
+
       - name: Commit results
-        if: ${{ always() && inputs.task != 'canary' && inputs.task != 'pilot_obligations' }}
+        if: ${{ always() && inputs.task != 'canary' && inputs.task != 'pilot_obligations' && steps.validate.outcome != 'failure' }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"

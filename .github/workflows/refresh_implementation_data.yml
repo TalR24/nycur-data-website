@@ -48,6 +48,9 @@ jobs:
     #   fetch/scrape/DORIS/members/agencies/archive clone/votes/context steps
     #                               ~ 30-60 min combined, historically
     #   commit + push retries      ~  5 min
+    #   DORIS filings refresh      <= 10 min (TOTAL_BUDGET_S in
+    #                                build_report_filings.py; replaces a
+    #                                single 3-min request, so +7 min worst case)
     #   ---------------------------------------
     #   total                     <= 305-345 min, under the 360-min cap
     # Either batch step returning None (still pending after its own wait)
@@ -89,7 +92,13 @@ jobs:
           MAX_REFRESH_GATE: "1"
         run: python3 pipeline/reextract_queued.py
 
+      # retries timeouts and 5xx itself. continue-on-error keeps the rest of
+      # the month's data flowing, but the final "Fail the run" steps below turn
+      # the job red if this step failed or the file is over 35 days old (Nov 1
+      # 2026: a ReadTimeout here exited 1 under continue-on-error and the run
+      # went green with report_filings.json a month stale).
       - name: Refresh DORIS report filing status
+        id: filings
         working-directory: civic_reference/legislation_implementation_tracker
         continue-on-error: true
         run: python3 pipeline/build_report_filings.py
@@ -142,6 +151,14 @@ jobs:
             civic_reference/nyc_council_legislation_trackers/data/member_context.json
             civic_reference/nyc_council_legislation_trackers/data/council_members.json
           retention-days: 30
+
+      # a hard failure blocks the commit and fails the job (review finding 9,
+      # Nov 10 2026). The text-cache checks skip themselves on a CI checkout,
+      # which holds text only for the laws it just fetched (cache/ is
+      # gitignored), so only the structural checks can fire here.
+      - name: Data validator (a hard failure blocks the commit)
+        working-directory: civic_reference/legislation_implementation_tracker
+        run: python3 pipeline/validate_obligations.py --strict
 
       - name: Commit and push if data changed
         run: |
@@ -262,6 +279,17 @@ jobs:
           echo "::error::A profile rebuild step failed (see the 'Rebuild agency and council member profiles' log). Tracker data was committed; the named profile files kept last month's values."
           exit 1
 
+      - name: Fail the run if the DORIS filings were not refreshed
+        if: ${{ always() && steps.filings.outcome != 'skipped' }}
+        working-directory: civic_reference/legislation_implementation_tracker
+        run: |
+          if [ "${{ steps.filings.outcome }}" = "failure" ]; then
+            echo "::error::Refresh DORIS report filing status failed after retries; report_filings.json was not refreshed."
+            python3 pipeline/build_report_filings.py --check || true
+            exit 1
+          fi
+          python3 pipeline/build_report_filings.py --check
+
   # Cheap daily check, days 2-7 of the month: resumes a batch left pending by
   # the monthly run (its 360-min cap can be hit by a batch still processing).
   # Exits immediately, no other API call, when neither state file exists.
@@ -330,7 +358,33 @@ jobs:
           git add -u -- 'civic_reference/legislation_implementation_tracker/*index.html' \
                         'civic_reference/nyc_council_legislation_trackers/*index.html'
 
+      - name: Upload resume output
+        if: ${{ always() && env.RESUME_RAN == '1' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: resume-refresh-output
+          path: |
+            civic_reference/legislation_implementation_tracker/data/obligations.json
+            civic_reference/legislation_implementation_tracker/data/powers.json
+            civic_reference/legislation_implementation_tracker/data/summary.json
+            civic_reference/legislation_implementation_tracker/pipeline/reextract_queue.json
+            civic_reference/legislation_implementation_tracker/pipeline/batch_state_new.json
+            civic_reference/legislation_implementation_tracker/pipeline/batch_state_reextract.json
+            civic_reference/nyc_council_legislation_trackers/data/members.json
+            civic_reference/nyc_council_legislation_trackers/data/agencies.json
+            civic_reference/nyc_council_legislation_trackers/data/member_votes.json
+            civic_reference/nyc_council_legislation_trackers/data/member_context.json
+            civic_reference/nyc_council_legislation_trackers/data/council_members.json
+          if-no-files-found: ignore
+          retention-days: 30
+
+      - name: Data validator (a hard failure blocks the commit)
+        if: env.RESUME_RAN == '1'
+        working-directory: civic_reference/legislation_implementation_tracker
+        run: python3 pipeline/validate_obligations.py --strict
+
       - name: Commit and push if resume produced data
+        id: commit
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -357,10 +411,111 @@ jobs:
             exit 0
           fi
           git commit -m "Resume pending legislation implementation batch"
-          git -c rebase.autoStash=true pull --rebase origin main && git push
+          # same loop as the monthly job (Sep 26 2026 lost a batch to a single
+          # push): a stuck push fails loudly instead of exiting green
+          pushed=0
+          for attempt in 1 2 3 4 5; do
+            if git -c rebase.autoStash=true pull --rebase origin main && git push; then pushed=1; break; fi
+            sleep $((attempt * 30))
+          done
+          if [ "$pushed" != 1 ]; then echo "::error::push failed after 5 attempts"; exit 1; fi
+          echo "landed=1" >> "$GITHUB_OUTPUT"
+
+      # Run after the obligations commit so a slow Socrata day (bounded at 10
+      # minutes by build_report_filings.py) cannot hit this job's 30-minute
+      # timeout before the resumed data is safely pushed.
+      - name: Refresh DORIS report filing status
+        id: filings
+        working-directory: civic_reference/legislation_implementation_tracker
+        continue-on-error: true
+        if: env.RESUME_RAN == '1'
+        run: python3 pipeline/build_report_filings.py
+
+      - name: Commit DORIS filing status
+        if: env.RESUME_RAN == '1' && steps.filings.outcome == 'success'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add civic_reference/legislation_implementation_tracker/data/report_filings.json
+          if git diff --cached --quiet; then echo "Filings unchanged."; exit 0; fi
+          git commit -m "Resume refresh: DORIS report filing status"
+          pushed=0
+          for attempt in 1 2 3 4 5; do
+            if git -c rebase.autoStash=true pull --rebase origin main && git push; then pushed=1; break; fi
+            sleep $((attempt * 30))
+          done
+          if [ "$pushed" != 1 ]; then echo "::error::push failed after 5 attempts"; exit 1; fi
+
+      # Alerts and the Ask index run only when THIS run's commit step landed
+      # new obligations data (steps.commit.outputs.landed). RESUME_RAN is also
+      # set when a batch is still pending and nothing finished; send_alerts.py
+      # always builds "District N this month" lines and keeps no state to
+      # dedupe them, so a district subscriber would get the same email on each
+      # of up to 6 resume days (review, Nov 10 2026).
+      - name: Send member alerts
+        id: alerts
+        continue-on-error: true  # an alert failure should never block the Ask index rebuild
+        if: steps.commit.outputs.landed == '1'
+        env:
+          PREMIUM_PUSH_TOKEN: ${{ secrets.PREMIUM_PUSH_TOKEN }}
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+        run: |
+          git clone --depth 1 "https://TalR24:${PREMIUM_PUSH_TOKEN}@github.com/TalR24/nycur-data-premium.git" /tmp/premium
+          PREMIUM_DIR=/tmp/premium python3 civic_reference/nyc_council_legislation_trackers/pipeline/send_alerts.py
+          cd /tmp/premium
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add civic_reference/legislation_implementation_tracker/data/alerts_state.json
+          if git diff --cached --quiet; then
+            echo "Alert state unchanged."
+          else
+            git commit -m "Resume refresh: alert state"
+            pushed=0
+            for attempt in 1 2 3 4 5; do
+              if git pull --rebase origin main && git push; then pushed=1; break; fi
+              sleep $((attempt * 10))
+            done
+            if [ "$pushed" != 1 ]; then echo "::error::premium push failed after 5 attempts"; exit 1; fi
+          fi
+
+      - name: Flag a failed alerts run
+        if: steps.alerts.outcome == 'failure'
+        run: echo "::warning::Member alerts failed on this resume run; alert state was not committed. Check the Send member alerts step."
+
+      - name: Rebuild Ask index
+        if: steps.commit.outputs.landed == '1'
+        env:
+          PREMIUM_PUSH_TOKEN: ${{ secrets.PREMIUM_PUSH_TOKEN }}
+        run: |
+          if [ ! -d /tmp/premium ]; then
+            git clone --depth 1 "https://TalR24:${PREMIUM_PUSH_TOKEN}@github.com/TalR24/nycur-data-premium.git" /tmp/premium
+          fi
+          PREMIUM_DIR=/tmp/premium python3 civic_reference/nyc_council_legislation_trackers/pipeline/build_ask_index.py
+          cd /tmp/premium
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add worker/ask_index.json
+          if git diff --cached --quiet; then
+            echo "Ask index unchanged."
+          else
+            git commit -m "Resume refresh: Ask index"
+            pushed=0
+            for attempt in 1 2 3 4 5; do
+              if git pull --rebase origin main && git push; then pushed=1; break; fi
+              sleep $((attempt * 10))
+            done
+            if [ "$pushed" != 1 ]; then echo "::error::premium push failed after 5 attempts"; exit 1; fi
+          fi
 
       - name: Fail the run if a profile rebuild failed
         if: ${{ always() && steps.profiles.outcome == 'failure' }}
         run: |
           echo "::error::A profile rebuild step failed (see the 'Rebuild agency and council member profiles' log). Tracker data was committed; the named profile files kept last month's values."
+          exit 1
+
+      - name: Fail the run if the DORIS filings were not refreshed
+        if: ${{ always() && steps.filings.outcome == 'failure' }}
+        run: |
+          echo "::error::Refresh DORIS report filing status failed after retries on a resume run; report_filings.json was not refreshed."
           exit 1

@@ -29,6 +29,7 @@ date, so every view gets the status without another fetch.
 
 Usage:
     python3 pipeline/build_report_filings.py
+    python3 pipeline/build_report_filings.py --check   # fail if the file is over 35 days old
 
 No Anthropic API calls.
 """
@@ -37,8 +38,9 @@ from __future__ import annotations
 import json
 import re
 import sys
+import time
 from collections import defaultdict
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 import requests
@@ -219,25 +221,102 @@ def parse_dt(v: str | None) -> date | None:
         return None
 
 
-def fetch_grouped(where: str) -> dict[str, date]:
-    """latest date_published per (agency, required_report_name)."""
-    out: dict[str, date] = {}
+MAX_AGE_DAYS = 35
+RETRIES = 4  # attempts per request; waits 5, 15, 45 seconds between them
+TOTAL_BUDGET_S = 600  # overall deadline for every request in one run
+MAX_DROP = 0.20  # refuse to overwrite the file if matched falls more than this
+
+_deadline: float | None = None
+
+
+def set_budget(seconds: float | None, now=time.monotonic) -> None:
+    """Start the overall clock: after this many seconds get_json stops retrying
+    and raises, so a slow Socrata day cannot eat the job's time budget."""
+    global _deadline
+    _deadline = None if seconds is None else now() + seconds
+
+
+def get_json(url: str, params: dict, session=None, sleep=time.sleep,
+             retries: int = RETRIES, timeout: int = 180, now=time.monotonic):
+    """GET a Socrata endpoint, retrying timeouts, connection errors, dropped
+    streams, non-JSON 200 bodies, 429 and 5xx with backoff. Other 4xx responses
+    are real errors and raise at once. The module deadline (set_budget) bounds
+    the total time. A Nov 1 2026 ReadTimeout once left the file a month stale."""
+    http = session or requests
+    for attempt in range(1, retries + 1):
+        remaining = None if _deadline is None else _deadline - now()
+        if remaining is not None and remaining <= 0:
+            raise TimeoutError(f"{url}: overall {TOTAL_BUDGET_S}s retry budget spent")
+        try:
+            r = http.get(url, params=params,
+                         timeout=timeout if remaining is None else max(1, min(timeout, remaining)))
+            if r.status_code == 429 or r.status_code >= 500:
+                raise requests.HTTPError(f"HTTP {r.status_code}", response=r)
+            r.raise_for_status()
+            return r.json()
+        except (requests.Timeout, requests.ConnectionError, requests.HTTPError,
+                requests.exceptions.ChunkedEncodingError, ValueError) as e:
+            resp = getattr(e, "response", None)
+            code = getattr(resp, "status_code", None)
+            retryable = code is None or code == 429 or code >= 500
+            wait = 5 * 3 ** (attempt - 1)
+            out_of_time = _deadline is not None and now() + wait >= _deadline
+            if not retryable or attempt == retries or out_of_time:
+                raise
+            print(f"::warning::{url} failed ({e.__class__.__name__}), retry "
+                  f"{attempt}/{retries - 1} in {wait}s", file=sys.stderr)
+            sleep(wait)
+
+
+def regression_ok(old_matched: int | None, new_matched: int,
+                  max_drop: float = MAX_DROP) -> tuple[bool, str]:
+    """False when the new matched count is more than max_drop below the old
+    file's: HTTP 200 with empty pages must not produce a fresh but hollow file."""
+    if not old_matched:
+        return True, "no previous count to compare"
+    floor = old_matched * (1 - max_drop)
+    if new_matched < floor:
+        return False, (f"matched fell from {old_matched} to {new_matched} "
+                       f"(more than {int(max_drop * 100)}% drop); file not overwritten")
+    return True, f"matched {new_matched} vs {old_matched} before"
+
+
+def check_fresh(path: Path = OUT, today: date | None = None,
+                max_age: int = MAX_AGE_DAYS) -> tuple[bool, str]:
+    """True when the file's `generated` date is at most max_age days old."""
+    today = today or date.today()
+    try:
+        gen = date.fromisoformat(json.loads(path.read_text())["generated"])
+    except (OSError, ValueError, KeyError) as e:
+        return False, f"{path.name}: unreadable generated date ({e})"
+    age = (today - gen).days
+    if age > max_age:
+        return False, f"{path.name} generated {gen} is {age} days old (limit {max_age})"
+    return True, f"{path.name} generated {gen}, {age} days old"
+
+
+def fetch_all(url: str, params: dict, get=None, page: int = 5000) -> list[dict]:
+    """Page with $limit/$offset until an empty page."""
+    rows_all: list[dict] = []
     offset = 0
     while True:
-        r = requests.get(FILINGS, params={
+        rows = (get or get_json)(url, {**params, "$limit": page, "$offset": offset})
+        if not rows:
+            return rows_all
+        rows_all.extend(rows)
+        offset += page
+
+
+def fetch_grouped(where: str, get=None) -> dict[str, date]:
+    """latest date_published per (agency, required_report_name)."""
+    out: dict[str, date] = {}
+    for row in fetch_all(FILINGS, {
             "$select": "agency,required_report_name,max(date_published) as latest",
             "$group": "agency,required_report_name",
-            "$where": where, "$limit": 5000, "$offset": offset}, timeout=180)
-        rows = r.json()
-        if not rows:
-            break
-        for row in rows:
-            d = parse_dt(row.get("latest"))
-            if d:
-                out[key(row.get("agency"), row.get("required_report_name"))] = d
-        if len(rows) < 5000:
-            break
-        offset += 5000
+            "$where": where, "$order": "agency,required_report_name"}, get):
+        d = parse_dt(row.get("latest"))
+        if d:
+            out[key(row.get("agency"), row.get("required_report_name"))] = d
     return out
 
 
@@ -263,8 +342,13 @@ def classify(m: dict, last_filed: date | None, today: date) -> tuple[str, int | 
 
 
 def main() -> None:
+    if "--check" in sys.argv:
+        ok, msg = check_fresh()
+        print(msg if ok else f"::error::{msg}")
+        sys.exit(0 if ok else 1)
     today = date.today()
-    mandates = requests.get(MANDATES, params={"$limit": 5000}, timeout=180).json()
+    set_budget(TOTAL_BUDGET_S)
+    mandates = fetch_all(MANDATES, {"$order": ":id"})
     filed = fetch_grouped(f"report_type != '{LATE_NOTICE}'")
     notices = fetch_grouped(f"report_type = '{LATE_NOTICE}'")
     print(f"DORIS: {len(mandates)} mandates, {len(filed)} filed report groups, "
@@ -392,6 +476,14 @@ def main() -> None:
         "status_counts": dict(sorted(counts.items(), key=lambda x: -x[1])),
         "filings": out,
     }
+    try:
+        old_matched = json.loads(OUT.read_text()).get("matched")
+    except (OSError, ValueError):
+        old_matched = None
+    ok, why = regression_ok(old_matched, payload["matched"])
+    if not ok:
+        print(f"::error::{why}")
+        sys.exit(1)
     OUT.write_text(json.dumps(payload, separators=(",", ":")))
     print(f"matched {payload['matched']} of "
           f"{sum(len(v) for v in our_reports.values())} "
