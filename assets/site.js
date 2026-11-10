@@ -111,6 +111,12 @@
        content column uses 1240px and intros 920px instead of a narrow 900/680.
        Below 1100px every page keeps its own widths, so phones are unchanged.
        !important because pages set these widths in their own <style>. */
+    /* Text contrast (Nov 2026): --b-ink-4 is decorative only (3.07:1 on cream),
+       so label and note text uses --b-ink-3 (5.4:1). Link and last-crumb colours
+       keep their own, more specific rules. */
+    '.breadcrumb,.footer-copy,.pill-label,.section-label,.section-label-row,.map-hint{color:var(--b-ink-3);}' +
+    /* Tap targets: footer and breadcrumb links get a 24px minimum hit area. */
+    '.footer-links a:not(.footer-support),.breadcrumb a{display:inline-block;min-height:24px;line-height:24px;}' +
     '@media (min-width:1100px){' +
       '.header-inner,.hero-inner,.main-inner,.footer-inner,.stat-row-inner,.charts-inner,' +
       '.sitenav-inner,.relwork-inner,.trk-studio-inner,.projects-inner,.band-inner,.charts-nav-inner,.table-inner{max-width:1240px !important;}' +

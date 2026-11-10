@@ -248,9 +248,56 @@
 
   /* ---- boot ------------------------------------------------------------ */
 
+  /* Scroll cue for .c-plot--scroll. When a plot is wider than its box, add a
+     one-word utility hint above it and an edge fade (classes c-fade-l /
+     c-fade-r, styled in chart.css) that tracks the scroll position. */
+  function updateScrollCue(el) {
+    var over = el.scrollWidth > el.clientWidth + 2;
+    var hint = el.previousElementSibling;
+    var hasHint = hint && hint.classList && hint.classList.contains('c-scroll-hint');
+    if (over && !hasHint) {
+      hint = document.createElement('div');
+      hint.className = 'c-scroll-hint';
+      hint.setAttribute('aria-hidden', 'true');
+      hint.textContent = 'Scroll →';
+      el.parentNode.insertBefore(hint, el);
+      hasHint = true;
+    }
+    if (hasHint) hint.hidden = !over;
+    var max = el.scrollWidth - el.clientWidth;
+    el.classList.toggle('c-fade-r', over && el.scrollLeft < max - 2);
+    el.classList.toggle('c-fade-l', over && el.scrollLeft > 2);
+  }
+  function initScrollCues() {
+    var els = document.querySelectorAll('.c-plot--scroll');
+    for (var i = 0; i < els.length; i++) {
+      var el = els[i];
+      if (!el.__cue) {
+        el.__cue = true;
+        el.addEventListener('scroll', (function (n) {
+          return function () { updateScrollCue(n); };
+        })(el), { passive: true });
+      }
+      updateScrollCue(el);
+    }
+  }
+  var cueTimer = null;
+  function queueScrollCues() {
+    clearTimeout(cueTimer);
+    cueTimer = setTimeout(initScrollCues, 120);
+  }
+
   function boot() {
     injectMarks(document);
     applyChartDefaults();
+    var emb = document.getElementById('embedCode');
+    if (emb && !emb.getAttribute('aria-label')) emb.setAttribute('aria-label', 'Embed code');
+    initScrollCues();
+    window.addEventListener('resize', queueScrollCues);
+    window.addEventListener('load', queueScrollCues);
+    if (window.MutationObserver) {
+      new MutationObserver(queueScrollCues).observe(document.body, { childList: true, subtree: true });
+    }
     /* Bars animate in, so measure after the transition has settled. */
     setTimeout(function () { placeBarValues(document); }, 1100);
   }
