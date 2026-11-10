@@ -48,6 +48,15 @@ DATE_KEY = re.compile(
 STATUS_EXCLUDE = {"skip", "done", "won", "declined"}
 PURSUING_STATUSES = {"pursue", "drafting", "submitted"}
 
+# A changed page line is worth a digest entry only when it reads like a
+# deadline or call-status statement; headlines, agendas and banners are not.
+DEADLINE_LINE = re.compile(
+    r"(deadline|due\b|closes?\b|closing|call for|proposals? (are )?(open|due|accepted)|"
+    r"applications? (are )?(open|close|due)|submissions? (are )?(open|close|due)|"
+    r"submit (by|before)|nominations? (are )?(open|close|due))",
+    re.I,
+)
+
 FORMAT_LABELS = {
     "remote": "remote",
     "part_time": "part-time",
@@ -66,6 +75,7 @@ SECTION_TITLES = [
     ("priorities", "Your priorities"),
     ("deadline_changes", "Deadlines announced or changed"),
     ("pursuing", "Pursuing"),
+    ("waiting", "Waiting on a decision"),
     ("closing45", "Closing in the next 45 days"),
     ("new_week", "New this week"),
     ("windows", "Windows opening soon"),
@@ -77,7 +87,7 @@ SECTION_TITLES = [
 
 # --------------------------------------------------------------- watch list
 
-DATE_FIELDS = ("deadline", "added", "verified")
+DATE_FIELDS = ("deadline", "added", "verified", "decision_expected", "submitted_on", "status_updated")
 
 
 def load_watchlist(path):
@@ -234,6 +244,12 @@ def default_fetch(url, today_year):
     return extract_date_lines(body), via, code, None
 
 
+def _is_pitch_desk(item):
+    """Pitch desks and outlet guidelines have no deadline to track, so their
+    pages are not fetched or reported; a named priority (Vital City) is."""
+    return item.get("category") == "pitch" and not item.get("priority")
+
+
 def check_pages(items, state, today, no_fetch, fetch_fn=None):
     """Fetches each item's check_url/url (unless no_fetch), compares its
     hash to the stored one, and reports the newly-appeared date lines.
@@ -244,6 +260,7 @@ def check_pages(items, state, today, no_fetch, fetch_fn=None):
     if no_fetch:
         return changes, failures, state
     fetch_fn = fetch_fn or (lambda url: default_fetch(url, today.year))
+    items = [i for i in items if not _is_pitch_desk(i)]
     for idx, item in enumerate(items):
         url = item.get("check_url") or item.get("url")
         if not url:
@@ -262,7 +279,8 @@ def check_pages(items, state, today, no_fetch, fetch_fn=None):
                 # baseline silently instead.
                 if prev and prev.get("hash") != digest and prev.get("via") == via:
                     prev_lines = set(prev.get("lines") or [])
-                    new_lines = [l for l in lines if l not in prev_lines][:6]
+                    new_lines = [l for l in lines
+                                 if l not in prev_lines and DEADLINE_LINE.search(l)][:6]
                     if new_lines:
                         changes.append({
                             "id": item["id"], "name": item.get("name") or item["id"], "url": item.get("url") or "",
@@ -322,8 +340,9 @@ def compute_deadline_changes(items, prev_snapshot):
 def build_sections(items, today, page_changes, deadline_changes=None):
     by_id_changed = {c["id"]: c for c in page_changes}
 
-    pursuing = [i for i in items if i.get("status") in PURSUING_STATUSES]
-    pursuing_ids = {i["id"] for i in pursuing}
+    pursuing = [i for i in items if i.get("status") in {"pursue", "drafting"}]
+    waiting = [i for i in items if i.get("status") == "submitted"]
+    pursuing_ids = {i["id"] for i in pursuing} | {i["id"] for i in waiting}
 
     # Tal's named priorities show every week in their own section, so they
     # are left out of the date-driven sections below to avoid listing them
@@ -341,10 +360,17 @@ def build_sections(items, today, page_changes, deadline_changes=None):
         and today <= i["deadline"] <= today + timedelta(days=45)
     ]
 
+    # Only items added in the last 7 days; the older untriaged backlog is
+    # a one-line count, and an item is not listed in two sections.
     new_week = [
         i for i in items_np
-        if i.get("status") == "new"
-        or (i.get("added") and 0 <= (today - i["added"]).days <= 7)
+        if i.get("added") and 0 <= (today - i["added"]).days <= 7
+        and i["id"] not in pursuing_ids
+    ]
+    new_week_ids = {i["id"] for i in new_week}
+    awaiting = [
+        i for i in items
+        if i.get("status") == "new" and i["id"] not in new_week_ids
     ]
 
     this_month = today.month
@@ -354,6 +380,7 @@ def build_sections(items, today, page_changes, deadline_changes=None):
         if i.get("deadline_kind") == "expected"
         and _valid_month(i.get("expected_month"))
         and i["expected_month"] in {this_month, next_month}
+        and i["id"] not in new_week_ids
     ]
 
     changed = [i for i in items if i["id"] in by_id_changed]
@@ -361,15 +388,17 @@ def build_sections(items, today, page_changes, deadline_changes=None):
     rolling_open = []
     watching_no_date = []
     if today.day <= 7:
-        rolling_open = [i for i in items_np if i.get("deadline_kind") in {"rolling", "open"}]
+        rolling_open = [i for i in items_np
+                        if i.get("deadline_kind") in {"rolling", "open"} and i["id"] not in new_week_ids]
         # Not on the calendar at all yet: an expected call with no
         # expected_month, or an event with no deadline. Surfaced only
         # alongside rolling/open, on the same first-Saturday cadence, so
         # they get a periodic nudge to fill in a real date.
         watching_no_date = [
             i for i in items_np
-            if (i.get("deadline_kind") == "expected" and not _valid_month(i.get("expected_month")))
-            or (i.get("deadline_kind") == "event" and not i.get("deadline"))
+            if i["id"] not in new_week_ids and (
+                (i.get("deadline_kind") == "expected" and not _valid_month(i.get("expected_month")))
+                or (i.get("deadline_kind") == "event" and not i.get("deadline")))
         ]
 
     past_deadline = [
@@ -385,6 +414,8 @@ def build_sections(items, today, page_changes, deadline_changes=None):
         "priorities": priorities,
         "deadline_changes": [dict(i, _deadline_note=n) for i, n in (deadline_changes or [])],
         "pursuing": s(pursuing),
+        "waiting": sorted(waiting, key=lambda i: (i.get("decision_expected") or date.max,
+                                                  i.get("name") or "")),
         "closing45": s(closing45),
         "new_week": s(new_week),
         "windows": s(windows),
@@ -392,6 +423,7 @@ def build_sections(items, today, page_changes, deadline_changes=None):
         "rolling_open": s(rolling_open),
         "watching_no_date": s(watching_no_date),
         "past_deadline": s(past_deadline),
+        "awaiting": s(awaiting),
     }
     return sections, by_id_changed
 
@@ -403,6 +435,13 @@ def _format_format(fmt):
 
 
 def _format_deadline(item, today):
+    if item.get("status") == "submitted":
+        # The deadline is met; what matters now is when a decision is due.
+        due = item.get("decision_expected")
+        if due:
+            note = "decision date passed, follow up" if due < today else None
+            return f"decision expected {due.isoformat()}", note
+        return "awaiting decision", None
     deadline = item.get("deadline")
     if deadline:
         days = (deadline - today).days
@@ -455,7 +494,9 @@ def _unique_total(sections):
     lengths: the same item can legitimately appear in more than one
     section (closing soon and new this week, say)."""
     ids = set()
-    for entries in sections.values():
+    for key, entries in sections.items():
+        if key == "awaiting":
+            continue
         for i in entries:
             ids.add(i["id"])
     return len(ids)
@@ -474,6 +515,17 @@ def _visible_sections(sections):
     return visible
 
 
+def awaiting_line(sections, today):
+    """One line for the untriaged backlog (status new, added before this
+    week): the count and the age of the oldest."""
+    waiting = sections.get("awaiting") or []
+    if not waiting:
+        return None
+    ages = [(today - i["added"]).days for i in waiting if i.get("added")]
+    oldest = f" (oldest {max(ages)} days)" if ages else ""
+    return f"Awaiting your call: {len(waiting)}{oldest}"
+
+
 def build_digest_text(sections, by_id_changed, today, tracker_url, failures):
     total = _unique_total(sections)
     visible = _visible_sections(sections)
@@ -482,6 +534,9 @@ def build_digest_text(sections, by_id_changed, today, tracker_url, failures):
            f"{len(visible)} section{'s' if len(visible) != 1 else ''}.", ""]
     if tracker_url:
         out += [f"Tracker: {tracker_url}", ""]
+    aw = awaiting_line(sections, today)
+    if aw:
+        out += [aw, ""]
     if total == 0:
         out += ["Quiet week, nothing to flag.", ""]
     for key, title, entries, extra in visible:
@@ -552,6 +607,9 @@ def build_digest_html(sections, by_id_changed, today, tracker_url, failures):
     if tracker_url:
         body.append(f'<p style="font-size:13px;"><a href="{_esc(tracker_url)}" '
                     f'style="color:#0b5cab;">Open the tracker</a></p>')
+    aw = awaiting_line(sections, today)
+    if aw:
+        body.append(f'<p style="font-size:14px;">{_esc(aw)}</p>')
     if total == 0:
         body.append('<p style="font-size:14px;">Quiet week, nothing to flag.</p>')
     for key, title, entries, extra in visible:

@@ -92,6 +92,8 @@ class SectionTests(unittest.TestCase):
                       deadline_kind="set"),
             make_item(id="p2", status="drafting", deadline=None),
             make_item(id="w1", status="watch", deadline=None),
+            make_item(id="s1", status="submitted", deadline=date(2026, 10, 20),
+                      deadline_kind="set"),
         ]
         sections, _ = monitor.build_sections(items, TODAY, [])
         self.assertEqual({i["id"] for i in sections["pursuing"]}, {"p1", "p2"})
@@ -110,14 +112,15 @@ class SectionTests(unittest.TestCase):
         sections, _ = monitor.build_sections(items, TODAY, [])
         self.assertEqual({i["id"] for i in sections["closing45"]}, {"c1"})
 
-    def test_new_this_week_status_new_or_recently_added(self):
+    def test_new_this_week_only_items_added_in_last_7_days(self):
         items = [
-            make_item(id="n1", status="new", added=date(2026, 1, 1)),
+            make_item(id="n1", status="new", added=date(2026, 1, 1)),    # old backlog
             make_item(id="n2", status="watch", added=date(2026, 9, 28)),  # 5 days ago
             make_item(id="n3", status="watch", added=date(2026, 9, 1)),   # too old
         ]
         sections, _ = monitor.build_sections(items, TODAY, [])
-        self.assertEqual({i["id"] for i in sections["new_week"]}, {"n1", "n2"})
+        self.assertEqual({i["id"] for i in sections["new_week"]}, {"n2"})
+        self.assertEqual({i["id"] for i in sections["awaiting"]}, {"n1"})
 
     def test_windows_opening_soon_this_or_next_month(self):
         # TODAY is October 2026: this month=10, next=11
@@ -595,6 +598,95 @@ class DeadlineChangeTests(unittest.TestCase):
     def test_dry_run_writes_no_deadlines_json(self):
         sd = self._run_main(["--no-fetch"])
         self.assertFalse((sd / "deadlines.json").exists())
+
+
+class SubmittedAndAwaitingTests(unittest.TestCase):
+    def _digest(self, items, today=TODAY):
+        sections, by_id = monitor.build_sections(items, today, [])
+        return sections, monitor.build_digest_text(sections, by_id, today, None, [])
+
+    def test_submitted_goes_to_waiting_with_decision_date_not_days_left(self):
+        item = make_item(id="s1", name="Submitted One", status="submitted",
+                         deadline=date(2026, 11, 15), deadline_kind="set",
+                         decision_expected=date(2026, 12, 7))
+        sections, text = self._digest([item])
+        self.assertEqual([i["id"] for i in sections["waiting"]], ["s1"])
+        self.assertEqual(sections["pursuing"], [])
+        self.assertIn("## Waiting on a decision (1)", text)
+        self.assertIn("decision expected 2026-12-07", text)
+        self.assertNotIn("days left", text)
+        self.assertNotIn("overdue", text)
+
+    def test_submitted_without_decision_date_says_awaiting_decision(self):
+        item = make_item(id="s2", status="submitted", deadline=date(2026, 9, 1),
+                         deadline_kind="set")
+        _, text = self._digest([item])
+        self.assertIn("awaiting decision", text)
+        self.assertNotIn("overdue", text)
+
+    def test_passed_decision_date_is_flagged(self):
+        item = make_item(id="s3", status="submitted", deadline_kind="rolling",
+                         decision_expected=date(2026, 9, 20))
+        _, text = self._digest([item])
+        self.assertIn("decision date passed, follow up", text)
+
+    def test_waiting_sorted_by_decision_date(self):
+        a = make_item(id="a", name="A", status="submitted", decision_expected=date(2026, 12, 7))
+        b = make_item(id="b", name="B", status="submitted", decision_expected=date(2026, 11, 16))
+        c = make_item(id="c", name="C", status="submitted")
+        sections, _ = monitor.build_sections([a, b, c], TODAY, [])
+        self.assertEqual([i["id"] for i in sections["waiting"]], ["b", "a", "c"])
+
+    def test_awaiting_line_counts_backlog_and_oldest_age(self):
+        items = [
+            make_item(id="o1", status="new", added=date(2026, 9, 3)),   # 30 days
+            make_item(id="o2", status="new", added=date(2026, 9, 23)),  # 10 days
+            make_item(id="f1", status="new", added=date(2026, 10, 1)),  # new this week
+        ]
+        sections, text = self._digest(items)
+        self.assertIn("Awaiting your call: 2 (oldest 30 days)", text)
+        self.assertEqual([i["id"] for i in sections["new_week"]], ["f1"])
+
+    def test_new_week_item_not_repeated_in_rolling_open(self):
+        item = make_item(id="r", status="new", deadline_kind="rolling", added=date(2026, 10, 1))
+        sections, _ = monitor.build_sections([item], TODAY, [])
+        self.assertEqual(len(sections["new_week"]), 1)
+        self.assertEqual(sections["rolling_open"], [])
+
+    def test_new_date_fields_normalized(self):
+        items = [make_item(decision_expected="2026-12-07", submitted_on="2026-10-17",
+                           status_updated="2026-11-09")]
+        monitor.normalize_item_dates(items)
+        self.assertEqual(items[0]["decision_expected"], date(2026, 12, 7))
+        self.assertEqual(items[0]["status_updated"], date(2026, 11, 9))
+
+
+class PageChangeNoiseTests(unittest.TestCase):
+    def _run(self, item, first, second):
+        state = {}
+        calls = iter([first, second])
+        fetch = lambda url: (next(calls), "live", 200, None)
+        monitor.check_pages([item], state, TODAY, False, fetch_fn=fetch)
+        changes, _, _ = monitor.check_pages([item], state, TODAY, False, fetch_fn=fetch)
+        return changes
+
+    def test_non_deadline_line_change_not_reported(self):
+        changes = self._run(make_item(id="x"), ["Old headline"], ["Old headline", "City Council votes on bike lanes"])
+        self.assertEqual(changes, [])
+
+    def test_deadline_line_change_reported_without_noise_lines(self):
+        changes = self._run(make_item(id="x"), ["Old headline"],
+                            ["Old headline", "Proposals due December 6 2026", "Agenda posted"])
+        self.assertEqual(len(changes), 1)
+        self.assertEqual(changes[0]["new_lines"], ["Proposals due December 6 2026"])
+
+    def test_pitch_desk_not_fetched_unless_priority(self):
+        calls = []
+        fetch = lambda url: (calls.append(url) or ["x"], "live", 200, None)
+        monitor.check_pages([make_item(id="p", category="pitch")], {}, TODAY, False, fetch_fn=fetch)
+        self.assertEqual(calls, [])
+        monitor.check_pages([make_item(id="q", category="pitch", priority=True)], {}, TODAY, False, fetch_fn=fetch)
+        self.assertEqual(len(calls), 1)
 
 
 if __name__ == "__main__":

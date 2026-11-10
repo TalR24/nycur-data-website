@@ -1,6 +1,6 @@
 # Opportunity monitor
 
-Last refreshed: Oct 3 2026.
+Last refreshed: Nov 10 2026.
 
 Weekly digest (built Saturday, read by the Sunday week-ahead routine) of Tal's private opportunities watch list (conferences, fellowships, grants, awards, civic seats). Sibling of `mention_monitor/`; it shares that monitor's premium-repo state checkout and Gmail SMTP conventions.
 
@@ -10,7 +10,7 @@ Reads `opportunities/watchlist.yaml` from the private `nycur-data-premium` repo 
 1. Drops items with status `skip`, `done`, `won` or `declined`, and items that require full-time leave.
 2. Re-checks each remaining item's official page for date or deadline changes (skipped with `--no-fetch`).
 3. Scores what is left against `opportunities/profile.md`.
-4. Builds an HTML and plain-text digest with these sections, in order: Your priorities; Deadlines announced or changed; Pursuing; Closing in the next 45 days; New this week; Windows opening soon; Pages that changed; Rolling and open (first week of the month only); Past deadline, update or retire.
+4. Builds an HTML and plain-text digest with these sections, in order: Your priorities; Deadlines announced or changed; Pursuing (pursue and drafting); Waiting on a decision (submitted items, sorted by `decision_expected`, shown as "decision expected <date>" or "awaiting decision" instead of days left); Closing in the next 45 days; New this week (only items added in the last 7 days; the older untriaged backlog is one line, "Awaiting your call: N (oldest X days)"); Windows opening soon; Pages that changed (only changed lines that read like a deadline or call status; non-priority pitch desks are not fetched); Rolling and open (first week of the month only); Past deadline, update or retire.
 
 Since Oct 17 2026 (`DIGEST_DELIVERY=file`) the radar no longer emails the digest: it writes `digests/YYYY-MM-DD.{html,txt,json}` to the premium repo, and the Sunday cloud routine sends it inside the one Sunday week-ahead email. If the write or push fails the digest is emailed directly, and `sunday_brief_fallback.yml` (16:30 UTC) emails the raw digests when the routine's `planning/briefs/<date>.md` marker is missing. With `DIGEST_DELIVERY=email` (the script default) a scheduled run emails even when nothing is flagged, so a missing email means a failure. A failed run sends "Opportunities radar run failed".
 
@@ -44,8 +44,10 @@ python3 opportunity_monitor/monitor.py \
 
 Flags: `--watchlist` and `--state-dir` (required), `--today YYYY-MM-DD`, `--no-fetch` (skip the network re-check), `--email` (deliver the digest: with `DIGEST_DELIVERY=file` it is left in the premium repo, otherwise it is emailed and needs the Gmail secrets as environment variables), `--out PATH` (write `PATH.html` and `PATH.txt` instead of `<state-dir>/digests/<date>.{html,txt}`).
 
-Tests (offline, no network; 54 tests as of Oct 3 2026):
+Tests (offline, no network; 64 tests as of Nov 10 2026):
 
 ```
 python3 -m unittest discover -s opportunity_monitor -p "test_monitor.py" -v
 ```
+
+Watch-list fields read by the digest besides the deadline fields: `status_updated`, `submitted_on`, `decision_expected` (schema in the watchlist.yaml header).
