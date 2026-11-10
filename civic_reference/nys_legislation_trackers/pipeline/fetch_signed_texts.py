@@ -53,6 +53,24 @@ def fetch_one(session, base):
     return True
 
 
+def ensure_marked_text(session, base):
+    """One law: fetch its text if the cache lacks it (need_fetch/fetch_one), convert, write cache/text_marked/{key}.txt.
+    Returns True when the marked text exists afterwards. The same steps run() takes per bill."""
+    key = "%d-%s" % (session, base)
+    out = os.path.join(CACHE, "text_marked", key + ".txt")
+    if os.path.exists(out):
+        return True
+    if need_fetch(session, key) and not fetch_one(session, base):
+        return False
+    try:
+        txt, _ = text_markup.convert(key, HERE)
+    except FileNotFoundError:
+        return False
+    os.makedirs(os.path.dirname(out), exist_ok=True)
+    open(out, "w").write(txt)
+    return True
+
+
 def run(session, limit=None):
     bills = signed_bills(session)
     if limit:

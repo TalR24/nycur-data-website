@@ -329,6 +329,12 @@ jobs:
             MSG="data: NYS bill index, session $SESSION"
           else
             git add "$NYS/data/duties" "$NYS/data/powers" "$NYS/data/effective_dates" "$NYS/data/deferred_long.json" "$NYS/data/chapter_index.json"
+            # every other output the ingest writes (nightly runbook step 5): the dropped log, the re-ask queue and its history,
+            # mechanical flags, the manual re-ask list and the skipped-long list stay in step with the duties committed above
+            for f in "$NYS/data/dropped" "$NYS/data/reask" "$NYS/data/mechanical_flags" "$NYS/data/reask_history.json" \
+                     "$NYS/data/reask_manual.json" "$NYS/pipeline/reask_manual.json" "$NYS/data/deferred_skipped.json"; do
+              if [ -e "$f" ]; then git add -A -- "$f"; fi
+            done
             # batch state files: a pending batch leaves them present (stage them); a collected one deletes them (stage the deletion)
             for f in "$NYS"/pipeline/batch_state*.json; do
               if git ls-files --error-unmatch "$f" >/dev/null 2>&1 || [ -f "$f" ]; then git add -A -- "$f"; fi
@@ -359,6 +365,12 @@ jobs:
             civic_reference/nys_legislation_trackers/data/powers/
             civic_reference/nys_legislation_trackers/data/effective_dates/
             civic_reference/nys_legislation_trackers/data/deferred_long.json
+            civic_reference/nys_legislation_trackers/data/deferred_skipped.json
+            civic_reference/nys_legislation_trackers/data/dropped/
+            civic_reference/nys_legislation_trackers/data/reask/
+            civic_reference/nys_legislation_trackers/data/mechanical_flags/
+            civic_reference/nys_legislation_trackers/data/reask_history.json
+            civic_reference/nys_legislation_trackers/data/reask_manual.json
             civic_reference/nys_legislation_trackers/pipeline/batch_state*.json
             civic_reference/nys_legislation_trackers/pipeline/canary_output.txt
             civic_reference/nys_legislation_trackers/pipeline/cache/api/

@@ -202,6 +202,112 @@ def relative_footers(files: list[Path]) -> list[Path]:
     return bad
 
 
+PREPARE_CAP = 150           # laws prepared (text fetched, packet emitted) per run, so a big signing week cannot stall the night
+GAP_DAYS = 10
+MAX_CHARS = 120_000         # same limit as extract_duties.MAX_CHARS: longer laws are deferred and get no packet
+TEXT_MARKED = HERE / "cache" / "text_marked"
+
+
+def _excluded_keys() -> set[str]:
+    """Pilot laws, laws agents skipped, and laws over the length limit: none of them gets a packet from the nightly draw."""
+    ex = pilot_keys() | deferred_skipped()
+    dl = DATA / "deferred_long.json"
+    if dl.exists():
+        ex |= {x["key"] for x in json.load(open(dl))["laws"]}
+    return ex
+
+
+def laws_lacking_packet(sessions=SESSIONS, data_dir: Path | None = None, packets_dir: Path | None = None,
+                        text_dir: Path | None = None, excluded: set[str] | None = None) -> list[dict]:
+    """Signed laws (data/signed/{Y}.json) with no packet and no answer. Each is returned as its law dict plus "has_text"."""
+    data_dir, packets_dir, text_dir = data_dir or DATA, packets_dir or PACKETS, text_dir or TEXT_MARKED
+    excluded = _excluded_keys() if excluded is None else excluded
+    out = []
+    for y in sessions:
+        sg = data_dir / "signed" / f"{y}.json"
+        if not sg.exists():
+            continue
+        for law in json.load(open(sg)):
+            k = law["key"]
+            if k in excluded or re.sub(r"[A-Z]$", "", k) in excluded:
+                continue
+            d = packets_dir / str(y)
+            if (d / f"{k}.txt").exists() or (d / "results" / f"{k}.json").exists():
+                continue
+            tp = text_dir / f"{k}.txt"
+            if tp.exists() and len(tp.read_text()) > MAX_CHARS:
+                continue                                  # deferred long, by rule
+            out.append(dict(law, has_text=tp.exists()))
+    return out
+
+
+def prepare(cap: int = PREPARE_CAP, fetch_text=None, emit=None, **kw) -> dict:
+    """Self-heal before the draw: for signed laws without a packet, fetch the text if missing (OpenLeg only, never a model) and emit
+    their packets. fetch_text(session, base_print_no) -> bool and emit(session, [law dicts]) -> int are injectable for tests.
+    A failure on one law is logged and skipped; nothing here raises into the draw."""
+    if fetch_text is None:
+        import fetch_signed_texts
+        fetch_text = fetch_signed_texts.ensure_marked_text
+    if emit is None:
+        emit = _emit_packets
+    need = laws_lacking_packet(**kw)
+    todo, failed = need[:cap], 0
+    ready: dict[int, list[dict]] = {}
+    for law in todo:
+        ok = law["has_text"]
+        if not ok:
+            try:
+                ok = fetch_text(law["session"], law["print_no"])
+            except Exception as e:           # network, key, API: log and carry on with what exists
+                print("prepare: %s could not be fetched: %s" % (law["key"], str(e)[:100]), file=sys.stderr)
+                ok = False
+        if ok:
+            ready.setdefault(law["session"], []).append(law)
+        else:
+            failed += 1
+    made = 0
+    for y, laws in sorted(ready.items()):
+        try:
+            made += emit(y, laws)
+        except Exception as e:
+            print("prepare: packet emit failed for %d: %s" % (y, str(e)[:100]), file=sys.stderr)
+            failed += len(laws)
+    res = {"lacking": len(need), "tried": len(todo), "prepared": made, "not_fetched": failed, "left_over_cap": max(len(need) - cap, 0)}
+    print("prepare: %d laws prepared, %d could not be fetched or emitted (%d lacked a packet, cap %d)" % (made, failed, len(need), cap))
+    return res
+
+
+def _emit_packets(session: int, laws: list[dict]) -> int:
+    """Packets for exactly these laws, with the production emit code (version-2 prompt), under cache/packets/{Y}/."""
+    import extract_duties as ed
+    keys = {l["key"] for l in laws}
+    todo = []
+    for law in ed.signed_laws([session]):
+        if law["key"] in keys:
+            text = (ed.TEXT_MARKED / (law["key"] + ".txt")).read_text()
+            if len(text) <= ed.MAX_CHARS:
+                todo.append((law, text))
+    if not todo:
+        return 0
+    d = PACKETS / str(session)
+    (d / "results").mkdir(parents=True, exist_ok=True)
+    ed.emit_absolute_packets(d, todo, fixed_prompt=ed.build_prompt(2)[0], render=ed.render_variable_prompt, schema=ed.SCHEMA_V2)
+    return len(todo)
+
+
+def gap_problems(today=None, days: int = GAP_DAYS, **kw) -> list[str]:
+    """Signed laws older than `days` days with no packet and no answer. Skipped cleanly where the packet cache is absent (CI)."""
+    from datetime import date, timedelta
+    packets_dir = kw.get("packets_dir") or PACKETS
+    if not packets_dir.exists():
+        return []
+    cutoff = ((today or date.today()) - timedelta(days=days)).isoformat()
+    old = [l for l in laws_lacking_packet(**kw) if (l.get("signed_date") or "9999") <= cutoff]
+    if not old:
+        return []
+    return ["%d signed laws older than %d days have no packet and no answer (first %s, signed %s)" % (len(old), days, old[0]["key"], old[0]["signed_date"])]
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--chunks", type=int, default=30, help="chunks this run (one subagent each)")
@@ -209,7 +315,23 @@ def main() -> None:
     ap.add_argument("--max-laws", type=int, default=30)
     ap.add_argument("--reask", type=int, metavar="N", help="draw up to N laws from data/reask/*.json as re-ask packets (Max path; default 100 with --extract); their chunks come first")
     ap.add_argument("--extract", action="store_true", help="with --reask: also fill the remaining chunks with never-answered laws")
+    ap.add_argument("--no-prepare", action="store_true", help="skip fetching texts and emitting packets for newly signed laws")
+    ap.add_argument("--prepare-only", action="store_true", help="prepare, print, and stop: no draw, no batch consumed")
+    ap.add_argument("--check", action="store_true", help="exit 1 if signed laws older than 10 days have no packet and no answer (skips without the packet cache)")
     a = ap.parse_args()
+    if a.check:
+        probs = gap_problems()
+        for p in probs:
+            print("GAP:", p)
+        print("%d gap problem(s)" % len(probs) if probs else "no packet gap (or no local packet cache)")
+        sys.exit(1 if probs else 0)
+    if not a.no_prepare or a.prepare_only:
+        try:
+            prepare()
+        except Exception as e:               # preparation never stops the night's draw
+            print("prepare failed, drawing from what exists: %s" % str(e)[:120], file=sys.stderr)
+    if a.prepare_only:
+        return
     if a.reask is None and a.extract:
         a.reask = 100
     if a.reask:

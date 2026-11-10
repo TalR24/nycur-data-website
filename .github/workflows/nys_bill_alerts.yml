@@ -1,7 +1,8 @@
 name: NYS bill alerts (hourly)
 
-# Per-bill alerts for members. Reads the Open Legislation change feed since data/updates_state.json, emails each member who
-# follows a changed bill ONE message per run, records what was sent in the PRIVATE premium repo, then advances the cursor.
+# Per-bill alerts for members. Reads the Open Legislation change feed since the cursor (nys_bill_alerts_cursor.json in the
+# premium repo; the first run falls back to the old public data/updates_state.json), emails each member who
+# follows a changed bill ONE message per run, records what was sent and the advanced cursor in ONE premium commit (no public commits).
 # No model calls and no Anthropic key. Follows and sent-event state live in nycur-data-premium (emails are PII).
 # Failure policy: no continue-on-error on the send step. If any send or fetch fails the run turns red, the sends that
 # worked are still recorded (so a retry repeats nothing), and the cursor stays put so the next hour retries the rest.
@@ -67,11 +68,14 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add civic_reference/nys_legislation_trackers/data/nys_bill_alerts_state.json
+          # either file may not exist yet (first run, or a run that stopped before writing), so add only what is there
+          for f in nys_bill_alerts_state.json nys_bill_alerts_cursor.json; do
+            if [ -f "civic_reference/nys_legislation_trackers/data/$f" ]; then git add "civic_reference/nys_legislation_trackers/data/$f"; fi
+          done
           if git diff --cached --quiet; then
-            echo "Sent-event state unchanged."
+            echo "Sent-event state and cursor unchanged."
           else
-            git commit -m "NYS bill alerts: sent-event state"
+            git commit -m "NYS bill alerts: sent-event state and cursor"
             # the premium Worker can commit a member's follow between the clone and this push
             pushed=0
             for attempt in 1 2 3 4 5; do
@@ -79,22 +83,4 @@ jobs:
               sleep $((attempt * 10))
             done
             if [ "$pushed" != 1 ]; then echo "::error::premium push failed after 5 attempts"; exit 1; fi
-          fi
-
-      - name: Commit the cursor (public repo)
-        if: ${{ success() && !inputs.dry_run }}
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add "$NYS"/data/updates_state.json
-          if git diff --cached --quiet; then
-            echo "Cursor unchanged."
-          else
-            git commit -m "NYS bill alerts: cursor"
-            pushed=0
-            for attempt in 1 2 3 4 5; do
-              if git -c rebase.autoStash=true pull --rebase origin main && git push; then pushed=1; break; fi
-              sleep $((attempt * 10))
-            done
-            if [ "$pushed" != 1 ]; then echo "::error::push failed after 5 attempts"; exit 1; fi
           fi

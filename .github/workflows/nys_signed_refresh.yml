@@ -1,0 +1,72 @@
+name: NYS signed-law index refresh (weekly)
+
+# data/signed/{session}.json lists the laws the duty extraction reads. The daily index refresh (nys_index_refresh.yml) keeps
+# data/bills/{session}.json current but never touched the signed index, so laws signed after Oct 7 2026 never reached
+# extraction (review of Nov 10 2026, finding 2). This job appends every newly signed law from the bill index to the signed
+# index, using only the Open Legislation API. No model calls and no Anthropic key.
+# Concurrency: this group is separate from nys-extract on purpose. Sharing it would let a multi-hour fetch_bills run queue
+# this job and GitHub keeps only one pending run per group. A manual fetch_bills run for the same session can therefore race
+# this job; the push loop below then exits non-zero, which is the expected outcome in that case (rerun this workflow).
+# Staleness check: the first check only warns (the index may be a week behind); the one after the refresh fails the run if a
+# signed index still lags its bill index by more than 10 days. Schedule drift is harmless: nothing here is timed against
+# another job, the job reads whatever bill index is on main.
+on:
+  schedule:
+    - cron: "27 11 * * 1"
+  workflow_dispatch:
+
+concurrency:
+  group: nys-signed-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: write
+    env:
+      TZ: America/New_York
+      NYS_OPENLEG_KEY: ${{ secrets.NYS_OPENLEG_KEY }}
+      NYS: civic_reference/nys_legislation_trackers
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Staleness before the refresh (warns only)
+        run: |
+          cd "$NYS"/pipeline
+          python3 refresh_signed_index.py --check || echo "::warning::signed index was stale before this refresh"
+
+      - name: Refresh the signed index
+        run: |
+          cd "$NYS"/pipeline
+          python3 refresh_signed_index.py
+
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add "$NYS"/data/signed "$NYS"/data/signed_state.json
+          if git diff --cached --quiet; then
+            echo "Nothing changed."
+          else
+            git commit -m "NYS signed-law index: weekly refresh from the bill index"
+            pushed=0
+            for attempt in 1 2 3 4 5; do
+              if git -c rebase.autoStash=true pull --rebase origin main && git push; then pushed=1; break; fi
+              sleep $((attempt * 10))
+            done
+            if [ "$pushed" != 1 ]; then echo "::error::push failed after 5 attempts"; exit 1; fi
+          fi
+
+      # after the push on purpose: a law that keeps coming back without a chapter must not discard the laws this run did add
+      - name: Staleness after the refresh (fails the run)
+        run: |
+          cd "$NYS"/pipeline
+          python3 refresh_signed_index.py --check

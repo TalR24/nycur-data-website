@@ -1,5 +1,8 @@
 """Plain script: python3 tests/test_effective_date_parts.py  ->  'N passed, M failed'. E1 Part-level dates, E2 section-bound repeal, E3 lookups.
 No network: chapter_lookup is only used through cached/local data."""
+import os as _os, sys as _sys
+if not _os.path.isdir(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "cache", "text_marked")):      # CI has no cached law texts (not committed)
+    print("0 passed, 0 failed (skipped: cache/text_marked is not present here)"); _sys.exit(0)
 import json, os, sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, ".."))

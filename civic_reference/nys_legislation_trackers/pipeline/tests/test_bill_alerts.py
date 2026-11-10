@@ -60,6 +60,31 @@ def follows():
 
 
 CASES += [(roundtrip(), True), (follows(), True)]
+
+
+def cursor_roundtrip():
+    """The cursor is read from the premium dir first, falls back to the old public path, and is written only to the premium dir."""
+    import poll_updates
+    with tempfile.TemporaryDirectory() as d, tempfile.TemporaryDirectory() as old_dir:
+        old = os.path.join(old_dir, "updates_state.json")
+        orig = poll_updates.STATE
+        poll_updates.STATE = old
+        try:
+            ok = s.read_cursor(d) is None
+            json.dump({"cursor": "2026-11-01T00:00:00"}, open(old, "w"))
+            ok = ok and s.read_cursor(d) == "2026-11-01T00:00:00"                      # first run: old path
+            new = s.cursor_path(d)
+            os.makedirs(os.path.dirname(new))
+            json.dump({"cursor": "2026-11-10T09:00:00"}, open(new, "w"))
+            ok = ok and s.read_cursor(d) == "2026-11-10T09:00:00"                      # then the premium path wins
+            ok = ok and new.endswith("nys_bill_alerts_cursor.json") and s.cursor_path(None) is None
+        finally:
+            poll_updates.STATE = orig
+        return ok
+
+
+CASES += [(cursor_roundtrip(), True)]
+
 fails = [i for i, (got, want) in enumerate(CASES) if got != want]
 for i in fails:
     print("FAIL case", i, "got", repr(CASES[i][0]), "want", repr(CASES[i][1]))

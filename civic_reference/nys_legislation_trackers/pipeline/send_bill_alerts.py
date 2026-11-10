@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Per-bill NYS alerts for members, near real time. No model calls.
 
-Reads the Open Legislation change feed since the cursor (data/updates_state.json), keeps the bills a member follows,
+Reads the Open Legislation change feed since the cursor (premium repo nys_bill_alerts_cursor.json; falls back to data/updates_state.json on the first run), keeps the bills a member follows,
 fetches each changed bill (view=no_fulltext), turns every new action into one plain line ("Passed the Senate, 61-0
 (Oct 7)", "Moved to the Codes committee"), and sends ONE email per member per run through Gmail.
 
@@ -30,6 +30,7 @@ FMT = poll_updates.FMT
 PREMIUM_REL = os.path.join("civic_reference", "nys_legislation_trackers", "data")
 FOLLOWS_NAME = "nys_bill_follows.csv"
 STATE_NAME = "nys_bill_alerts_state.json"
+CURSOR_NAME = "nys_bill_alerts_cursor.json"       # Nov 10 2026: the cursor lives in the premium repo, not in public commits
 MANAGE_URL = "https://premium.nycuriosity.com/civic_reference/nys_legislation_trackers/following/"
 LAG_DAYS = 1          # actions dated up to a day before the window start still count (the feed can lag the action date)
 KEEP_DAYS = 90        # sent-event ids older than this are dropped from the state
@@ -200,6 +201,20 @@ def send(msg_to, subject, body):
         s.send_message(msg)
 
 
+def cursor_path(pdir):
+    """Where the cursor is kept: the premium repo, next to the sent-event state. None without a premium dir."""
+    return os.path.join(pdir, PREMIUM_REL, CURSOR_NAME) if pdir else None
+
+
+def read_cursor(pdir):
+    """The saved cursor string. Reads the premium file first and falls back to the old public path
+    (data/updates_state.json) until the first run has written the new one. None if neither exists."""
+    for p in (cursor_path(pdir), poll_updates.STATE):
+        if p and os.path.exists(p):
+            return json.load(open(p))["cursor"]
+    return None
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--days", type=int)
@@ -224,8 +239,8 @@ def main():
     now = dt.datetime.now().replace(microsecond=0)         # the machine and the feed both run on Eastern time
     if a.days:
         start = now - dt.timedelta(days=a.days)
-    elif os.path.exists(poll_updates.STATE):
-        start = dt.datetime.strptime(json.load(open(poll_updates.STATE))["cursor"], FMT)
+    elif read_cursor(pdir):
+        start = dt.datetime.strptime(read_cursor(pdir), FMT)
     else:
         start = now - dt.timedelta(days=1)
     since_date = (start - dt.timedelta(days=LAG_DAYS)).date().isoformat()
@@ -287,7 +302,7 @@ def main():
         print("%d failure(s): cursor not advanced; sent events are recorded so a retry repeats nothing" % failures)
         sys.exit(1)
     json.dump({"cursor": now.strftime(FMT), "last_run_updates": len(changed), "last_run_bills": len(changed)},
-              open(poll_updates.STATE, "w"), indent=1)
+              open(cursor_path(pdir), "w"), indent=1)
     print("cursor advanced to %s; %d emails sent" % (now.strftime(FMT), len(per_member)))
 
 

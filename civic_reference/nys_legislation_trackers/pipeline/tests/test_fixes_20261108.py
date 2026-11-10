@@ -1,4 +1,7 @@
 """Nov 8 2026 night (AB1-AB3). Asserts the gate rule on the cached record; dry run counts over stored ids, cap 40 per rule."""
+import os as _os, sys as _sys
+if not _os.path.isdir(_os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "..", "cache", "text_marked")):      # CI has no cached law texts (not committed)
+    print("0 passed, 0 failed (skipped: cache/text_marked is not present here)"); _sys.exit(0)
 import sys, json, pathlib
 HERE = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(HERE))
