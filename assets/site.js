@@ -60,16 +60,16 @@
   styleEl.textContent =
     '.sitenav{background:#170C03;border-top:1px solid #2E1C0C;border-bottom:1px solid #2E1C0C;padding:0 clamp(20px,5vw,48px);}' +
     '.sitenav-inner{max-width:1100px;margin:0 auto;display:flex;align-items:center;gap:10px;min-height:52px;flex-wrap:wrap;padding:8px 0;}' +
-    '.sitenav .nav-pill,.sitenav-btn{font-family:\'JetBrains Mono\',ui-monospace,monospace;font-size:0.8rem;font-weight:600;color:#E7DDCE;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.22);border-radius:20px;padding:7px 16px;text-decoration:none;white-space:nowrap;cursor:pointer;transition:all 0.15s;display:inline-flex;align-items:center;gap:6px;}' +
+    '.sitenav .nav-pill,.sitenav-btn{font-family: var(--b-sans);font-size:0.8rem;font-weight:600;color:#E7DDCE;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.22);border-radius:20px;padding:7px 16px;text-decoration:none;white-space:nowrap;cursor:pointer;transition:all 0.15s;display:inline-flex;align-items:center;gap:6px;}' +
     '.sitenav .nav-pill:hover,.sitenav-btn:hover,.sitenav-item.open .sitenav-btn{background:#C84609;border-color:#C84609;color:#fff;}' +
     '.sitenav-item{position:relative;}' +
     '.sitenav-caret{font-size:0.6rem;}' +
     '.sitenav-menu{display:none;position:absolute;top:calc(100% + 6px);left:0;z-index:200;background:#ffffff;border:1px solid #E7DDCE;border-radius:12px;box-shadow:0 10px 28px rgba(26,18,8,0.18);padding:10px;min-width:310px;max-height:72vh;overflow-y:auto;}' +
     '.sitenav-menu--tools{max-height:none;overflow:visible;}' +
     '.sitenav-item.open .sitenav-menu{display:block;}' +
-    '.sitenav-menu a{display:block;padding:7px 10px;border-radius:6px;color:#4A3B2C;font-family:\'JetBrains Mono\',ui-monospace,monospace;font-size:0.74rem;font-weight:600;text-decoration:none;white-space:normal;line-height:1.4;}' +
+    '.sitenav-menu a{display:block;padding:7px 10px;border-radius:6px;color:#4A3B2C;font-family: var(--b-sans);font-size:0.74rem;font-weight:600;text-decoration:none;white-space:normal;line-height:1.4;}' +
     '.sitenav-menu a:hover{background:#FAF6F1;color:#C84609;}' +
-    '.menu-cat{font-family:\'JetBrains Mono\',ui-monospace,monospace;font-size:0.62rem;font-weight:600;text-transform:uppercase;letter-spacing:0.09em;color:#A44D00;padding:10px 10px 4px;}' +
+    '.menu-cat{font-family: var(--b-sans);font-size:0.62rem;font-weight:600;text-transform:uppercase;letter-spacing: normal;color:#A44D00;padding:10px 10px 4px;}' +
     '.menu-cat:first-child{padding-top:4px;}' +
     '.sitenav-menu .menu-seeall{color:#C84609;font-size:0.7rem;padding-top:3px;padding-bottom:9px;border-bottom:1px solid #F2EBE1;border-radius:0;margin-bottom:2px;}' +
     '.sitenav-menu .menu-all{color:#C84609;border-top:1px solid #E7DDCE;border-radius:0 0 8px 8px;margin-top:6px;padding-top:10px;}' +
@@ -88,7 +88,7 @@
     '.sitenav-spacer{flex:1;}' +
     '.relwork{padding:8px clamp(20px,5vw,48px) 44px;}' +
     '.relwork-inner{max-width:900px;margin:0 auto;}' +
-    '.relwork-label{font-family:\'JetBrains Mono\',ui-monospace,monospace;font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;color:#A44D00;margin-bottom:14px;}' +
+    '.relwork-label{font-family: var(--b-sans);font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing: normal;color:#A44D00;margin-bottom:14px;}' +
     // always one row (Tal, Sep 24 2026): cards share the width; 4+ cards get
     // tighter type; on phones the single row scrolls sideways instead of wrapping
     '.relwork-grid{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:14px;}' +
@@ -98,9 +98,9 @@
     '@media (max-width:640px){.relwork-grid,.relwork-grid.dense{grid-auto-columns:minmax(210px,78%);overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:8px;-webkit-overflow-scrolling:touch;}.relwork-card{scroll-snap-align:start;}}' +
     '.relwork-card{background:#fff;border:1px solid #E7DDCE;border-radius:10px;padding:16px 18px;display:flex;flex-direction:column;gap:6px;text-decoration:none;box-shadow:0 1px 3px rgba(26,18,8,0.08);transition:border-color 0.2s,box-shadow 0.2s,transform 0.15s;}' +
     '.relwork-card:hover{border-color:#C84609;transform:translateY(-2px);box-shadow:0 4px 16px rgba(207,75,12,0.10);}' +
-    '.relwork-tag{font-family:\'JetBrains Mono\',ui-monospace,monospace;font-size:0.62rem;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:#A44D00;}' +
-    '.relwork-title{font-family:\'JetBrains Mono\',ui-monospace,monospace;font-size:0.85rem;font-weight:700;color:#1A1208;line-height:1.35;}' +
-    '.relwork-cta{font-family:\'JetBrains Mono\',ui-monospace,monospace;font-size:0.72rem;font-weight:600;color:#C84609;margin-top:auto;padding-top:4px;}' +
+    '.relwork-tag{font-family: var(--b-sans);font-size:0.62rem;font-weight:600;text-transform:uppercase;letter-spacing: normal;color:#A44D00;}' +
+    '.relwork-title{font-family: var(--b-display);font-size:0.85rem;font-weight:700;color:#1A1208;line-height:1.35;}' +
+    '.relwork-cta{font-family: var(--b-sans);font-size:0.72rem;font-weight:600;color:#C84609;margin-top:auto;padding-top:4px;}' +
     /* The footer nav is a flex row with no wrap in every page's local CSS, so
        on a 360px screen it measures 490px and pushes the whole page into
        horizontal scroll. Patched here because site.js is the one stylesheet
