@@ -1,0 +1,40 @@
+# Reruns the failed jobs of a few workflows ONCE when they fail on attempt 1.
+# Origin (papercuts log): runner-not-acquired Oct 5 2026, GitHub Pages 503
+# Nov 2 2026, Pages build timeout Nov 9 2026; each passed on a manual rerun.
+#
+# Why each listed workflow is safe to rerun:
+#   pages-build-deployment: GitHub's built-in Pages deploy (no file in the
+#     repo); it republishes the same commit, so a rerun is idempotent.
+#   Site Health: read-only checks of the live sites; any email it sends is
+#     for ERROR findings only, and a rerun after a transient failure is the
+#     intended behaviour.
+#   Daily static snapshots: regenerates static HTML from site data; no API
+#     key, no email.
+# Never listed: claude_backfill and nys_extract (they bill the Anthropic API)
+# and any workflow that sends a digest, which includes Mention Monitor (it
+# emails its digest directly when its state push fails). Site Health emails
+# only when a check fails, so a transient first failure can still send one.
+# Only attempt 1 is rerun, so a failure of attempt 2 never loops.
+name: Rerun transient failures
+on:
+  workflow_run:
+    workflows:
+      - "pages-build-deployment"
+      - "Site Health"
+      - "Daily static snapshots"
+    types: [completed]
+permissions:
+  actions: write
+jobs:
+  rerun:
+    if: github.event.workflow_run.conclusion == 'failure' && github.event.workflow_run.run_attempt == 1
+    runs-on: ubuntu-latest
+    steps:
+      - name: Rerun the failed jobs once
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+          REPO: ${{ github.repository }}
+        run: |
+          sleep 60
+          gh run rerun "$RUN_ID" --failed --repo "$REPO"

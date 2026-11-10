@@ -26,6 +26,7 @@ import argparse
 import json
 import re
 import sys
+import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -187,11 +188,18 @@ AI_CRAWLERS = ("GPTBot/1.2", "ClaudeBot/1.0", "PerplexityBot/1.0")
 
 
 def fetch(session, url, ua="nycuriosity-seo-check/1.0"):
-    try:
-        r = session.get(url, timeout=25, headers={"User-Agent": ua})
-        return r.status_code, r.text
-    except Exception as e:  # noqa: BLE001
-        return None, str(e)
+    # A 5xx or a connection error is retried up to 2 more times (GitHub Pages
+    # served one 503 on Nov 2 2026 and the page was 200 minutes later); a 4xx
+    # returns at once.
+    for attempt in range(3):
+        try:
+            r = session.get(url, timeout=25, headers={"User-Agent": ua})
+            status, body = r.status_code, r.text
+        except Exception as e:  # noqa: BLE001
+            status, body = None, str(e)
+        if (status is not None and status < 500) or attempt == 2:
+            return status, body
+        time.sleep(2 * (attempt + 1))
 
 
 def check_site_live(key, repo=None, f=None):
