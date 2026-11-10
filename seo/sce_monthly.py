@@ -34,7 +34,7 @@ from datetime import date, timedelta
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from common import ALERT_TO, WORKSPACE, send_email  # noqa: E402
+from common import ALERT_TO, WORKSPACE, send_email, write_asks  # noqa: E402
 import gsc_pull  # noqa: E402
 import report_email  # noqa: E402
 from report_email import plural  # noqa: E402
@@ -123,8 +123,8 @@ def health_actions(health, review, month):
             "tag": "Fix first" if hard else "Check", "who": "Claude Code",
             "title": f"Site health, {s['name']}: {plural(n, 'hard failure' if hard else 'warning')}",
             "why": ("site_health.py counts these as broken on the live site." if hard else
-                    "site_health.py flags these for a look; some are false alarms (bot-blocked links, symbols "
-                    "that read as dashes)."),
+                    "site_health.py flags these for a look. Claude Code checks each one against the page and "
+                    "tells you which are real."),
             "findings": s["findings"],
             "steps": ["Paste the prompt into Claude Code.",
                       "Approve the fixes it proposes" + ("." if hard else ", or tell it which flags to ignore."),
@@ -227,7 +227,10 @@ def main():
     ap.add_argument("--changes", help="seo_reports/changes.md (default: the premium repo copy if present)")
     ap.add_argument("--out", help="folder for the files (default: nycur-data-premium/seo_reports/)")
     ap.add_argument("--email", action="store_true")
-    ap.add_argument("--preview", action="store_true", help="email Tal only, not the SCE inbox")
+    ap.add_argument("--preview", action="store_true",
+                    help="email Tal only, not the SCE inbox; the subject starts with PREVIEW and the body says the team has not received it")
+    ap.add_argument("--premium", help="premium repo checkout: the asks go to planning/inbox/asks_<YYYY-MM>.md there "
+                                      "(the sent-email archive uses $SENT_ARCHIVE_DIR)")
     args = ap.parse_args()
 
     today = date.today()
@@ -270,10 +273,27 @@ def main():
     sys.stdout.write(md)
     print(f"\nwrote {stem}.md, {stem}.json and {stem}.html", file=sys.stderr)
 
+    if args.premium:
+        # one line per action for the Sunday routine (TODO_tal.md format); a preview run writes them too, duplicates are skipped
+        written = write_asks(Path(args.premium) / "planning" / "inbox" / f"asks_{month}.md",
+                             [(x["title"], "SCE monthly report") for x in plan["actions"]],
+                             f"{today.strftime('%b')} {today.day} SCE monthly", today)
+        print(f"wrote {written} asks to {args.premium}/planning/inbox/asks_{month}.md", file=sys.stderr)
+
     if args.email:
         label = date.fromisoformat(month + "-01").strftime("%B %Y")
-        send_email(f"SCE monthly report, {label}: {health['summary'] or 'no health report'}, "
-                   f"{plural(n, 'action')}", md, to=[ALERT_TO] if args.preview else RECIPIENTS, html=page)
+        subject = (f"SCE monthly report, {label}: {health['summary'] or 'no health report'}, "
+                   f"{plural(n, 'action')}")
+        if args.preview:
+            banner = ("PREVIEW: the State Capacity Ecosystem team inbox has NOT received this report. Run the "
+                      "'SCE monthly report' workflow again with preview off to send it.")
+            subject = "PREVIEW, SCE team not sent: " + subject
+            md = banner + "\n\n" + md
+            page = page.replace("<body>", "<body><p style=\"font-weight:bold;color:#b00020\">" + html.escape(banner) + "</p>", 1) \
+                if "<body>" in page else f"<p><b>{html.escape(banner)}</b></p>" + page
+        send_email(subject, md, to=[ALERT_TO] if args.preview else RECIPIENTS, html=page,
+                   archive_slug="sce_monthly_PREVIEW" if args.preview else "sce_monthly",
+                   role="Tal only (preview)" if args.preview else "Tal and the SCE team inbox")
 
 
 if __name__ == "__main__":

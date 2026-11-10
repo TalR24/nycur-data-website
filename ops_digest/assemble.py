@@ -15,7 +15,8 @@ written by the Actions, or <source>.md written by cloud routines:
     <blank line>
     <plain-text body: CAPS headings, numbered TO DO items, dashed prompt blocks>
 
-The email opens with "Needs you", "Did not report" (expected sources with no
+The tracker refresh routine's report is read from ops_digest/tracker_refresh_report.md in the public repo
+(never moved or filed). The email opens with "Needs you", "Did not report" (expected sources with no
 file, which is how a silent routine failure shows up) and "Failed Action runs
 since the last digest", then every section in order.
 
@@ -38,11 +39,11 @@ from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "seo"))
-from common import send_email  # noqa: E402
+from common import archive_sent, extract_asks, send_email, write_asks  # noqa: E402
 
-EXPECTED = ["seo", "trackers_quality", "block_party_quality", "fiscal_drafts", "copy_currency", "brand_qa"]
+EXPECTED = ["seo", "trackers_quality", "trackers_refresh", "block_party_quality", "fiscal_drafts", "copy_currency", "brand_qa"]
 LABELS = {"seo": "SEO report", "trackers_quality": "Legislation trackers quality report",
-          "block_party_quality": "Block Party quality report", "fiscal_drafts": "Fiscal tracker drafts",
+          "trackers_refresh": "Tracker refresh report", "block_party_quality": "Block Party quality report", "fiscal_drafts": "Fiscal tracker drafts",
           "copy_currency": "Copy currency review", "brand_qa": "Brand QA"}
 REPOS = [("TalR24/nycur-data-website", "GITHUB_TOKEN"),
          ("TalR24/nycur-data-premium", "PREMIUM_PUSH_TOKEN"),
@@ -51,7 +52,7 @@ REPOS = [("TalR24/nycur-data-website", "GITHUB_TOKEN"),
 SKIP_WORKFLOWS = ("pages-build-deployment", "pages build and deployment")
 # Expected sources that cannot report yet; shown with the reason instead of as a failure (audit A3, Oct 18 2026)
 SETUP_PENDING = {"block_party_quality": "no file; until the PREMIUM_PUSH_TOKEN secret exists in block-party-studio/resolution_engine this is expected (TODO_tal.md), after that check its monthly-quality-report run"}
-DASHES = re.compile(r"^-{10,}\s*$")
+DASHES = re.compile(r"^-{5,}\s*$")
 URL = re.compile(r"(https?://[^\s<>\"')]+)")
 
 
@@ -155,6 +156,26 @@ def load_sections(pending):
     return secs
 
 
+REFRESH_REPORT = Path(__file__).resolve().parent / "tracker_refresh_report.md"
+REFRESH_MAX_AGE_DAYS = 35
+
+
+def load_refresh_report(today, path=None):
+    """The monthly tracker refresh routine writes this file into the PUBLIC repo (counts and validator lines
+    only, see .github/tracker_refresh_routine_prompt.md, Reporting). Returns a section dict, or None when the
+    file is missing, has no 'Report date:' line, or is older than 35 days (then it shows under Did not report)."""
+    path = Path(path or REFRESH_REPORT)
+    if not path.exists():
+        return None
+    raw = path.read_text(encoding="utf-8")
+    m = re.search(r"(?m)^Report date:\s*(\d{4}-\d{2}-\d{2})", raw)
+    if not m or (today - date.fromisoformat(m.group(1))).days > REFRESH_MAX_AGE_DAYS:
+        return None
+    subject, needs, body = parse_md(raw)
+    return {"key": "trackers_refresh", "title": subject or LABELS["trackers_refresh"], "needs": needs,
+            "html": text_to_html(body), "text": body}
+
+
 def ordered(secs):
     keys = [k for k in EXPECTED if k in secs] + sorted(k for k in secs if k not in EXPECTED)
     return [secs[k] for k in keys]
@@ -255,13 +276,36 @@ def git(premium, *args):
     return subprocess.run(["git", "-C", str(premium), *args], check=True)
 
 
-def file_sent(premium, today):
+def build_extras(secs, subject, text, today):
+    """Files for the premium repo that go in the same commit as the filed sections: the exact digest body
+    under planning/sent/ and one line per ask under planning/inbox/asks_<YYYY-MM>.md (read by the Sunday
+    routine). Returns (sent_body, asks) where asks is [(title, where)]."""
+    asks = []
+    for sec in secs:
+        if sec["needs"]:
+            found = extract_asks(sec["text"]) or [sec["title"]]  # no numbered list: the section's own title is the ask
+            asks += [(a, LABELS.get(sec["key"], sec["title"])) for a in found]
+    return text, asks
+
+
+def write_extras(premium, subject, text, asks, today):
+    """Write the archive and asks files under premium. Returns the two paths (asks path is None when no asks)."""
+    month = today.strftime("%Y-%m")
+    sent_path = archive_sent(subject, text, "Tal (monthly ops digest)", "monthly_ops_digest",
+                             dest_dir=Path(premium) / "planning" / "sent",
+                             when=datetime.combine(today, datetime.now(timezone.utc).time(), tzinfo=timezone.utc))
+    asks_path = Path(premium) / "planning" / "inbox" / f"asks_{month}.md"
+    n = write_asks(asks_path, asks, f"{today.strftime('%b')} {today.day} ops digest", today)
+    return sent_path, (asks_path if n else None), n
+
+
+def file_sent(premium, today, extras=None):
     """Move the sections that were just sent into sent/YYYY-MM/ and push. Each attempt starts from a fresh
     origin/main, so a section that landed while the digest ran is left in pending/ for next month instead of
     breaking the rebase (audit round 2, A2-02)."""
     pend = Path(premium) / "ops_digest" / "pending"
     names = [f.name for f in sorted(pend.iterdir()) if not f.name.startswith(".")]
-    if not names:
+    if not names and not extras:
         return 0
     month = today.strftime("%Y-%m")
     git(premium, "config", "user.name", "github-actions[bot]")
@@ -277,9 +321,14 @@ def file_sent(premium, today):
                 if (pend / n).exists():
                     git(premium, "mv", "-f", f"ops_digest/pending/{n}", f"ops_digest/sent/{month}/{n}")
                     moved += 1
-            if not moved:
+            if extras:  # written after the reset so a retry starts clean
+                sent_path, asks_path, _ = write_extras(premium, *extras)
+                git(premium, "add", "--", str(sent_path.relative_to(premium)))
+                if asks_path:
+                    git(premium, "add", "--", str(asks_path.relative_to(premium)))
+            elif not moved:
                 return 0
-            git(premium, "commit", "-m", f"Ops digest {month}: file sent sections")
+            git(premium, "commit", "-m", f"Ops digest {month}: file sent sections, archive and asks")
             git(premium, "push", "origin", "HEAD:main")
             return moved
         except subprocess.CalledProcessError:
@@ -295,6 +344,7 @@ def main():
     ap.add_argument("--dry-run", action="store_true", help="print the email; send nothing, move nothing")
     ap.add_argument("--since", help="failed runs created on or after YYYY-MM-DD (default: last digest's date)")
     ap.add_argument("--today", help="override today's date (testing)")
+    ap.add_argument("--extras-dir", help="with --dry-run: write the archive and asks files under this folder (testing)")
     ap.add_argument("--no-runs", action="store_true", help="skip the GitHub failed-runs lookup (testing)")
     ap.add_argument("--send-files", action="store_true", help="just email --txt/--html (fallback path)")
     ap.add_argument("--subject")
@@ -312,7 +362,11 @@ def main():
     today = date.fromisoformat(a.today) if a.today else datetime.now(timezone.utc).date()
     premium = Path(a.premium)
     pending = premium / "ops_digest" / "pending"
-    secs = ordered(load_sections(pending)) if pending.exists() else []
+    loaded = load_sections(pending) if pending.exists() else {}
+    refresh = load_refresh_report(today)
+    if refresh:
+        loaded["trackers_refresh"] = refresh
+    secs = ordered(loaded)
     have = {s["key"] for s in secs}
     missing = [k for k in EXPECTED if k not in have]
     since = a.since or default_since(premium, today)
@@ -322,12 +376,20 @@ def main():
     if a.dry_run:
         print(f"DRY RUN, nothing sent or moved.\nSubject: {subject}\nFailed runs since: {since}\n\n{text}")
         print("Did not report:", ", ".join(missing) or "none")
+        _, asks = build_extras(secs, subject, text, today)
+        if a.extras_dir:
+            sent_path, asks_path, n = write_extras(a.extras_dir, subject, text, asks, today)
+            print(f"\nArchive file: {sent_path}\nAsks file: {asks_path} ({n} lines)")
+        else:
+            print(f"\n{len(asks)} asks would go to planning/inbox/asks_{today.strftime('%Y-%m')}.md")
         return 0
     if not send_email(subject, text, html=page):
         print("Email not sent; leaving pending/ untouched.", file=sys.stderr)
         return 1
     print(f"Sent: {subject}")
-    print(f"Filed {file_sent(premium, today)} files under ops_digest/sent/{today.strftime('%Y-%m')}/")
+    _, asks = build_extras(secs, subject, text, today)
+    print(f"Filed {file_sent(premium, today, (subject, text, asks, today))} files under ops_digest/sent/{today.strftime('%Y-%m')}/, "
+          f"plus the digest body under planning/sent/ and {len(asks)} asks under planning/inbox/")
     return 0
 
 

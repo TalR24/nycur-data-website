@@ -2,9 +2,10 @@ name: Sunday brief fallback
 
 # Digests are built on Saturday (GitHub cron starts 3 to 9 h late). The Sunday cloud routine writes planning/briefs/YYYY-MM-DD.md into the private
 # premium repo and sends the ONE Sunday week-ahead email. This workflow runs
-# after it is due. If today's marker file is missing, it emails the raw mention
-# and opportunity digests so nothing is lost; if the marker exists it exits
-# silently. Delivery: SMTP via seo/common.send_email. Billing: no Anthropic API.
+# after it is due. If today's brief file is missing, contains "EMAIL NOT SENT", or
+# no Saturday Gmail sweep report exists for the last 8 days, it emails the raw
+# mention and opportunity digests so nothing is lost; otherwise it exits
+# silently (logic: seo/sunday_fallback.py). Delivery: SMTP via seo/common.send_email. Billing: no Anthropic API.
 # Secrets: GMAIL_USER, GMAIL_APP_PASSWORD, PREMIUM_PUSH_TOKEN.
 
 on:
@@ -33,51 +34,25 @@ jobs:
           PREMIUM_PUSH_TOKEN: ${{ secrets.PREMIUM_PUSH_TOKEN }}
         run: git clone --depth 1 "https://TalR24:${PREMIUM_PUSH_TOKEN}@github.com/TalR24/nycur-data-premium.git" "$RUNNER_TEMP/premium"
 
-      - name: Email the raw digests if the Sunday brief is missing
+      - name: Email the raw digests if the Sunday brief did not arrive
         env:
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
-          PREMIUM_DIR: ${{ runner.temp }}/premium
+          SENT_ARCHIVE_DIR: ${{ runner.temp }}/premium/planning/sent   # exact body of the sent email (seo/common.archive_sent)
+        run: python3 seo/sunday_fallback.py --premium "${{ runner.temp }}/premium"
+
+      - name: File the sent fallback in the premium repo
         run: |
-          python3 - <<'PY'
-          import html, os, sys
-          from datetime import datetime, timedelta, timezone
-          from pathlib import Path
-          sys.path.insert(0, "seo")
-          from common import send_email
-
-          premium = Path(os.environ["PREMIUM_DIR"])
-          now = datetime.now(timezone.utc)
-          # this run can start hours late (GitHub cron delay), even after midnight UTC: check the most recent Sunday
-          sunday = (now - timedelta(days=(now.weekday() + 1) % 7)).strftime("%Y-%m-%d")
-          marker = premium / "planning" / "briefs" / f"{sunday}.md"
-          if marker.exists():
-              print(f"Marker {marker.name} exists; the Sunday brief arrived. Nothing to do.")
-              sys.exit(0)
-
-          def newest(folder):
-              # digests are built on Saturday (names YYYY-MM-DD or YYYY-MM-DD-2); take the newest from the last 2 days
-              cutoff = (now - timedelta(days=2)).strftime("%Y-%m-%d")
-              stems = sorted({p.stem for p in folder.glob("*.html") if p.stem[:10] >= cutoff})
-              return folder / stems[-1] if stems else folder / "missing"
-          digests = [("Mention digest", newest(premium / "mention_monitor_state" / "digests")),
-                     ("Opportunity digest", newest(premium / "opportunities" / "state" / "digests"))]
-          intro = ("The Sunday week-ahead email did not arrive. Check the routine at "
-                   "https://claude.ai/code/routines/trig_01F1EJTV9kbR5MJiJQEKKoPw and run the /ci-triage skill "
-                   "if an Action failed. The raw digests follow.")
-          text, page, missing = [intro, ""], [f"<p>{html.escape(intro)}</p>"], []
-          for label, base in digests:
-              h, t = base.with_suffix(".html"), base.with_suffix(".txt")
-              if h.exists():
-                  page.append(f"<hr><h2>{label}</h2>" + h.read_text(encoding="utf-8"))
-                  text += ["=" * 60, label.upper(), "=" * 60, t.read_text(encoding="utf-8") if t.exists() else "(HTML only)", ""]
-              else:
-                  missing.append(label)
-          if missing:
-              note = "Missing (none built in the last 2 days): " + ", ".join(missing) + "."
-              text.insert(2, note)
-              page.insert(1, f"<p><strong>{html.escape(note)}</strong></p>")
-          ok = send_email("Sunday week-ahead email did not arrive, raw digests below",
-                          "\n".join(text), html="\n".join(page))
-          sys.exit(0 if ok else 1)
-          PY
+          cd "${{ runner.temp }}/premium"
+          if [ -d planning/sent ]; then git add planning/sent; fi
+          if git diff --cached --quiet; then
+            echo "No fallback was sent; nothing to file."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git commit -m "Sunday fallback email archive"
+            for i in 1 2 3; do
+              if git pull --rebase origin main && git push origin HEAD:main; then break; fi
+              sleep $((i * 15))
+            done
+          fi

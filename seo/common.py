@@ -321,10 +321,84 @@ def sitemap_entries(text):
 
 # ---------------------------------------------------------------- email ----
 
-def send_email(subject, body, to=ALERT_TO, html=None):
+def archive_sent(subject, body, role, slug, dest_dir=None, when=None):
+    """File the exact body of a sent email as <dest>/<YYYY-MM-DD>_<slug>.md in the premium repo's
+    planning/sent/ folder (subject, date, recipient role without the address, body). `dest_dir`
+    defaults to $SENT_ARCHIVE_DIR; with neither, nothing is written and None is returned. A second
+    send with the same slug on the same day gets -2, -3 and so on. The caller commits the file."""
+    from datetime import datetime, timezone
+    dest = dest_dir or os.environ.get("SENT_ARCHIVE_DIR")
+    if not dest:
+        return None
+    when = when or datetime.now(timezone.utc)
+    folder = Path(dest)
+    folder.mkdir(parents=True, exist_ok=True)
+    stem = f"{when:%Y-%m-%d}_{slug}"
+    path, n = folder / f"{stem}.md", 2
+    while path.exists():
+        path, n = folder / f"{stem}-{n}.md", n + 1
+    path.write_text(f"Subject: {subject}\nDate: {when:%Y-%m-%d %H:%M} UTC\nRecipient role: {role}\n\n{body.rstrip()}\n",
+                    encoding="utf-8")
+    return path
+
+
+_DASHES = re.compile(r"^-{5,}\s*$")
+_CAPS_HEAD = re.compile(r"^[A-Z][A-Z0-9 ,&/'()-]{3,}$")
+
+
+def extract_asks(text):
+    """Titles of the asks a digest or email prints: numbered items under a 'TO DO' heading (routine
+    sections) and '### N. [tag] title' action headings (SEO and SCE reports). Lines inside dashed
+    prompt blocks are skipped."""
+    asks, in_todo, in_box = [], False, False
+    for line in text.splitlines():
+        if _DASHES.match(line):
+            in_box = not in_box
+            continue
+        if in_box:
+            continue
+        m = re.match(r"^###\s+\d+\.\s+(?:\[[^\]]+\]\s*)?(.+?)\s*$", line)
+        if m:
+            asks.append(m.group(1))
+            continue
+        t = line.strip()
+        if t == "TO DO":
+            in_todo = True
+        elif in_todo and _CAPS_HEAD.match(t):
+            in_todo = False
+        elif in_todo:
+            m = re.match(r"^\d+\.\s+(.+?)\s*$", line)
+            if m:
+                asks.append(m.group(1))
+    return asks
+
+
+def write_asks(path, asks, source, when):
+    """Append one TODO_tal.md-format line per ask to <premium>/planning/inbox/asks_<YYYY-MM>.md
+    (`- [ ] what to do (where) · added YYYY-MM-DD · from <source>`). `asks` is a list of
+    (title, where). Lines already present (same text before ' · added') are not repeated.
+    Returns the number written."""
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    old = path.read_text(encoding="utf-8") if path.exists() else ""
+    have = {l.split(" · added")[0] for l in old.splitlines()}
+    new = [f"- [ ] {t} ({w}) · added {when:%Y-%m-%d} · from {source}" for t, w in asks]
+    new = [l for l in new if l.split(" · added")[0] not in have]
+    if not new:
+        return 0
+    head = "" if old else ("# Asks from monthly emails\n\nOne line per ask, in TODO_tal.md format. The Sunday week-ahead "
+                           "routine carries every open line into the brief until it is done; the session sweep merges "
+                           "them into TODO_tal.md.\n\n")
+    path.write_text(old + head + "\n".join(new) + "\n", encoding="utf-8")
+    return len(new)
+
+
+def send_email(subject, body, to=ALERT_TO, html=None, archive_slug=None, role="Tal"):
     """Gmail SMTP, same secrets as site_health/check_site.py. `body` is the
     plain-text part; pass `html` to send multipart/alternative. Returns True
-    when sent, False (with a note on stderr) when credentials are absent."""
+    when sent, False (with a note on stderr) when credentials are absent.
+    With `archive_slug` and $SENT_ARCHIVE_DIR set, the exact body is filed after a
+    successful send (see archive_sent); `role` names the recipients without addresses."""
     user = os.environ.get("GMAIL_USER")
     pw = os.environ.get("GMAIL_APP_PASSWORD")
     if not (user and pw):
@@ -343,6 +417,8 @@ def send_email(subject, body, to=ALERT_TO, html=None):
     with smtplib.SMTP_SSL("smtp.gmail.com", 465) as s:
         s.login(user, pw)
         s.sendmail(user, to, msg.as_string())
+    if archive_slug:
+        archive_sent(subject, body, role, archive_slug)
     return True
 
 

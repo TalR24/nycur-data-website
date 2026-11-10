@@ -10,6 +10,9 @@ name: SCE monthly report
 # here because this repo already holds the Search Console key and the premium
 # push token; the SCE repo is public, so search numbers never go there.
 #
+# The sent body is archived under premium planning/sent/ and each action is added to planning/inbox/asks_<YYYY-MM>.md
+# for the Sunday routine. A preview run says PREVIEW in the subject and the body.
+#
 # Secrets: GSC_SERVICE_ACCOUNT_JSON, GMAIL_USER, GMAIL_APP_PASSWORD,
 # PREMIUM_PUSH_TOKEN.
 
@@ -19,9 +22,9 @@ on:
   workflow_dispatch:
     inputs:
       preview:
-        description: "Send to Tal only (not the SCE inbox)"
+        description: "Send to Tal only (not the SCE inbox); the subject then starts with PREVIEW. Leave off to rerun a failed scheduled send."
         type: boolean
-        default: true
+        default: false
 
 jobs:
   report:
@@ -57,9 +60,10 @@ jobs:
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SENT_ARCHIVE_DIR: /tmp/premium/planning/sent   # exact body of the sent email (seo/common.archive_sent)
         run: |
           python3 seo/sce_monthly.py --sce-repo "$GITHUB_WORKSPACE/../statecapacityecosystem" \
-            --out /tmp/sce_reports --changes /tmp/premium/seo_reports/changes.md --email \
+            --out /tmp/sce_reports --changes /tmp/premium/seo_reports/changes.md --email --premium /tmp/premium \
             ${{ github.event.inputs.preview == 'true' && '--preview' || '' }}
 
       - name: File the snapshot in the premium repo
@@ -70,6 +74,8 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add seo_reports
+          if [ -d planning/sent ]; then git add planning/sent; fi
+          if [ -d planning/inbox ]; then git add planning/inbox; fi
           if git diff --cached --quiet; then
             echo "Report unchanged."
           else

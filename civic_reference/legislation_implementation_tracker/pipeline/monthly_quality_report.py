@@ -248,7 +248,7 @@ def main(argv=None) -> int:
                 continue
             prev_name, prev = older.stem, cand
             break
-    delta = []
+    delta, carried = [], []
     for k in sorted(set(metrics) | set(prev)):
         if k.startswith("_"):
             continue
@@ -261,9 +261,19 @@ def main(argv=None) -> int:
         if now_v is None or then_v is None:   # a skipped check is neither better nor worse
             continue
         if now_v != then_v:
+            if now_v > then_v and k not in prev:
+                # the baseline report has no such check, so the count is a backlog measured for the first
+                # time, not a failure that appeared this month (Nov 10 2026 emails review: 18 lines read as new failures)
+                carried.append(f"- {k}: {then_v} → {now_v} (carried over, first measured now, +{now_v - then_v})")
+                continue
             arrow = "REGRESSION +" if now_v > then_v else "improved -"
             delta.append(f"- **{k}**: {then_v} → {now_v} ({arrow}{abs(now_v - then_v)})")
-    if prev and not delta:
+    n_new = sum(1 for d in delta if "(REGRESSION +" in d)
+    if prev:
+        delta = ([f"New regressions since {prev_name}: {n_new}. Carried-over known counts (checks the earlier report "
+                  f"did not have, so they are not new failures): {len(carried)}.", ""] + delta
+                 + (["", "Carried over, first measured now:"] + carried if carried else []))
+    if prev and not (n_new or carried or any("improved" in d for d in delta)):
         delta = ["- No metric changed. Quiet month."]
 
     hard_total = sum(

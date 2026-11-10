@@ -260,7 +260,9 @@ def page_facts(url):
 
 def short_name(url, title=None):
     if title:
-        return re.split(r"\s+[—|]\s+", title)[0].strip()
+        name = re.split(r"\s+[—|]\s+", title)[0].strip()
+        # a title with a second sentence ("... This Year. Here's Why ...") would read as a run-on inside an action header
+        return re.split(r"(?<=[a-z0-9])[.?!]\s+(?=[A-Z])", name)[0].strip()
     parts = urlsplit(url)
     if "/p/" in parts.path:
         return parts.path.split("/p/")[1].strip("/").replace("-", " ").capitalize()
@@ -402,9 +404,10 @@ def build(sections, period, session, changes_path=None, extra_actions=None):
                    else "no longer appearing in results")
             f = repo_file(d["page"])
             commits = recent_commits(d["page"])
+            live_title, _ = live_head(session, d["page"])  # the post title, not the URL slug (Nov 10 2026: garbled header)
             actions.append({
-                "tag": "Fix first", "who": "Claude Code",
-                "title": f"{short_name(d['page'])} lost half its clicks ({d['prev_clicks']} → {d['clicks']})",
+                "tag": "Fix first", "who": "Claude Code", "url": d["page"],
+                "title": f"{short_name(d['page'], live_title or None)} lost half its clicks ({d['prev_clicks']} → {d['clicks']})",
                 "why": f"{pos}. {d['page']}"
                        + (f" Last edits to the file: {'; '.join(commits)}." if commits else ""),
                 "steps": ["Paste the prompt into Claude Code.",
@@ -481,6 +484,15 @@ def build(sections, period, session, changes_path=None, extra_actions=None):
                       "Claude applies it and logs it; next month's report judges it."],
             "prompt": prompt,
         })
+
+    # one action per page: a Quick win on a page that also has a Fix first drop is folded into the drop
+    # (they gave different advice for the same URL; Nov 10 2026 emails review)
+    fixes = {norm(a["url"]): a for a in actions if a["tag"] == "Fix first" and a.get("url")}
+    for a in [a for a in actions if a["tag"] == "Quick win" and norm(a.get("url", "")) in fixes]:
+        base = fixes[norm(a["url"])]
+        base["why"] += " Same page, once the drop is explained: " + a["why"]
+        base["prompt"] += " After that, do this too: " + a["prompt"]
+        actions.remove(a)
 
     # near page one: real queries with impressions but few clicks
     near = []
