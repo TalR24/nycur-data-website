@@ -1,0 +1,633 @@
+{
+ "_scoring": {
+  "auditor": "A",
+  "night": "20261110",
+  "laws": 11,
+  "stored_records": 23,
+  "correct": 13,
+  "wrong_fields": 7,
+  "not_real": 3,
+  "missed": 4,
+  "precision_strict": "13/23 = 56.5% (Wilson 95% 36.8-74.4)",
+  "precision_real": "20/23 = 87.0% (Wilson 95% 67.9-95.5)",
+  "recall": "20/24 = 83.3% (Wilson 95% 64.1-93.3)",
+  "effective_dates": "10/11 correct",
+  "recall_method": "24 blind items (A1004 2, S6614 1, A1686 4, A10269 1, S7798 3, A10110 1, S9403 8, A2833 4); 20 matched; 0 stored-correct records missed by blind pass. Judgment items not counted: A1004 deletion of 'at the recommendation of' (s2, s4c); S7798 new 2027 sunset.",
+  "calibration_laws": [
+   "2019-S4417",
+   "2015-S4741"
+  ],
+  "calibration": {
+   "laws": 2,
+   "stored_records": 2,
+   "correct": 2,
+   "wrong_fields": 0,
+   "not_real": 0,
+   "missed": 0,
+   "precision_strict": "2/2 = 100.0% (Wilson 95% 34.2-100.0)",
+   "precision_real": "2/2 = 100.0% (Wilson 95% 34.2-100.0)",
+   "recall": "2/2 = 100.0% (Wilson 95% 34.2-100.0)",
+   "effective_dates": "2/2 correct"
+  },
+  "blind_list_file": "/Users/troded/.claude/jobs/c1df60cb/tmp/auditA/blind.txt"
+ },
+ "_classes": [
+  {
+   "name": "sunset extension of an earlier chapter with no stored and no dropped record",
+   "criteria": [
+    "1",
+    "7"
+   ],
+   "instances": [
+    "2021-S6614",
+    "2023-A10269"
+   ],
+   "rule": "packet LAW TEXT matches r'(expire|deemed repealed)[^.]{0,200}\\[[^\\]]{1,40}\\]\\s*\\{\\{[^}]{1,40}\\}\\}' and matter_id has no row in duties, powers or dropped (law-level count; includes packets not yet answered)",
+   "db_matches": 337,
+   "db_examples": [
+    "2011-A7279",
+    "2011-A8235",
+    "2011-S2807"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "effective date: 'N years after it shall have become a law' section proviso misassigned (known parser gap, recurrence)",
+   "criteria": [
+    "8",
+    "5"
+   ],
+   "instances": [
+    "2021-S9403-01",
+    "2021-S9403-02",
+    "2021-S9403-05",
+    "2021-S9403-06",
+    "2021-S9403-07"
+   ],
+   "rule": "effective_dates raw_clause matches r'(sections?[^;]{0,80}?) shall take effect (one|two|...|\\d+) years? after it shall have become a law' and a section_dates.applies_to inside that group has rule != years_after_law; count records of those laws with effective_rule section_section",
+   "db_matches": 17,
+   "db_examples": [
+    "2009-S4983-02",
+    "2021-A597-01",
+    "2021-A597-02"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "penalty on a private person stored as a court duty",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2023-A3120-01"
+   ],
+   "rule": "quote matches r'shall be punished by|punishable by a fine|guilty of a (misdemeanor|violation|class)' (case-insensitive)",
+   "db_matches": 10,
+   "db_examples": [
+    "2009-A11308-31",
+    "2009-A11308-33",
+    "2009-A11308-34"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "record whose only braced matter in the quote span is punctuation or a gender-neutral word (reprint; fixed Oct 17, recurrence)",
+   "criteria": [
+    "1",
+    "2"
+   ],
+   "instances": [
+    "2023-A10110-01"
+   ],
+   "rule": "locate quote in packet text with [deleted] removed; every braced run inside the quote span matches ^(,|;|:|their|them|they|the commissioner|the applicant|such person|the|a|an|some|which|or|and)?$; record_source empty",
+   "db_matches": 18,
+   "db_examples": [
+    "2009-S8090-04",
+    "2011-S3914-07",
+    "2011-S5571-03"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "approval condition added to a reprinted power stored as an extension",
+   "criteria": [
+    "1",
+    "7"
+   ],
+   "instances": [
+    "2023-A1008-01"
+   ],
+   "rule": "extends_existing true and quote matches r'upon (the )?approval (by|of)'",
+   "db_matches": 9,
+   "db_examples": [
+    "2009-A4218-04",
+    "2011-A113-03",
+    "2013-A4611-05"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "appointment to a newly created seat with deadline none instead of on_effective_date",
+   "criteria": [
+    "5"
+   ],
+   "instances": [
+    "2023-A1004-01",
+    "2023-A1004-02"
+   ],
+   "rule": "kind duty, deliverable_type 'designation or staffing', deadline_kind none, extends_existing false, quote matches r'shall appoint' and not r'vacanc'",
+   "db_matches": 14,
+   "db_examples": [
+    "2009-A11438-02",
+    "2009-A8501-32",
+    "2009-A8501-68"
+   ],
+   "needs_judgment": true
+  }
+ ],
+ "2023-A1004": {
+  "records": {
+   "2023-A1004-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "5"
+    ],
+    "quote": "In addition to the members representing each county, the governor shall appoint one voting member who is a transit dependent individual who resides in a county within the district.",
+    "note": "New seat: 'the governor shall appoint one voting member who is a transit dependent individual' is a one-time setup appointment with no stated deadline, so on_effective_date per criterion 5 (judgment call; recurrence as-needed acceptable for later vacancies).",
+    "fields": {
+     "deadline_kind": "on_effective_date"
+    }
+   },
+   "2023-A1004-02": {
+    "verdict": "wrong",
+    "criteria": [
+     "5"
+    ],
+    "quote": "In addition to the members specified above, the governor shall appoint a transit dependent individual as a voting member who resides within a county within the district.",
+    "note": "Same as -01 for CNYRTA: 'the governor shall appoint a transit dependent individual as a voting member'.",
+    "fields": {
+     "deadline_kind": "on_effective_date"
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2023-03-28",
+   "computed": "2023-03-28",
+   "verdict": "correct",
+   "note": "Same as ch. 801 of 2022 (S3959-B), signed 2022-12-28, 90th day = 2023-03-28; A1004 signed 2023-03-03 before that date, so it stands."
+  }
+ },
+ "2021-S6614": {
+  "records": {},
+  "missed": [
+   {
+    "blind": "b1",
+    "quote": "paragraph (b) of subdivision 1 of section 97-a of the alcoholic beverage control law as added by section two of this act shall expire and be deemed repealed October 12, 2022",
+    "kind": "power",
+    "agency": "State Liquor Authority (Division of Alcoholic Beverage Control)",
+    "dropped_by": null,
+    "note": "Earlier chapter's sunset extended '[2021] {{2022}}' inside an amendment = extension record (Oct 16/19 rules). Re-ask law answered tonight, yet nothing stored and nothing in dropped/2021.json. Holder: title names liquidator's permits (ABC Law 97-a, issued by the Authority); if judged unnamed-holder it should have been routed to re-ask, not silently empty."
+   }
+  ],
+  "effective_date": {
+   "stored": "2021-08-02",
+   "computed": "2021-08-02",
+   "verdict": "correct",
+   "note": "'This act shall take effect immediately', signed 2021-08-02."
+  }
+ },
+ "2023-A3158": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2023-10-25",
+   "computed": "2023-10-25",
+   "verdict": "correct",
+   "note": "Immediately. Law only widens a student licensure exemption; no government record expected."
+  }
+ },
+ "2023-A1686": {
+  "records": {
+   "2023-A1686-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "quote": "The division of housing and community renewal shall issue an annual report on the access to home programs regarding certain data and program progress for the previous year.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "HCR",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2023-A1686-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "quote": "shall be posted and made publicly available on the division of housing and community renewal's website in a clear and conspicuous manner.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "HCR",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2023-A1686-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "quote": "The division of housing and community renewal shall undertake an ongoing effort to promote the availability of the access to home programs to all eligible applicants and persons with eligible properties",
+    "note": "'Such actions shall include working with any other state agencies' treated as part of this ongoing promotion duty.",
+    "fields_at_audit": {
+     "agency": "HCR",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2023-A1686-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "quote": "providing contact and application information on the website for the division of housing and community renewal for eligible applicants and persons with eligible properties which shall be updated annually.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "HCR",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2024-05-15",
+   "computed": "2024-05-15",
+   "verdict": "correct",
+   "note": "180th day after 2023-11-17."
+  }
+ },
+ "2023-A10269": {
+  "records": {},
+  "missed": [
+   {
+    "blind": "b1",
+    "quote": "This act shall take effect immediately and shall expire and be deemed repealed six years after such date.",
+    "kind": "power",
+    "agency": "needs_judgment (title: 'facilities owned by a public sports venue'; Security Guard Act administered by Department of State)",
+    "dropped_by": null,
+    "note": "Earlier chapter (ch. 429 of 2021) sunset extended '[three] {{six}} years' = extension record under Oct 16/19 rules; if holder is unnamed the law should go to re-ask (sunset_extension_unnamed_holder). Nothing stored, nothing dropped."
+   }
+  ],
+  "effective_date": {
+   "stored": "2024-07-03",
+   "computed": "2024-07-03",
+   "verdict": "correct",
+   "note": "Immediately."
+  }
+ },
+ "2023-A1008": {
+  "records": {
+   "2023-A1008-01": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "7"
+    ],
+    "quote": "the assessor of the county of Nassau, upon approval by the Nassau county legislature, may grant exemption from all taxation and make appropriate corrections to the subject rolls.",
+    "note": "Only new matter is the condition '{{, upon approval by the Nassau county legislature,}}'; the operative 'may grant exemption from all taxation' is reprinted from the 2022 chapter. A condition of another record is not a record (criterion 1); and it narrows, so extends_existing true is wrong even if kept."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2022-07-21",
+   "computed": "2022-07-21",
+   "verdict": "correct",
+   "note": "Same as ch. 466 of 2022 (S8940-A), effective immediately 2022-07-21; amendment signed later leaves that date standing (criterion 8)."
+  }
+ },
+ "2021-S7798": {
+  "records": {
+   "2021-S7798-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "quote": "The office of addiction services and supports website shall include a hyperlink to such information and data",
+    "note": "'[Such] {{The office of addiction services and supports website shall include a hyperlink to such}} information' replaces the posting duty; extends_existing true acceptable (changed duty).",
+    "fields_at_audit": {
+     "agency": "OASAS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2021-S7798-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "quote": "The department, in collaboration with the office of addiction services and supports and health care providers, shall collect data on and report the health risk factor of excessive alcohol consumption and alcohol poisoning, including the risk factors of heavy and binge drinking.",
+    "note": "'The report shall be submitted annually, on or before November first'; s4 effective 2021-12-22, first Nov 1 = 2022-11-01.",
+    "fields_at_audit": {
+     "agency": "DOH",
+     "kind": "duty",
+     "deadline_kind": "fixed_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S7798-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "quote": "ways to determine if services, resources, and responses in particular areas of the state area having a positive impact on reducing excessive alcohol consumption and alcohol poisoning. Such reporting may be through a web-based dashboard.",
+    "note": "'Such reporting may be through a web-based dashboard.' option given to DOH; quote starts mid list item (c) but is verbatim and in new matter.",
+    "fields_at_audit": {
+     "agency": "DOH",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2021-12-22",
+   "computed": "2021-12-22 for ss1,2,4 (all records); s3 immediate 2022-02-24",
+   "verdict": "correct",
+   "note": "Same as ch. 741 of 2021 (A6166-A), immediate 2021-12-22. Act-level immediate date for s3 not captured as a section date (known proviso gap; no record affected). New sunset 'shall expire and be deemed repealed March 31, 2027' on 3309(6) narrows, not an extension; not counted as a miss."
+  }
+ },
+ "2023-A3120": {
+  "records": {
+   "2023-A3120-01": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "3"
+    ],
+    "quote": "upon a conviction of a third or subsequent violation, all of which were committed within a period of three years, such person shall be punished by a fine of not less than seven hundred fifty dollars nor more than one thousand five hundred dollars",
+    "note": "'such person shall be punished by a fine of not less than seven hundred fifty dollars nor more than one thousand {{five hundred}} dollars' is a penalty on a private person; no court duty is created."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2024-11-01",
+   "computed": "2024-11-01",
+   "verdict": "correct",
+   "note": "'first of November next succeeding' 2024-10-23."
+  }
+ },
+ "2023-A10110": {
+  "records": {
+   "2023-A10110-01": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "2"
+    ],
+    "quote": "The commissioner, after due notice and opportunity of hearing to the applicant or permittee, may deny an application for or revoke or refuse to renew a permit when the commissioner is satisfied that the applicant or permittee has:",
+    "note": "Only braced matter is '{{,}}' twice and '[he or she] {{the commissioner}}'; the deny/revoke power is reprinted unchanged (gender-word-only reprint, fixed class Oct 17, recurring)."
+   }
+  },
+  "missed": [
+   {
+    "blind": "b1",
+    "quote": "unless such dealer, auctioneer, poultry transporter, or rescue holds a domestic animal health permit granted by the commissioner.",
+    "kind": "power",
+    "agency": "Department of Agriculture and Markets",
+    "dropped_by": null,
+    "note": "Judgment: the law adds a class ('{{, or rescue}}', '{{15. The term \"rescue\" means...}}') to the permits the commissioner grants; class widening = extends_existing true record per criterion 7. Not stored, not dropped."
+   }
+  ],
+  "effective_date": {
+   "stored": "2024-08-28",
+   "computed": "2024-08-28",
+   "verdict": "correct",
+   "note": "Immediately."
+  }
+ },
+ "2021-S9403": {
+  "records": {
+   "2021-S9403-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "8",
+     "5"
+    ],
+    "quote": "the New York state public employment relations board shall establish and promulgate rules authorizing an electronic filing program (hereinafter referred to as \"e-filing\"), in the use of electronic means for: (a) the commencement of a proceeding; and (b) the filing and service of papers in pending proceedings.",
+    "note": "s1 (new 708-a): 'sections one and three of this act shall take effect one year after it shall have become a law' = 2023-11-22; stored 2023-03-22 is the s4 120-day date.",
+    "fields": {
+     "effective_date": "2023-11-22",
+     "deadline_date": "2023-11-22"
+    }
+   },
+   "2021-S9403-02": {
+    "verdict": "wrong",
+    "criteria": [
+     "8",
+     "5"
+    ],
+    "quote": "The board's website shall contain the e-filing program along with instructions for e-filing, such rules regarding e-filing, and certain forms promulgated by the board that parties or other persons may use to prepare their documents for e-filing.",
+    "note": "s1, same as -01.",
+    "fields": {
+     "effective_date": "2023-11-22",
+     "deadline_date": "2023-11-22"
+    }
+   },
+   "2021-S9403-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "quote": "The board shall e-file all orders, notices of hearing, and other process and papers originating from the board pursuant to section seven hundred eight-a of this article upon the effectiveness of such section",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "PERB",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S9403-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "quote": "until the effectiveness of section seven hundred eight-a of this article, the board shall serve final orders upon the parties by registered or certified mail and shall send courtesy copies of such orders, notices of hearing, and other process and papers originating from the board by electronic mail upon all parties who have provided an electronic mailing address designated for such purpose.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "PERB",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S9403-05": {
+    "verdict": "wrong",
+    "criteria": [
+     "8",
+     "5"
+    ],
+    "quote": "The board shall establish and maintain a current index, by topic, of the principles of law established by the decisions rendered by the board and its predecessors and the courts concerning matters arising under this article.",
+    "note": "s3 (new 710-a), one year after = 2023-11-22, stored 2023-03-22.",
+    "fields": {
+     "effective_date": "2023-11-22",
+     "deadline_date": "2023-11-22"
+    }
+   },
+   "2021-S9403-06": {
+    "verdict": "wrong",
+    "criteria": [
+     "8",
+     "5"
+    ],
+    "quote": "The board shall create written materials informing employers and employees of the rights afforded pursuant to this article to be made available on the board's website.",
+    "note": "s4 (710-b): 'section four of this act shall take effect on the one hundred twentieth day' = 2023-03-22; stored immediate 2022-11-22.",
+    "fields": {
+     "effective_date": "2023-03-22",
+     "deadline_date": "2023-03-22"
+    }
+   },
+   "2021-S9403-07": {
+    "verdict": "wrong",
+    "criteria": [
+     "8",
+     "5"
+    ],
+    "quote": "Such materials shall be translated into the twelve most common non-English languages spoken by limited-English proficient individuals in the state, based on the data in the most recent American Community Survey published by the United States Census Bureau.",
+    "note": "s4, same as -06.",
+    "fields": {
+     "effective_date": "2023-03-22",
+     "deadline_date": "2023-03-22"
+    }
+   }
+  },
+  "missed": [
+   {
+    "blind": "b6",
+    "quote": "Copies of such index shall be made available to the public electronically on the board's website.",
+    "kind": "duty",
+    "agency": "Public Employment Relations Board",
+    "dropped_by": null,
+    "note": "Separate publication duty in new 710-a; not stored, not dropped."
+   }
+  ],
+  "effective_date": {
+   "stored": "2022-11-22; section_dates: ss1,3 -> 2023-03-22",
+   "computed": "2022-11-22; ss1,3 -> 2023-11-22; s4 -> 2023-03-22",
+   "verdict": "wrong",
+   "note": "Parser applied the 120-day date to 'sections one and three' and dropped the 'one year after it shall have become a law' and s4 dates."
+  }
+ },
+ "2023-A2833": {
+  "records": {
+   "2023-A2833-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "quote": "The commissioner and all state agencies, when procuring end point devices, shall require those devices, services and solutions to meet the National Institute of Standards and Technology (NIST) Cybersecurity Framework.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "OGS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2023-A2833-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "quote": "The commissioner and all state agencies, when procuring end point devices, shall require those devices, services and solutions to meet the National Institute of Standards and Technology (NIST) Cybersecurity Framework.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "OGS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2023-A2833-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "quote": "Within one year of adoption of any amendments to the security standards and guidelines referenced in paragraph (b) of this subdivision the commissioner and each state agency shall update their end point device procurement requirements.",
+    "note": "'Within one year of adoption of any amendments' is event-anchored: none.",
+    "fields_at_audit": {
+     "agency": "OGS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2023-A2833-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "quote": "Within one year of adoption of any amendments to the security standards and guidelines referenced in paragraph (b) of this subdivision the commissioner and each state agency shall update their end point device procurement requirements.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "OGS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2025-03-21",
+   "computed": "2025-03-21",
+   "verdict": "correct",
+   "note": "90th day after 2024-12-21."
+  }
+ },
+ "2019-S4417": {
+  "records": {
+   "2019-S4417-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "quote": "the town of Webster, county of Monroe, acting by and through its governing body, and upon such terms and conditions as determined by such body, is hereby authorized to discontinue as parklands and alienate the lands more particularly described in section three of this act",
+    "note": "s2 dedication and s4 federal compliance are conditions ('effective only upon the condition', 'shall not occur until'), no records.",
+    "fields_at_audit": {
+     "agency": "Towns",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "Town of Webster"
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2019-10-11",
+   "computed": "2019-10-11",
+   "verdict": "correct",
+   "note": "Immediately."
+  }
+ },
+ "2015-S4741": {
+  "records": {
+   "2015-S4741-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "quote": "the commissioner may take disciplinary action against an online Education marketplace pursuant to section five thousand three of this article, to the extent such provisions are deemed applicable by the commissioner in regulations.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "SED",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2016-11-28",
+   "computed": "2016-11-28",
+   "verdict": "correct",
+   "note": "Immediately. Private-party duties of online education marketplaces correctly not stored."
+  }
+ }
+}

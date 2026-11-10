@@ -16,6 +16,10 @@ def cached(oid):
 def gate_q(q):
     return ed.gate_record({"quote": q, "quote_verified": True, "agency": "X", "agency_unit": None, "actor_raw": "x"}, q, False)
 o = cached("2017-S8074-01")
+if o and not ed.AD1_DEEMED_CONTRACTS.search(o.get("quote") or ""):   # Nov 10 2026: the re-ask renumbered the law; find the deeming sentence by text
+    import json as _j
+    _f = HERE / "cache" / "extracted" / "2017-S8074.json"
+    o = next((x for x in _j.load(open(_f))["obligations"] if ed.AD1_DEEMED_CONTRACTS.search(x.get("quote") or "")), None) if _f.exists() else None
 if o:
     check("AD1 rule on cached quote", bool(ed.AD1_DEEMED_CONTRACTS.search(o["quote"])))
     r = ed.gate_record(o, (HERE / "cache" / "text_marked" / "2017-S8074.txt").read_text(), False)

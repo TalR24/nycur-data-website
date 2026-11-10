@@ -1224,6 +1224,8 @@ def amount_rule_subject(q):
     """N1: grant caps, permit term caps, benefit-rate and amount rules, claim and application form procedures. Dropped when the subject word
     opens the match (no government noun heads the sentence before it)."""
     m = AMOUNT_SUBJECT.search(q or "")
+    if APPLY_AF2 and m and re.search(r"\bforms?\s+prescribed\s+by\s*$", m.group(0), re.I) and GOV_ACTOR.search(q[m.end():m.end() + 60]):
+        return False          # AF2 (coordinator, Nov 10 2026): forms prescribed by a government body are that body's duty to prescribe, not a bare entitlement term
     return bool(m) and not GOV_ACTOR.search(q[:m.start()]) and not re.search(r"\bshall\s+be\s+applied\b", m.group(0), re.I) and not re.match(r"\s+(?:established|fixed|set|appointed)\s+by\b", q[m.end():m.end() + 30], re.I)
 
 
@@ -1891,6 +1893,60 @@ def ongoing_lead_item(o, text):
     return bool(lead and ONGOING_BODY.search(lead) and re.search(r"\bshall\b", lead, re.I))
 
 
+# Nov 10 2026 night gate fixes AG1-AG4 (flags set from the dry run over stored ids, cap 40 each)
+APPLY_AG1 = True          # applicant licensing conditions (backlog B45): 'an applicant shall ...', 'Be of good moral character', 'shall have N years of experience'
+APPLY_AG2 = True          # a private firm's licence precondition: 'may offer to provide ... services only after obtaining a certificate of authorization'
+APPLY_AG3 = False          # a manner clause cut before its main clause: 'if a meeting of X, by such means ..., as determined by the X.' (no modal)
+APPLY_AG4 = False          # funding eligibility sentence with no acting body: 'may be eligible for funding' under an Unspecified actor
+APPLY_AF1 = True          # Nov 10 2026 (coordinator AF1, audit B): a duty whose condition sits in its own sentence or the sentence before ('If the department determines ..., the department shall ...') is never stamped on_effective_date; count above 40 knowingly, the rule is the criterion-5 definition
+APPLY_AF2 = True          # Nov 10 2026 (coordinator AF2): 'Application ... shall be made on forms prescribed by the department' keeps its record (the body prescribes the form)
+AF1_COND_LEAD = re.compile(r"^\W*(?:\(\w{1,3}\)\s*)?(?:if|upon\s+(?:a\s+|the\s+)?(?:finding|determination|receipt|request)|in\s+the\s+event|whenever|unless|where\s+the|should\s+the)\b", re.I)
+AF1_COND_INSIDE = re.compile(r"\b(?:if|unless|in\s+the\s+event|upon\s+(?:a\s+|the\s+)?(?:finding|determination)|whenever)\b", re.I)
+
+
+def af1_condition_context(quote, text):
+    """AF1: True when the sentence holding the quote (from its start through the quote's end), or the sentence before it in the same paragraph,
+    states the condition that triggers the duty."""
+    sp = locate_span(quote, text) if text else None
+    if not sp:
+        return False
+    para_start = text.rfind("\n\n", 0, sp[0]) + 1
+    before = re.sub(r"\{\{|\}\}", "", text[max(para_start, sp[0] - 900):sp[0]])
+    sents = [x for x in re.split(r"(?<=[.;])\s+", before) if x.strip()]
+    cur = (sents[-1] if sents and not before.rstrip().endswith((".", ";")) else "") + " " + quote
+    if AF1_COND_LEAD.search(cur.strip()) or AF1_COND_INSIDE.search(cur.strip()):
+        return True
+    prev = sents[-2] if (sents and not before.rstrip().endswith((".", ";")) and len(sents) > 1) else (sents[-1] if sents and before.rstrip().endswith((".", ";")) else "")
+    return bool(prev) and bool(AF1_COND_LEAD.search(prev.strip()))
+
+
+APPLY_AF3 = True          # Nov 10 2026 (coordinator AF3): braces holding only punctuation, a conjunction, a gender-neutral edit or a name swap are no new matter
+APPLY_AF4 = True          # Nov 10 2026 (coordinator AF4): 'Any person who violates ... shall be fined / punished by a fine' stored for a court is the person's liability, not a court record
+AF3_TRIVIAL_BLOCK = re.compile(r"^\W*(?:(?:and|or|but|nor)\W*)?$", re.I)
+AF4_PERSON_PENALTY = re.compile(r"\b(?:any|such|every|each)\s+(?:person|persons|owner|operator)\b[^.]{0,260}?\bshall\s+(?:be\s+(?:punished|fined|liable|subject)|forfeit|pay)\b", re.I)
+AF4_COURT_ACTOR = re.compile(r"\bcourts?\b|\bjudges?\b|\bjustices?\b", re.I)
+AF4_COURT_DIRECTED = re.compile(r"\b(?:court|judge|justice)s?\s+(?:shall|may|must)\s+(?:impose|order|fine|assess|sentence|direct)\b", re.I)
+
+
+def af3_trivial_reprint(sent):
+    """AF3: every braced block is punctuation, a conjunction or a gender-neutral edit, or the rest is a bare name swap."""
+    blocks = [m.group(1) for m in re.finditer(r"\{\{(.*?)\}\}", sent, re.S)]
+    if not blocks:
+        return False
+    def triv(b):
+        return bool(AF3_TRIVIAL_BLOCK.match(b) or GENDER_EDIT.match(b))
+    if all(triv(b) for b in blocks):
+        return True
+    rest = re.sub(r"\{\{(.*?)\}\}", lambda m: "" if triv(m.group(1)) else m.group(0), sent, flags=re.S)
+    return reprinted_name_swap(rest)
+
+
+AG1_APPLICANT = re.compile(r"(?:^\W*(?:\(\w{1,3}\)\s*)?(?:[A-Z][a-z]+:\s*)?be\s+of\s+good\s+moral\s+character\b|(?:^\W*|[.;:]\s+)(?:an?|each|the)\s+applicants?\s+(?:shall|must)\s+(?:be\s+(?:of|a|at|licensed|registered|over|resident)\b|have|possess|hold|demonstrate)\b|\bapplicants?\s+shall\s+(?:be\s+of\s+good\s+moral\s+character|have\s+(?:at\s+least\s+)?[\w-]+\s+years\b)|\bshall\s+be\s+of\s+good\s+moral\s+character\b|\bshall\s+have\s+(?:at\s+least\s+)?[\w-]+(?:\s+[\w-]+)?\s+years\s+of\s+(?:\w+\s+)?experience\b)", re.I)
+AG2_LICENCE_PRECOND = re.compile(r"^\W*may\s+(?:offer\s+to\s+provide\s+or\s+provide|provide|practice|engage\s+in)\b[^.]{0,200}\bonly\s+after\s+obtaining\s+an?\s+(?:certificate|license|licence|permit)\b", re.I)
+AG3_MANNER_FRAGMENT = re.compile(r"^\W*(?:and,?\s+)?if\s+[^.]{5,300}\bas\s+determined\s+by\s+the\b[^.]{0,120}\.?$", re.I)
+AG4_ELIGIBLE_FUNDING = re.compile(r"\bmay\s+be\s+eligible\s+for\s+(?:funding|aid|grants?|reimbursement)\b", re.I)
+
+
 def gate_record(o, text, has_markers):
     """Returns (rule, reason) when the record must be dropped, else None. Rules 1-3 of phase 3b."""
     if not o.get("quote_verified"):
@@ -1957,6 +2013,16 @@ def gate_record(o, text, has_markers):
         return "amount_not_duty", "an allocation of implementation cost ('all costs associated with implementing this act shall be borne by X'): no actor carries it out"
     if APPLY_AD1 and AD1_DEEMED_CONTRACTS.search(q):
         return "definition", "a classification clause ('contracts ... shall be deemed state contracts within the meaning of article 15-A'): it labels the contracts for another law, no actor carries it out"
+    if APPLY_AF4 and AF4_PERSON_PENALTY.search(q) and AF4_COURT_ACTOR.search((o.get("actor_raw") or "") + " " + (o.get("agency") or "")) and not AF4_COURT_DIRECTED.search(q):
+        return "no_duty_or_power", "a fine or penalty on a private person ('such person shall be punished by a fine'): the person's liability, no court action is directed"
+    if APPLY_AG1 and AG1_APPLICANT.search(q):
+        return "condition_of_other_record", "a condition an applicant must meet for a licence ('shall be of good moral character', 'an applicant shall ...'): the applicant's requirement, part of the licensing record"
+    if APPLY_AG2 and AG2_LICENCE_PRECOND.search(q):
+        return "condition_of_other_record", "a private firm may offer services only after obtaining a certificate: the firm's precondition, part of the licensing record"
+    if APPLY_AG3 and AG3_MANNER_FRAGMENT.search(q) and not MODAL_SENT.search(q):
+        return "condition_of_other_record", "a manner clause cut before its main clause ('if a meeting ... by such means ... as determined by the committee'), part of the notice record"
+    if APPLY_AG4 and AG4_ELIGIBLE_FUNDING.search(q) and re.sub(r"\W", "", (o.get("actor_raw") or "")).lower() in ("unspecified", "") and (o.get("agency") or "") in ("Unspecified", ""):
+        return "amount_not_duty", "an eligibility sentence ('actions may be eligible for funding') with no acting body: a benefit term, no actor carries it out"
     if APPLY_AA2 and AA2_BASED_ON.search(q):
         return "amount_not_duty", "a computation rule ('the abatement shall be based on the information contained in the application'): an entitlement term, no actor carries it out"
     if APPLY_AA3 and AA3_CONSIDERATION.search(q):
@@ -2013,6 +2079,8 @@ def gate_record(o, text, has_markers):
         blocks0 = [m.group(1) for m in re.finditer(r"\{\{(.*?)\}\}", sent0, re.S)]
         if blocks0 and all(GENDER_EDIT.match(b) for b in blocks0):
             return "reprinted_gender_neutral", "the sentence is existing text; the only new matter is a gender-neutral pronoun edit"
+    if span and has_markers and APPLY_AF3 and af3_trivial_reprint(context_sentence(span, text)[0]):
+        return "reprinted_gender_neutral", "the sentence is existing text; the only braced matter is punctuation, a conjunction, a gender-neutral edit or a name swap"
     if span and has_markers:          # G2
         if reprinted_name_swap(context_sentence(span, text)[0]):
             return "reprinted_name_swap", "the sentence is existing text; the only new matter is a word or office name replacing a deleted one"
@@ -4009,6 +4077,9 @@ def build_records(laws):
                 o["deadline_kind"], o["recurrence"] = "none", "ongoing"; bump("ongoing_lead_item")
             if kind == "duty" and o.get("deadline_kind") == "on_effective_date" and TRIGGER.search(quote) and not CAP_RE.search(quote):
                 o["deadline_kind"], o["deadline_date"] = "none", None; bump("setup_to_triggered")
+            elif (APPLY_AF1 and kind == "duty" and o.get("deadline_kind") == "on_effective_date" and not CAP_RE.search(quote)
+                  and af1_condition_context(quote, text)):          # AF1: the trigger sits in the sentence or the one before
+                o["deadline_kind"], o["deadline_date"] = "none", None; bump("af1_context_trigger")
             elif (kind == "duty" and o.get("deadline_kind") in ("on_effective_date", "none") and PILOT_FOLLOW_ON.match(quote) and sp0
                   and preceding_sentence_has_period(sp0, text)):          # S6a: 'Such pilot projects shall be designed ...' follows the sentence that sets the pilot's period
                 o["deadline_kind"], o["deadline_date"] = "none", None; bump("s6a_pilot_follow_on_triggered")
@@ -4016,6 +4087,7 @@ def build_records(laws):
                   and r6_ok("d_event_tied", o)):          # R6d: 'at the time that the member takes the oath', 'after the completion of ...'
                 o["deadline_kind"], o["deadline_date"] = "none", None
             elif (kind == "duty" and o.get("deadline_kind") == "none" and o.get("recurrence") == "one-time"
+                  and not (APPLY_AF1 and af1_condition_context(quote, text))
                   and (o.get("deliverable_type") in SETUP_TYPES or o.get("deliverable_type") == "signage or installation"
                        or (o.get("deliverable_type") not in (None, "", "other") and not B16_EXTRA_TRIGGER.search(quote) and not o.get("deadline_date")))
                   and not TRIGGER.search(quote) and not EVENT_TIED.search(quote) and not CAP_RE.search(quote)

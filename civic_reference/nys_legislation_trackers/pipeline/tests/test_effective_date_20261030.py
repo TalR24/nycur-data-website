@@ -120,5 +120,20 @@ check("N3 signed before the date: fixed date unchanged", e["effective_date"] == 
 e = parse_effective("§ 5. This act shall take effect July 1, 2021, except that if it shall have become a law subsequent to such date, this act shall take effect immediately and be deemed to have been in full force and effect on and after July 1, 2021.", "2021-12-22", _parts=False)
 check("N3 2021-S7159 clause (subsequent to)", e["effective_date"] == "2021-12-22" and e["rule"] == "immediately_after_date" and e["retroactive_to"] == "2021-07-01", (e["effective_date"], e["rule"], e["retroactive_to"]))
 
+# N4 (night 20261110): fixed date before the signing date
+A33 = "\u00a7 2. This act shall take effect January 1, 2024."
+e = parse_effective(A33, "2024-01-30", _parts=False)
+check("N4 A3340 fixed date before signing: effective = signing", e["effective_date"] == "2024-01-30" and e["rule"] == "fixed_date_before_signing" and e["retroactive_to"] is None, (e["effective_date"], e["rule"], e["retroactive_to"]))
+e = parse_effective(A33, "2023-12-01", _parts=False)
+check("N4 fixed date after signing unchanged", e["effective_date"] == "2024-01-01" and e["rule"] == "fixed_date", (e["effective_date"], e["rule"]))
+e = parse_effective("\u00a7 2. This act shall take effect January 1, 2024 and shall be deemed to have been in full force and effect on and after January 1, 2024.", "2024-01-30", _parts=False)
+check("N4 deemed in full force: signing + retroactive_to", e["effective_date"] == "2024-01-30" and e["rule"] == "fixed_date_before_signing" and e["retroactive_to"] == "2024-01-01", (e["effective_date"], e["rule"], e["retroactive_to"]))
+
+# N5 (night 20261110): 2021-S9403 two section lists, two offsets
+C5 = "\u00a7 5. This act shall take effect immediately; provided, however, that sections one and three of this act shall take effect one year after it shall have become a law and section four of this act shall take effect on the one hundred twentieth day after it shall have become a law. Effective immediately, rules may be made."
+e = parse_effective(C5, "2022-11-22", _parts=False)
+sd = {x["applies_to"]: x["effective_date"] for x in e["section_dates"]}
+check("N5 S9403 offsets stay with their sections", sd == {"sections one and three of this act": "2023-11-22", "section four of this act": "2023-03-22"}, sd)
+
 print("%d passed, %d failed" % (passed, failed))
 sys.exit(1 if failed else 0)

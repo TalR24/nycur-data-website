@@ -532,23 +532,28 @@ def parse_effective(text, signed_date, resolver=None, _parts=True):
         cond_retro, eff, rule = eff, signed, "immediately_after_date"
     if rule == "unparsed" and not re.search(r"take effect|takes effect", text or "", re.I):
         rule = "text_truncated"           # M19 (Oct 12 2026): the cached text ends before the act clause (budget schedules) or is empty
+    if rule == "fixed_date" and eff and eff < signed and not cond_retro and not re.search(r"become a law (?:after|subsequent)", clause, re.I):
+        # night 20261110: a plain fixed-date act clause naming a date before the signing cannot take effect before the law exists; the effective
+        # date is the signing date, and the named date is kept as retroactive_to only through "deemed in full force" wording (via _retro below)
+        eff, rule = signed, "fixed_date_before_signing"
     retros = _retro(clause, signed)
     expires = _expiry(clause, eff, signed)
     if not expires:
         expires = _signed_expiry(clause, signed)
     sections = []
     for m in re.finditer(r";\s*provided(?:,? however,?| further,?)?,?\s+(?:that\s+)?(.*?)(?=;\s*provided|$)", clause, re.I):
-        part = m.group(1)
-        if not re.search(r"shall take effect|takes effect", part, re.I):
-            continue
-        sect = re.search(r"^(.*?)\s+(?:shall take effect|takes effect)", part, re.I)
-        if re.match(r"\s*(?:that\s+)?(?:if|effective)\b|this act\b", part, re.I):   # a condition on the act itself, not a section
-            continue
-        sub = "This act " + part[part.lower().find("shall take effect"):]
-        e2, r2, _ = _single(sub, signed, refinfo)
-        sections.append({"applies_to": re.sub(r"^that\s+", "", (sect.group(1) if sect else part[:80]).strip()), "effective_date": e2.isoformat() if e2 else None, "rule": r2})
-        if r2 == "same_as_chapter" and refinfo and refinfo.get("effective_source"):
-            sections[-1]["effective_source"] = refinfo["effective_source"]
+        # N5 (night 20261110): "sections one and three ... shall take effect X and section four ... shall take effect Y" is two statements; each keeps its own offset
+        for part in re.split(r"\s+and\s+(?=sections?\s+[\w,\s-]+?\s+of this act\s+shall take effect)", m.group(1), flags=re.I):
+            if not re.search(r"shall take effect|takes effect", part, re.I):
+                continue
+            sect = re.search(r"^(.*?)\s+(?:shall take effect|takes effect)", part, re.I)
+            if re.match(r"\s*(?:that\s+)?(?:if|effective)\b|this act\b", part, re.I):   # a condition on the act itself, not a section
+                continue
+            sub = "This act " + part[part.lower().find("shall take effect"):]
+            e2, r2, _ = _single(sub, signed, refinfo)
+            sections.append({"applies_to": re.sub(r"^that\s+", "", (sect.group(1) if sect else part[:80]).strip()), "effective_date": e2.isoformat() if e2 else None, "rule": r2})
+            if r2 == "same_as_chapter" and refinfo and refinfo.get("effective_source"):
+                sections[-1]["effective_source"] = refinfo["effective_source"]
     # M20 (Oct 13 2026): "...provided, however, that: 1. ...; 2. sections three, four and five of this act shall take effect January 1, 2012;"
     # a numbered or lettered proviso names the sections and carries its own date
     seen = {(x["applies_to"], x["effective_date"]) for x in sections}

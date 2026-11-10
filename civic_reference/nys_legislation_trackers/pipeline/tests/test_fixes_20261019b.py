@@ -29,7 +29,6 @@ N1 = [
  ("an amount equal to the amount paid", "an amount equal to the amount paid to a school district pursuant to subdivisions a and b of this section shall first be deducted from the following payments due the school district"),
  ("The amount of such additional accrual", "The amount of such additional accrual shall be certified to the commissioner of education by the president of the board of education or the trustees"),
  ("A new permit", "new permit for a Water withdrawal system and any subsequent renewal thereof shall be valid for a period of time not to exceed ten years from the date of issuance."),
- ("the department", "Application for grants made pursuant to this section shall be made in the manner and on forms prescribed by the department."),
  ("the department", "no grant shall be made to any one or any consortium of career education agencies and not-for-profit corporations in excess of seventy-five thousand dollars"),
 ]
 for raw, q in N1:
@@ -70,5 +69,8 @@ g = ed.gate_record(rec("State agencies", Q5), TXT5, True)
 check("N5 first actor is a reprint", g and g[0] == "reprinted_existing_actor")
 g = ed.gate_record(rec("municipalities", Q5), TXT5, True)
 check("N5 braced actor stays", g is None or g[0] != "reprinted_existing_actor")
+
+# Nov 10 2026 (AF2): a sentence whose form is prescribed by a government body is the agency's duty, no longer a benefit entitlement
+check("N1 keeps a form-prescribing sentence (AF2)", (ed.gate_record({"actor_raw": "the department", "quote": "Application for grants made pursuant to this section shall be made in the manner and on forms prescribed by the department.", "quote_verified": True}, "", False) or [None])[0] != "benefit_entitlement")
 
 print("%d passed, %d failed" % (passed, failed))
