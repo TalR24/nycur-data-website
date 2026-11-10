@@ -15,6 +15,7 @@ tracking and does not fail the run.
     python3 pipeline/validate_obligations.py             # human-readable
     python3 pipeline/validate_obligations.py --json out.json
     python3 pipeline/validate_obligations.py --strict    # exit 1 on any hard failure
+    python3 pipeline/validate_obligations.py --fetch-missing   # fetch law texts absent from the local cache first
 
 Hard failures are structural problems with an objectively right answer:
 duplicate ids, quotes absent from the law, deadlines that precede enactment,
@@ -112,8 +113,35 @@ def load_texts(matter_ids) -> dict[str, str]:
     return out
 
 
+def fetch_missing_texts(by_matter, laws) -> tuple[int, list[str]]:
+    """Fetch the Legistar text of every law with obligations but no cached text,
+    through the pipeline's own recovery (sweep_restated_duties.fetch_marked_text).
+    No model, no key. Returns (fetched, [law numbers that could not be fetched]).
+    The cache is local only (pipeline/cache is gitignored)."""
+    import requests
+    from sweep_restated_duties import fetch_marked_text, UA
+    TEXT.mkdir(parents=True, exist_ok=True)
+    session = requests.Session()
+    session.headers.update({"User-Agent": UA})
+    fetched, failed = 0, []
+    for mid in by_matter:
+        if (TEXT / f"{mid}.txt").exists():
+            continue
+        url = laws[mid].get("legistar_url")
+        marked = fetch_marked_text(session, url) if url else None
+        if marked:
+            (TEXT / f"{mid}.txt").write_text(marked)
+            fetched += 1
+        else:
+            failed.append(laws[mid]["law_number_display"])
+    return fetched, failed
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
+    ap.add_argument("--fetch-missing", action="store_true",
+                    help="before checking, fetch the text of any law missing from the local "
+                         "cache from Legistar (no model, no key); only when the cache exists")
     ap.add_argument("--json")
     ap.add_argument("--strict", action="store_true")
     ap.add_argument("--today", default=date.today().isoformat())
@@ -130,6 +158,12 @@ def main() -> None:
     for o in obs:
         by_matter[o["matter_id"]].append(o)
     texts = load_texts(by_matter)
+
+    if args.fetch_missing and TEXT.exists():
+        got, failed = fetch_missing_texts(by_matter, laws)
+        print(f"--fetch-missing: fetched {got} law texts"
+              + (f"; could not fetch {len(failed)}: {', '.join(failed)}" if failed else ""))
+        texts = load_texts(by_matter)
 
     if args.reverify:
         # Recovering a law's real text (from an attachment, say) can turn a

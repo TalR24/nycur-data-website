@@ -13,6 +13,14 @@ Runs the existing instruments rather than reinventing them:
      tracker's sibling suite, Sep 2026: invariants, dead-link shape,
      coverage vs the enacted-law universe)
 
+  4. quality/score_gold.py --strict-new  (Council gold set; fails only on
+     regressions absent from the previous gold_score.json; Nov 10 2026)
+  5. nys_legislation_trackers/pipeline/validate_duties.py --per-session
+     (NYS sibling suite, HARD count only)
+  6. input freshness: report_filings.json and the NYS signed index, each
+     flagged when older than 35 days (build_report_filings.py --check and
+     refresh_signed_index.py --check do the checking)
+
 Writes  quality_reports/quality_report_YYYY-MM-DD.{md,json}  under the
 implementation tracker (one report for both trackers; the fiscal
 metrics are prefixed `fiscal_`).
@@ -40,6 +48,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import subprocess
 import sys
 from datetime import date
@@ -49,6 +58,33 @@ HERE = Path(__file__).resolve().parent
 TRACKER = HERE.parent
 REPO = TRACKER.parent.parent
 FISCAL_VALIDATOR = REPO / "pipeline" / "validate_fiscal_impacts.py"
+GOLD_SCORER = REPO / "civic_reference" / "nyc_council_legislation_trackers" / "quality" / "score_gold.py"
+NYS = REPO / "civic_reference" / "nys_legislation_trackers"
+NYS_VALIDATOR = NYS / "pipeline" / "validate_duties.py"
+SIGNED_REFRESH = NYS / "pipeline" / "refresh_signed_index.py"
+SIGNED_STATE = NYS / "data" / "signed_state.json"
+BILL_INDEX_DIR = NYS / "data" / "bills"
+FILINGS_BUILDER = HERE / "build_report_filings.py"
+MAX_INPUT_AGE_DAYS = 35
+NYS_TEXT_DIR = NYS / "pipeline" / "cache" / "text_marked"
+NYS_SIGNED_DIR = NYS / "data" / "signed"
+NYS_SKIP_LINE = "NYS validator skipped: text cache not present in this checkout (it runs nightly on the Mac)"
+
+
+def nys_text_cache_usable(text_dir: Path = NYS_TEXT_DIR, signed_dir: Path = NYS_SIGNED_DIR) -> bool:
+    """validate_duties.py counts every record as a HARD failure when its gitignored
+    text cache is missing (a CI checkout), so it only runs where the cache holds
+    text for at least 90% of the signed laws."""
+    if not text_dir.is_dir():
+        return False
+    have = sum(1 for _ in text_dir.glob("*.txt")) or sum(1 for _ in text_dir.iterdir())
+    total = 0
+    for f in signed_dir.glob("*.json"):
+        try:
+            total += len(json.loads(f.read_text()))
+        except (OSError, ValueError):
+            pass
+    return have >= max(1, 0.9 * total)
 OUT_DIR = TRACKER / "quality_reports"
 FISCAL_FLAG_CHECKS = ("later_column_dwarfs_total", "narrative_multi_year_total",
                       "full_impact_column_earlier_than_succeeding")
@@ -59,6 +95,54 @@ def run(cmd):
         cmd, cwd=TRACKER, capture_output=True, text=True, timeout=1800,
     )
     return proc.returncode, proc.stdout + proc.stderr
+
+
+def freshness_section(today: date, filings: tuple, signed_check: tuple,
+                      state_path: Path = SIGNED_STATE, bills_dir: Path = BILL_INDEX_DIR,
+                      max_age: int = MAX_INPUT_AGE_DAYS) -> tuple[list, list]:
+    """(lines, flagged) for the input-freshness section. `filings` and
+    `signed_check` are (exit code, output) of build_report_filings.py --check
+    and refresh_signed_index.py --check. The NYS signed index is aged by the
+    refresh date recorded for the newest session in signed_state.json, and
+    the bill index it is checked against by that index's own `generated` date."""
+    flagged, lines = [], []
+
+    def last(out: str) -> str:
+        """Last real line of a check's output (stderr warnings are mixed in)."""
+        keep = [l.strip() for l in out.splitlines() if l.strip() and "warn" not in l.lower()]
+        return keep[-1] if keep else "no output"
+
+    rc, out = filings
+    lines.append(f"- {last(out)}")
+    if rc:
+        flagged.append("report_filings.json")
+    rc, out = signed_check
+    lines.append(f"- NYS signed index vs its bill index: {last(out)}")
+    if rc:
+        flagged.append("NYS signed index (stale against the bill index)")
+    try:
+        state = json.loads(state_path.read_text())
+        sessions = sorted((state.get("refreshed") or {}), key=int)
+        newest = sessions[-1] if sessions else None
+        if newest is None:
+            lines.append("- NYS signed index: no refresh date recorded in signed_state.json")
+            flagged.append("NYS signed index (no refresh date recorded)")
+        else:
+            ref = date.fromisoformat(state["refreshed"][newest])
+            age = (today - ref).days
+            lines.append(f"- NYS signed index (session {newest}) last refreshed {ref}, {age} days ago")
+            if age > max_age:
+                flagged.append(f"NYS signed index refreshed {age} days ago")
+            bill = bills_dir / f"{newest}.json"
+            if bill.exists():
+                gen = date.fromisoformat(json.loads(bill.read_text())["generated"])
+                lines.append(f"- NYS bill index (session {newest}) generated {gen}, {(today - gen).days} days ago")
+                if (today - gen).days > max_age:
+                    flagged.append(f"NYS bill index generated {(today - gen).days} days ago")
+    except (OSError, ValueError, KeyError) as e:
+        lines.append(f"- NYS signed index: freshness unreadable ({e})")
+        flagged.append("NYS signed index (unreadable)")
+    return lines, flagged
 
 
 def new_fiscal_flags(now: dict, prev: dict | None) -> dict:
@@ -96,7 +180,16 @@ def main(argv=None) -> int:
     fjson = OUT_DIR / f"{tag}.fiscal.json"
     rc_f, out_f = run([sys.executable, str(FISCAL_VALIDATOR), "--json", str(fjson)])
 
-    metrics = {"_validator_exit": rc_v, "_doris_exit": rc_d, "_fiscal_exit": rc_f}
+    rc_g, out_g = run([sys.executable, str(GOLD_SCORER), "--strict-new"])
+    nys_skipped = not nys_text_cache_usable()
+    if nys_skipped:
+        rc_n, out_n = 0, NYS_SKIP_LINE
+    else:
+        rc_n, out_n = run([sys.executable, str(NYS_VALIDATOR), "--per-session"])
+    rc_fb, out_fb = run([sys.executable, str(FILINGS_BUILDER), "--check"])
+    rc_sr, out_sr = run([sys.executable, str(SIGNED_REFRESH), "--check"])
+
+    metrics = {"_gold_exit": rc_g, "_nys_exit": rc_n, "_validator_exit": rc_v, "_doris_exit": rc_d, "_fiscal_exit": rc_f}
 
     def absorb(path: Path, prefix: str) -> None:
         """Both validators write {"hard_failures": {check: [ids]},
@@ -116,6 +209,25 @@ def main(argv=None) -> int:
     # report said "Hard failures: 0 (clean)", every fiscal count "improved")
     crashed = [name for name, path in (("validate_obligations.py", vjson),
                                        ("validate_fiscal_impacts.py", fjson)) if not path.exists()]
+    # score_gold.py exits 1 on a new regression (a result); any other non-zero
+    # exit, or no summary line, is a crash. validate_duties.py without its
+    # "HARD FAILURES" line is a crash.
+    gold_counts = re.findall(r"^regressions: (\d+)", out_g, re.M)
+    if rc_g > 1 or len(gold_counts) < 2:
+        crashed.append("score_gold.py")
+    else:
+        metrics["gold:regressions_obligations"] = int(gold_counts[0])
+        metrics["gold:regressions_fiscal"] = int(gold_counts[1])
+        metrics["gold:new_regressions_exit"] = rc_g
+    nys_hard = re.search(r"^HARD FAILURES: (\d+)", out_n, re.M)
+    metrics["_skipped"] = []
+    if nys_skipped:
+        metrics["nys_hard:total"] = None
+        metrics["_skipped"].append("nys_validate_duties")
+    elif not nys_hard:
+        crashed.append("validate_duties.py")
+    else:
+        metrics["nys_hard:total"] = int(nys_hard.group(1))
     metrics["_crashed"] = crashed
     fiscal_flagged: dict = {}
     if fjson.exists():
@@ -141,9 +253,13 @@ def main(argv=None) -> int:
         if k.startswith("_"):
             continue
         if (k.startswith("fiscal_") and "validate_fiscal_impacts.py" in crashed) or \
-           (not k.startswith("fiscal_") and "validate_obligations.py" in crashed):
+           (k.startswith("gold:") and "score_gold.py" in crashed) or \
+           (k.startswith("nys_") and "validate_duties.py" in crashed) or \
+           (not k.startswith(("fiscal_", "gold:", "nys_")) and "validate_obligations.py" in crashed):
             continue
         now_v, then_v = metrics.get(k, 0), prev.get(k, 0)
+        if now_v is None or then_v is None:   # a skipped check is neither better nor worse
+            continue
         if now_v != then_v:
             arrow = "REGRESSION +" if now_v > then_v else "improved -"
             delta.append(f"- **{k}**: {then_v} → {now_v} ({arrow}{abs(now_v - then_v)})")
@@ -151,19 +267,27 @@ def main(argv=None) -> int:
         delta = ["- No metric changed. Quiet month."]
 
     hard_total = sum(
-        v for k, v in metrics.items() if k.startswith("hard:") or k.startswith("fiscal_hard:")
+        v for k, v in metrics.items()
+        if k.startswith(("hard:", "fiscal_hard:", "nys_hard:")) and v is not None
     )
+    fresh_lines, stale_inputs = freshness_section(date.today(), (rc_fb, out_fb), (rc_sr, out_sr))
+    metrics["_stale_inputs"] = stale_inputs
     lines = [
         f"# Legislation trackers quality report, {tag}",
         "",
         (f"**VALIDATOR CRASHED: {', '.join(crashed)}. No result for it this month; see its output below.** "
          f"Hard failures in the validator that ran: **{hard_total}**"
          if crashed else
-         f"Hard failures: **{hard_total}**" + (": RUN A QUALITY LOOP" if hard_total else " (clean)")),
+         f"Hard failures: **{hard_total}**" + (": RUN A QUALITY LOOP" if hard_total else
+                                           (" (clean in the checks that ran; NYS validator skipped)" if nys_skipped else " (clean)"))),
         "",
     ]
     if prev:
         lines += [f"## Change vs {prev_name}", ""] + delta + [""]
+    if nys_skipped:
+        lines += [f"**{NYS_SKIP_LINE}**", ""]
+    lines += ["## Input freshness (limit 35 days)", ""] + fresh_lines
+    lines += ([f"- **STALE INPUT: {', '.join(stale_inputs)}**"] if stale_inputs else ["- All inputs fresh."]) + [""]
     new_flags = new_fiscal_flags(fiscal_flagged, prev) if "validate_fiscal_impacts.py" not in crashed else {}
     metrics["_fiscal_new"] = new_flags
     if new_flags:
@@ -174,7 +298,11 @@ def main(argv=None) -> int:
               "", "## validate_against_doris.py", "```",
               out_d.strip()[:8000], "```",
               "", "## validate_fiscal_impacts.py (fiscal tracker)", "```",
-              out_f.strip()[:8000], "```"]
+              out_f.strip()[:8000], "```",
+              "", "## score_gold.py --strict-new (Council gold set)", "```",
+              out_g.strip()[:6000], "```",
+              "", "## validate_duties.py --per-session (NYS)", "```",
+              out_n.strip()[:4000], "```"]
 
     (OUT_DIR / f"{tag}.md").write_text("\n".join(lines) + "\n")
     (OUT_DIR / f"{tag}.json").write_text(json.dumps(metrics, indent=1))

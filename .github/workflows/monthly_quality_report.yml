@@ -1,7 +1,8 @@
 # Monthly data-quality report for the legislation trackers — the
 # standing decay detector. Runs the existing regression suite
 # (validate_obligations.py) + the DORIS external check + the fiscal
-# tracker's validate_fiscal_impacts.py (Sep 2026), commits a dated
+# tracker's validate_fiscal_impacts.py (Sep 2026), score_gold.py --strict-new,
+# the NYS validate_duties.py and an input-freshness check (Nov 10 2026), commits a dated
 # report with a month-over-month diff to
 # civic_reference/legislation_implementation_tracker/quality_reports/,
 # and, until Oct 17 2026, emailed Tal the headline + delta. Now
@@ -13,8 +14,8 @@
 # hits NYC Open Data anonymously.
 #
 # Scheduled the 3rd at 14:00 UTC: AFTER the 1st-of-month implementation
-# refresh (14:40) and fiscal refresh (11:23), so it measures the fresh
-# data. A hard failure or rising soft count = run a quality loop
+# refresh (21:40 UTC) and fiscal refresh (18:23 UTC), and the Max routine
+# (12:17 UTC), so it measures the fresh data. A hard failure or rising soft count = run a quality loop
 # (database-expansion-playbook skill).
 
 name: monthly-quality-report
@@ -26,6 +27,10 @@ on:
 
 permissions:
   contents: write
+
+concurrency:
+  group: quality-report
+  cancel-in-progress: false
 
 jobs:
   quality-report:
@@ -48,6 +53,9 @@ jobs:
           pip install -r pipeline/requirements.txt
           pip install -r civic_reference/legislation_implementation_tracker/pipeline/requirements.txt
 
+      - name: Crosswalk copies are identical
+        run: python3 civic_reference/legislation_implementation_tracker/pipeline/tests/test_crosswalk_copies.py
+
       - name: Run quality report
         id: report
         continue-on-error: true   # commit the report, then fail the run below
@@ -63,8 +71,13 @@ jobs:
             echo "No report changes."
           else
             git commit -m "[bot] Monthly trackers quality report $(date -u +%Y-%m-%d)"
-            git pull --rebase origin main
-            git push origin main
+            # autostash + retry; a push that never lands fails the run (review finding 8, Nov 10 2026)
+            pushed=0
+            for attempt in 1 2 3 4 5; do
+              if git -c rebase.autoStash=true pull --rebase origin main && git push origin main; then pushed=1; break; fi
+              sleep $((attempt * 15))
+            done
+            if [ "$pushed" != 1 ]; then echo "::error::report push failed after 5 attempts"; exit 1; fi
           fi
 
       - name: Check out the premium repo (ops digest sections)
