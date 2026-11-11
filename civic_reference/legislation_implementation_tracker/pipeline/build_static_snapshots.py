@@ -396,7 +396,7 @@ def build_hub_home(obl, pw):
     p = HUB / "index.html"
     obs, pows = obl.get("obligations", []), pw.get("powers", [])
     put(p, "hub-obl-duties", num(obl.get("obligation_count") or len(obs)))
-    put(p, "hub-obl-laws", num(sum(1 for l in obl.get("laws", []) if (l.get("obligation_count") or 0) > 0)))
+    put(p, "hub-obl-laws", num(len({o["matter_id"] for o in obs if o.get("matter_id")})))   # Nov 10 2026: the laws behind the duties counted above, the table's definition (reprinted duties included)
     put(p, "hub-obl-agencies", num(len({o["agency"] for o in obs if o.get("agency_matched")})))
     put(p, "hub-pow-powers", num(pw.get("power_count") or len(pows)))
     put(p, "hub-pow-laws", num(len({o["matter_id"] for o in pows if o.get("matter_id")})))
