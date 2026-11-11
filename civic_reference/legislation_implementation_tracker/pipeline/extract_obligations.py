@@ -1051,9 +1051,11 @@ def apply_record_overrides(records: list[dict], matter_id: str,
             report.append({"matter_id": matter_id, "action": "set",
                           "status": "stale", **entry})
             continue
-        if len(cands) > 1 and "agency" in entry.get("fields", {}):
+        if (len(cands) > 1 and "agency" in entry.get("fields", {})
+                and not entry.get("all")):
             # an agency change on a quote shared by several records cannot
-            # pick its record: report it
+            # pick its record: report it (`"all": true` says the judge meant
+            # every record sharing the quote, Nov 10 2026)
             report.append({"matter_id": matter_id, "action": "set",
                           "status": "ambiguous",
                           "candidates": [c.get("obligation_id") for c in cands],
@@ -1079,6 +1081,14 @@ def apply_record_overrides(records: list[dict], matter_id: str,
         if not cands:
             report.append({"matter_id": matter_id, "action": "remove",
                           "status": "already_absent", **entry})
+            continue
+        keep = entry.get("keep")
+        if keep and 1 <= keep <= len(cands):
+            # "keep": N keeps the Nth candidate (1-based, record order) and
+            # removes the other duplicates (Nov 10 2026: keep-one verdicts on
+            # records sharing an identical quote and agency)
+            for c in cands[:keep - 1] + cands[keep:]:
+                records.remove(c)
             continue
         if len(cands) > 1:
             report.append({"matter_id": matter_id, "action": "remove",

@@ -137,6 +137,29 @@ def fetch_missing_texts(by_matter, laws) -> tuple[int, list[str]]:
     return fetched, failed
 
 
+
+def classify_absent_remove(mid: str, rep: dict, cache_rows) -> str:
+    """Soft-count key for an override report row that is neither stale nor
+    ambiguous (a `remove` whose target is absent from the published data).
+    Uses prune_overrides.producer_emits, the same lenient cached-extraction
+    test: target still produced -> override_working_remove (the override is
+    what removed it); not produced -> override_dead_remove; no cache ->
+    override_already_absent (the old behaviour)."""
+    if cache_rows is None:
+        return "override_already_absent"
+    from prune_overrides import producer_emits
+    emits = producer_emits(mid, {"quote_prefix": rep.get("quote_prefix", "")}, cache_rows)
+    if emits is None:
+        return "override_already_absent"
+    return "override_working_remove" if emits else "override_dead_remove"
+
+
+def load_cache_rows(overrides):
+    """Cached extraction rows for the override matters, or None when the cache
+    folder is absent (CI)."""
+    from prune_overrides import load_cache_rows as _load
+    return _load(overrides)
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--fetch-missing", action="store_true",
@@ -605,6 +628,11 @@ def main() -> None:
     except Exception:                                    # noqa: BLE001
         RECORD_OVERRIDES = None
     if RECORD_OVERRIDES:
+        cache_rows = load_cache_rows(RECORD_OVERRIDES)   # None in CI (no cache folder)
+        if cache_rows is None:
+            soft["override_cache_absent"].append(
+                "NOTE: no cached extraction (pipeline/cache/extracted absent), so working "
+                "removals cannot be told from dead ones; every absent remove is listed here")
         for mid, ov in RECORD_OVERRIDES.items():
             rows = by_matter.get(mid, []) + [o for o in powers if o["matter_id"] == mid]
             _, report = apply_record_overrides([dict(o) for o in rows], mid,
@@ -616,7 +644,7 @@ def main() -> None:
             for s in report:
                 key = "stale_override" if s.get("status") == "stale" \
                     else "override_ambiguous" if s.get("status") == "ambiguous" \
-                    else "override_already_absent"
+                    else classify_absent_remove(mid, s, cache_rows)
                 soft[key].append(
                     f"matter {mid} {s['action']}: {s.get('quote_prefix', '')[:60]!r}")
 
