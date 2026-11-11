@@ -96,6 +96,11 @@ def main():
     if not problems:
         print(f"The Sunday brief for {sunday} arrived and the Saturday Gmail sweep report exists. Nothing to do.")
         return 0
+    # A missing sweep report alone must not trigger this fallback: the brief was delivered and reports the
+    # missing sweep itself (brief_rules.md rule 8e), so sending the raw digests too would be a second Sunday email.
+    if all("Gmail sweep" in p for p in problems):
+        print("The Sunday brief arrived. Warning only, no email sent: " + "; ".join(problems))
+        return 0
     print("Delivery problems: " + "; ".join(problems))
     text, page = compose(a.premium, now, problems)
     subject = "Sunday week-ahead email may not have arrived, raw digests below"
