@@ -64,7 +64,7 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version-file: .python-version
 
       - name: Install dependencies
         run: pip install -r civic_reference/legislation_implementation_tracker/pipeline/requirements.txt
@@ -102,129 +102,57 @@ jobs:
       # canary, extract and resume read the converted texts that fetch_texts saved, one cache per session
       - name: Restore 2009 marked texts
         if: ${{ inputs.task == 'canary' || inputs.task == 'extract' || inputs.task == 'resume' }}
-        uses: actions/cache/restore@v4
+        uses: ./.github/actions/restore-nys-session
         with:
-          # the path list must match the save step's exactly: actions/cache keys a cache by its paths too
-          # (Oct 7 2026: a one-path restore missed all 9 caches and the canary sent 0 laws)
-          path: |
-            civic_reference/nys_legislation_trackers/pipeline/cache/html/2009-*.html
-            civic_reference/nys_legislation_trackers/pipeline/cache/text/2009-*.txt
-            civic_reference/nys_legislation_trackers/pipeline/cache/memo/2009-*.txt
-            civic_reference/nys_legislation_trackers/pipeline/cache/text_marked/2009-*.txt
-          key: nys-texts-2009-restore
-          restore-keys: nys-texts-2009-
+          session: "2009"
 
       - name: Restore 2011 marked texts
         if: ${{ inputs.task == 'canary' || inputs.task == 'extract' || inputs.task == 'resume' }}
-        uses: actions/cache/restore@v4
+        uses: ./.github/actions/restore-nys-session
         with:
-          # the path list must match the save step's exactly: actions/cache keys a cache by its paths too
-          # (Oct 7 2026: a one-path restore missed all 9 caches and the canary sent 0 laws)
-          path: |
-            civic_reference/nys_legislation_trackers/pipeline/cache/html/2011-*.html
-            civic_reference/nys_legislation_trackers/pipeline/cache/text/2011-*.txt
-            civic_reference/nys_legislation_trackers/pipeline/cache/memo/2011-*.txt
-            civic_reference/nys_legislation_trackers/pipeline/cache/text_marked/2011-*.txt
-          key: nys-texts-2011-restore
-          restore-keys: nys-texts-2011-
+          session: "2011"
 
       - name: Restore 2013 marked texts
         if: ${{ inputs.task == 'canary' || inputs.task == 'extract' || inputs.task == 'resume' }}
-        uses: actions/cache/restore@v4
+        uses: ./.github/actions/restore-nys-session
         with:
-          # the path list must match the save step's exactly: actions/cache keys a cache by its paths too
-          # (Oct 7 2026: a one-path restore missed all 9 caches and the canary sent 0 laws)
-          path: |
-            civic_reference/nys_legislation_trackers/pipeline/cache/html/2013-*.html
-            civic_reference/nys_legislation_trackers/pipeline/cache/text/2013-*.txt
-            civic_reference/nys_legislation_trackers/pipeline/cache/memo/2013-*.txt
-            civic_reference/nys_legislation_trackers/pipeline/cache/text_marked/2013-*.txt
-          key: nys-texts-2013-restore
-          restore-keys: nys-texts-2013-
+          session: "2013"
 
       - name: Restore 2015 marked texts
         if: ${{ inputs.task == 'canary' || inputs.task == 'extract' || inputs.task == 'resume' }}
-        uses: actions/cache/restore@v4
+        uses: ./.github/actions/restore-nys-session
         with:
-          # the path list must match the save step's exactly: actions/cache keys a cache by its paths too
-          # (Oct 7 2026: a one-path restore missed all 9 caches and the canary sent 0 laws)
-          path: |
-            civic_reference/nys_legislation_trackers/pipeline/cache/html/2015-*.html
-            civic_reference/nys_legislation_trackers/pipeline/cache/text/2015-*.txt
-            civic_reference/nys_legislation_trackers/pipeline/cache/memo/2015-*.txt
-            civic_reference/nys_legislation_trackers/pipeline/cache/text_marked/2015-*.txt
-          key: nys-texts-2015-restore
-          restore-keys: nys-texts-2015-
+          session: "2015"
 
       - name: Restore 2017 marked texts
         if: ${{ inputs.task == 'canary' || inputs.task == 'extract' || inputs.task == 'resume' }}
-        uses: actions/cache/restore@v4
+        uses: ./.github/actions/restore-nys-session
         with:
-          # the path list must match the save step's exactly: actions/cache keys a cache by its paths too
-          # (Oct 7 2026: a one-path restore missed all 9 caches and the canary sent 0 laws)
-          path: |
-            civic_reference/nys_legislation_trackers/pipeline/cache/html/2017-*.html
-            civic_reference/nys_legislation_trackers/pipeline/cache/text/2017-*.txt
-            civic_reference/nys_legislation_trackers/pipeline/cache/memo/2017-*.txt
-            civic_reference/nys_legislation_trackers/pipeline/cache/text_marked/2017-*.txt
-          key: nys-texts-2017-restore
-          restore-keys: nys-texts-2017-
+          session: "2017"
 
       - name: Restore 2019 marked texts
         if: ${{ inputs.task == 'canary' || inputs.task == 'extract' || inputs.task == 'resume' }}
-        uses: actions/cache/restore@v4
+        uses: ./.github/actions/restore-nys-session
         with:
-          # the path list must match the save step's exactly: actions/cache keys a cache by its paths too
-          # (Oct 7 2026: a one-path restore missed all 9 caches and the canary sent 0 laws)
-          path: |
-            civic_reference/nys_legislation_trackers/pipeline/cache/html/2019-*.html
-            civic_reference/nys_legislation_trackers/pipeline/cache/text/2019-*.txt
-            civic_reference/nys_legislation_trackers/pipeline/cache/memo/2019-*.txt
-            civic_reference/nys_legislation_trackers/pipeline/cache/text_marked/2019-*.txt
-          key: nys-texts-2019-restore
-          restore-keys: nys-texts-2019-
+          session: "2019"
 
       - name: Restore 2021 marked texts
         if: ${{ inputs.task == 'canary' || inputs.task == 'extract' || inputs.task == 'resume' }}
-        uses: actions/cache/restore@v4
+        uses: ./.github/actions/restore-nys-session
         with:
-          # the path list must match the save step's exactly: actions/cache keys a cache by its paths too
-          # (Oct 7 2026: a one-path restore missed all 9 caches and the canary sent 0 laws)
-          path: |
-            civic_reference/nys_legislation_trackers/pipeline/cache/html/2021-*.html
-            civic_reference/nys_legislation_trackers/pipeline/cache/text/2021-*.txt
-            civic_reference/nys_legislation_trackers/pipeline/cache/memo/2021-*.txt
-            civic_reference/nys_legislation_trackers/pipeline/cache/text_marked/2021-*.txt
-          key: nys-texts-2021-restore
-          restore-keys: nys-texts-2021-
+          session: "2021"
 
       - name: Restore 2023 marked texts
         if: ${{ inputs.task == 'canary' || inputs.task == 'extract' || inputs.task == 'resume' }}
-        uses: actions/cache/restore@v4
+        uses: ./.github/actions/restore-nys-session
         with:
-          # the path list must match the save step's exactly: actions/cache keys a cache by its paths too
-          # (Oct 7 2026: a one-path restore missed all 9 caches and the canary sent 0 laws)
-          path: |
-            civic_reference/nys_legislation_trackers/pipeline/cache/html/2023-*.html
-            civic_reference/nys_legislation_trackers/pipeline/cache/text/2023-*.txt
-            civic_reference/nys_legislation_trackers/pipeline/cache/memo/2023-*.txt
-            civic_reference/nys_legislation_trackers/pipeline/cache/text_marked/2023-*.txt
-          key: nys-texts-2023-restore
-          restore-keys: nys-texts-2023-
+          session: "2023"
 
       - name: Restore 2025 marked texts
         if: ${{ inputs.task == 'canary' || inputs.task == 'extract' || inputs.task == 'resume' }}
-        uses: actions/cache/restore@v4
+        uses: ./.github/actions/restore-nys-session
         with:
-          # the path list must match the save step's exactly: actions/cache keys a cache by its paths too
-          # (Oct 7 2026: a one-path restore missed all 9 caches and the canary sent 0 laws)
-          path: |
-            civic_reference/nys_legislation_trackers/pipeline/cache/html/2025-*.html
-            civic_reference/nys_legislation_trackers/pipeline/cache/text/2025-*.txt
-            civic_reference/nys_legislation_trackers/pipeline/cache/memo/2025-*.txt
-            civic_reference/nys_legislation_trackers/pipeline/cache/text_marked/2025-*.txt
-          key: nys-texts-2025-restore
-          restore-keys: nys-texts-2025-
+          session: "2025"
 
       - name: Restore answers already collected (extract, resume)
         if: ${{ inputs.task == 'extract' || inputs.task == 'resume' }}

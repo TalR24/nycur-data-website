@@ -1,0 +1,20 @@
+name: Restore NYS session texts
+description: Restore one session's converted law texts cache (same paths and keys the save step writes)
+inputs:
+  session:
+    description: Legislative session year (2009, 2011, ... 2025)
+    required: true
+runs:
+  using: composite
+  steps:
+    - uses: actions/cache/restore@v4
+      with:
+        # the path list must match the save step's exactly: actions/cache keys a cache by its paths too
+        # (Oct 7 2026: a one-path restore missed all 9 caches and the canary sent 0 laws)
+        path: |
+          civic_reference/nys_legislation_trackers/pipeline/cache/html/${{ inputs.session }}-*.html
+          civic_reference/nys_legislation_trackers/pipeline/cache/text/${{ inputs.session }}-*.txt
+          civic_reference/nys_legislation_trackers/pipeline/cache/memo/${{ inputs.session }}-*.txt
+          civic_reference/nys_legislation_trackers/pipeline/cache/text_marked/${{ inputs.session }}-*.txt
+        key: nys-texts-${{ inputs.session }}-restore
+        restore-keys: nys-texts-${{ inputs.session }}-
