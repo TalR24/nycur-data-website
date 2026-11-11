@@ -5,7 +5,7 @@
      <script defer src="/assets/chart.js"></script>
 
    Provides:
-     - the NYCuriosity wordmark, injected into every .c-foot
+     - the NYCuriosity sub-logo, injected into every .c-foot
      - PNG capture of a .chart-card (canvas-safe)
      - the embed modal
      - the canonical number formatters
@@ -64,10 +64,11 @@
 
   /* ---- wordmark -------------------------------------------------------- */
 
+  /* The delivered NYCURIOSITY{}DATA sub-logo (black, for a light ground). Same-origin
+     <img>, so the PNG export inlines it as a data URL. Height 14px, clear space
+     comes from the footer padding. */
   function markup() {
-    return '<span class="c-mark-bars" aria-hidden="true">' +
-             '<i style="height:6px"></i><i style="height:10px"></i><i style="height:13px"></i>' +
-           '</span><span class="c-mark-wm">NYCURIOSITY</span>';
+    return '<img class="c-mark-img" src="/assets/brand/SubLogo_B.svg" alt="" width="160" height="14" decoding="async">';
   }
 
   /* Every chart footer carries the wordmark, so an exported PNG stays
