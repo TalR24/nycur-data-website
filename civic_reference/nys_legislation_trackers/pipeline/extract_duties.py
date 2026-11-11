@@ -1573,10 +1573,17 @@ Q4_NO_POWER = re.compile(r"\bshall,[^,]{0,120},\s+by\s+virtue\s+thereof\s+(?:als
 Q5_BLOCK = re.compile(r"^(?:such|if\s+[^{}]{5,200},|of\s+that\s+year\.?)$", re.I)
 
 
+APPLY_AG6 = True          # Nov 11 2026 (coordinator AG6): items under 'shall be appointed as follows:' that say 'appointed by <official>' are not sub-items of the parent
+AG6_APPOINT_LEAD = re.compile(r"^\W*(?:\d+\.\s*)?the\s+members\s+shall\s+be\s+appointed\s+as\s+follows\s*:\s*$", re.I)
+AG6_APPOINTED_BY = re.compile(r"\bappointed\s+by\s+the\s+(?:[\w'-]+\s+){0,8}?(?:president|speaker|leader|governor|executive|supervisor|mayor|comptroller|commissioner|chair\w*|attorney\s+general|director)\b", re.I)
+
+
 def q1_item(q, lead):
     """Q1: a list item with no modal of its own under a membership / scope / report-content lead is part of the parent record."""
     if not lead or not Q1_LEAD.search(re.sub(r"\s+", " ", lead.strip())[-700:]):
         return False
+    if APPLY_AG6 and AG6_APPOINT_LEAD.search(lead.strip()[-120:]) and AG6_APPOINTED_BY.search(q):
+        return False          # AG6: an item that names its own appointing official is that official's duty
     m = re.search(r"\b(?:shall|must|may|will)\b", q)
     return not m or bool(SUBORDINATE_MARK.search(q[:m.start()]))
 
@@ -1844,6 +1851,17 @@ def earlier_chapter_sunset(q, text):
 
 
 APPLY_AC3 = True          # Nov 8 2026 (coordinator AC3): the lead's own modal decides a list item's kind: a 'may' / 'is authorized' lead makes power items, a 'shall' lead duties, no modal leaves the item's own modal in charge
+AG5_MAY_ALSO = re.compile(r"\bmay\s+also\b", re.I)
+
+
+def lead_kind(lead, q=None):
+    """The list lead's kind: duty when it holds a mandatory modal, else power; AG5: with both modals ('the court shall, ... and where appropriate, may also impose:') the last one governs."""
+    if APPLY_AG5 and not (q and MANDATORY.search(q)) and MANDATORY.search(lead) and AG5_MAY_ALSO.search(lead) and AG5_MAY_ALSO.search(lead).start() > list(MANDATORY.finditer(lead))[-1].start():
+        return "power"
+    return "duty" if MANDATORY.search(lead) else "power"
+
+
+APPLY_AG5 = True          # Nov 11 2026 (coordinator AG5): a list lead holding both modals takes the kind of the LAST modal before the colon
 AC3_MARK = re.compile(r"\(\s*(?:a|A|1|i)\s*\)")
 AC3_PERMISSIVE = re.compile(r"\bmay\b(?!\s+not)|\b(?:is|are)\s+(?:hereby\s+)?(?:authorized|empowered|permitted)\b", re.I)
 def lead_modal_kind(span, text):
@@ -1855,6 +1873,10 @@ def lead_modal_kind(span, text):
     lead = RELATIVE.sub(" ", re.sub(r"\{\{|\}\}", "", lead))
     if not lead.strip() or not re.search(r"(?:\bonly\s+if|\bfollowing|\bif|:)\s*$", lead.strip(), re.I):
         return None
+    if APPLY_AG5:          # AG5: 'the court shall, at a minimum, toll ..., and where appropriate, the court may also impose one or more of the following:' - the clause that ends at the colon governs
+        mand, perm = list(MANDATORY.finditer(lead)), list(AC3_PERMISSIVE.finditer(lead))
+        if mand and perm and perm[-1].start() > mand[-1].start():
+            return "power"
     if MANDATORY.search(lead):
         return "duty"
     return "power" if AC3_PERMISSIVE.search(lead) else None
@@ -1899,8 +1921,8 @@ def ongoing_lead_item(o, text):
 # Nov 10 2026 night gate fixes AG1-AG4 (flags set from the dry run over stored ids, cap 40 each)
 APPLY_AG1 = True          # applicant licensing conditions (backlog B45): 'an applicant shall ...', 'Be of good moral character', 'shall have N years of experience'
 APPLY_AG2 = True          # a private firm's licence precondition: 'may offer to provide ... services only after obtaining a certificate of authorization'
-APPLY_AG3 = False          # a manner clause cut before its main clause: 'if a meeting of X, by such means ..., as determined by the X.' (no modal)
-APPLY_AG4 = False          # funding eligibility sentence with no acting body: 'may be eligible for funding' under an Unspecified actor
+APPLY_AG3 = True          # Nov 11 2026: ON, dry run over stored ids 1 (cap 40); a manner clause cut before its main clause: 'if a meeting of X, by such means ..., as determined by the X.' (no modal)
+APPLY_AG4 = True          # Nov 11 2026: ON, dry run over stored ids 1 (cap 40); funding eligibility sentence with no acting body: 'may be eligible for funding' under an Unspecified actor
 APPLY_AF1 = True          # Nov 10 2026 (coordinator AF1, audit B): a duty whose condition sits in its own sentence or the sentence before ('If the department determines ..., the department shall ...') is never stamped on_effective_date; count above 40 knowingly, the rule is the criterion-5 definition
 APPLY_AF2 = True          # Nov 10 2026 (coordinator AF2): 'Application ... shall be made on forms prescribed by the department' keeps its record (the body prescribes the form)
 AF1_COND_LEAD = re.compile(r"^\W*(?:\(\w{1,3}\)\s*)?(?:if|upon\s+(?:a\s+|the\s+)?(?:finding|determination|receipt|request)|in\s+the\s+event|whenever|unless|where\s+the|should\s+the)\b", re.I)
@@ -1941,13 +1963,60 @@ def af3_trivial_reprint(sent):
     if all(triv(b) for b in blocks):
         return True
     rest = re.sub(r"\{\{(.*?)\}\}", lambda m: "" if triv(m.group(1)) else m.group(0), sent, flags=re.S)
-    return reprinted_name_swap(rest)
+    return reprinted_name_swap(rest) or (APPLY_AG7 and ag7_term_swap(rest))
+
+
+APPLY_AG7 = False         # OFF, 219 stored ids flip (cap 40); one-word swaps still 113 and include real changes (employees/persons, municipal/international); needs a semantic test. Nov 11 2026 (coordinator AG7): a reprinted sentence whose only braced matter 1:1 replaces a bracketed word or phrase of at most 4 words, with no modal, verb, digit or new actor, is no new matter
+AG7_BAD = re.compile(NAME_SWAP_BAD.pattern + r"|\d|\b(?:shall|must|may|can|will|required|authorized|empowered|directed|within|after|before|until|not|no)\b", re.I)
+
+
+def ag7_term_swap(sent):
+    n = sent.count("{{")
+    pairs = list(NAME_SWAP_PAIR.finditer(sent))
+    if not n or len(pairs) != n:
+        return False
+    for m in pairs:
+        old, new = re.sub(r"^\W+|\W+$", "", m.group(1)), re.sub(r"^\W+|\W+$", "", m.group(2))
+        if not old or not new or len(old.split()) > 4 or len(new.split()) > 4 or AG7_BAD.search(old) or AG7_BAD.search(new) or VERBISH.search(new) or VERBISH.search(old):
+            return False
+    return True
 
 
 AG1_APPLICANT = re.compile(r"(?:^\W*(?:\(\w{1,3}\)\s*)?(?:[A-Z][a-z]+:\s*)?be\s+of\s+good\s+moral\s+character\b|(?:^\W*|[.;:]\s+)(?:an?|each|the)\s+applicants?\s+(?:shall|must)\s+(?:be\s+(?:of|a|at|licensed|registered|over|resident)\b|have|possess|hold|demonstrate)\b|\bapplicants?\s+shall\s+(?:be\s+of\s+good\s+moral\s+character|have\s+(?:at\s+least\s+)?[\w-]+\s+years\b)|\bshall\s+be\s+of\s+good\s+moral\s+character\b|\bshall\s+have\s+(?:at\s+least\s+)?[\w-]+(?:\s+[\w-]+)?\s+years\s+of\s+(?:\w+\s+)?experience\b)", re.I)
 AG2_LICENCE_PRECOND = re.compile(r"^\W*may\s+(?:offer\s+to\s+provide\s+or\s+provide|provide|practice|engage\s+in)\b[^.]{0,200}\bonly\s+after\s+obtaining\s+an?\s+(?:certificate|license|licence|permit)\b", re.I)
 AG3_MANNER_FRAGMENT = re.compile(r"^\W*(?:and,?\s+)?if\s+[^.]{5,300}\bas\s+determined\s+by\s+the\b[^.]{0,120}\.?$", re.I)
 AG4_ELIGIBLE_FUNDING = re.compile(r"\bmay\s+be\s+eligible\s+for\s+(?:funding|aid|grants?|reimbursement)\b", re.I)
+
+APPLY_AH1 = True          # Nov 11 2026: a limit set by reference to an earlier paragraph ('the number of licenses shall be limited to the number of licenses established in subparagraph (i)'): a term of the licence cap, no actor acts
+APPLY_B51 = True          # Nov 11 2026 (backlog B51): a sunset extension inside a Local Finance Law 11.00 period-of-probable-usefulness entry is never a record (criteria.md); dropped in the caller of sunset_extension_records
+AH1_LIMIT_BY_REF = re.compile(r"\bthe\s+number\s+of\s+(?:\w+\s+){1,2}shall\s+be\s+limited\s+to\s+the\s+number\s+of\s+(?:\w+\s+){1,2}established\s+in\b", re.I)
+PPU_AMENDED = re.compile(r"local\s+finance\s+law[^.]{0,80}period\s+of\s+probable\s+usefulness|period\s+of\s+probable\s+usefulness", re.I)
+PPU_SECTION = re.compile(r"\b11\.00\b[^.]{0,80}local finance law|local finance law[^.]{0,80}\b11\.00\b", re.I)
+
+
+APPLY_AG9 = True          # Nov 11 2026 (coordinator AG9)
+APPLY_AG10 = True         # Nov 11 2026: the M24 drafting-commission rule applied to U1/B43 records
+AG9_TAKE_EFFECT = re.compile(r"\btake\s+effect\b", re.I)
+AG9_EXPIRY = re.compile(r"\b(?:expire|(?:deemed\s+)?repealed|remain\s+in\s+(?:full\s+)?(?:force|effect))\b", re.I)
+
+
+def ag9_effective_date_only(q):
+    """AG9: the clause that holds the (trimmed) quote's date says 'take effect' and nothing about expiry or remaining in force."""
+    last = [c for c in re.split(r";", q) if c.strip()]
+    last = last[-1] if last else q
+    return bool(AG9_TAKE_EFFECT.search(last)) and not AG9_EXPIRY.search(last)
+
+
+def ppu_sunset_record(o, text):
+    """B51: True when the record's quote sits in a Local Finance Law section 11.00 (period of probable usefulness) entry."""
+    sp = locate_span(o.get("quote") or "", text)
+    if not sp:
+        return False
+    hdr, sec = section_of_span(sp, text)
+    if sec and PPU_SECTION.search((hdr or "") + " " + sec[:400]):
+        return True
+    desc = amending_description(text, sp[0]) or ""          # 'Section 2 of chapter 719 of the laws of 1980 amending the local finance law relating to the period of probable usefulness of ...'
+    return bool(PPU_AMENDED.search(desc))
 
 
 def gate_record(o, text, has_markers):
@@ -2026,6 +2095,8 @@ def gate_record(o, text, has_markers):
         return "condition_of_other_record", "a manner clause cut before its main clause ('if a meeting ... by such means ... as determined by the committee'), part of the notice record"
     if APPLY_AG4 and AG4_ELIGIBLE_FUNDING.search(q) and re.sub(r"\W", "", (o.get("actor_raw") or "")).lower() in ("unspecified", "") and (o.get("agency") or "") in ("Unspecified", ""):
         return "amount_not_duty", "an eligibility sentence ('actions may be eligible for funding') with no acting body: a benefit term, no actor carries it out"
+    if APPLY_AH1 and AH1_LIMIT_BY_REF.search(q):
+        return "amount_not_duty", "a licence cap stated by reference ('the number of licenses shall be limited to the number established in subparagraph (i)'): a term of the cap record, no actor acts"
     if APPLY_AA2 and AA2_BASED_ON.search(q):
         return "amount_not_duty", "a computation rule ('the abatement shall be based on the information contained in the application'): an entitlement term, no actor carries it out"
     if APPLY_AA3 and AA3_CONSIDERATION.search(q):
@@ -2106,7 +2177,7 @@ def gate_record(o, text, has_markers):
             lead = list_lead_in(span, text)
             if lead and (VERBISH.search(lead) or TO_VERB.search(lead)):          # a list entry: the duty is in the lead-in sentence
                 o["lead_in"] = re.sub(r"\s+", " ", re.sub(r"\{\{|\}\}", "", lead)).strip()[:400]
-                o["kind_from_lead_in"] = "duty" if MANDATORY.search(lead) else "power"
+                o["kind_from_lead_in"] = lead_kind(lead, q)
                 if INFINITIVE_ITEM.match(q):
                     o["kind_from_lead_in"] = infinitive_lead_kind(lead); bump("s4_infinitive_list_item")          # S4: 'shall have the following powers:' grants powers
                 if o["kind_from_lead_in"] == "duty" and o.get("kind_model") == "power" and LIMIT_RE.search(lead) and not MANDATORY.search(LIMIT_RE.sub(" ", lead)) and not DEBT_WORDS.search(lead + " " + q):
@@ -2131,7 +2202,7 @@ def gate_record(o, text, has_markers):
                     # R2: 'Work with ... to prepare', 'Advise the Governor' under 'shall have the following powers and duties:'
                     lead = imperative_lead_in(span, text)
                     o["lead_in"] = re.sub(r"\s+", " ", re.sub(r"\{\{|\}\}", "", lead)).strip()[:400]
-                    o["kind_from_lead_in"] = "duty" if MANDATORY.search(lead) else "power"
+                    o["kind_from_lead_in"] = lead_kind(lead, q)
                     if INFINITIVE_ITEM.match(q):
                         o["kind_from_lead_in"] = infinitive_lead_kind(lead); bump("s4_infinitive_list_item")
                     subj = lead_in_subject(lead)
@@ -2141,7 +2212,7 @@ def gate_record(o, text, has_markers):
                 elif APPLY_U4 and scan_back_lead_in(span, text):
                     lead = scan_back_lead_in(span, text)          # U4: the nearest ':' paragraph above the item's run holds the shall / may
                     o["lead_in"] = re.sub(r"\s+", " ", re.sub(r"\{\{|\}\}", "", lead)).strip()[:400]
-                    o["kind_from_lead_in"] = "duty" if MANDATORY.search(lead) else "power"
+                    o["kind_from_lead_in"] = lead_kind(lead, q)
                     if INFINITIVE_ITEM.match(q):
                         o["kind_from_lead_in"] = infinitive_lead_kind(lead)
                     subj = lead_in_subject(lead)
@@ -2190,7 +2261,10 @@ def _stems(s):
     return {w[:6] for w in re.findall(r"[a-z]{5,}", (s or "").lower())} - skip
 
 
-STRICT_COND = re.compile(r"^\W*no\b[^.;]{0,160}\bunless\b|^\W*subject to\b", re.I)          # U7: an explicit 'no ... unless' / 'subject to' condition keeps the stem test alone
+APPLY_AG8 = True          # Nov 11 2026 (coordinator AG8): 'For the purposes of section 163 of this article, no bidder shall be deemed ... unless ...' is as strict a condition as its copies without the lead
+STRICT_COND = re.compile(r"^\W*(?:for\s+the\s+purposes?\s+of\s+[^,.;]{1,120},\s*)?no\b[^.;]{0,160}\bunless\b|^\W*subject to\b", re.I)
+AG8_LEAD_COND = re.compile(r"^\W*for\s+the\s+purposes?\s+of\s+[^,.;]{1,120},\s*no\b[^.;]{0,160}\bunless\b", re.I)
+STRICT_COND_OLD = re.compile(r"^\W*no\b[^.;]{0,160}\bunless\b|^\W*subject to\b", re.I)          # U7: an explicit 'no ... unless' / 'subject to' condition keeps the stem test alone
 
 
 def word_overlap(a, b):
@@ -2204,7 +2278,7 @@ def drop_conditions(lst):
     or power of its own: dropped when it shares a content stem with that record."""
     out = list(lst)
     for r in list(out):
-        if r not in out or not CONDITION_RE.search(r.get("quote") or ""):
+        if r not in out or not (CONDITION_RE.search(r.get("quote") or "") or (APPLY_AG8 and AG8_LEAD_COND.search(r.get("quote") or ""))):
             continue
         q = r.get("quote") or ""
         ms = MODAL_SENT.search(q)
@@ -2220,7 +2294,7 @@ def drop_conditions(lst):
             if o is r or ((o.get("agency"), o.get("agency_unit")) != (r.get("agency"), r.get("agency_unit")) and not approval):
                 continue         # 'subject to the approval of X' qualifies another actor's record: same-actor test waived
             if _stems(r["quote"]) & _stems(o["quote"]) and not CONDITION_RE.search(o["quote"]):
-                if APPLY_U7 and not STRICT_COND.search(q) and word_overlap(r["quote"], o["quote"]) < 0.3:
+                if APPLY_U7 and not (STRICT_COND if APPLY_AG8 else STRICT_COND_OLD).search(q) and word_overlap(r["quote"], o["quote"]) < 0.3:
                     bump("u7_condition_low_overlap_kept"); break          # U7: the record it would attach to shares under 30% of its words: it stands
                 out.remove(r); drop(r, "condition_of_other_record", "a condition on %s, same actor and object" % o["obligation_id"])
                 break
@@ -3605,6 +3679,10 @@ def strip_relative_may(q):
 def lead_in_makes_duty(lead):
     """R6a: a lead-in whose modal is a bare 'shall'/'must' aimed at its actor ('shall have the following powers and duties:'), not a grant."""
     last = re.sub(r"\{\{|\}\}", "", lead or "")[-300:]
+    if APPLY_AG5 and AG5_MAY_ALSO.search(last):
+        mand = list(MANDATORY.finditer(last))
+        if mand and AG5_MAY_ALSO.search(last).start() > mand[-1].start():
+            return False          # AG5: '... the court shall toll ..., and where appropriate, the court may also impose one or more of the following:' - the last modal governs
     return bool(MANDATORY.search(last)) and not LEAD_DUTY_NEG.search(last)
 
 
@@ -3796,6 +3874,21 @@ def amending_description(text, pos):
     return re.sub(r"\s+", " ", text[last.start():last.start(4)]) if last else None
 
 
+def clean_u1_quote(q, text):
+    """Nov 11 2026: a U1/B43 sentence cut inside a bracketed deletion ('after June 30, [2017, and provided ...') leaves an unclosed '['
+    that quote_present cannot place in the law text (2017-A7245-01, 2021-S6018-01, two HARD failures). Trim back to before the
+    unclosed bracket when that restores a match; otherwise keep the sentence and mark it unverified (a soft count, never hard)."""
+    if eo.quote_present(q, text):
+        return q, True
+    if q.count("[") > q.count("]"):
+        t = q[:q.rfind("[")].rstrip(" ,;")
+        if t and eo.quote_present(t, text):
+            bump("u1_quote_trimmed_unclosed_bracket")
+            return t, True
+    bump("u1_quote_unverified")
+    return q, False
+
+
 def sunset_extension_records(law, text, eff, existing, res):
     """U1: (records, unnamed) where records are new power records for the sunset sentences no stored record covers, and unnamed is
     {sentence, title} for the first such sentence when the law's title names no single government body."""
@@ -3803,6 +3896,7 @@ def sunset_extension_records(law, text, eff, existing, res):
     law_holder = sunset_holder(law.get("title"), law.get("act_clause"))
     multi_part = bool(part_starts(text))
     for q, c, pos in sunset_extension_sentences_pos(text):
+        q, q_ok = clean_u1_quote(q, text)
         amend_desc = amending_description(text, pos) if APPLY_Q5 else None
         if any(overlap(q, r.get("quote") or "") >= 0.6 for r in existing):
             continue
@@ -3817,9 +3911,9 @@ def sunset_extension_records(law, text, eff, existing, res):
             if holder:
                 bump("q5_holder_from_amended_chapter")
         if holder:
-            sents.append((q, c, holder))
+            sents.append((q, c, holder, q_ok))
         elif APPLY_B43:
-            sents.append((q, c, None))
+            sents.append((q, c, None, q_ok))
             bump("b43_sunset_extension_holder_unnamed")
         elif unnamed is None:
             bump("u1_sunset_extension_unnamed")
@@ -3829,14 +3923,14 @@ def sunset_extension_records(law, text, eff, existing, res):
     ids = [int(m.group(1)) for o in res.get("obligations", []) for m in [re.search(r"-(\d+)$", o.get("obligation_id") or "")] if m]
     nxt = max(ids or [0]) + 1
     out = []
-    for i, (q, cit, holder) in enumerate(sents):
+    for i, (q, cit, holder, qv) in enumerate(sents):
         unnamed_holder = holder is None          # B43
         if unnamed_holder:
             holder = "Unspecified"
         o = {"obligation_id": "%s-%02d" % (law["key"], nxt + i), "matter_id": law["key"], "actor_raw": HOLDER_UNNAMED_ACTOR if unnamed_holder else holder, "model_unit": None,
              "agency": holder, "agency_full": holder, "agency_matched": False,          # as the model writes it: the chain below resolves it
              "action_summary": "Continue the authority granted by an earlier chapter, now running to the date in: " + q[:200],
-             "deliverable_type": "other", "citation": cit, "quote": q, "quote_verified": True, "kind_rule": "power", "kind_model": "power",
+             "deliverable_type": "other", "citation": cit, "quote": q, "quote_verified": qv, "kind_rule": "power", "kind_model": "power",
              "kind_list_item": False, "deadline_kind": "none", "deadline_text": None, "deadline_date": None, "recurrence": "ongoing",
              "affected_groups": [], "extends_existing": True, "record_source": "sunset_extension_holder_unnamed" if unnamed_holder else "sunset_extension_from_title", "provision_kind": "power"}
         if unnamed_holder:
@@ -4163,6 +4257,33 @@ def build_records(laws):
         law_p = drop_prepare_duplicates(drop_conditions(dedupe_law(law_p)))
         if APPLY_U1:
             sx_recs, sx_unnamed = sunset_extension_records(law, text, eff, law_d + law_p, res)
+            if APPLY_AG9 and sx_recs:          # AG9: a holder-less extension built from a sentence that moves an EFFECTIVE date is no extension
+                kept_sx = []
+                for r in sx_recs:
+                    if ag9_effective_date_only(r.get("quote") or ""):
+                        r["matter_id"] = law["key"]
+                        drop(r, "effective_date_swap", "the braced date belongs to a 'shall take effect' clause, not an expiry; the effective date is computed separately")
+                    else:
+                        kept_sx.append(r)
+                sx_recs = kept_sx
+            if APPLY_AG10 and sx_recs:          # AG10 (Nov 11 2026): U1 records skip gate_record, so the M24 rule is applied here: a sentence carrying the
+                kept_sx = []                     # bill drafting commission notice is this act's own contingent clause (2009-A10213-04), never an extension
+                for r in sx_recs:
+                    if BDC_NOTIFY.search(r.get("quote") or ""):
+                        r["matter_id"] = law["key"]
+                        drop(r, "act_clause_boilerplate", "this act's own clause with the bill drafting commission notice (M24); not an extension of an earlier chapter")
+                    else:
+                        kept_sx.append(r)
+                sx_recs = kept_sx
+            if APPLY_B51 and sx_recs:          # B51: the PPU entries of Local Finance Law 11.00 are never records
+                kept_sx = []
+                for r in sx_recs:
+                    if ppu_sunset_record(r, text):
+                        r["matter_id"] = law["key"]
+                        drop(r, "local_finance_useful_life", "Local Finance Law section 11.00 period of probable usefulness")
+                    else:
+                        kept_sx.append(r)
+                sx_recs = kept_sx
             law_p += sx_recs
             if sx_unnamed:
                 SUNSET_UNNAMED[law["key"]] = sx_unnamed
