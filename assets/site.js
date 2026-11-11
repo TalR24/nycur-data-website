@@ -86,6 +86,34 @@
     '.menu-group.sub-hover > .sitenav-sub{display:block;}' +
     '.menu-group.sub-open > .sitenav-sub{display:block;position:static;margin:2px 0 6px 14px;border:none;box-shadow:none;border-left:2px solid #E7DDCE;border-radius:0;padding:0 0 0 8px;min-width:0;}' +
     '.sitenav-spacer{flex:1;}' +
+    /* Subpage header layout (moved here from brand.css, which holds tokens only).
+       Back link and page title are never cut off: the back link keeps its full
+       width, the title wraps to at most two lines. On phones the back link may
+       wrap too. About and Substack hide only below the width where the longest
+       real back link and title stop fitting beside them. */
+    'header .header-inner .brand{display:flex;align-items:center;flex-shrink:0;text-decoration:none;}' +
+    'header .header-inner:has(.back-link){height:auto;min-height:56px;padding:8px 0;min-width:0;flex-wrap:wrap;row-gap:4px;}' +
+    'header .header-inner .back-link{display:block;flex:0 1 auto;max-width:100%;overflow:visible;text-overflow:clip;white-space:normal;overflow-wrap:anywhere;font-family:var(--b-sans);}' +
+    'header .header-inner .back-link svg{vertical-align:-2px;}' +
+    'header .header-inner .header-actions{flex-shrink:0;}' +
+    'header .header-inner .site-header-title{font-family:var(--b-display);flex:1 1 12ch;min-width:min(12ch,100%);white-space:normal;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;line-clamp:3;}' +
+    '@media (max-width:1220px){header .header-inner .header-actions .header-link{display:none;}}' +
+    '@media (max-width:900px){header .header-inner:has(.back-link) .header-divider{display:none;}}' +
+    '@media (max-width:560px){' +
+      'header .header-inner:has(.back-link) .brand{flex:0 1 calc(100% - 48px);}' +
+      'header .header-inner:has(.back-link) .site-header-title{flex:1 1 55%;-webkit-line-clamp:2;line-clamp:2;}' +
+    '}' +
+    '@media (max-width:640px){code{overflow-wrap:anywhere;}}' +
+    /* Related-work cards wrap or scroll inside their container at any width. */
+    '.relwork,.relwork-inner,.relwork-grid{min-width:0;max-width:100%;}' +
+    '.relwork-card{min-width:0;max-width:100%;overflow-wrap:anywhere;}' +
+    /* h1 is always the display face (the cb-tools hubs set none). */
+    'h1{font-family:var(--b-display);}' +
+    /* Faint text: --b-ink-4 is decorative only (3.31:1 on white), so every text
+       use of the faint token resolves to --b-ink-3 (6.1:1 on cream). Literal
+       #9A8B7A text rules that pages set directly are listed here. */
+    ':root{--text-faint:var(--b-ink-3);}' +
+    '.bar-label .sublabel,.footnotes h3,.filter-panel-title,.c-foot-text span,footer .footer-links a,.view-card-stat,.col-label,.chart-note,.hub-card-stat,.hero-updated,.proto-section-label,.proto-stat,.category-name,.cy-empty{color:var(--b-ink-3);}' +
     '.relwork{padding:8px clamp(20px,5vw,48px) 44px;}' +
     '.relwork-inner{max-width:900px;margin:0 auto;}' +
     '.relwork-label{font-family: var(--b-sans);font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing: normal;color:#A44D00;margin-bottom:14px;}' +
@@ -187,11 +215,16 @@
         clearTimeout(g._closeT);
       });
     }
+    var canHover = !!(window.matchMedia && window.matchMedia('(hover: hover)').matches);
     items.forEach(function (item) {
       var btn = item.querySelector('.sitenav-btn');
       btn.addEventListener('click', function (ev) {
         ev.stopPropagation();
         var wasOpen = item.classList.contains('open');
+        /* Hover-capable pointers already opened the menu on mouseenter, so a
+           mouse click keeps it open (outside click or Escape closes it).
+           Keyboard activation (ev.detail 0) and touch still toggle. */
+        if (wasOpen && canHover && ev.detail > 0) return;
         closeAll();
         if (!wasOpen) {
           item.classList.add('open');

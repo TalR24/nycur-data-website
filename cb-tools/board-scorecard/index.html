@@ -447,6 +447,12 @@ const BOARDS = [
     SI: { label: "Staten Island", color: "#D92969" }
   };
   const BORO_ORDER = ["MN", "BK", "QN", "BX", "SI"];
+  // Text on a filled chip: white or ink, whichever has the higher contrast with the fill (4.5:1 needed).
+  function chipInk(hex) {
+    const ch = [1, 3, 5].map(i => { const v = parseInt(hex.slice(i, i + 2), 16) / 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); });
+    const L = 0.2126 * ch[0] + 0.7152 * ch[1] + 0.0722 * ch[2];
+    return 1.05 / (L + 0.05) >= (L + 0.05) / 0.0573 ? "#fff" : "var(--b-ink)";
+  }
 
   function boardName(b) { return BORO[b.boro].label + " CB " + b.num; }
   function fmtH(mins) {
@@ -474,7 +480,7 @@ const BOARDS = [
       const chip = document.createElement("button");
       chip.className = "boro-chip";
       const c = BORO[k].color;
-      if (on === members.length) { chip.style.background = c; chip.style.borderColor = c; chip.style.color = "#fff"; }
+      if (on === members.length) { chip.style.background = c; chip.style.borderColor = c; chip.style.color = chipInk(c); }
       else if (on > 0) { chip.style.background = "#fff"; chip.style.borderColor = c; chip.style.color = c; }
       else { chip.style.background = "var(--bg)"; chip.style.borderColor = "var(--border)"; chip.style.color = "var(--text-faint)"; }
       chip.innerHTML = '<span class="boro-dot" style="background:' + (on > 0 ? (on === members.length ? "rgba(255,255,255,0.85)" : c) : "#D3C4AF") + '"></span>' + BORO[k].label + " (" + on + "/" + members.length + ")";
@@ -497,7 +503,7 @@ const BOARDS = [
         const chip = document.createElement("button");
         chip.className = "cb-chip";
         chip.textContent = "CB " + b.num;
-        if (picked.has(b.id)) { chip.style.background = c; chip.style.borderColor = c; chip.style.color = "#fff"; }
+        if (picked.has(b.id)) { chip.style.background = c; chip.style.borderColor = c; chip.style.color = chipInk(c); }
         if (!b.channel) chip.title = "No board-run YouTube channel found"; else if (b.dormant) chip.title = "Channel dormant since " + b.dormant;
         chip.onclick = () => { picked.has(b.id) ? picked.delete(b.id) : picked.add(b.id); renderAll(); };
         row.appendChild(chip);

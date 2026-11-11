@@ -28,8 +28,34 @@ POSTS = '/nycuriosity_substack_posts/'
 
 # Homepage tool cards: slug -> page whose top is the best miniature of the tool.
 TOOLS = {
-    'nyc_council_legislation_trackers': '/civic_reference/nyc_council_fiscal_impacts_tracker/overview/',
+    'nyc_council_legislation_trackers': '/civic_reference/nyc_council_fiscal_impacts_tracker/agency-fiscal-impact/',
     'cb-tools': '/cb-tools/member-tracker/',
+    'state_capacity_ecosystem': 'https://statecapacityecosystem.com/ecosystem/',
+}
+
+# Cards on the tool hubs (Obligations, Powers, Fiscal overview, /cb-tools/): file name -> target page.
+# A target with nothing visual (methodology) gets no file and the card shows a flat palette block.
+LT = '/civic_reference/legislation_implementation_tracker/'
+FT = '/civic_reference/nyc_council_fiscal_impacts_tracker/'
+TOOL_CARDS = {
+    'tool--obligations-table': LT + 'obligations-table/',
+    'tool--agency-workload': LT + 'agency-workload/',
+    'tool--deadline-timeline': LT + 'deadline-timeline/',
+    'tool--law': LT + 'law/',
+    'tool--powers-table': LT + 'powers-table/',
+    'tool--agency-powers': LT + 'powers/agency-powers/',
+    'tool--methodology': LT + 'methodology/',
+    'tool--fiscal-bill-table': FT,
+    'tool--agency-fiscal-impact': FT + 'agency-fiscal-impact/',
+    'tool--sponsor-fiscal-impact': FT + 'sponsor-fiscal-impact/',
+    'tool--intro-year-impact': FT + 'intro-year-impact/',
+    'tool--cost-revenue-breakdown': FT + 'cost-revenue-breakdown/',
+    'tool--fiscal-methodology': FT + 'methodology/',
+    'tool--cb-member-guide': '/civic_reference/cb_member_guide/',
+    'tool--roberts-rules-helper': '/cb-tools/roberts-rules-helper/',
+    'tool--meeting-review': '/cb-tools/meeting-review/',
+    'tool--block-party': '/cb-tools/block-party/',
+    'tool--board-scorecard': '/cb-tools/board-scorecard/',
 }
 
 
@@ -77,7 +103,9 @@ def serve():
 
 
 def save_jpeg(im, path):
-    im = im.convert('RGB').resize((W, H), Image.LANCZOS)
+    im = im.convert('RGB')
+    if im.size != (W, H):
+        im = im.resize((W, H), Image.LANCZOS)
     for q in (82, 74, 66, 58, 50, 42, 34):
         buf = BytesIO()
         im.save(buf, 'JPEG', quality=q, optimize=True, progressive=True)
@@ -92,32 +120,80 @@ def has_visual(page):
       '.chart-card .c-plot, .chart-card canvas, .chart-card svg, .chart-card table, .chart-card .c-bars, canvas, #map, table, .leaflet-container, iframe')""")
 
 
+PAD = 14                       # page-ground padding around the plot, in stored pixels
+GROUND = (250, 246, 241)       # --b-cream, the page ground (assets/brand.css)
+
+# Per-item overrides when the automatic rule is still unreadable. Keyed by target URL.
+#   sel:   CSS selector of the element to show (default: the chart's plot area)
+#   rows:  table only, height in CSS px of the slice shown (default 380)
+#   width: table only, width in CSS px of the slice shown (default 760)
+#   top:   True = show the top 2:1 slice at full width (bars stay whole, only rows below are cut); for plots
+#          so tall that the whole plot would be a thumbnail-sized sliver
+#   clip:  (x, y, w, h) in CSS px relative to the element, replaces the whole-element rule
+P = POSTS
+OVERRIDES = {
+    P + 'robust_opposition/council-margins-2025/': {'top': True},
+    P + 'state_capacity_ai/public-service-delivery/': {'top': True},
+    P + 'block_party_updates_2026/by-board/': {'top': True},
+    P + 'cso_reports_2026/nyc-tax-rates/': {'top': True},
+    P + 'west_4th_st_station/station-timeline/': {'top': True},
+    # pages that draw with divs or a map rather than svg/canvas/table: take the viewport below the header
+    'https://statecapacityecosystem.com/ecosystem/': {},
+    '/civic_reference/legislation_implementation_tracker/deadline-timeline/': {},
+    '/civic_reference/legislation_implementation_tracker/law/': {},
+    '/cb-tools/block-party/': {},
+}
+
+
+def fit(im, box=None):
+    """Scale im to fit inside the padded 2:1 frame (never crop), centred on the page ground."""
+    iw, ih = im.size
+    aw, ah = W - 2 * PAD, H - 2 * PAD
+    sc = min(aw / iw, ah / ih, 1.0 if iw >= aw else 1.5)
+    nw, nh = max(1, int(iw * sc)), max(1, int(ih * sc))
+    im = im.resize((nw, nh), Image.LANCZOS)
+    canvas = Image.new('RGB', (W, H), GROUND)
+    canvas.paste(im, ((W - nw) // 2, (H - nh) // 2))
+    return canvas
+
+
 def capture(page, base, url):
-    """Return a PIL image (cropped to 2:1) of the page's lead visual, or None for a text page."""
-    page.goto(base + url, wait_until='load', timeout=40000)
+    """Return a W x H PIL image: the whole plot area (no title) scaled to fit, or the first rows of a
+    table at readable size; None for a text page with nothing visual."""
+    page.goto(url if url.startswith('http') else base + url, wait_until='load', timeout=40000)
     page.wait_for_timeout(2500)
-    if not has_visual(page):
+    ov = OVERRIDES.get(url)
+    if ov is None and not has_visual(page):
         return None
-    box = None
-    for sel in ('.chart-card .c-plot', '.chart-card', '#chart-box', 'main table', '#map', '.leaflet-container'):
+    ov = ov or {}
+    if False:
+        return None
+    sels = [ov['sel']] if 'sel' in ov else ['.chart-card .c-plot', '.chart-card', '#chart-box', 'main table', '#map', '.leaflet-container']
+    box, is_table = None, False
+    for sel in sels:
         el = page.query_selector(sel)
         if el:
             el.scroll_into_view_if_needed()
             b = el.bounding_box()
             if b and b['width'] > 300 and b['height'] > 120:
                 box = b
+                is_table = el.evaluate("e => (e.tagName === 'TABLE' || !!e.querySelector('table')) && !e.querySelector('svg, canvas')")
                 break
     if box is None:  # a tool page: the viewport below the header
         hh = page.evaluate("() => { const h=document.querySelector('header'); return h ? h.getBoundingClientRect().bottom : 0; }")
         box = {'x': 0, 'y': hh, 'width': 1100, 'height': 550}
-    w = min(box['width'], 1100)
-    h = min(box['height'], w / 2)
-    clip = {'x': box['x'], 'y': box['y'] + page.evaluate('window.scrollY'), 'width': w, 'height': h}
-    png = page.screenshot(clip=clip, full_page=True)
-    im = Image.open(BytesIO(png)).convert('RGB')
-    canvas = Image.new('RGB', (int(w), int(w / 2)), (255, 255, 255))
-    canvas.paste(im, (0, 0))
-    return canvas
+    sy = page.evaluate('window.scrollY')
+    x, y, w, h = box['x'], box['y'] + sy, box['width'], box['height']
+    if 'clip' in ov:
+        cx, cy, cw, ch = ov['clip']
+        x, y, w, h = x + cx, y + cy, cw, ch
+    elif ov.get('top'):
+        h = min(h, w / 2)
+    elif is_table:  # first rows at readable size: a slice about 2:1, not the whole table shrunk
+        w = min(w, ov.get('width', 760))
+        h = min(h, ov.get('rows', 380))
+    png = page.screenshot(clip={'x': x, 'y': y, 'width': w, 'height': min(h, 1600)}, full_page=True)
+    return fit(Image.open(BytesIO(png)).convert('RGB'))
 
 
 def main():
@@ -132,12 +208,14 @@ def main():
             jobs.append((card_thumb_name(slug, u, i == 0), u, slug))
     for slug, u in TOOLS.items():
         jobs.append((slug + '.jpg', u, slug))
+    for name, u in TOOL_CARDS.items():
+        jobs.append((name + '.jpg', u, 'tools'))
     cache = {}
     total = 0
     try:
         with sync_playwright() as p:
             b = p.chromium.launch(headless=True)
-            ctx = b.new_context(viewport={'width': 1100, 'height': 900})
+            ctx = b.new_context(viewport={'width': 1100, 'height': 900}, device_scale_factor=2)
             page = ctx.new_page()
             for fname, url, slug in jobs:
                 if only and slug not in only.split(','):
