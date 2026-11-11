@@ -21,12 +21,12 @@ from __future__ import annotations
 import html as html_lib
 import os
 import re
-import smtplib
 import sys
-from email.mime.text import MIMEText
 from pathlib import Path
 
 TRACKER = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "shared"))
+import mailer  # noqa: E402
 REPORT_DIR = Path(os.getenv("QUALITY_REPORT_DIR") or TRACKER / "quality_reports")
 NEW_FISCAL = "## New fiscal figures to check"
 
@@ -150,13 +150,8 @@ def main() -> int:
     if not user or not password:
         print("GMAIL_* not set and the ops digest write failed — nothing sent (report is committed).")
         return 0
-    msg = MIMEText(body)
-    msg["Subject"] = subject
-    msg["From"] = user
-    msg["To"] = to
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
-        smtp.login(user, password)
-        smtp.sendmail(user, [to], msg.as_string())
+    msg = mailer.compose(subject, user, to, body)
+    mailer.send_gmail(msg, user, password, envelope_to=[to])
     print(f"Sent: {subject} → {to}")
     return 0
 

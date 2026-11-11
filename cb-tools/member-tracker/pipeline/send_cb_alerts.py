@@ -41,13 +41,9 @@ Usage:
 """
 from __future__ import annotations
 
-import csv
 import difflib
 import json
-import os
-import smtplib
 import sys
-from email.mime.text import MIMEText
 from pathlib import Path
 
 _PLACEHOLDER_NAMES = {"vacant", "- vacant -", "tbd", ""}
@@ -68,6 +64,8 @@ def _is_spelling_fix(old: str | None, new: str | None) -> bool:
 
 HERE = Path(__file__).resolve().parent
 DATA = HERE.parent / "data"
+sys.path.insert(0, str(HERE.parents[2] / "shared"))
+import alert_engine  # noqa: E402
 
 TRACKER_URL = "https://data.nycuriosity.com/cb-tools/member-tracker/"
 ALERTS_URL = "https://premium.nycuriosity.com/cb-tools/member-tracker/alerts/"
@@ -76,11 +74,9 @@ EVENT_TYPES = ("chair", "dm", "committee_chair", "members")
 
 
 def load_premium_paths() -> tuple[Path, Path]:
-    premium = os.environ.get("PREMIUM_DIR")
-    if not premium:
-        sys.exit("PREMIUM_DIR not set")
-    pdata = Path(premium) / "cb-tools" / "member-tracker" / "data"
-    return pdata / "cb_alert_subscriptions.csv", pdata / "cb_alerts_state.json"
+    return alert_engine.premium_paths(
+        ("cb-tools", "member-tracker", "data"),
+        "cb_alert_subscriptions.csv", "cb_alerts_state.json")
 
 
 def snapshot(boards_doc: dict, members_doc: dict) -> dict:
@@ -154,7 +150,7 @@ def diff_events(prev: dict, cur: dict, board_names: dict[str, str]) -> list[dict
 
 
 def main() -> None:
-    dry = os.environ.get("DRY_RUN") == "1"
+    dry = alert_engine.is_dry()
     subs_path, state_path = load_premium_paths()
 
     boards_doc = json.loads((DATA / "boards.json").read_text())
@@ -165,8 +161,7 @@ def main() -> None:
     cur = snapshot(boards_doc, members_doc)
 
     if not state_path.exists():
-        state_path.parent.mkdir(parents=True, exist_ok=True)
-        state_path.write_text(json.dumps({"snapshot": cur}, indent=1))
+        alert_engine.write_state(state_path, {"snapshot": cur}, mkdir=True)
         print("No previous state; snapshot seeded, no alerts sent.")
         return
 
@@ -175,25 +170,18 @@ def main() -> None:
     if not events:
         print("No leadership or roster changes; no alerts to send.")
         if not dry:
-            state_path.write_text(json.dumps({"snapshot": cur}, indent=1))
+            alert_engine.write_state(state_path, {"snapshot": cur})
         return
     print(f"{len(events)} change events detected.")
 
-    if not subs_path.exists():
-        print("No cb_alert_subscriptions.csv; skipping sends.")
-        subscribers = []
-    else:
-        with open(subs_path, newline="", encoding="utf-8") as f:
-            subscribers = [r for r in csv.DictReader(f)
-                           if (r.get("email") or "").strip()]
-    print(f"{len(subscribers)} subscribers.")
+    subscribers = alert_engine.read_subscribers(subs_path, "cb_alert_subscriptions.csv")
 
     sent = 0
     for sub_no, sub in enumerate(subscribers, 1):
         email = sub["email"].strip()
 
         def splitfield(name):
-            return {x.strip() for x in (sub.get(name) or "").split(";") if x.strip()}
+            return alert_engine.splitfield(sub, name)
 
         want_boards = splitfield("boards")
         want_boroughs = splitfield("boroughs")
@@ -230,27 +218,12 @@ def main() -> None:
         subject = (f"NYCuriosity alert: {n} community board change"
                    f"{'s' if n != 1 else ''} on your watchlist")
 
-        if dry:
-            print(f"\n=== DRY RUN to subscriber {sub_no}: {subject}\n{body}\n")
-        else:
-            msg = MIMEText(body)
-            msg["Subject"] = subject
-            msg["From"] = os.environ["GMAIL_USER"]
-            msg["To"] = email
-            # Never let an address reach the log: on failure print only the
-            # error type, keep going, and still write state below.
-            try:
-                with smtplib.SMTP_SSL("smtp.gmail.com", 465) as s:
-                    s.login(os.environ["GMAIL_USER"], os.environ["GMAIL_APP_PASSWORD"])
-                    s.send_message(msg)
-            except Exception as e:  # noqa: BLE001
-                print(f"Send failed for subscriber {sub_no}/{len(subscribers)}: {type(e).__name__}")
-                continue
-            print(f"Sent alert {sub_no}/{len(subscribers)}: {n} matches")
+        if not alert_engine.deliver(email, subject, body, sub_no, len(subscribers), n, dry):
+            continue
         sent += 1
 
     if not dry:
-        state_path.write_text(json.dumps({"snapshot": cur}, indent=1))
+        alert_engine.write_state(state_path, {"snapshot": cur})
         print(f"State updated. {sent} emails sent.")
 
 

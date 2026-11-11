@@ -16,12 +16,13 @@ Flags: --days N reads the last N days instead of the cursor (always a dry run un
        --follows-file PATH reads a follow list from PATH instead of the premium checkout (tests, dry runs).
 The cursor advances only after every changed followed bill was fetched and every email sent.
 Exit 1 on any failure; sends that did succeed stay recorded in the state, so a retry repeats nothing."""
-import argparse, csv, datetime as dt, hashlib, json, os, re, smtplib, sys
+import argparse, csv, datetime as dt, hashlib, json, os, re, sys
 from collections import defaultdict
-from email.mime.text import MIMEText
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
+sys.path.insert(0, os.path.join(HERE, "..", "..", "..", "shared"))
+import mailer  # noqa: E402
 import openleg  # noqa: E402
 import poll_updates  # noqa: E402
 
@@ -192,13 +193,8 @@ def compose(items):
 
 
 def send(msg_to, subject, body):
-    msg = MIMEText(body)
-    msg["Subject"] = subject
-    msg["From"] = os.environ["GMAIL_USER"]
-    msg["To"] = msg_to
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as s:
-        s.login(os.environ["GMAIL_USER"], os.environ["GMAIL_APP_PASSWORD"])
-        s.send_message(msg)
+    msg = mailer.compose(subject, os.environ["GMAIL_USER"], msg_to, body)
+    mailer.send_gmail(msg, os.environ["GMAIL_USER"], os.environ["GMAIL_APP_PASSWORD"])
 
 
 def cursor_path(pdir):

@@ -67,15 +67,11 @@ Usage:
 """
 from __future__ import annotations
 
-import csv
 import json
-import os
 import re
-import smtplib
 import sys
 from collections import defaultdict
 from datetime import date, datetime, timedelta
-from email.mime.text import MIMEText
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -83,6 +79,8 @@ sys.path.insert(0, str(HERE))
 from build_agency_profiles import slug  # noqa: E402
 sys.path.insert(0, str(HERE.parent.parent.parent / "pipeline"))
 from agency_canon import canonicalize  # noqa: E402
+sys.path.insert(0, str(HERE.parents[2] / "shared"))
+import alert_engine  # noqa: E402
 
 _IGNORE_AGENCY_CODES = {"n/a", "coordinator"}
 BASE = HERE.parent
@@ -103,11 +101,9 @@ DEADLINE_WINDOW_DAYS = 45
 
 
 def load_premium_paths() -> tuple[Path, Path]:
-    premium = os.environ.get("PREMIUM_DIR")
-    if not premium:
-        sys.exit("PREMIUM_DIR not set")
-    pdata = Path(premium) / "civic_reference" / "legislation_implementation_tracker" / "data"
-    return pdata / "alert_subscriptions.csv", pdata / "alerts_state.json"
+    return alert_engine.premium_paths(
+        ("civic_reference", "legislation_implementation_tracker", "data"),
+        "alert_subscriptions.csv", "alerts_state.json")
 
 
 def kw_hit(keywords: set[str], blob: str) -> list[str]:
@@ -233,7 +229,7 @@ def agency_hits(want_ag_slugs: set[str], want_ag_canon: set[str], agency_codes) 
 
 
 def main() -> None:
-    dry = os.environ.get("DRY_RUN") == "1"
+    dry = alert_engine.is_dry()
     subs_path, state_path = load_premium_paths()
 
     laws = json.loads((IMPL_DATA / "laws.json").read_text())["laws"]
@@ -247,8 +243,7 @@ def main() -> None:
     member_context = (json.loads(MEMBER_CONTEXT_JSON.read_text())
                        if MEMBER_CONTEXT_JSON.exists() else {})
 
-    state = (json.loads(state_path.read_text())
-             if state_path.exists() else {})
+    state = alert_engine.read_state(state_path, {})
     known_impl = set(state.get("announced_matter_ids", []))
     known_fiscal = set(state.get("announced_fiscal_ids", []))
     new_laws = [l for l in laws if l["matter_id"] not in known_impl]
@@ -439,14 +434,7 @@ def main() -> None:
         district_cache[n] = lines
         return lines
 
-    if not subs_path.exists():
-        print("No alert_subscriptions.csv; skipping sends.")
-        subscribers = []
-    else:
-        with open(subs_path, newline="", encoding="utf-8") as f:
-            subscribers = [r for r in csv.DictReader(f)
-                           if (r.get("email") or "").strip()]
-    print(f"{len(subscribers)} subscribers.")
+    subscribers = alert_engine.read_subscribers(subs_path, "alert_subscriptions.csv")
 
     slug_names = crosswalk_slug_names()
     sent = 0
@@ -454,7 +442,7 @@ def main() -> None:
         email = sub["email"].strip()
 
         def splitfield(name):
-            return {x.strip() for x in (sub.get(name) or "").split(";") if x.strip()}
+            return alert_engine.splitfield(sub, name)
 
         want_trackers = ({t.lower() for t in splitfield("trackers")}
                           or {"impl", "powers", "fiscal", "deadlines"})
@@ -625,23 +613,8 @@ def main() -> None:
         else:
             subject = "NYCuriosity alert: your monthly legislation update"
 
-        if dry:
-            print(f"\n=== DRY RUN to subscriber {sub_no}: {subject}\n{body}\n")
-        else:
-            msg = MIMEText(body)
-            msg["Subject"] = subject
-            msg["From"] = os.environ["GMAIL_USER"]
-            msg["To"] = email
-            # Never let an address reach the log: on failure print only the
-            # error type, keep going, and still write state below.
-            try:
-                with smtplib.SMTP_SSL("smtp.gmail.com", 465) as s:
-                    s.login(os.environ["GMAIL_USER"], os.environ["GMAIL_APP_PASSWORD"])
-                    s.send_message(msg)
-            except Exception as e:  # noqa: BLE001
-                print(f"Send failed for subscriber {sub_no}/{len(subscribers)}: {type(e).__name__}")
-                continue
-            print(f"Sent alert {sub_no}/{len(subscribers)}: {total} matches")
+        if not alert_engine.deliver(email, subject, body, sub_no, len(subscribers), total, dry):
+            continue
         sent += 1
 
     if not dry:
@@ -656,7 +629,7 @@ def main() -> None:
                 known_upcoming | {o["obligation_id"] for o in new_upcoming})
             state["announced_overdue_ids"] = sorted(
                 known_overdue | {o["obligation_id"] for o in new_overdue})
-        state_path.write_text(json.dumps(state, indent=1))
+        alert_engine.write_state(state_path, state)
         print(f"State updated. {sent} emails sent.")
 
 

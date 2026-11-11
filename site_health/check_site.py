@@ -22,12 +22,14 @@ Usage: python3 check_site.py [--dry-run]   (--dry-run: print report, never email
 """
 
 import os
-import smtplib
 import sys
-from email.mime.text import MIMEText
+from pathlib import Path
 from urllib.parse import urljoin, urldefrag, urlparse
 
 from playwright.sync_api import sync_playwright
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "shared"))
+import mailer  # noqa: E402
 
 BASE = "https://data.nycuriosity.com"
 ALERT_TO = "troded24@gmail.com"
@@ -187,13 +189,9 @@ def main():
     if dry:
         print("\n--dry-run: email suppressed.")
     else:
-        msg = MIMEText(body)
-        msg["Subject"] = f"data.nycuriosity.com health: {len(broken)} broken page(s)"
-        msg["From"] = os.environ["GMAIL_USER"]
-        msg["To"] = ALERT_TO
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as s:
-            s.login(os.environ["GMAIL_USER"], os.environ["GMAIL_APP_PASSWORD"])
-            s.send_message(msg)
+        msg = mailer.compose(f"data.nycuriosity.com health: {len(broken)} broken page(s)",
+                             os.environ["GMAIL_USER"], ALERT_TO, body)
+        mailer.send_gmail(msg, os.environ["GMAIL_USER"], os.environ["GMAIL_APP_PASSWORD"])
         print(f"\nAlert emailed to {ALERT_TO}.")
     return 1
 

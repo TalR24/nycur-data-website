@@ -20,16 +20,16 @@ import html as html_mod
 import json
 import os
 import re
-import smtplib
 import sys
 import time
 from datetime import date, datetime, timedelta
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
 from pathlib import Path
 
 import requests
 import yaml
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "shared"))
+import mailer  # noqa: E402
 
 UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/128 Safari/537.36")
@@ -661,15 +661,8 @@ def send_email(subject, text_body, html_body):
     # `or` (not .get(..., default)) so an unset secret coming through
     # Actions as an empty string still falls back.
     to = os.environ.get("OPPS_DIGEST_TO") or os.environ.get("MENTION_DIGEST_TO") or user
-    msg = MIMEMultipart("alternative")
-    msg.attach(MIMEText(text_body, "plain"))
-    msg.attach(MIMEText(html_body, "html"))
-    msg["Subject"] = subject
-    msg["From"] = user
-    msg["To"] = to
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=30) as s:
-        s.login(user, password)
-        s.send_message(msg)
+    msg = mailer.compose(subject, user, to, text_body, html=html_body)
+    mailer.send_gmail(msg, user, password, timeout=30)
     print(f"Emailed digest to {to}.", file=sys.stderr)
     return True
 

@@ -12,12 +12,14 @@ Needs PREMIUM_PUSH_TOKEN (repo read), GMAIL_USER, GMAIL_APP_PASSWORD.
 """
 import argparse
 import os
-import smtplib
 import sys
 from datetime import datetime, timedelta, timezone
-from email.mime.text import MIMEText
+from pathlib import Path
 
 import requests
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "shared"))
+import mailer  # noqa: E402
 
 REPO = "TalR24/nycur-data-premium"
 PATH = "mention_monitor_state"
@@ -43,13 +45,8 @@ def email(subject, body):
     if not (user and password):
         print("WARNING: Gmail env vars missing; not emailing.", file=sys.stderr)
         return
-    msg = MIMEText(body)
-    msg["Subject"] = subject
-    msg["From"] = user
-    msg["To"] = os.environ.get("MENTION_DIGEST_TO") or user
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=30) as s:
-        s.login(user, password)
-        s.send_message(msg)
+    msg = mailer.compose(subject, user, os.environ.get("MENTION_DIGEST_TO") or user, body)
+    mailer.send_gmail(msg, user, password, timeout=30)
     print(f"Emailed staleness alert to {msg['To']}.", file=sys.stderr)
 
 

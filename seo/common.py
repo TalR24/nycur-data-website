@@ -26,13 +26,14 @@ must stay out of the sitemap.
 import json
 import os
 import re
-import smtplib
 import subprocess
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
+import sys
 from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import urljoin, urlsplit
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "shared"))
+import mailer  # noqa: E402
 
 WORKSPACE = Path(__file__).resolve().parents[2]
 
@@ -404,19 +405,9 @@ def send_email(subject, body, to=ALERT_TO, html=None, archive_slug=None, role="T
     if not (user and pw):
         print("EMAIL NOT SENT: GMAIL_USER / GMAIL_APP_PASSWORD not set", flush=True)
         return False
-    if html:
-        msg = MIMEMultipart("alternative")
-        msg.attach(MIMEText(body, "plain", "utf-8"))
-        msg.attach(MIMEText(html, "html", "utf-8"))
-    else:
-        msg = MIMEText(body, "plain", "utf-8")
-    msg["Subject"] = subject
-    msg["From"] = user
     to = [to] if isinstance(to, str) else list(to)
-    msg["To"] = ", ".join(to)
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465) as s:
-        s.login(user, pw)
-        s.sendmail(user, to, msg.as_string())
+    msg = mailer.compose(subject, user, ", ".join(to), body, html=html, charset="utf-8")
+    mailer.send_gmail(msg, user, pw, envelope_to=to)
     if archive_slug:
         archive_sent(subject, body, role, archive_slug)
     return True

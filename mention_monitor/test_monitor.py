@@ -1488,7 +1488,7 @@ class OfflineSmtpTimeoutTests(unittest.TestCase):
 
         env = {"GMAIL_USER": "me@example.com", "GMAIL_APP_PASSWORD": "x"}
         with unittest.mock.patch.dict(os.environ, env):
-            with unittest.mock.patch.object(monitor.smtplib, "SMTP_SSL", FakeSMTP):
+            with unittest.mock.patch.object(monitor.mailer.smtplib, "SMTP_SSL", FakeSMTP):
                 monitor.send_email("subject", "body")
         self.assertEqual(captured["kwargs"].get("timeout"), 30)
 
@@ -1519,7 +1519,7 @@ class OfflineEmailTests(unittest.TestCase):
         env = {"GMAIL_USER": "me@example.com", "GMAIL_APP_PASSWORD": "x",
                "MENTION_DIGEST_TO": ""}
         with unittest.mock.patch.dict(os.environ, env):
-            with unittest.mock.patch.object(monitor.smtplib, "SMTP_SSL", FakeSMTP):
+            with unittest.mock.patch.object(monitor.mailer.smtplib, "SMTP_SSL", FakeSMTP):
                 monitor.send_email("subject", "body")
         self.assertEqual(sent["to"], "me@example.com")
 
@@ -1545,7 +1545,7 @@ class OfflineEmailTests(unittest.TestCase):
         env = {"GMAIL_USER": "me@example.com", "GMAIL_APP_PASSWORD": "x"}
         html = "<html><body><script>alert(1)</script></body></html>"
         with unittest.mock.patch.dict(os.environ, env):
-            with unittest.mock.patch.object(monitor.smtplib, "SMTP_SSL", FakeSMTP):
+            with unittest.mock.patch.object(monitor.mailer.smtplib, "SMTP_SSL", FakeSMTP):
                 monitor.send_email("subject", "text body", html)
         msg = sent["msg"]
         self.assertTrue(msg.is_multipart())
