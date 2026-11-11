@@ -104,6 +104,22 @@
       'header .header-inner:has(.back-link) .site-header-title{flex:1 1 55%;-webkit-line-clamp:2;line-clamp:2;}' +
     '}' +
     '@media (max-width:640px){code{overflow-wrap:anywhere;}}' +
+    /* Phone navigation (Nov 10 2026): fewer stacked rows before the content. The Home pill is hidden because
+       the wordmark above it links home; the remaining pills fit one row; and the page's own pill rows (the
+       'Visuals in this post' and 'Views in this tool' rows and the tracker switcher) become one line that
+       scrolls sideways with a fade at the right edge instead of wrapping to three or four rows. */
+    '@media (max-width:640px){' +
+      '.sitenav .nav-pill[href="/"]{display:none;}' +
+      '.sitenav{padding:0 12px;}' +
+      '.sitenav-inner{gap:5px;min-height:46px;padding:6px 0;flex-wrap:nowrap;}' +
+      '.sitenav .nav-pill,.sitenav-btn{font-size:0.7rem;padding:7px 9px;}' +
+            '.sitenav-spacer{display:none;}' +
+      '.pill-nav,.chart-nav,.trk-switch{flex-wrap:nowrap !important;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;-webkit-mask-image:linear-gradient(to right,#000 calc(100% - 32px),transparent);mask-image:linear-gradient(to right,#000 calc(100% - 32px),transparent);}' +
+      '.pill-nav::-webkit-scrollbar,.chart-nav::-webkit-scrollbar,.trk-switch::-webkit-scrollbar{display:none;}' +
+      '.pill-nav > *,.chart-nav > *,.trk-switch > *{flex:0 0 auto;white-space:nowrap;}' +
+      '.pill-nav::after,.chart-nav::after,.trk-switch::after{content:"";flex:0 0 28px;}' +
+    '}' +
+    '@media (max-width:370px){.sitenav-inner{flex-wrap:wrap;}}' +
     /* Related-work cards wrap or scroll inside their container at any width. */
     '.relwork,.relwork-inner,.relwork-grid{min-width:0;max-width:100%;}' +
     '.relwork-card{min-width:0;max-width:100%;overflow-wrap:anywhere;}' +
@@ -307,6 +323,17 @@
     }
   }
 
+  // Phone navigation: bring the active pill into view in the single-line pill rows.
+  function revealActivePills() {
+    var rows = document.querySelectorAll('.pill-nav, .chart-nav, .trk-switch');
+    for (var i = 0; i < rows.length; i++) {
+      var row = rows[i], act = row.querySelector('a.active, a[aria-current="page"]');
+      if (act && row.scrollWidth > row.clientWidth) row.scrollLeft = Math.max(0, act.offsetLeft - row.offsetLeft - 48);
+    }
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', revealActivePills);
+  else revealActivePills();
+  window.addEventListener('load', revealActivePills);
   if (isHome) return;
 
   fetch('/assets/related_work.json')

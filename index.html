@@ -170,6 +170,13 @@
       margin-bottom: 10px;
     }
     .hero h1 span { color: var(--blue); }
+    /* Phones: the hero paragraph shows four lines with a Read more control; the full text is unchanged (Nov 10 2026). */
+    .hero-more { display: none; }
+    @media (max-width: 640px) {
+      .hero-desc:not(.open) { display: -webkit-box; -webkit-line-clamp: 4; line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+      .hero-more { display: inline-flex; align-items: center; min-height: 44px; padding: 0; margin: 2px 0 6px; background: none; border: 0; cursor: pointer;
+        font-family: var(--b-sans); font-size: 0.85rem; font-weight: 600; color: var(--b-link); text-decoration: underline; text-underline-offset: 3px; }
+    }
     .hero p {
       font-size: 1rem;
       color: var(--text-muted);
@@ -590,7 +597,8 @@
 <div class="hero">
   <div class="hero-inner">
     <h1>Charts behind every post, <span>tools that track the city</span></h1>
-    <p>The charts behind every NYCuriosity post on transit, streets, the City budget, and how New York governs itself, plus civic tools I keep up to date: what Council laws cost, require, and allow, who leads all 59 community boards, and what each city agency spends. Members also get Ask the Trackers, which answers questions with cited records, plus monthly email alerts, a brief for every council district, a watchlist, community board alerts, full-text search of <!--bp:resolutions-->39,649<!--/bp:resolutions--> resolutions from 27 community boards since 1984, and the data behind every post's charts.</p>
+    <p id="hero-desc" class="hero-desc">The charts behind every NYCuriosity post on transit, streets, the City budget, and how New York governs itself, plus civic tools I keep up to date: what Council laws cost, require, and allow, who leads all 59 community boards, and what each city agency spends. Members also get Ask the Trackers, which answers questions with cited records, plus monthly email alerts, a brief for every council district, a watchlist, community board alerts, full-text search of <!--bp:resolutions-->39,649<!--/bp:resolutions--> resolutions from 27 community boards since 1984, and the data behind every post's charts.</p>
+    <button class="hero-more" type="button" aria-expanded="false" aria-controls="hero-desc">Read more</button>
     <div class="topic-filter" id="topic-filter" aria-label="Filter by topic">
       <button class="tf-pill active" data-topic="all">All</button>
       <button class="tf-pill" data-topic="transit">Transit &amp; Streets</button>
@@ -1189,5 +1197,16 @@
 })();
 </script>
 
+<script>
+(function () {
+  var btn = document.querySelector('.hero-more'), desc = document.getElementById('hero-desc');
+  if (!btn || !desc) return;
+  btn.addEventListener('click', function () {
+    var open = desc.classList.toggle('open');
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    btn.textContent = open ? 'Show less' : 'Read more';
+  });
+})();
+</script>
 </body>
 </html>
