@@ -1612,6 +1612,9 @@ T4_CONTINUE_APPLY = re.compile(r"^\W*(?:(?:and\s+)?provided,?\s+however,?\s+that
 
 
 APPLY_Y2 = True                     # Nov 5 2026 closing-class rules (named Y: APPLY_U1/U4 are older flags); dry run over stored ids: Y2 (aid provided) 1
+APPLY_B43 = True          # Nov 10 2026 (Tal, B43): a sunset extension whose title, Part title and amended chapter name no single body is stored as a power with agency Unspecified + holder_unnamed, never re-asked
+HOLDER_UNNAMED_NOTE = "Holder not named in the amending law"
+HOLDER_UNNAMED_ACTOR = "holder not named in the amending law"
 APPLY_Y1 = False                    # Nov 5 2026: OFF. "provisions of this act shall remain in full force until [2010] {{2014}}" inside an amended earlier act clause is a sunset EXTENSION (real; Nov 4 F1 restored 15); W2 sets its holder or routes it to re-ask
 APPLY_Y3 = APPLY_Y4 = True          # which-approved clause and individual service bar, 1 id each: set aside for W1/W2 (coordinator, Nov 5 2026)
 U1_FORCE_UNTIL = re.compile(r"^\W*the\s+provisions?\s+of\s+(?:this\s+act,\s+and\s+all\s+regulations,\s+orders\s+and\s+requirements\s+thereunder|(?:sections?|subdivisions?)\s+[\w\s,-]{1,60}\s+of\s+this\s+act)\s+shall\s+remain\s+in\s+full\s+force\s+and\s+effect\s+(?:only\s+)?until\s+and\s+including\b", re.I)          # 'of this act' only: 'subdivision 6 of section 12 of the emergency housing rent control law, as added by this act' stays
@@ -2761,7 +2764,7 @@ def split_mechanical(entries):
 REASK_HISTORY = DATA / "reask_history.json"     # Oct 29 2026: {law: {count, last_tag, checks, sentences, answered}}; a re-asked law is not re-queued for the same uncovered text
 APPLY_REQUEUE_CAP = True          # Nov 6 2026
 REQUEUE_CAP_COUNT = 4
-ALWAYS_REQUEUE = frozenset({"audit_confirmed_miss", "sunset_extension_unnamed_holder"})
+ALWAYS_REQUEUE = frozenset({"audit_confirmed_miss"} if APPLY_B43 else {"audit_confirmed_miss", "sunset_extension_unnamed_holder"})
 JUDGMENT_REQUEUE_MAX_COUNT = 1                    # a judgment flag queues a law once more after its first re-ask, never after the second
 
 
@@ -2842,7 +2845,7 @@ def build_reask(todo, duties, powers, mechanical=None, history=None):
                        "sentences": [r["quote"] for r in unres][:12]})
         fl += judgment_flags(text, by_law.get(law["key"], []))
         fl += mandatory_drop_flags(text, drops.get(law["key"], []))      # T8
-        if law["key"] in SUNSET_UNNAMED:          # U1: an earlier chapter's sunset moved, and the title names no single government body
+        if law["key"] in SUNSET_UNNAMED and not APPLY_B43:          # U1 (B43: unnamed holders are stored, not re-asked): an earlier chapter's sunset moved, and the title names no single government body
             su = SUNSET_UNNAMED[law["key"]]
             fl.append({"check": "sunset_extension_unnamed_holder", "detail": "the law moves a sunset date in an earlier chapter and its title names no single holder: %s" % su["title"],
                        "sentences": [su["sentence"]], "title": su["title"]})
@@ -3815,6 +3818,9 @@ def sunset_extension_records(law, text, eff, existing, res):
                 bump("q5_holder_from_amended_chapter")
         if holder:
             sents.append((q, c, holder))
+        elif APPLY_B43:
+            sents.append((q, c, None))
+            bump("b43_sunset_extension_holder_unnamed")
         elif unnamed is None:
             bump("u1_sunset_extension_unnamed")
             unnamed = {"sentence": q, "title": (part_title(text, pos) if multi_part else None) or law.get("title") or ""}
@@ -3824,19 +3830,27 @@ def sunset_extension_records(law, text, eff, existing, res):
     nxt = max(ids or [0]) + 1
     out = []
     for i, (q, cit, holder) in enumerate(sents):
-        o = {"obligation_id": "%s-%02d" % (law["key"], nxt + i), "matter_id": law["key"], "actor_raw": holder, "model_unit": None,
+        unnamed_holder = holder is None          # B43
+        if unnamed_holder:
+            holder = "Unspecified"
+        o = {"obligation_id": "%s-%02d" % (law["key"], nxt + i), "matter_id": law["key"], "actor_raw": HOLDER_UNNAMED_ACTOR if unnamed_holder else holder, "model_unit": None,
              "agency": holder, "agency_full": holder, "agency_matched": False,          # as the model writes it: the chain below resolves it
              "action_summary": "Continue the authority granted by an earlier chapter, now running to the date in: " + q[:200],
              "deliverable_type": "other", "citation": cit, "quote": q, "quote_verified": True, "kind_rule": "power", "kind_model": "power",
              "kind_list_item": False, "deadline_kind": "none", "deadline_text": None, "deadline_date": None, "recurrence": "ongoing",
-             "affected_groups": [], "extends_existing": True, "record_source": "sunset_extension_from_title", "provision_kind": "power"}
-        if eo.fix_actor(o, LOOKUP, BY_CANON, stage="private") == "private":
-            continue
-        canon, full = eo.match_agency(holder, LOOKUP, BY_CANON)          # the crosswalk match finalize_extraction gives every model actor
-        if canon:
-            o.update(agency=canon, agency_full=full, agency_matched=True)
-        attach_jurisdiction(o)
-        run_agency_fixes(o, text, law)
+             "affected_groups": [], "extends_existing": True, "record_source": "sunset_extension_holder_unnamed" if unnamed_holder else "sunset_extension_from_title", "provision_kind": "power"}
+        if unnamed_holder:
+            o.update(holder_unnamed=True, holder_note=HOLDER_UNNAMED_NOTE)
+            attach_jurisdiction(o)
+            o.update(agency="Unspecified", agency_full="Unspecified", agency_matched=False)          # attach_jurisdiction may read a locality from the quote; the holder stays unnamed
+        else:
+            if eo.fix_actor(o, LOOKUP, BY_CANON, stage="private") == "private":
+                continue
+            canon, full = eo.match_agency(holder, LOOKUP, BY_CANON)          # the crosswalk match finalize_extraction gives every model actor
+            if canon:
+                o.update(agency=canon, agency_full=full, agency_matched=True)
+            attach_jurisdiction(o)
+            run_agency_fixes(o, text, law)
         sec_date, sec_src = section_effective(o, text, eff)
         out.append({**o, "kind": "power", "chapter": law["chapter_number"], "chapter_year": law["chapter_year"],
                     "session": law["session"], "print_no": law["print_no"], "law_number_display": law["law_number_display"],
@@ -3950,6 +3964,11 @@ def build_records(laws):
             run_agency_fixes(o, text, law)
             quote = o.get("quote") or ""
             w2 = w2_extension_holder(o, text, law)
+            if w2 == "unnamed" and APPLY_B43:          # B43: keep the model's record, agency Unspecified, flagged
+                o.update(agency="Unspecified", agency_full="Unspecified", agency_matched=False, actor_raw=HOLDER_UNNAMED_ACTOR, actor_unresolved=False,
+                         holder_unnamed=True, holder_note=HOLDER_UNNAMED_NOTE)
+                bump("b43_w2_kept_holder_unnamed")
+                w2 = None
             if w2 == "unnamed":
                 SUNSET_UNNAMED.setdefault(law["key"], {"sentence": quote, "title": law.get("title") or ""})
                 drop(o, "extension_holder_unnamed", "an expiry sentence whose subject is the provisions that expire and whose act title names no single holder; routed to the sunset_extension_unnamed_holder re-ask")
@@ -4025,6 +4044,8 @@ def build_records(laws):
                     bump("cap_deadline_cleared")
                 o["deadline_kind"], o["deadline_date"] = "none", None
                 bump("cap_cutoff_records")
+            if APPLY_B43 and o.get("holder_unnamed") and kind != "power":          # B43: a sunset extension is a power by decision, after every kind rule
+                kind = "power"; o["kind_adjusted"] = "b43_sunset_extension_power"; bump("b43_forced_power")
             if kind == "power":
                 o["deadline_kind"], o["deadline_date"] = "none", None
             # 6. setup / triggered consistency

@@ -42,7 +42,8 @@ check("B30 sunset not a duty", not ed.SECTION_SUNSET.match("provided further tha
 r = build("2015-S5867")
 check("B30 S5867 imperative items dropped", not any(i in r for i in ("2015-S5867-10", "2015-S5867-12", "2015-S5867-13", "2015-S5867-14")))
 r = build("2013-A8728")
-check("B30 A8728-01 dropped", "2013-A8728-01" not in r)
+# Nov 10 2026 (B43): the section-five sunset sentence is now kept as a holder-unnamed power
+check("B30 A8728-01 kept as holder-unnamed power", r.get("2013-A8728-01", {}).get("holder_unnamed") is True and r["2013-A8728-01"]["kind"] == "power")
 
 # B16: one-time 'none' duties with no trigger get on_effective_date; transfers by operation of law are dropped
 import tempfile

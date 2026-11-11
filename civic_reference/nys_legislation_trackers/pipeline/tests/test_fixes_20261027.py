@@ -92,8 +92,10 @@ _L3 = {"key": "2011-A3", "title": "AN ACT relating to the city of New York, in r
 _E3 = {"effective_date": "2011-06-01", "rule": "immediately", "expires_date": None, "section_dates": []}
 check("G3 two Parts found", len(ed.part_starts(_T3)) == 2)
 _r3, _u3 = ed.sunset_extension_records(_L3, _T3, _E3, [], {"obligations": [], "model": "m"})
-check("G3 Part C racing sunset does not take the title's city", not any("2012" in r["quote"] for r in _r3) and _u3 is not None)
-check("G3 Part D keeps the city", [r["actor_raw"] for r in _r3] == ["the city of New York"] and "2013" in _r3[0]["quote"])
+# Nov 10 2026 (B43): Part C no longer goes to re-ask; it becomes a holder-unnamed record and still does not take the title's city
+check("G3 Part C racing sunset does not take the title's city", [r["agency"] for r in _r3 if "2012" in r["quote"]] == ["Unspecified"] and [r.get("holder_unnamed") for r in _r3 if "2012" in r["quote"]] == [True] and _u3 is None)
+# Nov 10 2026 (B43): the list now also holds the Part C holder-unnamed record; Part D still has exactly the city
+check("G3 Part D keeps the city", [r["actor_raw"] for r in _r3 if "2013" in r["quote"]] == ["the city of New York"])
 _long = "This act shall take effect immediately, " + " ".join("word%d" % i for i in range(120)) + ", and shall expire and be deemed repealed July 1, [2011] {{2012}}; " + " ".join("tail%d" % i for i in range(120)) + "."
 _T4 = "Section 1. Section 3 of chapter 5 of the laws of 2010, relating to the town of Islip, is amended to read as follows:\n\n§ 3. " + _long + "\n\n§ 2. This act shall take effect immediately."
 _s4 = ed.sunset_extension_sentences(_T4)

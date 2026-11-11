@@ -79,7 +79,8 @@ EFFW = {"effective_date": "2017-06-01", "rule": "immediately", "expires_date": N
 rw, unw = ed.sunset_extension_records(LAWW, T1, EFFW, [{"quote": "unrelated stored quote"}], {"obligations": []})
 check("W1 builds a record although the law stores other records", any(r["quote"].endswith("expire June 30, 2018.") and r["actor_raw"] == "the department of health" for r in rw))
 rn, unn = ed.sunset_extension_records(dict(LAWW, title="Relates to clinics"), T1, EFFW, [], {"obligations": []})
-check("W1 no body in the title: reask flag", rn == [] and unn is not None)
+# Nov 10 2026 (B43): holder-unnamed record instead of a re-ask flag
+check("W1 no body in the title: holder-unnamed record, no reask flag", len(rn) >= 1 and unn is None and all(x["holder_unnamed"] is True and x["agency"] == "Unspecified" for x in rn))
 
 # W2: expiry counted from the signing date
 import effective_date as efd

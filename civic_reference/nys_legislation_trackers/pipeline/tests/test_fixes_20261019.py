@@ -51,7 +51,8 @@ recs2, _ = ed.sunset_extension_records(LAW, TXT, EFF, [{"quote": r["quote"]}], {
 check("U1 a stored record that covers the sentence suppresses it", recs2 == [])
 LAW2 = dict(LAW, title="AN ACT to amend chapter 5 of the laws of 2010, relating to a tax, in relation to extending the expiration thereof")
 recs3, un3 = ed.sunset_extension_records(LAW2, TXT, EFF, [], {"obligations": []})
-check("U1 no body in the title: no record, reask entry with sentence and title", recs3 == [] and un3 and un3["sentence"].endswith("2020.") and "relating to a tax" in un3["title"])
+# Nov 10 2026 (B43): no body named anywhere now stores a holder-unnamed power record and raises no re-ask entry
+check("U1 no body in the title: holder-unnamed record, no reask entry", len(recs3) == 1 and un3 is None and recs3[0]["holder_unnamed"] is True and recs3[0]["agency"] == "Unspecified" and recs3[0]["kind"] == "power")
 ed.SUNSET_UNNAMED["2011-A1"] = un3
 check("U1 a body-less sunset sentence in the re-ask text", "sunset_extension_unnamed_holder" in json.dumps(ed.SUNSET_UNNAMED) or True)
 ed.SUNSET_UNNAMED.clear()

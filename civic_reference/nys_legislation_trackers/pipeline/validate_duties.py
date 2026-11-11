@@ -87,7 +87,9 @@ def main():
             hard["schema_placeholder_left"].append(oid)
         if o.get("effective_date") and not re.match(r"^\d{4}-\d{2}-\d{2}$", o["effective_date"]):
             hard["bad_effective_date"].append(oid)
-        if not o.get("agency_matched") and not GOV_NOUN.search(o.get("actor_raw") or ""):
+        if o.get("holder_unnamed") and o.get("agency") == "Unspecified":      # B43: a sunset extension whose law names no holder; stored as Unspecified on purpose
+            soft["holder_unnamed_sunset_extension"].append(oid)
+        elif not o.get("agency_matched") and not GOV_NOUN.search(o.get("actor_raw") or ""):
             if o.get("actor_unresolved") and o.get("agency") == "Unspecified":      # kept as Unspecified and sent to re-ask
                 soft["actor_unresolved_reasked"].append("%s: %s" % (oid, (o.get("actor_raw") or "")[:50]))
             else:
@@ -101,7 +103,7 @@ def main():
             soft["on_effective_date_null_date"].append(oid)
         if o.get("agency") == "DTF" and not re.search(r"\b(state|department of taxation and finance|commissioner of taxation|tax commission)\b", q + " " + (o.get("actor_raw") or ""), re.I):
             soft["dtf_without_state_marker"].append(oid)
-        if not GOV_NOUN.search(o.get("actor_raw") or ""):
+        if not o.get("holder_unnamed") and not GOV_NOUN.search(o.get("actor_raw") or ""):
             soft["actor_raw_no_government_noun"].append("%s: %s" % (oid, (o.get("actor_raw") or "")[:50]))
         ag = o.get("agency") or ""
         if not o.get("agency_matched") and ag not in ("Unspecified", "All agencies"):

@@ -125,9 +125,11 @@ check("Q3 one prior re-ask, same coverage reasons: not queued, suppressed kept",
 k, sup = ed.apply_reask_history([cov(S1, S2)], h1)
 check("Q3 new uncovered sentence: queued", len(k) == 1 and sup == [])
 k, _ = ed.apply_reask_history([{"check": "audit_confirmed_miss", "detail": "d", "sentences": [S1]}, {"check": "sunset_extension_unnamed_holder", "detail": "d", "sentences": [S1]}], {"count": 3, "sentences": [S1]})
-check("Q3 audit_confirmed_miss and sunset_extension_unnamed_holder queued below 4 re-asks", len(k) == 2)
+# Nov 10 2026 (B43): sunset_extension_unnamed_holder is no longer always-requeue (and no longer emitted); only audit_confirmed_miss is
+check("Q3 audit_confirmed_miss queued below 4 re-asks, unnamed-holder no longer always-requeue", [x["check"] for x in k] == ["audit_confirmed_miss"])
 k, sup = ed.apply_reask_history([{"check": "audit_confirmed_miss", "detail": "d", "sentences": [S1]}, {"check": "sunset_extension_unnamed_holder", "detail": "d", "sentences": [S1]}], {"count": 4, "sentences": [S1]})
-check("Q3 always-requeue checks capped at 4 re-asks into requeue_capped_after_4", k == [] and [x["check"] for x in sup] == ["requeue_capped_after_4"] * 2)
+# Nov 10 2026 (B43): one always-requeue check left
+check("Q3 always-requeue checks capped at 4 re-asks into requeue_capped_after_4", k == [] and [x["check"] for x in sup].count("requeue_capped_after_4") == 1 and "sunset_extension_unnamed_holder" not in ed.ALWAYS_REQUEUE)
 check("Q3 count 2 with only judgment flags: not queued", ed.apply_reask_history([jud], {"count": 2, "sentences": [S1]})[0] == [])
 check("Q3 count 1 judgment flag queues once more; count 0 keeps everything", len(ed.apply_reask_history([jud], h1)[0]) == 1 and len(ed.apply_reask_history([cov(S1)], None)[0]) == 1)
 dd2, pk2 = tmp / "data2", tmp / "packets2"
