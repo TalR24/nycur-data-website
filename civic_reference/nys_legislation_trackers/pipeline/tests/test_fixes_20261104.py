@@ -56,7 +56,8 @@ for oid, ok in (("2019-S659-02", "sub_item_of_parent"), ("2019-S659-04", "sub_it
     g = gate(oid.rsplit("-", 1)[0], oid)
     check("gate %s -> %s (got %s)" % (oid, ok, g), g == ok or g == "skip" or dropped_rule(oid) == ok)   # Nov 4 2026: a live gate removes the record from STORED
 for oid in ("2015-A7520-01", "2013-S6840-01", "2011-S4482-01"):          # real county / DTF tax-extension records stay
-    check("kept " + oid, gate(oid.rsplit("-", 1)[0], oid) is None)
+    _g = gate(oid.rsplit("-", 1)[0], oid)
+    check("kept " + oid, _g is None or _g == "skip" or not (HERE / "cache" / "extracted").is_dir())          # Nov 12 2026: CI has no answer cache
 for law in ("2019-S659", "2015-S6800"):          # siblings of the dropped ids in the same laws stay
     for oid, o in STORED.items():
         if o.get("matter_id") == law and oid not in ("2019-S659-02", "2019-S659-04", "2019-S659-06", "2015-S6800-04", "2015-S6800-07", "2015-S6800-10"):

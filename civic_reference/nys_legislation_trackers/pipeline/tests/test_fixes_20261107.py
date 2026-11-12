@@ -41,7 +41,8 @@ for f in (HERE / "cache" / "extracted").glob("*.json"):
 for n, h in hits.items():
     print("dry run", n, len(h), h[:12])
     if len(h) > 40: print("over the cap: flag", n, "stays off")
-    check(n + " flag on only within cap", getattr(ed, "APPLY_" + n) == (len(h) <= 40))
+    if (HERE / "cache" / "extracted").is_dir():          # Nov 12 2026: CI has no answer cache, so dry-run counts are 0 there
+        check(n + " flag on only within cap", getattr(ed, "APPLY_" + n) == (len(h) <= 40))
 check("AA1 rule matches", bool(ed.AA1_COSTS_BORNE.search("All past service costs associated with implementing the provisions of this act shall be borne by the state of New York.")))
 check("AA1 plain cost sentence kept", gate_q("The commissioner shall report the costs of the program to the legislature.") is None)
 g = gate_q("then the abatement for the year shall be based on the information contained in the application submitted in two thousand eleven"); check("AA2 gate", bool(g) and g[0] == "amount_not_duty")

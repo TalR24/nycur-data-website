@@ -101,7 +101,7 @@ check("AF4 person fine dropped for a court actor", rule(gate_q(q, "courts", "cou
 check("AF4 court directed to impose is kept", rule(gate_q("Any person who violates this section shall be fined, and the court shall impose a fine of five hundred dollars.", "courts", "courts")) != "no_duty_or_power")
 check("AF4 non-court actor untouched by AF4", rule(gate_q(q, "the department", "SED")) != "no_duty_or_power")
 n3 = []; n4 = []
-for f in (HERE.parent / "data").glob("*/*.json"):
+for f in [g for _d in ("duties", "powers") for g in (HERE.parent / "data" / _d).glob("*.json")]:          # Nov 12 2026: data/site holds non-record files
     d = json.load(open(f))
     for x in d.get("obligations", d.get("powers", [])) if isinstance(d, dict) else []:
         qq = x.get("quote") or ""
