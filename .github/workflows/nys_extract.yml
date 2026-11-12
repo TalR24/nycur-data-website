@@ -50,6 +50,11 @@ on:
         required: false
         default: false
         type: boolean
+      reask:
+        description: "Extract only: send re-asks for the laws in data/reask/*.json (with keys_file to choose which) instead of unanswered laws (Nov 12 2026)"
+        required: false
+        default: false
+        type: boolean
       max_usd:
         description: "Extract only: refuse to submit when the projected cost exceeds this many dollars"
         required: false
@@ -241,6 +246,7 @@ jobs:
           if [ -n "${{ inputs.max_usd }}" ]; then BARGS="--max-usd ${{ inputs.max_usd }}"; fi
           set -o pipefail
           if [ "$TASK" = resume ]; then python3 extract_duties.py --api --resume $SARGS | tee extract_output.txt
+          elif [ "${{ inputs.reask }}" = "true" ]; then python3 extract_duties.py --api --reask $SARGS | tee extract_output.txt
           else python3 extract_duties.py --api --batch $SARGS $BARGS | tee extract_output.txt; fi
           if grep -q "^laws with text: 0 " extract_output.txt; then echo "::error::no law texts restored: nothing was sent"; exit 1; fi
 
