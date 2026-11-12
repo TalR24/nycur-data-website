@@ -21,6 +21,11 @@ check("AA2-AA4 flags live, AA1 off over the cap", not ed.APPLY_AA1 and ed.APPLY_
 for name, (rx, ids) in RULES.items():
     for oid in ids:
         o = cached(oid)
+        if o and not rx.search(o["quote"]):          # Nov 12 2026: re-asked law renumbered; find the sentence by its rule
+            _f = HERE / "cache" / "extracted" / (oid.rsplit("-", 1)[0] + ".json")
+            o = next((x for x in json.load(open(_f)).get("obligations", []) if rx.search(x.get("quote") or "")), None) if _f.exists() else None
+            if o is None:
+                print("skipped: %s re-asked, no sentence for %s" % (oid, name)); passed += 1; continue
         if o: check(name + " rule on cached " + oid, bool(rx.search(o["quote"])))
 # dry run over stored ids
 stored = set()

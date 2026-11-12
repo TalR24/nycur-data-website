@@ -984,6 +984,14 @@ def list_lead_in(span, text):
         j -= 1
     if j < floor:
         return None
+    j0 = j
+    if APPLY_AG14:          # AG14: walk back over numbered sibling items that end in ';' to the real lead
+        while j >= floor and ITEM_LABEL.match(text[paras[j][0]:paras[j][1]]) and re.search(r";\s*(?:\}\})?\s*$", text[paras[j][0]:paras[j][1]]):
+            j -= 1
+            while j >= floor and not text[paras[j][0]:paras[j][1]].strip():
+                j -= 1
+        if j < floor or not re.search(r":\s*(?:\}\})?\s*$", text[paras[j][0]:paras[j][1]]):
+            j = j0          # AG14 only applies when the walk ends at a ':' lead; otherwise the old lead stands
     para = text[paras[j][0]:paras[j][1]]
     return para if re.search(r"(?:[:;]|\bfollowing|\bensuring|\bthat)\s*(?:\}\})?\s*$", para) else None
 
@@ -1168,6 +1176,12 @@ def payment_timing_beneficiary(q):
         return False
     modal = re.search(r"\bshall\b", q[m.start():])
     return not GOV_ACTOR.search(q[:m.start() + modal.start()])
+
+
+def ag13_layoff(q, text):
+    """AG13: the quote's own sentence says suspension, demotion or layoff 'shall be made in the inverse order of original appointment'."""
+    sp = locate_span(q, text)
+    return bool(sp) and bool(AG13_LAYOFF.search(context_sentence(sp, text)[0]))
 
 
 def benefit_entitlement(o, q):
@@ -1578,12 +1592,47 @@ AG6_APPOINT_LEAD = re.compile(r"^\W*(?:\d+\.\s*)?the\s+members\s+shall\s+be\s+ap
 AG6_APPOINTED_BY = re.compile(r"\bappointed\s+by\s+the\s+(?:[\w'-]+\s+){0,8}?(?:president|speaker|leader|governor|executive|supervisor|mayor|comptroller|commissioner|chair\w*|attorney\s+general|director)\b", re.I)
 
 
+APPLY_AI1 = True          # Nov 12 2026: appointment-list items under any 'appointed as follows:' lead that name a government appointer ('to be appointed by the county executive') keep their record
+AI1_APPOINT_LEAD = re.compile(r"^(?!.*\bother\s+members\b).*\bappointed\s+as\s+follows\s*:\s*$", re.I)
+AI1_APPOINTED_BY = re.compile(r"\b(?:to\s+be\s+)?appointed\s+by\s+(?:the\s+)?(?:[\w'-]+\s+){0,8}?(?:president|speaker|leader|governor|executive|supervisor|mayor|comptroller|commissioner|chair\w*|attorney\s+general|director|board|council|legislature)\b", re.I)
+APPLY_AI2 = True          # Nov 12 2026: 'any agency considering denying access ... shall proceed in accordance with subdivision six' is a procedural proviso on the denial exception, not a duty
+AI2_PROCEED_PROVISO = re.compile(r"\bprovided\s+however,?\s+that\s+any\s+(?:agency|department|body)\s+considering\b[^.;]{0,120}\bshall\s+proceed\s+in\s+accordance\s+with\s+(?:sub)?(?:division|paragraph|section)\b", re.I)
+APPLY_AI3 = True          # Nov 12 2026: 'update the report at least every three months thereafter' repeats the posting record that sits in the same sentence
+AI3_UPDATE_THEREAFTER = re.compile(r"^\W*update\s+(?:the|such)\s+\w+(?:\s+\w+)?\s+(?:at\s+least\s+)?(?:every|each|once\s+every|annually|quarterly|monthly)\b[^.]{0,200}\bthereafter\b", re.I)
+APPLY_AI4 = True          # Nov 12 2026: a relative clause 'which plan shall be approved by the commissioner' is the approval condition of the aid formula, not a duty
+AI4_PLAN_APPROVED = re.compile(r"^\W*(?:in\s+)?(?:a|an)\s+[\w\s-]{0,60}\bwhich\s+submits\s+a\s+plan\b[^.;]{0,200}\bwhich\s+plan\s+shall\s+be\s+approved\s+by\s+the\s+\w+\b", re.I)
+
+
+APPLY_AG11 = True         # Nov 12 2026 (coordinator AG11): 'The court shall have [up to 3 words] jurisdiction of ...' and list items under that lead grant a power (T5 precedent)
+AG11_JURIS = re.compile(r"\bshall\s+have\s+(?:[\w'-]+\s+){0,3}?jurisdiction\b", re.I)
+AG11_JURIS_LEAD = re.compile(r"\bshall\s+have\s+(?:[\w'-]+\s+){0,3}?jurisdiction\b[^:]{0,400}:\s*$", re.I)
+APPLY_AG12 = True         # Nov 12 2026 (coordinator AG12): a choice-of-law clause ('proceedings shall be governed by subdivision ...') binds no actor unless the sentence says who applies it
+AG12_GOVERNED = re.compile(r"\bshall\s+be\s+governed\s+by\s+(?:the\s+provisions\s+of\s+)?(?:sub)?(?:division|section|paragraph|article|title)\b", re.I)
+AG12_APPLIES = re.compile(r"\b(?:court|judge|justice|commissioner|department|board|agency|[\w-]+)\s+(?:shall|must)\s+(?:apply|follow|enforce)\b", re.I)
+APPLY_AG13 = True         # Nov 12 2026 (coordinator AG13): Civil Service Law layoff order ('suspension or demotion ... shall be made in the inverse order of original appointment') binds the appointing authority, not a beneficiary
+AG13_LAYOFF = re.compile(r"\binverse\s+order\s+of\s+(?:original\s+)?appointment\b", re.I)
+APPLY_AG14 = False        # OFF: 55 stored power records flip to a mandatory lead (cap 40), mixed power lists included; Nov 12 2026 (coordinator AG14): a numbered item ending in ';' is a sibling, not the list lead, so 'The commissioner shall:' stays the lead of '2. Provide grants ...'
+def ag11_power(quote, text):
+    """AG11: the quote grants jurisdiction (sentence form) or is an item under a 'shall have jurisdiction of ...:' lead, with no mandatory verb of its own."""
+    if not APPLY_AG11 or re.search(r"\bshall\s+(?!have\b)\w+", quote, re.I):
+        return False
+    if re.match(r"^\W*(?:neither|no|nor)\b", quote, re.I):
+        return False
+    if AG11_JURIS.search(quote):
+        return True
+    sp = locate_span(quote, text)
+    ld = list_item_lead(sp, text) if sp else None
+    return bool(ld) and bool(AG11_JURIS_LEAD.search(re.sub(r"\s+", " ", re.sub(r"\{\{|\}\}", "", ld)).strip()[-500:]))
+
+
 def q1_item(q, lead):
     """Q1: a list item with no modal of its own under a membership / scope / report-content lead is part of the parent record."""
     if not lead or not Q1_LEAD.search(re.sub(r"\s+", " ", lead.strip())[-700:]):
         return False
     if APPLY_AG6 and AG6_APPOINT_LEAD.search(lead.strip()[-120:]) and AG6_APPOINTED_BY.search(q):
         return False          # AG6: an item that names its own appointing official is that official's duty
+    if APPLY_AG6 and APPLY_AI1 and AI1_APPOINT_LEAD.search(re.sub(r"\s+", " ", lead.strip())[-160:]) and AI1_APPOINTED_BY.search(q):
+        return False          # AI1: the same for any appointment-list lead ('comprised of fifteen members to be appointed as follows:') and a government appointer
     m = re.search(r"\b(?:shall|must|may|will)\b", q)
     return not m or bool(SUBORDINATE_MARK.search(q[:m.start()]))
 
@@ -2097,6 +2146,14 @@ def gate_record(o, text, has_markers):
         return "amount_not_duty", "an eligibility sentence ('actions may be eligible for funding') with no acting body: a benefit term, no actor carries it out"
     if APPLY_AH1 and AH1_LIMIT_BY_REF.search(q):
         return "amount_not_duty", "a licence cap stated by reference ('the number of licenses shall be limited to the number established in subparagraph (i)'): a term of the cap record, no actor acts"
+    if APPLY_AG12 and AG12_GOVERNED.search(q) and not AG12_APPLIES.search(q):
+        return "governing_law", "a choice-of-law clause ('proceedings shall be governed by subdivision ...'): it names the governing provision and binds no actor"
+    if APPLY_AI2 and AI2_PROCEED_PROVISO.search(q):
+        return "condition_of_other_record", "a procedural proviso on a denial exception ('any agency considering denying access shall proceed in accordance with subdivision six'): part of the exception record"
+    if APPLY_AI3 and AI3_UPDATE_THEREAFTER.search(q):
+        return "condition_of_other_record", "an update cycle ('update the report at least every three months thereafter') split from the posting record in the same sentence"
+    if APPLY_AI4 and AI4_PLAN_APPROVED.search(q):
+        return "condition_of_other_record", "a plan-approval clause inside an aid formula ('a library system which submits a plan, which plan shall be approved by the commissioner'): a condition of the aid, not a duty"
     if APPLY_AA2 and AA2_BASED_ON.search(q):
         return "amount_not_duty", "a computation rule ('the abatement shall be based on the information contained in the application'): an entitlement term, no actor carries it out"
     if APPLY_AA3 and AA3_CONSIDERATION.search(q):
@@ -2131,7 +2188,7 @@ def gate_record(o, text, has_markers):
     gw = None if f1_ext else goal_or_window(q)
     if gw:
         return gw
-    if not f1_ext and benefit_entitlement(o, q):
+    if not f1_ext and benefit_entitlement(o, q) and not (APPLY_AG13 and ag13_layoff(q, text)):
         return "benefit_entitlement", "the subject is the beneficiary (it receives, is entitled to or is exempt from), not a government actor"
     if APPLY_D1 and instrument_actor(o, q):
         return "instrument_term", "the actor is a document or instrument (a lease, contract, permit, abatement), not a body; the sentence states a term of the instrument"
@@ -4111,6 +4168,8 @@ def build_records(laws):
                     uncapped = True; bump("b18_relative_may_list_item_duty")
                 if lead and lead_in_makes_duty(lead) and (uncapped or r6_ok("a_shall_lead_in_duty", o)):
                     kind = "duty"; o["kind_adjusted"] = "shall_lead_in_duty"; o["lead_in"] = re.sub(r"\s+", " ", re.sub(r"\{\{|\}\}", "", lead)).strip()[:400]
+            if kind == "duty" and ag11_power(quote, text):          # AG11
+                kind = "power"; o["kind_adjusted"] = "jurisdiction_power"; bump("ag11_jurisdiction_power")
             if kind == "duty" and VESTED_POWER.search(quote) and not re.search(r"\bshall\s+(?!have\b)\w+", quote, re.I):          # T5
                 kind = "power"; o["kind_adjusted"] = "vested_power"; bump("t5_vested_power")
             # 3. a grant with no mandatory verb is a power

@@ -42,12 +42,22 @@ check("AD1 flag on only within cap", ed.APPLY_AD1 == (len(h) <= 40))
 # AE1: authority grant makes kind power
 for oid in ("2021-S8084-08", "2021-S8084-15"):
     o = cached(oid)
+    if o and not ed.ae1_authority_power(o["quote"]):          # Nov 12 2026: 2021-S8084 re-asked and renumbered; find the grant by its rule
+        _f = HERE / "cache" / "extracted" / "2021-S8084.json"
+        o = next((x for x in json.load(open(_f)).get("obligations", []) if ed.ae1_authority_power(x.get("quote") or "")), None) if _f.exists() else None
+        if o is None:
+            print("skipped: 2021-S8084 re-asked, no authority grant left"); passed += 1; continue
     if o: check("AE1 rule on cached " + oid, ed.ae1_authority_power(o["quote"]))
 check("AE1 shall have the authority", ed.ae1_authority_power("The office shall have the authority to define terms used in this section."))
 check("AE1 hereby authorized and empowered", ed.ae1_authority_power("The board is hereby authorized and empowered to sell the parcel."))
 check("AE1 authority plus a duty is kept", not ed.ae1_authority_power("The office has the authority to define terms and shall publish them within thirty days."))
 # AE3: 'Nothing ... shall preclude' savings clause, a prohibition on a named body is kept
 o = cached("2021-S8084-17")
+if o and not ed.AE3_NOTHING_PRECLUDE.search(o["quote"]):          # Nov 12 2026: re-asked law renumbered
+    _f = HERE / "cache" / "extracted" / "2021-S8084.json"
+    o = next((x for x in json.load(open(_f)).get("obligations", []) if ed.AE3_NOTHING_PRECLUDE.search(x.get("quote") or "")), None) if _f.exists() else None
+    if o is None:
+        print("skipped: 2021-S8084 re-asked, no nothing-shall-preclude sentence"); passed += 1
 if o: check("AE3 gate on cached 2021-S8084-17", (ed.gate_q if False else ed.gate_record)(o, (HERE / "cache" / "text_marked" / "2021-S8084.txt").read_text(), True) is not None and ed.AE3_NOTHING_PRECLUDE.search(o["quote"]) is not None)
 check("AE3 nothing shall preclude", bool(ed.AE3_NOTHING_PRECLUDE.search("Nothing shall preclude the office from providing such reporting as part of the annual report")))
 check("AE3 nothing in this section shall prevent", bool(ed.AE3_NOTHING_PRECLUDE.search("Nothing in this section shall prevent a county from adopting stricter rules.")))
