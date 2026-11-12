@@ -3892,15 +3892,64 @@ def part_title(text, pos):
     return re.sub(r"\{\{|\}\}", "", seg[:min(m.start() if m else 400, 400)])
 
 
+APPLY_B50 = True          # Nov 12 2026 (backlog B50): U1 also reads amending sentences that name a subdivision, paragraph or Part of an earlier chapter ('Subdivision (c) of section 153 of part B of chapter 436 ...', 'Section 2 of part O of chapter 56 ...') and a body that reads 'This {{act}} shall ...'; a shortened sunset (new year earlier than the old) is no extension
+SUNSET_ITEM_B50 = r"[\w().-]+(?:\s*(?:,|and|through)\s*[\w().-]+)*"
+SUNSET_AMEND_B50 = re.compile(r"(?:^|\n)[ \t]*(?:§|Section)\s*\d+\.\s*((?:Sections?|Subdivisions?|Paragraphs?|Subparagraphs?|Items?)\s+" + SUNSET_ITEM_B50 + r"\s+of\s+(?:(?:sections?\s+([\w-]+)\s+of\s+)?(?:(?:sub)?parts?\s+[\w-]+\s+of\s+)*))chapter\s+(\d+)\s+of\s+the\s+laws\s+of\s+((?:19|20)\d{2})\b[^\n]*?\b(?:is|are)\s+(?:hereby\s+)?amended\s+to\s+read\s+as\s+follows:[ \t]*\n+([^\n]+)", re.I)
+SUNSET_BODY_B50 = re.compile(r"^\W*(?:(?:§|Section)\s*\d+\.\s*)?(?:\(?[\w-]+[.)]\s+)?(?:\{\{)?\s*(?:this\s+(?:\{\{)?act(?:\}\})?|sections?\b[^.]{0,80}\bof this act)\b", re.I)
+
+
+def sunset_amend_matches(text):
+    """[(section id, chapter, year, body, body offset, match start)] for every amending sentence U1 reads; B50 widens the older Section-N-of-chapter pattern."""
+    if not APPLY_B50:
+        return [(m.group(1), m.group(2), m.group(3), m.group(4), m.start(4), m.start()) for m in SUNSET_AMEND.finditer(text)]
+    out = []
+    for m in SUNSET_AMEND_B50.finditer(text):
+        first = re.match(r"\w+\s+(" + SUNSET_ITEM_B50 + r")", m.group(1))
+        sec = m.group(2) or (first.group(1) if first else "")
+        out.append((sec, m.group(3), m.group(4), m.group(5), m.start(5), m.start()))
+    return out
+
+
+def sunset_shortened_swap(sent):
+    """B50: True when every bracket-to-brace year swap in the sentence moves the date earlier (a shortened sunset, no extension)."""
+    pairs = [(_marked_year(a), _marked_year(b)) for a, b in re.findall(r"\[([^\[\]]*\d[^\[\]]*)\]\s*\{\{([^{}]*\d[^{}]*)\}\}", sent or "")]
+    pairs = [(a, b) for a, b in pairs if a and b]
+    return bool(pairs) and all(b < a for a, b in pairs)
+
+
+def sunset_swap_anchor(sent, s_left, default):
+    """B50: offset of the first '{{' whose ';'-clause (new matter kept, [deleted] matter dropped) says expire / repealed / remain in force, else None.
+    A date swapped inside 'shall take effect ...' or 'shall apply to taxable years ... before January 1, [2012] {{2017}}' is no sunset."""
+    for m in re.finditer(r"\{\{", sent):
+        lo = sent.rfind(";", 0, m.start()) + 1
+        if re.match(r"\s*[A-Za-z]\.?\s*\d+-?[A-Za-z]?\b", sent[m.end():m.end() + 12]):          # '{{a.9560-b,]}}' is a bill number, not a date
+            continue
+        close = sent.find("}}", m.end())
+        hi = sent.find(";", close + 2 if close >= 0 else m.end())          # a ';' inside the braces belongs to the new matter
+        clause = re.sub(r"\[[^\[\]]*\]|\{\{|\}\}", "", sent[lo:hi if hi >= 0 else len(sent)])
+        if AG9_EXPIRY.search(clause) and not re.search(r"\bapply\s+to\s+(?:taxable|tax)\b", clause, re.I):
+            return s_left + m.start()
+    return None
+
+
 def sunset_extension_sentences_pos(text):
     """[(post-amendment sentence, citation, offset of its braced date)]; each sentence is verbatim, trimmed to at most 60 words around the braced date (G3)."""
     out = []
-    for m in SUNSET_AMEND.finditer(text):
-        body = m.group(4)
-        if "{{" not in body or not SUNSET_BODY.match(body) or not SUNSET_WORDS.search(re.sub(r"\[[^\[\]]*\]", "", body)):
+    legacy = {(m.group(1), m.group(2), m.group(3), m.start(4)) for m in SUNSET_AMEND.finditer(text) if SUNSET_BODY.match(m.group(4))} if APPLY_B50 else set()
+    for sec_id, chap, yr, body, body_at, _ in sunset_amend_matches(text):
+        if "{{" not in body or not (SUNSET_BODY_B50 if APPLY_B50 else SUNSET_BODY).match(body) or not SUNSET_WORDS.search(re.sub(r"\[[^\[\]]*\]", "", body)):
             continue
-        a = m.start(4) + body.index("{{")
+        a = body_at + body.index("{{")
+        if APPLY_B50 and (sec_id, chap, yr, body_at) not in legacy:          # a body the older pattern read keeps its old anchor and sentence unchanged
+            a = sunset_swap_anchor(body, body_at, a)          # the line's own '{{' search: a bracketed 'S. 4176-A' or '{{352}}' ahead of the sunset must not hide it
+            if a is None:          # no braced date sits in an expiry / repeal / remain-in-force clause: an effective-date or applicability change
+                bump("b50_swap_not_in_expiry_clause")
+                continue
         sent = context_sentence((a, a + 2), text)[0]
+        if APPLY_B50 and (sec_id, chap, yr, body_at) not in legacy:
+            if sunset_shortened_swap(sent):
+                bump("b50_shortened_sunset_skipped")
+                continue
         q = re.sub(r"\[[^\[\]]*\]", "", sent)
         q = re.sub(r"\{\{", "\x01", q); q = re.sub(r"\}\}", "\x02", q)
         q = re.sub(r"\s+", " ", q).strip()
@@ -3913,7 +3962,7 @@ def sunset_extension_sentences_pos(text):
             q = trim_to_window(q, ca, cb)
         q = q.replace("\x01", "").replace("\x02", "")
         if q:
-            out.append((q, "Chapter %s of the Laws of %s, § %s" % (m.group(2), m.group(3), m.group(1)), a))
+            out.append((q, "Chapter %s of the Laws of %s, § %s" % (chap, yr, sec_id), a))
     return out
 
 
@@ -3925,10 +3974,10 @@ def sunset_extension_sentences(text):
 def amending_description(text, pos):
     """Q5: the amending sentence ('Section 3 of chapter 206 of the laws of 2010, amending the ... law relating to ..., is amended to read as follows:') above the braced date at pos."""
     last = None
-    for m in SUNSET_AMEND.finditer(text):
-        if m.start(4) <= pos:
+    for m in sunset_amend_matches(text):
+        if m[4] <= pos:
             last = m
-    return re.sub(r"\s+", " ", text[last.start():last.start(4)]) if last else None
+    return re.sub(r"\s+", " ", text[last[5]:last[4]]) if last else None
 
 
 def clean_u1_quote(q, text):
