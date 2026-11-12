@@ -291,7 +291,11 @@ def _emit_packets(session: int, laws: list[dict]) -> int:
         return 0
     d = PACKETS / str(session)
     (d / "results").mkdir(parents=True, exist_ok=True)
+    mf = d / "manifest.json"
+    before = json.loads(mf.read_text()) if mf.exists() else {}      # Nov 12 2026: emit writes a manifest of only these laws; keep the session's other entries
     ed.emit_absolute_packets(d, todo, fixed_prompt=ed.build_prompt(2)[0], render=ed.render_variable_prompt, schema=ed.SCHEMA_V2)
+    merged = {**before, **json.loads(mf.read_text())}
+    mf.write_text(json.dumps(merged, indent=1))
     return len(todo)
 
 

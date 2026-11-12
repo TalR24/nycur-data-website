@@ -58,6 +58,28 @@ def run():
 
 
 CASES = [(g, True) for g in run()]
+# Nov 12 2026: _emit_packets keeps the session's other manifest entries (it once rewrote the 2025 manifest from 1,068 to 57)
+with tempfile.TemporaryDirectory() as _td:
+    _old = nb.PACKETS
+    try:
+        nb.PACKETS = Path(_td)
+        (Path(_td) / "2099").mkdir()
+        (Path(_td) / "2099" / "manifest.json").write_text(json.dumps({"2099-A1": {"windows": 1}}))
+        import extract_duties as _ed
+        _orig = _ed.emit_absolute_packets
+        _ed.emit_absolute_packets = lambda d, todo, **kw: (d / "manifest.json").write_text(json.dumps({"2099-A2": {"windows": 1}}))
+        _orig_signed = _ed.signed_laws
+        _ed.signed_laws = lambda s: [{"key": "2099-A2"}]
+        _ed_text = _ed.TEXT_MARKED
+        _ed.TEXT_MARKED = Path(_td)
+        (Path(_td) / "2099-A2.txt").write_text("short law text")
+        nb._emit_packets(2099, [{"key": "2099-A2"}])
+        _m = json.loads((Path(_td) / "2099" / "manifest.json").read_text())
+        CASES.append((sorted(_m), ["2099-A1", "2099-A2"]))
+    finally:
+        nb.PACKETS = _old
+        _ed.emit_absolute_packets, _ed.signed_laws, _ed.TEXT_MARKED = _orig, _orig_signed, _ed_text
+
 fails = [i for i, (got, want) in enumerate(CASES) if got != want]
 for i in fails:
     print("FAIL case", i)
