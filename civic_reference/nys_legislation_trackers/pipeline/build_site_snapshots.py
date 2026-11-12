@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Pre-render the static blocks of the NYS duties/ and powers/ pages (hero line, result count, first 25 rows,
+"""Pre-render the static blocks of the NYS duties/, powers/, agencies/ and legislators/ pages (hero line, result count, first 25 rows,
 methodology note) from data/site/ and quality/gold_score.json, so crawlers that skip JavaScript see real content.
 Mirrors the markup and labels the pages' own JS builds; the JS replaces the blocks on load.
 
@@ -10,6 +10,7 @@ No network, no model calls, idempotent. Uses the same marker helper as the NYC b
 import json
 import sys
 from html import escape
+from urllib.parse import quote
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent.parent            # nys_legislation_trackers/
@@ -78,6 +79,48 @@ def method_note(summary, gold):
             % (num(gold["gold_laws"]), pr, rc))
 
 
+def enc(s):
+    """Same escaping as the pages' encodeURIComponent."""
+    return quote(s, safe="!'()*")
+
+
+def agency_row(a):
+    d, p = sum(a["duties"].values()), sum(a["powers"].values())
+    nd = a["next_deadlines"][0]["date"] if a["next_deadlines"] else None
+    full = a.get("full_name") or a["name"]
+    return ('<tr class="data-row"><td class="agency-cell name-cell" title="%s"><a href="?agency=%s">%s</a>%s</td>'
+            '<td class="num-cell">%s</td><td class="num-cell">%s</td><td class="num-cell">%s</td><td class="deadline-cell">%s</td></tr>'
+            % (esc(a["name"]), esc(enc(a["name"])), esc(full), '<span class="agency-unit">%s</span>' % esc(a["name"]) if full != a["name"] else "",
+               num(d), num(p), num(a["laws"]), esc(fmt_date(nd)) if nd else "—"))
+
+
+def legislator_row(g, dup):
+    href = "?name=" + enc(g["name"]) + ("&chamber=" + enc(g["chamber"]) if g["name"] in dup else "")
+    return ('<tr class="data-row"><td class="agency-cell name-cell"><a href="%s">%s</a></td><td class="meta-cell">%s</td>'
+            '<td class="num-cell">%s</td><td class="num-cell">%s</td><td class="num-cell">%s</td></tr>'
+            % (esc(href), esc(g["name"]), esc(g["chamber"]), num(g["laws"]), num(g["duties"]), num(g["powers"])))
+
+
+def directory_pages(summary):
+    """Agencies and legislators: hero line, result count and first PAGE_SIZE rows in the pages' default sort
+    (duties plus powers, descending; ties by name), the same order the JS paints."""
+    ags = json.load(open(SITE / "agencies.json"))
+    ags.sort(key=lambda a: (-(sum(a["duties"].values()) + sum(a["powers"].values())), a["name"]))
+    path = HERE / "agencies" / "index.html"
+    put(path, "nys-ag-hero", "%s state and local bodies carry duties or powers from New York laws signed since 2009." % num(summary["agencies"]))
+    put(path, "nys-ag-count", "Showing <strong>1–%d</strong> of %s matching agencies" % (PAGE_SIZE, num(len(ags))))
+    put(path, "nys-ag-rows", "".join(agency_row(a) for a in ags[:PAGE_SIZE]))
+    lgs = json.load(open(SITE / "legislators.json"))
+    seen, dup = set(), set()
+    for g in lgs:
+        (dup if g["name"] in seen else seen).add(g["name"])
+    lgs.sort(key=lambda g: (-(g["duties"] + g["powers"]), g["name"]))
+    path = HERE / "legislators" / "index.html"
+    put(path, "nys-lg-hero", "%s prime sponsors carried the signed laws behind these duties and powers." % num(summary["legislators"]))
+    put(path, "nys-lg-count", "Showing <strong>1–%d</strong> of %s matching legislators" % (PAGE_SIZE, num(len(lgs))))
+    put(path, "nys-lg-rows", "".join(legislator_row(g, dup) for g in lgs[:PAGE_SIZE]))
+
+
 def main():
     summary = json.load(open(SITE / "summary.json"))
     gold = json.load(open(HERE / "quality" / "gold_score.json"))
@@ -100,6 +143,7 @@ def main():
         put(path, "nys-count", "Showing <strong>1–%d</strong> of %s matching %s" % (PAGE_SIZE, num(total), noun))
         put(path, "nys-rows", "".join(row(r, laws, ag, has_dl) for r in rows[:PAGE_SIZE]))
         put(path, "nys-method", method_note(summary, gold))
+    directory_pages(summary)
     print("changed:", changed or "nothing")
 
 
