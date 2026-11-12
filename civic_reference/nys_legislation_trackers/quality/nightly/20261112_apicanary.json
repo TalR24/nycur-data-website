@@ -1,0 +1,367 @@
+{
+ "_scoring": {
+  "auditor": "A",
+  "night": "20261112",
+  "sample": "API canary list A (Sonnet 5 single API call per law)",
+  "laws": 6,
+  "stored_records": 14,
+  "correct": 7,
+  "wrong_fields": 6,
+  "not_real": 1,
+  "missed": 1,
+  "precision_strict": "7/14 = 50.0% (Wilson 95% 26.8-73.2)",
+  "precision_real": "13/14 = 92.9% (Wilson 95% 68.5-98.7)",
+  "recall": "13/14 = 92.9% (Wilson 95% 68.5-98.7) (11 of 12 blind items matched + 2 stored correct records not on the blind list)",
+  "effective_dates": "5/6 correct",
+  "calibration_laws": {
+   "laws": [
+    "2013-S4644",
+    "2017-S5682"
+   ],
+   "stored_records": 3,
+   "correct": 3,
+   "wrong_fields": 0,
+   "not_real": 0,
+   "missed": 0,
+   "precision_strict": "3/3 = 100.0% (Wilson 95% 43.8-100.0)",
+   "precision_real": "3/3 = 100.0% (Wilson 95% 43.8-100.0)",
+   "recall": "3/3 = 100.0% (Wilson 95% 43.8-100.0)",
+   "effective_dates": "2/2 correct"
+  }
+ },
+ "_classes": [
+  {
+   "name": "'shall be authorized to' list lead-in converts powers to duties",
+   "criteria": [
+    "4"
+   ],
+   "instances": [
+    "2025-S3799-03",
+    "2025-S3799-04"
+   ],
+   "rule": "kind=='duty' and kind_model=='power' and re.search(r'\\b(shall be authorized|is (hereby )?authorized|are (hereby )?authorized|may)\\b', lead_in) (no 'directed' later); same-lead-in sibling 2025-S3799-02 stayed power, so the gate is also inconsistent within one list",
+   "db_matches": 43,
+   "db_examples": [
+    "2009-A11438-05",
+    "2009-S6888-22",
+    "2009-S6888-24"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "assessing_unit_r7 resolver: group 'Municipalities (all)' and wrong county unit for Nassau/Suffolk assessing units",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2023-S9486-01",
+    "2023-S9486-02",
+    "2023-S9486-04"
+   ],
+   "rule": "agency_source=='assessing_unit_r7' and agency=='Municipalities (all)' (42 records); subset where the county named in actor_resolved_model differs from the county in agency_unit: 36",
+   "db_matches": 42,
+   "db_examples": [
+    "2009-A11237-01",
+    "2009-A7261-01",
+    "2011-A6461-01"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "reprinted_existing_text drop of a sentence that also appears verbatim in braced new matter elsewhere in the law",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2023-S9486-03 (dropped)"
+   ],
+   "rule": "dropped records with rule reprinted_existing_text whose normalised quote is a substring of some {{...}} span in the packet LAW TEXT",
+   "db_matches": 23,
+   "db_examples": [
+    "2009-A5667-02",
+    "2009-A8518-04",
+    "2009-A8518-07"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "recurring 'on or before July first in the calendar year following the effective date' stored as days_after_effective dated the effective date",
+   "criteria": [
+    "5"
+   ],
+   "instances": [
+    "2023-S8006-02"
+   ],
+   "rule": "deadline_kind=='days_after_effective' and (deadline_date==effective_date or deadline_text names a month and day)",
+   "db_matches": 7,
+   "db_examples": [
+    "2023-S8006-02",
+    "2011-S6255-83",
+    "2011-S6255-84"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "same-as-chapter clause with bill numbers left unparsed (known D1 parser gap, recurrence count only)",
+   "criteria": [
+    "8"
+   ],
+   "instances": [
+    "2025-A1468"
+   ],
+   "rule": "effective_dates rule=='unparsed' and raw_clause matches 'same (date|manner)'",
+   "db_matches": 25,
+   "db_examples": [
+    "2015-S1807",
+    "2015-S1808",
+    "2015-S6002"
+   ],
+   "needs_judgment": false,
+   "note": "25 laws, 23 stored records; chapter_index already holds the reference (bill:2023-A9235, ch 562 of 2024, effective 2024-12-13)"
+  }
+ ],
+ "2023-S7505": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2023-09-15 (retroactive_to 2021-03-31)",
+   "computed": "2023-09-15",
+   "verdict": "correct",
+   "note": "'This act shall take effect immediately, and shall be deemed to have been in full force and effect on and after March 31, 2021.' Only new matter is a cross-reference fix '[(i)] {{(ii)}}'; no records stored or expected."
+  }
+ },
+ "2025-S3799": {
+  "records": {
+   "2025-S3799-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The exercise of any right of entry to the adjoining property shall be upon reasonable prior notice to the adjoining owner, as applicable and as the court may establish, except in cases of an emergency posing an immediate threat to the safety of persons or property",
+    "note": "'as the court may establish' is braced new matter in 4(a); court power to set notice terms"
+   },
+   "2025-S3799-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The court, in granting a license or otherwise resolving a proceeding brought pursuant to this section, shall be authorized to: (a) consider evidence that either party failed to comply with the terms of any existing or previously existing license respecting the same property",
+    "note": "5(a) 'shall be authorized to: (a) consider evidence'"
+   },
+   "2025-S3799-03": {
+    "verdict": "wrong",
+    "criteria": [
+     "4"
+    ],
+    "fields": {
+     "kind": "power"
+    },
+    "quote": "obligate the licensee to reimburse the adjoining owner for reasonable fees incurred in connection with the review of relevant documents for the installation, maintenance, inspection, repair, replacement or removal of devices, structures, materials or equipment on the adjoining property",
+    "note": "Lead-in '5. The court ... shall be authorized to:' grants authority; 'is authorized' is a power (criterion 4). Model said power; kind_from_lead_in flipped it. Sibling -02 under the same lead-in is a power."
+   },
+   "2025-S3799-04": {
+    "verdict": "wrong",
+    "criteria": [
+     "4"
+    ],
+    "fields": {
+     "kind": "power"
+    },
+    "quote": "insure for damage to property and persons if there is unique, physical occurrence causing physical damage to property or persons caused by the access",
+    "note": "Same lead-in 'shall be authorized to: ... (c) insure for damage to property and persons'; power, not duty."
+   },
+   "2025-S3799-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Notwithstanding subdivision five of this section, where the adjoining property to which the licensee seeks access is owned, leased or otherwise occupied by a state entity, the court shall not grant a license.",
+    "note": "'the court shall not grant a license' where a state entity: prohibition on the court = duty"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2025-12-05",
+   "computed": "2025-12-05",
+   "verdict": "correct",
+   "note": "'§ 3. This act shall take effect immediately.' signed 2025-12-05"
+  }
+ },
+ "2025-S7620": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2025-09-22 (expires 2025-09-29)",
+   "computed": "2025-09-22",
+   "verdict": "correct",
+   "note": "'This act shall take effect September 22, 2025, and shall expire and be deemed repealed September 29, 2025.' Only private practitioners 'may provide professional services'; no government record stored or expected."
+  }
+ },
+ "2025-A1468": {
+  "records": {
+   "2025-A1468-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The department shall issue a certificate of qualification to any person who meets minimum qualifications, prescribed by the department and in accordance with federal regulations, including board certification as required, and who otherwise demonstrates to the department that such person possesses the character, competence, training and ability to administer properly",
+    "note": "New matter '{{, prescribed by the department and in accordance with}}' changes the qualification standard of an existing DOH duty; extends_existing true per packet rule 'extends or changes'."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": null,
+   "computed": "2024-12-13",
+   "verdict": "wrong",
+   "note": "'same date in the same manner as a chapter of the laws of 2024 ... S. 8966-A and A. 9235-A' = chapter 562 of 2024 (chapter_index bill:2023-A9235), 'shall take effect immediately', signed 2024-12-13; A1468 signed 2025-02-14 after that date, so 2024-12-13 stands (criterion 8). Stored rule 'unparsed', date null; records carry no effective_date."
+  }
+ },
+ "2023-S8006": {
+  "records": {
+   "2023-S8006-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Every state agency, board, or commission that directly or by contract collects demographic data as to the ancestry or ethnic origin of residents of the state of New York shall use, to the extent practicable, separate collection categories and tabulations for sexual orientation and gender identity or expression.",
+    "note": "New matter only '{{, to the extent practicable,}}'; recorded as a change to an existing duty per packet rule; borderline because the change narrows rather than widens (criterion 7)."
+   },
+   "2023-S8006-02": {
+    "verdict": "wrong",
+    "criteria": [
+     "5"
+    ],
+    "fields": {
+     "deadline_kind": "fixed_date",
+     "deadline_date": "2025-07-01"
+    },
+    "quote": "by posting the data on the internet web site of the agency, board, or commission on or before July first, in the calendar year following the effective date of this section, and annually thereafter.",
+    "note": "'on or before July first, in the calendar year following the effective date of this section, and annually thereafter' with effective date 2024-03-20 is fixed_date 2025-07-01, recurrence annual; stored days_after_effective dated 2024-03-20."
+   },
+   "2023-S8006-03": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "This subdivision shall not be construed to prevent any other state agency, board, or commission from posting data collected pursuant to subdivision one of this section on the agency's, board's, or commission's internet web site, in the manner prescribed by this section.",
+    "note": "'This subdivision shall not be construed to prevent any other state agency, board, or commission from posting' is a construction clause; it neither grants nor requires anything (only new matter is ', board, or commission')."
+   },
+   "2023-S8006-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "A state agency, board, or commission that cannot comply with the requirements of this section shall, at least sixty days before the applicable deadline, post publicly on its web site a written progress report that describes with specificity the steps the agency, board, or commission has taken to comply with this section, the impediments that prevented compliance",
+    "note": "'shall, at least sixty days before the applicable deadline, post publicly ... a written progress report' + 'updated every six months'; triggered by the cannot-comply condition, deadline none acceptable."
+   },
+   "2023-S8006-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Guidance shall be issued for state agencies, boards, and commissions in their compliance with the requirements set forth in subdivision three of this section.",
+    "note": "'Guidance shall be issued' names no issuer anywhere in the text; Unspecified is right."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2024-03-20",
+   "computed": "2024-03-20",
+   "verdict": "correct",
+   "note": "Same as chapter 674 of 2023 (A358), 'one hundred twentieth day after it shall have become a law', signed 2023-11-21 -> 2024-03-20; S8006 signed 2024-02-07, before that date."
+  }
+ },
+ "2023-S9486": {
+  "records": {
+   "2023-S9486-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Counties",
+     "agency_unit": "County of Nassau"
+    },
+    "quote": "the legislative body of such special assessing unit shall alter the current base proportion of any or all remaining classes so that the sum of the current base proportions equals one",
+    "note": "'(mm) ... in a special assessing unit that is not a city ... the legislative body of such special assessing unit shall alter' = Nassau County (model said 'Nassau county'); stored unit 'County of Suffolk', group 'Municipalities (all)'."
+   },
+   "2023-S9486-02": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Towns",
+     "agency_unit": "approved assessing units in the County of Suffolk"
+    },
+    "quote": "two thousand twenty-three- -two thousand twenty-four, and two thousand twenty-four--two thousand twenty-five assessment rolls, one percent",
+    "note": "Extension '{{, and two thousand twenty-four--two thousand twenty-five}} assessment rolls, one percent' for 'an approved assessing unit in the county of Suffolk'; an approved assessing unit is a city or town (packet rule), Suffolk has no cities; stored group 'Municipalities (all)'."
+   },
+   "2023-S9486-04": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Cities",
+     "agency_unit": "approved assessing units in the County of Nassau"
+    },
+    "quote": "provided that such approved assessing unit has passed a local law, ordinance or resolution providing therefor",
+    "note": "'(xxvi) ... in an approved assessing unit in the county of Nassau ... provided that such approved assessing unit has passed a local law' : Nassau, not Suffolk (stored unit 'County of Suffolk'); approved assessing units in Nassau are its cities."
+   }
+  },
+  "missed": [
+   {
+    "blind": "b3",
+    "quote": "the legislative body of such approved assessing unit shall alter the current base proportion of either class so that the sum of the current base proportions equals one",
+    "kind": "duty",
+    "agency": "Cities (approved assessing units in the County of Nassau)",
+    "dropped_by": "reprinted_existing_text",
+    "note": "Sentence is reprinted in § 2 (Suffolk) but is wholly braced new matter in § 3 '{{(xxvi) ... Where the computation of current base proportions would otherwise produce such result, ... the legislative body of such approved assessing unit shall alter ...}}'; dropped 2023-S9486-03 was real."
+   }
+  ],
+  "effective_date": {
+   "stored": "2024-07-03",
+   "computed": "2024-07-03",
+   "verdict": "correct",
+   "note": "'This act shall take effect immediately; provided, however, that paragraph (mm) ... shall apply to the levy of taxes based on the 2024 assessment roll' signed 2024-07-03"
+  }
+ },
+ "2013-S4644": {
+  "records": {
+   "2013-S4644-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Where a petition to vacate an acknowledgment of paternity has been filed in accordance with paragraph (i) or (ii) of this subdivision, the court shall order genetic marker tests or dna tests for the determination of the child's paternity.",
+    "note": "'{{(Iii) Where a petition to vacate ... has been filed in accordance with paragraph (i) or (ii) of this subdivision, the}} court shall order genetic marker tests or {{dna}} tests'; extends to under-18 signatories, extends_existing true. Hospital duties are private; registrar duties reprinted; 'must have been advised' names no actor (not counted)."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2014-01-19",
+   "computed": "2014-01-19",
+   "verdict": "correct",
+   "note": "'on the ninetieth day after it shall have become a law', signed 2013-10-21"
+  }
+ },
+ "2017-S5682": {
+  "records": {
+   "2017-S5682-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Within twenty-four hours of arriving at the facility to which an inmate is transferred, he or she shall be allowed to make at least one personal phone call, except when to do so would create an unacceptable risk to the safety and security of inmates or staff.",
+    "note": "'{{Within twenty-four hours ... he or she shall be allowed to make at least one personal phone call}}' passive; DOCCS holds it; deadline none (per-transfer event). actor_raw text is the passive phrase but agency is right."
+   },
+   "2017-S5682-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "If security precautions prevent the inmate from making such call, a staff member designated by the superintendent of the facility shall make a call to a person of the inmate's choice unless the inmate declines to have such a call made.",
+    "note": "'a staff member designated by the superintendent of the facility shall make a call' -> DOCCS"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2017-09-20",
+   "computed": "2017-09-20",
+   "verdict": "correct",
+   "note": "'on the thirtieth day after it shall have become a law', signed 2017-08-21"
+  }
+ }
+}
