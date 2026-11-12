@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#170C03">
+  <title>Duties Tracker — NYS Legislation Trackers — NYCuriosity</title>
+  <meta name="description" content="Every duty New York State laws signed since 2009 placed on a state or local agency, with the deadline, the agency and the sentence of law it comes from.">
+  <link rel="canonical" href="https://data.nycuriosity.com/civic_reference/nys_legislation_trackers/duties/">
+  <meta property="og:image" content="https://data.nycuriosity.com/website_logo.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta property="og:type"        content="website">
+  <meta property="og:url"         content="https://data.nycuriosity.com/civic_reference/nys_legislation_trackers/duties/">
+  <meta property="og:title"       content="Duties Tracker — NYS Legislation Trackers">
+  <meta property="og:description" content="Every duty New York State laws signed since 2009 placed on a state or local agency, with the deadline, the agency and the sentence of law it comes from.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/brand.css">
+  <link rel="stylesheet" href="/assets/chart.css?v=20260927">
+  <script defer src="/assets/chart.js?v=20260927"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --blue: #C84609; --blue-hover: #A44D00; --blue-light: #FAF6F1; --blue-mid: #EDC3A5;
+      --text: #1A1208; --text-mid: #4A3B2C; --text-muted: #6B5B4A; --text-faint: #9A8B7A;
+      --bg: #FAF6F1; --surface: #ffffff; --border: #E7DDCE;
+      --shadow-sm: 0 1px 3px rgba(26,18,8,0.08); --shadow-md: 0 4px 16px rgba(207,75,12,0.10);
+      --radius: 10px;
+      --red: #A44D00; --green: #226287;
+    }
+    body { font-family: 'Helvetica Neue', Helvetica, Arial, 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
+
+    header { background: #170C03; border-bottom: 1px solid #2E1C0C; padding: 0 clamp(20px, 5vw, 48px); }
+    .header-inner { max-width: 1100px; margin: 0 auto; height: 56px; display: flex; align-items: center; gap: 16px; }
+    .back-link { font-family: var(--b-sans); font-size: 0.75rem; font-weight: 600; color: #9A8B7A; text-decoration: none; display: flex; align-items: center; gap: 5px; padding: 4px 8px 4px 4px; border-radius: 5px; transition: color 0.15s, background 0.15s; white-space: nowrap; }
+    .back-link:hover { color: #FFD23F; background: rgba(255,210,63,0.1); }
+    .header-divider { width: 1px; height: 20px; background: #4A3B2C; flex-shrink: 0; }
+    header .site-header-title { margin: 0; font-weight: 700; font-family: var(--b-display); font-size: 0.95rem; font-weight: 700; color: #E7DDCE; letter-spacing: -0.02em; }
+
+    .pill-nav { background: var(--surface); border-bottom: 1px solid var(--border); padding: 10px clamp(20px, 5vw, 48px); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .pill-nav a { font-size: 0.78rem; font-family: var(--b-sans); font-weight: 600; padding: 4px 12px; border-radius: 20px; text-decoration: none; border: 1px solid var(--border); color: var(--text-muted); background: var(--bg); transition: all 0.15s; white-space: nowrap; }
+    .pill-nav a:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
+    .pill-nav a.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+    .pill-label { font-size: 0.72rem; color: var(--text-faint); font-family: var(--b-sans); white-space: nowrap; }
+
+    .hero { background: var(--surface); border-bottom: 1px solid var(--border); padding: clamp(28px, 4vw, 44px) clamp(20px, 5vw, 48px); }
+    .hero-inner { max-width: 1100px; margin: 0 auto; }
+    .breadcrumb { font-family: var(--b-sans); font-size: 0.72rem; color: var(--text-faint); margin-bottom: 14px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .breadcrumb a { color: var(--blue); text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+    .breadcrumb span:last-child { color: var(--b-brown); }
+    .hero-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .hero-tag { font-family: var(--b-sans); font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: normal; color: var(--b-topic-cb-ink); background: #FAF6F1; border: 1px solid #E7DDCE; border-radius: 4px; padding: 3px 8px; }
+    .hero-updated { font-family: var(--b-mono); font-size: 0.72rem; color: var(--text-faint); }
+    .hero h1 { font-family: 'Playfair Display', Georgia, serif; font-size: clamp(1.4rem, 3vw, 1.8rem); font-weight: 700; letter-spacing: -0.012em; line-height: 1.2; margin-bottom: 10px; }
+    .hero h1 span { color: var(--blue); }
+    .hero p { font-size: 0.95rem; color: var(--text-muted); max-width: 680px; line-height: 1.7; }
+    .hero-actions { margin-top: 18px; display: flex; gap: 10px; flex-wrap: wrap; }
+    .btn { font-family: var(--b-sans); font-size: 0.78rem; font-weight: 600; padding: 8px 14px; border-radius: 7px; text-decoration: none; display: inline-flex; align-items: center; gap: 7px; cursor: pointer; border: 1.5px solid var(--blue); transition: all 0.15s; }
+    .btn-outline { color: var(--blue); background: var(--surface); }
+    .btn-outline:hover { background: var(--blue-light); }
+
+    main { flex: 1; padding: clamp(24px, 4vw, 40px) clamp(20px, 5vw, 48px); }
+    .main-inner { max-width: 1100px; margin: 0 auto; }
+
+    .filters { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 16px 18px; margin-bottom: 16px; display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+    .fgroup { display: flex; flex-direction: column; gap: 5px; flex: 1 1 140px; min-width: 130px; }
+    .fgroup.wide { flex: 2 1 220px; min-width: 190px; }
+    .filters .msf { flex: 1 1 145px; min-width: 132px; }
+    .fgroup label { font-family: var(--b-sans); font-size: 0.62rem; font-weight: 600; text-transform: uppercase; letter-spacing: normal; color: var(--text-muted); }
+    .filters input[type="search"] { width: 100%; padding: 8px 12px; border: 1px solid var(--border); border-radius: 7px; font-family: 'Inter', sans-serif; font-size: 0.85rem; background: var(--bg); color: var(--text); }
+    .filters select { width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 7px; font-family: var(--b-sans); font-size: 0.75rem; background: var(--bg); color: var(--text-mid); cursor: pointer; }
+    .filters input:focus, .filters select:focus { outline: 2px solid var(--blue-mid); border-color: var(--blue); }
+    .reset-btn { font-family: var(--b-sans); font-size: 0.72rem; font-weight: 600; color: var(--text-muted); background: none; border: 1px solid var(--border); border-radius: 7px; padding: 9px 12px; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+    .reset-btn:hover { color: var(--red); border-color: var(--red); }
+
+    .result-row { display: flex; align-items: flex-end; justify-content: space-between; flex-wrap: wrap; gap: 10px 18px; margin-bottom: 12px; }
+    .result-count { font-family: var(--b-mono); font-size: 0.75rem; color: var(--text-muted); }
+    .result-count strong { color: var(--blue); }
+    .quick-stats { display: flex; gap: 18px; flex-wrap: wrap; }
+    .qs { display: flex; flex-direction: column; align-items: flex-end; }
+    .qs .n { font-family: var(--b-mono); font-size: 0.9rem; font-weight: 700; color: var(--blue); line-height: 1.1; }
+    .qs .n.red { color: var(--red); }
+    .qs .l { font-size: 0.64rem; color: var(--text-muted); }
+
+    table { width: 100%; border-collapse: collapse; min-width: 760px; }
+    .meta-cell { font-size: 0.76rem; color: var(--text-muted); white-space: nowrap; max-width: 150px; overflow: hidden; text-overflow: ellipsis; }
+    thead th { font-family: var(--b-sans); font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: normal; color: var(--text-muted); text-align: left; padding: 12px 14px; border-bottom: 2px solid var(--border); background: var(--bg); white-space: nowrap; cursor: pointer; user-select: none; }
+    thead th:hover { color: var(--blue); }
+    thead th .arrow { font-size: 0.6rem; margin-left: 3px; }
+    tbody td { padding: 12px 14px; border-bottom: 1px solid var(--border); font-size: 0.83rem; color: var(--text-mid); vertical-align: top; line-height: 1.5; }
+    tbody tr.data-row { cursor: pointer; transition: background 0.12s; }
+    tbody tr.data-row:hover { background: var(--blue-light); }
+    tbody tr:last-child td { border-bottom: none; }
+    .law-cell { font-family: var(--b-mono); font-size: 0.72rem; font-weight: 600; color: var(--blue); white-space: nowrap; }
+    .law-cell .file-no { display: block; color: var(--text-faint); font-weight: 400; margin-top: 2px; }
+    .agency-cell.unspec { color: var(--text-faint); font-weight: 400; font-style: italic; }
+    .agency-cell { font-family: var(--b-mono); font-size: 0.72rem; font-weight: 600; line-height: 1.45; min-width: 150px; max-width: 190px; overflow-wrap: break-word; }
+    .agency-unit { display: block; font-weight: 400; font-size: 0.66rem; color: var(--text-faint); margin-top: 2px; }
+    .action-cell { min-width: 260px; }
+    .type-badge { display: inline-block; font-family: var(--b-sans); font-size: 0.65rem; font-weight: 600; padding: 2px 8px; border-radius: 10px; background: var(--blue-light); color: var(--blue); border: 1px solid var(--blue-mid); white-space: nowrap; }
+    .deadline-cell { font-family: var(--b-mono); font-size: 0.75rem; white-space: nowrap; }
+    .deadline-cell.overdue { color: var(--red); font-weight: 600; }
+    .deadline-cell.upcoming { color: var(--text); font-weight: 600; }
+    .recur-cell { font-family: var(--b-mono); font-size: 0.72rem; color: var(--text-muted); white-space: nowrap; }
+
+    .detail-row td { background: var(--bg); padding: 18px 20px; }
+    .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .detail-block h4 { font-family: var(--b-sans); font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: normal; color: var(--text-faint); margin-bottom: 6px; }
+    .detail-block p { font-size: 0.83rem; line-height: 1.6; color: var(--text-mid); }
+    .detail-quote { grid-column: 1 / -1; border-left: 3px solid var(--blue); background: var(--blue-light); padding: 12px 16px; border-radius: 0 7px 7px 0; }
+    .detail-quote p { font-style: italic; font-size: 0.85rem; color: var(--text-mid); }
+    .detail-quote .cite { font-family: var(--b-sans); font-style: normal; font-size: 0.7rem; color: var(--text-muted); margin-top: 8px; }
+    .unverified-note { font-size: 0.72rem; color: var(--text-muted); font-style: italic; margin-top: 6px; }
+    .pager { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 14px; }
+    .pg-btn { font-family: var(--b-sans); font-size: 0.78rem; font-weight: 600; color: var(--text-mid); background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 7px 11px; cursor: pointer; transition: background 0.12s, border-color 0.12s; }
+    .pg-btn:hover:not(:disabled) { background: var(--blue-light); border-color: var(--blue); color: var(--blue); }
+    .pg-btn:disabled { opacity: 0.4; cursor: default; }
+    .pg-btn.is-current { background: var(--blue); border-color: var(--blue); color: #fff; }
+    .pg-gap { color: var(--text-faint); padding: 0 2px; }
+    .pg-count { margin-left: auto; font-size: 0.75rem; color: var(--text-muted); font-family: var(--b-mono); }
+    @media (max-width: 560px) { .pg-count { width: 100%; margin-left: 0; padding-top: 6px; } }
+    .restated-note { font-size: 0.72rem; color: var(--text-muted); font-style: italic; margin-top: 6px; }
+    .detail-links { grid-column: 1 / -1; display: flex; gap: 14px; flex-wrap: wrap; }
+    .detail-links a { font-family: var(--b-sans); font-size: 0.75rem; font-weight: 600; color: var(--blue); text-decoration: none; }
+    .detail-links a:hover { text-decoration: underline; }
+
+    .footnotes { margin-top: 20px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; }
+    .footnotes p { font-size: 0.8rem; color: var(--text-muted); line-height: 1.65; margin-bottom: 10px; }
+    .footnotes p:last-child { margin-bottom: 0; }
+    .footnotes a { color: var(--blue); text-decoration: none; }
+    .footnotes a:hover { text-decoration: underline; }
+
+    .loading-note { font-family: var(--b-sans); font-size: 0.85rem; color: var(--text-faint); padding: 40px; text-align: center; }
+
+    footer { background: var(--surface); border-top: 1px solid var(--border); padding: 20px clamp(20px, 5vw, 48px); }
+    .footer-inner { max-width: 1100px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+    .footer-copy { font-size: 0.8rem; color: var(--text-faint); }
+    .footer-links { display: flex; gap: 20px; align-items: center; }
+    .footer-links a { font-size: 0.8rem; color: var(--text-muted); text-decoration: none; transition: color 0.15s; }
+    .footer-links a:hover { color: var(--blue); }
+    .footer-support { display: inline-flex; align-items: center; gap: 5px; font-size: 0.8rem; font-weight: 500; color: #C84609; text-decoration: none; padding: 5px 11px; border: 1px solid rgba(207,75,12,0.45); border-radius: 6px; transition: color .15s, border-color .15s, background .15s; vertical-align: middle; }
+    .footer-support:hover { color: #fff; background: #C84609; border-color: #C84609; }
+
+    @media (max-width: 640px) {
+      .detail-grid {
+        grid-template-columns: 1fr;
+        position: sticky;
+        left: 0;
+        width: min(100%, calc(100vw - 64px));
+        white-space: normal;
+        box-sizing: border-box;
+      }
+    }
+
+  
+    /* Header action buttons on subpages (Tal, Sep 2026 — previously hub-only). */
+    .header-actions { display:flex; align-items:center; gap:12px; margin-left:auto; flex-shrink:0; }
+    .header-link { font-size:0.8rem; font-weight:500; color:#9A8B7A; text-decoration:none; display:inline-flex; align-items:center; gap:5px; padding:5px 11px; border:1px solid rgba(255,255,255,0.15); border-radius:6px; transition:color .15s,border-color .15s,background .15s; white-space:nowrap; }
+    .header-link:hover { color:#fff; border-color:rgba(255,255,255,0.35); background:rgba(255,255,255,0.08); }
+    .header-link svg, .support-link svg { flex-shrink:0; }
+    .support-link { font-size:0.8rem; font-weight:500; color:#FFD23F; text-decoration:none; display:inline-flex; align-items:center; gap:5px; padding:5px 11px; border:1px solid rgba(200,70,9,0.45); border-radius:6px; transition:color .15s,border-color .15s,background .15s; white-space:nowrap; }
+    .support-link:hover { color:#fff; background:#C84609; border-color:#C84609; }
+    /* The subpage header also carries a back-link and a page title, so shed the
+       optional buttons before the row can overflow. The footer keeps all three. */
+  
+    /* The subpage header carries a mark, a back-link, a page title AND the
+       action buttons, so shed the optional links before the row can overflow.
+       These MUST live in the last style block on the page: several pages carry
+       a second <style id="support-btn-css"> that re-declares .header-actions
+       and would otherwise override the media query. */
+    header .header-inner { min-width: 0; }
+    header .site-header-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    @media (max-width: 900px) { .header-actions .header-link { display: none; } }
+    @media (max-width: 560px) { .header-actions { display: none; } }
+    @media (max-width: 560px) { header .site-header-title { white-space: normal; } }
+    @media (max-width: 520px) { header .site-header-title { display: none; } }
+  </style>
+  <script defer src="/assets/site.js?v=20260927"></script>
+<!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d0dce16d32c14809bc15038314fb9a13"}'></script><!-- End Cloudflare Web Analytics -->
+  <style id="tracker-theme">
+    /* Duties accent: the Obligations blue, as on the NYC Obligations Table */
+    :root {
+      --blue: var(--b-topic-transit-ink);
+      --blue-hover: color-mix(in srgb, var(--b-topic-transit-ink) 80%, var(--b-ink));
+      --blue-light: color-mix(in srgb, var(--b-topic-transit-ink) 7%, var(--b-cream));
+      --blue-mid: color-mix(in srgb, var(--b-topic-transit-ink) 32%, var(--b-cream));
+      --c-cat-1: var(--b-topic-transit-ink);
+    }
+    .hero-tag { color: var(--blue) !important; }
+    #chart-box > .c-plot { padding: 0; }
+    .hero p.hero-line { color: var(--text); font-weight: 500; margin-bottom: 8px; }
+    .hero p.intro { margin-top: 0; }
+    .action-cell { min-width: 260px; }
+    .agency-unit.note { font-style: italic; }
+    .recur-sub { display: block; font-size: 0.66rem; color: var(--text-faint); margin-top: 2px; }
+    .main-inner { min-width: 0; }
+    .loading-note { padding: 28px; }
+    #nysTable thead th:first-child, #nysTable tbody td:first-child { position: sticky; left: 0; z-index: 1; background: var(--b-surface); box-shadow: 1px 0 0 var(--border); }
+    #nysTable tbody tr.data-row:hover td:first-child { background: var(--blue-light); }
+    .link-notice { font-size: 0.82rem; color: var(--text-mid); background: var(--blue-light); border: 1px solid var(--blue-mid); border-radius: 6px; padding: 8px 12px; margin: 0 0 12px; }
+    .link-notice button { font: inherit; color: var(--blue); background: none; border: none; padding: 0; margin-left: 6px; cursor: pointer; text-decoration: underline; }
+    .copy-link { font-family: var(--b-sans); font-size: 0.75rem; font-weight: 600; color: var(--blue); background: var(--blue-light); border: 1px solid var(--blue-mid); border-radius: 6px; padding: 3px 10px; cursor: pointer; }
+    .copy-link:hover { background: var(--blue); color: var(--surface); }
+    .copy-fallback { width: 18rem; max-width: 100%; font-size: 0.75rem; padding: 3px 6px; border: 1px solid var(--border); border-radius: 4px; }
+    .check-filter { display: flex; align-items: center; }
+    .check-filter label { font-family: var(--b-sans); font-size: 0.72rem; color: var(--text-mid); display: flex; align-items: center; gap: 6px; white-space: nowrap; text-transform: none; font-weight: 500; }
+    @keyframes row-flash { from { background: var(--blue-mid); } to { background: transparent; } }
+    tr.row-flash > td { animation: row-flash 2s ease-out; }
+    @media (prefers-reduced-motion: reduce) { tr.row-flash > td { animation: none; } }
+    .facts { display: flex; flex-wrap: wrap; gap: 6px 22px; margin: 12px 0 0; font-size: 0.85rem; color: var(--text-mid); }
+    .facts span b { font-family: var(--b-sans); font-size: 0.66rem; font-weight: 600; text-transform: uppercase; color: var(--text-muted); margin-right: 6px; }
+    .law-section { margin-top: 28px; }
+    .law-section h2 { font-family: 'Playfair Display', Georgia, serif; font-size: 1.15rem; font-weight: 700; margin-bottom: 12px; }
+    .law-rec { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 18px; margin-bottom: 10px; }
+    .law-rec .agency-cell { max-width: none; min-width: 0; }
+    .law-rec .rec-sum { font-size: 0.88rem; color: var(--text); margin: 6px 0 10px; line-height: 1.55; }
+    .law-rec .detail-quote { margin-top: 6px; }
+    .law-links { margin-top: 24px; }
+    .law-links a { font-family: var(--b-sans); font-size: 0.8rem; font-weight: 600; color: var(--blue); }
+    .rec-meta { font-family: var(--b-sans); font-size: 0.7rem; color: var(--text-muted); margin-top: 6px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <a href="/" class="header-mark" aria-label="NYCuriosity Data home"><img src="/assets/brand/Talbot.svg" alt="" style="height:32px;width:auto;display:block"></a>
+    <a href="/" class="brand" aria-label="NYCuriosity Data home"><img src="/assets/brand/SubLogo_W.svg" alt="NYCuriosity Data" style="height:19px;width:auto;display:block"></a>
+    <a href="../" class="back-link">← NYS Legislation Trackers</a>
+    <div class="header-divider"></div>
+    <p class="site-header-title">Duties Tracker</p>
+    <div class="header-actions">
+      <a href="https://talroded.nycuriosity.com" class="header-link" target="_blank" rel="noopener"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>About</a>
+      <a href="https://www.nycuriosity.com" class="header-link" target="_blank" rel="noopener"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v4H4z"/><path d="M4 10h16v10l-8-4-8 4z"/></svg>Substack</a>
+      <a href="https://buymeacoffee.com/nycuriosity" class="support-link" target="_blank" rel="noopener" aria-label="Support my work on Buy Me a Coffee"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>Support my work</a>
+    </div>
+  </div>
+</header>
+
+<div class="pill-nav">
+  <span class="pill-label">Views in this tool:</span>
+  <a href="../">NYS overview</a>
+  <a href="../bills/">Bill Explorer</a>
+  <a href="../duties/" class="active">Duties Tracker</a>
+  <a href="../powers/">Powers Tracker</a>
+</div>
+<div class="hero">
+  <div class="hero-inner">
+    <div class="breadcrumb">
+      <span>Civic Reference</span>
+      <span>›</span>
+      <a href="../">NYS Legislation Trackers</a>
+      <span>›</span>
+      <span>Duties</span>
+    </div>
+    <div class="hero-meta">
+      <span class="hero-tag">NYS Legislation Trackers</span>
+      <span class="hero-updated" id="heroUpdated"></span>
+    </div>
+    <h1>Duties Tracker</h1>
+    <p class="hero-line" id="heroLine"><!-- static:nys-hero:start -->
+New York laws signed since 2009 gave state and local governments 20,017 duties to carry out.
+<!-- static:nys-hero:end --></p>
+    <p class="intro">Each row is one duty that a law signed between the 2009 and 2025 legislative sessions placed on a government body, with the agency that owes it, the deadline when the law sets one, and the sentence of the law it comes from, so every record can be checked against the statute it cites.</p>
+  </div>
+</div>
+
+<main>
+  <div class="main-inner">
+
+    <p class="link-notice" id="linkNotice" role="status" hidden></p>
+
+    <div class="filters">
+      <div class="fgroup wide">
+        <label for="fSearch">Search</label>
+        <input type="search" id="fSearch">
+      </div>
+      <div id="msSession"></div>
+      <div id="msAgency"></div>
+      <div id="msDeadline"></div>
+      <div id="msRecur"></div>
+      <div class="fgroup check-filter">
+        <label for="fExtends"><input type="checkbox" id="fExtends"> Extends an existing duty</label>
+      </div>
+      <button class="reset-btn" id="fReset">Reset all</button>
+    </div>
+
+    <div class="result-row">
+      <p class="result-count" id="resultCount" aria-live="polite"><!-- static:nys-count:start -->
+Showing <strong>1–25</strong> of 20,017 matching duties
+<!-- static:nys-count:end --></p>
+    </div>
+
+    <figure class="chart-card" id="chart-box" data-slug="nys-duties-table">
+      <div class="c-plot c-plot--scroll">
+        <table id="nysTable">
+          <thead>
+            <tr>
+              <th data-sort="agency">Agency<span class="arrow"></span></th>
+              <th data-sort="action">Duty<span class="arrow"></span></th>
+              <th data-sort="deadline">Deadline<span class="arrow"></span></th>
+              <th data-sort="law">Law<span class="arrow"></span></th>
+              <th data-sort="session">Session<span class="arrow"></span></th>
+            </tr>
+          </thead>
+          <tbody id="tbody">
+            <!-- static:nys-rows:start -->
+<tr class="data-row" data-id="2025-A5175-01"><td class="agency-cell" title="Municipalities (all)">Municipalities (all)</td><td class="action-cell">Enforce the baby monitor security-feature and warning-label requirements and retain any civil penalties collected under this section.</td><td class="deadline-cell">—<span class="recur-sub">ongoing</span></td><td class="law-cell">Chapter 367 of 2026<span class="file-no">A5175</span></td><td class="meta-cell">2025</td></tr><tr class="data-row" data-id="2025-S10643-01"><td class="agency-cell" title="OCM · Office of Cannabis Management">Office of Cannabis Management</td><td class="action-cell">Make publicly available on the office&#x27;s website a report on applicant ownership structures, management service agreements, and wage/hour data submitted with each license application.</td><td class="deadline-cell">—<span class="recur-sub">ongoing</span></td><td class="law-cell">Chapter 369 of 2026<span class="file-no">S10643</span></td><td class="meta-cell">2025</td></tr><tr class="data-row" data-id="2025-S10643-02"><td class="agency-cell" title="DOL · Department of Labor">Department of Labor</td><td class="action-cell">Convene a cannabis industry wage board composed of industry, labor, and public representatives.</td><td class="deadline-cell">Jan 31, 2027<span class="recur-sub">one-time</span></td><td class="law-cell">Chapter 369 of 2026<span class="file-no">S10643</span></td><td class="meta-cell">2025</td></tr><tr class="data-row" data-id="2025-S10643-03"><td class="agency-cell" title="DOL · Department of Labor">Department of Labor<span class="agency-unit">Cannabis Industry Wage Board</span></td><td class="action-cell">Hold the wage board&#x27;s first hearing no later than March 1, 2027.</td><td class="deadline-cell">Mar 1, 2027<span class="recur-sub">one-time</span></td><td class="law-cell">Chapter 369 of 2026<span class="file-no">S10643</span></td><td class="meta-cell">2025</td></tr><tr class="data-row" data-id="2025-S10643-07"><td class="agency-cell" title="DOL · Department of Labor">Department of Labor<span class="agency-unit">Cannabis Industry Wage Board</span></td><td class="action-cell">Sign and issue subpoenas on behalf of the wage board.</td><td class="deadline-cell">—<span class="recur-sub">as-needed</span></td><td class="law-cell">Chapter 369 of 2026<span class="file-no">S10643</span></td><td class="meta-cell">2025</td></tr><tr class="data-row" data-id="2025-S10643-09"><td class="agency-cell" title="DOL · Department of Labor">Department of Labor<span class="agency-unit">Cannabis Industry Wage Board</span></td><td class="action-cell">Meet only within the state and hold at least three public hearings for public comment.</td><td class="deadline-cell">—<span class="recur-sub">one-time</span></td><td class="law-cell">Chapter 369 of 2026<span class="file-no">S10643</span></td><td class="meta-cell">2025</td></tr><tr class="data-row" data-id="2025-S10643-10"><td class="agency-cell" title="DOL · Department of Labor">Department of Labor<span class="agency-unit">Cannabis Industry Wage Board</span></td><td class="action-cell">Ensure at least one Spanish language interpreter is present at each public hearing.</td><td class="deadline-cell">—<span class="recur-sub">ongoing</span></td><td class="law-cell">Chapter 369 of 2026<span class="file-no">S10643</span></td><td class="meta-cell">2025</td></tr><tr class="data-row" data-id="2025-S10643-11"><td class="agency-cell" title="DOL · Department of Labor">Department of Labor<span class="agency-unit">Cannabis Industry Wage Board</span></td><td class="action-cell">Produce bilingual English and Spanish materials advertising its public hearings.</td><td class="deadline-cell">—<span class="recur-sub">ongoing</span></td><td class="law-cell">Chapter 369 of 2026<span class="file-no">S10643</span></td><td class="meta-cell">2025</td></tr><tr class="data-row" data-id="2025-S10643-12"><td class="agency-cell" title="DOL · Department of Labor">Department of Labor<span class="agency-unit">Cannabis Industry Wage Board</span></td><td class="action-cell">Make written hearing materials, testimony, and transcripts available in English, Spanish, and other languages upon request.</td><td class="deadline-cell">—<span class="recur-sub">ongoing</span></td><td class="law-cell">Chapter 369 of 2026<span class="file-no">S10643</span></td><td class="meta-cell">2025</td></tr><tr class="data-row" data-id="2025-S10643-13"><td class="agency-cell" title="DOL · Department of Labor">Department of Labor<span class="agency-unit">Cannabis Industry Wage Board</span></td><td class="action-cell">Submit a report to the governor and legislature recommending minimum hourly wages for cannabis industry workers by December 31, 2027.</td><td class="deadline-cell">Dec 31, 2027<span class="recur-sub">one-time</span></td><td class="law-cell">Chapter 369 of 2026<span class="file-no">S10643</span></td><td class="meta-cell">2025</td></tr><tr class="data-row" data-id="2025-S10643-15"><td class="agency-cell" title="DOL · Department of Labor">Department of Labor</td><td class="action-cell">Comply with section 656 of the labor law upon receiving the wage board&#x27;s recommendations.</td><td class="deadline-cell">—<span class="recur-sub">one-time</span></td><td class="law-cell">Chapter 369 of 2026<span class="file-no">S10643</span></td><td class="meta-cell">2025</td></tr><tr class="data-row" data-id="2025-S9051-02"><td class="agency-cell" title="Attorney General · Office of the Attorney General">Office of the Attorney General</td><td class="action-cell">Maintain a website to receive complaints, information or referrals from the public about compliance or non-compliance with the article.</td><td class="deadline-cell">—<span class="recur-sub">ongoing</span></td><td class="law-cell">Chapter 368 of 2026<span class="file-no">S9051</span></td><td class="meta-cell">2025</td></tr><tr class="data-row" data-id="2025-S9051-03"><td class="agency-cell" title="Unified Court System · Unified Court System / Office of Court Administration">Unified Court System / Office of Court Administration</td><td class="action-cell">Impose joint and several liability on affiliated entities that purposely structured themselves to avoid liability and frustrate recovery under the article.</td><td class="deadline-cell">—<span class="recur-sub">as-needed</span></td><td class="law-cell">Chapter 368 of 2026<span class="file-no">S9051</span></td><td class="meta-cell">2025</td></tr><tr class="data-row" data-id="2025-A10960-01"><td class="agency-cell" title="Boards of elections">Boards of elections</td><td class="action-cell">Notify a domestic violence victim by mail of the upcoming expiration of their confidential voter registration and explain how to reapply for confidentiality.</td><td class="deadline-cell">—<span class="recur-sub">as-needed</span></td><td class="law-cell">Chapter 366 of 2026<span class="file-no">A10960</span></td><td class="meta-cell">2025</td></tr><tr class="data-row" data-id="2025-A8939-01"><td class="agency-cell" title="State and local bodies">State and local bodies</td><td class="action-cell">Provide a lodging facility with notice of noncompliance informing it that it is subject to a civil penalty if it does not correct the violation within thirty days.</td><td class="deadline-cell">—<span class="recur-sub">as-needed</span></td><td class="law-cell">Chapter 365 of 2026<span class="file-no">A8939</span></td><td class="meta-cell">2025</td></tr><tr class="data-row" data-id="2025-A8939-02"><td class="agency-cell" title="State and local bodies">State and local bodies</td><td class="action-cell">Verify that a lodging facility&#x27;s violation was not corrected within the thirty-day notice period before assessing a civil penalty.</td><td class="deadline-cell">—<span class="recur-sub">as-needed</span></td><td class="law-cell">Chapter 365 of 2026<span class="file-no">A8939</span></td><td class="meta-cell">2025</td></tr><tr class="data-row" data-id="2025-A8939-03"><td class="agency-cell" title="Municipalities (all)">Municipalities (all)</td><td class="action-cell">Enforce the lodging-facility human trafficking notice requirements concurrently through municipal consumer affairs officials, town attorneys, city corporation counsel, or other local designees.</td><td class="deadline-cell">—<span class="recur-sub">ongoing</span></td><td class="law-cell">Chapter 365 of 2026<span class="file-no">A8939</span></td><td class="meta-cell">2025</td></tr><tr class="data-row" data-id="2025-A8939-04"><td class="agency-cell" title="Municipalities (all)">Municipalities (all)</td><td class="action-cell">Retain all civil penalty moneys collected under this subdivision.</td><td class="deadline-cell">—<span class="recur-sub">ongoing</span></td><td class="law-cell">Chapter 365 of 2026<span class="file-no">A8939</span></td><td class="meta-cell">2025</td></tr><tr class="data-row" data-id="2025-A10162-01"><td class="agency-cell" title="Municipalities (all)">Municipalities (all)<span class="agency-unit">Town of Orangetown</span></td><td class="action-cell">Limit the increase in the current base proportion of any property class to no more than one percent over the prior year&#x27;s adjusted base proportion for the 2026-2027 assessment roll, extending the prior limitation.</td><td class="deadline-cell">—<span class="recur-sub">annual</span></td><td class="law-cell">Chapter 321 of 2026<span class="file-no">A10162</span></td><td class="meta-cell">2025</td></tr><tr class="data-row" data-id="2025-A11443-01"><td class="agency-cell" title="DEC · Department of Environmental Conservation">Department of Environmental Conservation</td><td class="action-cell">Limit the number of resident and non-resident commercial food fish licenses issued each year through 2029 to the established annual caps.</td><td class="deadline-cell">—<span class="recur-sub">annual</span></td><td class="law-cell">Chapter 333 of 2026<span class="file-no">A11443</span></td><td class="meta-cell">2025</td></tr><tr class="data-row" data-id="2025-A11443-02"><td class="agency-cell" title="DEC · Department of Environmental Conservation">Department of Environmental Conservation</td><td class="action-cell">Issue commercial food fish licenses to new applicants each year through 2029, up to the difference between the annual cap and licenses renewed by prior holders.</td><td class="deadline-cell">—<span class="recur-sub">annual</span></td><td class="law-cell">Chapter 333 of 2026<span class="file-no">A11443</span></td><td class="meta-cell">2025</td></tr><tr class="data-row" data-id="2025-A11443-03"><td class="agency-cell" title="DEC · Department of Environmental Conservation">Department of Environmental Conservation</td><td class="action-cell">Limit the number of resident and non-resident commercial crab permits issued each year through 2029 to the established annual caps.</td><td class="deadline-cell">—<span class="recur-sub">annual</span></td><td class="law-cell">Chapter 333 of 2026<span class="file-no">A11443</span></td><td class="meta-cell">2025</td></tr><tr class="data-row" data-id="2025-A11443-04"><td class="agency-cell" title="DEC · Department of Environmental Conservation">Department of Environmental Conservation</td><td class="action-cell">Issue commercial crab permits to new applicants each year through 2029, up to the difference between the annual cap and permits renewed by prior holders.</td><td class="deadline-cell">—<span class="recur-sub">annual</span></td><td class="law-cell">Chapter 333 of 2026<span class="file-no">A11443</span></td><td class="meta-cell">2025</td></tr><tr class="data-row" data-id="2025-A11443-05"><td class="agency-cell" title="DEC · Department of Environmental Conservation">Department of Environmental Conservation</td><td class="action-cell">Limit the number of resident and non-resident commercial whelk or conch licenses issued each year through 2029 to the established annual caps.</td><td class="deadline-cell">—<span class="recur-sub">annual</span></td><td class="law-cell">Chapter 333 of 2026<span class="file-no">A11443</span></td><td class="meta-cell">2025</td></tr><tr class="data-row" data-id="2025-A11443-06"><td class="agency-cell" title="DEC · Department of Environmental Conservation">Department of Environmental Conservation</td><td class="action-cell">Cap the annual number of marine and coastal district party and charter boat licenses issued at 517 through 2029.</td><td class="deadline-cell">—<span class="recur-sub">annual</span></td><td class="law-cell">Chapter 333 of 2026<span class="file-no">A11443</span></td><td class="meta-cell">2025</td></tr>
+<!-- static:nys-rows:end -->
+          </tbody>
+        </table>
+      </div>
+      <figcaption class="c-foot">
+        <div class="c-foot-text">
+          <span>Created by Tal Roded · NYCuriosity · Source: <a href="https://legislation.nysenate.gov/" target="_blank" rel="noopener">NY Senate Open Legislation API</a></span>
+        </div>
+      </figcaption>
+    </figure>
+
+    <nav id="pager" class="pager" aria-label="Table pages"></nav>
+
+    <div class="footnotes">
+      <p><strong>How these records were made</strong></p>
+      <p><!-- static:nys-method:start -->
+Claude read the marked text of each signed law and listed the duties and powers it creates or widens, and the pipeline then drops reprinted text, conditions, definitions and duties of private parties before resolving each actor to a canonical agency. Two auditors check a blind sample of new records every night against a hand-verified set of 552 laws, where 95.6% of stored records are real duties or powers and 83.8% of the provisions in those laws are found. The 2025 session was extracted on November 12, 2026 and has had one audit so far, so its records carry more uncertainty than earlier sessions until the nightly audits reach it.
+<!-- static:nys-method:end --></p>
+    </div>
+
+  </div>
+</main>
+
+<footer>
+  <div class="footer-inner">
+    <span class="footer-copy">© NYCuriosity · Tal Roded</span>
+    <nav class="footer-links" style="flex-wrap:wrap">
+      <a href="https://buymeacoffee.com/nycuriosity" class="footer-support" target="_blank" rel="noopener" aria-label="Support my work on Buy Me a Coffee"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>Support my work</a>
+      <a href="https://talroded.nycuriosity.com" target="_blank" rel="noopener">About</a>
+      <a href="https://www.nycuriosity.com" target="_blank" rel="noopener" aria-label="NYCuriosity on Substack" title="Substack" style="display:inline-flex;align-items:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M22.539 8.242H1.46V5.406h21.08v2.836zM1.46 10.812V24L12 18.11 22.54 24V10.812H1.46zM22.54 0H1.46v2.836h21.08V0z"/></svg></a>
+      <a href="https://www.linkedin.com/in/tal-roded" target="_blank" rel="noopener" aria-label="Tal Roded on LinkedIn" title="LinkedIn" style="display:inline-flex;align-items:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.225 0z"/></svg></a>
+      <a href="https://x.com/TalR24" target="_blank" rel="noopener" aria-label="NYCuriosity on X" title="X" style="display:inline-flex;align-items:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z"/></svg></a>
+      <a href="https://www.instagram.com/talroded" target="_blank" rel="noopener" aria-label="Tal Roded on Instagram" title="Instagram" style="display:inline-flex;align-items:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg></a>
+      <a href="https://www.tiktok.com/@tal_nycuriosity" target="_blank" rel="noopener" aria-label="NYCuriosity on TikTok" title="TikTok" style="display:inline-flex;align-items:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/></svg></a>
+      <a href="https://www.youtube.com/@nycuriosity-yt" target="_blank" rel="noopener" aria-label="NYCuriosity on YouTube" title="YouTube" style="display:inline-flex;align-items:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814z M9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg></a>
+      <a href="https://github.com/TalR24/nycur-data-website" target="_blank" rel="noopener" aria-label="TalR24 on GitHub" title="GitHub" style="display:inline-flex;align-items:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg></a>
+    </nav>
+  </div>
+</footer>
+
+<script src="../../nyc_council_legislation_trackers/assets/multiselect.js?v=3"></script>
+<script>
+(function () {
+  var KIND = 'd';
+  var NOUN = 'duty';
+  var HERO = 'New York laws signed since 2009 gave state and local governments {n} duties to carry out.';
+  var HEROKEY = 'duties';
+  var COLS = ['agency', 'action', 'deadline', 'law', 'session'];
+  var HAS_DEADLINE = true;
+  var PAGE_SIZE = 25;
+  var MS_MULTI = 'Multi-state compact body in which New York takes part';
+
+  var DATA = '../data/site/';
+  var esc = function (s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); };
+  var MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  function fmtDate(iso) {
+    if (!iso) return '';
+    var p = iso.split('-');
+    return MONTHS[parseInt(p[1], 10) - 1] + ' ' + parseInt(p[2], 10) + ', ' + p[0];
+  }
+  function getJSON(name) {
+    return fetch(DATA + name).then(function (r) { if (!r.ok) throw new Error(name); return r.json(); });
+  }
+
+  var SUM = null, LAWS = {}, AG = {}, SESS = {}, loaded = {}, loading = {}, pending = 0;
+  var ALL = [], ROWS = [], MS = {};
+  var sortKey = 'law', sortDir = 1, page = 1, openId = null, lawFilter = null, pendingId = null, failed = false, ready = false;
+
+  function num(n) { return Number(n).toLocaleString('en-US'); }
+  function kindLabel(v) { var s = String(v).replace(/_/g, ' '); return s.charAt(0).toUpperCase() + s.slice(1); }
+  function agName(a) { return (AG[a] && AG[a].full_name) || a; }
+
+  Promise.all([getJSON('summary.json'), getJSON('agencies.json'), getJSON('laws.json')]).then(function (res) {
+    SUM = res[0];
+    res[1].forEach(function (a) { AG[a.name] = a; });
+    res[2].forEach(function (l) { LAWS[l.key] = l; });
+    var el = document.getElementById('heroLine');
+    el.textContent = HERO.replace('{n}', num(SUM[HEROKEY]));
+    if (SUM.generated_at) {
+      var g = new Date(SUM.generated_at), full = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+      document.getElementById('heroUpdated').textContent = 'Updated ' + full[g.getMonth()] + ' ' + g.getFullYear();
+    }
+    buildFilters(res[1]);
+    ready = true;
+    readUrl();
+    syncLoads();
+  }).catch(function () { fail(); });
+
+  function fail() {
+    failed = true;
+    document.getElementById('tbody').innerHTML = '<tr><td colspan="' + COLS.length + '"><p class="loading-note">Data failed to load.</p></td></tr>';
+  }
+
+  function buildFilters(agencies) {
+    var years = SUM.sessions.map(function (s) { return String(s.session); }).sort().reverse();
+    MS.session = new MSFilter('msSession', { label: 'Session', allLabel: 'All sessions', sort: 'none', onChange: onSessionChange,
+      options: years.map(function (y) { return { v: y, l: y }; }) });
+    var aopts = agencies.filter(function (a) {
+      var d = KIND === 'd' ? a.duties : a.powers, t = 0; for (var k in d) t += d[k]; return t > 0;
+    }).map(function (a) { return { v: a.name, l: a.full_name && a.full_name !== a.name ? a.full_name + ' (' + a.name + ')' : a.name }; });
+    MS.agency = new MSFilter('msAgency', { label: 'Agency', allLabel: 'All agencies', sort: 'alpha', onChange: applyFilters, options: aopts });
+    if (HAS_DEADLINE) {
+      MS.dk = new MSFilter('msDeadline', { label: 'Deadline', allLabel: 'All deadlines', sort: 'none', onChange: applyFilters, options: [
+        { v: 'fixed_date', l: kindLabel('fixed_date') }, { v: 'on_effective_date', l: kindLabel('on_effective_date') },
+        { v: 'days_after_effective', l: kindLabel('days_after_effective') }, { v: 'days_after_enactment', l: kindLabel('days_after_enactment') },
+        { v: 'days_after_other', l: kindLabel('days_after_other') }, { v: 'none', l: 'No deadline' }] });
+    }
+    MS.rc = new MSFilter('msRecur', { label: 'Recurrence', allLabel: 'All recurrence', sort: 'none', onChange: applyFilters, options: [{ v: 'ongoing', l: 'ongoing' },{ v: 'as-needed', l: 'as-needed' },{ v: 'one-time', l: 'one-time' },{ v: 'annual', l: 'annual' },{ v: 'quarterly', l: 'quarterly' },{ v: 'biennial', l: 'biennial' },{ v: 'monthly', l: 'monthly' },{ v: 'every 4 years', l: 'every 4 years' },{ v: 'multiple schedules', l: 'multiple schedules' },{ v: 'every 5 years', l: 'every 5 years' },{ v: 'semiannual', l: 'semiannual' },{ v: 'every 3 years', l: 'every 3 years' },{ v: 'every 10 years', l: 'every 10 years' },{ v: 'daily', l: 'daily' },{ v: 'three times a year', l: 'three times a year' },{ v: 'every 2 months', l: 'every 2 months' },{ v: 'weekly', l: 'weekly' }] });
+    document.getElementById('fSearch').addEventListener('input', applyFilters);
+    document.getElementById('fExtends').addEventListener('change', applyFilters);
+    document.getElementById('fReset').addEventListener('click', function () { resetFilters(); syncUrl(); syncLoads(); });
+    document.querySelectorAll('thead th').forEach(function (th) {
+      th.addEventListener('click', function () {
+        var k = th.getAttribute('data-sort');
+        if (sortKey === k) sortDir = -sortDir; else { sortKey = k; sortDir = 1; }
+        applyFilters();
+      });
+    });
+  }
+
+  function resetFilters() {
+    document.getElementById('fSearch').value = '';
+    document.getElementById('fExtends').checked = false;
+    Object.keys(MS).forEach(function (k) { MS[k].reset(); });
+    lawFilter = null; openId = null;
+    showNotice('');
+  }
+
+  function showNotice(html) {
+    var el = document.getElementById('linkNotice');
+    el.innerHTML = html; el.hidden = !html;
+  }
+
+  function onSessionChange() { syncLoads(); }
+
+  function wantedYears() {
+    var sel = MS.session.selected();
+    return SUM.sessions.map(function (s) { return String(s.session); }).filter(function (y) { return sel === null || sel.has(y); }).sort().reverse();
+  }
+
+  function syncLoads() {
+    wantedYears().forEach(function (y) {
+      if (loaded[y] || loading[y]) return;
+      loading[y] = true; pending++;
+      getJSON('records_' + y + '.json').then(function (rows) {
+        SESS[y] = rows.filter(function (r) { return r.k === KIND; });
+        SESS[y].forEach(function (r) {
+          var l = LAWS[r.l] || {};
+          r._law = l; r._sd = l.signed || ''; r._year = String(l.session || r.i.slice(0, 4)); r._ag = agName(r.a);
+        });
+        loaded[y] = true; loading[y] = false; pending--;
+        rebuildAll(); applyFilters(true);
+      }).catch(function () { loading[y] = false; pending--; fail(); });
+    });
+    applyFilters(true);
+  }
+
+  function rebuildAll() {
+    ALL = [];
+    Object.keys(SESS).forEach(function (y) { ALL = ALL.concat(SESS[y]); });
+  }
+
+  function hay(r) {
+    if (!r._h) r._h = (r.s + ' ' + r.a + ' ' + r._ag + ' ' + (r.au || '') + ' ' + (r._law.law_number_display || '') + ' ' + r.l + ' ' + (r._law.title || '') + ' ' + (r.c || '') + ' ' + (r.q || '') + ' ' + (r.ar || '')).toLowerCase();
+    return r._h;
+  }
+
+  function applyFilters(keepPage) {
+    if (failed || !ready) return;
+    var q = document.getElementById('fSearch').value.trim().toLowerCase();
+    var sess = MS.session.selected(), ag = MS.agency.selected(), rc = MS.rc.selected();
+    var dk = MS.dk ? MS.dk.selected() : null;
+    var ext = document.getElementById('fExtends').checked;
+    var rows = ALL.filter(function (r) {
+      if (lawFilter && r.l !== lawFilter) return false;
+      if (sess !== null && !sess.has(r._year)) return false;
+      if (ag !== null && !ag.has(r.a)) return false;
+      if (rc !== null && !rc.has(r.rc || '')) return false;
+      if (dk !== null && !dk.has(r.dk || 'none')) return false;
+      if (ext && !r.x) return false;
+      if (q && hay(r).indexOf(q) === -1) return false;
+      return true;
+    });
+    rows.sort(cmp);
+    ROWS = rows;
+    if (keepPage !== true) page = 1;
+    resolvePending();
+    paint();
+    syncUrl();
+    document.querySelectorAll('thead th').forEach(function (th) {
+      th.querySelector('.arrow').textContent = th.getAttribute('data-sort') === sortKey ? (sortDir === 1 ? '▲' : '▼') : '';
+    });
+  }
+
+  function s2(a, b) { return a < b ? -1 : a > b ? 1 : 0; }
+  function cmp(a, b) {
+    var c = 0;
+    switch (sortKey) {
+      case 'agency': c = s2(a._ag, b._ag); break;
+      case 'action': c = s2(a.s, b.s); break;
+      case 'deadline': c = s2(a.dd || a.dk || '~', b.dd || b.dk || '~'); break;
+      case 'session': c = -s2(a._year, b._year); break;
+      default: c = -s2(a._sd, b._sd);
+    }
+    c = sortDir * c;
+    return c !== 0 ? c : s2(a.i, b.i);
+  }
+
+  function deadlineText(r) {
+    if (r.dd) return fmtDate(r.dd);
+    if (r.dk) return kindLabel(r.dk);
+    return '—';
+  }
+
+  function rowHtml(r) {
+    var l = r._law;
+    var agCell = '<td class="agency-cell" title="' + esc(r._ag !== r.a ? r.a + ' · ' + r._ag : r.a) + '">' + esc(r._ag)
+      + (r.au ? '<span class="agency-unit">' + esc(r.au) + '</span>' : '')
+      + (r.hn ? '<span class="agency-unit note">' + esc(r.hn) + '</span>' : '')
+      + (r.ms ? '<span class="agency-unit note">' + esc(MS_MULTI) + '</span>' : '') + '</td>';
+    var dl = HAS_DEADLINE ? '<td class="deadline-cell">' + esc(deadlineText(r)) + (r.rc ? '<span class="recur-sub">' + esc(r.rc) + '</span>' : '') + '</td>' : '';
+    return '<tr class="data-row" data-id="' + esc(r.i) + '">' + agCell
+      + '<td class="action-cell">' + esc(r.s) + '</td>' + dl
+      + '<td class="law-cell">' + esc(l.law_number_display || r.l) + '<span class="file-no">' + esc(r.l.split('-').slice(1).join('-')) + '</span></td>'
+      + '<td class="meta-cell">' + esc(r._year) + '</td></tr>';
+  }
+
+  function detailRow(r) {
+    var l = r._law, ef = r.ef || l.effective_date;
+    return '<tr class="detail-row"><td colspan="' + COLS.length + '"><div class="detail-grid">'
+      + '<div class="detail-quote detail-block"><h4>From the law</h4><p>“' + esc(r.q) + '”</p></div>'
+      + '<div class="detail-block"><h4>Citation</h4><p>' + esc(r.c || '—') + '</p></div>'
+      + (ef ? '<div class="detail-block"><h4>Effective</h4><p>' + esc(fmtDate(ef)) + '</p></div>' : '')
+      + (r.ar ? '<div class="detail-block"><h4>Responsible entity as written</h4><p>' + esc(r.ar) + '</p></div>' : '')
+      + '<div class="detail-block"><h4>Law</h4><p><a href="../law/?key=' + encodeURIComponent(r.l) + '">' + esc((l.law_number_display || r.l) + (l.title ? ': ' + l.title : '')) + '</a></p></div>'
+      + '<div class="detail-links"><button type="button" class="copy-link" data-url="' + esc(location.origin + location.pathname + '?id=' + encodeURIComponent(r.i)) + '">Copy link to this ' + NOUN + '</button></div>'
+      + '</div></td></tr>';
+  }
+
+  function paint() {
+    var total = ROWS.length, pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+    if (page > pages) page = pages;
+    var start = (page - 1) * PAGE_SIZE, slice = ROWS.slice(start, start + PAGE_SIZE);
+    var all = SUM[HEROKEY];
+    document.getElementById('resultCount').innerHTML = total
+      ? 'Showing <strong>' + num(start + 1) + '–' + num(Math.min(start + PAGE_SIZE, total)) + '</strong> of ' + num(total) + ' matching ' + (KIND === 'd' ? 'duties' : 'powers')
+        + (total < all && !pending ? ' (filtered from ' + num(all) + ')' : '') + (pending ? ' …' : '')
+      : (pending ? '…' : 'No ' + (KIND === 'd' ? 'duties' : 'powers') + ' match these filters');
+    if (!slice.length && pending) return;
+    var html = slice.length ? '' : '<tr><td colspan="' + COLS.length + '"><p class="loading-note">No ' + (KIND === 'd' ? 'duties' : 'powers') + ' match these filters.</p></td></tr>';
+    slice.forEach(function (r) { html += rowHtml(r) + (openId === r.i ? detailRow(r) : ''); });
+    document.getElementById('tbody').innerHTML = html;
+    document.querySelectorAll('tr.data-row').forEach(function (tr) {
+      tr.addEventListener('click', function () {
+        openId = openId === tr.getAttribute('data-id') ? null : tr.getAttribute('data-id');
+        syncUrl(); paint();
+      });
+    });
+    document.querySelectorAll('.copy-link').forEach(function (b) { b.addEventListener('click', function (ev) { copyLink(ev, b); }); });
+    renderPager(pages, total);
+  }
+
+  function renderPager(pages, total) {
+    var el = document.getElementById('pager');
+    if (pages < 2) { el.innerHTML = ''; return; }
+    var want = {1: 1}; want[pages] = 1;
+    for (var i = page - 2; i <= page + 2; i++) if (i >= 1 && i <= pages) want[i] = 1;
+    var nums = Object.keys(want).map(Number).sort(function (a, b) { return a - b; });
+    var html = '<button class="pg-btn" data-page="' + (page - 1) + '"' + (page === 1 ? ' disabled' : '') + ' aria-label="Previous page">← Prev</button>';
+    var prev = 0;
+    nums.forEach(function (n) {
+      if (prev && n > prev + 1) html += '<span class="pg-gap">…</span>';
+      html += '<button class="pg-btn pg-num' + (n === page ? ' is-current' : '') + '" data-page="' + n + '"' + (n === page ? ' aria-current="page"' : '') + '>' + n + '</button>';
+      prev = n;
+    });
+    html += '<button class="pg-btn" data-page="' + (page + 1) + '"' + (page === pages ? ' disabled' : '') + ' aria-label="Next page">Next →</button>';
+    html += '<span class="pg-count">' + num(total) + ' rows · 25 per page</span>';
+    el.innerHTML = html;
+    el.querySelectorAll('.pg-btn').forEach(function (b) {
+      if (b.disabled) return;
+      b.addEventListener('click', function () {
+        page = parseInt(b.getAttribute('data-page'), 10); openId = null; paint(); syncUrl();
+        var box = document.getElementById('chart-box');
+        if (box) window.scrollTo({ top: box.offsetTop - 80, behavior: 'smooth' });
+      });
+    });
+  }
+
+  function copyLink(ev, btn) {
+    ev.stopPropagation();
+    var url = btn.getAttribute('data-url'), label = btn.textContent;
+    function done() { btn.textContent = 'Link copied'; setTimeout(function () { btn.textContent = label; }, 2000); }
+    function fallback() {
+      var inp = btn.parentNode.querySelector('input.copy-fallback');
+      if (!inp) { inp = document.createElement('input'); inp.type = 'text'; inp.readOnly = true; inp.className = 'copy-fallback'; btn.insertAdjacentElement('afterend', inp); }
+      inp.value = url; inp.focus(); inp.select();
+      try { if (document.execCommand('copy')) done(); } catch (e) { /* the selected input lets the reader copy by hand */ }
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(done, fallback); else fallback();
+  }
+
+  // Shareable state: ?q= ?s= ?a= ?dk= ?rc= ?x=1, plus ?id= (one record open) or ?law= (one law).
+  function syncUrl() {
+    var sp = new URLSearchParams();
+    var q = document.getElementById('fSearch').value.trim();
+    if (q) sp.set('q', q);
+    [['s', MS.session], ['a', MS.agency], ['dk', MS.dk], ['rc', MS.rc]].forEach(function (p) {
+      var sel = p[1] ? p[1].selected() : null;
+      if (sel !== null) sp.set(p[0], Array.from(sel).join('~'));
+    });
+    if (document.getElementById('fExtends').checked) sp.set('x', '1');
+    if (openId) sp.set('id', openId); else if (lawFilter) sp.set('law', lawFilter);
+    var qs = sp.toString();
+    history.replaceState(null, '', location.pathname + (qs ? '?' + qs : ''));
+  }
+
+  function readUrl() {
+    var sp = new URLSearchParams(location.search);
+    if (sp.get('q')) document.getElementById('fSearch').value = sp.get('q');
+    [['s', MS.session], ['a', MS.agency], ['dk', MS.dk], ['rc', MS.rc]].forEach(function (p) {
+      if (p[1] && sp.get(p[0])) p[1].set(sp.get(p[0]).split('~'));
+    });
+    if (sp.get('x') === '1') document.getElementById('fExtends').checked = true;
+    var id = sp.get('id'), law = sp.get('law');
+    if (id) {
+      pendingId = id;
+      MS.session.set(addYear(id.slice(0, 4)));
+    } else if (law) {
+      lawFilter = law;
+      if (!sp.get('s')) MS.session.set([law.slice(0, 4)]);
+      var lw = LAWS[law];
+      showNotice(lw
+        ? 'Showing the ' + (KIND === 'd' ? 'duties' : 'powers') + ' in ' + esc(lw.law_number_display) + '. <button type="button" id="lawClear">Show all ' + (KIND === 'd' ? 'duties' : 'powers') + '</button>'
+        : 'No law with that link was found. <button type="button" id="lawClear">Show all ' + (KIND === 'd' ? 'duties' : 'powers') + '</button>');
+      document.getElementById('lawClear').addEventListener('click', function () {
+        lawFilter = null; showNotice(''); MS.session.reset(); syncLoads();
+      });
+    }
+  }
+
+  function addYear(y) {
+    var sel = MS.session.selected();
+    if (sel === null) return Array.from(MS.session.options.map(function (o) { return o.v; }));
+    var out = Array.from(sel); if (out.indexOf(y) < 0) out.push(y);
+    return out;
+  }
+
+  // A shared ?id= link: wait for its session file, open the record on its own page, scroll and pulse.
+  function resolvePending() {
+    if (!pendingId) return;
+    var rec = null;
+    for (var i = 0; i < ALL.length; i++) if (ALL[i].i === pendingId) { rec = ALL[i]; break; }
+    if (!rec) { if (!loading[pendingId.slice(0, 4)] && loaded[pendingId.slice(0, 4)]) { showNotice('No ' + NOUN + ' with that link was found.'); pendingId = null; } return; }
+    if (ROWS.indexOf(rec) < 0) { var keep = pendingId; resetFilters(); MS.session.set([keep.slice(0, 4)]); pendingId = keep; applyFilters(); return; }
+    var id = pendingId; pendingId = null; openId = id;
+    page = Math.floor(ROWS.indexOf(rec) / PAGE_SIZE) + 1;
+    paint(); syncUrl();
+    var tr = document.querySelector('tr.data-row[data-id="' + CSS.escape(id) + '"]');
+    if (tr) {
+      var det = tr.nextElementSibling;
+      tr.classList.add('row-flash'); if (det && det.classList.contains('detail-row')) det.classList.add('row-flash');
+      tr.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      setTimeout(function () { tr.classList.remove('row-flash'); if (det) det.classList.remove('row-flash'); }, 2100);
+    }
+  }
+})();
+</script>
+
+</body>
+</html>
