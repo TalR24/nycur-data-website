@@ -58,6 +58,11 @@ jobs:
           git clone --depth 1 "https://TalR24:${PREMIUM_PUSH_TOKEN}@github.com/TalR24/nycur-data-premium.git" "$RUNNER_TEMP/premium"
           mkdir -p "$RUNNER_TEMP/premium/opportunities/state/digests"
 
+      # Nov 11 2026: schema check of the watch list before the digest reads it. Errors fail the run
+      # (a broken list would silently drop items from the digest); warnings only print.
+      - name: Validate the watch list
+        run: python3 "$RUNNER_TEMP/premium/opportunities/validate.py" "$RUNNER_TEMP/premium/opportunities/watchlist.yaml"
+
       - name: Run opportunity monitor
         env:
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
