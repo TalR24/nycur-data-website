@@ -181,6 +181,96 @@ def write_reask_packets(picks: list[tuple[str, dict]], tag: str, data_dir: Path 
     return paths
 
 
+LONG_LIMIT = 5              # long laws drawn a night
+LONG_PENDING_HOURS = 20     # a law drawn within this many hours is pending: not drawn again
+LONG_MAX_DRAWS = 3          # a law whose windows are still unanswered after this many draws is left alone (agents skipped it)
+
+
+LONG_NOT_FIXABLE = re.compile(r"truncated|empty|list item|no quotable|only new matter|section heading", re.I)    # skipped for a reason windows do not fix
+
+
+def long_candidates(data_dir: Path | None = None, packets_dir: Path | None = None, text_dir: Path | None = None) -> list[dict]:
+    """Long laws that can still be drawn, as {key, law, text, windows, answered}: every law in data/deferred_long.json, and every law in
+    data/deferred_skipped.json whose marked text is longer than a window, unless the reason is truncated, empty or list-only text (windows cannot fix that).
+    Laws with every window answered (waiting for the ingest) or needing more than LONG_MAX_WINDOWS are left out.
+    Order: laws already part-answered, then fewest windows, then key."""
+    import extract_duties as ed
+    data_dir, packets_dir, text_dir = data_dir or DATA, packets_dir or PACKETS, text_dir or TEXT_MARKED
+    keys = []
+    for name in ("deferred_long.json", "deferred_skipped.json"):
+        f = data_dir / name
+        if f.exists():
+            keys += [x["key"] for x in json.load(open(f))["laws"] if x["key"] not in keys and not LONG_NOT_FIXABLE.search(x.get("reason", ""))]
+    laws = {}
+    for y in sorted({int(k.split("-")[0]) for k in keys}):
+        sg = data_dir / "signed" / f"{y}.json"
+        if sg.exists():
+            laws.update({l["key"]: l for l in json.load(open(sg))})
+    out = []
+    for k in keys:
+        tp = text_dir / f"{k}.txt"
+        if k not in laws or not tp.exists():
+            continue
+        text = tp.read_text()
+        if len(text) <= ed.LONG_MIN:
+            continue
+        n_win = len(ed.split_long(text))
+        if n_win > ed.LONG_MAX_WINDOWS:
+            continue
+        n, done = ed.long_state(k, packets_dir)
+        if n and len(done) == n:
+            continue
+        out.append({"key": k, "law": laws[k], "text": text, "windows": n_win, "answered": len(done) if n == n_win else 0})
+    out.sort(key=lambda c: (c["answered"] == 0, c["windows"], c["key"]))
+    return out
+
+
+def long_draws(path: Path | None = None) -> dict:
+    p = path or PACKETS / "long_draws.json"
+    return json.load(open(p)) if p.exists() else {}
+
+
+def draw_long(limit: int = LONG_LIMIT, now: datetime | None = None, draws_path: Path | None = None, **kw) -> list[dict]:
+    """Up to `limit` candidate long laws, skipping laws pending (drawn within LONG_PENDING_HOURS) and laws already drawn LONG_MAX_DRAWS times."""
+    now = now or datetime.now()
+    draws = long_draws(draws_path)
+    picks = []
+    for c in long_candidates(**kw):
+        tags = draws.get(c["key"], [])
+        if len(tags) >= LONG_MAX_DRAWS:
+            continue
+        if tags and (now.timestamp() - _tag_time(tags[-1])) < LONG_PENDING_HOURS * 3600:
+            continue
+        picks.append(c)
+        if len(picks) >= limit:
+            break
+    return picks
+
+
+def write_long_packets(picks: list[dict], packets_dir: Path | None = None) -> list[Path]:
+    """Window packets of the picks under packets/{Y}/long/; returns only the packets of windows not yet answered, in law then window order."""
+    import extract_duties as ed
+    packets_dir = packets_dir or PACKETS
+    files = []
+    for c in picks:
+        y = c["key"].split("-")[0]
+        d = packets_dir / y / "long"
+        made = ed.emit_long_packets(d, [(c["law"], c["text"])])[c["key"]]
+        n, done = ed.long_state(c["key"], packets_dir)
+        files += [f for i, f in enumerate(made, 1) if i not in done]
+    return files
+
+
+def record_long_draws(keys: list[str], tag: str, path: Path | None = None) -> None:
+    p = path or PACKETS / "long_draws.json"
+    draws = long_draws(p)
+    for k in keys:
+        if tag not in draws.setdefault(k, []):
+            draws[k].append(tag)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    json.dump(draws, open(p, "w"), indent=0)
+
+
 def write_lists(chunks: list[list[Path]], out: Path) -> list[str]:
     out.mkdir(parents=True, exist_ok=True)
     paths = []
@@ -319,6 +409,9 @@ def main() -> None:
     ap.add_argument("--max-laws", type=int, default=30)
     ap.add_argument("--reask", type=int, metavar="N", help="draw up to N laws from data/reask/*.json as re-ask packets (Max path; default 250 with --extract since Nov 12 2026); their chunks come first")
     ap.add_argument("--extract", action="store_true", help="with --reask: also fill the remaining chunks with never-answered laws")
+    ap.add_argument("--long", action=argparse.BooleanOptionalAction, default=True, help="with --extract: also draw the windows of long laws (deferred_long, deferred_skipped) after the re-asks and new laws; --no-long turns it off (Nov 12 2026)")
+    ap.add_argument("--long-limit", type=int, default=LONG_LIMIT, help="long laws drawn this run")
+    ap.add_argument("--long-reserve", type=int, default=6, help="chunks held back from the re-asks for new laws and long-law windows (default 6 since Nov 12 2026: room for the last new laws and 5 long laws a night; 250 re-asks alone would fill 25 chunks)")
     ap.add_argument("--no-prepare", action="store_true", help="skip fetching texts and emitting packets for newly signed laws")
     ap.add_argument("--prepare-only", action="store_true", help="prepare, print, and stop: no draw, no batch consumed")
     ap.add_argument("--check", action="store_true", help="exit 1 if signed laws older than 10 days have no packet and no answer (skips without the packet cache)")
@@ -349,7 +442,7 @@ def main() -> None:
         cands = reask_candidates(skip)
         picks = cands[:a.reask]
         packets = write_reask_packets(picks, tag)
-        reask_chunks = make_chunks(packets, a.chunks, a.max_bytes, a.max_laws)
+        reask_chunks = make_chunks(packets, a.chunks - (a.long_reserve if a.long and a.extract else 0), a.max_bytes, a.max_laws)
         record_draws([f.stem for c in reask_chunks for f in c], tag)
         reask_laws = sum(len(c) for c in reask_chunks)
         reask_left = len(cands) - reask_laws
@@ -362,11 +455,24 @@ def main() -> None:
     chunks = make_chunks(todo, max(a.chunks - len(reask_chunks), 0), a.max_bytes, a.max_laws) if a.chunks > len(reask_chunks) else []
     all_paths += write_lists(chunks, out)
     laws = sum(len(c) for c in chunks)
-    listed = [f for c in chunks for f in c] + [f for c in reask_chunks for f in c]
+    long_chunks, long_keys, long_windows_n = [], [], 0
+    left_chunks = a.chunks - len(reask_chunks) - len(chunks)
+    if a.long and a.extract and left_chunks > 0 and a.long_limit > 0:
+        picks = draw_long(a.long_limit)
+        wfiles = write_long_packets(picks)
+        long_chunks = make_chunks(wfiles, left_chunks, a.max_bytes, a.max_laws)
+        in_chunks = {f.stem.split("__w")[0] for c in long_chunks for f in c}
+        long_keys = [c["key"] for c in picks if c["key"] in in_chunks]
+        record_long_draws(long_keys, tag)
+        long_windows_n = sum(len(c) for c in long_chunks)
+        all_paths += write_lists(long_chunks, out / "long")
+    listed = [f for c in chunks for f in c] + [f for c in reask_chunks for f in c] + [f for c in long_chunks for f in c]
     rel = relative_footers(listed)
     if rel:
         print("WARNING: %d listed packets have a relative results path in the footer, first %s (run extract_duties.py --fix-footers)" % (len(rel), rel[0]), file=sys.stderr)
     res = {"tag": tag, "chunks": all_paths, "laws": laws + reask_laws, "left_after": len(todo) - laws, "skipped_deferred": n_skipped, "relative_footers": len(rel)}
+    if long_keys:
+        res.update({"long_laws": len(long_keys), "long_windows": long_windows_n})
     if a.reask:
         res.update({"reask_laws": reask_laws, "reask_left_after": reask_left})
     print(json.dumps(res))

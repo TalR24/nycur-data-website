@@ -143,14 +143,147 @@ def signed_laws(sessions=None):
     return out
 
 
-def load_todo(sessions=None):
+# ── Long laws, answered window by window (Nov 12 2026) ──────────────────────────────────────────────────────────
+# A law over MAX_CHARS, or one agents skipped as too long, is split on its section boundaries into windows
+# (the shared eo.split_for_extraction with an NYS target, not a fork). Windows live in packets/{Y}/long/ with their
+# own manifest and results/, so the session's ordinary packets, manifest and re-ask overlay are untouched.
+LONG_TARGET = 12_000         # window text size; the fixed prompt and definitions add 20-30 KB, so a packet stays near 50 KB (agents skip packets over about 60 KB)
+LONG_MIN = int(LONG_TARGET * 1.6)   # eo.split_for_extraction leaves a text this size or smaller whole
+LONG_MAX_WINDOWS = 60        # a law needing more waits (two 3.7 MB codification laws would need about 190 windows)
+PACKETS_ROOT = HERE / "cache" / "packets"
+LONG_NOTE = ("NOTE: the law text below is ONE WINDOW of a longer law. Extract only from this window; the other windows are answered "
+             "separately and merged afterwards. The effective-date clause may not be in this window; leave it as the schema allows.\n\n")
+LONG_MODEL = {}              # law key -> {normalised quote prefix: (extends_existing, actor_resolved)} gathered across windows
+
+
+class long_windows:
+    """Context manager: eo.split_for_extraction uses the NYS window target, so eo.emit_packets and eo.ingest_packets agree on the windows."""
+    def __enter__(self):
+        self._orig = eo.split_for_extraction
+        orig = self._orig
+        eo.split_for_extraction = lambda text, target=LONG_TARGET: orig(text, target)
+        return self
+
+    def __exit__(self, *exc):
+        eo.split_for_extraction = self._orig
+
+
+def split_long(text):
+    with long_windows():
+        return eo.split_for_extraction(text)
+
+
+def long_dir(key, root=None):
+    return Path(root or PACKETS_ROOT) / key.split("-")[0] / "long"
+
+
+def window_names(key, n):
+    return [key] if n == 1 else ["%s__w%d" % (key, i) for i in range(1, n + 1)]
+
+
+def long_state(key, root=None, schema=None):
+    """(windows, [answered window numbers]) of a long law from packets/{Y}/long/manifest.json; (0, []) when it has no windowed packets.
+    An answer counts only when it parses and fits the schema."""
+    d = long_dir(key, root)
+    mf = d / "manifest.json"
+    if not mf.exists():
+        return 0, []
+    n = json.loads(mf.read_text()).get(key, {}).get("windows", 0)
+    done = []
+    for i, name in enumerate(window_names(key, n), 1):
+        rp = d / "results" / (name + ".json")
+        if rp.exists():
+            try:
+                if eo.validate_against_schema(json.loads(rp.read_text()), schema or SCHEMA_V2):
+                    done.append(i)
+            except json.JSONDecodeError:
+                pass
+    return n, done
+
+
+def long_answered(key, root=None):
+    n, done = long_state(key, root)
+    return n > 0 and len(done) == n
+
+
+def render_window(law, text):
+    return LONG_NOTE + render_variable_prompt(law, text)
+
+
+def emit_long_packets(d, todo):
+    """Windowed packets for (law, text) pairs into d (= packets/{Y}/long), footers made absolute, manifest merged with the existing entries.
+    Returns {key: [window packet paths]}."""
+    d = Path(d).resolve()
+    (d / "results").mkdir(parents=True, exist_ok=True)
+    mf = d / "manifest.json"
+    before = json.loads(mf.read_text()) if mf.exists() else {}
+    with long_windows():
+        eo.emit_packets(d, todo, fixed_prompt=build_prompt(2)[0], render=render_window, schema=SCHEMA_V2)
+    after = json.loads(mf.read_text())
+    mf.write_text(json.dumps({**before, **after}, indent=1))
+    out = {}
+    for law, _ in todo:
+        k = law["key"]
+        out[k] = [d / (nm + ".txt") for nm in window_names(k, after[k]["windows"])]
+        for f in out[k]:
+            f.write_text(absolute_footer(f.read_text(), d / "results"))
+    return out
+
+
+def long_prepare(law, raw):
+    """eo.ingest_packets' prepare for a window: the ordinary prepare, plus a record of each record's model fields by quote so the merged law keeps them."""
+    prepare(law, raw)
+    m = LONG_MODEL.setdefault(law["key"], {})
+    for o in raw.get("obligations", []):
+        m[eo.normalize_quote(o.get("quote", ""))[:160]] = (bool(o.get("extends_existing")), o.get("actor_resolved"))
+
+
+def long_writer(mid, res):
+    """write_cache for a merged long law: EXT_MODEL / ACTOR_MODEL rebuilt from the merged ids (prepare numbered them per window)."""
+    m = LONG_MODEL.get(mid, {})
+    ext, act = {}, {}
+    for o in res.get("obligations", []):
+        e, a = m.get(eo.normalize_quote(o.get("quote", ""))[:160], (False, None))
+        ext[o["obligation_id"]], act[o["obligation_id"]] = e, a
+    EXT_MODEL[mid], ACTOR_MODEL[mid] = ext, act
+    write_cache(mid, res)
+
+
+def ingest_long(todo, root, lookup, by_canon, model, schema=None):
+    """Merge the window answers of the long laws in todo (laws whose windowed answers are all present). Returns (done, left)."""
+    done, left = [], []
+    for law, text in todo:
+        if not long_answered(law["key"], root):
+            continue
+        d = long_dir(law["key"], root)
+        with long_windows():
+            dn, lf = eo.ingest_packets(d, [(law, text)], lookup, by_canon, model, writer=long_writer, prepare=long_prepare, schema=schema or SCHEMA_V2)
+        done += dn
+        left += lf
+    return done, left
+
+
+def drop_from_deferred_skipped(keys, read_path, write_path):
+    """Remove keys from deferred_skipped.json (written to write_path); returns the keys removed. Called only for laws whose windows were all ingested."""
+    if not keys or not Path(read_path).exists():
+        return []
+    dj = json.load(open(read_path))
+    gone = [x["key"] for x in dj["laws"] if x["key"] in set(keys)]
+    if gone:
+        dj["laws"] = [x for x in dj["laws"] if x["key"] not in set(gone)]
+        Path(write_path).write_text(json.dumps(dj, indent=2, ensure_ascii=False))
+    return gone
+
+
+def load_todo(sessions=None, packets_root=None):
+    """Laws with marked text, split into (todo, deferred). A law over MAX_CHARS joins todo only when every window of its long packets is answered."""
     todo, deferred = [], []
     for law in signed_laws(sessions):
         tp = TEXT_MARKED / (law["key"] + ".txt")
         if not tp.exists():
             continue
         text = tp.read_text()
-        if len(text) > MAX_CHARS:
+        if len(text) > MAX_CHARS and not long_answered(law["key"], packets_root):
             deferred.append({"key": law["key"], "chapter": law["chapter_number"], "year": law["chapter_year"], "chars": len(text), "title": law["title"]})
         else:
             todo.append((law, text))
@@ -4614,7 +4747,7 @@ def emit_pilot_packets(root, todo, keys, version):
 
 
 def main():
-    global EFFECTIVE, EXTRACTED
+    global EFFECTIVE, EXTRACTED, PACKETS_ROOT
     ap = argparse.ArgumentParser()
     ap.add_argument("--emit-packets", metavar="DIR")
     ap.add_argument("--ingest", metavar="DIR")
@@ -4665,6 +4798,8 @@ def main():
     if a.data_dir:
         EXTRACTED = out / "cache" / "extracted"
     schema = SCHEMA if a.prompt_version == 1 else SCHEMA_V2
+    if a.ingest:
+        PACKETS_ROOT = Path(a.ingest).resolve().parent           # packets/{Y} -> packets/: where the long laws' windowed answers are looked up
     todo, deferred = load_todo(sessions)
     if a.pilot_only:
         pb = json.load(open(DATA / "bills.json"))
@@ -4679,6 +4814,8 @@ def main():
         print("keys file: %d of %d listed laws have text here" % (len(todo), len(want)))
     if a.limit:
         todo = todo[:a.limit]
+    if a.api or a.emit_packets:
+        todo = [(l, t) for l, t in todo if len(t) <= MAX_CHARS]      # a long law is only ever answered window by window (emit_long_packets)
     laws = [l for l, _ in todo] + [l for l in signed_laws(sessions) if l["key"] in {d["key"] for d in deferred}]
     EFFECTIVE = effective_table([l for l, _ in todo])
     if full:
@@ -4720,6 +4857,12 @@ def main():
         with tempfile.TemporaryDirectory() as tmpd:       # a valid results_reask answer replaces results/ for its law
             view, reasked = reask_overlay(d, todo, tmpd, schema)
             done, left = eo.ingest_packets(view, todo, LOOKUP, BY_CANON, "claude-sonnet-5" if full else "max-subagent", writer=write_cache, prepare=prepare, schema=schema)
+        long_done, long_left = ingest_long(todo, PACKETS_ROOT, LOOKUP, BY_CANON, "claude-sonnet-5" if full else "max-subagent", schema)
+        done += long_done
+        left += long_left
+        gone = drop_from_deferred_skipped(long_done, (out if (out / "deferred_skipped.json").exists() else DATA) / "deferred_skipped.json", out / "deferred_skipped.json")
+        if long_done or long_left:
+            print("long laws merged from windows: %d (%s), left %d, removed from deferred_skipped %d" % (len(long_done), ", ".join(long_done), len(long_left), len(gone)))
         print("re-ask answers used: %d laws" % mark_reasked(reasked, set(done)))
         merged = merge_reask(todo, d / "results", "claude-sonnet-5" if full else "max-subagent")
         duties, powers, excluded = build_records([l for l, _ in todo])
