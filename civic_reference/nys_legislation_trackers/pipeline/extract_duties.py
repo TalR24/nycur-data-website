@@ -4574,6 +4574,8 @@ def main():
     ap.add_argument("--resume", action="store_true", help="with --api: collect pending batches only")
     ap.add_argument("--reask", action="store_true", help="with --api: re-send only the laws in data/reask.json with the added instruction")
     ap.add_argument("--canary", type=int, metavar="N", help="with --api: N real laws synchronously, usage and cost projection")
+    ap.add_argument("--keys", metavar="FILE", help="with --api: send only these law keys (a JSON list); Nov 12 2026, so a runner without the local answer cache cannot resend answered laws")
+    ap.add_argument("--max-usd", type=float, metavar="X", help="with --api --batch: refuse to submit when the projected cost exceeds X dollars")
     ap.add_argument("--session", type=int, action="append", help="restrict to a session (repeatable); default all nine")
     ap.add_argument("--limit", type=int)
     ap.add_argument("--pilot-only", action="store_true", help="restrict to the 52 audited pilot laws (data/bills.json signed)")
@@ -4622,6 +4624,10 @@ def main():
         keys |= {"%d-%s" % (b["session"], b.get("base_print_no") or b["print_no"]) for b in pb if b.get("signed")}
         todo = [(l, t) for l, t in todo if l["key"] in keys]
         print("pilot-only: %d of the audited pilot laws have text" % len(todo))
+    if a.keys:
+        want = set(json.load(open(a.keys)))
+        todo = [(l, t) for l, t in todo if l["key"] in want]
+        print("keys file: %d of %d listed laws have text here" % (len(todo), len(want)))
     if a.limit:
         todo = todo[:a.limit]
     laws = [l for l, _ in todo] + [l for l in signed_laws(sessions) if l["key"] in {d["key"] for d in deferred}]
@@ -4642,6 +4648,13 @@ def main():
         if a.reask:
             flagged = load_reask()
             return run_batches(todo, reask=flagged)
+        if a.batch and a.max_usd is not None:          # Nov 12 2026: spend guard from the measured per-law output (adaptive 5,490; medium 1,529; low 909; off 600)
+            out_tok = {"default": 5490, "medium": 1529, "low": 909, "off": 600}.get(os.environ.get("NYS_THINKING", "default"), 5490)
+            avg_in = sum(len(render_variable_prompt(l, t)) for l, t in todo) / max(1, len(todo)) / 3.8
+            proj = project_cost(len(todo), avg_in, out_tok, len(FIXED_PROMPT) / 3.8)
+            print("projected batch cost: $%.2f for %d laws (cap $%.2f)" % (proj, len(todo), a.max_usd))
+            if proj > a.max_usd:
+                sys.exit("projected cost $%.2f exceeds --max-usd %.2f: nothing submitted" % (proj, a.max_usd))
         if a.batch or a.resume:
             return run_batches(todo, resume_only=a.resume and not a.batch)
         sys.exit("--api needs --canary N, --batch or --resume")
