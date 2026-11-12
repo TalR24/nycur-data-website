@@ -97,7 +97,10 @@
     'header .header-inner .back-link svg{vertical-align:-2px;}' +
     'header .header-inner .header-actions{flex-shrink:0;}' +
     'header .header-inner .site-header-title{font-family:var(--b-display);flex:1 1 12ch;min-width:min(12ch,100%);white-space:normal;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;line-clamp:3;}' +
-    '@media (max-width:1220px){header .header-inner .header-actions .header-link{display:none;}}' +
+    /* Nov 11 2026: on subpages, About and Substack collapse to their icons below 1220px instead of vanishing
+       (the label stays in the DOM for screen readers and becomes a tooltip); they hide only on phones. */
+    '@media (max-width:1220px){header .header-inner:has(.back-link) .header-actions .header-link{display:flex;font-size:0;gap:0;padding:7px;}}' +
+    '@media (max-width:560px){header .header-inner:has(.back-link) .header-actions .header-link{display:none;}}' +
     '@media (max-width:900px){header .header-inner:has(.back-link) .header-divider{display:none;}}' +
     '@media (max-width:560px){' +
       'header .header-inner:has(.back-link) .brand{flex:0 1 calc(100% - 48px);}' +
@@ -334,6 +337,13 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', revealActivePills);
   else revealActivePills();
   window.addEventListener('load', revealActivePills);
+  function titleHeaderLinks() {
+    document.querySelectorAll('header .header-actions .header-link').forEach(function (a) {
+      if (!a.title) a.title = a.textContent.trim();
+    });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', titleHeaderLinks);
+  else titleHeaderLinks();
   if (isHome) return;
 
   fetch('/assets/related_work.json')

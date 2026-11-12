@@ -54,7 +54,8 @@ TOOL_CARDS = {
     'tool--cb-member-guide': '/civic_reference/cb_member_guide/',
     'tool--roberts-rules-helper': '/cb-tools/roberts-rules-helper/',
     'tool--meeting-review': '/cb-tools/meeting-review/',
-    'tool--block-party': '/cb-tools/block-party/',
+    # the tool page is only a 'moved to Block Party' notice; show the resolutions-by-board chart instead (Nov 11 2026)
+    'tool--block-party': '/nycuriosity_substack_posts/block_party_updates_2026/by-board/',
     'tool--board-scorecard': '/cb-tools/board-scorecard/',
 }
 
@@ -139,15 +140,24 @@ OVERRIDES = {
     P + 'west_4th_st_station/station-timeline/': {'top': True},
     # pages that draw with divs or a map rather than svg/canvas/table: take the viewport below the header
     'https://statecapacityecosystem.com/ecosystem/': {},
-    '/civic_reference/legislation_implementation_tracker/deadline-timeline/': {},
-    '/civic_reference/legislation_implementation_tracker/law/': {},
-    '/cb-tools/block-party/': {},
+    # Nov 11 2026: these two showed the nav pills and page title; capture the tool itself
+    '/civic_reference/legislation_implementation_tracker/deadline-timeline/': {'sel': '#content', 'top': True},
+    '/civic_reference/legislation_implementation_tracker/law/': {'sel': '#lawList', 'top': True},
 }
 
 
+MAX_ASPECT = 3.0  # wider than this and a chart shrank to a thin strip in the 2:1 card (Nov 11 2026)
+
+
 def fit(im, box=None):
-    """Scale im to fit inside the padded 2:1 frame (never crop), centred on the page ground."""
+    """Scale im to fit inside the padded 2:1 frame, centred on the page ground. A very wide, short chart is
+    first trimmed from the right to MAX_ASPECT (category labels and axes sit on the left) so it fills the card at a readable size; nothing else is cropped."""
     iw, ih = im.size
+    if iw / ih > MAX_ASPECT:
+        keep = int(ih * MAX_ASPECT)
+        left = 0
+        im = im.crop((left, 0, left + keep, ih))
+        iw = keep
     aw, ah = W - 2 * PAD, H - 2 * PAD
     sc = min(aw / iw, ah / ih, 1.0 if iw >= aw else 1.5)
     nw, nh = max(1, int(iw * sc)), max(1, int(ih * sc))
