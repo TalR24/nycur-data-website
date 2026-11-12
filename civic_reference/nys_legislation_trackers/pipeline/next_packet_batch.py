@@ -317,7 +317,7 @@ def main() -> None:
     ap.add_argument("--chunks", type=int, default=30, help="chunks this run (one subagent each)")
     ap.add_argument("--max-bytes", type=int, default=400_000)
     ap.add_argument("--max-laws", type=int, default=30)
-    ap.add_argument("--reask", type=int, metavar="N", help="draw up to N laws from data/reask/*.json as re-ask packets (Max path; default 100 with --extract); their chunks come first")
+    ap.add_argument("--reask", type=int, metavar="N", help="draw up to N laws from data/reask/*.json as re-ask packets (Max path; default 250 with --extract since Nov 12 2026); their chunks come first")
     ap.add_argument("--extract", action="store_true", help="with --reask: also fill the remaining chunks with never-answered laws")
     ap.add_argument("--no-prepare", action="store_true", help="skip fetching texts and emitting packets for newly signed laws")
     ap.add_argument("--prepare-only", action="store_true", help="prepare, print, and stop: no draw, no batch consumed")
@@ -337,7 +337,7 @@ def main() -> None:
     if a.prepare_only:
         return
     if a.reask is None and a.extract:
-        a.reask = 100
+        a.reask = 250          # Nov 12 2026 (Tal): new-law extraction is done, so re-asks may fill all 25 chunks; the chunk cap still bounds the night
     if a.reask:
         for k in defer_twice_skipped():
             print("deferred (re-ask skipped twice): " + k, file=sys.stderr)
