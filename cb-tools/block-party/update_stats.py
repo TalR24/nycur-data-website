@@ -66,9 +66,16 @@ def from_export():
         for r in csv.DictReader(fh):
             b = board_of.get(r["meeting_id"], "?")
             by[b] = by.get(b, 0) + 1
-    day = subprocess.run(["git", "-C", ENGINE, "log", "-1", "--format=%cs", "--", "storage/exports/full_resolutions.csv.gz"],
+    # Since Nov 11 2026 the exports live on the engine's "exports-latest" release, not in git
+    # (fetch them with `bash scripts/exports_release.sh fetch` in the engine repo). Date = the asset's upload date.
+    day = subprocess.run(["gh", "release", "view", "exports-latest", "-R", "block-party-studio/resolution_engine",
+                          "--json", "assets", "-q",
+                          '.assets[]|select(.name=="full_resolutions.csv.gz")|.updatedAt[:10]'],
                          capture_output=True, text=True).stdout.strip()
-    return by, day, "engine weekly export (storage/exports/full_resolutions.csv.gz)"
+    if not day:
+        import datetime
+        day = datetime.date.fromtimestamp(os.path.getmtime(os.path.join(exp, "full_resolutions.csv.gz"))).isoformat()
+    return by, day, "engine weekly export (release exports-latest, full_resolutions.csv.gz)"
 
 
 def from_json(path):
