@@ -32,6 +32,7 @@ jobs:
         env:
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          SENT_ARCHIVE_DIR: ${{ runner.temp }}/sent
         run: |
           python3 site_health/check_site.py ${{ inputs.dry_run && '--dry-run' || '' }}
 
@@ -45,6 +46,7 @@ jobs:
           PREMIUM_PUSH_TOKEN: ${{ secrets.PREMIUM_PUSH_TOKEN }}
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          SENT_ARCHIVE_DIR: ${{ runner.temp }}/sent
           MENTION_DIGEST_TO: ${{ secrets.MENTION_DIGEST_TO }}
         run: |
           pip install requests
@@ -58,6 +60,30 @@ jobs:
         env:
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          SENT_ARCHIVE_DIR: ${{ runner.temp }}/sent
         run: |
           pip install requests
           python3 seo/seo_check.py --all --live ${{ inputs.dry_run && '' || '--email' }}
+
+      # Nov 11 2026: file a copy of any alert this run emailed (shared/mailer.py writes them to
+      # $RUNNER_TEMP/sent) in premium planning/sent/, so the monthly ops digest and Sunday email can
+      # see what Tal was already told. Does nothing on a quiet run.
+      - name: File sent alerts in the premium repo
+        if: always() && !inputs.dry_run
+        env:
+          PREMIUM_PUSH_TOKEN: ${{ secrets.PREMIUM_PUSH_TOKEN }}
+        run: |
+          if [ -z "$(ls -A "$RUNNER_TEMP/sent" 2>/dev/null)" ]; then echo "No alerts sent."; exit 0; fi
+          git clone --depth 1 "https://TalR24:${PREMIUM_PUSH_TOKEN}@github.com/TalR24/nycur-data-premium.git" "$RUNNER_TEMP/premium"
+          mkdir -p "$RUNNER_TEMP/premium/planning/sent"
+          cp "$RUNNER_TEMP"/sent/*.md "$RUNNER_TEMP/premium/planning/sent/"
+          cd "$RUNNER_TEMP/premium"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add planning/sent
+          git commit -q -m "Site health: file sent alerts $(date -u +%Y-%m-%d)"
+          for i in 1 2 3; do
+            if git pull -q --rebase origin main && git push -q origin HEAD:main; then exit 0; fi
+            sleep 20
+          done
+          echo "::warning::could not push the sent-alert copies"

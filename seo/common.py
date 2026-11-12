@@ -407,7 +407,7 @@ def send_email(subject, body, to=ALERT_TO, html=None, archive_slug=None, role="T
         return False
     to = [to] if isinstance(to, str) else list(to)
     msg = mailer.compose(subject, user, ", ".join(to), body, html=html, charset="utf-8")
-    mailer.send_gmail(msg, user, pw, envelope_to=to)
+    mailer.send_gmail(msg, user, pw, envelope_to=to, archive=not archive_slug)
     if archive_slug:
         archive_sent(subject, body, role, archive_slug)
     return True
