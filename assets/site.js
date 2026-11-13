@@ -45,7 +45,7 @@
       { label: 'New York Needs to Grow', href: '/nycuriosity_substack_posts/nyc_building_strategies/' }
     ]},
     { cat: 'Community Boards', topic: 'cb', items: [
-      { label: 'What 27 community boards vote on', href: '/nycuriosity_substack_posts/block_party_updates_2026/' },
+      { label: 'What 52 community boards vote on', href: '/nycuriosity_substack_posts/block_party_updates_2026/' },
       { label: 'Suggestions to Improve NYC Community Boards', href: '/nycuriosity_substack_posts/community_board_suggestions/' },
       { label: 'What Has MCB3 Focused On Over Time?', href: '/nycuriosity_substack_posts/mcb3_history_analysis/' }
     ]},
