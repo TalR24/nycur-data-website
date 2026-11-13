@@ -72,7 +72,7 @@ def method_note(summary, gold):
     rc = gold["recall"]["rate"] * 100
     return ('Claude read the marked text of each signed law and listed the duties and powers it creates or widens, and the pipeline '
             'then drops reprinted text, conditions, definitions and duties of private parties before resolving each actor to a '
-            'canonical agency. Two auditors check a blind sample of new records every night against a hand-verified set of %s laws, '
+            'canonical public body. Two auditors check a blind sample of new records every night against a hand-verified set of %s laws, '
             'where %.1f%% of stored records are real duties or powers and %.1f%% of the provisions in those laws are found. '
             'The 2025 session was extracted on November 12, 2026 and has had one audit so far, so its records carry more uncertainty '
             'than earlier sessions until the nightly audits reach it. <a href="../methodology/">Read the methodology</a>'
@@ -137,7 +137,7 @@ def directory_pages(summary):
     (duties plus powers, descending; ties by name), the same order the JS paints."""
     ags = json.load(open(SITE / "agencies.json"))
     ags.sort(key=lambda a: (-(sum(a["duties"].values()) + sum(a["powers"].values())), a["name"]))
-    path = HERE / "agencies" / "index.html"
+    path = HERE / "public-bodies" / "index.html"
     put(path, "nys-ag-hero", "%s state and local bodies carry duties or powers from New York laws signed since 2009." % num(summary["agencies"]))
     put(path, "nys-ag-count", "Showing <strong>1–%d</strong> of %s matching public bodies" % (PAGE_SIZE, num(len(ags))))
     put(path, "nys-ag-rows", "".join(agency_row(a) for a in ags[:PAGE_SIZE]))

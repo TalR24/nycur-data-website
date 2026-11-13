@@ -120,7 +120,7 @@ try:
                     ("new: NYS-only subject", sent["nys@example.test"]["Subject"], "NYCuriosity alert: 1 NYS deadline"),
                     ("new: both subject", sent["both@example.test"]["Subject"], "NYCuriosity alert: 1 new law, 1 NYS deadline"),
                     ("new: empty state when no agency match",
-                     "No NYS deadlines for your agencies this month." in body_of(sent["empty@example.test"]), True),
+                     "No NYS deadlines for your public bodies this month." in body_of(sent["empty@example.test"]), True),
                     ("new: keywords do not match NYS duties", "kw@example.test" in sent, False),
                     ("new: no email for empty NYS and no NYC news", "other@example.test" in sent, False),
                     ("new: state records announced ids", json.loads(state.read_text())["announced_nys_upcoming_ids"], ["2025-S1-01", "2025-S1-02"])]

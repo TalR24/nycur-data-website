@@ -638,7 +638,7 @@ def main() -> None:
                         f"- {ag}: {r.get('s')} ({r.get('l')}), due {fmt_date(parse_ymd(r['dd']))}",
                         f"  Duty page: {NYS_DUTY_URL}{r['i']}"]
             else:
-                lines.append("No NYS deadlines for your agencies this month.")
+                lines.append("No NYS deadlines for your public bodies this month.")
             lines.append("")
         lines += district_lines
         lines += [
