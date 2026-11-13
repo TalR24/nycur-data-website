@@ -11,7 +11,7 @@ Q = T / "quality"
 sys.path.insert(0, str(Q))
 import build_gold
 import score_gold
-from gold_lib import agency_code, agency_equal, is_act_clause, quotes_match, wilson
+from gold_lib import agency_code, agency_equal, is_act_clause, is_sunset_extension, quotes_match, wilson
 
 passed = failed = 0
 def check(name, cond):
@@ -97,6 +97,40 @@ gq = {"built_at": "t", "laws": {"2098-A1": {"items": [gi("g1", "SED"), gi("g2", 
 rq = score_gold.score(gq, dq)
 check("siblings match own gold item", rq["field_accuracy"]["agency"]["k"] == 2 and rq["field_mismatches"] == [])
 check("aliases resolve", agency_equal("Loft", "Loft Board of New York City") and agency_equal("Loft Board", "Loft Board of New York City") and agency_equal("DHSES", "State Office of Emergency Management"))
+
+# Nov 12 2026: act-clause sunset extensions are scored, the law's own effective-date boilerplate is still skipped
+AQ = "This act shall take effect immediately and shall expire and be deemed repealed June 30, 2015."
+check("sunset ext: record_source", is_sunset_extension({"record_source": "sunset_extension_from_title", "quote": AQ}))
+check("sunset ext: holder_unnamed", is_sunset_extension({"holder_unnamed": True, "quote": AQ}))
+check("sunset ext: extends_existing with expiry date", is_sunset_extension({"extends_existing": True, "quote": AQ}))
+check("boilerplate stays skipped", not is_sunset_extension({"extends_existing": False, "quote": "This act shall take effect immediately."})
+      and not is_sunset_extension({"extends_existing": True, "quote": "This act shall take effect on the ninetieth day after it shall have become a law."}))
+ds = tempfile.mkdtemp(); os.makedirs(ds + "/duties"); os.makedirs(ds + "/powers")
+json.dump({"obligations": []}, open(ds + "/duties/2097.json", "w"))
+json.dump({"powers": [
+    {"matter_id": "2097-A1", "obligation_id": "2097-A1-01", "actor_raw": "a", "agency": "Unspecified", "kind": "power", "quote": AQ, "record_source": "sunset_extension_holder_unnamed", "holder_unnamed": True, "extends_existing": True},
+    {"matter_id": "2097-A1", "obligation_id": "2097-A1-02", "actor_raw": "a", "agency": "Unspecified", "kind": "power", "quote": "This act shall take effect immediately."}]}, open(ds + "/powers/2097.json", "w"))
+gs = {"built_at": "t", "laws": {"2097-A1": {"items": [{"gold_id": "s1", "source": {"obligation_id": "q"}, "quote": AQ, "status": "real", "disputed": False, "expected_fields": {}}]}}}
+rs = score_gold.score(gs, ds)
+check("sunset extension scored and matched", rs["act_clause_records"] == 1 and rs["stored_records_in_gold_laws"] == 1 and rs["recall"]["k"] == 1)
+
+# Nov 12 2026: gold items for one provision (same quote, same agency, same kind) collapse to the best-sourced one
+def gd(gid, night, ag, quote="The commissioner shall adopt rules governing licences within ninety days.", exp=True, kind="duty", status="real"):
+    it = {"gold_id": gid, "kind": kind, "status": status, "source": {"night": night, "auditor": "A" if night != "bulk_verification" else night, "obligation_id": gid}, "quote": quote, "disputed": False,
+          "expected_fields": {"agency": ag, "kind": kind} if exp else {}}
+    if not exp:
+        it["agency_hint"] = ag
+    return it
+kept, mg = build_gold.dedupe_items([gd("L-01", "bulk_verification", "DOH", exp=False), gd("L-02", "20261019", "DOH"), gd("L-03", "20261105", "DOH"),
+                                    gd("L-04", "20261105", "SED"), gd("L-05", "20261105", "DOH", kind="power"), gd("L-06", "20261105", "DOH", quote="Something else entirely about fees.")])
+ids = {i["gold_id"] for i in kept}
+check("dedupe keeps newest audit item", "L-03" in ids and "L-02" not in ids and "L-01" not in ids)
+check("dedupe keeps other agency, kind and quote", {"L-04", "L-05", "L-06"} <= ids and len(kept) == 4)
+check("dedupe records merged ids", sorted(next(i for i in kept if i["gold_id"] == "L-03")["merged_duplicates"]) == ["L-01", "L-02"] and len(mg) == 2)
+check("dedupe leaves excluded items", len(build_gold.dedupe_items([gd("E-1", "20261019", "DOH"), dict(gd("E-2", "20261019", "DOH"), excluded="x")])[0]) == 2)
+check("built gold has no same-provision pairs", all(not build_gold.same_provision(a_, b_) for l_ in g["laws"].values()
+      for n_, a_ in enumerate([i for i in l_["items"] if not i.get("excluded") and not i["disputed"]]) for b_ in [i for i in l_["items"] if not i.get("excluded") and not i["disputed"]][n_ + 1:]))
+check("build counts merged duplicates", g["counts"]["duplicates_merged"] > 0)
 
 print(f"{passed} passed, {failed} failed")
 sys.exit(1 if failed else 0)

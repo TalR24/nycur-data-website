@@ -10,7 +10,7 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-from gold_lib import SCORED_FIELDS, agency_code, agency_equal, is_act_clause, quote_score, quotes_match, wilson
+from gold_lib import SCORED_FIELDS, agency_code, agency_equal, is_act_clause, is_sunset_extension, quote_score, quotes_match, wilson
 
 T = os.path.dirname(HERE)
 
@@ -111,7 +111,7 @@ def score(gold, data_dir):
         qonly = quote_only_law(by_law.get(law, []), items)
         taken_ids = set()
         for r in by_law.get(law, []):
-            if is_act_clause(r.get("quote")):
+            if is_act_clause(r.get("quote")) and not is_sunset_extension(r):
                 act_clause += 1
                 continue
             it = best_match(r, items, qonly, taken_ids)

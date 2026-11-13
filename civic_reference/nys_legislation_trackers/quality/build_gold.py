@@ -11,7 +11,7 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-from gold_lib import SCORED_FIELDS, quotes_match, quote_score
+from gold_lib import SCORED_FIELDS, agency_equal, quotes_match, quote_score
 
 T = os.path.dirname(HERE)
 ID_RE = re.compile(r"\b(\d{4}-[AS]\d+-\d+)\b")
@@ -104,6 +104,51 @@ def read_night(path, skipped):
     return laws, ed
 
 
+DUP_THRESHOLD = 0.9
+
+
+def _item_agency(it):
+    return (it.get("expected_fields") or {}).get("agency") or it.get("agency_hint")
+
+
+def _item_kind(it):
+    return (it.get("expected_fields") or {}).get("kind") or it.get("kind")
+
+
+def _rank(it):
+    """Higher wins: an audit verdict beats a blind-missed item, which beats a bulk addition; newer night, then expected fields, then id."""
+    night = (it.get("source") or {}).get("night") or ""
+    tier = 0 if night == "bulk_verification" else (1 if it["gold_id"].count(":") else 2)
+    return (tier, night if night != "bulk_verification" else "", bool(it.get("expected_fields")), it["gold_id"])
+
+
+def same_provision(a, b):
+    """Two live gold items name the same provision: quotes near-identical (>= DUP_THRESHOLD), same actor/agency (both unknown counts as same), same kind."""
+    if a["status"] != b["status"] or _item_kind(a) != _item_kind(b) or not a.get("quote") or not b.get("quote"):
+        return False
+    if quote_score(a["quote"], b["quote"]) < DUP_THRESHOLD:
+        return False
+    ag, bg = _item_agency(a), _item_agency(b)
+    if not ag and not bg:
+        return True
+    return bool(ag and bg and agency_equal(ag, bg))
+
+
+def dedupe_items(items):
+    """Collapse items of one law that name the same provision, keeping the best-sourced one. Returns (kept, merged) with merged = [(kept_id, dropped_id)]."""
+    live = [i for i in items if not i.get("excluded") and not i["disputed"]]
+    rest = [i for i in items if i.get("excluded") or i["disputed"]]
+    kept, merged = [], []
+    for it in sorted(live, key=_rank, reverse=True):
+        w = next((k for k in kept if same_provision(k, it)), None)
+        if w is None:
+            kept.append(it)
+        else:
+            w.setdefault("merged_duplicates", []).append(it["gold_id"])
+            merged.append((w["gold_id"], it["gold_id"]))
+    return kept + rest, merged
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default=os.path.join(HERE, "gold.json"))
@@ -113,6 +158,7 @@ def main(argv=None):
     ap.add_argument("--packets-dir", default=os.path.join(T, "pipeline", "cache", "packets"))
     ap.add_argument("--reask-history", default=None)
     ap.add_argument("--additions", default=os.path.join(HERE, "gold_verified_additions.json"))
+    ap.add_argument("--merged-out", default=None, help="write the merged-duplicate pairs here (JSON)")
     a = ap.parse_args(argv)
 
     ov = load(a.overrides)
@@ -296,7 +342,7 @@ def main(argv=None):
                 "source": {"night": "bulk_verification", "auditor": "bulk_verification", "obligation_id": oid, "note": ad.get("source")},
                 "quote": ad.get("quote") or src_rec.get("quote"),
                 "expected_fields": {k: rec[k] for k in ("agency", "kind", "deadline_kind", "extends_existing", "agency_unit") if k in rec}
-                if ad["verdict"] == "real" and rec else {},
+                if ad["verdict"] == "real" and rec and (not ad.get("quote") or not rec.get("quote") or quotes_match(ad["quote"], rec["quote"])) else {},
                 "disputed": False,
             }
             if ad.get("agency"):
@@ -335,6 +381,16 @@ def main(argv=None):
             kept_m.append((None, item))
         for _, it in kept_m:
             law_bucket(law)["items"].append(it)
+
+    merged_all = []
+    for law, g_ in gold_laws.items():
+        g_["items"], m_ = dedupe_items(g_["items"])
+        merged_all += [(law, k_, d_) for k_, d_ in m_]
+    counts["duplicates_merged"] = len(merged_all)
+    counts["duplicates_merged_laws"] = len({m[0] for m in merged_all})
+    if a.merged_out:
+        with open(a.merged_out, "w") as f:
+            json.dump([{"law": l_, "kept": k_, "dropped": d_} for l_, k_, d_ in merged_all], f, indent=1)
 
     ed_conflicts = []
     for law, lst in eds.items():

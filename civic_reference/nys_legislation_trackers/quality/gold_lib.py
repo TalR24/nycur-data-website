@@ -122,3 +122,15 @@ def agency_equal(stored, expected, stored_full=None):
 
 def is_act_clause(quote):
     return " ".join(words(quote))[:30].startswith("this act shall take effect")
+
+
+_EXPIRY = re.compile(r"\b(expire|expires|deemed repealed|remain in full force and effect|continue in full force)\b", re.I)
+
+
+def is_sunset_extension(rec):
+    """Nov 12 2026: a stored act-clause record that gold counts as a real power, a sunset extension (not the law's own effective-date boilerplate):
+    record_source sunset_extension_*, holder_unnamed true, or extends_existing with an expiry wording and a year in the quote."""
+    if str(rec.get("record_source") or "").startswith("sunset_extension") or rec.get("holder_unnamed"):
+        return True
+    q = rec.get("quote") or ""
+    return bool(rec.get("extends_existing") and _EXPIRY.search(q) and re.search(r"\b(19|20)\d\d\b", q))
