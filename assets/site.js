@@ -5,7 +5,7 @@
    Related work is curated in /assets/related_work.json (path-prefix keys).
    When a tool or post hub ships: add it to TOOLS_MENU (with sub list) or the
    right POSTS_MENU category (newest first, max 2 shown). Sub lists cap at 5
-   items; the flyout always ends with a See-all link to the hub. */
+   items (override with max: N on the entry); the flyout always ends with a See-all link to the hub. */
 (function () {
   var path = location.pathname;
   var isHome = path === '/' || path === '/index.html';
@@ -17,6 +17,15 @@
       { label: 'Powers', href: '/civic_reference/legislation_implementation_tracker/powers/' },
       { label: 'Council Members', href: '/civic_reference/nyc_council_legislation_trackers/council-members/' },
       { label: 'Agencies', href: '/civic_reference/nyc_council_legislation_trackers/agencies/' }
+    ]},
+    { label: 'NYS Legislation Trackers', href: '/civic_reference/nys_legislation_trackers/', max: 7, sub: [
+      { label: 'Overview', href: '/civic_reference/nys_legislation_trackers/' },
+      { label: 'Bill Explorer', href: '/civic_reference/nys_legislation_trackers/bills/' },
+      { label: 'Duties Tracker', href: '/civic_reference/nys_legislation_trackers/duties/' },
+      { label: 'Powers Tracker', href: '/civic_reference/nys_legislation_trackers/powers/' },
+      { label: 'Agencies', href: '/civic_reference/nys_legislation_trackers/agencies/' },
+      { label: 'Legislators', href: '/civic_reference/nys_legislation_trackers/legislators/' },
+      { label: 'Alerts', href: '/civic_reference/nys_legislation_trackers/alerts/' }
     ]},
     { label: 'Community Board Tools', href: '/cb-tools/', sub: [
       { label: 'Member Tracker', href: '/cb-tools/member-tracker/' },
@@ -176,7 +185,7 @@
       if (!t.sub || !t.sub.length) {
         return '<a class="menu-link" href="' + t.href + '">' + t.label + '</a>';
       }
-      var shown = t.sub.slice(0, 5);
+      var shown = t.sub.slice(0, t.max || 5);
       var subLinks = shown.map(function (s) {
         return '<a href="' + s.href + '">' + s.label + '</a>';
       }).join('') + '<a class="menu-all" href="' + t.href + '">See all →</a>';

@@ -1118,7 +1118,7 @@ def list_lead_in(span, text):
     if j < floor:
         return None
     j0 = j
-    if APPLY_AG14:          # AG14: walk back over numbered sibling items that end in ';' to the real lead
+    if APPLY_AG14 or APPLY_B58:          # AG14 / B58: walk back over numbered sibling items that end in ';' to the real lead
         while j >= floor and ITEM_LABEL.match(text[paras[j][0]:paras[j][1]]) and re.search(r";\s*(?:\}\})?\s*$", text[paras[j][0]:paras[j][1]]):
             j -= 1
             while j >= floor and not text[paras[j][0]:paras[j][1]].strip():
@@ -1745,6 +1745,11 @@ AG12_APPLIES = re.compile(r"\b(?:court|judge|justice|commissioner|department|boa
 APPLY_AG13 = True         # Nov 12 2026 (coordinator AG13): Civil Service Law layoff order ('suspension or demotion ... shall be made in the inverse order of original appointment') binds the appointing authority, not a beneficiary
 AG13_LAYOFF = re.compile(r"\binverse\s+order\s+of\s+(?:original\s+)?appointment\b", re.I)
 APPLY_AG14 = False        # OFF: 55 stored power records flip to a mandatory lead (cap 40), mixed power lists included; Nov 12 2026 (coordinator AG14): a numbered item ending in ';' is a sibling, not the list lead, so 'The commissioner shall:' stays the lead of '2. Provide grants ...'
+APPLY_B52 = False         # Nov 12 2026 (Tal's ruling, criterion 4): a cap on what an official or body may do ('Nominations are limited to ten per elected official per term', 'the state shall only recover its actual cost') is a power with extends_existing true; bond and issuance caps (CAP_RE) stay duties
+B52_CAP = re.compile(r"\b(?:are|is)\s+limited\s+to\s+(?:\w+\s+){0,3}?per\b|\b(?:shall|may)\s+only\s+recover\s+(?:its|their|the)\s+actual\s+costs?\b", re.I)
+def b52_cap(quote):
+    """B52: the quote is a cap on what an official or body may do (a per-holder quota, a cost-recovery ceiling), not a bond or issuance cutoff."""
+    return bool(APPLY_B52 and B52_CAP.search(quote or "") and not CAP_RE.search(quote or "") and not DEBT_WORDS.search(quote or ""))
 def ag11_power(quote, text):
     """AG11: the quote grants jurisdiction (sentence form) or is an item under a 'shall have jurisdiction of ...:' lead, with no mandatory verb of its own."""
     if not APPLY_AG11 or re.search(r"\bshall\s+(?!have\b)\w+", quote, re.I):
@@ -2043,6 +2048,19 @@ def lead_kind(lead, q=None):
     return "duty" if MANDATORY.search(lead) else "power"
 
 
+APPLY_B58 = False         # Nov 12 2026 (Tal's ruling, criterion 4): in a list whose lead mixes powers and duties each item takes its own modal; an item with no modal takes the modal of the clause that ends at the colon. Also turns on the AG14 walk-back over ';' sibling items to the real lead
+B58_OWN_SHALL = re.compile(r"^\W*(?:\d+\.|\([a-z0-9]+\))?\W*(?:\{\{)?\s*(?:\w+\s+){0,4}?(?:shall|must)\b(?!\s+not)", re.I)
+def item_lead_kind(lead, q):
+    """B58: the kind an item takes from its list lead. A lead holding both a mandatory and a permissive modal gives way to the item's own modal ('may waive ...' is a power, 'the board shall ...' a duty); no modal of its own, the AG5 last-modal rule on the lead stands."""
+    k = lead_kind(lead, q)
+    if APPLY_B58 and MANDATORY.search(lead) and AC3_PERMISSIVE.search(lead):
+        if item_own_may(q):
+            return "power"
+        if B58_OWN_SHALL.search(RELATIVE.sub(" ", re.sub(r"\{\{|\}\}", "", q or ""))) and not strip_relative_may(q).lstrip("{ ").lower().startswith("may"):
+            return "duty"
+    return k
+
+
 APPLY_AG5 = True          # Nov 11 2026 (coordinator AG5): a list lead holding both modals takes the kind of the LAST modal before the colon
 AC3_MARK = re.compile(r"\(\s*(?:a|A|1|i)\s*\)")
 AC3_PERMISSIVE = re.compile(r"\bmay\b(?!\s+not)|\b(?:is|are)\s+(?:hereby\s+)?(?:authorized|empowered|permitted)\b", re.I)
@@ -2210,6 +2228,8 @@ def gate_record(o, text, has_markers):
         return "savings_clause", "a savings clause ('nothing in this section shall be construed to ...'): it limits the reach of the law and binds no actor"
     if APPLY_AE2 and consultee_only(o, text):
         return "consultee_only", "the body appears in the sentence only as a consultee ('in consultation with X'); the body that acts carries the record"
+    if b52_cap(q) and (o.get("actor_raw") or "").strip():          # B52: a cap on a named holder's power is a record (no modal, a list item or not)
+        return None
     if APPLY_D7 and QUALIFICATION.search(q):
         return "qualification", "a qualification of an officer ('shall be a resident of', 'shall be at least N years of age'), not a duty or power"
     if APPLY_D6 and d6_private(o, q):
@@ -2367,7 +2387,7 @@ def gate_record(o, text, has_markers):
             lead = list_lead_in(span, text)
             if lead and (VERBISH.search(lead) or TO_VERB.search(lead)):          # a list entry: the duty is in the lead-in sentence
                 o["lead_in"] = re.sub(r"\s+", " ", re.sub(r"\{\{|\}\}", "", lead)).strip()[:400]
-                o["kind_from_lead_in"] = lead_kind(lead, q)
+                o["kind_from_lead_in"] = item_lead_kind(lead, q)
                 if INFINITIVE_ITEM.match(q):
                     o["kind_from_lead_in"] = infinitive_lead_kind(lead); bump("s4_infinitive_list_item")          # S4: 'shall have the following powers:' grants powers
                 if o["kind_from_lead_in"] == "duty" and o.get("kind_model") == "power" and LIMIT_RE.search(lead) and not MANDATORY.search(LIMIT_RE.sub(" ", lead)) and not DEBT_WORDS.search(lead + " " + q):
@@ -2392,7 +2412,7 @@ def gate_record(o, text, has_markers):
                     # R2: 'Work with ... to prepare', 'Advise the Governor' under 'shall have the following powers and duties:'
                     lead = imperative_lead_in(span, text)
                     o["lead_in"] = re.sub(r"\s+", " ", re.sub(r"\{\{|\}\}", "", lead)).strip()[:400]
-                    o["kind_from_lead_in"] = lead_kind(lead, q)
+                    o["kind_from_lead_in"] = item_lead_kind(lead, q)
                     if INFINITIVE_ITEM.match(q):
                         o["kind_from_lead_in"] = infinitive_lead_kind(lead); bump("s4_infinitive_list_item")
                     subj = lead_in_subject(lead)
@@ -2402,7 +2422,7 @@ def gate_record(o, text, has_markers):
                 elif APPLY_U4 and scan_back_lead_in(span, text):
                     lead = scan_back_lead_in(span, text)          # U4: the nearest ':' paragraph above the item's run holds the shall / may
                     o["lead_in"] = re.sub(r"\s+", " ", re.sub(r"\{\{|\}\}", "", lead)).strip()[:400]
-                    o["kind_from_lead_in"] = lead_kind(lead, q)
+                    o["kind_from_lead_in"] = item_lead_kind(lead, q)
                     if INFINITIVE_ITEM.match(q):
                         o["kind_from_lead_in"] = infinitive_lead_kind(lead)
                     subj = lead_in_subject(lead)
@@ -4379,6 +4399,12 @@ def build_records(laws):
                     bump("cap_deadline_cleared")
                 o["deadline_kind"], o["deadline_date"] = "none", None
                 bump("cap_cutoff_records")
+            if b52_cap(quote) and kind != "power":          # B52
+                kind = "power"; o["kind_adjusted"] = "b52_cap_power"; bump("b52_cap_power")
+            if b52_cap(quote):
+                if not o["extends_existing"]:
+                    bump("b52_cap_extends")
+                o["extends_existing"] = True
             if APPLY_B43 and o.get("holder_unnamed") and kind != "power":          # B43: a sunset extension is a power by decision, after every kind rule
                 kind = "power"; o["kind_adjusted"] = "b43_sunset_extension_power"; bump("b43_forced_power")
             if kind == "power":

@@ -20,6 +20,13 @@ Copied verbatim from the 20261019 audit brief and the nys-legislation-trackers s
 8. Effective date: act clause applied to the signing date; "same as chapter N of YYYY" resolves to that chapter's date; an amendment signed after the referenced chapter's original effective date leaves that date standing.
 9. Duplicate: two stored records for the same provision.
 
+## Kind rulings (Tal, Nov 12 2026; apply under criterion 4)
+- A law that raises a cap on what an official or body may do (nominations "[two] {{ten}} per elected official", a cost-recovery
+  cap) widens a power: a power with extends_existing true. An issuance cutoff stated as a duty on the issuer stays a duty.
+- In a list whose lead mixes powers and duties, each item takes its own modal; an item with no modal of its own takes the modal
+  of the clause that ends at the colon.
+
+
 ## Pilot rules (orchestrator decisions, Oct 7 2026; reversible, each a field or filter)
 - Local governments: `agency` = the group (Counties, Cities, Towns, Villages, School districts, Fire districts, Special
   districts...), `agency_unit` = the named locality, normalised. A locality's assessor, tax office or governing body is the

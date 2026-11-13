@@ -31,6 +31,7 @@ TOOLS = {
     'nyc_council_legislation_trackers': '/civic_reference/nyc_council_fiscal_impacts_tracker/agency-fiscal-impact/',
     'cb-tools': '/cb-tools/member-tracker/',
     'state_capacity_ecosystem': 'https://statecapacityecosystem.com/ecosystem/',
+    'nys_legislation_trackers': '/civic_reference/nys_legislation_trackers/duties/',
 }
 
 # Cards on the tool hubs (Obligations, Powers, Fiscal overview, /cb-tools/): file name -> target page.
