@@ -4,6 +4,8 @@ from pathlib import Path
 HERE = Path(os.path.abspath(__file__)).parent.parent
 sys.path.insert(0, str(HERE))
 import extract_duties as ed
+_HV0 = getattr(ed, "APPLY_HOLDER_VERDICTS", False)          # Nov 13 2026: these check the B43 mechanics; the curated holder verdicts override them
+ed.APPLY_HOLDER_VERDICTS = False
 
 passed = failed = 0
 def check(name, cond):
@@ -54,4 +56,5 @@ if (ed.TEXT_MARKED / "2009-A9706.txt").exists() and ed.EXTRACTED.exists():
     check("B43 real law no re-ask entry", "2009-A2002" not in ed.SUNSET_UNNAMED)
 else:
     print("note: cache not present, real-law checks skipped")
+ed.APPLY_HOLDER_VERDICTS = _HV0
 print("%d passed, %d failed" % (passed, failed))

@@ -1,0 +1,2618 @@
+{
+ "_scoring": {
+  "auditor": "B",
+  "night": "20261113",
+  "laws": 11,
+  "stored_records": 170,
+  "correct": 120,
+  "wrong_fields": 24,
+  "not_real": 26,
+  "missed": 2,
+  "precision_strict": "120/170 = 70.6% (Wilson 95% 63.3-76.9)",
+  "precision_real": "144/170 = 84.7% (Wilson 95% 78.5-89.3)",
+  "recall": "144/146 = 98.6% (Wilson 95% 95.1-99.6)",
+  "effective_dates": "11/11 correct",
+  "calibration_laws": [
+   "2021-A9493",
+   "2021-S6783"
+  ],
+  "calibration": {
+   "laws": 2,
+   "stored_records": 3,
+   "correct": 2,
+   "wrong_fields": 0,
+   "not_real": 1,
+   "missed": 0,
+   "effective_dates": "2/2 correct"
+  },
+  "method": "blind list per law from the marked packet text, saved before opening data/duties, data/powers, data/dropped, data/effective_dates; class counts by python over all 9 sessions (33,300 records: duties + powers)"
+ },
+ "_classes": [
+  {
+   "name": "fixed_date deadline stored with null deadline_date",
+   "criteria": [
+    "5"
+   ],
+   "instances": [
+    "2009-A41011-01",
+    "2009-A41011-08",
+    "2009-A41011-09",
+    "2009-A7329-11",
+    "2009-A40023-06",
+    "2009-A40023-12",
+    "2009-A40023-14",
+    "2009-A40023-15"
+   ],
+   "rule": "deadline_kind == 'fixed_date' and not deadline_date",
+   "db_matches": 67,
+   "db_examples": [
+    "2011-A2294-02",
+    "2009-A41011-12",
+    "2017-S8910-01"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "list items of a content lead-in (\"shall include\") stored as separate records",
+   "criteria": [
+    "1",
+    "9"
+   ],
+   "instances": [
+    "2023-A611-06",
+    "2023-A611-07",
+    "2023-A611-08",
+    "2023-A611-09",
+    "2023-A611-10",
+    "2023-A611-11",
+    "2023-A611-12",
+    "2023-A611-13"
+   ],
+   "rule": "re.match(r'^\\(?([a-z]|[ivx]{1,4}|\\d{1,2})[\\.\\)] ', quote) and no modal (shall|must|may|is authorized|empowered|directed|will) in quote; not caught by sub_item_of_parent, probably because the parent -05 had a junk agency",
+   "db_matches": 228,
+   "db_examples": [
+    "2015-A9518-11",
+    "2023-A5609-01",
+    "2021-S7837-08"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "generic State board/agency actor left Unspecified",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2023-A611-03",
+    "2023-A611-04",
+    "2023-A611-14"
+   ],
+   "rule": "agency == 'Unspecified' and re.search(r'(?i)\\b(each|every|any) (state )?(board|agency|department|commission)', actor_raw)",
+   "db_matches": 21,
+   "db_examples": [
+    "2019-A1316-06",
+    "2023-A10215-01",
+    "2015-S8117-06"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "agency set to the passive subject phrase (Monies in the Fund, Website ...)",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2009-A41011-10",
+    "2009-A41011-11",
+    "2023-A611-05"
+   ],
+   "rule": "normalized agency == normalized actor_raw and not agency_group and actor_raw starts with monies|moneys|fund|website|amount|payment|notice|such (agency_matched is True for these: the crosswalk accepts them as a named body)",
+   "db_matches": 7,
+   "db_examples": [
+    "2009-A41011-11",
+    "2009-A41011-10",
+    "2025-S9005-214"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "act-clause early-implementation proviso stored as power",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2011-A10039-07",
+    "2011-A10039-08"
+   ],
+   "rule": "re.search(r'(?i)may (implement|take (any )?steps)[^.]{0,120}(before|prior to) (that|its|such) (effective )?date', quote)",
+   "db_matches": 4,
+   "db_examples": [
+    "2011-A10039-08",
+    "2017-S1206-01",
+    "2011-A10039-07"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "local body or population phrase in place of locality group/unit",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2009-A7329-23",
+    "2009-A40023-22",
+    "2009-A40023-23"
+   ],
+   "rule": "re.search(r'(?i)city of one million|population of', agency_unit) or re.search(r'(?i)^(nassau|suffolk|westchester|erie|monroe|orange|rockland) county .*(agency|bureau|department)', agency)",
+   "db_matches": 46,
+   "db_examples": [
+    "2025-S8394-04",
+    "2025-S9005-217",
+    "2013-S7464-02"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "list item under a mandatory lead held as power (known, fixed Oct 17; recurrence)",
+   "criteria": [
+    "4"
+   ],
+   "instances": [
+    "2023-S7524-09",
+    "2023-A611-09"
+   ],
+   "rule": "kind == 'power' and no modal at all in quote (may|authoriz|empower|power|discretion|permit|shall|must); upper bound, also matches legitimate items under a may lead",
+   "db_matches": 768,
+   "db_examples": [
+    "2009-S3583-06",
+    "2009-S7696-04",
+    "2009-S6888-14"
+   ],
+   "needs_judgment": true
+  },
+  {
+   "name": "same sentence reprinted in parallel or successive sections stored twice",
+   "criteria": [
+    "9"
+   ],
+   "instances": [
+    "2011-A10039-04",
+    "2011-A10039-06",
+    "2021-A9493-02"
+   ],
+   "rule": "no mechanical rule separates these from legitimate parallel provisions (identical quote+agency+kind gives 845 groups / 1,168 extra records; adding citation gives 273 / 414, which misses these because the citations differ)",
+   "db_matches": 0,
+   "db_examples": [],
+   "needs_judgment": true,
+   "laws": [
+    "2011-A10039",
+    "2021-A9493"
+   ]
+  },
+  {
+   "name": "reprinted or narrowed existing duty stored as a record",
+   "criteria": [
+    "1",
+    "7"
+   ],
+   "instances": [
+    "2025-S7120-22",
+    "2009-A40023-01",
+    "2009-A40023-02",
+    "2009-A40023-03"
+   ],
+   "rule": "needs_judgment: the new matter is a word swap or a narrowing proviso inside a pre-existing duty sentence",
+   "db_matches": 0,
+   "db_examples": [],
+   "needs_judgment": true,
+   "laws": [
+    "2025-S7120",
+    "2009-A40023"
+   ]
+  },
+  {
+   "name": "passive or entitlement subject with Unspecified actor (known class; recurrence)",
+   "criteria": [
+    "1",
+    "3"
+   ],
+   "instances": [
+    "2009-A41011-09",
+    "2009-A41011-12",
+    "2009-A40023-10",
+    "2009-A40023-21"
+   ],
+   "rule": "agency == 'Unspecified' and actor_raw has no government noun (commission|department|...|supervisor)",
+   "db_matches": 773,
+   "db_examples": [
+    "2017-A10971-13",
+    "2023-A10335-01",
+    "2011-S3111-03"
+   ],
+   "needs_judgment": false
+  }
+ ],
+ "2023-A611": {
+  "records": {
+   "2023-A611-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner shall maintain a list of all state boards, including state boards deemed active and regularly meeting on and after the effective date of this section.",
+    "note": ""
+   },
+   "2023-A611-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner shall keep such list on a website designated by the commissioner for the purpose of public access, and such list shall have a link to the website for each such board established pursuant to subdivision three of this section.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "OGS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2023-A611-15": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "On or before January first, two thousand twenty-four, the commissioner shall report to the governor, the speaker of the assembly, the temporary president of the senate, the chair of the assembly oversight, analysis and investigation committee and the chair of the senate investigations and government operations committee on the status of the list",
+    "note": "report duty amended: \"status of the [inventory] {{list}}\", demographic content deleted; kept as amended record"
+   },
+   "2023-A611-03": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "State agencies (state boards; generic class)"
+    },
+    "quote": "Each board or the state agency that provides administrative support or is otherwise affiliated with a board shall establish and maintain a website available to the public and provide a link to such website to the commissioner.",
+    "note": "\"Each board or the state agency that provides administrative support ... shall establish and maintain a website\": a named class of State bodies, not Unspecified"
+   },
+   "2023-A611-04": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "State agencies (state boards; generic class)"
+    },
+    "quote": "Each board or the state agency that provides administrative support or is otherwise affiliated with a board shall annually on or before January first, update the information on its website.",
+    "note": "same actor as -03; deadline 2024-01-01 annual is right"
+   },
+   "2023-A611-14": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "State agencies (state boards; generic class)"
+    },
+    "quote": "Each board or the state agency that provides administrative support or is otherwise affiliated with a board shall update on an annual basis beginning November first, two thousand twenty-three on its website, all vacancies, expired terms, terms expiring within one year, and the process for filling such vacancies on such boards.",
+    "note": "same actor as -03; fixed_date 2023-11-01 annual is right"
+   },
+   "2023-A611-05": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "State agencies (state boards; generic class)"
+    },
+    "quote": "The website established by each board or the state agency that provides administrative support or is otherwise affiliated with a board shall include, but not be limited to:",
+    "note": "agency \"Website Established By Each Board Or the State Agency\" is the quote subject, not a body"
+   },
+   "2023-A611-06": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "9"
+    ],
+    "fields": {},
+    "quote": "a. statutory language, executive order or other legal basis or authorization for the establishment of such board;",
+    "note": "list item of subdivision 4 (\"The website ... shall include, but not be limited to:\"); content of record -05, not a separate duty; the sub_item_of_parent gate that dropped 2009-A7329-12..20 missed it"
+   },
+   "2023-A611-07": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "9"
+    ],
+    "fields": {},
+    "quote": "b. public information including departmental affiliation, contact address, phone number, and website;",
+    "note": "list item of subdivision 4 (\"The website ... shall include, but not be limited to:\"); content of record -05, not a separate duty; the sub_item_of_parent gate that dropped 2009-A7329-12..20 missed it"
+   },
+   "2023-A611-08": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "9"
+    ],
+    "fields": {},
+    "quote": "c. a brief description of the purpose of the board and its legally required duties, including required reports or other products;",
+    "note": "list item of subdivision 4 (\"The website ... shall include, but not be limited to:\"); content of record -05, not a separate duty; the sub_item_of_parent gate that dropped 2009-A7329-12..20 missed it"
+   },
+   "2023-A611-10": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "9"
+    ],
+    "fields": {},
+    "quote": "e. whether members of a board are eligible for payment of expenses or other compensation in the performance of their duties as members of such board and information on compensation and expenses incurred in the prior and current fiscal years, as well as projected costs for the coming fiscal year;",
+    "note": "list item of subdivision 4 (\"The website ... shall include, but not be limited to:\"); content of record -05, not a separate duty; the sub_item_of_parent gate that dropped 2009-A7329-12..20 missed it"
+   },
+   "2023-A611-11": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "9"
+    ],
+    "fields": {},
+    "quote": "f. meeting minutes and agendas, dates and locations of all meetings held, and to be held within six months, or a location, including but not limited to another website, in which such information can be publicly accessed;",
+    "note": "list item of subdivision 4 (\"The website ... shall include, but not be limited to:\"); content of record -05, not a separate duty; the sub_item_of_parent gate that dropped 2009-A7329-12..20 missed it"
+   },
+   "2023-A611-12": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "9"
+    ],
+    "fields": {},
+    "quote": "g. geographic and other relevant qualifications of all current members of the board, including the county in which the member resides and the background or expertise the member possesses where such background or expertise is required for membership on such board; and",
+    "note": "list item of subdivision 4 (\"The website ... shall include, but not be limited to:\"); content of record -05, not a separate duty; the sub_item_of_parent gate that dropped 2009-A7329-12..20 missed it"
+   },
+   "2023-A611-13": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "9"
+    ],
+    "fields": {},
+    "quote": "h. any other information the commissioner may require. Nothing in this section shall authorize the release or publication of any board member's residential address.",
+    "note": "list item of subdivision 4 (\"The website ... shall include, but not be limited to:\"); content of record -05, not a separate duty; the sub_item_of_parent gate that dropped 2009-A7329-12..20 missed it"
+   },
+   "2023-A611-09": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "4",
+     "9"
+    ],
+    "fields": {},
+    "quote": "d. the size of board membership, current member names, and any qualifications;",
+    "note": "item \"d. the size of board membership...\" is a content item of -05 and is stored as a power although the lead reads \"shall include\""
+   }
+  },
+  "missed": [
+   {
+    "blind": "b3",
+    "quote": "The designated website shall be updated annually",
+    "kind": "duty",
+    "agency": "OGS",
+    "dropped_by": null,
+    "note": "new braced sentence in subdivision 2 (passive; the commissioner designates and keeps the website); no stored or dropped record"
+   }
+  ],
+  "effective_date": {
+   "stored": "2023-03-03; s1 2023-11-01",
+   "computed": "2023-03-03 (immediately); s1 = 2022 chapter S8145 whose s2 this law amends to November 1, 2023",
+   "verdict": "correct",
+   "note": ""
+  }
+ },
+ "2009-A41011": {
+  "records": {
+   "2009-A41011-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Reductions under this section shall commence on September 16, 2010 and be made in accordance with a written allocation plan prepared by the director of the budget, which shall be filed with the state comptroller, the chairman of the senate finance committee and the chairman of the assembly ways and means committee.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOB",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2009-A41011-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The director of the budget shall prepare appropriately reduced certificates, which shall be filed with the state comptroller, the chairman of the senate finance committee and the chairman of the assembly ways and means committee.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOB",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2009-A41011-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Upon request of the director of the budget, the comptroller shall transfer the cash equal to the uniform appropriation reduction to the fmap contingency fund established pursuant to section 99-r of the state finance law to the extent such cash is available.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State Comptroller",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2009-A41011-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "If an extension of enhanced fmap is not enacted by November 15, 2010, the governor, temporary president of the senate, and the speaker of the assembly shall cause their respective appropriate personnel to meet to review the impact of the uniform reductions and discuss potential alternative reductions.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Governor",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2009-A41011-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "If an extension of enhanced fmap is not enacted by November 15, 2010, the governor, temporary president of the senate, and the speaker of the assembly shall cause their respective appropriate personnel to meet to review the impact of the uniform reductions and discuss potential alternative reductions.",
+    "note": "joint actor rule; legislative leader",
+    "fields_at_audit": {
+     "agency": "Governor",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2009-A41011-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "If an extension of enhanced fmap is not enacted by November 15, 2010, the governor, temporary president of the senate, and the speaker of the assembly shall cause their respective appropriate personnel to meet to review the impact of the uniform reductions and discuss potential alternative reductions.",
+    "note": "joint actor rule; legislative leader",
+    "fields_at_audit": {
+     "agency": "Governor",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2009-A41011-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "5"
+    ],
+    "fields": {
+     "deadline_date": "2010-09-16"
+    },
+    "quote": "the individual payments from all undisbursed general fund and state special revenue fund aid to localities appropriations, commencing on September 16, 2010, shall be uniformly reduced by the percentage set forth in the written allocation plan required by this section",
+    "note": "\"commencing on September 16, 2010\" stored as fixed_date with null date"
+   },
+   "2009-A41011-08": {
+    "verdict": "wrong",
+    "criteria": [
+     "5"
+    ],
+    "fields": {
+     "deadline_date": "2011-03-31"
+    },
+    "quote": "On March 31, 2011, the director of the budget shall calculate the difference, if any, between the actual closing balance in the general fund on March 31, 2011 and the closing balance projected by the division of the budget in the 2010-11 enacted budget financial plan.",
+    "note": "\"On March 31, 2011, the director of the budget shall calculate\": fixed_date with null date"
+   },
+   "2009-A41011-09": {
+    "verdict": "wrong",
+    "criteria": [
+     "3",
+     "5"
+    ],
+    "fields": {
+     "agency": "DOB",
+     "actor_raw": "the director of the budget",
+     "deadline_date": "2011-04-15"
+    },
+    "quote": "the amount of the difference shall be disbursed by April 15, 2011 or, in the case of Medicaid, as soon as practicable following the receipt of all necessary federal approvals, to uniformly mitigate the uniform reductions made pursuant to section one of this act",
+    "note": "passive \"the amount of the difference shall be disbursed by April 15, 2011\"; actor_raw is the subject, Unspecified, date null"
+   },
+   "2009-A41011-10": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "State Comptroller"
+    },
+    "quote": "Monies in the fund shall be disbursed, when allocated, for the purpose of making payments that had previously been subject to reduction pursuant to law as a result of Federal government failure to enact an extension of enhanced Federal Medical Assistance Percentages",
+    "note": "agency \"Monies in the Fund\" is the passive subject of \"Monies in the fund shall be disbursed\""
+   },
+   "2009-A41011-11": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "State Comptroller (upon request of DOB)"
+    },
+    "quote": "monies in the fund on such date not required to be paid pursuant to the provisions of Section two of the chapter of the laws of two thousand ten which added this Section may be transferred to the general fund",
+    "note": "agency \"Monies in the Fund\"; \"may be transferred to the general fund upon the request of the director of the budget\""
+   },
+   "2009-A41011-12": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "for the 2010-11 school year shall be due and payable on or before September 30, 2010.",
+    "note": "Part B s3 \"any payment otherwise due ... shall be due and payable on or before September 30, 2010\": payment-date entitlement with no named payer; quote fragment"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2010-08-04",
+   "computed": "2010-08-04 (Part A immediately)",
+   "verdict": "correct",
+   "note": "Part A expiry April 15, 2011 not stored at law level"
+  }
+ },
+ "2011-A10039": {
+  "records": {
+   "2011-A10039-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner shall not maintain records of any person who checks \"skip this question\".",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOH",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A10039-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner shall ensure that space is provided on the application so that the applicant shall register or decline registration in the donate life registry for organ and tissue donations",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DMV",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A10039-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "and shall provide space on the application so that the applicant may register in the New York state organ and tissue donor registry under section forty-three hundred ten of the public health law with the following stated on the application in clear and conspicuous type:",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DMV",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2011-A10039-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "5",
+     "6"
+    ],
+    "fields": {
+     "deadline_kind": "on_effective_date",
+     "recurrence": "one-time"
+    },
+    "quote": "the commissioner shall ensure that space is provided on any consent form so that the applicant shall register or decline registration in the donate life registry for organ and tissue donations under this section",
+    "note": "\"the commissioner shall ensure that space is provided on any consent form\" is a form setup duty; the DMV twins -03/-05 carry on_effective_date"
+   },
+   "2011-A10039-04": {
+    "verdict": "not_real",
+    "criteria": [
+     "9"
+    ],
+    "fields": {},
+    "quote": "The commissioner of the department of Health shall not maintain records of any person who checks \"skip this question\".",
+    "note": "\"The commissioner of the department of Health shall not maintain records ...\" is reprinted word for word in PHL 4310(2), VTL 490(2) and VTL 502(1); same DOH prohibition as -02"
+   },
+   "2011-A10039-06": {
+    "verdict": "not_real",
+    "criteria": [
+     "9"
+    ],
+    "fields": {},
+    "quote": "The commissioner of the department of Health shall not maintain records of any person who checks \"skip this question\".",
+    "note": "third copy of the same DOH prohibition (VTL 502(1)); duplicate of -02"
+   },
+   "2011-A10039-07": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "the commissioners of health and motor vehicles may implement sections two, four and five of this act within their respective jurisdictions before that date",
+    "note": "act clause s6 \"provided that the commissioners of health and motor vehicles may implement sections two, four and five of this act ... before that date\" is effective-date boilerplate"
+   },
+   "2011-A10039-08": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "the commissioners of health and motor vehicles may implement sections two, four and five of this act within their respective jurisdictions before that date",
+    "note": "same act-clause early-implementation proviso as -07"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2013-10-03",
+   "computed": "2013-10-03 (one year after 2012-10-03)",
+   "verdict": "correct",
+   "note": "expiry three years after (2016-10-03) not in expires_date"
+  }
+ },
+ "2025-S8830": {
+  "records": {
+   "2025-S8830-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "an application may be made by the attorney general in the name of the people of the state of New York to a court or justice having jurisdiction to issue an injunction, and upon notice to the defendant of not less than fifteen days, to enjoin and restrain the continuance of such violations",
+    "note": "604-ff re-enacts deleted 604-cc(10) with \"not less than fifteen days\" and scope \"this article\"; extends_existing arguable",
+    "fields_at_audit": {
+     "agency": "Attorney General",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2025-S8830-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the attorney general is authorized to take proof and make a determination of the relevant facts and to issue subpoenas in accordance with the civil practice law and rules",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Attorney General",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2025-S8830-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "an injunction may be issued by such court or justice, enjoining or restraining any violation, without requiring proof that any person has, in fact, been injured or damaged thereby",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2025-S8830-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the court may make allowances to the attorney general as provided in section eighty-three hundred three of the civil practice law and rules, and may make direct restitution",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2025-S8830-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "unless the creditor has provided information that would otherwise show the violation was the result of bona fide error, the court may impose a civil penalty for each violation up to five thousand dollars.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2025-S8830-06": {
+    "verdict": "wrong",
+    "criteria": [
+     "7"
+    ],
+    "fields": {
+     "extends_existing": false
+    },
+    "quote": "provided that under no circumstance shall the creditor disclose the contact information of the debtor unless directed by a court and such court shall only direct the disclosure of such information in a manner reasonably calculated to protect the safety of the debtor",
+    "note": "\"such court shall only direct the disclosure ... in a manner reasonably calculated to protect the safety of the debtor\" is a wholly new limit, it widens nothing"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2026-03-18; s1 2026-06-17",
+   "computed": "s1 = S1353 (ch 710, signed 2025-12-19) at its amended 180th day = 2026-06-17",
+   "verdict": "correct",
+   "note": ""
+  }
+ },
+ "2011-A7602": {
+  "records": {
+   "2011-A7602-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Absentee ballots received by the board of elections shall be retained at the board of elections and cast and canvassed pursuant to the provisions of section 9-209 of this chapter",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Boards of elections",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2011-A7602-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "each central board of inspectors shall examine, cast, and canvass the envelopes and the ballots therein contained as nearly as practicable in the following manner",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Boards of elections",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2011-A7602-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "or if there is no name on the envelope, or if the envelope is not sealed, Such envelope shall be laid aside unopened.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Boards of elections",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A7602-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "If there is more than one ballot envelope executed by the same voter, the one bearing the later date of execution shall be accepted and the other rejected.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Boards of elections",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A7602-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "If it cannot be determined which envelope bears the later date, then all Such envelopes shall be rejected.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Boards of elections",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A7602-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "If Such person is found to be registered and has not voted in person, an inspector shall compare the signature, if Any, on each envelope with the signature, if Any, on the registration poll record,",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Boards of elections",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A7602-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "If the signatures are found to correspond, Such inspector shall certify thereto by signing his or her initials in the \"inspector's initials\" line on the computer generated list of registered voters or in the \"remarks\" column as appropriate.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Boards of elections",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A7602-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "If Such person is found to be registered and has not voted in person, and if no challenge is made, or if a challenge made is not sustained, the envelope shall be opened, the ballot or ballots withdrawn without unfolding, and the ballot or ballots deposited in the proper ballot box or boxes, or envelopes",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Boards of elections",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A7602-09": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "If not, the ballot shall be rejected without inspection or unfolding and shall be returned to the envelope which shall be endorsed \"not enrolled.\"",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Boards of elections",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A7602-10": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the inspectors shall enter the words \"absentee vote\" or \"military vote\" in the space reserved for the voter's signature on the aforesaid list or in the \"remarks\" column as appropriate, and shall enter the year and month of the Election on the same line in the spaces provided therefor.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Boards of elections",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A7602-11": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "As each envelope is opened, if one or more of the different kinds of ballots to be voted at the Election are not found therein, the clerks, or inspectors, shall make a memorandum showing what ballot or ballots are missing.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Boards of elections",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A7602-12": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "If a ballot envelope shall contain more than one ballot for the same offices, all the ballots in Such envelope shall be rejected.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Boards of elections",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A7602-13": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the clerks or inspectors shall ascertain the number of Such ballots of each kind which have been deposited in the ballot box by deducting from the number of envelopes opened the number of missing ballots, and shall make a return thereof.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Boards of elections",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A7602-14": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The number of absentee voters' ballots deposited in the ballot box shall be added to the number of other ballots deposited in the ballot box, in order to determine the number of all ballots of each kind to be accounted for in the ballot box.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Boards of elections",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2011-08-03",
+   "computed": "2011-08-03",
+   "verdict": "correct",
+   "note": ""
+  }
+ },
+ "2023-S7538": {
+  "records": {
+   "2023-S7538-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Such fiscal study referenced in subdivision one of this section shall be submitted to the department of state and shall be posted by the department of state on the public facing portion of its website",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2023-S7538-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "7"
+    ],
+    "fields": {
+     "extends_existing": true
+    },
+    "quote": "That a study has not been conducted on the fiscal, service, and taxation interests of the population which would constitute the residents of such village and the population which constitutes the residents of such town in which such village would be established",
+    "note": "adds ground \"g. That a study has not been conducted\" to the existing duty \"shall hear objections\"; an added class widens an existing duty"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2023-12-22",
+   "computed": "2023-12-22",
+   "verdict": "correct",
+   "note": ""
+  }
+ },
+ "2009-A7329": {
+  "records": {
+   "2009-A7329-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the county of Nassau is hereby authorized and empowered to adopt and amend a local law or ordinance establishing a demonstration program imposing monetary liability on the owner of a vehicle For failure of an operator thereof to comply with traffic-control indications in such county",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Counties",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "County of Nassau"
+    }
+   },
+   "2009-A7329-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Such demonstration program shall empower such county to install and operate traffic-control signal photo violation-monitoring devices at no more than fifty intersections within and under the jurisdiction of such county at any one time.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Counties",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "County of Nassau"
+    }
+   },
+   "2009-A7329-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Such demonstration program shall utilize necessary technologies to ensure, to the extent practicable, that photographs produced by such traffic-control signal photo violation-monitoring systems shall not include images that identify the driver, the passengers, or the contents of the vehicle.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Counties",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "County of Nassau"
+    }
+   },
+   "2009-A7329-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The liability of the owner pursuant to this section shall not exceed fifty dollars For each violation; Provided, however, that such local law or ordinance may provide For an additional penalty not in excess of twenty-five dollars For each violation For the failure to respond to a notice of liability within the prescribed time period.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Counties",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "County of Nassau"
+    }
+   },
+   "2009-A7329-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "A notice of liability shall be sent by first class mail to each person alleged to be liable as an owner For a violation of subdivision (d) of section eleven hundred eleven of this article pursuant to this section.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Counties",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "County of Nassau"
+    }
+   },
+   "2009-A7329-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The notice of liability shall be prepared and mailed by Nassau county or by any other entity authorized by such county to prepare and mail such notification of violation.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Counties",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "County of Nassau"
+    }
+   },
+   "2009-A7329-09": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Adjudication of the liability imposed upon owners by this section shall be by the court having jurisdiction over traffic infractions.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2009-A7329-10": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "When a county has established a demonstration program pursuant to this section, all fines and penalties collected under such program shall be made to the county treasurer within the first ten days of the month following collection.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Counties",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "County of Nassau"
+    }
+   },
+   "2009-A7329-21": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the registrant was liable in accordance with section eleven hundred eleven-a or eleven hundred eleven-b of this chapter for a violation of subdivision (d) of section eleven hundred eleven of this chapter, the commissioner or his or her agent shall deny the registration or renewal application",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DMV",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2009-A7329-11": {
+    "verdict": "wrong",
+    "criteria": [
+     "5"
+    ],
+    "fields": {
+     "deadline_date": "2010-06-01"
+    },
+    "quote": "such county shall submit an annual report on the results of the use of a traffic-control signal photo violation-monitoring system to the governor, the temporary president of the senate and the speaker of the assembly on or before June first, two thousand ten and on the same date in each succeeding year",
+    "note": "\"on or before June first, two thousand ten and on the same date in each succeeding year\": fixed_date with null date"
+   },
+   "2009-A7329-23": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Counties",
+     "agency_unit": "County of Nassau"
+    },
+    "quote": "The Nassau county traffic and parking violations agency, as established, may be authorized to assist the Nassau county district court in the disposition and administration of infractions of traffic and parking laws, ordinances, rules and regulations and the liability of owners For violations of subdivision (d) of section eleven hundred eleven of the vehicle and traffic law",
+    "note": "\"The Nassau county traffic and parking violations agency\" is a Nassau County body; local actors resolve to the group with the locality in agency_unit"
+   },
+   "2009-A7329-06": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "A notice of liability shall contain the name and address of the person alleged to be liable as an owner For a violation of subdivision (d) of section eleven hundred eleven of this article pursuant to this section, the registration number of the vehicle involved in such violation,",
+    "note": "\"A notice of liability shall contain the name and address ...\" is the content of the notice mailed under -05/-08, not a separate duty"
+   },
+   "2009-A7329-07": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "The notice of liability shall contain information advising the person charged of the manner and the time in which he or she may contest the liability alleged in the notice.",
+    "note": "\"The notice of liability shall contain information advising ...\" is notice content, part of -05/-08"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2009-05-28",
+   "computed": "2009-05-28 (30th day after 2009-04-28)",
+   "verdict": "correct",
+   "note": ""
+  }
+ },
+ "2023-S7524": {
+  "records": {
+   "2023-S7524-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the chief administrator shall consult with each county clerk in whose county a program has been implemented in the supreme and/or county court, each district attorney in whose county a program has been implemented in criminal cases in the courts of such county, the advisory committees established pursuant to subparagraphs (ii) through (vi) of this paragraph",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2023-S7524-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "implementation of laws affecting the program in the use of electronic means for the commencement of civil actions and proceedings and the service and filing of papers therein in the civil court of the city of New York, the district courts, the city courts outside New York city, and the town and village justice courts",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2023-S7524-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the chief administrator shall consult with the county clerk of a county outside the city of New York before the use of electronic means is to be authorized hereunder in the supreme court or the county court of such county, afford him or her the opportunity to submit comments with respect thereto",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2023-S7524-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "all parties shall be notified clearly, in plain language, about their options to participate in filing by electronic means",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2023-S7524-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "where a party is not represented by counsel, the court shall explain such party's options for electronic filing in plain language, including the option for expedited processing, and shall inquire whether he or she wishes to participate",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2023-S7524-10": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "afford all those with whom he or she consults pursuant to item one of this clause the opportunity to submit comments with respect to the program, which comments, including but not limited to comments related to unrepresented litigants, he or she shall consider and shall post for public review on the office of court administration's website",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2023-S7524-11": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Where the chief administrator requires participation in electronic filing as provided in paragraph one of this subdivision, he or she shall afford counsel the opportunity to opt out of the program, via presentation of a prescribed form to be filed with the clerk of the court where the action is pending.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2023-S7524-20": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "all parties shall be notified clearly, in plain language, about their options to participate in filing by electronic means",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2023-S7524-21": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "where a party is not represented by counsel, the court shall explain such party's options for electronic filing in plain language, including the option for expedited processing, and shall inquire whether he or she wishes to participate",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2023-S7524-22": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "first consult with and obtain the agreement of the district attorney and the criminal defense bar of such county, provide all persons and organizations, or their representative or representatives, who regularly appear in criminal actions or proceedings in the criminal courts of such county with reasonable notice and opportunity to submit comments with respect thereto",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2023-S7524-23": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "afford all those with whom he or she consults pursuant to item one of this clause the opportunity to submit comments with respect to the program, which comments, including but not limited to comments related to unrepresented litigants, he or she shall consider and shall post for public review on the office of court administration's website",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2023-S7524-24": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Where the chief administrator requires participation in electronic filing as provided in paragraph (b) of this subdivision, he or she shall afford counsel the opportunity to opt out of the program, via presentation of a prescribed form to be filed with the court where the criminal action is pending.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2023-S7524-25": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Notwithstanding any other provision of this section, no paper or document that is filed by electronic means in a criminal proceeding shall be available for public inspection on-line.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2023-S7524-28": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "all parties shall be notified clearly, in plain language, about their options to participate in filing by electronic means",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2023-S7524-29": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "where a party is not represented by counsel, the court shall explain such party's options for electronic filing in plain language, including the option for expedited processing, and shall inquire whether he or she wishes to participate",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2023-S7524-30": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "first consult with and obtain the agreement of each authorized presentment agency, child protective agency, the family court bar providing representation to parents, and the family court bar providing representation to children",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2023-S7524-31": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "afford all those with whom he or she consults pursuant to clause (A) of this subparagraph with a reasonable opportunity to submit comments with respect to the program, which comments he or she shall consider and shall post for public review on the office of court administration's website",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2023-S7524-32": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "consult with the members of the advisory committee continued pursuant to subparagraph (vi) of paragraph (u) of subdivision two of section two hundred twelve of the judiciary law",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2023-S7524-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the chief administrator of the courts, with the approval of the administrative board of the courts, may promulgate rules authorizing a program in the use of facsimile transmission only in the court of claims and electronic means in the courts of New York having civil jurisdiction for: (i) the commencement of civil actions and proceedings",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2023-S7524-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Participation in this program may be required or may be voluntary as provided by the chief administrator, except that it shall be strictly voluntary as to any party to an action or proceeding who is not represented by counsel.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2023-S7524-13": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Notwithstanding any other provision of law, the chief administrator of the courts may authorize a program in the use of facsimile transmission and electronic means in the court as provided in article twenty-one-A of the civil practice law and rules.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2023-S7524-14": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Notwithstanding any other provision of law, the chief administrator of the courts may authorize a program in the use of electronic means in cases in the criminal court of the city of New York as provided in section 10.40 of the criminal procedure law.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2023-S7524-15": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the chief administrator of the courts may authorize a program in the use of electronic means in civil cases in a district court as provided in article twenty-one-A of the civil practice law and rules, and in criminal cases as provided in section 10.40 of the criminal procedure law.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2023-S7524-16": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the chief administrator of the courts may authorize a program in the use of electronic means in civil cases in a city court as provided in article twenty-one-A of the civil practice law and rules, and in criminal cases as provided in section 10.40 of the criminal procedure law.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2023-S7524-17": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the chief administrator of the courts may authorize a program in the use of electronic means in civil cases in a justice court as provided in article twenty-one-A of the civil practice law and rules, and in criminal cases as provided in section 10.40 of the criminal procedure law.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2023-S7524-18": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the chief administrator, with the approval of the administrative board of the courts, may promulgate rules authorizing a program in the use of electronic means (\"e-filing\") in the courts of New York having criminal jurisdiction for: (i) the filing with a court of an accusatory instrument for the purpose of commencement of a criminal action or proceeding",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2023-S7524-19": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Participation in this program may be required or may be voluntary as provided by the chief administrator, except that it shall be strictly voluntary as to any party to an action or proceeding who is not represented by counsel unless such party, upon his or her request, chooses to participate.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2023-S7524-26": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the chief administrator, with the approval of the administrative board of the courts, may promulgate rules authorizing a program in the use of electronic means (\"e-filing\") in the family court for: (1) the origination of proceedings in such court, and (2) the filing and service of papers in pending proceedings.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2023-S7524-27": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Participation in this program may be required or may be voluntary as provided by the chief administrator, except that it shall be strictly voluntary as to any party to an action or proceeding who is not represented by counsel unless such party, upon his or her request, chooses to participate.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2023-S7524-03": {
+    "verdict": "wrong",
+    "criteria": [
+     "2"
+    ],
+    "fields": {
+     "quote": "(vi) text: \"The chief administrator shall maintain an advisory committee ... for the origination of proceedings in family court\" (deletion of [juvenile delinquency] ... [abuse or neglect proceedings] widens it)"
+    },
+    "quote": "him or her in the implementation of laws affecting the program in the use of electronic means for the commencement of civil actions and proceedings and the service and filing of papers therein in the civil court of the city of New York, the district courts, the city courts outside New York city, and the town and village justice courts.",
+    "note": "citation is Judiciary Law 212(2)(u)(vi) but the quote is copied from (iv), so it repeats -02"
+   },
+   "2023-S7524-09": {
+    "verdict": "wrong",
+    "criteria": [
+     "4"
+    ],
+    "fields": {
+     "kind": "duty"
+    },
+    "quote": "first consult with members of the organized bar including but not limited to city, state, county, and women's bar associations and, where they practice in such court in such county, with (a) institutional service providers, (b) not-for-profit legal service providers",
+    "note": "item under the lead \"the chief administrator shall:\" (\"(1) first consult with members of the organized bar ...\"): mandatory lead, stored as power"
+   },
+   "2023-S7524-12": {
+    "verdict": "wrong",
+    "criteria": [
+     "4"
+    ],
+    "fields": {
+     "kind": "power"
+    },
+    "quote": "To the extent practicable, rules promulgated by the appellate division in each judicial department pursuant to this section shall be uniform and may apply to any appellate term established by an appellate division.",
+    "note": "the only new matter is \"{{and may apply to any appellate term established by an appellate division}}\": a may clause (Nov 12 ruling: each clause takes its own modal)"
+   }
+  },
+  "missed": [
+   {
+    "blind": "b25",
+    "quote": "This act shall take effect immediately[; provided that sections four, five, six and seven of this act shall each expire and be deemed repealed September 1, 2027",
+    "kind": "power",
+    "agency": "Unified Court System",
+    "dropped_by": null,
+    "note": "s18 strikes the 2027 sunset of chapter 237 of 2015 (the e-filing programs), a deletion that widens an existing authority (extends_existing true); an earlier chapter's sunset is an extension record, not this act's own act clause"
+   }
+  ],
+  "effective_date": {
+   "stored": "2024-12-13",
+   "computed": "2024-12-13",
+   "verdict": "correct",
+   "note": ""
+  }
+ },
+ "2025-S7120": {
+  "records": {
+   "2025-S7120-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner shall not issue a certificate of title to a manufactured home with respect to which there has been filed an affidavit of affixation pursuant to paragraph five of subdivision (a) of section twenty-one hundred seventeen-a of this article",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DMV",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2025-S7120-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner shall file, upon receipt, each affidavit of affixation that is delivered in accordance with subdivision (b) of section three hundred forty-four-b of the real property law",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DMV",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2025-S7120-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner shall maintain a record of each affidavit of affixation the commissioner files in accordance with subdivision (e) of this section.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DMV",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2025-S7120-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner shall file, upon receipt, each application for surrender of the manufacturer's certificate of origin relating to a manufactured home that is delivered in accordance with section twenty-one hundred seventeen-a of this article",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DMV",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2025-S7120-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner shall maintain a record of each manufactured home manufacturer's certificate of origin that the commissioner accepts for surrender as provided in section twenty-one hundred seventeen-a of this article.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DMV",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2025-S7120-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner shall file, upon receipt, each application for surrender of the certificate of title relating to a manufactured home that is delivered in accordance with section twenty-one hundred seventeen-b of this article",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DMV",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2025-S7120-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner shall maintain a record of each manufactured home certificate of title that the commissioner accepts for surrender as provided in section twenty-one hundred seventeen-b of this article.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DMV",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2025-S7120-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner shall file, upon receipt, each application for confirmation of conversion relating to a manufactured home that is delivered in accordance with section twenty-one hundred seventeen-c of this article",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DMV",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2025-S7120-09": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner shall maintain a record of each application for confirmation of conversion accepted as provided in section twenty-one hundred seventeen-c of this article.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DMV",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2025-S7120-10": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Notwithstanding the provisions of any other law, the commissioner shall maintain the records required by this section indefinitely.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DMV",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2025-S7120-11": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner shall establish electronic public access to the records maintained in accordance with subdivisions (f), (h), (j) and (l) of this section.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DMV",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2025-S7120-12": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the commissioner shall cancel the manufacturer's certificate of origin and update the commissioner's records in accordance with the provisions of subdivisions (g) and (h) of section twenty-one hundred seven of this article and provide written acknowledgment of compliance with the provisions of this section",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DMV",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2025-S7120-13": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Upon written request, the commissioner shall provide written acknowledgment of compliance with the provisions of this section.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DMV",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2025-S7120-14": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner shall not accept for surrender a certificate of title to a manufactured home unless and until any liens pursuant to section twenty-one hundred five-a and any security interests pursuant to sections twenty-one hundred seven and twenty-one hundred eighteen of this article have been released.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DMV",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2025-S7120-15": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the commissioner shall cancel the certificate of title and update the commissioner's records in accordance with the provisions of subdivisions (i) and (j) of section twenty-one hundred seven of this article.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DMV",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2025-S7120-16": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner shall also provide written acknowledgment of compliance with the provisions of this section to each person identified on the application for surrender of a certificate of title under paragraph six of subdivision (a) of this section.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DMV",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2025-S7120-17": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Upon written request, the commissioner shall provide written acknowledgment of compliance with the provisions of this section.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DMV",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2025-S7120-18": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the commissioner shall update the commissioner's records in accordance with the provisions of subdivisions (f), (k) and (l) of section twenty-one hundred seven of this article.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DMV",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2025-S7120-19": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner shall also provide written acknowledgment of compliance with the provisions of this section to each person identified on the application for confirmation of conversion under paragraph seven of subdivision (a) of this section.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DMV",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2025-S7120-20": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Upon written request, the commissioner shall provide written acknowledgment of compliance with the provisions of this section.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DMV",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2025-S7120-21": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the commissioner shall not file an affidavit of affixation, nor revoke the certificate of title, nor issue a certificate of title under subdivision (a) of section twenty-one hundred seven of this article,",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DMV",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2025-S7120-23": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the recording officer shall immediately cause the affidavit of affixation and any attachments thereto, to be duly recorded and indexed in the record of deeds.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Counties",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2025-S7120-24": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the recording officer shall endorse the affidavit as \"recorded in land records\", setting forth thereon the indexing information for the affidavit of affixation and the recording officer shall forthwith forward the recorded original affidavit of affixation to the person designated therein for filing with the commissioner of motor vehicles.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Counties",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2025-S7120-22": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "the commissioner shall not suspend or revoke a certificate of title to a manufactured home by reason of the fact that, at any time, in any manner, it shall have become attached to real property.",
+    "note": "VTL 2124 \"the commissioner shall not suspend or revoke ... attached to [realty] {{real property}}\" is reprinted text; the only new matter is a word swap and a narrowing \"Except as provided\" lead"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2026-12-12",
+   "computed": "2026-12-12 (one year after 2025-12-12)",
+   "verdict": "correct",
+   "note": ""
+  }
+ },
+ "2009-A40023": {
+  "records": {
+   "2009-A40023-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the commissioner of education, in consultation with the state board for nursing and the state board of pharmacy, shall promulgate guidelines which allow for the prefill of up to a fifteen day supply of medication",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "SED",
+     "kind": "duty",
+     "deadline_kind": "days_after_effective",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2009-A40023-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the commissioner of health shall apply zero trend factor projections attributable to the 2010 calendar year in accordance with paragraph (c) of subdivision 10 of section 2807-c of the public health law",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOH",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2009-A40023-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner of health shall adjust rates of payment to reflect the exclusion pursuant to this section of such specified trend factor projections or adjustments.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOH",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2009-A40023-11": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the comptroller is hereby authorized and directed to transfer, at the request of the director of the budget, up to $575 million from the unencumbered balance of any special revenue fund or account, or combination of funds and accounts, to the general fund.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State Comptroller",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2009-A40023-13": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the insurance department shall finance the annual expenses related to its activities and",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DFS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2009-A40023-16": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the comptroller shall at the direction of the director of the division of the budget, transfer from the general fund to the New York State energy research and development authority moneys sufficient to meet such disbursements.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State Comptroller",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2009-A40023-19": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the commissioner shall reduce payments due to each district for the two thousand nine--two thousand ten school year pursuant to this Section by an amount equal to the supplemental deficit reduction assessment computed for such district",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "SED",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2009-A40023-20": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner shall compute such supplemental deficit reduction assessment and shall provide a schedule of such reduction in payments to the state comptroller, the director of the budget, the chair of the senate Finance Committee and the chair of the assembly Ways and Means Committee.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "SED",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2009-A40023-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the authority is hereby authorized to contribute two hundred million dollars to the state treasury to the credit of the general fund.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "BPCA",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2009-A40023-09": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the commissioner of health shall be authorized, with the approval of the state budget director, to delay such payments which are due prior to April 1, 2010, until the later of April 1, 2010 or the enactment of a budget for the 2010-2011 state fiscal year",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOH",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2009-A40023-18": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the comptroller is hereby authorized to transfer upon request of the director of the budget, $29,000,000 on or before March 31, 2010, from the city university special revenue fund (377), city university stabilization account (a1), to the general fund.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State Comptroller",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2009-A40023-01": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "7"
+    ],
+    "fields": {},
+    "quote": "The superintendent shall develop and implement a methodology to cover the cost to any such group purchaser for providing the coverage required in subparagraph (a) of this paragraph.",
+    "note": "\"The superintendent shall develop and implement a methodology to [fully] cover the cost\" is pre-existing; the new matter \"moneys appropriated ... to the extent of funds available\" only narrows its funding, and extends_existing true is wrong"
+   },
+   "2009-A40023-02": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "7"
+    ],
+    "fields": {},
+    "quote": "(B) The superintendent shall develop and implement a methodology to cover the cost to any such group contract holder for providing the coverage required in paragraph one of this subsection.",
+    "note": "\"The superintendent shall develop and implement a methodology to [fully] cover the cost\" is pre-existing; the new matter \"moneys appropriated ... to the extent of funds available\" only narrows its funding, and extends_existing true is wrong"
+   },
+   "2009-A40023-03": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "7"
+    ],
+    "fields": {},
+    "quote": "(B) The superintendent shall develop and implement a methodology to cover the cost to any such group remittance group and group contract holder for providing the coverage required in paragraph one of this subsection.",
+    "note": "\"The superintendent shall develop and implement a methodology to [fully] cover the cost\" is pre-existing; the new matter \"moneys appropriated ... to the extent of funds available\" only narrows its funding, and extends_existing true is wrong"
+   },
+   "2009-A40023-06": {
+    "verdict": "wrong",
+    "criteria": [
+     "5"
+    ],
+    "fields": {
+     "deadline_date": "2011-04-01"
+    },
+    "quote": "The commissioner of education, in consultation with such state boards, shall examine the experiences pursuant to the guidelines established pursuant to this section and, on or before April 1, 2011, recommend to the governor and the legislature any changes as may be necessary to this section.",
+    "note": "\"on or before April 1, 2011, recommend\": fixed_date with null date"
+   },
+   "2009-A40023-12": {
+    "verdict": "wrong",
+    "criteria": [
+     "5"
+    ],
+    "fields": {
+     "deadline_date": "2010-03-31"
+    },
+    "quote": "the dormitory authority of the state of New York is authorized and directed, upon the request of the director of the budget, to transfer $26,000,000 to the general fund on or before March 31, 2010.",
+    "note": "\"on or before March 31, 2010\": fixed_date with null date"
+   },
+   "2009-A40023-14": {
+    "verdict": "wrong",
+    "criteria": [
+     "5"
+    ],
+    "fields": {
+     "deadline_date": "2010-03-31"
+    },
+    "quote": "the comptroller is hereby authorized and directed to transfer, at the request of the director of the budget, up to $4,940,000 from the unencumbered balance of the special revenue fund (339), insurance department account (b6) to the general fund on or before March 31, 2010.",
+    "note": "\"on or before March 31, 2010\": fixed_date with null date"
+   },
+   "2009-A40023-15": {
+    "verdict": "wrong",
+    "criteria": [
+     "5"
+    ],
+    "fields": {
+     "deadline_date": "2010-03-31"
+    },
+    "quote": "the New York State energy research and development authority is authorized and directed to make a contribution to the state treasury to the credit of the general fund in the amount of $90,000,000",
+    "note": "\"on or before March 31, 2010\": fixed_date with null date"
+   },
+   "2009-A40023-10": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "in the state fiscal year commencing April first, two thousand nine the deficit reduction adjustment to the base level grants of certain cities pursuant to paragraph e-one of this subdivision shall be made on or before March fifteenth, two thousand ten.",
+    "note": "Part D \"the deficit reduction adjustment to the base level grants ... shall be made on or before March fifteenth\": an aid payment timing with no named actor (Unspecified)"
+   },
+   "2009-A40023-17": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "Such transfers shall be made only upon certification of need by the director of the division of the budget, with copies of such certification filed with the chairperson of the senate finance committee, the chairperson of the assembly ways and means committee and the state comptroller.",
+    "note": "\"Such transfers shall be made only upon certification of need by the director of the division of the budget\": a condition precedent on -16"
+   },
+   "2009-A40023-21": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "Funds shall be apportioned to each school district in an amount equal to the supplemental deficit reduction assessment computed pursuant to subparagraph 3 of paragraph d of subdivision 1 of section 3609-a of the education law.",
+    "note": "\"Funds shall be apportioned to each school district ...\": aid entitlement with the amount as subject"
+   },
+   "2009-A40023-22": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "3"
+    ],
+    "fields": {},
+    "quote": "the district attorney's office shall retain a percentage of the remaining such monies in recognition that such monies were recovered as a result of investigations undertaken by the district attorney's office.",
+    "note": "\"the district attorney's office shall retain a percentage ... in recognition that such monies were recovered\": the DA keeps money, an entitlement; agency Cities / \"City of One Million\" is junk too"
+   },
+   "2009-A40023-23": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "NYC district attorneys (county DAs of New York City)",
+     "agency_unit": null
+    },
+    "quote": "The remainder of such monies shall be paid by the district attorney's office to the state and to the county in equal amounts within thirty days of receipt, where disposition of such monies is not otherwise prescribed by law.",
+    "note": "\"shall be paid by the district attorney's office to the state and to the county\": unit \"City of One Million\" is a population phrase, not a body"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2009-12-04",
+   "computed": "2009-12-04 (every Part immediately)",
+   "verdict": "correct",
+   "note": ""
+  }
+ },
+ "2023-S7537": {
+  "records": {
+   "2023-S7537-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "There is hereby established within the department of state a village incorporation commission.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOS",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2023-S7537-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commission shall: a. accept petitions filed pursuant to this article;",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "Village Incorporation Commission"
+    }
+   },
+   "2023-S7537-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "accept petitions filed pursuant to this article; b. hold hearings as required by this article;",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "Village Incorporation Commission"
+    }
+   },
+   "2023-S7537-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "accept and deposit with the state comptroller all such monies required to be paid by those seeking to incorporate a village pursuant to this article",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "Village Incorporation Commission"
+    }
+   },
+   "2023-S7537-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "d. evaluate petitions filed pursuant to this article and make decisions with regard to whether a village incorporation election shall proceed based upon the commission's judgment of the criteria established in sections 2-200 and 2-206 of this article and any other requirements established in this article.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "Village Incorporation Commission"
+    }
+   },
+   "2023-S7537-09": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the village incorporation commission established pursuant to section 2-259 of this article shall cause to be posted in five public places located in the territory where such village shall be incorporated and also to be published at least twice",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": "Village Incorporation Commission"
+    }
+   },
+   "2023-S7537-10": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The village incorporation commission established pursuant to section 2-259 of this article shall meet at the time and place specified in such notice and shall hear objections which may be presented as to the incorporation based upon any of the following grounds",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": "Village Incorporation Commission"
+    }
+   },
+   "2023-S7537-11": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "2. The commission shall conduct the hearing. 3. All objections must be in writing",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": "Village Incorporation Commission"
+    }
+   },
+   "2023-S7537-12": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the village incorporation commission established pursuant to section 2-259 of this article shall determine whether the petition complies with the requirements of this article and shall make and sign a decision as to whether a village incorporation shall proceed to election pursuant to the criteria established in section 2-259 of this article",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": "Village Incorporation Commission"
+    }
+   },
+   "2023-S7537-13": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "shall be filed by the commission within fifteen days after the hearing is concluded, with the town clerk of the same town in which the original copy of the petition was filed.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": "Village Incorporation Commission"
+    }
+   },
+   "2023-S7537-14": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the expenses incurred by the towns in which any part of such territory is located for payment of cost of posting, publishing and serving required notices, stenographic services and services of inspectors of election shall be paid from the fund deposited with the village incorporation commission established pursuant to section 2-259 of this article",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": "Village Incorporation Commission"
+    }
+   },
+   "2023-S7537-15": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The first study shall consist of a feasibility assessment, which shall examine the proposed village's ability to provide services to its population in an efficient manner. The feasibility study shall also evaluate the proposed village's fiscal capacity to provide these services",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "Village Incorporation Commission"
+    }
+   },
+   "2023-S7537-16": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The second study shall consist of an impact assessment that shall evaluate the fiscal and operational effects of incorporation on the surrounding town and the rest of the local area. These impacts shall include fiscal, service, political, environmental, and land use impacts.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "Village Incorporation Commission"
+    }
+   },
+   "2023-S7537-18": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The report required pursuant to paragraph c of this subdivision shall be published on the public facing portion of the department of state's website",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOS",
+     "kind": "duty",
+     "deadline_kind": "days_after_effective",
+     "extends_existing": false,
+     "agency_unit": "Village Incorporation Commission"
+    }
+   },
+   "2023-S7537-20": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the commission shall post a notice of its decision on the public-facing portion of the department of state's website.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "Village Incorporation Commission"
+    }
+   },
+   "2023-S7537-24": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "monies constituting the funds of the village incorporation commission established pursuant to section 2-259 of the village law shall be deposited with the state comptroller and held for the purposes of the village incorporation commission established in article two of the village law",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State Comptroller",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2023-S7537-17": {
+    "verdict": "wrong",
+    "criteria": [
+     "5"
+    ],
+    "fields": {
+     "deadline_kind": "days_after_effective",
+     "deadline_date": "2026-01-01"
+    },
+    "quote": "the village incorporation commission shall also produce a report on its recommendations with regard to the village incorporation process pursuant to this article.",
+    "note": "report is due with the transmission \"on or before two years from the effective date of this section\" (para d), not on_effective_date"
+   },
+   "2023-S7537-19": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency_unit": null
+    },
+    "quote": "the secretary of state or his or her designee shall transmit the commission's findings and recommendations to the speaker of the assembly, the temporary president of the senate, and the governor on or before two years from the effective date of this section.",
+    "note": "actor is \"the secretary of state or his or her designee\", not the commission"
+   },
+   "2023-S7537-21": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "No village incorporation election shall proceed in the event the commission rules adversely to such incorporation, except pursuant to the provisions of section 2-210 of this article.",
+    "note": "\"No village incorporation election shall proceed in the event the commission rules adversely\": the consequence of decision -08, with no actor"
+   },
+   "2023-S7537-22": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "No village incorporation election shall proceed until January first, two thousand twenty-four.",
+    "note": "\"No village incorporation election shall proceed until January first, two thousand twenty-four\": a start cutoff, not an actor duty (criterion 5: a cutoff is not a deadline)"
+   },
+   "2023-S7537-23": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "The decision of the village incorporation commission established pursuant to section 2-259 of this article as to whether a village incorporation shall proceed to election shall be subject to judicial review in the manner provided in article seventy-eight of the civil practice law and rules.",
+    "note": "\"shall be subject to judicial review in the manner provided in article seventy-eight\": reprinted review clause with the decider renamed; it grants courts no new power"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2024-01-01",
+   "computed": "2024-01-01",
+   "verdict": "correct",
+   "note": "s3-a \"shall take effect immediately\" (2023-12-22) is stored as same_as_chapter_unresolved/null, a section-date parser gap"
+  }
+ },
+ "2021-A9493": {
+  "records": {
+   "2021-A9493-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Upon the request of any veteran, the division shall provide counseling and assistance to applicants for a mortgage loan guaranteed by the Servicemen's Readjustment Act of 1944.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Division of Veterans' Services",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "Division of Veterans' Services"
+    }
+   },
+   "2021-A9493-02": {
+    "verdict": "not_real",
+    "criteria": [
+     "9"
+    ],
+    "fields": {},
+    "quote": "Upon the request of any veteran, the division shall provide counseling and assistance to applicants for a mortgage loan guaranteed by the Servicemen's Readjustment Act of 1944.",
+    "note": "VSL 29-a repeats Exec Law 354-f word for word; s4 makes 354-f expire when 29-a takes effect, so the two are successive versions of one duty (cf. the duplicate_provision drop on 2009-A7329-22). Its effective date should also be the section-three date, not 2023-04-15"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2023-04-15; s3 2022-04-09",
+   "computed": "2023-04-15 (120th day after 2022-12-16)",
+   "verdict": "correct",
+   "note": "s3 date 2022-04-09 (Part PP of ch 56 of 2022) not verified"
+  }
+ },
+ "2021-S6783": {
+  "records": {
+   "2021-S6783-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "In accord with the intent of this section, an adjustment and/or exemption to the mandatory continuing education requirement may be granted by the department for reasons of health certified by an appropriate health care professional",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "SED",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2023-05-03",
+   "computed": "2023-05-03 (18 months after 2021-11-03)",
+   "verdict": "correct",
+   "note": ""
+  }
+ }
+}

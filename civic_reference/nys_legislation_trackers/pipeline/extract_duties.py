@@ -1752,6 +1752,75 @@ AI3_UPDATE_THEREAFTER = re.compile(r"^\W*update\s+(?:the|such)\s+\w+(?:\s+\w+)?\
 APPLY_AI4 = True          # Nov 12 2026: a relative clause 'which plan shall be approved by the commissioner' is the approval condition of the aid formula, not a duty
 AI4_PLAN_APPROVED = re.compile(r"^\W*(?:in\s+)?(?:a|an)\s+[\w\s-]{0,60}\bwhich\s+submits\s+a\s+plan\b[^.;]{0,200}\bwhich\s+plan\s+shall\s+be\s+approved\s+by\s+the\s+\w+\b", re.I)
 
+# Nov 13 2026 night (AJ): re-ask noise gates confirmed by two auditors and a blind judge of 89 re-ask changes (quality/nightly/20261113_A.json and _B.json, "_classes").
+APPLY_AJ1 = False         # content items stored as records: 'the website shall include, but not be limited to:' lead and its items a-h, 'the tracking system shall:' items, 'which act shall include the following:' items, 'the following terms shall have the following meanings:' items, 'a notice of liability shall contain ...'
+APPLY_AJ2 = False         # an agency that is only the passive subject phrase ('Monies in the Fund', 'Statewide Electronic Tracking System', 'Website Established By ...'): resolves to the body the sentence names elsewhere, else the record drops as no_actor
+APPLY_AJ3 = False         # deadline_kind fixed_date with a null deadline_date: the date comes from deadline_text through dated_deadline, else the kind is none
+AJ1_THING = r"(?:web\s*sites?|portals?|databases?|(?:tracking|information|data|reporting)\s+systems?|notices?(?:\s+of\s+\w+)?|acts?|local\s+laws?|resolutions?|ordinances?|certificates?|petitions?)"
+AJ1_LEAD = re.compile(r"\b" + AJ1_THING + r"\b[^.:;]{0,160}?\b(?:shall|must)\s+(?:also\s+)?(?:include|contain|set\s+forth)\b[^.:;]{0,80}:\s*(?:\}\})?\s*$"
+                      r"|\b(?:web\s*sites?|(?:tracking|information|data|reporting)\s+systems?)\s+shall\s*:\s*(?:\}\})?\s*$"
+                      r"|\bfollowing\s+terms\s+shall\s+have\s+the\s+following\s+meanings?\s*:\s*(?:\}\})?\s*$", re.I)
+AJ1_NOTICE = re.compile(r"^\W*(?:a|the|such)\s+notices?\s+of\s+(?:liability|violation)\s+shall\s+(?:also\s+)?contain\b", re.I)
+AJ1_OWN_MODAL = re.compile(r"\b(?:shall|must)\b", re.I)
+
+
+def aj1_item(q, span, text):
+    """AJ1: (rule, reason) for a list item under a lead-in that describes what a website, notice, act, tracking system or definition list holds."""
+    if not APPLY_AJ1 or AJ1_OWN_MODAL.search(q):
+        return None
+    lead = item_lead_full(span, text)
+    if not lead:
+        return None
+    tail = lead[-220:]
+    if AJ1_LEAD.search(tail) and not CONTENT_LEAD_NOT.search(tail[-120:]):
+        bump("aj1_content_item")
+        return "sub_item_of_parent", "a list item under a lead-in that describes the content of a website, notice, act, system or definition list; part of the parent record, not a record"
+    return None
+
+
+AJ2_SUBJECT = re.compile(r"^(?:the\s+)?(?:(?:monies|moneys|money)\b|web\s*site\b|(?:statewide\s+)?(?:electronic\s+)?(?:tracking|information|data|reporting)\s+system\b)", re.I)
+AJ2_BODY = re.compile(r"\b(?:the\s+)?((?:[A-Za-z'-]+\s+){0,3}(?:department|office|board|commission|authority|division|agency|corporation|comptroller|commissioner|governor|attorney general|council)(?:\s+of\s+(?:the\s+)?(?:[A-Za-z'-]+\s+){0,3}[A-Za-z'-]+)?)", re.I)
+
+
+def aj2_passive(o):
+    """AJ2: the agency is the actor phrase itself and the phrase is a fund, money, website or tracking-system subject."""
+    if not APPLY_AJ2 or o.get("agency_group"):
+        return False
+    ar = re.sub(r"\s+", " ", (o.get("actor_raw") or "").strip())
+    ag = re.sub(r"\s+", " ", (o.get("agency") or "").strip())
+    norm = lambda x: re.sub(r"^(?:the|a|an)\s+", "", x, flags=re.I).lower()
+    return bool(ar) and norm(ar) == norm(ag) and bool(AJ2_SUBJECT.match(norm(ar)))
+
+
+def aj2_named_body(o, text):
+    """AJ2: the government body the quote (or the list item's lead-in) names besides the passive subject: (canon, full) or None."""
+    q = o.get("quote") or ""
+    ctx = q
+    sp = locate_span(q, text)
+    if sp:
+        lead = item_lead_full(sp, text)
+        if lead:
+            ctx = lead[-400:] + " " + q
+    ctx = re.sub(r"\{\{|\}\}", "", ctx)
+    subj = (o.get("actor_raw") or "").strip()
+    if subj:
+        ctx = ctx.replace(subj, " ")
+    for m in AJ2_BODY.finditer(ctx):
+        cand = re.sub(r"\s+", " ", m.group(1)).strip()
+        if re.match(r"(?i)^(?:such|said|any|each|every|a|an)\b", cand):
+            continue
+        words = cand.split()
+        for i in range(len(words)):          # drop leading words ('disbursed by the department of health'), then trailing ones
+            for j in range(len(words), i, -1):
+                sub = " ".join(words[i:j])
+                if not AJ2_BODY.fullmatch(sub) and not AJ2_BODY.fullmatch("the " + sub):
+                    continue
+                canon, full = eo.match_agency(sub, LOOKUP, BY_CANON)
+                if canon and canon in BY_CANON and BY_CANON[canon].get("jurisdiction") == "state":
+                    return canon, full
+    return None
+
+
 
 APPLY_AG11 = True         # Nov 12 2026 (coordinator AG11): 'The court shall have [up to 3 words] jurisdiction of ...' and list items under that lead grant a power (T5 precedent)
 AG11_JURIS = re.compile(r"\bshall\s+have\s+(?:[\w'-]+\s+){0,3}?jurisdiction\b", re.I)
@@ -2324,6 +2393,9 @@ def gate_record(o, text, has_markers):
         return "condition_of_other_record", "a procedural proviso on a denial exception ('any agency considering denying access shall proceed in accordance with subdivision six'): part of the exception record"
     if APPLY_AI3 and AI3_UPDATE_THEREAFTER.search(q):
         return "condition_of_other_record", "an update cycle ('update the report at least every three months thereafter') split from the posting record in the same sentence"
+    if APPLY_AJ1 and (AJ1_NOTICE.search(q) or (q.rstrip().endswith(":") and AJ1_LEAD.search(q[-260:]) and not CONTENT_LEAD_NOT.search(q[-120:]))):
+        bump("aj1_content_sentence")
+        return "sub_item_of_parent", "a lead-in or sentence that lists the content of a website, notice, act or system ('the website shall include ...:', 'a notice of liability shall contain ...'); part of the parent record, not a record"
     if APPLY_AI4 and AI4_PLAN_APPROVED.search(q):
         return "condition_of_other_record", "a plan-approval clause inside an aid formula ('a library system which submits a plan, which plan shall be approved by the commissioner'): a condition of the aid, not a duty"
     if APPLY_AA2 and AA2_BASED_ON.search(q):
@@ -2402,6 +2474,9 @@ def gate_record(o, text, has_markers):
         if sec and re.search(r"\b11\.00\b[^.]{0,80}local finance law|local finance law[^.]{0,80}\b11\.00\b", hdr + " " + sec[:400], re.I):
             return "local_finance_useful_life", "Local Finance Law section 11.00 period of probable usefulness"
         sent, (sl, sr) = context_sentence(span, text)
+        ai = aj1_item(q, span, text)
+        if ai:
+            return ai
         if not VERBISH.search(q) and not VERBISH.search(sent) and not (WILL_DUTY.search(q) or WILL_DUTY.search(sent)):      # M11: 'the director will report' is a duty
             lead = list_lead_in(span, text)
             if lead and (VERBISH.search(lead) or TO_VERB.search(lead)):          # a list entry: the duty is in the lead-in sentence
@@ -4306,6 +4381,104 @@ def sunset_extension_records(law, text, eff, existing, res):
     return out, unnamed
 
 
+APPLY_HOLDER_VERDICTS = True          # Nov 13 2026: data/sunset_holder_verdicts.json, a blind judgment of every stored sunset-extension record; private and not_extension drop, a named government holder sets the agency, unclear and 'unknown government body' stay as stored
+HOLDER_VERDICTS_FILE = DATA / "sunset_holder_verdicts.json"
+HOLDER_VERDICTS_BY_LAW = {}
+HOLDER_VERDICTS_MATCHED = set()
+HOLDER_VERDICTS_LOADED = [False]
+
+
+def _hv_norm(q):
+    return re.sub(r"\s+", " ", re.sub(r"\{\{|\}\}", "", q or "")).strip().lower()
+
+
+def load_holder_verdicts():
+    if HOLDER_VERDICTS_LOADED[0]:
+        return HOLDER_VERDICTS_BY_LAW
+    HOLDER_VERDICTS_LOADED[0] = True
+    if HOLDER_VERDICTS_FILE.exists():
+        for vid, v in json.load(open(HOLDER_VERDICTS_FILE)).get("records", {}).items():
+            HOLDER_VERDICTS_BY_LAW.setdefault(v["law"], []).append((vid, v))
+    return HOLDER_VERDICTS_BY_LAW
+
+
+def holder_verdict_for(law_key, quote):
+    """(id, verdict) for the sunset-extension verdict of this law that matches the quote: the first 200 characters, else overlap() >= 0.8; None otherwise."""
+    cands = load_holder_verdicts().get(law_key) or []
+    nq = _hv_norm(quote)
+    if not nq:
+        return None
+    for vid, v in cands:
+        if _hv_norm(v.get("quote"))[:200] == nq[:200]:
+            return vid, v
+    best = max(((overlap(quote, v.get("quote") or ""), vid, v) for vid, v in cands), default=(0, None, None), key=lambda t: t[0])
+    return (best[1], best[2]) if best[0] >= 0.8 else None
+
+
+def holder_resolves(o, holder, text, law):
+    """Resolve a judged holder name through the same agency chain a U1 record gets; returns the resolved field dict or None."""
+    if not holder or re.search(r"unknown government body", holder, re.I):
+        return None
+    cands = [holder]
+    base = re.sub(r"\s*\([^)]*\)", "", holder).strip()
+    if base and base != holder:
+        cands.append(base)
+    cands += [m.strip() for m in re.findall(r"\(([^)]*)\)", holder)]
+    for cand in cands:
+        t = {**o, "actor_raw": cand, "agency": cand, "agency_full": cand, "agency_matched": False}
+        for k in ("agency_group", "agency_unit", "jurisdiction", "agency_org_type", "actor_unresolved"):
+            t.pop(k, None)
+        canon, full = eo.match_agency(cand, LOOKUP, BY_CANON)
+        if canon:
+            t.update(agency=canon, agency_full=full, agency_matched=True)
+        attach_jurisdiction(t)
+        run_agency_fixes(t, text, law)
+        if t.get("agency_matched") and t.get("agency") not in (None, "Unspecified"):
+            return t
+    return None
+
+
+def apply_holder_verdicts(law, text, lists):
+    """Match each sunset-extension record to its verdict by law and quote; drop private and not_extension, set the agency of a named government holder."""
+    if not APPLY_HOLDER_VERDICTS or law["key"] not in load_holder_verdicts():
+        return
+    for lst in lists:
+        keep = []
+        for o in lst:
+            hv = holder_verdict_for(law["key"], o.get("quote") or "")
+            if not hv:
+                keep.append(o); continue
+            vid, v = hv
+            HOLDER_VERDICTS_MATCHED.add(vid)
+            verdict = v.get("verdict")
+            if verdict in ("private", "not_extension"):
+                o["matter_id"] = law["key"]
+                if verdict == "private":
+                    drop(o, "sunset_private_holder", "blind judgment: the extended provisions bind a private party, not a government body (%s)" % (v.get("why") or "")[:160])
+                else:
+                    drop(o, "sunset_not_extension", "blind judgment: the sentence does not extend an earlier chapter's government duty or power (%s)" % (v.get("why") or "")[:160])
+                bump("holder_verdict_" + verdict)
+                continue
+            if verdict == "government":
+                t = holder_resolves(o, v.get("holder"), text, law)
+                if t:
+                    before = (o.get("agency"), bool(o.get("holder_unnamed")))
+                    for k in ("agency", "agency_full", "agency_matched", "agency_group", "agency_unit", "jurisdiction", "agency_org_type"):
+                        if k in t:
+                            o[k] = t[k]
+                    if o.get("holder_unnamed"):
+                        o["actor_raw"] = v.get("holder")
+                    o.pop("holder_unnamed", None); o.pop("holder_note", None); o.pop("actor_unresolved", None)
+                    o["holder_verdict"] = "government"
+                    bump("holder_verdict_reassigned" if before != (o.get("agency"), False) else "holder_verdict_same")
+                else:
+                    bump("holder_verdict_government_unresolved")
+            else:
+                bump("holder_verdict_kept_" + str(verdict))
+            keep.append(o)
+        lst[:] = keep
+
+
 APPLY_X5 = True          # Nov 3 2026: live-path fix for 'shall have the following powers and duties: 1. to ...' items (2011-S4376)
 MANDATORY_LEAD_X5 = re.compile(r"\bshall\s+have\s+(?:the\s+)?following\s+powers\s+and\s+(?:duties|responsibilities)\b", re.I)
 
@@ -4322,6 +4495,91 @@ def x5_infinitive_lead(span, text):
         if ld and MANDATORY_LEAD_X5.search(re.sub(r"\{\{|\}\}", "", ld)) and infinitive_lead_kind(ld) == "duty":
             return ld
     return None
+
+
+APPLY_LONG_SEAM = True    # Nov 13 2026 (B64): a law merged from windows keeps one record per provision; overlapping windows had stored the same sentence twice, often with fields that disagree
+
+
+def _seam_index(text):
+    masked = _mask_deleted(text)
+    flat, offs = [], []
+    for m in re.finditer(r"[A-Za-z0-9]", masked):
+        flat.append(m.group(0).lower()); offs.append(m.start())
+    return "".join(flat), offs
+
+
+def _seam_span(quote, idx):
+    """(start, end, occurrences) of the quote in the law's alphanumeric stream, else None."""
+    flat, offs = idx
+    q = eo.alnum(quote)
+    if len(q) < 8:
+        return None
+    i = flat.find(q)
+    if i < 0:
+        return None
+    return offs[i], offs[i + len(q) - 1] + 1, flat.count(q)
+
+
+def _seam_actor_key(o):
+    ag = o.get("agency")
+    if ag and ag != "Unspecified":
+        return (ag, o.get("agency_unit"), o.get("jurisdiction"))
+    return ("Unspecified", re.sub(r"[^a-z0-9]+", " ", (o.get("actor_raw") or "").lower()).strip())
+
+
+def _seam_completeness(o):
+    return (o.get("agency") not in (None, "", "Unspecified"), bool(o.get("deadline_date")) + bool(o.get("recurrence")), bool(o.get("quote_verified")), len(o.get("quote") or ""))
+
+
+def collapse_window_seams(lst, text, law_key=None):
+    """B64: records of a law merged from windows whose quotes locate to the same span of the law text (80%+ of the shorter, quote found once)
+    or overlap 80%+ word for word, for the same actor, are one provision; keeps the most complete (resolved agency, deadline and
+    recurrence filled, verified, longer quote). Returns the dropped records, each already listed as rule window_seam_duplicate."""
+    if len(lst) < 2:
+        return []
+    idx = _seam_index(text)
+    info = [(o, _seam_span(o.get("quote") or "", idx), _seam_actor_key(o)) for o in lst]
+    par = list(range(len(info)))
+
+    def find(x):
+        while par[x] != x:
+            par[x] = par[par[x]]; x = par[x]
+        return x
+    for i in range(len(info)):
+        oa, sa, ka = info[i]
+        for j in range(i + 1, len(info)):
+            ob, sb, kb = info[j]
+            if ka != kb and not ("Unspecified" in (ka[0], kb[0]) and (oa.get("actor_raw") or "").strip().lower() == (ob.get("actor_raw") or "").strip().lower()):
+                continue
+            if sa and sb:
+                if sa[2] != 1 or sb[2] != 1:
+                    continue
+                inter = min(sa[1], sb[1]) - max(sa[0], sb[0])
+                same = inter > 0 and inter >= 0.8 * min(sa[1] - sa[0], sb[1] - sb[0])
+            else:
+                qa, qb = oa.get("quote") or "", ob.get("quote") or ""
+                same = overlap(qa, qb) >= 0.8 and same_provision(qa, qb)
+            if same:
+                par[find(i)] = find(j)
+    groups = {}
+    for i in range(len(info)):
+        groups.setdefault(find(i), []).append(i)
+    gone = []
+    for g in groups.values():
+        if len(g) < 2:
+            continue
+        best = max(g, key=lambda i: (_seam_completeness(info[i][0]), -i))
+        for i in g:
+            if i == best:
+                continue
+            o = info[i][0]
+            o["matter_id"] = law_key or o.get("matter_id")
+            drop(o, "window_seam_duplicate", "the same provision as %s, stored twice from overlapping windows; the more complete record stays" % info[best][0].get("obligation_id"))
+            DROPPED[-1]["kept_id"] = info[best][0].get("obligation_id")
+            gone.append(o)
+    ids = {id(o) for o in gone}
+    lst[:] = [o for o in lst if id(o) not in ids]
+    return gone
 
 
 def build_records(laws):
@@ -4427,6 +4685,14 @@ def build_records(laws):
                 drop(o, g[0], g[1])
                 continue
             reresolve_after_rescue(o, text, law)          # O4
+            if aj2_passive(o):          # AJ2
+                nb = aj2_named_body(o, text)
+                if nb:
+                    o.update(agency=nb[0], agency_full=nb[1], agency_matched=True); o["aj2_agency_from_sentence"] = True; bump("aj2_agency_from_sentence")
+                else:
+                    o["matter_id"] = law["key"]
+                    drop(o, "no_actor", "the agency is only the passive subject phrase ('%s') and the sentence names no government body" % (o.get("actor_raw") or ""))
+                    continue
             o["extends_existing"] = bool(res.get("extends_model", {}).get(o["obligation_id"])) or extends_by_text(quote, text)
             if not o["extends_existing"] and relocated(quote, text):          # D4
                 o["extends_existing"] = True; bump("d4_relocated")
@@ -4549,6 +4815,13 @@ def build_records(laws):
                     pd_ = period_deadline(o["deadline_text"], sec_date, law["enactment_date"])          # U5: 'within 90 days after the effective date'
                     if pd_:
                         o["deadline_kind"], o["deadline_date"] = pd_[1], pd_[0]; bump("u5_period_deadline")
+            if APPLY_AJ3 and o.get("deadline_kind") == "fixed_date" and not o.get("deadline_date"):          # AJ3
+                dtx = o.get("deadline_text") or ""
+                dd3 = (dated_deadline(dtx, sec_date or law["enactment_date"]) or dated_deadline("by " + re.sub(r"(?i)^\W*(?:on|commencing(?:\s+on)?|starting(?:\s+on)?|beginning(?:\s+on)?|effective)\s+", "", dtx), sec_date or law["enactment_date"])) if dtx else None
+                if dd3 and dd3[0] >= law["enactment_date"]:
+                    o["deadline_date"] = dd3[0]; bump("aj3_fixed_date_filled")
+                else:
+                    o["deadline_kind"] = "none"; bump("aj3_fixed_date_to_none")
             if kind == "duty" and o.get("deadline_kind") in (None, "none", "on_effective_date") and not o.get("deadline_date") and ongoing_lead_item(o, text):
                 o["deadline_kind"], o["recurrence"] = "none", "ongoing"; bump("ongoing_lead_item")
             if kind == "duty" and o.get("deadline_kind") == "on_effective_date" and TRIGGER.search(quote) and not CAP_RE.search(quote):
@@ -4646,6 +4919,7 @@ def build_records(laws):
                         kept_sx.append(r)
                 sx_recs = kept_sx
             law_p += sx_recs
+            apply_holder_verdicts(law, text, (law_d, law_p))
             if sx_unnamed:
                 SUNSET_UNNAMED[law["key"]] = sx_unnamed
         for lst in (law_d, law_p):       # never merge across jurisdictions or named localities
@@ -4656,6 +4930,9 @@ def build_records(laws):
                     eo.merge_split_list_duplicates(part)
                     keep += part
             lst[:] = sorted(keep, key=lambda o: o["obligation_id"])
+        if APPLY_LONG_SEAM and (res.get("windows") or 1) > 1:
+            for lst in (law_d, law_p):
+                collapse_window_seams(lst, text, law["key"])
         kept = {o["obligation_id"] for o in law_d + law_p}
         dropped_ids = {d["obligation_id"] for d in DROPPED if d.get("matter_id") == law["key"]}
         for o in res["obligations"]:       # R3 safety net: a record that left through a merge or any other path is listed, never silent

@@ -7,6 +7,8 @@ from pathlib import Path
 HERE = Path(os.path.abspath(__file__)).parent.parent
 sys.path.insert(0, str(HERE))
 import extract_duties as ed
+_HV0 = getattr(ed, "APPLY_HOLDER_VERDICTS", False)          # Nov 13 2026: these check the B43 mechanics; the curated holder verdicts override them
+ed.APPLY_HOLDER_VERDICTS = False
 
 passed = failed = 0
 def check(name, cond):
@@ -81,9 +83,10 @@ for oid, kd in (("2013-S2605-49", "duty"), ("2011-A6611-01", "power"), ("2011-A8
 for oid in ("2011-S6615-01", "2009-A9220-02", "2013-A9733-04"):          # capitalised imperatives
     r, dr = b16(oid)
     check("B17 %s rescued as duty" % oid, r.get(oid, {}).get("kind") == "duty" and oid not in dr)
-for oid in ("2009-S4601-04", "2009-A9465-01", "2011-A6964-01"):          # Prescribing, DASNY 1676, species list
+# the law 2009-S4601 was re-asked after this test was written and its ids renumbered, so the three are found by their quote (Nov 13 2026)
+for oid, qs in (("2009-S4601-04", "Prescribing the requirements for the alternative and permissive publication"), ("2009-A9465-01", "The Trevor Day School, for the financing"), ("2011-A6964-01", "e. American shad")):          # Prescribing, DASNY 1676, species list
     r, dr = b16(oid)
-    check("B17 %s still dropped" % oid, oid not in r and oid in dr)
+    check("B17 %s still dropped" % oid, not any((x.get("quote") or "").startswith(qs) for x in r.values()) and any((x.get("quote") or "").startswith(qs) for x in dr.values()))
 
 # D1-D7 (builder D): each rule on its named quote; D1 and D3 ship off (over the 40 cap), so they are switched on here
 _d_flags = (ed.APPLY_D1, ed.APPLY_D3); ed.APPLY_D1 = ed.APPLY_D3 = True
@@ -148,4 +151,5 @@ check("H2 braceless sentence away from the date sentence dropped", _h3(_dt, "The
 _rt = "Section 1. The tax rate is [ten] {{fifteen}} percent.\n\nThe board shall meet monthly."
 check("H2 rate change section untouched", not _h3(_rt, "The board shall meet monthly."))
 ed.APPLY_D1, ed.APPLY_D3 = _h_flags
+ed.APPLY_HOLDER_VERDICTS = _HV0
 print(f"{passed} passed, {failed} failed")

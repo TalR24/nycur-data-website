@@ -11,8 +11,10 @@ import extract_duties as ed
 import extract_obligations as eo
 import next_packet_batch as nb
 
-DEFERRED_LONG = ed.DATA / "deferred_long.json"
-if not (ed.TEXT_MARKED / "2015-A7645.txt").exists() or not DEFERRED_LONG.exists():      # CI has no cached texts
+KEY_LONG = "2011-A4002"                    # a small long law (25 KB, 3 windows) stands in for the budget bills in the live deferred_long.json, which the nightly merges empty (Nov 13 2026)
+KEY_LONG2 = "2013-S2602"                   # second fixture entry of deferred_long, never answered, so the nightly draw has a candidate from that list
+KEY_SKIP = "2015-A7645"                    # in deferred_skipped.json ("too long, domestic relations")
+if not all((ed.TEXT_MARKED / (k + ".txt")).exists() for k in (KEY_LONG, KEY_LONG2, KEY_SKIP)):      # CI has no cached texts
     print("0 passed, 0 failed (skipped: long-law texts are not cached here)")
     sys.exit(0)
 passed = failed = 0
@@ -21,10 +23,11 @@ def check(name, cond):
     if cond: passed += 1
     else: failed += 1; print("FAIL", name)
 
-KEY_LONG = json.load(open(DEFERRED_LONG))["laws"][0]["key"] if json.load(open(DEFERRED_LONG))["laws"] else "2025-A3005"
-KEY_SKIP = "2015-A7645"                    # in deferred_skipped.json ("too long, domestic relations")
+ed.MAX_CHARS = 20_000                      # the small fixture laws count as long (the real limit is 120,000)
 tmp = Path(tempfile.mkdtemp())
 data = tmp / "data"; shutil.copytree(ed.DATA, data, ignore=shutil.ignore_patterns("bills", "site"))
+DEFERRED_LONG = data / "deferred_long.json"          # fixture, never the live file
+json.dump({"laws": [{"key": k, "chapter": 0, "year": int(k.split("-")[0]), "chars": len((ed.TEXT_MARKED / (k + ".txt")).read_text()), "title": "fixture"} for k in (KEY_LONG, KEY_LONG2)]}, open(DEFERRED_LONG, "w"))
 packets = tmp / "packets"
 ed.EXTRACTED = tmp / "extracted"
 laws = {}
@@ -136,7 +139,7 @@ check("removed once ingested, others kept", gone == [KEY_SKIP] and after == befo
 check("a law with unanswered windows is not removed", ed.drop_from_deferred_skipped([], ds, ds) == [] and before - {KEY_SKIP} == after)
 
 # 5. the nightly draw
-kw = dict(data_dir=ed.DATA, packets_dir=packets, text_dir=ed.TEXT_MARKED)
+kw = dict(data_dir=data, packets_dir=packets, text_dir=ed.TEXT_MARKED)
 cands = nb.long_candidates(**kw)
 ck = [c["key"] for c in cands]
 check("candidates come from both deferred lists", any(c in {x["key"] for x in json.load(open(DEFERRED_LONG))["laws"]} for c in ck) and any(c in before for c in ck))
