@@ -1519,6 +1519,21 @@ def inside_definition(q, span, text):
     return bool(m) and not re.search(r"[.;:]\s", re.sub(r"\[[^\[\]]*\]?", " ", head[m.end():]))          # only within the definition's first sentence
 
 
+APPLY_B63A = False        # Nov 12 2026 (B63a, recall audit class 6): sub_item_of_parent keeps (1) a membership-list item that names its own appointer ('one member to be appointed by the temporary president of the senate') under any membership lead, and (2) an action item ('Allow ... any interested person to file a petition') under a body's own 'the commission shall, at a minimum:' lead
+B63A_ACTOR_MIN = re.compile(r"\b(?:commission|board|department|agency|authority|commissioner|council|office|director|division|committee|court|corporation)\s+shall,?\s+at\s+a\s+minimum,?\s*:\s*(?:\}\})?\s*$", re.I)
+B63A_ACTION_ITEM = re.compile(r"^\W*(?:\{\{)?\s*(?:Allow|Provide|Establish|Adopt|Publish|Make|Notify|Develop|Maintain|Hold|Issue|Review|Respond|Submit|Report|Post|Ensure|Require|Take|Enforce|Collect|Prepare|Conduct|Coordinate|Create|Give|Send|Keep|Appoint|Promulgate|Permit|Grant|Hear|Investigate|Pay|File|Remit)\b")
+B63A_APPOINT_ITEM = re.compile(r"\b(?:to\s+be\s+|as\s+)?appointed\s+by\s+(?:the\s+)?(?:[\w'-]+\s+){0,8}?(?:president|speaker|leader|governor|executive|supervisor|mayor|comptroller|commissioner|chair\w*|attorney\s+general|director|board|council|legislature|advocate)\b", re.I)
+
+
+def b63a_keep(q, tail=None, lead=None):
+    """B63a: True when the list item is a record of its own and sub_item_of_parent must not fire."""
+    if not APPLY_B63A:
+        return False
+    if lead is not None and B63A_APPOINT_ITEM.search(q) and not re.search(r";\s*\(?\w{1,3}[.)]\s", q):
+        return True          # one item, one appointer (a composite quote holding several ';' items stays a sub-item)
+    return bool(tail is not None and B63A_ACTOR_MIN.search(tail) and B63A_ACTION_ITEM.match(q))
+
+
 def v_item_rule(o, span, text, hdr, sec):
     """V1 / V2 for a list item whose duty sits in a lead-in: (rule, reason) or None."""
     q = o.get("quote") or ""
@@ -1533,6 +1548,8 @@ def v_item_rule(o, span, text, hdr, sec):
         return None
     if APPLY_V2 and LIMITED_LEAD.search(tail):
         return "cap_not_duty", "a condition inside a cap ('shall be limited to:'); it limits an amount and binds no actor"
+    if b63a_keep(q, tail=tail):
+        return None
     if (b30 or (APPLY_V1 and CONTENT_LEAD.search(tail)) or (APPLY_P1 and CONTENT_LEAD_P1.search(tail)) or (APPLY_V1B and CRITERIA_LEAD.search(tail) and not CRITERIA_ITEM_MODAL.search(q))) and not CONTENT_LEAD_NOT.search(tail[-120:]):
         return "sub_item_of_parent", "a list item under a lead-in that describes the content of one deliverable; part of the parent record, not a record"
     return None
@@ -1745,7 +1762,7 @@ AG12_APPLIES = re.compile(r"\b(?:court|judge|justice|commissioner|department|boa
 APPLY_AG13 = True         # Nov 12 2026 (coordinator AG13): Civil Service Law layoff order ('suspension or demotion ... shall be made in the inverse order of original appointment') binds the appointing authority, not a beneficiary
 AG13_LAYOFF = re.compile(r"\binverse\s+order\s+of\s+(?:original\s+)?appointment\b", re.I)
 APPLY_AG14 = False        # OFF: 55 stored power records flip to a mandatory lead (cap 40), mixed power lists included; Nov 12 2026 (coordinator AG14): a numbered item ending in ';' is a sibling, not the list lead, so 'The commissioner shall:' stays the lead of '2. Provide grants ...'
-APPLY_B52 = False         # Nov 12 2026 (Tal's ruling, criterion 4): a cap on what an official or body may do ('Nominations are limited to ten per elected official per term', 'the state shall only recover its actual cost') is a power with extends_existing true; bond and issuance caps (CAP_RE) stay duties
+APPLY_B52 = True          # Nov 12 2026 (Tal's ruling, criterion 4): a cap on what an official or body may do ('Nominations are limited to ten per elected official per term', 'the state shall only recover its actual cost') is a power with extends_existing true; bond and issuance caps (CAP_RE) stay duties
 B52_CAP = re.compile(r"\b(?:are|is)\s+limited\s+to\s+(?:\w+\s+){0,3}?per\b|\b(?:shall|may)\s+only\s+recover\s+(?:its|their|the)\s+actual\s+costs?\b", re.I)
 def b52_cap(quote):
     """B52: the quote is a cap on what an official or body may do (a per-holder quota, a cost-recovery ceiling), not a bond or issuance cutoff."""
@@ -1771,6 +1788,8 @@ def q1_item(q, lead):
         return False          # AG6: an item that names its own appointing official is that official's duty
     if APPLY_AG6 and APPLY_AI1 and AI1_APPOINT_LEAD.search(re.sub(r"\s+", " ", lead.strip())[-160:]) and AI1_APPOINTED_BY.search(q):
         return False          # AI1: the same for any appointment-list lead ('comprised of fifteen members to be appointed as follows:') and a government appointer
+    if b63a_keep(q, lead=lead):
+        return False          # B63a: any membership lead
     m = re.search(r"\b(?:shall|must|may|will)\b", q)
     return not m or bool(SUBORDINATE_MARK.search(q[:m.start()]))
 
@@ -2356,7 +2375,7 @@ def gate_record(o, text, has_markers):
     if span and NOW_THEREFORE.search(text[max(0, span[0] - 40):span[0]]):          # H3 (Oct 28 2026)
         return "legislative_findings", "the 'Now, therefore' resolving sentence of the legislative findings; the enacted duty is codified in the later section"
     # 3. no-record classes
-    if STRONG_EXEMPT_RE.search(q) or (EXEMPT_RE.search(q) and not MANDATORY.search(EXEMPT_RE.sub(" ", q)) and not (APPLY_V1_ADOPT and V1_ADOPT_POWER.search(q))):
+    if STRONG_EXEMPT_RE.search(q) or (EXEMPT_RE.search(q) and not MANDATORY.search(EXEMPT_RE.sub(" ", q)) and not (APPLY_V1_ADOPT and V1_ADOPT_POWER.search(q)) and not (APPLY_B63B and B63B_MAY_EXEMPT.search(q))):
         return "exemption_or_applicability", "exemption, residency or refund-review applicability clause, binds no government actor"
     if span and has_markers:          # S5: the only new matter in the quoted sentence is a gender-neutral pronoun edit ('his or her', 'or she')
         sent0 = context_sentence(span, text)[0]
@@ -2440,6 +2459,8 @@ def gate_record(o, text, has_markers):
                 elif b17_rescue(o, q):
                     o["kind_from_lead_in"] = b17_rescue(o, q)
                     o["rescued_imperative_item"] = True; bump("b17_imperative_no_lead_in_rescue")
+                elif b63b_designator_named(o, q):
+                    bump("b63b_designator_named_kept")          # B63b: the designator is the record's actor
                 else:
                     if IMPERATIVE_B17.match(q):
                         bump("b17_imperative_exception_kept_dropped")
@@ -2900,6 +2921,28 @@ def aid_recipient_actor(r):
                 not re.search(r"\b(?:by|from)\s+(?:the\s+)?" + re.escape(actor), q[:m.start()].lower()))
 
 
+APPLY_B63B = True         # Nov 12 2026 (B63b, recall audit class 9): designation_no_actor does not fire when the quote names its designator and the record's actor is that designator; 'X may exempt from disclosure' is the body's power, not an applicability clause
+B63B_DESIGNATOR = re.compile(r"\b(?:designated|selected|appointed|approved)\s+by\s+(?:the\s+|such\s+)?((?:[\w'-]+\s+){0,2}?[\w'-]+)", re.I)
+B63B_MAY_EXEMPT = re.compile(r"\b(?:[\w'-]+\s+){1,8}?(?:in\s+(?:its|his|her|their)\s+\w+\s+)?may\s+exempt\s+[^.;]{0,160}?\bfrom\b", re.I)
+
+
+APPLY_B63B_DES = False    # OFF: the designator half of B63b kept 3 fragments (a sign format, a newspaper, an appropriation) that are not records; the 'may exempt' half is the flag above
+
+
+def b63b_designator_named(o, q):
+    """B63b: 'to be designated by the county clerk ...' where the record's own actor is that clerk: the designator acts, so the entry is a record."""
+    if not APPLY_B63B_DES:
+        return False
+    actor = re.sub(r"^(?:the|a|an|such|each|any)\s+", "", (o.get("actor_raw") or "").strip().lower())
+    if not actor or not GOV_ACTOR.search(actor):
+        return False
+    for m in B63B_DESIGNATOR.finditer(q):
+        d = re.sub(r"^(?:the|such)\s+", "", m.group(1).strip().lower())
+        if GOV_ACTOR.search(d) and (d in actor or actor in d or d.split()[0] in actor.split()):
+            return True
+    return False
+
+
 JOINT_OPINION = re.compile(r"\bin\s+the\s+(?:opinion|discretion|judgment)\s+of\s+(?:the\s+)?([\w'-]+(?:\s+[\w'-]+){0,6}?)\s+and\s+(?:of\s+)?(?:the\s+)?([\w'-]+(?:\s+[\w'-]+){0,6}?)(?=\s*[,;.]|\s+(?:such|that|the|it)\b)", re.I)
 JOINT_MODAL = re.compile(r"\b(?:the\s+)?([\w'-]+(?:\s+[\w'-]+){0,5}?)\s+and\s+(?:the\s+)?([\w'-]+(?:\s+[\w'-]+){0,5}?)\s+(?:may|shall)\b", re.I)
 
@@ -2922,6 +2965,55 @@ def joint_actor_single(r, records):
         if ha != hb:
             return True
     return False
+
+
+APPLY_B63C = False        # Nov 12 2026 (B63c, recall audit class 5): a sentence whose subject joins two named government bodies ('The department and the division shall: ...') gets one record per named actor; the missing partner is appended as a copy that runs the whole pipeline with its own actor_raw
+B63C_SUBJECT = re.compile(r"^\W*(?:\{\{)?\s*(?:the\s+)?([\w'-]+(?:\s+[\w'-]+){0,5}?)\s+and\s+(?:the\s+)?([\w'-]+(?:\s+[\w'-]+){0,5}?)\s+(?:may|shall)\b", re.I)
+
+
+B63C_BAD = re.compile(r"\b(?:provided|that|when|within|issuing|selling|vice|chairperson|chairman|receive|whom|which)\b", re.I)
+
+
+def b63c_partner(o):
+    """B63c: the other named actor of a joint-subject sentence the record names only one of, else None. The two bodies open the quote as its subject (a mid-sentence 'and' is not a joint subject)."""
+    if not APPLY_B63C:
+        return None
+    q = o.get("quote") or ""
+    actor = re.sub(r"^(?:the|a|an|such|each|any)\s+", "", (o.get("actor_raw") or "").strip().lower())
+    m = B63C_SUBJECT.match(q)
+    if not actor or not m:
+        return None
+    pa, pb = m.group(1).strip(), m.group(2).strip()
+    if not (GOV_ACTOR.search(pa) and GOV_ACTOR.search(pb)) or pa.lower() == pb.lower():
+        return None
+    if B63C_BAD.search(pa) or B63C_BAD.search(pb) or re.match(r"(?i)(?:and|or)\b", pa):
+        return None          # a clause, a list or a position pair, not two bodies
+    ha, hb = actor in pa.lower() or pa.lower() in actor, actor in pb.lower() or pb.lower() in actor
+    if ha == hb:
+        return None
+    return pb if ha else pa
+
+
+def b63c_split(res, law_key):
+    """B63c: append one copy per missing joint actor to the law's answer list (ids continue after the last, so no stored id moves). Returns the copies."""
+    if not APPLY_B63C:
+        return []
+    obs = res["obligations"]
+    taken = {o.get("quote") for o in obs}
+    top = max([int(o["obligation_id"].rsplit("-", 1)[1]) for o in obs if re.search(r"-\d+$", o.get("obligation_id") or "")] or [0])
+    added = []
+    for o in list(obs):
+        other = b63c_partner(o)
+        if not other or any(x is not o and x.get("quote") == o.get("quote") and re.sub(r"^(?:the|a|an|such|each|any)\s+", "", (x.get("actor_raw") or "").strip().lower()) == re.sub(r"^(?:the|a|an|such|each|any)\s+", "", other.lower()) for x in obs):
+            continue
+        top += 1
+        c = dict(o)
+        c.update(obligation_id="%s-%02d" % (law_key, top), actor_raw="the " + other if not re.match(r"(?i)^(?:the|a|an)\s", other) else other,
+                 agency="Unspecified", agency_full="Unspecified", agency_matched=False, agency_unit=None, agency_group=None, jurisdiction=None, agency_org_type=None,
+                 joint_actor_split_from=o["obligation_id"])
+        added.append(c)
+    obs.extend(added)
+    return added
 
 
 NARROW_MUNICIPALITY = re.compile(r"[\"“”']municipalit(?:y|ies)[\"“”']\s+(?:shall\s+)?means?\s+[^.;]{0,200}?(?:located\s+in\s+(?:the\s+)?count(?:y|ies)\s+of|within\s+(?:the\s+)?count(?:y|ies)\s+of|population\s+of|having\s+a\s+population)", re.I)
@@ -4253,6 +4345,8 @@ def build_records(laws):
             if secs and None not in secs and secs <= exp_secs and len(sx) == 1:
                 eff["expires_date"] = sx[0]["expires_date"]; bump("m21_expiry_from_records")
         law_d, law_p = [], []
+        for _c in b63c_split(res, law["key"]):
+            bump("b63c_joint_actor_split")
         for o in res["obligations"]:
             o["deadline_date"] = eo.sanitize_deadline(o.get("deadline_date"), law["enactment_date"])
             cal = calendar_deadline(o, [res.get("effective_date"), eff.get("effective_date"), law["enactment_date"]])

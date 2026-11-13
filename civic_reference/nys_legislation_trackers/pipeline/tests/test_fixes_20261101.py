@@ -5,6 +5,7 @@ from pathlib import Path
 HERE = Path(os.path.abspath(__file__)).parent.parent
 sys.path.insert(0, str(HERE))
 import extract_duties as ed
+ed.APPLY_B63A = False          # B63a (Nov 12 2026) supersedes the old drop of own-appointer items; these checks pin the older rules
 
 passed = failed = 0
 def check(name, cond):

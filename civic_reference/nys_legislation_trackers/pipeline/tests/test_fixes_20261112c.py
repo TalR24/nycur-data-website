@@ -64,7 +64,7 @@ if all((HERE / "cache" / "extracted" / (k + ".json")).exists() and (HERE / "cach
     check("A3661 flag off keeps the old power", len(grants0) == 1 and grants0[0][0] == "power")
 
 # ---- B58 unit
-check("B58 flag on", ed.APPLY_B58 is True)
+check("B58 flag off after the Nov 12 blind judge (16/32)", ed.APPLY_B58 is False)
 mixed = "The board shall adopt rules and, where appropriate, may also impose the following:"
 check("mixed lead, item with its own may is a power", ed.item_lead_kind("The board shall adopt rules and may also:", "may waive the fee") == "power")
 check("mixed lead, item with its own shall is a duty", ed.item_lead_kind("The board may adopt rules and shall also:", "the board shall file a report") == "duty")

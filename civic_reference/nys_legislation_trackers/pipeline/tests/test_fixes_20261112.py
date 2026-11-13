@@ -6,6 +6,7 @@ sys.path.insert(0, str(HERE))
 if not (HERE / "cache" / "packets").is_dir():
     print("0 passed, 0 failed (skipped: cache/packets is not present here)"); sys.exit(0)
 import extract_duties as ed
+ed.APPLY_B63A = False          # B63a (Nov 12 2026) supersedes the old drop of own-appointer items; these checks pin the older rules
 passed = failed = 0
 def check(name, ok):
     global passed, failed
