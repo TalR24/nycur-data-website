@@ -251,6 +251,7 @@
   <a href="../agencies/">Agencies</a>
   <a href="../legislators/">Legislators</a>
   <a href="../alerts/">Alerts</a>
+  <a href="../methodology/">Methodology</a>
 </div>
 <div class="hero">
   <div class="hero-inner">
@@ -328,7 +329,7 @@ Showing <strong>1–25</strong> of 10,893 matching powers
     <div class="footnotes">
       <p><strong>How these records were made</strong></p>
       <p><!-- static:nys-method:start -->
-Claude read the marked text of each signed law and listed the duties and powers it creates or widens, and the pipeline then drops reprinted text, conditions, definitions and duties of private parties before resolving each actor to a canonical agency. Two auditors check a blind sample of new records every night against a hand-verified set of 552 laws, where 95.6% of stored records are real duties or powers and 83.8% of the provisions in those laws are found. The 2025 session was extracted on November 12, 2026 and has had one audit so far, so its records carry more uncertainty than earlier sessions until the nightly audits reach it.
+Claude read the marked text of each signed law and listed the duties and powers it creates or widens, and the pipeline then drops reprinted text, conditions, definitions and duties of private parties before resolving each actor to a canonical agency. Two auditors check a blind sample of new records every night against a hand-verified set of 552 laws, where 94.6% of stored records are real duties or powers and 89.4% of the provisions in those laws are found. The 2025 session was extracted on November 12, 2026 and has had one audit so far, so its records carry more uncertainty than earlier sessions until the nightly audits reach it. <a href="../methodology/">Read the methodology</a>
 <!-- static:nys-method:end --></p>
     </div>
 
@@ -452,20 +453,45 @@ Claude read the marked text of each signed law and listed the duties and powers 
     return SUM.sessions.map(function (s) { return String(s.session); }).filter(function (y) { return sel === null || sel.has(y); }).sort().reverse();
   }
 
+  // The newest session loads first and paints; earlier sessions follow one at a time, newest to oldest, without blocking.
+  // A session filter or a shared ?id= / ?law= link fetches the sessions it needs before anything else.
+  var fg = 0, bgBusy = false;
+
+  function loadSession(y, background) {
+    if (loaded[y] || loading[y]) return;
+    loading[y] = true; pending++;
+    if (background) bgBusy = true; else fg++;
+    getJSON('records_' + y + '.json').then(function (rows) {
+      SESS[y] = rows.filter(function (r) { return r.k === KIND; });
+      SESS[y].forEach(function (r) {
+        var l = LAWS[r.l] || {};
+        r._law = l; r._sd = l.signed || ''; r._year = String(l.session || r.i.slice(0, 4)); r._ag = agName(r.a);
+      });
+      loaded[y] = true; loading[y] = false; pending--;
+      if (background) bgBusy = false; else fg--;
+      rebuildAll(); applyFilters(true); pumpBackground();
+    }).catch(function () { loading[y] = false; pending--; if (background) bgBusy = false; else fg--; fail(); });
+  }
+
+  function pumpBackground() {
+    if (failed || fg > 0 || bgBusy || MS.session.selected() !== null) return;
+    var next = wantedYears().filter(function (y) { return !loaded[y] && !loading[y]; })[0];
+    if (next) loadSession(next, true);
+  }
+
+  function stillLoading() {
+    return wantedYears().some(function (y) { return !loaded[y]; });
+  }
+
   function syncLoads() {
-    wantedYears().forEach(function (y) {
-      if (loaded[y] || loading[y]) return;
-      loading[y] = true; pending++;
-      getJSON('records_' + y + '.json').then(function (rows) {
-        SESS[y] = rows.filter(function (r) { return r.k === KIND; });
-        SESS[y].forEach(function (r) {
-          var l = LAWS[r.l] || {};
-          r._law = l; r._sd = l.signed || ''; r._year = String(l.session || r.i.slice(0, 4)); r._ag = agName(r.a);
-        });
-        loaded[y] = true; loading[y] = false; pending--;
-        rebuildAll(); applyFilters(true);
-      }).catch(function () { loading[y] = false; pending--; fail(); });
-    });
+    var want = wantedYears(), all = MS.session.selected() === null, first = [];
+    if (all) {
+      [pendingId && pendingId.slice(0, 4), lawFilter && lawFilter.slice(0, 4), want[0]].forEach(function (y) {
+        if (y && want.indexOf(y) >= 0 && first.indexOf(y) < 0) first.push(y);
+      });
+    } else first = want;
+    first.forEach(function (y) { loadSession(y, false); });
+    pumpBackground();
     applyFilters(true);
   }
 
@@ -558,9 +584,9 @@ Claude read the marked text of each signed law and listed the duties and powers 
     var all = SUM[HEROKEY];
     document.getElementById('resultCount').innerHTML = total
       ? 'Showing <strong>' + num(start + 1) + '–' + num(Math.min(start + PAGE_SIZE, total)) + '</strong> of ' + num(total) + ' matching ' + (KIND === 'd' ? 'duties' : 'powers')
-        + (total < all && !pending ? ' (filtered from ' + num(all) + ')' : '') + (pending ? ' …' : '')
-      : (pending ? '…' : 'No ' + (KIND === 'd' ? 'duties' : 'powers') + ' match these filters');
-    if (!slice.length && pending) return;
+        + (total < all && !stillLoading() ? ' (filtered from ' + num(all) + ')' : '') + (stillLoading() ? '. Loading earlier sessions…' : '')
+      : (stillLoading() ? '…' : 'No ' + (KIND === 'd' ? 'duties' : 'powers') + ' match these filters');
+    if (!slice.length && stillLoading()) return;
     var html = slice.length ? '' : '<tr><td colspan="' + COLS.length + '"><p class="loading-note">No ' + (KIND === 'd' ? 'duties' : 'powers') + ' match these filters.</p></td></tr>';
     slice.forEach(function (r) { html += rowHtml(r) + (openId === r.i ? detailRow(r) : ''); });
     document.getElementById('tbody').innerHTML = html;
@@ -665,6 +691,8 @@ Claude read the marked text of each signed law and listed the duties and powers 
     var rec = null;
     for (var i = 0; i < ALL.length; i++) if (ALL[i].i === pendingId) { rec = ALL[i]; break; }
     if (!rec) { if (!loading[pendingId.slice(0, 4)] && loaded[pendingId.slice(0, 4)]) { showNotice('No ' + NOUN + ' with that link was found.'); pendingId = null; } return; }
+    // Its page number depends on every newer session, so wait until those have loaded.
+    if (wantedYears().some(function (y) { return y > pendingId.slice(0, 4) && !loaded[y]; })) return;
     if (ROWS.indexOf(rec) < 0) { var keep = pendingId; resetFilters(); MS.session.set([keep.slice(0, 4)]); pendingId = keep; applyFilters(); return; }
     var id = pendingId; pendingId = null; openId = id;
     page = Math.floor(ROWS.indexOf(rec) / PAGE_SIZE) + 1;

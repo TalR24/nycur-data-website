@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Pre-render the static blocks of the NYS duties/, powers/, agencies/ and legislators/ pages (hero line, result count, first 25 rows,
-methodology note) from data/site/ and quality/gold_score.json, so crawlers that skip JavaScript see real content.
+methodology note, and the methodology page's figures) from data/site/ and quality/gold_score.json, so crawlers that skip JavaScript see real content.
 Mirrors the markup and labels the pages' own JS builds; the JS replaces the blocks on load.
 
     python3 civic_reference/nys_legislation_trackers/pipeline/build_site_snapshots.py
@@ -75,8 +75,29 @@ def method_note(summary, gold):
             'canonical agency. Two auditors check a blind sample of new records every night against a hand-verified set of %s laws, '
             'where %.1f%% of stored records are real duties or powers and %.1f%% of the provisions in those laws are found. '
             'The 2025 session was extracted on November 12, 2026 and has had one audit so far, so its records carry more uncertainty '
-            'than earlier sessions until the nightly audits reach it.'
+            'than earlier sessions until the nightly audits reach it. <a href="../methodology/">Read the methodology</a>'
             % (num(gold["gold_laws"]), pr, rc))
+
+
+def deferred_long_laws():
+    """Long laws still being read section by section: the windowable laws next_packet_batch.long_candidates() can still draw
+    (the same list the nightly draw uses; Nov 12 2026), minus laws that already have stored records."""
+    import sys
+    sys.path.insert(0, str(HERE / "pipeline"))
+    import next_packet_batch as npb
+    keys = {c["key"] for c in npb.long_candidates()}
+    ingested = {l["key"] for l in json.load(open(SITE / "laws.json"))}
+    return len(keys - ingested)
+
+
+def methodology_page(summary, gold):
+    path = HERE / "methodology" / "index.html"
+    put(path, "meth-laws", num(summary["laws"]))
+    put(path, "meth-gold-laws", num(gold["gold_laws"]))
+    put(path, "meth-precision-real", "%.1f%%" % (gold["precision_real"]["rate"] * 100))
+    put(path, "meth-precision-strict", "%.1f%%" % (gold["precision_strict"]["rate"] * 100))
+    put(path, "meth-recall", "%.1f%%" % (gold["recall"]["rate"] * 100))
+    put(path, "meth-deferred", num(deferred_long_laws()))
 
 
 def enc(s):
@@ -144,6 +165,7 @@ def main():
         put(path, "nys-rows", "".join(row(r, laws, ag, has_dl) for r in rows[:PAGE_SIZE]))
         put(path, "nys-method", method_note(summary, gold))
     directory_pages(summary)
+    methodology_page(summary, gold)
     print("changed:", changed or "nothing")
 
 

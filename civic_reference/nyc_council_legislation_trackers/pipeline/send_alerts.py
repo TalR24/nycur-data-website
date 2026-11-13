@@ -40,6 +40,12 @@ Inputs (premium checkout, path via PREMIUM_DIR):
                           boundaries against titles, summaries, obligation
                           text, and fiscal narratives),
                added     (date, informational)
+               nys_agencies (semicolon-separated NYS agency ids, slug() of the
+                          name in nys_legislation_trackers/data/site/agencies.json;
+                          optional column, missing or blank = no NYS section.
+                          Adds "New York State deadlines": NYS duties with a
+                          dated deadline in the next 45 days for those agencies
+                          only)
                districts (semicolon-separated council district numbers 1-51;
                           optional column, missing = none. Each requested
                           district gets a "District N this month" section:
@@ -50,7 +56,7 @@ Inputs (premium checkout, path via PREMIUM_DIR):
   civic_reference/legislation_implementation_tracker/data/alerts_state.json
       {"announced_matter_ids": [...], "announced_fiscal_ids": [...],
        "deadline_state_seeded": bool, "announced_upcoming_ids": [...],
-       "announced_overdue_ids": [...]}
+       "announced_overdue_ids": [...], "announced_nys_upcoming_ids": [...]}
       Seeded with the full backlog at launch so subscribers only hear about
       genuinely new records.
 
@@ -98,6 +104,8 @@ MEMBER_PROFILE_URL = "https://data.nycuriosity.com/civic_reference/nyc_council_l
 DISTRICT_BRIEF_URL = "https://premium.nycuriosity.com/civic_reference/nyc_council_legislation_trackers/district-briefs/?district="
 
 DEADLINE_WINDOW_DAYS = 45
+NYS_SITE = BASE.parent / "nys_legislation_trackers" / "data" / "site"
+NYS_DUTY_URL = "https://data.nycuriosity.com/civic_reference/nys_legislation_trackers/duties/?id="
 
 
 def load_premium_paths() -> tuple[Path, Path]:
@@ -228,6 +236,24 @@ def agency_hits(want_ag_slugs: set[str], want_ag_canon: set[str], agency_codes) 
     return sorted(hits)
 
 
+def load_nys_upcoming(today: date, cutoff: date) -> tuple[list, dict[str, str]]:
+    """NYS duties (kind 'd') with a dated deadline in [today, cutoff], from the
+    built site data, plus {agency name: full name}. Empty when the data is absent."""
+    if not NYS_SITE.exists():
+        return [], {}
+    full = {}
+    ag_path = NYS_SITE / "agencies.json"
+    if ag_path.exists():
+        full = {a["name"]: a.get("full_name") or a["name"] for a in json.loads(ag_path.read_text())}
+    out = []
+    for f in sorted(NYS_SITE.glob("records_*.json")):
+        for r in json.loads(f.read_text()):
+            dd = parse_ymd(r.get("dd"))
+            if r.get("k") == "d" and dd is not None and today <= dd <= cutoff:
+                out.append(r)
+    return out, full
+
+
 def main() -> None:
     dry = alert_engine.is_dry()
     subs_path, state_path = load_premium_paths()
@@ -307,6 +333,12 @@ def main() -> None:
         new_overdue = [o for o in overdue_all if o["obligation_id"] not in known_overdue]
         print(f"{len(new_upcoming)} newly upcoming deadlines, "
               f"{len(new_overdue)} newly overdue reports.")
+
+    # NYS deadlines: only read when some subscriber chose NYS agencies, so an
+    # NYC-only run never touches the NYS data. Window duties not yet announced.
+    nys_known = set(state.get("announced_nys_upcoming_ids", []))
+    nys_new: list = []
+    nys_full: dict[str, str] = {}
 
     new_law_ids = {l["matter_id"] for l in new_laws}
     agencies_by_law: dict[str, set] = {}
@@ -437,6 +469,10 @@ def main() -> None:
     subscribers = alert_engine.read_subscribers(subs_path, "alert_subscriptions.csv")
 
     slug_names = crosswalk_slug_names()
+    if any(alert_engine.splitfield(s_, "nys_agencies") for s_ in subscribers):
+        nys_window, nys_full = load_nys_upcoming(today, upcoming_cutoff)
+        nys_new = [r for r in nys_window if r["i"] not in nys_known]
+        print(f"{len(nys_new)} newly upcoming NYS deadlines.")
     sent = 0
     for sub_no, sub in enumerate(subscribers, 1):
         email = sub["email"].strip()
@@ -517,12 +553,20 @@ def main() -> None:
             upcoming_matches = [o for o in new_upcoming if deadline_hit(o)]
             overdue_matches = [o for o in new_overdue if deadline_hit(o)]
 
+        want_nys = {slug(a) for a in splitfield("nys_agencies")}
+        nys_matches = []
+        if want_nys:
+            # agency match only (keywords are NYC-side), and only duties not announced
+            # before: like the NYC deadlines, a duty is listed once, in the first
+            # monthly email after it enters the window, and never re-sent.
+            nys_matches = [r for r in nys_new if slug(r.get("a") or "") in want_nys]
+
         district_lines: list[str] = []
         for n in sorted(want_districts):
             district_lines += district_section(n)
 
         if not law_matches and not fiscal_matches and not upcoming_matches \
-                and not overdue_matches and not district_lines:
+                and not overdue_matches and not nys_matches and not district_lines:
             continue
 
         lines = ["New this month for what you follow:", ""]
@@ -584,6 +628,18 @@ def main() -> None:
                 if filing.get("doris_url"):
                     lines.append(f"  {filing['doris_url']}")
             lines.append("")
+        if want_nys:
+            lines.append("New York State deadlines")
+            lines.append("")
+            if nys_matches:
+                for r in sorted(nys_matches, key=lambda r: (r["dd"], r["i"])):
+                    ag = nys_full.get(r.get("a"), r.get("a") or "Agency not named in the law")
+                    lines += [
+                        f"- {ag}: {r.get('s')} ({r.get('l')}), due {fmt_date(parse_ymd(r['dd']))}",
+                        f"  Duty page: {NYS_DUTY_URL}{r['i']}"]
+            else:
+                lines.append("No NYS deadlines for your agencies this month.")
+            lines.append("")
         lines += district_lines
         lines += [
             "--",
@@ -596,7 +652,8 @@ def main() -> None:
         n_fiscal = len(fiscal_matches)
         n_upcoming = len(upcoming_matches)
         n_overdue = len(overdue_matches)
-        total = n_laws + n_fiscal + n_upcoming + n_overdue
+        n_nys = len(nys_matches)
+        total = n_laws + n_fiscal + n_upcoming + n_overdue + n_nys
         bits = []
         if n_laws:
             bits.append(f"{n_laws} new law{'s' if n_laws != 1 else ''}")
@@ -606,6 +663,8 @@ def main() -> None:
             bits.append(f"{n_upcoming} upcoming deadline{'s' if n_upcoming != 1 else ''}")
         if n_overdue:
             bits.append(f"{n_overdue} overdue report{'s' if n_overdue != 1 else ''}")
+        if n_nys:
+            bits.append(f"{n_nys} NYS deadline{'s' if n_nys != 1 else ''}")
         if bits:
             subject = "NYCuriosity alert: " + ", ".join(bits)
         elif district_lines:
@@ -629,6 +688,8 @@ def main() -> None:
                 known_upcoming | {o["obligation_id"] for o in new_upcoming})
             state["announced_overdue_ids"] = sorted(
                 known_overdue | {o["obligation_id"] for o in new_overdue})
+        if nys_new:
+            state["announced_nys_upcoming_ids"] = sorted(nys_known | {r["i"] for r in nys_new})
         alert_engine.write_state(state_path, state)
         print(f"State updated. {sent} emails sent.")
 
