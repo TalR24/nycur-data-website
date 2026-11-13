@@ -179,6 +179,32 @@ def law_record(b):
             "law_number_display": "Chapter %d of %d" % (b["chapter"]["number"], b["chapter"]["year"])}
 
 
+CARRY_OVER_MIN = 250   # no year reached 150 new chapters by the end of February (2009-2026: highest 137, 2022); carry-overs start near 388
+
+
+def fix_carry_over_years(laws, rows=None, cols=None):
+    """Nov 12 2026: a bill passed in year Y and signed in January or February of Y+1 keeps Y's chapter numbering ('chapter 758
+    of the laws of 2019' was signed 2020-02-07), but the API's signing action gives only the number, so the year came from the
+    signing date. A chapter signed in January or February with a number above CARRY_OVER_MIN belongs to the previous year:
+    fixes chapter_year and law_number_display, and, when given, the bill index rows (by base print number). Returns the keys
+    changed."""
+    changed = {}
+    for l in laws:
+        sd = l.get("signed_date") or ""
+        if sd[5:7] in ("01", "02") and l.get("chapter_number", 0) > CARRY_OVER_MIN and int(sd[:4]) - 1 >= l["session"]:
+            y = int(sd[:4]) - 1
+            if l.get("chapter_year") != y:
+                l["chapter_year"] = y
+                l["law_number_display"] = "Chapter %d of %d" % (l["chapter_number"], y)
+                changed[l["print_no"]] = y
+    if rows is not None and cols is not None and changed:
+        ix = {c: i for i, c in enumerate(cols)}
+        for r in rows:
+            if r[ix["signed"]] and r[ix["base_print_no"]] in changed:
+                r[ix["chapter_year"]] = changed[r[ix["base_print_no"]]]
+    return sorted("%s-%s" % (l["session"], l["print_no"]) for l in laws if l["print_no"] in changed)
+
+
 def run_session(session, resume=False, limit=None):
     os.makedirs(FULL, exist_ok=True)
     os.makedirs(INDEX_DIR, exist_ok=True)
@@ -227,6 +253,7 @@ def run_session(session, resume=False, limit=None):
             rows.append(index_row(rec))
             if rec.get("chapter") and rec["status"]["type"] == "SIGNED_BY_GOV":
                 laws.append(law_record(rec))
+    fix_carry_over_years(laws, rows, COLS)
     os.makedirs(os.path.join(DATA, "signed"), exist_ok=True)
     json.dump(laws, open(os.path.join(DATA, "signed", "%d.json" % session), "w"), separators=(",", ":"), ensure_ascii=False)
     out = os.path.join(INDEX_DIR, "%d.json" % session)

@@ -94,7 +94,8 @@ check("E2 'of such section pursuant to ... and shall be deemed repealed therewit
 r = parse_effective("§ 4. This act shall take effect July 1, 2014: provided, however, that if section 3 of part D of chapter 501 of the laws of 2012 is not in effect on such date, then section 12 of this act shall take effect on the same date and in the same manner as such chapter of the laws of 2012, takes effect.", "2014-01-10")
 check("E3 colon proviso does not turn the act into same_as_chapter", r["effective_date"] == "2014-07-01" and r["rule"] == "fixed_date", (r["effective_date"], r["rule"]))
 import chapter_lookup as cl
-check("E3 January carry-over chapter detected", cl._carry_over(2013, 557) and not cl._carry_over(2013, 5))
+_s13 = os.path.join(HERE, "..", "..", "data", "signed", "2013.json")          # Nov 12 2026: the signed index now files carry-overs under their own year
+check("E3 January carry-over chapter found under its own year", (cl._carry_over(2013, 557) and not cl._carry_over(2013, 5)) or (os.path.exists(_s13) and any(l["chapter_number"] == 557 and l["chapter_year"] == 2013 for l in json.load(open(_s13)))))
 rec = cl._local_chapter(2013, 557)
 check("E3 chapter 557 of 2013 found in the signed index (signed 2014-01-10)", rec and rec["signed_date"] == "2014-01-10" and rec["bill"] == "2013-S5504", rec and rec["bill"])
 u = cl.resolve(chapter=553, year=2008)

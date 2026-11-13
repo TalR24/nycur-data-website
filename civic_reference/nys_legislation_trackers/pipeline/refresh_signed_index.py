@@ -92,6 +92,8 @@ def refresh_session(data, session, fetch=None, write=True):
             continue
         laws.append(fetch_bills.law_record(rec))
         added.append(laws[-1]["key"])
+    if added:
+        fetch_bills.fix_carry_over_years(laws)
     if write and added:
         json.dump(laws, open(os.path.join(data, "signed", "%d.json" % session), "w"), separators=(",", ":"), ensure_ascii=False)
     return added
