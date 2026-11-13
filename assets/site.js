@@ -23,7 +23,7 @@
       { label: 'Bill Explorer', href: '/civic_reference/nys_legislation_trackers/bills/' },
       { label: 'Duties Tracker', href: '/civic_reference/nys_legislation_trackers/duties/' },
       { label: 'Powers Tracker', href: '/civic_reference/nys_legislation_trackers/powers/' },
-      { label: 'Agencies', href: '/civic_reference/nys_legislation_trackers/agencies/' },
+      { label: 'Public bodies', href: '/civic_reference/nys_legislation_trackers/agencies/' },
       { label: 'Legislators', href: '/civic_reference/nys_legislation_trackers/legislators/' },
       { label: 'Alerts', href: '/civic_reference/nys_legislation_trackers/alerts/' }
     ]},

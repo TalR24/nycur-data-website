@@ -139,7 +139,7 @@ def directory_pages(summary):
     ags.sort(key=lambda a: (-(sum(a["duties"].values()) + sum(a["powers"].values())), a["name"]))
     path = HERE / "agencies" / "index.html"
     put(path, "nys-ag-hero", "%s state and local bodies carry duties or powers from New York laws signed since 2009." % num(summary["agencies"]))
-    put(path, "nys-ag-count", "Showing <strong>1–%d</strong> of %s matching agencies" % (PAGE_SIZE, num(len(ags))))
+    put(path, "nys-ag-count", "Showing <strong>1–%d</strong> of %s matching public bodies" % (PAGE_SIZE, num(len(ags))))
     put(path, "nys-ag-rows", "".join(agency_row(a) for a in ags[:PAGE_SIZE]))
     lgs = json.load(open(SITE / "legislators.json"))
     seen, dup = set(), set()
