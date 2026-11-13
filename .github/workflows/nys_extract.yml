@@ -10,6 +10,10 @@ name: NYS legislation trackers (fetch and API extraction)
 #   3. canary       (limit = number of laws, default 12; prints usage and the projected full-run cost; no commit)
 #   4. extract      (submits Message Batches for every unanswered law, waits up to 5 hours, ingests, validates, commits)
 #   5. resume       (collects batches a previous extract left pending, then ingests, validates, commits)
+#   6. long_windows (Nov 12 2026: the windows of the long laws through the Batches API, one request per window; inputs keys_file,
+#                    max_usd, limit = number of windows (canary), thinking; saves answers to cache/api/long/ and uploads them as
+#                    the artifact only: no ingest, no commit. Locally: import_long_answers.py <artifact folder>. A re-dispatch
+#                    collects a batch left pending, so a timed-out run is not paid twice)
 # fetch_bills commits per session so the job limit is never hit.
 on:
   workflow_dispatch:
@@ -18,7 +22,7 @@ on:
         description: "Task to run"
         required: true
         type: choice
-        options: ["fetch_bills", "fetch_texts", "canary", "extract", "resume"]
+        options: ["fetch_bills", "fetch_texts", "canary", "extract", "resume", "long_windows"]
       session:
         description: "Session start year (2009, 2011, ... 2025). Required for fetch_bills and fetch_texts; optional filter for the others"
         required: false
@@ -121,55 +125,55 @@ jobs:
 
       # canary, extract and resume read the converted texts that fetch_texts saved, one cache per session
       - name: Restore 2009 marked texts
-        if: ${{ inputs.task == 'canary' || inputs.task == 'extract' || inputs.task == 'resume' }}
+        if: ${{ inputs.task == 'canary' || inputs.task == 'extract' || inputs.task == 'resume' || inputs.task == 'long_windows' }}
         uses: ./.github/actions/restore-nys-session
         with:
           session: "2009"
 
       - name: Restore 2011 marked texts
-        if: ${{ inputs.task == 'canary' || inputs.task == 'extract' || inputs.task == 'resume' }}
+        if: ${{ inputs.task == 'canary' || inputs.task == 'extract' || inputs.task == 'resume' || inputs.task == 'long_windows' }}
         uses: ./.github/actions/restore-nys-session
         with:
           session: "2011"
 
       - name: Restore 2013 marked texts
-        if: ${{ inputs.task == 'canary' || inputs.task == 'extract' || inputs.task == 'resume' }}
+        if: ${{ inputs.task == 'canary' || inputs.task == 'extract' || inputs.task == 'resume' || inputs.task == 'long_windows' }}
         uses: ./.github/actions/restore-nys-session
         with:
           session: "2013"
 
       - name: Restore 2015 marked texts
-        if: ${{ inputs.task == 'canary' || inputs.task == 'extract' || inputs.task == 'resume' }}
+        if: ${{ inputs.task == 'canary' || inputs.task == 'extract' || inputs.task == 'resume' || inputs.task == 'long_windows' }}
         uses: ./.github/actions/restore-nys-session
         with:
           session: "2015"
 
       - name: Restore 2017 marked texts
-        if: ${{ inputs.task == 'canary' || inputs.task == 'extract' || inputs.task == 'resume' }}
+        if: ${{ inputs.task == 'canary' || inputs.task == 'extract' || inputs.task == 'resume' || inputs.task == 'long_windows' }}
         uses: ./.github/actions/restore-nys-session
         with:
           session: "2017"
 
       - name: Restore 2019 marked texts
-        if: ${{ inputs.task == 'canary' || inputs.task == 'extract' || inputs.task == 'resume' }}
+        if: ${{ inputs.task == 'canary' || inputs.task == 'extract' || inputs.task == 'resume' || inputs.task == 'long_windows' }}
         uses: ./.github/actions/restore-nys-session
         with:
           session: "2019"
 
       - name: Restore 2021 marked texts
-        if: ${{ inputs.task == 'canary' || inputs.task == 'extract' || inputs.task == 'resume' }}
+        if: ${{ inputs.task == 'canary' || inputs.task == 'extract' || inputs.task == 'resume' || inputs.task == 'long_windows' }}
         uses: ./.github/actions/restore-nys-session
         with:
           session: "2021"
 
       - name: Restore 2023 marked texts
-        if: ${{ inputs.task == 'canary' || inputs.task == 'extract' || inputs.task == 'resume' }}
+        if: ${{ inputs.task == 'canary' || inputs.task == 'extract' || inputs.task == 'resume' || inputs.task == 'long_windows' }}
         uses: ./.github/actions/restore-nys-session
         with:
           session: "2023"
 
       - name: Restore 2025 marked texts
-        if: ${{ inputs.task == 'canary' || inputs.task == 'extract' || inputs.task == 'resume' }}
+        if: ${{ inputs.task == 'canary' || inputs.task == 'extract' || inputs.task == 'resume' || inputs.task == 'long_windows' }}
         uses: ./.github/actions/restore-nys-session
         with:
           session: "2025"
@@ -250,6 +254,23 @@ jobs:
           else python3 extract_duties.py --api --batch $SARGS $BARGS | tee extract_output.txt; fi
           if grep -q "^laws with text: 0 " extract_output.txt; then echo "::error::no law texts restored: nothing was sent"; exit 1; fi
 
+      # --- long_windows: the long laws' windows, one batch request each; answers go to the artifact only ---
+      - name: Long-law windows through the Batches API
+        if: ${{ inputs.task == 'long_windows' }}
+        working-directory: civic_reference/nys_legislation_trackers/pipeline
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          PYTHONUNBUFFERED: "1"
+          NYS_THINKING: ${{ inputs.thinking }}
+        run: |
+          WARGS=""
+          if [ -n "$LIMIT" ]; then WARGS="--canary $LIMIT"; fi
+          if [ -n "${{ inputs.keys_file }}" ]; then WARGS="$WARGS --keys $GITHUB_WORKSPACE/${{ inputs.keys_file }}"; fi
+          if [ -n "${{ inputs.max_usd }}" ]; then WARGS="$WARGS --max-usd ${{ inputs.max_usd }}"; fi
+          set -o pipefail
+          python3 api_long_windows.py $WARGS | tee long_windows_output.txt
+          if grep -q "^laws with text: 0 " long_windows_output.txt; then echo "::error::no long-law texts restored: nothing was sent"; exit 1; fi
+
       # collected answers survive a failed or timed-out job (a batch is paid once)
       - name: Save collected answers
         if: ${{ always() && (inputs.task == 'extract' || inputs.task == 'resume') }}
@@ -326,6 +347,8 @@ jobs:
             civic_reference/nys_legislation_trackers/data/reask_manual.json
             civic_reference/nys_legislation_trackers/pipeline/batch_state*.json
             civic_reference/nys_legislation_trackers/pipeline/canary_output.txt
+            civic_reference/nys_legislation_trackers/pipeline/long_windows_output.txt
+            civic_reference/nys_legislation_trackers/pipeline/cache/api/long/
             civic_reference/nys_legislation_trackers/pipeline/cache/api/
           if-no-files-found: ignore
           retention-days: 30
