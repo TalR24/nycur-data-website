@@ -90,6 +90,16 @@ def deferred_long_laws():
     return len(keys - ingested)
 
 
+
+def hub_cards(summary):
+    """Nov 12 2026: live counts on the NYS hub's tracker cards."""
+    path = HERE / "index.html"
+    put(path, "hub-nys-duties", num(summary["duties"]))
+    put(path, "hub-nys-laws", num(summary["laws"]))
+    put(path, "hub-nys-powers", num(summary["powers"]))
+    put(path, "hub-nys-agencies", num(summary["agencies"]))
+    put(path, "hub-nys-legislators", num(summary["legislators"]))
+
 def methodology_page(summary, gold):
     path = HERE / "methodology" / "index.html"
     put(path, "meth-laws", num(summary["laws"]))
@@ -166,6 +176,7 @@ def main():
         put(path, "nys-method", method_note(summary, gold))
     directory_pages(summary)
     methodology_page(summary, gold)
+    hub_cards(summary)
     print("changed:", changed or "nothing")
 
 
