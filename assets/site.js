@@ -58,6 +58,7 @@
       { label: 'Medicaid’s Check Register Is Public', href: '/nycuriosity_substack_posts/medicaid_provider_spending/' }
     ]},
     { cat: 'Government & Technology', topic: 'govtech', items: [
+      { label: 'By the time the City Council votes, the decision is already made', href: '/nycuriosity_substack_posts/political_starlight/' },
       { label: 'Community data pipeline', href: '/nycuriosity_substack_posts/vital_city_community_data/' },
       { label: 'Duties, Powers and Staffing in the Legislation Trackers Update', href: '/nycuriosity_substack_posts/legislation_trackers_update/' },
       { label: 'What Mamdani’s Efficiency Commission Put on the Ballot', href: '/nycuriosity_substack_posts/coge_report/' },
