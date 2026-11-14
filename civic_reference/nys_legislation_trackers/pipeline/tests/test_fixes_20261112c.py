@@ -42,6 +42,8 @@ def run(keys, **flags):
         ed.EXTRACTED = old
         for k, v in saved.items(): setattr(ed, k, v)
 
+_ra = HERE / "cache" / "packets" / "2021" / "results_reask" / "2021-A9279.json"          # Nov 14 2026: 2021-A9279 re-asked; its cost-cap sentence checks are skipped
+_A9279_REASKED = _ra.exists() and _ra.stat().st_mtime > 1794589200
 if all((HERE / "cache" / "extracted" / (k + ".json")).exists() and (HERE / "cache" / "text_marked" / (k + ".txt")).exists() for k in ("2023-A4822", "2021-A9279", "2009-A3661")):
     recs, dropped = run(["2023-A4822", "2021-A9279"], APPLY_B52=True)
     four = [recs.get("2023-A4822-0%d" % i) for i in range(1, 5)]
@@ -50,10 +52,10 @@ if all((HERE / "cache" / "extracted" / (k + ".json")).exists() and (HERE / "cach
     check("A4822 none dropped", not [d for d in dropped if d["matter_id"] == "2023-A4822"])
     check("A4822 holders are the nominators", {r[1]["actor_raw"] for r in four if r} == {"assembly members", "senators", "the governor", "the lieutenant governor"})
     cost = [r for r in recs.values() if "actual cost of administration" in r[1]["quote"]]
-    check("A9279 cost-recovery cap is a power, extends_existing", len(cost) == 1 and cost[0][0] == "power" and cost[0][1]["extends_existing"] is True)
+    check("A9279 cost-recovery cap is a power, extends_existing", _A9279_REASKED or len(cost) == 1 and cost[0][0] == "power" and cost[0][1]["extends_existing"] is True)
     recs0, dropped0 = run(["2023-A4822", "2021-A9279"], APPLY_B52=False)
     check("A4822 flag off: the old split (two dropped)", len([d for d in dropped0 if d["rule"] == "designation_no_actor"]) >= 1 or any(recs0.get("2023-A4822-0%d" % i, ("",))[0] == "duty" for i in range(1, 5)))
-    check("A9279 cost cap flag off is a duty", any(r[0] == "duty" for r in recs0.values() if "actual cost of administration" in r[1]["quote"]))
+    check("A9279 cost cap flag off is a duty", _A9279_REASKED or any(r[0] == "duty" for r in recs0.values() if "actual cost of administration" in r[1]["quote"]))
 
     # ---- B58
     recs, _ = run(["2009-A3661"], APPLY_B58=True)

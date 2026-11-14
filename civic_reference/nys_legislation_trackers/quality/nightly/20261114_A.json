@@ -1,0 +1,3163 @@
+{
+ "_scoring": {
+  "auditor": "A",
+  "night": "20261114",
+  "laws": 11,
+  "stored_records": 201,
+  "correct": 161,
+  "wrong_fields": 15,
+  "not_real": 25,
+  "missed": 6,
+  "precision_strict": "161/201 = 80.1% (Wilson 95% 74.0-85.0)",
+  "precision_real": "176/201 = 87.6% (Wilson 95% 82.3-91.4)",
+  "recall": "176/182 = 96.7% (Wilson 95% 93.0-98.5)",
+  "effective_dates": "11/11 correct (act level; 2 section-scoped proviso gaps noted)",
+  "calibration_laws": {
+   "laws": [
+    "2015-S5903",
+    "2009-A3337"
+   ],
+   "stored_records": 6,
+   "correct": 6,
+   "wrong_fields": 0,
+   "not_real": 0,
+   "missed": 0,
+   "precision_strict": "6/6 = 100.0% (Wilson 95% 61.0-100.0)",
+   "recall": "6/6 = 100.0% (Wilson 95% 61.0-100.0)",
+   "effective_dates": "2/2 correct"
+  },
+  "recall_method": "denominator = stored real records (correct+wrong) + blind items with no stored record; large omnibus laws were blind-listed by section, not item by item"
+ },
+ "_classes": [
+  {
+   "name": "conforming-word or citation-only reprint stored as a record",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2011-S5571-02",
+    "2011-S5571-05",
+    "2011-S5571-08",
+    "2013-A9733-01",
+    "2013-A9733-09",
+    "2025-S8415-35"
+   ],
+   "rule": "packet text -> clean text with new-matter mask; flag records whose quote span contains 1-4 new-matter words, all in {justices, or, they, their, chairperson, his, her, article, title, chapter, the, an, a, such, incarcerated individual, ...}",
+   "db_matches": 51,
+   "db_examples": [
+    "2009-A11515-15",
+    "2009-A40012-87",
+    "2009-A40023-01"
+   ],
+   "needs_judgment": false,
+   "sample_instances_matched": "1/6"
+  },
+  {
+   "name": "study-content list items stored as separate records",
+   "criteria": [
+    "9"
+   ],
+   "instances": [
+    "2025-S8415-27",
+    "2025-S8415-28",
+    "2025-S8415-29",
+    "2025-S8415-30",
+    "2025-S8415-31"
+   ],
+   "rule": "deliverable_type=='study or audit' and quote matches ^(Determine|Assess|Identify|Evaluate|Recommend|Examine|Review|Analy[sz]e|Investigate|Study|Compare)\\b and no shall/must/may in quote",
+   "db_matches": 29,
+   "db_examples": [
+    "2009-A40012-07",
+    "2013-A829-02",
+    "2013-S6865-11"
+   ],
+   "needs_judgment": false,
+   "sample_instances_matched": "4/5"
+  },
+  {
+   "name": "appointee-qualification lead stored as a duty per appointer",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2025-S8415-48",
+    "2025-S8415-51",
+    "2025-S8415-54"
+   ],
+   "rule": "quote matches (?i)members (appointed|of the \\w+) shall include,? but not be limited to|shall include at least one|at least one of each of the following",
+   "db_matches": 3,
+   "db_examples": [
+    "2025-S8415-48",
+    "2025-S8415-51",
+    "2025-S8415-54"
+   ],
+   "needs_judgment": false,
+   "sample_instances_matched": "3/3"
+  },
+  {
+   "name": "offset deadline anchored to the act date instead of the Part/section date",
+   "criteria": [
+    "5"
+   ],
+   "instances": [
+    "2025-S8415-22"
+   ],
+   "rule": "deadline_kind=='days_after_effective' and deadline_offset amount>0 and deadline_date<=record effective_date",
+   "db_matches": 17,
+   "db_examples": [
+    "2011-S2581-03",
+    "2011-S6255-83",
+    "2011-S6255-84"
+   ],
+   "needs_judgment": false,
+   "sample_instances_matched": "1/1"
+  },
+  {
+   "name": "named-class local actor left Unspecified",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2025-S8415-05",
+    "2025-S8415-06",
+    "2013-A4327-13"
+   ],
+   "rule": "agency=='Unspecified' and actor_raw matches (?i)local correctional facilit|public entity|county jail|any municipality|local (government|agency)",
+   "db_matches": 27,
+   "db_examples": [
+    "2009-A9040-04",
+    "2009-A9040-08",
+    "2009-S5921-21"
+   ],
+   "needs_judgment": false,
+   "sample_instances_matched": "3/3"
+  },
+  {
+   "name": "prohibition on the government actor stored as a power",
+   "criteria": [
+    "4"
+   ],
+   "instances": [
+    "2025-S8415-57"
+   ],
+   "rule": "record in powers/*.json whose quote matches (?i)\\b(may not|shall not|no \\w+ (shall|may))\\b before any 'provided'",
+   "db_matches": 112,
+   "db_examples": [
+    "2009-A11144-02",
+    "2009-A11567-05",
+    "2009-A2209-91"
+   ],
+   "needs_judgment": false,
+   "sample_instances_matched": "1/1"
+  },
+  {
+   "name": "owner-liability, penalty cap or evidentiary rule in camera laws stored as a record",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2025-S10058-19",
+    "2025-S10058-21",
+    "2025-S10058-22",
+    "2025-S10058-17",
+    "2025-S10058-29"
+   ],
+   "rule": "quote matches (?i)liability of the owner .{0,40}shall not exceed|shall not be deemed a conviction|shall be liable for monetary penalties|lessee of such vehicle|be used in such criminal action|shall be subject to liability",
+   "db_matches": 29,
+   "db_examples": [
+    "2009-A7329-04",
+    "2013-A4327-18",
+    "2013-A9206-46"
+   ],
+   "needs_judgment": false,
+   "sample_instances_matched": "5/5"
+  },
+  {
+   "name": "relocated duplicate quote under a different citation",
+   "criteria": [
+    "2",
+    "9"
+   ],
+   "instances": [
+    "2011-S3914-13",
+    "2011-S3914-14"
+   ],
+   "rule": "group by (matter_id, agency, quote); flag groups with more than one distinct citation (all but the first record)",
+   "db_matches": 662,
+   "db_examples": [
+    "2015-A1719-03",
+    "2015-A6045-03",
+    "2015-A7319-02"
+   ],
+   "needs_judgment": false,
+   "sample_instances_matched": "1/2"
+  },
+  {
+   "name": "section-scoped proviso date not applied to the section's records",
+   "criteria": [
+    "8"
+   ],
+   "instances": [
+    "2025-S8415-36",
+    "2025-S8415-37"
+   ],
+   "rule": "law raw_clause or Part clause matches 'section (\\w+) of this act shall take effect on the' while record effective_date equals the act/Part date; needs citation-to-section mapping",
+   "db_matches": null,
+   "db_examples": [],
+   "needs_judgment": true,
+   "laws": [
+    "2025-S8415"
+   ]
+  },
+  {
+   "name": "setup-duty deadline wrong when duty depends on an optional program or a later Part date",
+   "criteria": [
+    "5"
+   ],
+   "instances": [
+    "2025-S10058-05",
+    "2025-S8415-09",
+    "2025-S8415-10"
+   ],
+   "rule": "none mechanical: on_effective_date vs none turns on whether the duty is conditional on an optional authorization",
+   "db_matches": null,
+   "db_examples": [],
+   "needs_judgment": true,
+   "laws": [
+    "2025-S10058",
+    "2025-S8415"
+   ]
+  }
+ ],
+ "2011-S5571": {
+  "records": {
+   "2011-S5571-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "In like manner, there shall also be appointed for the village of Port Chester, two acting police justices for the said term.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Villages",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": "Village of Port Chester"
+    }
+   },
+   "2011-S5571-02": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "The police justice, or in case of his absence or inability to act, the acting police justice or justices, shall have exclusive jurisdiction in the first instance to hear, try and determine charges of violations of the ordinances of the village of Port Chester.",
+    "note": "Only new matter in the quoted sentence is the conforming plural ('acting police [justice] {{justices}}' / '{{or justices}}'); the duty is reprinted unchanged text. The real widening (two acting justices) is -01."
+   },
+   "2011-S5571-03": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "an acting police justice shall be a person who has the qualifications herein provided for such office, and shall perform the duties of the said police justice in case of and during his temporary disability or absence.",
+    "note": "Only new matter in the quoted sentence is the conforming plural ('acting police [justice] {{justices}}' / '{{or justices}}'); the duty is reprinted unchanged text. The real widening (two acting justices) is -01."
+   },
+   "2011-S5571-04": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "The police justice may make an order that the business of the court requires such acting police justice or justices to assist him in the disposition thereof",
+    "note": "Only new matter in the quoted sentence is the conforming plural ('acting police [justice] {{justices}}' / '{{or justices}}'); the duty is reprinted unchanged text. The real widening (two acting justices) is -01."
+   },
+   "2011-S5571-05": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "thereupon such acting police justices shall perform the duties, and shall have and exercise the jurisdiction and powers of the police justice in civil and criminal cases and proceedings concurrently with such police justice.",
+    "note": "Only new matter in the quoted sentence is the conforming plural ('acting police [justice] {{justices}}' / '{{or justices}}'); the duty is reprinted unchanged text. The real widening (two acting justices) is -01."
+   },
+   "2011-S5571-06": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "The police justice and acting police justices shall receive for their service such salaries as shall be fixed by a majority vote of the board of trustees.",
+    "note": "Only new matter in the quoted sentence is the conforming plural ('acting police [justice] {{justices}}' / '{{or justices}}'); the duty is reprinted unchanged text. The real widening (two acting justices) is -01."
+   },
+   "2011-S5571-07": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "The police justice and acting police justices shall pay all fines, penalties, fees and other costs received by either of them to the comptroller of the state of New York, as provided by law.",
+    "note": "Only new matter in the quoted sentence is the conforming plural ('acting police [justice] {{justices}}' / '{{or justices}}'); the duty is reprinted unchanged text. The real widening (two acting justices) is -01."
+   },
+   "2011-S5571-08": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "If said police justice or the acting police justices shall be absent, or unable to perform said duties, then any justice of the peace of the town of Rye, residing in said village who may be designated by the mayor of said village",
+    "note": "Only new matter in the quoted sentence is the conforming plural ('acting police [justice] {{justices}}' / '{{or justices}}'); the duty is reprinted unchanged text. The real widening (two acting justices) is -01."
+   },
+   "2011-S5571-09": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "The police justice court and the police justice and acting police justices thereof must take judicial notice of all ordinances adopted by the board of trustees so long as the same remain in force and effect",
+    "note": "Only new matter in the quoted sentence is the conforming plural ('acting police [justice] {{justices}}' / '{{or justices}}'); the duty is reprinted unchanged text. The real widening (two acting justices) is -01."
+   },
+   "2011-S5571-10": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "to be known as the police justice fund, and all fines, forfeitures of bail, fees and costs collected by the police justice and acting police justices and received by the treasurer of the village of Port Chester through the comptroller of the state of New York, and all moneys received by the village from the county for services of police",
+    "note": "Only new matter in the quoted sentence is the conforming plural ('acting police [justice] {{justices}}' / '{{or justices}}'); the duty is reprinted unchanged text. The real widening (two acting justices) is -01."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2011-08-03",
+   "computed": "2011-08-03",
+   "verdict": "correct",
+   "note": "act clause 'immediately' applied to signing date"
+  }
+ },
+ "2013-A9733": {
+  "records": {
+   "2013-A9733-01": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "The justice center for the protection of people with special needs shall be responsible for monitoring the quality of mental health care provided to inmates pursuant to article twenty of the executive law.",
+    "note": "Only change is the citation: 'pursuant to article [forty-five of the mental hygiene law] {{twenty of the executive law.}}'; monitoring duty is reprinted unchanged."
+   },
+   "2013-A9733-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Provide for the development and implementation of a plan of prevention and remediation with respect to a substantiated report of abuse or neglect.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "SED",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2013-A9733-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Provide for the development and implementation of a plan of prevention and remediation with respect to a substantiated report of abuse or neglect.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "SED",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2013-A9733-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Provide for the development and implementation of a plan of prevention and remediation with respect to a substantiated report of abuse or neglect.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "SED",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2013-A9733-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "To provide for the development and implementation of a plan of prevention and remediation with respect to a substantiated report of abuse or neglect.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "SED",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2013-A9733-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "assuring that an individual who has committed a category one offense, as defined in paragraph (a) of subdivision four of section four hundred ninety-three of the social services law, that is included on the vulnerable persons' central register is not hired or otherwise used in any position in which such individual would have regular and substantial contact",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "SED",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-A9733-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "assuring that an individual who has committed a category one offense, as defined in paragraph (a) of subdivision four of section four hundred ninety-three of the social services law, that is included on the vulnerable persons' central register is not hired or otherwise used in any position in which such individual would have regular and substantial contact",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "SED",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-A9733-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "assuring that an individual who has committed a category one offense, as defined in paragraph (a) of subdivision four of section four hundred ninety-three of the social services law, that is included on the vulnerable persons' central register is not hired or otherwise used in any position in which such individual would have regular and substantial contact",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "SED",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-A9733-09": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "shall develop guidelines to be utilized by appropriate state and local governmental agencies and authorized agencies as defined by subdivision ten of section three hundred seventy-one of this article",
+    "note": "Only changes are citation words: 'this [chapter] {{article}}', '[chapter] {{title}}'; guideline duty reprinted unchanged."
+   },
+   "2013-A9733-10": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "or its vendors or contractors shall not take any retaliatory personnel action, as such term is defined in paragraph (e) of subdivision one of section seven hundred forty of the labor law, against an employee or agent or vendor or contractor",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State agencies",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2014-07-22",
+   "computed": "2014-07-22",
+   "verdict": "correct",
+   "note": "\u00a7 13 proviso for section six (same as ch 554 of 2013 \u00a7 12) not resolved; act-level date correct."
+  }
+ },
+ "2025-S10058": {
+  "records": {
+   "2025-S10058-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the village of Croton-on-Hudson is hereby authorized to establish a demonstration program imposing monetary liability on the owner of a vehicle for failure of an operator thereof to comply with posted maximum speed limits in a school speed zone within such village",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Villages",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "Village of Croton-on-Hudson"
+    }
+   },
+   "2025-S10058-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Such demonstration program shall empower the village of Croton-on-Hudson to install photo speed violation monitoring systems within no more than three school speed zones within such village at any one time and to operate such systems within such zones",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Villages",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "Village of Croton-on-Hudson"
+    }
+   },
+   "2025-S10058-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "In selecting a school speed zone in which to install and operate a photo speed violation monitoring system, the village shall consider criteria including, but not limited to, the speed data, crash history, and the roadway geometry applicable to such school speed zone.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Villages",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "Village of Croton-on-Hudson"
+    }
+   },
+   "2025-S10058-05": {
+    "verdict": "wrong",
+    "criteria": [
+     "5"
+    ],
+    "fields": {
+     "deadline_kind": "none"
+    },
+    "quote": "The village shall install signs giving notice that a photo speed violation monitoring system is in use to be mounted on advance warning signs notifying motor vehicle operators of such upcoming school speed zone and/or on speed limit signs applicable within such school speed zone, in conformance with standards established in the MUTCD.",
+    "note": "Sign duty applies only once the optional program runs systems ('is hereby authorized to establish a demonstration program'); triggered by a precondition, so no on_effective_date deadline."
+   },
+   "2025-S10058-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Operators of photo speed violation monitoring systems shall have completed training in the procedures for setting up, testing, and operating such systems.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Villages",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "Village of Croton-on-Hudson"
+    }
+   },
+   "2025-S10058-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Each such operator shall complete and sign a daily set-up log for each such system that such operator operates that (i) states the date and time when, and the location where, the system was set up that day, and (ii) states that such operator successfully performed, and the system passed, the self-tests of such system",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Villages",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "Village of Croton-on-Hudson"
+    }
+   },
+   "2025-S10058-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The village shall retain each such daily log until the later of the date on which the photo speed violation monitoring system to which it applies has been permanently removed from use or the final resolution of all cases involving notices of liability issued based on photographs, microphotographs, videotape or other recorded images produced by such system.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Villages",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "Village of Croton-on-Hudson"
+    }
+   },
+   "2025-S10058-09": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Each photo speed violation monitoring system shall undergo an annual calibration check performed by an independent calibration laboratory which shall issue a signed certificate of calibration.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Villages",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "Village of Croton-on-Hudson"
+    }
+   },
+   "2025-S10058-10": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The village shall keep each such annual certificate of calibration on file until the final resolution of all cases involving a notice of liability issued during such year which were based on photographs, microphotographs, videotape or other recorded images produced by such photo speed violation monitoring system.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Villages",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "Village of Croton-on-Hudson"
+    }
+   },
+   "2025-S10058-11": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Such demonstration program shall utilize necessary technologies to ensure, to the extent practicable, that photographs, microphotographs, videotape or other recorded images produced by such photo speed violation monitoring systems shall not include images that identify the driver, the passengers, or the contents of the vehicle.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Villages",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "Village of Croton-on-Hudson"
+    }
+   },
+   "2025-S10058-12": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "shall be destroyed by the village upon the final resolution of the notice of liability to which such photographs, microphotographs, videotape or other recorded images relate, or one year following the date of issuance of such notice of liability, whichever is later",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Villages",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "Village of Croton-on-Hudson"
+    }
+   },
+   "2025-S10058-13": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "no public entity or employee, officer or agent thereof shall disclose such information, except that such photographs, microphotographs, videotape or any other recorded images from such systems:",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Villages",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "Village of Croton-on-Hudson"
+    }
+   },
+   "2025-S10058-14": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "shall be available for inspection and copying and use by the motor vehicle owner and operator for so long as such photographs, microphotographs, videotape or other recorded images are required to be maintained or are maintained by such public entity, employee, officer or agent",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Villages",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "Village of Croton-on-Hudson"
+    }
+   },
+   "2025-S10058-15": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "shall be furnished when described in a search warrant issued by a court authorized to issue such a search warrant pursuant to article six hundred ninety of the criminal procedure law or a federal court authorized to issue such a search warrant under federal law",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Villages",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "Village of Croton-on-Hudson"
+    }
+   },
+   "2025-S10058-16": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "shall be furnished in response to a subpoena duces tecum signed by a judge of competent jurisdiction and issued pursuant to article six hundred ten of the criminal procedure law or a judge or magistrate of a federal court authorized to issue such a subpoena duces tecum under federal law",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Villages",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "Village of Croton-on-Hudson"
+    }
+   },
+   "2025-S10058-17": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "may, if lawfully obtained pursuant to this clause and clause (A) of this subparagraph and otherwise admissible, be used in such criminal action or proceeding.",
+    "note": "'may, if lawfully obtained ... be used in such criminal action or proceeding' is an evidentiary rule, no government actor (stored Unspecified)."
+   },
+   "2025-S10058-18": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Any photographs, microphotographs, videotape or other recorded images evidencing such a violation shall include at least two date and time stamped images of the rear of the motor vehicle that include the same stationary object near the motor vehicle and shall be available for inspection reasonably in advance of and at any proceeding",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Villages",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "Village of Croton-on-Hudson"
+    }
+   },
+   "2025-S10058-19": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "shall be liable for monetary penalties in accordance with a schedule of fines and penalties to be set forth in such local law or ordinance.",
+    "note": "'[the owner] shall be liable for monetary penalties in accordance with a schedule of fines and penalties to be set forth in such local law' is the owner's liability, a private party's obligation."
+   },
+   "2025-S10058-20": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "such local law or ordinance may provide for an additional penalty not in excess of twenty-five dollars for each violation for the failure to respond to a notice of liability within the prescribed time period.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Villages",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "Village of Croton-on-Hudson"
+    }
+   },
+   "2025-S10058-21": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "The liability of the owner pursuant to this section shall not exceed fifty dollars for each violation",
+    "note": "'The liability of the owner pursuant to this section shall not exceed fifty dollars for each violation' is a cap."
+   },
+   "2025-S10058-22": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "shall not be deemed a conviction as an operator and shall not be made part of the operating record of the person upon whom such liability is imposed nor shall it be used for insurance purposes in the provision of motor vehicle insurance coverage.",
+    "note": "'shall not be deemed a conviction as an operator ...' binds no government actor (stored Unspecified)."
+   },
+   "2025-S10058-23": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "A notice of liability shall be sent by first class mail to each person alleged to be liable as an owner for a violation of subdivision (b), (c), (d), (f) or (g) of section eleven hundred eighty of this article pursuant to this section, within fourteen business days if such owner is a resident of this state",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Villages",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "Village of Croton-on-Hudson"
+    }
+   },
+   "2025-S10058-24": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "A notice of liability shall contain the name and address of the person alleged to be liable as an owner for a violation of subdivision (b), (c), (d), (f) or (g) of section eleven hundred eighty of this article pursuant to this section, the registration number of the vehicle involved in such violation",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Villages",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "Village of Croton-on-Hudson"
+    }
+   },
+   "2025-S10058-25": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The notice of liability shall contain information advising the person charged of the manner and the time in which such person may contest the liability alleged in the notice.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Villages",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "Village of Croton-on-Hudson"
+    }
+   },
+   "2025-S10058-26": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Such notice of liability shall also contain a prominent warning to advise the person charged that failure to contest in the manner and time provided shall be deemed an admission of liability and that a default judgment may be entered thereon.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Villages",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "Village of Croton-on-Hudson"
+    }
+   },
+   "2025-S10058-27": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The notice of liability shall be prepared and mailed by the village of Croton-on-Hudson, or by any other entity authorized by the village to prepare and mail such notice of liability.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Villages",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "Village of Croton-on-Hudson"
+    }
+   },
+   "2025-S10058-28": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Adjudication of the liability imposed upon owners of this section shall be by a traffic violations bureau established pursuant to section three hundred seventy of the general municipal law or, if there be none, by the court having jurisdiction over traffic infractions.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Villages",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "Village of Croton-on-Hudson"
+    }
+   },
+   "2025-S10058-29": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "shall be subject to liability for the violation of subdivision (b), (c), (d), (f) or (g) of section eleven hundred eighty of this article pursuant to this section and shall be sent a notice of liability pursuant to subdivision (g) of this section.",
+    "note": "'the lessee ... shall be subject to liability ...' is a private party's liability; the notice part duplicates -23."
+   },
+   "2025-S10058-30": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "it shall conduct a study and submit an annual report on the results of the use of photo devices to the governor, the temporary president of the senate and the speaker of the assembly on or before the first day of June next succeeding the effective date of this section",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Villages",
+     "kind": "duty",
+     "deadline_kind": "fixed_date",
+     "extends_existing": false,
+     "agency_unit": "Village of Croton-on-Hudson"
+    }
+   }
+  },
+  "missed": [
+   {
+    "blind": "b1",
+    "quote": "The purchase or lease of equipment for a demonstration program established pursuant to section 1180-i of the vehicle and traffic law, as added by section one of this act, shall be subject to the provisions of section 103 of the general municipal law.",
+    "kind": "duty",
+    "agency": "Villages (Village of Croton-on-Hudson)",
+    "dropped_by": null,
+    "note": "\u00a7 3, wholly new section: competitive bidding applies to the village's purchase."
+   },
+   {
+    "blind": "b2",
+    "quote": "{{(x) are photographs, microphotographs, videotape or other recorded images prepared under the authority of section eleven hundred eighty-i of the vehicle and traffic law.}}",
+    "kind": "power",
+    "agency": "State agencies",
+    "dropped_by": null,
+    "note": "POL 87(2) list item under 'may deny access to records'; Kind ruling: item takes the lead's modal (power)."
+   }
+  ],
+  "effective_date": {
+   "stored": "2026-09-13",
+   "computed": "2026-09-13",
+   "verdict": "correct",
+   "note": "act clause 'nth_day_after_law' applied to signing date"
+  }
+ },
+ "2013-A10122": {
+  "records": {
+   "2013-A10122-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Prior to commencing operation of any such branch office, the licensee shall notify the authority of the location of such branch office and the authority may issue a permit for the operation of same.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "ABC",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2014-12-13",
+   "computed": "2014-12-13",
+   "verdict": "correct",
+   "note": "act clause 'nth_day_after_law' applied to signing date"
+  }
+ },
+ "2025-S8415": {
+  "records": {
+   "2025-S8415-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The department shall disclose to the attorney general's office of special investigation any video footage that such office deems to be related to the death of an incarcerated individual.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2025-S8415-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "No redactions shall be made to the video footage before it is disclosed to the attorney general's office of special investigation.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2025-S8415-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The attorney general's office of special investigation shall maintain the confidentiality of all video footage and will determine redactions pursuant to its published video release policy.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Attorney General",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "Office of Special Investigation"
+    }
+   },
+   "2025-S8415-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Disclosure may be delayed only if the attorney general's office of special investigation certifies that such disclosure would compromise an ongoing criminal investigation or prosecution.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Attorney General",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "Office of Special Investigation"
+    }
+   },
+   "2025-S8415-05": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Counties"
+    },
+    "quote": "Any local correctional facility shall disclose to the attorney general's office of special investigation any video footage that such office deems to be related to the death of an incarcerated individual.",
+    "note": "'Any local correctional facility shall disclose ...' - local correctional facilities are county (and NYC) jails; stored Unspecified."
+   },
+   "2025-S8415-06": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Counties"
+    },
+    "quote": "No redactions shall be made to the video footage before it is disclosed to the attorney general's office of special investigation.",
+    "note": "Same local correctional facility actor (500-q(4)(a)) stored Unspecified."
+   },
+   "2025-S8415-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The attorney general's office of special investigation shall maintain the confidentiality of all video footage and will determine redactions pursuant to its published video release policy.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Attorney General",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "Office of Special Investigation"
+    }
+   },
+   "2025-S8415-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Disclosure may be delayed only if the attorney general's office of special investigation certifies that such disclosure would compromise an ongoing criminal investigation or prosecution.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Attorney General",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "Office of Special Investigation"
+    }
+   },
+   "2025-S8415-09": {
+    "verdict": "wrong",
+    "criteria": [
+     "5"
+    ],
+    "fields": {
+     "deadline_kind": "on_effective_date",
+     "deadline_date": "2026-12-19"
+    },
+    "quote": "All covered facilities in the state shall be required to install, operate, and maintain fixed or stationary cameras sufficient to capture the activities and movement of all persons within each such covered facilities, with the exception of the interior of cells, showers, and toilet areas.",
+    "note": "'shall be required to install, operate, and maintain fixed or stationary cameras' is a setup duty with no stated deadline; Part B takes effect 'one year after it shall have become a law'."
+   },
+   "2025-S8415-10": {
+    "verdict": "wrong",
+    "criteria": [
+     "5"
+    ],
+    "fields": {
+     "deadline_kind": "on_effective_date",
+     "deadline_date": "2026-12-19"
+    },
+    "quote": "For each area in which there is not fixed or stationary camera coverage of the interior of such area, cameras shall be installed, operated, and maintained which capture the ingress and egress of such areas.",
+    "note": "'cameras shall be installed, operated, and maintained which capture the ingress and egress' is a setup duty."
+   },
+   "2025-S8415-11": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Fixed or stationary cameras installed in covered facilities shall capture both audio and visual footage.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2025-S8415-12": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Each covered facility shall ensure that all fixed or stationary cameras capture a clear visual of the activities within such covered facility.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2025-S8415-13": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The superintendent or warden or their designee shall perform regular assessments and improvements to fixed or stationary camera placement and functionality to ensure complete coverage.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2025-S8415-14": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "If at any time, the superintendent or warden or their designee becomes aware of any non-functioning fixed or stationary cameras, or any blind spot, such issues shall be documented, investigated and actions shall be taken to remedy the problems that led to incomplete camera coverage or unavailable camera footage.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2025-S8415-15": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Fixed or stationary cameras in covered facilities shall operate continuously for twenty-four hours a day.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2025-S8415-16": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "All fixed or stationary camera footage captured under this section shall be preserved for a minimum of one year.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2025-S8415-17": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "If there is an allegation or report of any staff misconduct or rule violation, such footage from the time period of such incident shall be preserved for a minimum of five years.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2025-S8415-18": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Fixed or stationary camera footage from covered facilities under this section shall be provided upon request if such request is accompanied by a valid subpoena or a court order issued by a court of competent jurisdiction.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2025-S8415-19": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Fixed or stationary camera footage relevant to any complaint, investigation, or legal proceeding shall be preserved for a minimum of five years from the date of such complaint or incident.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2025-S8415-20": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The office of the inspector general shall determine whether any enforcement actions are warranted for failure to install or maintain adequate fixed or stationary camera coverage, including the recommendation of monetary penalties or corrective actions.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Office of the State Inspector General",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2025-S8415-21": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The office of the state inspector general shall conduct annual audits of covered facilities to ensure compliance with this section. The findings of such audits shall be made available to the public through an annual report.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Office of the State Inspector General",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2025-S8415-22": {
+    "verdict": "wrong",
+    "criteria": [
+     "5"
+    ],
+    "fields": {
+     "deadline_date": "2027-12-19"
+    },
+    "quote": "The commissioner shall make an annual report to the speaker of the assembly, the temporary president of the senate, and the governor of all the incidents documented, investigated, and all of the actions taken pursuant to subdivision two of this section beginning one year after the effective date of this section.",
+    "note": "'beginning one year after the effective date of this section'; Part B is effective 2026-12-19, so the first report is due 2027-12-19, not 2026-12-19."
+   },
+   "2025-S8415-23": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The department shall promptly notify the next of kin and any other person designated as the representative of any incarcerated individual whose death takes place during custody",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2025-S8415-24": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The department shall promptly notify the next of kin and any other person designated as a representative of the circumstances surrounding the death of such incarcerated individual, the medical procedures used and the cause of death including preliminary determinations and final determination as reported by an autopsy report as such information becomes available.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2025-S8415-25": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Within twenty-four hours after the next of kin and any other person designated as a representative has been notified of such death, the department shall publish public notice of such death on the department's website.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2025-S8415-26": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The state commission of correction shall conduct a comprehensive study on deaths in correctional facilities of the department of corrections and community supervision to provide data-driven insights and recommendations to improve prison conditions, healthcare, and policies to prevent future tragedies.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "SCOC",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2025-S8415-27": {
+    "verdict": "not_real",
+    "criteria": [
+     "9"
+    ],
+    "fields": {},
+    "quote": "Determine the number and causes of deaths in New York state correctional facilities over the past decade;",
+    "note": "Item of 'Such study shall:' list in Part D \u00a7 1; content of the one study duty -26, not a distinct duty."
+   },
+   "2025-S8415-28": {
+    "verdict": "not_real",
+    "criteria": [
+     "9"
+    ],
+    "fields": {},
+    "quote": "Assess the adequacy of the mental health services and medical services within correctional facilities of the department of corrections and community supervision;",
+    "note": "Item of 'Such study shall:' list in Part D \u00a7 1; content of the one study duty -26, not a distinct duty."
+   },
+   "2025-S8415-29": {
+    "verdict": "not_real",
+    "criteria": [
+     "9"
+    ],
+    "fields": {},
+    "quote": "Identify any patterns or trends in the data that may indicate systemic issues or areas needing improvement;",
+    "note": "Item of 'Such study shall:' list in Part D \u00a7 1; content of the one study duty -26, not a distinct duty."
+   },
+   "2025-S8415-30": {
+    "verdict": "not_real",
+    "criteria": [
+     "9"
+    ],
+    "fields": {},
+    "quote": "Evaluate the effectiveness of existing policies and procedures in preventing deaths in custody; and",
+    "note": "Item of 'Such study shall:' list in Part D \u00a7 1; content of the one study duty -26, not a distinct duty (also stored as a power against a mandatory lead)."
+   },
+   "2025-S8415-31": {
+    "verdict": "not_real",
+    "criteria": [
+     "9"
+    ],
+    "fields": {},
+    "quote": "Recommend measures to improve the health and safety of incarcerated individuals.",
+    "note": "Item of 'Such study shall:' list in Part D \u00a7 1; content of the one study duty -26, not a distinct duty."
+   },
+   "2025-S8415-32": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Within one year of the effective date of this act, the state commission of correction shall issue a report of the findings of the study to the governor, the temporary president of the senate and the speaker of the assembly.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "SCOC",
+     "kind": "duty",
+     "deadline_kind": "days_after_effective",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2025-S8415-33": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "an autopsy report shall include all photographs of the body, microscopic slides, and post-mortem x-rays taken by or at the direction of the person performing the autopsy, and all photographs, microscopic slides, and post-mortem x-rays reviewed by the person performing the autopsy",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Counties",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2025-S8415-34": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "an autopsy report shall include all photographs of the body, microscopic slides, and post-mortem x-rays taken by or at the direction of the person performing the autopsy, and all photographs, microscopic slides, and post-mortem x-rays reviewed by the person performing the autopsy",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Counties",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2025-S8415-35": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "the coroner, coroner's physician or medical examiner shall promptly provide the chairperson of the correction medical review board and the commissioner of corrections and community supervision with copies of any autopsy report, toxicological report or any report of any examination or inquiry prepared with respect to any death occurring to an incarcerated individual",
+    "note": "Only new matter in County Law 677(6) operative sentence is '[chairman] {{chairperson}}' and '[his or her] {{their}}' - gender-word reprint; the new autopsy-contents sentence is already -34."
+   },
+   "2025-S8415-36": {
+    "verdict": "wrong",
+    "criteria": [
+     "8"
+    ],
+    "fields": {
+     "effective_date": "2026-02-17"
+    },
+    "quote": "the attorney general may designate a deputy attorney general or assistant attorney general, including any person designated under subdivision five of this section, as provided by section nine of the public officers law, to act as attorney general for that matter in the attorney general's stead.",
+    "note": "Part F \u00a7 5: 'section two of this act shall take effect on the sixtieth day after it shall have become a law' (signed 2025-12-19); 70-b(8) is section two."
+   },
+   "2025-S8415-37": {
+    "verdict": "wrong",
+    "criteria": [
+     "8",
+     "5"
+    ],
+    "fields": {
+     "effective_date": "2026-02-17",
+     "deadline_date": "2026-02-17"
+    },
+    "quote": "the attorney general shall establish through rules and regulations, processes and procedures for screening (i) the person so designated pursuant to paragraph (a) of this subdivision, and the entire prosecution team, from records, communication, and information related to the civil defense of a police officer or peace officer",
+    "note": "Same Part F section-two date; rules duty is due on that date."
+   },
+   "2025-S8415-38": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the attorney general shall be authorized to establish through executive order or other formal action within the office, processes and procedures for screenings required by paragraph (b) of subdivision 8 of section 70-b of the executive law",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Attorney General",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2025-S8415-39": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "a superior criminal court in the county wherein the action is triable may upon articulable reasons set forth by the attorney general for such appointment, by order: (i) appoint some attorney at law having relevant experience and expertise, without regard to judicial department or other geographic limitations within the state, to act as special district attorney",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2025-S8415-40": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "appoint a district attorney of any county to act as special district attorney, provided such district attorney agrees to accept appointment by such criminal court during such disqualification of the attorney general and such assistants as they may have.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2025-S8415-41": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The special district attorney so appointed shall possess the powers and discharge the duties of the attorney general during the period, or for the duration of the matter, for which they shall be appointed.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Special District Attorney Appointed Under County Law Section 701",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2025-S8415-42": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the special district attorney may direct the exercise of such powers and the performance of such duties by any assistant or other staff in their office to assist such special district attorney to the same extent permitted by law.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Special District Attorney Appointed Under County Law Section 701",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2025-S8415-43": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Any special district attorney appointed under this subdivision for a matter arising out of the attorney general's authority under section seventy-b of the executive law shall be responsible for the public report required by subdivision six of such section.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Special District Attorney Appointed Under County Law Section 701",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2025-S8415-44": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the department of budget, after having been notified and provided with an opportunity to be heard, shall pay the necessary disbursements of, and a reasonable compensation for, the services of the person so appointed and acting, as certified by the presiding judge or justice.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOB",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2025-S8415-45": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner shall collect data from the office of special investigations established by the department and report quarterly to the speaker of the assembly, the temporary president of the senate, and the governor regarding complaints received the previous quarter by the office.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2025-S8415-46": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner shall report annually the average length of time to close an investigation by the office of special investigation by division for each correctional facility and any recommendations made by the office of special investigations to the relevant departmental program areas",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2025-S8415-47": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "three of whom shall be appointed by the governor, two of whom shall be appointed by the speaker of the assembly, two of whom shall be appointed by the temporary president of the senate, and two of whom shall be appointed by the correctional association.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Governor",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2025-S8415-48": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "The members appointed shall include, but not be limited to, at least one of each of the following:",
+    "note": "'{{(b) The members appointed shall include, but not be limited to, at least one of each of the following:}}' is a qualification condition on the appointment records -47/-50/-53."
+   },
+   "2025-S8415-49": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Any member of the commission may be removed by the appointing authority who nominated the member for cause after an opportunity to be heard in such member's defense.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Governor",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2025-S8415-50": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "three of whom shall be appointed by the governor, two of whom shall be appointed by the speaker of the assembly, two of whom shall be appointed by the temporary president of the senate, and two of whom shall be appointed by the correctional association.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Governor",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2025-S8415-51": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "The members appointed shall include, but not be limited to, at least one of each of the following:",
+    "note": "'{{(b) The members appointed shall include, but not be limited to, at least one of each of the following:}}' is a qualification condition on the appointment records -47/-50/-53."
+   },
+   "2025-S8415-52": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Any member of the commission may be removed by the appointing authority who nominated the member for cause after an opportunity to be heard in such member's defense.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Governor",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2025-S8415-53": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "three of whom shall be appointed by the governor, two of whom shall be appointed by the speaker of the assembly, two of whom shall be appointed by the temporary president of the senate, and two of whom shall be appointed by the correctional association.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Governor",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2025-S8415-54": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "The members appointed shall include, but not be limited to, at least one of each of the following:",
+    "note": "'{{(b) The members appointed shall include, but not be limited to, at least one of each of the following:}}' is a qualification condition on the appointment records -47/-50/-53."
+   },
+   "2025-S8415-55": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Any member of the commission may be removed by the appointing authority who nominated the member for cause after an opportunity to be heard in such member's defense.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Governor",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2025-S8415-56": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The members of the commission shall annually designate one of the appointed members as chairperson to serve at such members of the commission's pleasure",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "SCOC",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2025-S8415-57": {
+    "verdict": "wrong",
+    "criteria": [
+     "4"
+    ],
+    "fields": {
+     "provision_kind": "duty"
+    },
+    "quote": "The department may not place restrictions on such visits and inspections, including during periods when a facility is locked down or experiencing a facility wide emergency",
+    "note": "'The department may {{not}} place restrictions on such visits and inspections' is a prohibition on the government actor, a duty."
+   },
+   "2025-S8415-58": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "provided, however, that the department may restrict access to a portion of a facility in an emergency situation for the duration of the emergency.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2025-S8415-59": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "At the commencement and conclusion of any visits to, or inspections and examinations of, state correctional facilities, the superintendent and executive team, to the extent practicable and upon request by the correctional association, shall meet with the correctional association.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2025-S8415-60": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Privately without representatives of the central office present, representatives of the office of mental health and any other entities or agencies providing services in a facility shall meet with the correctional association, upon the correctional association's request during the course of any visit.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "OMH",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2025-S8415-61": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Such interviews shall not be restricted by the department or the office of mental health or any other agency or attended by anyone on behalf of the department or the office of mental health or any other agency",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2025-S8415-62": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Such interviews shall not be restricted by the department or the office of mental health or any other agency or attended by anyone on behalf of the department or the office of mental health or any other agency",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2025-S8415-63": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "nor shall there be any retaliation or adverse action taken by the department or other state agency against anyone who speaks with the correctional association.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2025-S8415-64": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner may submit a written response to such tentative report within sixty days of the receipt thereof, including a plan of action for addressing the findings and recommendations.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [
+   {
+    "blind": "b1",
+    "quote": "Physical mail received and sent to the correctional association is defined as privileged correspondence, and any and all processing controls, allowances for limited free postage, and advances of incarcerated individual funds for postage shall apply to privileged correspondence received and sent to the correctional association.",
+    "kind": "duty",
+    "agency": "DOCCS",
+    "dropped_by": null,
+    "note": "Correction Law 146(3)(f) new matter; passive duty on the department's mail processing."
+   }
+  ],
+  "effective_date": {
+   "stored": "2025-12-19",
+   "computed": "2025-12-19",
+   "verdict": "correct",
+   "note": "Act and Part dates correct; Part F section-two 60th-day proviso (2026-02-17) missing from section_dates."
+  }
+ },
+ "2011-S3914": {
+  "records": {
+   "2011-S3914-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The governor, the speaker of the assembly and the temporary president of the senate shall each appoint one additional representative to serve on the board.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Governor",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2011-S3914-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The governor, the speaker of the assembly and the temporary president of the senate shall each appoint one additional representative to serve on the board.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Governor",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2011-S3914-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The governor, the speaker of the assembly and the temporary president of the senate shall each appoint one additional representative to serve on the board.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Governor",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2011-S3914-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Each regional planning council shall transmit to the board a report containing any recommendations specific to its region on a schedule determined by the board to be appropriate for consideration of Such report in the development of the draft energy plan.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State Energy Planning Board",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": "Regional Planning Council"
+    }
+   },
+   "2011-S3914-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Staff services shall be performed by personnel of the department of public service, the department of environmental conservation, the department of transportation, the department of economic development, the division of homeland security and emergency services and the New York state energy research and development authority, as directed by the board.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DHSES",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2011-S3914-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "forecasts for A minimum period of ten years, and for Such other periods as the board may determine, of: (i) demand for electricity, natural gas, coal, petroleum products, including heating and transportation fuels, and alternate fuels",
+    "note": "Mixed clause ('A {{minimum period}} of ten years, {{and for Such other periods as the board may determine}}'); duty accepted.",
+    "fields_at_audit": {
+     "agency": "State Energy Planning Board",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2011-S3914-07": {
+    "verdict": "wrong",
+    "criteria": [
+     "2",
+     "4"
+    ],
+    "fields": {
+     "quote": "the elements of the state energy plan as enumerated in subdivision two of this section shall be provided on a statewide basis, and as determined feasible and necessary by the board, for the two regions described in subdivision two of section 6-102 of this article.",
+     "provision_kind": "power"
+    },
+    "quote": "the elements of the state energy plan as enumerated in subdivision two of this section shall be provided on a statewide basis",
+    "note": "Stored quote is reprinted text (only the case-changed 'the' is braced); new matter is '{{and as determined feasible and necessary by the board,}} for the two regions', a board discretion."
+   },
+   "2011-S3914-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Public comment hearings, with at least three in each region described in subdivision two of section 6-102 of this article and provide an opportunity to submit written comments, subsequent to the issuance of a draft plan",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State Energy Planning Board",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2011-S3914-09": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "a forecast of electricity demands over a period as the board may determine appropriate, including annual in-state electric energy sales and summer and winter peak loads by utility service area where applicable",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State Energy Planning Board",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2011-S3914-10": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "a forecast of electricity supply requirements over a period as the board may determine appropriate, by utility service area where applicable, specifically identifying the reserve margins required for reliable electric service",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State Energy Planning Board",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2011-S3914-11": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "a forecast over a period as the board may determine appropriate, by utility service area, of estimated annual in-state gas sales, winter season sales and peak day sales by appropriate end-use classifications",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State Energy Planning Board",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2011-S3914-12": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "a forecast of gas supply requirements over a period as the board may determine appropriate, by utility service area, specifically identifying the amounts of gas needed to meet severe weather conditions",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State Energy Planning Board",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2011-S3914-13": {
+    "verdict": "wrong",
+    "criteria": [
+     "2",
+     "9"
+    ],
+    "fields": {
+     "quote": "(c) Such information from major petroleum suppliers and major coal suppliers as the board may require to carry out the purposes of this article."
+    },
+    "quote": "(ii) a forecast of gas supply requirements over a period as the board may determine appropriate, by utility service area, specifically identifying the amounts of gas needed to meet severe weather conditions, lost and unaccounted for gas, out-of-state sales commitments and internal use;",
+    "note": "Cited 6-106(3)(c) but quote is the (b)(ii) gas-supply text, identical to -12; provision is the deletion 'as the board may[, by regulation,] require'."
+   },
+   "2011-S3914-14": {
+    "verdict": "wrong",
+    "criteria": [
+     "2",
+     "9"
+    ],
+    "fields": {
+     "quote": "(d) Such other information from owners and operators of electric generating power plants as the board may require to carry out the purposes of this article."
+    },
+    "quote": "(ii) a forecast of gas supply requirements over a period as the board may determine appropriate, by utility service area, specifically identifying the amounts of gas needed to meet severe weather conditions, lost and unaccounted for gas, out-of-state sales commitments and internal use;",
+    "note": "Cited 6-106(3)(d) but quote duplicates -12's (b)(ii) text; provision is '(d) ... as the board may[, by regulation,] require'."
+   },
+   "2011-S3914-15": {
+    "verdict": "wrong",
+    "criteria": [
+     "6"
+    ],
+    "fields": {
+     "deliverable_type": "other"
+    },
+    "quote": "Prior to adopting any proposed amendment to an element of the plan identified in subdivision two of section 6-104 of this article, the board shall hold Public comment hearings and may hold evidentiary hearings upon the written application of an interested party.",
+    "note": "'the board shall hold {{Public comment hearings and may hold}} evidentiary hearings' is a hearing duty, not enforcement or inspection."
+   }
+  },
+  "missed": [
+   {
+    "blind": "b1",
+    "quote": "{{(E) A single comprehensive submission from industry groups, trade associations, or combinations of Such groups and associations in place of submissions by individual member companies.}}",
+    "kind": "power",
+    "agency": "State Energy Planning Board",
+    "dropped_by": null,
+    "note": "New paragraph (e) of 6-106(3), list item under the board's information-requirement lead."
+   }
+  ],
+  "effective_date": {
+   "stored": "2011-07-20",
+   "computed": "2011-07-20",
+   "verdict": "correct",
+   "note": "act clause 'immediately' applied to signing date"
+  }
+ },
+ "2015-A6950": {
+  "records": {
+   "2015-A6950-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Workers' Compensation Board"
+    },
+    "quote": "The provisions of section two of this act shall remain in full force and effect to and including the thirtieth day of June, 2020.",
+    "note": "'The provisions of section two of this act shall remain in full force and effect to and including the thirtieth day of June, [2015] {{2020}}' names no holder and the title names no body; the VFBL heart presumption is applied by the Workers' Compensation Board. Judgment call: Oct 19 rule sends such laws to re-ask, and this re-ask still returned Unspecified."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2015-06-30",
+   "computed": "2015-06-30",
+   "verdict": "correct",
+   "note": "act clause 'immediately' applied to signing date"
+  }
+ },
+ "2013-A9334": {
+  "records": {
+   "2013-A9334-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "shall allow pupils who have been diagnosed by a physician or other duly authorized health care provider with an asthmatic condition or another respiratory disease to carry and use a prescribed inhaler",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "School districts",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2013-A9334-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "shall allow pupils who have been diagnosed by a physician or other duly authorized health care provider with an asthmatic condition or another respiratory disease to carry and use a prescribed inhaler",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "School districts",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2013-A9334-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "A record of such consent and permission shall be maintained in the student's cumulative health record.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "School districts",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2013-A9334-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "A record of such consent and permission shall be maintained in the student's cumulative health record.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "School districts",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2013-A9334-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the board of education or trustees of a school district and board of cooperative educational services shall allow such pupils to maintain an extra such inhaler in the care and custody of a licensed nurse, nurse practitioner, physician assistant, or physician employed by such district or board of cooperative educational services, and shall be readily accessible to such pupil.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "School districts",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2013-A9334-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the board of education or trustees of a school district and board of cooperative educational services shall allow such pupils to maintain an extra such inhaler in the care and custody of a licensed nurse, nurse practitioner, physician assistant, or physician employed by such district or board of cooperative educational services, and shall be readily accessible to such pupil.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "School districts",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2013-A9334-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the medication provided by the pupil's parents or persons in parental relation shall be made available to the pupil as needed in accordance with the school district's or board of cooperative educational services' policy and the orders prescribed in the written permission of the physician or other authorized health care provider.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "School districts",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-A9334-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the medication provided by the pupil's parents or persons in parental relation shall be made available to the pupil as needed in accordance with the school district's or board of cooperative educational services' policy and the orders prescribed in the written permission of the physician or other authorized health care provider.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "School districts",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-A9334-09": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "shall allow pupils who have been diagnosed by a physician or other duly authorized health care provider with an allergy to carry and use a prescribed epinephrine auto injector for the emergency treatment of allergic reactions",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "School districts",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-A9334-10": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "shall allow pupils who have been diagnosed by a physician or other duly authorized health care provider with an allergy to carry and use a prescribed epinephrine auto injector for the emergency treatment of allergic reactions",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "School districts",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-A9334-11": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "A record of such consent and permission shall be maintained in the student's cumulative health record.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "School districts",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2013-A9334-12": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "A record of such consent and permission shall be maintained in the student's cumulative health record.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "School districts",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2013-A9334-13": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "shall allow such pupils to maintain an extra epinephrine auto injector for the emergency treatment of allergies in the care and custody of licensed nurse, nurse practitioner, physician assistant, or physician employed by such district or board of cooperative educational services, and shall be readily accessible to such pupil.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "School districts",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-A9334-14": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "shall allow such pupils to maintain an extra epinephrine auto injector for the emergency treatment of allergies in the care and custody of licensed nurse, nurse practitioner, physician assistant, or physician employed by such district or board of cooperative educational services, and shall be readily accessible to such pupil.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "School districts",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-A9334-15": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the epinephrine auto injector provided by the pupil's parents or persons in parental relation will be made available to the pupil as needed in accordance with the school district's or board of cooperative educational services' policy and the orders prescribed in the written permission of the physician or other authorized health care provider.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "School districts",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-A9334-16": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the epinephrine auto injector provided by the pupil's parents or persons in parental relation will be made available to the pupil as needed in accordance with the school district's or board of cooperative educational services' policy and the orders prescribed in the written permission of the physician or other authorized health care provider.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "School districts",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-A9334-17": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "shall allow pupils who have been diagnosed with diabetes to carry glucagon and carry and use insulin through appropriate medication delivery devices and equipment",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "School districts",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-A9334-18": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "shall allow pupils who have been diagnosed with diabetes to carry glucagon and carry and use insulin through appropriate medication delivery devices and equipment",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "School districts",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-A9334-19": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "A record of such consent and permission shall be maintained in the student's cumulative health record.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "School districts",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2013-A9334-20": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "A record of such consent and permission shall be maintained in the student's cumulative health record.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "School districts",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2013-A9334-21": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "shall allow such pupils to maintain extra insulin and an insulin delivery system, glucagon, blood glucose meters and related supplies used to treat such pupil's diabetes in the care and custody of a licensed nurse, nurse practitioner, physician assistant, or physician employed by such district or board of cooperative educational services, and shall be readily accessible to such pupil.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "School districts",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-A9334-22": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "shall allow such pupils to maintain extra insulin and an insulin delivery system, glucagon, blood glucose meters and related supplies used to treat such pupil's diabetes in the care and custody of a licensed nurse, nurse practitioner, physician assistant, or physician employed by such district or board of cooperative educational services, and shall be readily accessible to such pupil.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "School districts",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-A9334-23": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the medication and devices, equipment and supplies provided by the pupil's parents or persons in parental relation shall be made available to the pupil as needed in accordance with the school district's or board of cooperative educational services' policy and the orders prescribed in the written permission of the physician or other authorized health care provider.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "School districts",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-A9334-24": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the medication and devices, equipment and supplies provided by the pupil's parents or persons in parental relation shall be made available to the pupil as needed in accordance with the school district's or board of cooperative educational services' policy and the orders prescribed in the written permission of the physician or other authorized health care provider.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "School districts",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-A9334-25": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Licensed nurses, nurse practitioners, physician assistants, or physicians employed by school districts or boards of cooperative educational services are authorized to calculate prescribed insulin dosages, administer prescribed insulin, program the prescribed insulin pump",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "School districts",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-A9334-26": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Licensed nurses, nurse practitioners, physician assistants, or physicians employed by school districts or boards of cooperative educational services are authorized to calculate prescribed insulin dosages, administer prescribed insulin, program the prescribed insulin pump",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "School districts",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-A9334-27": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Licensed nurses, nurse practitioners, physician assistants, or physicians employed by schools are authorized to administer prescribed epinephrine pursuant to the scope of practice of the licensed individual under title viii of this chapter",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "School districts",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-A9334-28": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "are authorized, but not obligated to have licensed registered professional nurses, nurse practitioners, physician assistants, and physicians train unlicensed school personnel to inject prescribed glucagon or epinephrine auto injectors in emergency situations",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "School districts",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-A9334-29": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "are authorized, but not obligated to have licensed registered professional nurses, nurse practitioners, physician assistants, and physicians train unlicensed school personnel to inject prescribed glucagon or epinephrine auto injectors in emergency situations",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "School districts",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-A9334-30": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "must be completed in a form and manner prescribed by the commissioner in regulation.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "SED",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-A9334-31": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the written permission shall include the name of the type of insulin, the dose or dose range, the times when the medication is to be taken, the type of insulin delivery system and any other information prescribed by the commissioner in regulation, after consultation with the commissioner of health.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "SED",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2015-07-01",
+   "computed": "2015-07-01",
+   "verdict": "correct",
+   "note": "act clause 'first_of_month_next_succeeding' applied to signing date"
+  }
+ },
+ "2015-A5953": {
+  "records": {},
+  "missed": [
+   {
+    "blind": "b1",
+    "quote": "This act shall take effect immediately[; provided, however, that the provisions of this act shall expire and be deemed repealed 10 years after such effective date].",
+    "kind": "power",
+    "agency": "BOCES (Madison-Oneida BOCES)",
+    "dropped_by": "designation_no_actor",
+    "note": "Deletion of the 2005 chapter's sunset widens the BOCES contracting power (holder from title: 'permitting the Madison-Oneida board of educational services to enter into contracts'); extends_existing true. The dropped -01 quoted the reprinted title instead; the amended sentence is under 10 words."
+   }
+  ],
+  "effective_date": {
+   "stored": "2015-07-23",
+   "computed": "2015-07-23",
+   "verdict": "correct",
+   "note": "act clause 'immediately' applied to signing date"
+  }
+ },
+ "2013-A4327": {
+  "records": {
+   "2013-A4327-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the city of new york is hereby authorized to establish a demonstration program imposing monetary liability on the owner of a vehicle for failure of an operator thereof to comply with posted maximum speed limits in a school speed zone within the city",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "New York City",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-A4327-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Such demonstration program shall empower the city to install photo speed violation monitoring systems within no more than twenty school speed zones within the city at any one time and to operate such systems within such zones",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "New York City",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-A4327-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "In selecting a school speed zone in which to install and operate a photo speed violation monitoring system, the city shall consider criteria including, but not limited to the speed data, crash history, and the roadway geometry applicable to such school speed zone.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "New York City",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-A4327-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The city may install signs giving Notice that a photo speed violation monitoring system is in use to be mounted on advance warning signs notifying motor vehicle operators of such upcoming school speed zone",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "New York City",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-A4327-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Operators of photo speed violation monitoring systems shall have completed training in the procedures for setting up, testing, and operating such systems.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "New York City",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-A4327-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Each such operator shall complete and sign a daily set-up log for each such system that he or she operates that (i) states the date and time when, and the location where, the system was set up that day",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "New York City",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-A4327-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The city shall retain each such daily log until the later of the date on which the photo speed violation monitoring system to which it applies has been permanently removed from use or the final resolution of all cases involving notices of liability",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "New York City",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-A4327-09": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Each photo speed violation monitoring system shall undergo an annual calibration check performed by an independent calibration laboratory which shall issue a signed certificate of calibration.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "New York City",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-A4327-10": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The city shall keep each such annual certificate of calibration on file until the final resolution of all cases involving a Notice of liability issued during such year",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "New York City",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-A4327-11": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Such demonstration program shall utilize necessary technologies to ensure, to the extent practicable, that photographs, microphotographs, videotape or other recorded images produced by such photo speed violation monitoring systems shall not include images that identify the driver, the passengers, or the contents of the vehicle.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "New York City",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-A4327-12": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "shall be destroyed by the city upon the final resolution of the Notice of liability to which such photographs, microphotographs, videotape or other recorded images relate, or one year following the date of issuance of such Notice of liability, whichever is later.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "New York City",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-A4327-13": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "New York City"
+    },
+    "quote": "no public entity or employee, officer or agent thereof shall disclose such information, except that such photographs, microphotographs, videotape or any other recorded images from such systems:",
+    "note": "'no public entity or employee, officer or agent thereof shall disclose such information' - the holder is the city running the program; the parallel Croton record 2025-S10058-13 resolved to the village."
+   },
+   "2013-A4327-14": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Shall be available for inspection and copying and use by the motor vehicle owner and operator for so long as such photographs, microphotographs, videotape or other recorded images are required to be maintained or are maintained by such public entity, employee, officer or agent;",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "New York City",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-A4327-15": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "shall be furnished when described in a search warrant issued by a Court authorized to issue such a search warrant pursuant to article six hundred ninety of the criminal procedure law",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "New York City",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-A4327-16": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "shall be furnished in response to a subpoena duces tecum signed by a judge of competent jurisdiction and issued pursuant to article six hundred ten of the criminal procedure law",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "New York City",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-A4327-17": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Any photographs, microphotographs, videotape or other recorded images evidencing such a violation shall include at least two date and time stamped images of the rear of the motor vehicle that include the same stationary object near the motor vehicle and shall be available for inspection reasonably in advance of and at any proceeding",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "New York City",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-A4327-18": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "shall be liable for monetary penalties in accordance with a schedule of fines and penalties to be promulgated by the parking violations bureau of the city of new york.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Parking Violations Bureau of the City of New York",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-A4327-19": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "such parking violations bureau may provide for an additional penalty not in excess of twenty-five dollars for each violation for the failure to respond to a Notice of liability within the prescribed time period.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Parking Violations Bureau of the City of New York",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-A4327-20": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Notice of liability shall be sent by first class mail to each person alleged to be liable as an owner for a violation of subdivision (b), (c), (d), (f) or (g) of section eleven hundred eighty of this article pursuant to this section, within fourteen business days if such owner is a resident of this state",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "New York City",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-A4327-21": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Notice of liability shall contain the name and address of the person alleged to be liable as an owner for a violation of subdivision (b), (c), (d), (f) or (g) of section eleven hundred eighty of this article pursuant to this section, the registration number of the vehicle involved in such violation",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "New York City",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-A4327-22": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The Notice of liability shall contain information advising the person charged of the manner and the time in which he or she may contest the liability alleged in the Notice.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "New York City",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-A4327-23": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The Notice of liability shall be prepared and mailed by the city of new york, or by any other entity authorized by the city to prepare and mail such Notice of liability.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "New York City",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-A4327-24": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Adjudication of the liability imposed upon owners of this section shall be by the new york city parking violations bureau.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Parking Violations Bureau of the City of New York",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-A4327-25": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "If the city adopts a demonstration program pursuant to subdivision one of this section it shall conduct a study and submit a report on the results of the use of photo devices to the governor, the temporary president of the senate and the speaker of the assembly.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "New York City",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-A4327-26": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "and shall adjudicate the liability of owners for violations of subdivision (b), (c), (d), (f) or (g) of section eleven hundred eighty of this chapter in accordance with section eleven hundred eighty-b of this chapter.",
+    "note": "PVB not resolved through the Council crosswalk (Department of Finance); should-fix only.",
+    "fields_at_audit": {
+     "agency": "Parking Violations Bureau of the City of New York",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2013-A4327-27": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "And shall adjudicate the liability of owners for violations of subdivision (b), (c), (d), (f) or (g) of section eleven hundred eighty of this chapter in accordance with section eleven hundred eighty-b of this chapter.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Parking Violations Bureau of the City of New York",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2013-A4327-28": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "To adjudicate the liability of owners for violations of subdivision (b), (c), (d), (f) or (g) of section eleven hundred eighty of this chapter in accordance with section eleven hundred eighty-b of this chapter.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Parking Violations Bureau of the City of New York",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2013-A4327-29": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "a person alleged to be liable in accordance with the provisions of section eleven hundred eighty-b of this chapter for a violation of subdivision (b), (c), (d), (f) or (g) of section eleven hundred eighty of this chapter contests such allegation, the bureau shall advise such person personally by such form of first class mail",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Parking Violations Bureau of the City of New York",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2013-A4327-30": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the bureau has been notified that an allegation of liability in accordance with section eleven hundred eighty-b of this chapter, is being contested, by a person in a timely fashion and a hearing upon the merits has been demanded, but has not yet been held, the bureau shall not issue any notice of fine or penalty to that person",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Parking Violations Bureau of the City of New York",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2013-A4327-31": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "or an allegation of liability in accordance with section eleven hundred eighty-b of this chapter, shall be held before a hearing examiner in accordance with rules and regulations promulgated by the bureau.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Parking Violations Bureau of the City of New York",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2013-A4327-32": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "or of a hearing at which liability in accordance with section eleven hundred eleven-c of this chapter or a hearing at which liability in accordance with section eleven hundred eighty-b of this chapter is contested.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Parking Violations Bureau of the City of New York",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2013-A4327-33": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "or the record of liabilities incurred in accordance with section eleven hundred eleven-c of this chapter, or the record of liabilities incurred in accordance with section eleven hundred eighty-b of this chapter, as applicable prior to rendering a final determination.",
+    "note": "Citation says \u00a7 240(2); the provision is \u00a7 241(1). Not a scored field.",
+    "fields_at_audit": {
+     "agency": "Parking Violations Bureau of the City of New York",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2013-A4327-34": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the bureau shall pursuant to the applicable provisions of law notify such operator or owner, by such form of first class mail as the commission may direct; (1) of the violation charged or alleged liability in accordance with section eleven hundred eleven-c of this chapter or alleged liability in accordance with section eleven hundred eighty-b of this chapter,",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Parking Violations Bureau of the City of New York",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2013-A4327-35": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "or (iv) the registrant was liable in accordance with section eleven hundred eighty-b of this chapter for a violation of subdivision (c) or (d) of section eleven hundred eighty of this chapter, the commissioner or his or her agent shall deny the registration or renewal application until the applicant provides proof",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DMV",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [
+   {
+    "blind": "b1",
+    "quote": "{{(M) Are photographs, microphotographs, videotape or other recorded images prepared under the authority of section eleven hundred eighty-b of the vehicle and traffic law.}}",
+    "kind": "power",
+    "agency": "State agencies",
+    "dropped_by": null,
+    "note": "POL 87(2)(m) list item under 'may deny access to records' (same shape as 2025-S10058 b2)."
+   }
+  ],
+  "effective_date": {
+   "stored": "2013-08-30",
+   "computed": "2013-08-30",
+   "verdict": "correct",
+   "note": "30th day after 2013-07-31; expires 5 years later 2018-08-30, stored correctly."
+  }
+ },
+ "2015-A2008": {
+  "records": {
+   "2015-A2008-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the city of Yonkers, in the county of westchester, is hereby authorized and empowered to adopt and amend local laws imposing in such city a tax, in addition to any other tax authorized and imposed pursuant to this article",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Cities",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "City of Yonkers"
+    }
+   },
+   "2015-A2008-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "such taxes may be collected and administered by the chief fiscal officer of the city of Yonkers by such Means and in such manner as other taxes which are now collected and administered by such officer",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Cities",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "City of Yonkers"
+    }
+   },
+   "2015-A2008-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "such local laws may provide that any taxes imposed shall be paid by the person liable therefor to the owner of the room for hire in the tourist home, inn, club, hotel, motel or other similar place of public accommodation occupied",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Cities",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "City of Yonkers"
+    }
+   },
+   "2015-A2008-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "such local laws may provide for the filing of returns and the payment of the taxes on a monthly basis or on a basis of any longer or shorter period of time.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Cities",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "City of Yonkers"
+    }
+   },
+   "2015-A2008-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "all revenues resulting from the imposition of the tax under the local laws shall be paid into the treasury of the city of Yonkers and shall be credited to and deposited in the general fund of the city.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Cities",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "City of Yonkers"
+    }
+   },
+   "2015-A2008-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "and shall be credited to and deposited in the general fund of the city. Such revenues may be used for any lawful purpose.",
+    "note": "Quote padded with the preceding duty clause to reach 10 words; accepted.",
+    "fields_at_audit": {
+     "agency": "Cities",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "City of Yonkers"
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2015-07-02",
+   "computed": "2015-07-02",
+   "verdict": "correct",
+   "note": "act clause 'immediately' applied to signing date"
+  }
+ },
+ "2015-S5903": {
+  "records": {
+   "2015-S5903-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner shall make regulations governing the donation and redispensing of unused prescription drugs under this section.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOH",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-S5903-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The department shall work with prospective and approved donor entities, recipient entities and third-party intermediaries to educate them about redispensing and promote participation in redispensing.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOH",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-S5903-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The department shall maintain a list of recipient entities, and third-party intermediaries and publish it on the department's website.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOH",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2016-11-28",
+   "computed": "2016-11-28",
+   "verdict": "correct",
+   "note": "act clause 'immediately' applied to signing date"
+  }
+ },
+ "2009-A3337": {
+  "records": {
+   "2009-A3337-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the assessor of the city of Schenectady is hereby authorized to accept from Schenectady Day Nursery, Inc. an application for exemption from real property taxes pursuant to section 420-b of the real property tax law for the 2007 assessment roll",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Cities",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "City of Schenectady"
+    }
+   },
+   "2009-A3337-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the assessor of the city of Schenectady may upon approval by the city council of such city, grant exemption from taxation based on the 2007 assessment roll and owing by such not-for-profit organization on the effective date of this act, and make appropriate correction of the subject roll.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Cities",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "City of Schenectady"
+    }
+   },
+   "2009-A3337-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the governing body or tax department may, in its sole discretion, provide for the refund of those taxes paid and cancel taxes, fines, penalties or interest remaining unpaid.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Cities",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "City of Schenectady"
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2009-08-26",
+   "computed": "2009-08-26",
+   "verdict": "correct",
+   "note": "act clause 'immediately' applied to signing date"
+  }
+ }
+}

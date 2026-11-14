@@ -1137,9 +1137,11 @@ INFINITIVE_ITEM = re.compile(r"^\W*(?:\{\{)?\s*To\s+[a-z]+", re.I)
 POWER_LEAD = re.compile(r"\bshall\s+have\s+(?:the\s+)?(?:following\s+|general\s+)?powers?\b(?!\s+and\s+(?:dut|respons))|\b(?:may|authorized|empowered|permitted)\b", re.I)
 
 
-def infinitive_lead_kind(lead):
+def infinitive_lead_kind(lead, q=None):
     """S4: 'shall have the following powers:' / 'may:' / 'is authorized to:' make the infinitive items powers; 'shall:' and 'powers and duties' make them duties."""
     last = re.sub(r"\{\{|\}\}", "", lead or "")
+    if b58_lead_power(lead, q):
+        return "power"
     if APPLY_X3:          # X3 (Nov 2 2026): a lead paragraph that also holds item 1 ('... powers and duties: 1. to promulgate regulations ... which may be assigned') is judged on the clause before the first item only
         m3 = re.match(r"(.*?:)\s*(?:\d+|\([\w]{1,4}\))\.?\s", last, re.S)
         if m3:
@@ -1754,7 +1756,7 @@ AI4_PLAN_APPROVED = re.compile(r"^\W*(?:in\s+)?(?:a|an)\s+[\w\s-]{0,60}\bwhich\s
 
 # Nov 13 2026 night (AJ): re-ask noise gates confirmed by two auditors and a blind judge of 89 re-ask changes (quality/nightly/20261113_A.json and _B.json, "_classes").
 APPLY_AJ1 = False         # content items stored as records: 'the website shall include, but not be limited to:' lead and its items a-h, 'the tracking system shall:' items, 'which act shall include the following:' items, 'the following terms shall have the following meanings:' items, 'a notice of liability shall contain ...'
-APPLY_AJ2 = False         # an agency that is only the passive subject phrase ('Monies in the Fund', 'Statewide Electronic Tracking System', 'Website Established By ...'): resolves to the body the sentence names elsewhere, else the record drops as no_actor
+APPLY_AJ2 = True          # an agency that is only the passive subject phrase ('Monies in the Fund', 'Statewide Electronic Tracking System', 'Website Established By ...'): resolves to the body the sentence names elsewhere, else the record drops as no_actor
 APPLY_AJ3 = False         # deadline_kind fixed_date with a null deadline_date: the date comes from deadline_text through dated_deadline, else the kind is none
 AJ1_THING = r"(?:web\s*sites?|portals?|databases?|(?:tracking|information|data|reporting)\s+systems?|notices?(?:\s+of\s+\w+)?|acts?|local\s+laws?|resolutions?|ordinances?|certificates?|petitions?)"
 AJ1_LEAD = re.compile(r"\b" + AJ1_THING + r"\b[^.:;]{0,160}?\b(?:shall|must)\s+(?:also\s+)?(?:include|contain|set\s+forth)\b[^.:;]{0,80}:\s*(?:\}\})?\s*$"
@@ -1762,11 +1764,16 @@ AJ1_LEAD = re.compile(r"\b" + AJ1_THING + r"\b[^.:;]{0,160}?\b(?:shall|must)\s+(
                       r"|\bfollowing\s+terms\s+shall\s+have\s+the\s+following\s+meanings?\s*:\s*(?:\}\})?\s*$", re.I)
 AJ1_NOTICE = re.compile(r"^\W*(?:a|the|such)\s+notices?\s+of\s+(?:liability|violation)\s+shall\s+(?:also\s+)?contain\b", re.I)
 AJ1_OWN_MODAL = re.compile(r"\b(?:shall|must)\b", re.I)
+AJ1_BODYNOUN = r"(?:county|counties|cit(?:y|ies)|towns?|villages?|municipalit\w+|school\s+districts?|districts?|departments?|boards?|commissioners?|superintendents?|bureaus?|authorit(?:y|ies)|agenc(?:y|ies)|offices?|divisions?|comptroller|governor|attorney\s+general|courts?|councils?|legislature|corporations?|state\s+police|secretary|director)"
+AJ1_BODY_SUBJECT = re.compile(r"^\W*(?:\{\{)?\s*(?:the|such|a|an|any|each)?\s*(?:(?!of\b)[\w'-]+\s+){0,2}?" + AJ1_BODYNOUN + r"\b", re.I)
+AJ1_BODY_MAY = re.compile(r"\b" + AJ1_BODYNOUN + r"\b[^.;:]{0,80}?\b(?:may|(?:is|are)\s+(?:hereby\s+)?(?:authorized|empowered|permitted))\b", re.I)
 
 
 def aj1_item(q, span, text):
     """AJ1: (rule, reason) for a list item under a lead-in that describes what a website, notice, act, tracking system or definition list holds."""
     if not APPLY_AJ1 or AJ1_OWN_MODAL.search(q):
+        return None
+    if item_own_may(q) or AJ1_BODY_MAY.search(q) or AJ1_BODY_SUBJECT.match(q or ""):          # B65: a modal of a named body's own ('the county ... may', 'is authorized') or a body subject keeps the record
         return None
     lead = item_lead_full(span, text)
     if not lead:
@@ -1779,6 +1786,30 @@ def aj1_item(q, span, text):
 
 
 AJ2_SUBJECT = re.compile(r"^(?:the\s+)?(?:(?:monies|moneys|money)\b|web\s*site\b|(?:statewide\s+)?(?:electronic\s+)?(?:tracking|information|data|reporting)\s+system\b)", re.I)
+AJ3_DUE = re.compile(r"\b(?:on\s+or\s+before|(?:no|not)\s+later\s+than|before|by|due)\b", re.I)
+AJ3_START = re.compile(r"^\W*(?:commenc\w+|beginning|starting|effective|on\s+or\s+after|(?:the\s+\w+\s+)?shall\s+commence)\b", re.I)
+AJ3_DAY_OF = re.compile(r"\b(?:on\s+or\s+before|(?:no|not)\s+later\s+than|by|before)\s+the\s+((?:(?:twenty|thirty)[\s-]*)?(?:first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|eleventh|twelfth|thirteenth|fourteenth|fifteenth|sixteenth|seventeenth|eighteenth|nineteenth|twentieth|thirtieth|\d{1,2}(?:st|nd|rd|th))(?:[\s-]+\w+)?)\s+day\s+of\s+(january|february|march|april|may|june|july|august|september|october|november|december)\b", re.I)
+
+
+def aj3_day_of_month(txt, enact):
+    """B67: (ISO date, 'recurring') for 'on or before the fifteenth day of June' with no year: the first such day on or after the enactment date."""
+    m = AJ3_DAY_OF.search(re.sub(r"\s+", " ", txt or ""))
+    if not m or not enact:
+        return None
+    try:
+        day = _dl_day(m.group(1).lower())
+        mon = efd.MONTHS[m.group(2).lower()]
+        b = date.fromisoformat(str(enact)[:10])
+        for yr in (b.year, b.year + 1):
+            d = date(yr, mon, day)
+            if d >= b:
+                return d.isoformat(), "recurring"
+    except (TypeError, ValueError, KeyError):
+        return None
+    return None
+
+
+AJ2_REQUEST_OF = re.compile(r"\b(?:upon|at|on)\s+the\s+(?:written\s+)?(?:request|direction|certification|order|approval|recommendation)\s+of\s+(?:the\s+)?((?:[A-Za-z'-]+\s+){0,3}?(?:budget|comptroller|governor|commissioner|secretary|department|office|board|division|authority|agency)(?:\s+of\s+(?:the\s+)?(?:[A-Za-z'-]+)(?:\s+[A-Za-z'-]+){0,2}?)?)(?=\s*[,;.)]|\s+(?:to|for|and|or|on|in|pursuant)\b|$)", re.I)
 AJ2_BODY = re.compile(r"\b(?:the\s+)?((?:[A-Za-z'-]+\s+){0,3}(?:department|office|board|commission|authority|division|agency|corporation|comptroller|commissioner|governor|attorney general|council)(?:\s+of\s+(?:the\s+)?(?:[A-Za-z'-]+\s+){0,3}[A-Za-z'-]+)?)", re.I)
 
 
@@ -1797,6 +1828,15 @@ def aj2_named_body(o, text):
     q = o.get("quote") or ""
     ctx = q
     sp = locate_span(q, text)
+    if re.match(r"(?i)^\W*(?:the\s+)?(?:monies|moneys|money)\b", (o.get("actor_raw") or "").strip()):          # B66: a fund-use restriction ('monies shall be expended to fund ...') names no actor; only a transfer made on a named official's request does ('may be transferred ... upon the request of the director of the budget')
+        sent = context_sentence(sp, text)[0] if sp else q
+        m = AJ2_REQUEST_OF.search(re.sub(r"\{\{|\}\}", "", sent + " " + q))
+        if not m:
+            return None
+        canon, full = eo.match_agency(re.sub(r"\s+", " ", m.group(1)).strip(), LOOKUP, BY_CANON)
+        if canon and canon in BY_CANON and BY_CANON[canon].get("jurisdiction") == "state":
+            return canon, full
+        return None
     if sp:
         lead = item_lead_full(sp, text)
         if lead:
@@ -2138,9 +2178,25 @@ def lead_kind(lead, q=None):
 
 APPLY_B58 = False         # Nov 12 2026 (Tal's ruling, criterion 4): in a list whose lead mixes powers and duties each item takes its own modal; an item with no modal takes the modal of the clause that ends at the colon. Also turns on the AG14 walk-back over ';' sibling items to the real lead
 B58_OWN_SHALL = re.compile(r"^\W*(?:\d+\.|\([a-z0-9]+\))?\W*(?:\{\{)?\s*(?:\w+\s+){0,4}?(?:shall|must)\b(?!\s+not)", re.I)
+B58_GRANT_ONLY = re.compile(r"\bshall\s+have\s+(?:the\s+)?(?:following\s+|general\s+)?(?:powers?|authority)(?:\s+to)?\s*:\s*(?:\}\})?\s*$", re.I)
+B58_POWERS_DUTIES = re.compile(r"\b(?:powers?\s+and\s+(?:dut(?:y|ies)|responsibilit\w+)|dut(?:y|ies)\s+and\s+powers?)\b[^:]{0,40}:\s*(?:\}\})?\s*$", re.I)
+B58_DISCRETIONARY = re.compile(r"\b(?:borrow|sell|convey|mortgage|pledge|lease|purchase|hire|sue|be\s+sued|enter\s+into|contract\s+for|accept\s+(?:(?:any|all|and)\s+)*(?:donations?|gifts?|grants?)|elect\s+or\s+appoint|conduct\s+(?:public\s+)?hearings?|(?:as|which)\s+(?:it|they|the\s+\w+)\s+deems?\b)", re.I)
+def b58_lead_power(lead, q):
+    """B58 (Nov 14 2026 rework): True when the lead only grants power ('shall have power:', 'shall have the power to:', 'shall have the authority to:'), or a 'powers and duties' lead sits over a discretionary item (borrow, sell, sue, enter into contracts, hold hearings, 'as it deems necessary')."""
+    if not APPLY_B58:
+        return False
+    tail = re.sub(r"\{\{|\}\}", "", lead or "")[-220:] + ":"
+    tail = re.sub(r":+\s*$", ":", tail)
+    if B58_GRANT_ONLY.search(tail):
+        return True
+    return bool(B58_POWERS_DUTIES.search(tail)) and bool(B58_DISCRETIONARY.search(re.sub(r"\{\{|\}\}", "", q or "")))
+
+
 def item_lead_kind(lead, q):
     """B58: the kind an item takes from its list lead. A lead holding both a mandatory and a permissive modal gives way to the item's own modal ('may waive ...' is a power, 'the board shall ...' a duty); no modal of its own, the AG5 last-modal rule on the lead stands."""
     k = lead_kind(lead, q)
+    if b58_lead_power(lead, q):
+        return "power"
     if APPLY_B58 and MANDATORY.search(lead) and AC3_PERMISSIVE.search(lead):
         if item_own_may(q):
             return "power"
@@ -2393,7 +2449,7 @@ def gate_record(o, text, has_markers):
         return "condition_of_other_record", "a procedural proviso on a denial exception ('any agency considering denying access shall proceed in accordance with subdivision six'): part of the exception record"
     if APPLY_AI3 and AI3_UPDATE_THEREAFTER.search(q):
         return "condition_of_other_record", "an update cycle ('update the report at least every three months thereafter') split from the posting record in the same sentence"
-    if APPLY_AJ1 and (AJ1_NOTICE.search(q) or (q.rstrip().endswith(":") and AJ1_LEAD.search(q[-260:]) and not CONTENT_LEAD_NOT.search(q[-120:]))):
+    if APPLY_AJ1 and not AJ1_BODY_MAY.search(q) and (AJ1_NOTICE.search(q) or (q.rstrip().endswith(":") and AJ1_LEAD.search(q[-260:]) and not CONTENT_LEAD_NOT.search(q[-120:]))):
         bump("aj1_content_sentence")
         return "sub_item_of_parent", "a lead-in or sentence that lists the content of a website, notice, act or system ('the website shall include ...:', 'a notice of liability shall contain ...'); part of the parent record, not a record"
     if APPLY_AI4 and AI4_PLAN_APPROVED.search(q):
@@ -2483,7 +2539,7 @@ def gate_record(o, text, has_markers):
                 o["lead_in"] = re.sub(r"\s+", " ", re.sub(r"\{\{|\}\}", "", lead)).strip()[:400]
                 o["kind_from_lead_in"] = item_lead_kind(lead, q)
                 if INFINITIVE_ITEM.match(q):
-                    o["kind_from_lead_in"] = infinitive_lead_kind(lead); bump("s4_infinitive_list_item")          # S4: 'shall have the following powers:' grants powers
+                    o["kind_from_lead_in"] = infinitive_lead_kind(lead, q); bump("s4_infinitive_list_item")          # S4: 'shall have the following powers:' grants powers
                 if o["kind_from_lead_in"] == "duty" and o.get("kind_model") == "power" and LIMIT_RE.search(lead) and not MANDATORY.search(LIMIT_RE.sub(" ", lead)) and not DEBT_WORDS.search(lead + " " + q):
                     o["kind_from_lead_in"] = "power"; bump("lead_in_limit_stays_power")     # 'shall not exceed' on a court's order is a limit on a power
                 bump("list_entry_attached_to_lead_in")
@@ -2508,7 +2564,7 @@ def gate_record(o, text, has_markers):
                     o["lead_in"] = re.sub(r"\s+", " ", re.sub(r"\{\{|\}\}", "", lead)).strip()[:400]
                     o["kind_from_lead_in"] = item_lead_kind(lead, q)
                     if INFINITIVE_ITEM.match(q):
-                        o["kind_from_lead_in"] = infinitive_lead_kind(lead); bump("s4_infinitive_list_item")
+                        o["kind_from_lead_in"] = infinitive_lead_kind(lead, q); bump("s4_infinitive_list_item")
                     subj = lead_in_subject(lead)
                     if subj:
                         o["lead_in_actor"] = subj
@@ -2518,7 +2574,7 @@ def gate_record(o, text, has_markers):
                     o["lead_in"] = re.sub(r"\s+", " ", re.sub(r"\{\{|\}\}", "", lead)).strip()[:400]
                     o["kind_from_lead_in"] = item_lead_kind(lead, q)
                     if INFINITIVE_ITEM.match(q):
-                        o["kind_from_lead_in"] = infinitive_lead_kind(lead)
+                        o["kind_from_lead_in"] = infinitive_lead_kind(lead, q)
                     subj = lead_in_subject(lead)
                     if subj:
                         o["lead_in_actor"] = subj
@@ -4056,6 +4112,8 @@ def strip_relative_may(q):
 def lead_in_makes_duty(lead):
     """R6a: a lead-in whose modal is a bare 'shall'/'must' aimed at its actor ('shall have the following powers and duties:'), not a grant."""
     last = re.sub(r"\{\{|\}\}", "", lead or "")[-300:]
+    if b58_lead_power(lead, ""):          # B58: 'shall have power:' / 'shall have the authority to:' only grants power
+        return False
     if APPLY_AG5 and AG5_MAY_ALSO.search(last):
         mand = list(MANDATORY.finditer(last))
         if mand and AG5_MAY_ALSO.search(last).start() > mand[-1].start():
@@ -4818,10 +4876,14 @@ def build_records(laws):
             if APPLY_AJ3 and o.get("deadline_kind") == "fixed_date" and not o.get("deadline_date"):          # AJ3
                 dtx = o.get("deadline_text") or ""
                 dd3 = (dated_deadline(dtx, sec_date or law["enactment_date"]) or dated_deadline("by " + re.sub(r"(?i)^\W*(?:on|commencing(?:\s+on)?|starting(?:\s+on)?|beginning(?:\s+on)?|effective)\s+", "", dtx), sec_date or law["enactment_date"])) if dtx else None
+                if not dd3 and dtx:
+                    dd3 = aj3_day_of_month(dtx, law["enactment_date"])          # B67: 'on or before the fifteenth day of June' (annual): the next such day on or after enactment
                 if dd3 and dd3[0] >= law["enactment_date"]:
                     o["deadline_date"] = dd3[0]; bump("aj3_fixed_date_filled")
+                elif AJ3_DUE.search(dtx) and not AJ3_START.match(dtx):
+                    bump("aj3_due_date_kept")          # B67: a stated due date stays fixed_date even when the date cannot be placed after enactment; never none
                 else:
-                    o["deadline_kind"] = "none"; bump("aj3_fixed_date_to_none")
+                    o["deadline_kind"] = "none"; bump("aj3_fixed_date_to_none")          # only a start or effective date
             if kind == "duty" and o.get("deadline_kind") in (None, "none", "on_effective_date") and not o.get("deadline_date") and ongoing_lead_item(o, text):
                 o["deadline_kind"], o["recurrence"] = "none", "ongoing"; bump("ongoing_lead_item")
             if kind == "duty" and o.get("deadline_kind") == "on_effective_date" and TRIGGER.search(quote) and not CAP_RE.search(quote):

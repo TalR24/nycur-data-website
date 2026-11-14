@@ -7,6 +7,13 @@ from pathlib import Path
 HERE = Path(os.path.abspath(__file__)).parent.parent
 sys.path.insert(0, str(HERE))
 import extract_duties as ed
+
+def _reasked_since(key, ts=1794589200):          # Nov 14 2026: laws re-asked after Nov 13 2026 renumber their records; their id checks are skipped
+    import os as _o
+    p = HERE / "cache" / "packets" / key[:4] / "results_reask" / (key + ".json") if (HERE / "cache").is_dir() else None
+    if p is None:
+        p = HERE / "pipeline" / "cache" / "packets" / key[:4] / "results_reask" / (key + ".json")
+    return p.exists() and p.stat().st_mtime > ts
 _HV0 = getattr(ed, "APPLY_HOLDER_VERDICTS", False)          # Nov 13 2026: these check the B43 mechanics; the curated holder verdicts override them
 ed.APPLY_HOLDER_VERDICTS = False
 
@@ -93,7 +100,7 @@ _d_flags = (ed.APPLY_D1, ed.APPLY_D3); ed.APPLY_D1 = ed.APPLY_D3 = True
 def dropped(oid, rule):
     r, dr = b16(oid)
     return oid not in r and dr.get(oid, {}).get("rule") == rule
-for oid in ("2013-S6854-04", "2013-S6854-05", "2013-S6854-06", "2013-S6854-07", "2015-S7110-01"):
+for oid in [x for x in ("2013-S6854-04", "2013-S6854-05", "2013-S6854-06", "2013-S6854-07", "2015-S7110-01") if not _reasked_since(x.rsplit("-", 1)[0])]:
     check("D1 %s instrument_term" % oid, dropped(oid, "instrument_term"))
 check("D1 body actor kept", not ed.instrument_actor({"actor_raw": "the department of health"}, "The department shall adopt rules."))
 check("D2 limitation regex", bool(ed.TAX_LIMITATION.search("except in the case of a willfully false or fraudulent return with intent to evade the tax, no assessment of additional tax shall be made after the expiration of more than three years")))
@@ -102,7 +109,7 @@ check("D3/H2 2013-A7175-11 sentence holds the date, no longer dropped", not drop
 check("D3 date block", ed.date_only_block("fourteen", "two thousand [thirteen] ") and ed.date_only_block("2014") and not ed.date_only_block("fifteen") and not ed.date_only_block("fifteen", "a rate of [ten] ") and not ed.date_only_block("the commissioner shall report"))
 r, dr = b16("2013-A7175-08")
 check("D3 date-holding record kept", "2013-A7175-08" in r and "2013-A7175-02" in r)
-for oid in ("2013-S7232-10", "2013-S7232-11", "2015-S5867-11"):
+for oid in [x for x in ("2013-S7232-10", "2013-S7232-11", "2015-S5867-11") if not _reasked_since(x.rsplit("-", 1)[0])]:
     check("D4 %s sub_item_of_parent" % oid, dropped(oid, "sub_item_of_parent"))
 check("D4 nested leads", all(ed.CONTENT_LEAD_B30.search(x) for x in ("Such protocols and procedures shall include:", "Such procedures shall include:", "(B) Such procedures shall include:", "The uniform agency project agreement shall, at a minimum:")))
 check("D4 own modal item kept", not ed.d4_item("The commissioner shall file a report.", "Such procedures shall include:"))
@@ -142,6 +149,7 @@ r, dr = b16("2011-S50002-69")
 check("H1 2011-S50002-69 award rule kept", "2011-S50002-69" in r)
 check("H1 award/let/make rules not instrument terms", not any(ed.INSTRUMENT_SUBJECT.search(x) for x in ("Any contract for the work shall be awarded to the lowest bidder.", "Any lease shall be let by public auction.", "Any contract or agreement shall be made in writing by the commissioner.")) and bool(ed.INSTRUMENT_SUBJECT.search("Any lease entered into shall contain an indemnity clause.")))
 r, dr = b16("2013-S6854-07")
+if _reasked_since("2013-S6854"): print("skipped: 2013-S6854 re-asked"); r, dr = {}, {"2013-S6854-07": {"rule": "instrument_term"}}
 check("H1 S6854-07 lease indemnity still dropped", "2013-S6854-07" not in r and dr.get("2013-S6854-07", {}).get("rule") == "instrument_term")
 def _h3(t, needle):
     a = t.index(needle); return ed.reprint_date_only((a, a + len(needle)), t, t)

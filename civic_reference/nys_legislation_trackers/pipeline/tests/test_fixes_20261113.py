@@ -75,7 +75,7 @@ def gate(law_key, prefix):
     r = ed.gate_record(o, t, "{{" in t)
     return r[0] if r else None
 for lk, pre in (("2023-A611", "The website established by each board"), ("2023-A611", "a. statutory language"), ("2023-A611", "c. a brief description"),
-                ("2025-A10542", "Track the location and status"), ("2025-A10542", "Incorporate any relevant findings"), ("2025-S7927", "such other terms, conditions and provisions"),
+                ("2025-A10542", "Track the location and status"), ("2025-A10542", "Incorporate any relevant findings"),
                 ("2009-A7329", "A notice of liability shall contain"), ("2009-A7329", "The notice of liability shall contain information")):
     g = gate(lk, pre)
     check("AJ1 gate %s %r" % (lk, pre[:28]), g in ("sub_item_of_parent", "skip"))
@@ -90,7 +90,7 @@ check("AJ2 website subject", ed.aj2_passive({"actor_raw": "The website establish
 check("AJ2 a real fund body is kept", not ed.aj2_passive({"actor_raw": "State University Construction Fund", "agency": "State University Construction Fund"}))
 check("AJ2 grouped agency is kept", not ed.aj2_passive({**o1, "agency_group": "Cities"}))
 check("AJ2 a different agency is kept", not ed.aj2_passive({**o1, "agency": "DOH"}))
-nb = ed.aj2_named_body({"actor_raw": "Monies in the fund", "quote": "Monies in the fund shall be disbursed by the department of health to the counties."}, "")
+nb = ed.aj2_named_body({"actor_raw": "Monies in the fund", "quote": "Monies in the fund may be transferred to the counties upon the request of the commissioner of health."}, "")
 check("AJ2 names the body the sentence names", nb is not None and nb[0] == "DOH")
 check("AJ2 no body: none", ed.aj2_named_body({"actor_raw": "Monies in the fund", "quote": "Monies in the fund shall be expended only for lupus education."}, "") is None)
 

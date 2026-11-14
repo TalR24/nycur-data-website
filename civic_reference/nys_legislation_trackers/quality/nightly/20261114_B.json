@@ -1,0 +1,1557 @@
+{
+ "_scoring": {
+  "auditor": "B",
+  "night": "20261114",
+  "laws": 11,
+  "stored_records": 87,
+  "correct": 58,
+  "wrong_fields": 12,
+  "not_real": 17,
+  "missed": 4,
+  "precision_strict": "58/87 = 66.7% (Wilson 95% 56.2-75.7)",
+  "precision_real": "70/87 = 80.5% (Wilson 95% 70.9-87.4)",
+  "recall": "67/71 = 94.4% (Wilson 95% 86.4-97.8)",
+  "recall_note": "blind items 56, matched by a stored record 52, missed 4; plus 15 stored correct records the blind pass missed (counted as found in numerator and denominator). Literal brief formula 52/71 = 73.2%.",
+  "effective_dates": "11/11 correct",
+  "calibration_laws": {
+   "laws": [
+    "2019-S4915",
+    "2023-A6140"
+   ],
+   "stored_records": 2,
+   "correct": 2,
+   "wrong_fields": 0,
+   "not_real": 0,
+   "missed": 0,
+   "precision_strict": "2/2",
+   "recall": "2/2",
+   "effective_dates": "2/2 correct"
+  }
+ },
+ "_classes": [
+  {
+   "name": "Conforming-word-only reprints (plural/pronoun/cross-reference words) stored as records",
+   "criteria": [
+    "1",
+    "2"
+   ],
+   "instances": [
+    "2011-S5571-02",
+    "2011-S5571-03",
+    "2011-S5571-04",
+    "2011-S5571-05",
+    "2011-S5571-06",
+    "2011-S5571-07",
+    "2011-S5571-08",
+    "2011-S5571-09",
+    "2011-S5571-10",
+    "2013-A9733-09"
+   ],
+   "rule": "packet {{...}} spans found in the quote are all made only of {justices, justice, or, they, them, his, her, its, he, she, an, a, the, article, title, chapter, subdivision, section, paragraph}, at least one such span is >=4 chars, no substantive span in the quote",
+   "db_matches": 183,
+   "db_examples": [
+    "2009-A11308-14",
+    "2009-A11308-19",
+    "2009-A2209-13"
+   ],
+   "needs_judgment": true,
+   "note": "LOW PRECISION: the 3 db_examples checked at audit time are not instances of this class (e.g. raised-cap examples are private-party penalties stored as duties, contract examples are payment caps/CBA clauses); db_matches is an upper bound, rule needs tightening"
+  },
+  {
+   "name": "'the agency' resolved to the generic State agencies group instead of the named authority",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2013-A9021-05",
+    "2013-A9021-06",
+    "2013-A9021-08",
+    "2013-A9021-09",
+    "2013-A9021-10",
+    "2013-A9021-15"
+   ],
+   "rule": "agency == 'State agencies' and actor_raw fullmatch (?i)(the )?agency",
+   "db_matches": 87,
+   "db_examples": [
+    "2009-A8573-01",
+    "2011-A6446-01",
+    "2011-A7445-01"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "Contract/service-contract terms ('shall provide ... that') stored as records, missed by instrument_term",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2013-A9021-13",
+    "2013-A9021-14"
+   ],
+   "rule": "quote matches (?i)\\b(service contract|contract|lease|agreement)s?\\b[^.]{0,80}\\bshall (provide|include|contain)\\b",
+   "db_matches": 39,
+   "db_examples": [
+    "2009-A11171-12",
+    "2009-A7561-03",
+    "2009-A7967-04"
+   ],
+   "needs_judgment": true,
+   "note": "LOW PRECISION: the 3 db_examples checked at audit time are not instances of this class (e.g. raised-cap examples are private-party penalties stored as duties, contract examples are payment caps/CBA clauses); db_matches is an upper bound, rule needs tightening"
+  },
+  {
+   "name": "'is authorized' stored as a duty",
+   "criteria": [
+    "4"
+   ],
+   "instances": [
+    "2013-A9021-12"
+   ],
+   "rule": "duties where quote has (is|are) (hereby )?authorized (not 'and directed') and no shall/must other than 'shall not exceed'",
+   "db_matches": 14,
+   "db_examples": [
+    "2009-A6361-02",
+    "2009-A8768-03",
+    "2011-A8005-04"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "Raised cap stored as duty (Kind ruling Nov 12: widened power)",
+   "criteria": [
+    "4"
+   ],
+   "instances": [
+    "2013-A8106-09"
+   ],
+   "rule": "duties, extends_existing true, quote matches not (to )?(be )?(more than|exceed), excluding issuance cutoffs 'shall not issue/exceed'",
+   "db_matches": 73,
+   "db_examples": [
+    "2009-A11308-25",
+    "2009-A11308-26",
+    "2009-A11308-27"
+   ],
+   "needs_judgment": true,
+   "note": "LOW PRECISION: the 3 db_examples checked at audit time are not instances of this class (e.g. raised-cap examples are private-party penalties stored as duties, contract examples are payment caps/CBA clauses); db_matches is an upper bound, rule needs tightening"
+  },
+  {
+   "name": "Quote with no modal or operative verb (definition list stored as record)",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2015-A10280-01"
+   ],
+   "rule": "quote has none of shall|must|may|authorized|empowered|directed|required|responsible|have the power|prohibited",
+   "db_matches": 3147,
+   "db_examples": [
+    "2009-A1002-01",
+    "2009-A1002-02",
+    "2009-A1002-03"
+   ],
+   "needs_judgment": true,
+   "note": "rule over-matches: list items under a modal lead-in (\"To make Mortgage loans ...\") carry no modal of their own; the 3147 count is an upper bound, precision unverified"
+  },
+  {
+   "name": "Gate exemption_or_applicability drops prohibitions on a government actor",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2023-A6063-11",
+    "2023-A6063-22"
+   ],
+   "rule": "dropped rule == exemption_or_applicability and quote matches (commissioner|department|director|...)\\b[^.;]{0,30}\\bshall not",
+   "db_matches": 6,
+   "db_examples": [
+    "2021-S8715-03",
+    "2023-A6063-11",
+    "2023-A6063-22"
+   ],
+   "needs_judgment": false,
+   "note": "runs over data/dropped/*.json (real records lost by a gate)"
+  },
+  {
+   "name": "Gate duplicate_provision drops a parallel provision with a different amount",
+   "criteria": [
+    "1",
+    "9"
+   ],
+   "instances": [
+    "2013-A8106-01"
+   ],
+   "rule": "dropped rule == duplicate_provision and the number/amount words in the dropped quote are not a subset of those in the kept record's quote",
+   "db_matches": 55,
+   "db_examples": [
+    "2009-A10468-12",
+    "2009-A10468-13",
+    "2009-A10468-14"
+   ],
+   "needs_judgment": false,
+   "note": "runs over data/dropped/*.json (real records lost by a gate)"
+  },
+  {
+   "name": "Pre-2017 brace rule missed digits after a deletion ('[2012-2013] 2011-2012' left unbraced), record quoted reprinted text instead",
+   "criteria": [
+    "2"
+   ],
+   "instances": [
+    "2013-S3070-01"
+   ],
+   "rule": "packet LAW TEXT (sessions <=2015) matches \\[[^\\]]*\\d[^\\]]*\\]\\s+\\d[\\d,-]* with the digits outside {{ }}; db_matches = stored records in those laws",
+   "db_matches": 489,
+   "db_examples": [
+    "2009-A10681",
+    "2009-A11308",
+    "2009-A11364"
+   ],
+   "needs_judgment": false,
+   "laws_matched": 39,
+   "note": "db_matches counts all stored records in the matching laws, not confirmed errors; laws_matched is the packet count"
+  },
+  {
+   "name": "Single-instance judgment calls (S7845-01 setup duty deadline none; A6063-32 lien as duty; A4025-01 law-enforcement officers left Unspecified; A9021-07/-11 fund-use conditions as records; A8106-13 account establishment as duty)",
+   "criteria": [
+    "1",
+    "3",
+    "4",
+    "5"
+   ],
+   "instances": [
+    "2013-S7845-01",
+    "2023-A6063-32",
+    "2013-A4025-01",
+    "2013-A9021-07",
+    "2013-A9021-11",
+    "2013-A8106-13"
+   ],
+   "rule": "none",
+   "db_matches": null,
+   "db_examples": [],
+   "needs_judgment": true,
+   "laws": [
+    "2013-S7845",
+    "2023-A6063",
+    "2013-A4025",
+    "2013-A9021",
+    "2013-A8106"
+   ]
+  }
+ ],
+ "2011-S5571": {
+  "records": {
+   "2011-S5571-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "In like manner, there shall also be appointed for the village of Port Chester, two acting police justices for the said term.",
+    "note": "Sole new duty: '[an] {{two}} acting police [justice] {{justices}}'.",
+    "fields_at_audit": {
+     "agency": "Villages",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": "Village of Port Chester"
+    }
+   },
+   "2011-S5571-02": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "2"
+    ],
+    "fields": {},
+    "quote": "The police justice, or in case of his absence or inability to act, the acting police justice or justices, shall have exclusive jurisdiction in the first instance to hear, try and determine charges of violations of the ordinances of the village of Port Chester.",
+    "note": "Only braced matter in this sentence is the plural conforming word (e.g. 'acting police [justice] {{justices}}' / '{{or justices}}'); the duty or power is reprinted unchanged law. The real change is captured by -01."
+   },
+   "2011-S5571-03": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "2"
+    ],
+    "fields": {},
+    "quote": "an acting police justice shall be a person who has the qualifications herein provided for such office, and shall perform the duties of the said police justice in case of and during his temporary disability or absence.",
+    "note": "Only braced matter in this sentence is the plural conforming word (e.g. 'acting police [justice] {{justices}}' / '{{or justices}}'); the duty or power is reprinted unchanged law. The real change is captured by -01."
+   },
+   "2011-S5571-04": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "2"
+    ],
+    "fields": {},
+    "quote": "The police justice may make an order that the business of the court requires such acting police justice or justices to assist him in the disposition thereof",
+    "note": "Only braced matter in this sentence is the plural conforming word (e.g. 'acting police [justice] {{justices}}' / '{{or justices}}'); the duty or power is reprinted unchanged law. The real change is captured by -01."
+   },
+   "2011-S5571-05": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "2"
+    ],
+    "fields": {},
+    "quote": "thereupon such acting police justices shall perform the duties, and shall have and exercise the jurisdiction and powers of the police justice in civil and criminal cases and proceedings concurrently with such police justice.",
+    "note": "Only braced matter in this sentence is the plural conforming word (e.g. 'acting police [justice] {{justices}}' / '{{or justices}}'); the duty or power is reprinted unchanged law. The real change is captured by -01."
+   },
+   "2011-S5571-06": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "2"
+    ],
+    "fields": {},
+    "quote": "The police justice and acting police justices shall receive for their service such salaries as shall be fixed by a majority vote of the board of trustees.",
+    "note": "Only braced matter in this sentence is the plural conforming word (e.g. 'acting police [justice] {{justices}}' / '{{or justices}}'); the duty or power is reprinted unchanged law. The real change is captured by -01."
+   },
+   "2011-S5571-07": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "2"
+    ],
+    "fields": {},
+    "quote": "The police justice and acting police justices shall pay all fines, penalties, fees and other costs received by either of them to the comptroller of the state of New York, as provided by law.",
+    "note": "Only braced matter in this sentence is the plural conforming word (e.g. 'acting police [justice] {{justices}}' / '{{or justices}}'); the duty or power is reprinted unchanged law. The real change is captured by -01."
+   },
+   "2011-S5571-08": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "2"
+    ],
+    "fields": {},
+    "quote": "If said police justice or the acting police justices shall be absent, or unable to perform said duties, then any justice of the peace of the town of Rye, residing in said village who may be designated by the mayor of said village",
+    "note": "Only braced matter in this sentence is the plural conforming word (e.g. 'acting police [justice] {{justices}}' / '{{or justices}}'); the duty or power is reprinted unchanged law. The real change is captured by -01."
+   },
+   "2011-S5571-09": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "2"
+    ],
+    "fields": {},
+    "quote": "The police justice court and the police justice and acting police justices thereof must take judicial notice of all ordinances adopted by the board of trustees so long as the same remain in force and effect",
+    "note": "Only braced matter in this sentence is the plural conforming word (e.g. 'acting police [justice] {{justices}}' / '{{or justices}}'); the duty or power is reprinted unchanged law. The real change is captured by -01."
+   },
+   "2011-S5571-10": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "2"
+    ],
+    "fields": {},
+    "quote": "to be known as the police justice fund, and all fines, forfeitures of bail, fees and costs collected by the police justice and acting police justices and received by the treasurer of the village of Port Chester through the comptroller of the state of New York, and all moneys received by the village from the county for services of police",
+    "note": "Only braced matter in this sentence is the plural conforming word (e.g. 'acting police [justice] {{justices}}' / '{{or justices}}'); the duty or power is reprinted unchanged law. The real change is captured by -01."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2011-08-03",
+   "computed": "2011-08-03",
+   "verdict": "correct",
+   "note": "\u00a7 2. This act shall take effect immediately."
+  }
+ },
+ "2013-A9733": {
+  "records": {
+   "2013-A9733-01": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "The justice center for the protection of people with special needs shall be responsible for monitoring the quality of mental health care provided to inmates pursuant to article twenty of the executive law.",
+    "note": "Only new matter is the citation swap 'article [forty-five of the mental hygiene law] {{twenty of the executive law.}}'; monitoring duty is reprinted, not widened."
+   },
+   "2013-A9733-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Provide for the development and implementation of a plan of prevention and remediation with respect to a substantiated report of abuse or neglect.",
+    "note": "Trigger changed to 'substantiated report of [a reportable incident] {{abuse or neglect.}}' (4212); changed class, extends_existing true.",
+    "fields_at_audit": {
+     "agency": "SED",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2013-A9733-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Provide for the development and implementation of a plan of prevention and remediation with respect to a substantiated report of abuse or neglect.",
+    "note": "4314(b) copy; distinct section.",
+    "fields_at_audit": {
+     "agency": "SED",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2013-A9733-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Provide for the development and implementation of a plan of prevention and remediation with respect to a substantiated report of abuse or neglect.",
+    "note": "4358(b) copy.",
+    "fields_at_audit": {
+     "agency": "SED",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2013-A9733-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "To provide for the development and implementation of a plan of prevention and remediation with respect to a substantiated report of abuse or neglect.",
+    "note": "4403(12) copy.",
+    "fields_at_audit": {
+     "agency": "SED",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2013-A9733-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "assuring that an individual who has committed a category one offense, as defined in paragraph (a) of subdivision four of section four hundred ninety-three of the social services law, that is included on the vulnerable persons' central register is not hired or otherwise used in any position in which such individual would have regular and substantial contact",
+    "note": "New (vii) in 4314(a).",
+    "fields_at_audit": {
+     "agency": "SED",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-A9733-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "assuring that an individual who has committed a category one offense, as defined in paragraph (a) of subdivision four of section four hundred ninety-three of the social services law, that is included on the vulnerable persons' central register is not hired or otherwise used in any position in which such individual would have regular and substantial contact",
+    "note": "New (vii) in 4358(a).",
+    "fields_at_audit": {
+     "agency": "SED",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-A9733-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "assuring that an individual who has committed a category one offense, as defined in paragraph (a) of subdivision four of section four hundred ninety-three of the social services law, that is included on the vulnerable persons' central register is not hired or otherwise used in any position in which such individual would have regular and substantial contact",
+    "note": "New (g) in 4403(11).",
+    "fields_at_audit": {
+     "agency": "SED",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-A9733-09": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "2"
+    ],
+    "fields": {},
+    "quote": "shall develop guidelines to be utilized by appropriate state and local governmental agencies and authorized agencies as defined by subdivision ten of section three hundred seventy-one of this article",
+    "note": "Only new matter is cross-reference words 'this [chapter] {{article}}' / '{{title}}'; the guidelines duty is reprinted."
+   },
+   "2013-A9733-10": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "or its vendors or contractors shall not take any retaliatory personnel action, as such term is defined in paragraph (e) of subdivision one of section seven hundred forty of the labor law, against an employee or agent or vendor or contractor",
+    "note": "'state agency ... {{or its vendors or contractors}} shall not take any retaliatory personnel action'.",
+    "fields_at_audit": {
+     "agency": "State agencies",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2014-07-22",
+   "computed": "2014-07-22",
+   "verdict": "correct",
+   "note": "\u00a7 13. This act shall take effect immediately; provided, however, that if section 12 of chapter 554 of the laws of 2013 shall not have taken effect on or before "
+  },
+  "note": "b5 deletion '[which will serve children]' in 424-a(4) not counted (judgment)"
+ },
+ "2013-S7845": {
+  "records": {
+   "2013-S7845-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "5"
+    ],
+    "fields": {
+     "deadline_kind": "on_effective_date"
+    },
+    "quote": "The chief administrator of the courts shall promulgate salary schedules, as follows: (a) Effective October 1, 2014, each of the rates of pay established by the April, 2010 salary schedule shall be increased as follows:",
+    "note": "'The chief administrator of the courts shall promulgate salary schedules' is a one-time setup duty with no stated deadline; the 'Effective October 1, 2014' dates are rate effective dates, already past at signing (2014-10-08)."
+   },
+   "2013-S7845-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the chief administrator of the courts may direct that, notwithstanding subdivision 1 of section 200 of the state finance law or any other provision of law to the contrary, in each of the last four bi-weekly payroll periods commencing during such fiscal year up to one-half day's salary or wages shall be withheld",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-S7845-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Any direction by the chief administrator pursuant to subdivision (b) of this section that salary or wages be withheld must be reported to the comptroller not later than January 15 of the fiscal year in which such withholding will occur",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "fixed_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-S7845-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the chief administrator of the courts, with the agreement of such employee organization, shall deliver to the comptroller a certificate that such collective bargaining agreement is in effect",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-S7845-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "may be withheld in whole or in part from any nonjudicial officer or employee not in a collective negotiating unit when in the opinion of the chief administrator, such increase is not warranted or is not appropriate",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2014-10-08",
+   "computed": "2014-10-08",
+   "verdict": "correct",
+   "note": "\u00a7 11. This act shall take effect immediately and shall be deemed to have been in full force and effect on and after April 1, 2011."
+  }
+ },
+ "2015-A10280": {
+  "records": {
+   "2015-A10280-01": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "3"
+    ],
+    "fields": {},
+    "quote": "Esopus (including upper and lower branches), Fish (including east and west branches), Gooseberry, Little Sandy, Onondaga, Rondout, Sandy, Schoharie, South Sandy, Oatka, Tonawanda, West Kill, Scajaquada, Wappinger and Wynantskill;",
+    "note": "Definition list only: '... Onondaga, {{Rondout,}} Sandy, ...' grants or requires nothing; actor_raw is 'the state's major creeks', a list of creeks, not a body."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2016-07-21",
+   "computed": "2016-07-21",
+   "verdict": "correct",
+   "note": "\u00a7 2. This act shall take effect immediately."
+  },
+  "note": "blind list empty: definition change only"
+ },
+ "2013-S3070": {
+  "records": {
+   "2013-S3070-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "2"
+    ],
+    "fields": {
+     "quote": "the assessor of the Town of Pelham, county of Westchester, is hereby authorized to accept from the Pelham Jewish Center an application for exemption from real property taxes pursuant to section 420-a of the real property tax law for the 2011-2012 assessment roll"
+    },
+    "quote": "If satisfied that the Pelham Jewish Center would otherwise be entitled to such exemption if such not-for-profit organization had acquired the subject property and filed an application for exemption by the appropriate taxable status date, the assessor, upon approval by the Town of Pelham, Village of Pelham Manor and Pelham ufsd Board, may make appropriate correction to the subject roll.",
+    "note": "Stored sentence ('may make appropriate correction') is reprinted; its only braced token is the name '{{ufsd}}'. The law's real change is the roll year '[2012-2013] 2011-2012' in the accept sentence, which the packet left UNBRACED although digits after a deletion are braced by rule."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2013-10-21",
+   "computed": "2013-10-21",
+   "verdict": "correct",
+   "note": "\u00a7 2. This act shall take effect immediately."
+  }
+ },
+ "2013-A9021": {
+  "records": {
+   "2013-A9021-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "All refinancing applications by eligible secured Hospital borrowers shall be approved by the eligible secured Hospital borrower's board and the commissioner.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOH",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-A9021-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "As a condition of such prior approval, the commissioner shall approve the principal amount of the refinancing, and shall require the eligible secured Hospital borrower to give the department a written undertaking",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOH",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-A9021-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "A Mortgage loan to an eligible secured Hospital borrower, as defined in subdivision three-b of section twenty-eight hundred seventy-two of this article, made by the medical care facilities finance agency, and any successor thereto, may be refinanced for a term not longer than the term approved by the commissioner pursuant to this section",
+    "note": "New 2874-b: MCFFA loan 'may be refinanced for a term not longer than the term approved by the commissioner'.",
+    "fields_at_audit": {
+     "agency": "New York State Medical Care Facilities Finance Agency",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-A9021-05": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "New York State Medical Care Facilities Finance Agency"
+    },
+    "quote": "To make Mortgage loans and project loans to non-profit Hospital corporations and non-profit medical corporations constituting eligible secured Hospital borrowers, as defined in subdivision six-c of section three of this act, and to undertake commitments to make any such mortgage loans and project loans;",
+    "note": "'the agency' in MCFFA act s5 10-d is the medical care facilities finance agency, not the State agencies group."
+   },
+   "2013-A9021-06": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "New York State Medical Care Facilities Finance Agency"
+    },
+    "quote": "The agency shall establish a secured Hospital special debt service reserve fund or funds and pay into such fund or funds moneys from the secured Hospital fund up to an amount not to exceed an amount necessary to ensure the repayment of principal and interest due on any outstanding indebtedness on special Hospital projects bonds",
+    "note": "'The agency shall establish a secured Hospital special debt service reserve fund' - MCFFA act s7-c."
+   },
+   "2013-A9021-07": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "Funds deposited in such secured Hospital special debt service reserve fund or funds shall be used in the event that an eligible secured hospital borrower",
+    "note": "'Funds deposited in such ... reserve fund or funds shall be used in the event that an eligible secured hospital borrower ... fails' is a use condition of the fund in -06 (passive subject), not a separate duty."
+   },
+   "2013-A9021-08": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "New York State Medical Care Facilities Finance Agency"
+    },
+    "quote": "The agency shall, for the purposes of paragraph (a) of this subdivision and for the support of eligible secured Hospital borrowers, pay into the secured Hospital fund currently established and maintained by the agency",
+    "note": "'The agency shall ... pay into the secured Hospital fund currently established and maintained by the agency'."
+   },
+   "2013-A9021-09": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "New York State Medical Care Facilities Finance Agency"
+    },
+    "quote": "Moneys paid into the secured Hospital fund shall, in the discretion of the agency, but subject to agreements with bondholders, be used to fund the special debt service reserve fund or funds at a level or levels which minimize the need for use of the capital reserve fund or funds",
+    "note": "'in the discretion of the agency' - MCFFA."
+   },
+   "2013-A9021-10": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "New York State Medical Care Facilities Finance Agency"
+    },
+    "quote": "The agency shall establish a secured Hospital capital reserve fund or funds which shall be funded at an amount or amounts equal to the lesser of either",
+    "note": "'The agency shall establish a secured Hospital capital reserve fund'."
+   },
+   "2013-A9021-11": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "The capital reserve fund shall be funded by the sale of special Hospital project bonds, as defined in paragraph (d-1) of subdivision three of section three of this act, or from such other funds as may be legally available for such purpose",
+    "note": "'The capital reserve fund shall be funded by the sale of special Hospital project bonds' states the funding source of the fund in -10 (condition of another record)."
+   },
+   "2013-A9021-12": {
+    "verdict": "wrong",
+    "criteria": [
+     "4"
+    ],
+    "fields": {
+     "kind": "power"
+    },
+    "quote": "the director of the budget is authorized in any state fiscal year to enter into one or more service contracts, which service contracts shall not exceed the term of the special Hospital project bonds",
+    "note": "'the director of the budget is authorized in any state fiscal year to enter into one or more service contracts' - is authorized = power."
+   },
+   "2013-A9021-13": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "Any service contract entered into pursuant to paragraph (a) of this subdivision shall provide (i) that the obligation of the director of the budget or of the state to fund or to pay the amounts therein provided for shall not constitute a debt of the state",
+    "note": "'Any service contract ... shall provide (i) that the obligation ... shall not constitute a debt of the state' is a term of the instrument (cf. rule instrument_term)."
+   },
+   "2013-A9021-14": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "And (ii) that the amounts paid to the agency pursuant to any such contract may be used by it solely to pay or to assist in financing costs of Mortgage loans to eligible secured Hospital borrowers",
+    "note": "'(ii) that the amounts paid to the agency pursuant to any such contract may be used by it solely ...' is another required term of the service contract, not a power."
+   },
+   "2013-A9021-15": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "New York State Medical Care Facilities Finance Agency"
+    },
+    "quote": "The agency shall not issue special Hospital project bonds, as defined in paragraph (d-1) of subdivision three of section three of this act, except to refinance Mortgage loans for eligible secured Hospital borrowers",
+    "note": "'The agency shall not issue special Hospital project bonds ... except to refinance'."
+   },
+   "2013-A9021-16": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "This act shall take effect immediately and shall expire on December 31, 2015",
+    "note": "Earlier chapter's sunset in amendment: 'shall expire on [March 1, 1998] {{December 31}}, 2015' - extension record, extends_existing true.",
+    "fields_at_audit": {
+     "agency": "New York State Medical Care Facilities Finance Agency",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [
+   {
+    "blind": "b3",
+    "quote": "The use of all savings resulting from the refinancing of an eligible secured Hospital borrower's Mortgage loan by the issuance of refunding bonds, including original issue premium, shall be subject to the prior approval of the commissioner.",
+    "kind": "duty",
+    "agency": "DOH",
+    "dropped_by": null,
+    "note": "New 2874-b(2); no stored or dropped record."
+   }
+  ],
+  "effective_date": {
+   "stored": "2014-11-21",
+   "computed": "2014-11-21",
+   "verdict": "correct",
+   "note": "\u00a7 13. This act shall take effect immediately; provided that sections one through nine of this act shall expire and be deemed repealed December 31, 2015; provide"
+  }
+ },
+ "2023-A6063": {
+  "records": {
+   "2023-A6063-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The comptroller is hereby authorized and directed to utilize this appropriation for the purpose of making payments for non-personal service liabilities incurred by the judiciary from April 1 through April 10, 2023",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State Comptroller",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2023-A6063-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The comptroller is hereby authorized and directed to utilize this appropriation for the purpose of making payments for aid to localities liabilities incurred by the judiciary from April 1 through April 10, 2023",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State Comptroller",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2023-A6063-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The comptroller is hereby authorized and directed to utilize this appropriation for the purpose of making payments for employee fringe benefit liabilities incurred by the judiciary from April 1 through April 10, 2023",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State Comptroller",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2023-A6063-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "with the approval of the director of the budget who shall file such approval with the department of audit and control and copies thereof with the chairman of the senate finance committee and the chairman of the assembly ways and means committee",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOB",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2023-A6063-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "advances and reimbursement made pursuant to subdivision (d) of section 41.15 and section 41.18 of the mental hygiene law shall be allocated pursuant to a plan and in a manner prescribed by the agency head and approved by the director of the budget",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "OPWDD",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2023-A6063-26": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner shall, subject to the approval of the director of the budget, alter existing advance payment schedules for voluntary-operated community residences established pursuant to section 41.36 of the mental hygiene law",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "OPWDD",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2023-A6063-36": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "All expenditures and disbursements made against the appropriations in this act shall, upon final action by the legislature on appropriation bills submitted by the governor pursuant to article VII of the state constitution for the support of government for the state fiscal year beginning April 1, 2023, be transferred by the comptroller as expenditures and disbursements to such appropriations for all state departments and agencies",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State Comptroller",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2023-A6063-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the money hereby appropriated may be increased or decreased by interchange, with any appropriation of the justice center for the protection of people with special needs, and may be increased or decreased by transfer or suballocation between these appropriated amounts and appropriations of the office of mental health, office for people with develop- mental disabilities, office of addiction services and supports, department of health, and the office of children and family services",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Justice Center for the Protection of People with Special Needs",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2023-A6063-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the commissioner, pursuant to such contract and in the manner provided therein, may pay all or a portion of the expenses incurred by such voluntary agen- cies arising out of loans which are funded from the proceeds of bonds and notes issued by the dormitory authority of the state of New York",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "OPWDD",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2023-A6063-12": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the director of the budget is authorized to make suballocations from this appropriation to the department of health medical assistance program",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOB",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2023-A6063-13": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "pursuant to criteria estab- lished by the commissioner of the office for people with developmental disabilities and approved by the director of the budg- et, expenditures may be made from this appropriation for residential facilities which are pending recertification as intermediate care facilities for people with developmental disabilities",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "OPWDD",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2023-A6063-17": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the money hereby appropriated may be transferred to state operations and/or any appropriation of the office for people with developmental disabilities with the approval of the director of the budget",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "OPWDD",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2023-A6063-18": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "moneys from this appropriation may be used for state aid of up to 100 percent of the net deficit costs of day training programs and family support services",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "OPWDD",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2023-A6063-20": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "moneys from this appropriation may be used for expenses of family care homes including payments to operators of certified family care homes for damages caused by clients to personal and real property in accordance with standards established by the commissioner",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "OPWDD",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2023-A6063-21": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "moneys from this appropriation may be used for appropriate day program services and residential services including, but not limited to, direct housing subsidies to individuals, start-up expenses for family care providers, environmental modifications, adaptive technologies, appraisals, property options, feasibility studies and preoperational expenses",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "OPWDD",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2023-A6063-23": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "are authorized to provide such tasks as OPWDD may specify when performed under the supervision, training and periodic inspection of a registered professional nurse and in accordance with an authorized practitioner's ordered care",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "OPWDD",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2023-A6063-25": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "moneys from this appropriation may be used for payment up to $250 per year per client, at such times and in such manner as determined by the commissioner on the basis of financial need for the personal needs of each client residing in voluntary operated community residences",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "OPWDD",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2023-A6063-27": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "moneys from this appropriation may be used for the operation of clinics licensed pursuant to article 16 of the mental hygiene law including, but not limited to, supportive and habilitative services consistent with the home and community based services waiver",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "OPWDD",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2023-A6063-28": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "may be allocated and distributed by the commissioner of the office for people with developmental disabilities, subject to approval of the director of the budget, without a competitive bid or request for proposal process for the services and expenses of qualified applicants",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "OPWDD",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2023-A6063-33": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "up to $800,000 of this appropriation may be transferred to the New York State Education Departments' Adult Career and Continuing Education Services - Vocational Rehabilitation (ACCES-VR) program to support the Long-Term Sheltered Employment program operated by FEDCAP Rehabilitation Services, Inc.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "OPWDD",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2023-A6063-34": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the commissioner of the office for people with developmental disabilities may make the funds appropriated herein available as state aid, a loan or a grant, pursuant to terms and conditions established by the commissioner of the office for people with developmental disabilities, to cover a portion of the development costs of private, public and/or non-profit organizations",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "OPWDD",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2023-A6063-32": {
+    "verdict": "wrong",
+    "criteria": [
+     "4"
+    ],
+    "fields": {
+     "kind": "power"
+    },
+    "quote": "the office for people with developmental disabilities shall have a lien on the real property developed with such state aid, loans or grants, which shall be in the amount of the loan or grant, for a maximum term of 30 years",
+    "note": "'the office for people with developmental disabilities shall have a lien on the real property developed with such state aid' gives OPWDD a security right; it requires no act, so it is a power, not a duty."
+   }
+  },
+  "missed": [
+   {
+    "blind": "b7",
+    "quote": "for the period commencing on April 1, 2022 and ending March 31, 2023 the commissioner shall not apply any other cost of living adjustment for the purpose of establishing rates of payments, contracts or any other form of reimbursement",
+    "kind": "duty",
+    "agency": "OPWDD",
+    "dropped_by": "exemption_or_applicability (2023-A6063-11, -22)",
+    "note": "A prohibition on a government actor is a duty; it is not an exemption."
+   },
+   {
+    "blind": "b6",
+    "quote": "moneys from this appropriation may be used for payments to purchase general services including but not limited to respite providers, up to a maximum of 14 days, at rates to be established by the commissioner and approved by the director of the budget",
+    "kind": "power",
+    "agency": "OPWDD",
+    "dropped_by": "designation_no_actor (2023-A6063-09, -19 quoted only the rate clause)",
+    "note": "No stored respite-payment power; the model's records quoting the rate tail were dropped."
+   }
+  ],
+  "effective_date": {
+   "stored": "2023-04-03",
+   "computed": "2023-04-03",
+   "verdict": "correct",
+   "note": "\u00a7 14. This act shall take effect immediately and shall be deemed to have been in full force and effect on and after April 1, 2023; provided, however, that upon "
+  }
+ },
+ "2013-A4025": {
+  "records": {
+   "2013-A4025-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "law enforcement: Municipalities (local police) and State agencies (State Police, peace officers)"
+    },
+    "quote": "No police officer, peace officer, regulatory officer or law enforcement official may arrest, ticket, stop or question any person based solely or in part on an alleged violation of subdivision one of this section",
+    "note": "'No police officer, peace officer, regulatory officer or law enforcement official may arrest, ticket, stop or question' names government officers; agency must not be Unspecified."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2013-10-10",
+   "computed": "2013-10-10",
+   "verdict": "correct",
+   "note": "\u00a7 2. This act shall take effect on the ninetieth day after it shall have become a law."
+  }
+ },
+ "2013-A8106": {
+  "records": {
+   "2013-A8106-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the commissioner may assess against the employer damages of two hundred fifty dollars for each work day that the violations occurred or continue to occur, but not to exceed a total of five thousand dollars.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOL",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2013-A8106-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Additionally, such order, if issued to an employer who previously has been found in violation of those provisions, rules or regulations, or to an employer whose violation is willful or egregious, shall direct such employer to report, by location, and for such period as the commissioner shall determine,",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOL",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-A8106-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The department shall post the data collected on the department's website.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOL",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-A8106-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner's investigation shall cover the entire six-year statute of limitations period unless the commissioner otherwise notifies all affected employees.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOL",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-A8106-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner's investigation shall cover the entire six-year statute of limitations period unless the commissioner otherwise notifies all affected employees.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOL",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-A8106-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "if the commissioner finds that the employer has violated the provisions of this section in the preceding six years, he or she may assess a civil penalty of not less than one thousand nor more than twenty thousand dollars.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOL",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2013-A8106-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Liquidated damages shall be calculated as an amount not more than twenty thousand dollars.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2013-A8106-10": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "At the request of an employee, the commissioner shall assign that portion of the money due that constitutes wages, wage supplements, interest on wages or wage supplements, or liquidated damages due that employee, to that employee and file an order in that amount in the name of that employee",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOL",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2013-A8106-11": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "At the request of an employee, the commissioner shall assign that portion of the money due that constitutes wages, wage supplements, interest on wages or wage supplements, or liquidated damages due the employee, to that employee and file an order in that amount in the name of such employee",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOL",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2013-A8106-12": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner shall have the authority to promulgate rules necessary to effectuate the terms of this section.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOL",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-A8106-14": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Moneys of the fund shall be available to the commissioner of Labor for purposes of offsetting the costs incurred by the commissioner of Labor for the administration and enforcement of articles five, six, nineteen and nineteen-a of the Labor law",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOL",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-A8106-15": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The moneys shall be paid out of the fund on the audit and warrant of the comptroller on vouchers certified or approved by the commissioner of Labor or his or her designee.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State Comptroller",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-A8106-16": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Such certificate may be amended from time to time by the director of the budget and a copy of each such amendment shall be filed with the comptroller.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOB",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-A8106-09": {
+    "verdict": "wrong",
+    "criteria": [
+     "4"
+    ],
+    "fields": {
+     "kind": "power"
+    },
+    "quote": "Liquidated damages shall be calculated as an amount not more than twenty thousand dollars.",
+    "note": "215(2)(a) raises the court's liquidated-damages cap '[ten] {{twenty}} thousand dollars'; Kind ruling Nov 12: raising a cap widens a power (extends_existing true)."
+   },
+   "2013-A8106-13": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "There is hereby established in the custody of the state comptroller the wage theft prevention enforcement account.",
+    "note": "'There is hereby established in the custody of the state comptroller the wage theft prevention enforcement account.' creates an account; it requires no act of the comptroller (payout is -15)."
+   }
+  },
+  "missed": [
+   {
+    "blind": "b1",
+    "quote": "the commissioner may assess against the employer damages of fifty dollars for each work day that the violations occurred or continue to occur, but not to exceed a total of five thousand dollars.",
+    "kind": "power",
+    "agency": "DOL",
+    "dropped_by": "duplicate_provision (2013-A8106-01, 'overlaps 2013-A8106-02')",
+    "note": "198(1-b) (notice, $50/day) is a different subdivision from 198(1-d) (statements, $250/day); not a duplicate. extends_existing true."
+   }
+  ],
+  "effective_date": {
+   "stored": "2015-02-27",
+   "computed": "2015-02-27",
+   "verdict": "correct",
+   "note": "\u00a7 13. This act shall take effect on the sixtieth day after it shall have become a law."
+  }
+ },
+ "2013-S6854": {
+  "records": {
+   "2013-S6854-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The state university trustees are hereby authorized to lease without any public bidding a portion of the lands of the state university of New York at Stony Brook generally described in this act to the university foundation of such university at Stony Brook",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "SUNY",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2014-07-22",
+   "computed": "2014-07-22",
+   "verdict": "correct",
+   "note": "\u00a7 11. This act shall take effect immediately."
+  },
+  "note": "blind b2/b3 (lease shall require 15-a/labor law compliance; indemnity) dropped by instrument_term by policy, not counted as misses; b4 not counted"
+ },
+ "2013-A7430": {
+  "records": {
+   "2013-A7430-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner shall include space on the personal income tax return to enable a taxpayer to make such contribution.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DTF",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-A7430-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Notwithstanding any other provision of law all revenues collected pursuant to this section shall be credited to the homeless veterans assistance fund and used only for those purposes enumerated in section ninety-nine-v of the state finance law.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DTF",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-A7430-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "On or before the first day of February of each calendar year, the comptroller shall certify to the governor, the temporary president of the senate, the speaker of the assembly, the chair of the senate finance Committee and the chair of the assembly Ways and Means Committee",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State Comptroller",
+     "kind": "duty",
+     "deadline_kind": "fixed_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-A7430-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Moneys of the fund shall be expended only for the assistance and care of homeless veterans, for housing and housing-related expenses, as determined by the division of veterans affairs.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DVS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-A7430-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Moneys shall be paid out of the fund on the audit and warrant of the comptroller on vouchers approved and certified by the new york state director of veterans affairs.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State Comptroller",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-A7430-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Any interest received by the comptroller on moneys on deposit in the homeless veterans assistance fund shall be retained in and become part of such fund.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State Comptroller",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2014-11-07",
+   "computed": "2014-11-07",
+   "verdict": "correct",
+   "note": "\u00a7 3. This act shall take effect immediately and shall apply to taxable years beginning on or after January 1, 2015."
+  }
+ },
+ "2019-S4915": {
+  "records": {
+   "2019-S4915-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner of transportation shall provide for the installation and maintenance of adequate signing of the state highway system as designated pursuant to section one of this act.",
+    "note": "'The commissioner of transportation shall provide for the installation and maintenance of adequate signing'.",
+    "fields_at_audit": {
+     "agency": "NYSDOT",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2019-08-09",
+   "computed": "2019-08-09",
+   "verdict": "correct",
+   "note": "\u00a7 3. This act shall take effect immediately."
+  }
+ },
+ "2023-A6140": {
+  "records": {
+   "2023-A6140-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Program loans to small businesses and micro-businesses shall be targeted and marketed to minority and women-owned enterprises, veteran-owned enterprises as set forth in 15 U.S.C. section 632(Q)(3), as amended from time to time, and service-disabled veteran-owned enterprises as set forth in article three of the veterans' services law,",
+    "note": "'Program loans ... shall be targeted and marketed to minority and women-owned enterprises{{, veteran-owned enterprises ...}}' - added class, extends_existing true.",
+    "fields_at_audit": {
+     "agency": "ESD",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2023-11-10",
+   "computed": "2023-11-10",
+   "verdict": "correct",
+   "note": "\u00a7 2. This act shall take effect immediately."
+  }
+ }
+}
