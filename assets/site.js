@@ -39,6 +39,7 @@
 
   var POSTS_MENU = [
     { cat: 'Transit & Streets', topic: 'transit', items: [
+      { label: 'The Croton Aqueduct and the case for big swings', href: '/nycuriosity_substack_posts/croton_aqueduct/' },
       { label: 'Livable streets beyond Manhattan', href: '/nycuriosity_substack_posts/livable_streets_cuf/' },
       { label: 'Two Years of G Train Weekend Shutdowns', href: '/nycuriosity_substack_posts/g_train_weekend_shutdowns/' },
       { label: 'West 4th St Station Deep Dive', href: '/nycuriosity_substack_posts/west_4th_st_station/' },
