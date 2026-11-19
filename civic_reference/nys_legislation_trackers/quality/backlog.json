@@ -842,7 +842,10 @@
    ],
    "count": 51,
    "rule": "narrow AG7: a swap counts as conforming only when old and new share a stem, are gender terms, or are citation words (section, article, chapter, subdivision, paragraph, numbers); then dry run and blind sample",
-   "status": "open"
+   "status": "open",
+   "notes": [
+    "Nov 19 2026: built behind APPLY_B69 (OFF), extending the AF3 reprinted_gender_neutral gate; unit checks pass (employees/persons and municipal/international stay records). Full dry run over 3,226 laws still running; judge its changes before turning it on."
+   ]
   },
   {
    "id": "B70",
@@ -853,7 +856,10 @@
    ],
    "count": 87,
    "rule": "resolve through law_definitions before the group fallback",
-   "status": "open"
+   "status": "open",
+   "notes": [
+    "Nov 19 2026: built behind APPLY_B70 (OFF). Uncapped dry run 67 changes (53 in 2023-S8851, Seneca County Water and Sewer Authority). Blind judge 12/15: Seneca and 2013-A9021 right; wrong where the donor body sits in an unrelated section (2011-S6255-51, SFL 163(7)) and where the donor name is not a crosswalk agency (2023-S7526-09/-10 'Mentoring Program Agency'; the right value is New York City agencies). Guards: donor must be a canonical crosswalk body and named in the same section as the record. Raise R6_CAP for b70 once it passes."
+   ]
   },
   {
    "id": "B71",
@@ -876,6 +882,24 @@
    "count": 27,
    "rule": "resolver rule for local generic bodies",
    "status": "open"
+  },
+  {
+   "id": "B73",
+   "title": "Records with no provision kind dropped although the model said duty or power",
+   "status": "open",
+   "found": "2026-11-19 audit B (A559, A8047)",
+   "notes": [
+    "101 records dropped as excluded_missing_provision_kind; 86 have kind_model duty or power. Blind judge Nov 19: 27/30 should be restored (3 are definitions). Fix: fall back to kind_model and let every later gate judge (APPLY_B73). Verdicts quality/rework/mpk_verdicts_20261119.json."
+   ]
+  },
+  {
+   "id": "B74",
+   "title": "List-item lead finder stops at a nested sub-list's 'May' lead",
+   "status": "open",
+   "found": "2026-11-19 audit A (2015-S5607-07/08/12/13)",
+   "notes": [
+    "Items (Iii),(Iv),(Vi) under '(B) ... the Department shall:' follow a nested '(C) May approve ... in any of the following circumstances:' list whose numbering restarts; list_item_lead returns the nested May lead, so duties become powers. Fix: when the item's numeral does not continue the nearest lead's own sequence, keep walking up."
+   ]
   }
  ]
 }

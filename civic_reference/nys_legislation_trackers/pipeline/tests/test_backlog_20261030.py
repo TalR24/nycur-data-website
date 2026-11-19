@@ -48,7 +48,7 @@ check("B30 procedures lead", bool(ed.CONTENT_LEAD_B30.search("Such procedures sh
 check("B30 plain lead not content", not ed.CONTENT_LEAD_B30.search("The contract shall be as follows:") and not ed.CONTENT_LEAD_B30.search("The commissioner shall, at a minimum:"))
 check("B30 section sunset", bool(ed.SECTION_SUNSET.match("and provided further that section five of this act shall expire and be deemed repealed January 1, 2017.")))
 check("B30 sunset not a duty", not ed.SECTION_SUNSET.match("provided further that the commissioner shall report by January 1, 2017."))
-r = build("2015-S5867")
+r = {} if _reasked_since("2015-S5867") else build("2015-S5867")          # re-asked Nov 19 2026
 check("B30 S5867 imperative items dropped", not any(i in r for i in ("2015-S5867-10", "2015-S5867-12", "2015-S5867-13", "2015-S5867-14")))
 r = build("2013-A8728")
 # Nov 10 2026 (B43): the section-five sunset sentence is now kept as a holder-unnamed power

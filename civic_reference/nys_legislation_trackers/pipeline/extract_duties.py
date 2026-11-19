@@ -1756,6 +1756,7 @@ AI4_PLAN_APPROVED = re.compile(r"^\W*(?:in\s+)?(?:a|an)\s+[\w\s-]{0,60}\bwhich\s
 
 # Nov 13 2026 night (AJ): re-ask noise gates confirmed by two auditors and a blind judge of 89 re-ask changes (quality/nightly/20261113_A.json and _B.json, "_classes").
 APPLY_AJ1 = False         # content items stored as records: 'the website shall include, but not be limited to:' lead and its items a-h, 'the tracking system shall:' items, 'which act shall include the following:' items, 'the following terms shall have the following meanings:' items, 'a notice of liability shall contain ...'
+APPLY_B73 = True          # B73: no provision kind from the model -> fall back to kind_model (duty/power); later gates still judge
 APPLY_AJ2 = True          # an agency that is only the passive subject phrase ('Monies in the Fund', 'Statewide Electronic Tracking System', 'Website Established By ...'): resolves to the body the sentence names elsewhere, else the record drops as no_actor
 APPLY_AJ3 = False         # deadline_kind fixed_date with a null deadline_date: the date comes from deadline_text through dated_deadline, else the kind is none
 AJ1_THING = r"(?:web\s*sites?|portals?|databases?|(?:tracking|information|data|reporting)\s+systems?|notices?(?:\s+of\s+\w+)?|acts?|local\s+laws?|resolutions?|ordinances?|certificates?|petitions?)"
@@ -1820,7 +1821,9 @@ def aj2_passive(o):
     ar = re.sub(r"\s+", " ", (o.get("actor_raw") or "").strip())
     ag = re.sub(r"\s+", " ", (o.get("agency") or "").strip())
     norm = lambda x: re.sub(r"^(?:the|a|an)\s+", "", x, flags=re.I).lower()
-    return bool(ar) and norm(ar) == norm(ag) and bool(AJ2_SUBJECT.match(norm(ar)))
+    if bool(ar) and norm(ar) == norm(ag) and bool(AJ2_SUBJECT.match(norm(ar))):
+        return True
+    return bool(re.match(r"(?i)^\W*(?:the\s+)?(?:monies|moneys|money)\b", ar)) and bool(re.search(r"(?i)\bshall\s+be\s+(?:expended|used)\b", o.get("quote") or ""))          # Nov 19 2026: a re-ask's model actor resolves the agency, so a fund-use restriction no longer matches its subject; B66 still judges it
 
 
 def aj2_named_body(o, text):
@@ -2307,10 +2310,59 @@ def af3_trivial_reprint(sent):
     if all(triv(b) for b in blocks):
         return True
     rest = re.sub(r"\{\{(.*?)\}\}", lambda m: "" if triv(m.group(1)) else m.group(0), sent, flags=re.S)
-    return reprinted_name_swap(rest) or (APPLY_AG7 and ag7_term_swap(rest))
+    return reprinted_name_swap(rest) or (APPLY_AG7 and ag7_term_swap(rest)) or (APPLY_B69 and b69_conforming_swap(rest))
 
 
 APPLY_AG7 = False         # OFF, 219 stored ids flip (cap 40); one-word swaps still 113 and include real changes (employees/persons, municipal/international); needs a semantic test. Nov 11 2026 (coordinator AG7): a reprinted sentence whose only braced matter 1:1 replaces a bracketed word or phrase of at most 4 words, with no modal, verb, digit or new actor, is no new matter
+APPLY_B69 = False         # Nov 19 2026 (B69): OFF until blind-sampled. A reprint whose only braced matter is conforming ([justice] {{justices}}, [he] {{she}}, [chairman] {{chairperson}}, [section] {{subdivision}}) is no new matter; real substitutions (employees to persons, municipal to international) stay records
+B69_GENDER = frozenset("he she his her hers him himself herself they their them theirs themselves chairman chairwoman chairperson chair or and".split())
+B69_CITE = frozenset(("section sections subdivision subdivisions paragraph paragraphs subparagraph subparagraphs article articles chapter chapters part parts title titles clause clauses of and or this such "
+                      "zero one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty thirty forty fifty sixty seventy eighty ninety hundred first second third fourth fifth sixth seventh eighth ninth tenth").split())
+
+
+B69_CITE_NOUNS = frozenset("section sections subdivision subdivisions paragraph paragraphs subparagraph subparagraphs article articles chapter chapters part parts title titles clause clauses".split())
+
+
+def b69_same_stem(a, b):
+    a, b = a.lower(), b.lower()
+    if a == b:
+        return True
+    a, b = sorted((a, b), key=len)
+    return len(a) >= 3 and (b == a + "s" or b == a + "es" or (a.endswith("y") and b == a[:-1] + "ies") or (a.endswith("man") and b == a[:-3] + "men"))
+
+
+def b69_pair_conforming(old, new):
+    ow, nw = re.findall(r"[A-Za-z0-9]+", old), re.findall(r"[A-Za-z0-9]+", new)
+    if not ow or not nw:
+        return False
+    low = lambda ws: [w.lower() for w in ws]
+    if all(w in B69_GENDER for w in low(ow)) and all(w in B69_GENDER for w in low(nw)):
+        return True
+    def cite(ws):
+        return all(w.lower() in B69_CITE or re.fullmatch(r"\d+(?:-?[a-z])?|[A-Za-z]", w) or re.fullmatch(r"[a-z]+-[a-z]+", w.lower()) and all(x in B69_CITE for x in w.lower().split("-")) for w in ws)
+    if cite(ow) and cite(nw):
+        return True
+    if len(ow) == len(nw) and all(b69_same_stem(a, b) for a, b in zip(ow, nw)):
+        return True
+    return False
+
+
+def b69_conforming_swap(sent):
+    n = sent.count("{{")
+    pairs = list(NAME_SWAP_PAIR.finditer(sent))
+    if not n or len(pairs) != n:
+        return False
+    for m in pairs:
+        if not b69_pair_conforming(m.group(1), m.group(2)):
+            return False
+        words = [w.lower() for w in re.findall(r"[A-Za-z0-9]+", m.group(1) + " " + m.group(2))]
+        if not any(w in B69_CITE_NOUNS for w in words) and any(re.fullmatch(r"\d+|[a-z]+", w) and (w.isdigit() or w in B69_CITE) and w not in ("of", "and", "or", "this", "such") for w in words):
+            before = re.findall(r"[A-Za-z]+", sent[max(0, m.start() - 40):m.start()])[-3:]
+            if not any(w.lower() in B69_CITE_NOUNS for w in before):
+                return False          # a bare number swap ([six] {{seven}}) is a citation change only when a citation noun leads it
+    return True
+
+
 AG7_BAD = re.compile(NAME_SWAP_BAD.pattern + r"|\d|\b(?:shall|must|may|can|will|required|authorized|empowered|directed|within|after|before|until|not|no)\b", re.I)
 
 
@@ -4151,6 +4203,42 @@ def resolve_said_agency(recs, text):
     return n
 
 
+APPLY_B70 = False         # Nov 19 2026 (B70): OFF until blind-sampled. A bare defined term as the actor ('the agency', 'the authority', 'the board') takes the body the law itself names or defines (one distinct named body ending in that term, or the body in the law's definition of the term) before the State agencies group fallback
+B70_BARE_TERM = re.compile(r"^(?:the\s+)?(agency|authority|corporation|board|office|department|commission|council|bureau|division|fund)$", re.I)
+B70_FIELDS = ("actor_raw", "agency", "agency_full", "agency_matched", "agency_group", "agency_org_type", "agency_unit", "jurisdiction", "agency_source")
+
+
+def resolve_bare_defined_term(recs, text):
+    """B70: 'the agency' resolved to the State agencies group because the generic-role rules ran first; the law names the body it means
+    ('the medical care facilities finance agency'). Donors are the law's own records whose actor is a named body ending in the term;
+    the term's definition in law_definitions, when present, narrows them. Skips when the law names two different bodies for the term."""
+    n = 0
+    defs = None
+    for o in recs:
+        m = B70_BARE_TERM.match(re.sub(r"\s+", " ", (o.get("actor_raw") or "").strip(" .,;:")))
+        if not m or o.get("agency_source") not in ("group", "generic_role") or o.get("agency") not in ("State agencies", "State authorities", "Local agencies and authorities", "All agencies"):
+            continue
+        term = m.group(1).lower()
+        donors = {}
+        for r in recs:
+            raw = re.sub(r"\s+", " ", (r.get("actor_raw") or "").strip(" .,;:")).lower()
+            if r is not o and r.get("agency_source") == "named_body" and re.search(r"\s" + term + r"$", raw) and len(raw.split()) >= 3 and r.get("agency") not in (None, "Unspecified"):
+                donors.setdefault(r["agency"], r)
+        if defs is None:
+            defs = law_definitions.definitions(text)
+        ent = eo.alnum(defs.get(term, "")) if defs else ""
+        if ent and len(donors) > 1:
+            donors = {a: r for a, r in donors.items() if eo.alnum(re.sub(r"^(?:the\s+)", "", r.get("actor_raw") or "", flags=re.I)) in ent} or donors
+        if len(donors) != 1 or not r6_ok("b70_bare_defined_term", o):
+            continue
+        don = next(iter(donors.values()))
+        for k in B70_FIELDS[1:]:
+            if k in don:
+                o[k] = don[k]
+        o["agency_source"] = "defined_term"; n += 1
+    return n
+
+
 APPOINT_NEXT_PERIOD = re.compile(r"^\W*(?:\{\{)?\s*(?:[^.]{0,80}?\b(?:within|not later than)\s+[\w-]+(?:\s+[\w-]+){0,3}?\s+days?\s+(?:after|of|from)\s+the\s+(?:effective\s+date|date\s+(?:on\s+which\s+)?this\s+\w+\s+(?:shall\s+)?takes?\s+effect)[^.]*\.)", re.I)
 APPOINT_NEXT_SUBJ = re.compile(r"\bappoint(?:ment|ments|ed|ees?)?\b|\bmembers?\b|\bnominat\w+|\bdesignat\w+", re.I)
 
@@ -4689,6 +4777,8 @@ def build_records(laws):
             kind = eo._kind(o)
             if kind == "neither" and o.get("kind_model") == "neither" and COST_DUTY.search(o.get("quote") or ""):      # L3
                 kind = "duty"; o["kind_adjusted"] = "cost_duty"; bump("l3_cost_duty")
+            if APPLY_B73 and kind == "neither" and not o.get("provision_kind") and o.get("kind_model") in ("duty", "power"):
+                kind = o["kind_model"]; o["kind_adjusted"] = "b73_model_kind_no_provision_kind"; bump("b73_model_kind")          # B73 (Nov 19 2026, judge 27/30): the model said duty or power but gave no provision kind
             if kind == "neither":
                 excluded += 1
                 if OPERATION_OF_LAW.search(o.get("quote") or ""):          # B16: a transfer by operation of law, whatever the model said
@@ -4948,6 +5038,8 @@ def build_records(laws):
                 rec["reasked"], rec["reask_tag"] = True, res.get("reask_tag")
             (law_p if kind == "power" else law_d).append(rec)
         resolve_said_agency(law_d + law_p, text)
+        if APPLY_B70:
+            resolve_bare_defined_term(law_d + law_p, text)
         appointment_period(law_d + law_p, text)
         law_d = drop_prepare_duplicates(drop_conditions(dedupe_law(law_d)))
         law_p = drop_prepare_duplicates(drop_conditions(dedupe_law(law_p)))
