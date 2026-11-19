@@ -118,7 +118,7 @@
       '.trk-studio-inner:focus-visible{outline:2px solid var(--b-tangerine-deep,var(--blue));outline-offset:2px}' +
       '.trk-studio-k{font-family: var(--b-sans);font-size:.68rem;font-weight:700;text-transform:uppercase;' +
       'letter-spacing: normal;color:var(--b-tangerine-deep,var(--blue));margin:0 0 4px}' +
-      '.trk-studio-h{font-family: var(--b-display);font-size:1rem;font-weight:700;color:var(--text);margin:0 0 4px}' +
+      '.trk-studio-h{font-family: var(--b-display);font-size:1rem;font-weight: 500;color:var(--text);margin:0 0 4px}' +
       '.trk-studio-p{font-size:.88rem;color:var(--text-muted);margin:0}' +
       '.trk-studio-btns{display:flex;gap:10px;flex-wrap:wrap}' +
       '.trk-studio-btns span{font-family: var(--b-sans);font-size:.78rem;font-weight:600;text-decoration:none;' +

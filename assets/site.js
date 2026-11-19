@@ -108,7 +108,7 @@
     'header .header-inner .back-link{display:block;flex:0 1 auto;max-width:100%;overflow:visible;text-overflow:clip;white-space:normal;overflow-wrap:anywhere;font-family:var(--b-sans);}' +
     'header .header-inner .back-link svg{vertical-align:-2px;}' +
     'header .header-inner .header-actions{flex-shrink:0;}' +
-    'header .header-inner .site-header-title{font-family:var(--b-display);flex:1 1 12ch;min-width:min(12ch,100%);white-space:normal;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;line-clamp:3;}' +
+    'header .header-inner .site-header-title{font-family:var(--b-display);flex:1 1 12ch;min-width:min(12ch,100%);white-space:normal;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:3;line-clamp:3; font-weight: 500; }' +
     /* Nov 11 2026: on subpages, About and Substack collapse to their icons below 1220px instead of vanishing
        (the label stays in the DOM for screen readers and becomes a tooltip); they hide only on phones. */
     '@media (max-width:1220px){header .header-inner:has(.back-link) .header-actions .header-link{display:flex;font-size:0;gap:0;padding:7px;}}' +
@@ -139,7 +139,7 @@
     '.relwork,.relwork-inner,.relwork-grid{min-width:0;max-width:100%;}' +
     '.relwork-card{min-width:0;max-width:100%;overflow-wrap:anywhere;}' +
     /* h1 is always the display face (the cb-tools hubs set none). */
-    'h1{font-family:var(--b-display);}' +
+    'h1{font-family:var(--b-display); font-weight: 500; }' +
     /* Faint text: --b-ink-4 is decorative only (3.31:1 on white), so every text
        use of the faint token resolves to --b-ink-3 (6.1:1 on cream). Literal
        #9A8B7A text rules that pages set directly are listed here. */
@@ -158,7 +158,7 @@
     '.relwork-card{background:#fff;border:1px solid #E7DDCE;border-radius:10px;padding:16px 18px;display:flex;flex-direction:column;gap:6px;text-decoration:none;box-shadow:0 1px 3px rgba(26,18,8,0.08);transition:border-color 0.2s,box-shadow 0.2s,transform 0.15s;}' +
     '.relwork-card:hover{border-color:#C84609;transform:translateY(-2px);box-shadow:0 4px 16px rgba(207,75,12,0.10);}' +
     '.relwork-tag{font-family: var(--b-sans);font-size:0.62rem;font-weight:600;text-transform:uppercase;letter-spacing: normal;color:#A44D00;}' +
-    '.relwork-title{font-family: var(--b-display);font-size:0.85rem;font-weight:700;color:#1A1208;line-height:1.35;}' +
+    '.relwork-title{font-family: var(--b-display);font-size:0.85rem;font-weight: 500;color:#1A1208;line-height:1.35;}' +
     '.relwork-cta{font-family: var(--b-sans);font-size:0.72rem;font-weight:600;color:#C84609;margin-top:auto;padding-top:4px;}' +
     /* The footer nav is a flex row with no wrap in every page's local CSS, so
        on a 360px screen it measures 490px and pushes the whole page into
