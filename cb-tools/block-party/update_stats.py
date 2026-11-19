@@ -29,9 +29,9 @@ import re
 import subprocess
 import sys
 
-SITE = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+SITE = str(next(p for p in __import__("pathlib").Path(__file__).resolve().parents if (p / "CNAME").is_file()))
 ENGINE = os.path.join(os.path.dirname(SITE), "block_party", "resolution_engine")
-STATS = os.path.join(SITE, "cb-tools", "block-party", "data", "stats.json")
+STATS = os.path.join(SITE, "cb-tools/block-party/data/stats.json")
 PAGES = [
     "index.html",
     "members/index.html",

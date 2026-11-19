@@ -24,7 +24,8 @@ from datetime import date, datetime
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-REPO = HERE.parent.parent.parent  # data_website/
+SITE_ROOT = next(p for p in Path(__file__).resolve().parents if (p / "CNAME").is_file())  # repo root by marker, safe across folder moves
+REPO = SITE_ROOT  # data_website/
 LIT = REPO / "civic_reference" / "legislation_implementation_tracker"
 LIT_PIPELINE = LIT / "pipeline"
 FISCAL_TRACKER = REPO / "civic_reference" / "nyc_council_fiscal_impacts_tracker"

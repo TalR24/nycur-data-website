@@ -9,7 +9,7 @@ import hashlib
 import sys
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parents[4]
+REPO = next(p for p in Path(__file__).resolve().parents if (p / "CNAME").is_file())
 PIPELINE_COPY = REPO / "pipeline" / "agency_crosswalk.json"
 SITE_COPY = REPO / "civic_reference" / "legislation_implementation_tracker" / "data" / "agency_crosswalk.json"
 

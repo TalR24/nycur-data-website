@@ -21,7 +21,8 @@ from html import escape
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(HERE.parent.parent / "seo"))
+SITE_ROOT = next(p for p in Path(__file__).resolve().parents if (p / "CNAME").is_file())  # repo root by marker, safe across folder moves
+sys.path.insert(0, str(SITE_ROOT / "seo"))
 from static_snapshot import inject  # noqa: E402
 
 TOP_N = 10  # paywall rule: at most top-10 rows per table in static blocks

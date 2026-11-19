@@ -12,7 +12,7 @@ class flagged it.
     python3 sweep_candidates.py --out /path/sweep_diff.json [--classes ...]
 Then:
     RECONCILE_DIFF=/path/sweep_diff.json RECONCILE_DECISIONS=/path/sweep_decisions.json \\
-      python3 ../../legislation_implementation_tracker/pipeline/verify_obligations.py --emit-packets DIR
+      python3 civic_reference/legislation_implementation_tracker/pipeline/verify_obligations.py (from the repo root) --emit-packets DIR
 """
 from __future__ import annotations
 
@@ -23,7 +23,8 @@ from collections import Counter, defaultdict
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-LIT = HERE.parent.parent / "legislation_implementation_tracker"
+SITE_ROOT = next(p for p in Path(__file__).resolve().parents if (p / "CNAME").is_file())  # repo root by marker, safe across folder moves
+LIT = SITE_ROOT / "civic_reference/legislation_implementation_tracker"
 
 MAY = re.compile(r"\bmay\b|\bneed not\b", re.I)
 MANDATORY = re.compile(r"\bshall\b|\bmust\b|\bis required\b|\bare required\b", re.I)

@@ -14,11 +14,12 @@ import argparse, json, os, sys, time
 from pathlib import Path
 
 HERE = Path(os.path.abspath(__file__)).parent
+SITE_ROOT = next(p for p in Path(__file__).resolve().parents if (p / "CNAME").is_file())  # repo root by marker, safe across folder moves
 sys.path.insert(0, str(HERE))
 import extract_duties as ed   # noqa: E402  (read-only use)
 import extract_obligations as eo   # noqa: E402
 
-sys.path.insert(0, str(HERE.parent.parent.parent / "pipeline"))
+sys.path.insert(0, str(SITE_ROOT / "pipeline"))
 OUT_DIR = HERE / "cache" / "api" / "long"
 STATE = HERE / "batch_state_long.json"
 STATE_CHUNK = "batch_state_long_%03d.json"

@@ -20,8 +20,9 @@ from html import escape
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent.parent          # legislation_implementation_tracker/
+SITE_ROOT = next(p for p in Path(__file__).resolve().parents if (p / "CNAME").is_file())  # repo root by marker, safe across folder moves
 HUB = HERE.parent / "nyc_council_legislation_trackers"
-sys.path.insert(0, str(HERE.parent.parent / "seo"))
+sys.path.insert(0, str(SITE_ROOT / "seo"))
 from static_snapshot import inject  # noqa: E402
 
 TOP_N = 10
@@ -38,7 +39,7 @@ def num(n):
 
 def put(path, block_id, html):
     if inject(path, block_id, html):
-        changed.append(f"{Path(path).relative_to(HERE.parent.parent)}:{block_id}")
+        changed.append(f"{Path(path).relative_to(SITE_ROOT)}:{block_id}")
 
 
 def count_by(rows, fn):

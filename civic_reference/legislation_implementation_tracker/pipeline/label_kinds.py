@@ -23,10 +23,11 @@ import time
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
+SITE_ROOT = next(p for p in Path(__file__).resolve().parents if (p / "CNAME").is_file())  # repo root by marker, safe across folder moves
 sys.path.insert(0, str(HERE))
 from extract_obligations import (DEFAULT_MODEL, EXTRACT_CACHE, KIND_DEFINITIONS, KINDS,  # noqa: E402
                                  TEXT_CACHE, _clause, provision_context)
-sys.path.insert(0, str(HERE.parent.parent.parent / "pipeline"))  # claude_batch.py
+sys.path.insert(0, str(SITE_ROOT / "pipeline"))  # claude_batch.py
 from claude_batch import cached_content, Usage  # noqa: E402
 
 USAGE = Usage()

@@ -43,17 +43,18 @@ from pathlib import Path
 import requests
 
 HERE = Path(__file__).resolve().parent
+SITE_ROOT = next(p for p in Path(__file__).resolve().parents if (p / "CNAME").is_file())  # repo root by marker, safe across folder moves
 TRACKERS_DATA = HERE.parent / "data"
-IMPL_DATA = HERE.parent.parent / "legislation_implementation_tracker" / "data"
+IMPL_DATA = SITE_ROOT / "civic_reference/legislation_implementation_tracker/data"
 MEMBERS_PATH = HERE.parent / "data" / "members.json"
-FISCAL_DATA = HERE.parent.parent / "nyc_council_fiscal_impacts_tracker" / "data"
-EXPLORER_HTML = HERE.parent.parent / "nyc-gov-bodies-explorer" / "index.html"
+FISCAL_DATA = SITE_ROOT / "civic_reference/nyc_council_fiscal_impacts_tracker/data"
+EXPLORER_HTML = SITE_ROOT / "civic_reference/nyc-gov-bodies-explorer/index.html"
 GOV_BODIES_PATH = TRACKERS_DATA / "gov_bodies.json"
 OVERRIDES_PATH = HERE / "agency_code_overrides.json"
 OUT_PATH = TRACKERS_DATA / "agencies.json"
 
 # top-level resolver, shared with the fiscal impacts tracker
-sys.path.insert(0, str(HERE.parent.parent.parent / "pipeline"))
+sys.path.insert(0, str(SITE_ROOT / "pipeline"))
 from agency_canon import _norm, canonicalize  # noqa: E402
 
 SOCRATA_BASE = "https://data.cityofnewyork.us/resource/{}.json"

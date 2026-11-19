@@ -81,11 +81,12 @@ from datetime import date, datetime, timedelta
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
+SITE_ROOT = next(p for p in Path(__file__).resolve().parents if (p / "CNAME").is_file())  # repo root by marker, safe across folder moves
 sys.path.insert(0, str(HERE))
 from build_agency_profiles import slug  # noqa: E402
-sys.path.insert(0, str(HERE.parent.parent.parent / "pipeline"))
+sys.path.insert(0, str(SITE_ROOT / "pipeline"))
 from agency_canon import canonicalize  # noqa: E402
-sys.path.insert(0, str(HERE.parents[2] / "shared"))
+sys.path.insert(0, str(SITE_ROOT / "shared"))
 import alert_engine  # noqa: E402
 
 _IGNORE_AGENCY_CODES = {"n/a", "coordinator"}

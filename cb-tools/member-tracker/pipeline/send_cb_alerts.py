@@ -63,8 +63,9 @@ def _is_spelling_fix(old: str | None, new: str | None) -> bool:
     return difflib.SequenceMatcher(None, old.lower(), new.lower()).ratio() >= 0.85
 
 HERE = Path(__file__).resolve().parent
+SITE_ROOT = next(p for p in Path(__file__).resolve().parents if (p / "CNAME").is_file())  # repo root by marker, safe across folder moves
 DATA = HERE.parent / "data"
-sys.path.insert(0, str(HERE.parents[2] / "shared"))
+sys.path.insert(0, str(SITE_ROOT / "shared"))
 import alert_engine  # noqa: E402
 
 TRACKER_URL = "https://data.nycuriosity.com/cb-tools/member-tracker/"

@@ -17,7 +17,8 @@ import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-REPO = HERE.parent.parent.parent
+SITE_ROOT = next(p for p in Path(__file__).resolve().parents if (p / "CNAME").is_file())  # repo root by marker, safe across folder moves
+REPO = SITE_ROOT
 LIT = REPO / "civic_reference" / "legislation_implementation_tracker"
 FISCAL_TRACKER = REPO / "civic_reference" / "nyc_council_fiscal_impacts_tracker"
 

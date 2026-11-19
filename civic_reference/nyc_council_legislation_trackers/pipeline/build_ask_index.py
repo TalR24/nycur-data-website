@@ -31,9 +31,9 @@ from pathlib import Path
 
 PIPELINE_DIR = Path(__file__).resolve().parent
 COUNCIL_TRACKERS_DIR = PIPELINE_DIR.parent
-DATA_WEBSITE_ROOT = COUNCIL_TRACKERS_DIR.parent.parent
-LIT_DATA = DATA_WEBSITE_ROOT / "civic_reference" / "legislation_implementation_tracker" / "data"
-FISCAL_DATA = DATA_WEBSITE_ROOT / "civic_reference" / "nyc_council_fiscal_impacts_tracker" / "data"
+DATA_WEBSITE_ROOT = next(p for p in PIPELINE_DIR.parents if (p / "CNAME").is_file())  # marker, safe across moves
+LIT_DATA = DATA_WEBSITE_ROOT / "civic_reference/legislation_implementation_tracker/data"
+FISCAL_DATA = DATA_WEBSITE_ROOT / "civic_reference/nyc_council_fiscal_impacts_tracker/data"
 COUNCIL_DATA = COUNCIL_TRACKERS_DIR / "data"
 
 sys.path.insert(0, str(DATA_WEBSITE_ROOT / "pipeline"))

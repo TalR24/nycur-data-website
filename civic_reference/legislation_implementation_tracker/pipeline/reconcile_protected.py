@@ -38,6 +38,7 @@ from datetime import date
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
+SITE_ROOT = next(p for p in Path(__file__).resolve().parents if (p / "CNAME").is_file())  # repo root by marker, safe across folder moves
 DATA = HERE.parent / "data"
 EXCLUSIONS = HERE / "reextract_exclusions.json"
 SNAPSHOT = HERE / "protected_snapshot.json"
@@ -296,7 +297,7 @@ def cmd_apply() -> None:
     # standing check (Nov 2 2026): an override that contradicts a gold-correct
     # entry is two blind verdicts that disagree; list them for the gold
     # tiebreak instead of letting score_gold.py report them as regressions
-    quality = HERE.parent.parent / "nyc_council_legislation_trackers" / "quality"
+    quality = SITE_ROOT / "civic_reference/nyc_council_legislation_trackers/quality"
     sys.path.insert(0, str(quality))
     from score_gold import override_gold_conflicts  # noqa: E402
     conflicts = [c for c in override_gold_conflicts(overrides)

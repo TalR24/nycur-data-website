@@ -56,7 +56,8 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 TRACKER = HERE.parent
-REPO = TRACKER.parent.parent
+SITE_ROOT = next(p for p in Path(__file__).resolve().parents if (p / "CNAME").is_file())  # repo root by marker, safe across folder moves
+REPO = SITE_ROOT
 FISCAL_VALIDATOR = REPO / "pipeline" / "validate_fiscal_impacts.py"
 GOLD_SCORER = REPO / "civic_reference" / "nyc_council_legislation_trackers" / "quality" / "score_gold.py"
 NYS = REPO / "civic_reference" / "nys_legislation_trackers"

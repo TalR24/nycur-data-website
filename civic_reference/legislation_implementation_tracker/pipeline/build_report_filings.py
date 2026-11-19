@@ -46,10 +46,11 @@ from pathlib import Path
 import requests
 
 HERE = Path(__file__).resolve().parent
+SITE_ROOT = next(p for p in Path(__file__).resolve().parents if (p / "CNAME").is_file())  # repo root by marker, safe across folder moves
 DATA = HERE.parent / "data"
 OUT = DATA / "report_filings.json"
 
-sys.path.insert(0, str(HERE.parent.parent.parent / "pipeline"))
+sys.path.insert(0, str(SITE_ROOT / "pipeline"))
 import agency_canon  # noqa: E402
 from agency_canon import canonicalize  # noqa: E402
 

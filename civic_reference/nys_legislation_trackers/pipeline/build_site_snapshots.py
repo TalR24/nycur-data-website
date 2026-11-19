@@ -14,7 +14,7 @@ from urllib.parse import quote
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent.parent            # nys_legislation_trackers/
-REPO = HERE.parent.parent                                  # data_website/
+REPO = next(p for p in HERE.parents if (p / "CNAME").is_file())                                 # data_website/
 sys.path.insert(0, str(REPO / "seo"))
 from static_snapshot import inject  # noqa: E402
 

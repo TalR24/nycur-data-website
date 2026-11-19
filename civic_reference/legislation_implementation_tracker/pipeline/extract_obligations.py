@@ -42,8 +42,9 @@ from datetime import date, datetime, timedelta
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
+SITE_ROOT = next(p for p in Path(__file__).resolve().parents if (p / "CNAME").is_file())  # repo root by marker, safe across folder moves
 sys.path.insert(0, str(HERE))
-sys.path.insert(0, str(HERE.parent.parent.parent / "pipeline"))  # claude_batch.py
+sys.path.insert(0, str(SITE_ROOT / "pipeline"))  # claude_batch.py
 from claude_batch import cached_content, run_batch, clear_state, Usage, message_text  # noqa: E402
 DATA = HERE.parent / "data"
 TEXT_CACHE = HERE / "cache" / "text"
@@ -56,7 +57,7 @@ BATCH_STATE_NEW = HERE / "batch_state_new.json"          # extract_obligations.p
 BATCH_STATE_REEXTRACT = HERE / "batch_state_reextract.json"  # reextract_queued.py
 # Repo-root pipeline/, shared with the fiscal tracker's own routine (keys
 # per tracker: "fiscal", "obligations"), not LIT/pipeline/ (Sep 28 2026).
-MAX_REFRESH_PATH = HERE.parent.parent.parent / "pipeline" / "max_refresh.json"
+MAX_REFRESH_PATH = SITE_ROOT / "pipeline" / "max_refresh.json"
 
 
 def load_max_refresh() -> dict:

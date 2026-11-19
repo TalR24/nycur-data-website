@@ -25,7 +25,8 @@ import sys
 from pathlib import Path
 
 TRACKER = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(Path(__file__).resolve().parents[3] / "shared"))
+SITE_ROOT = next(p for p in Path(__file__).resolve().parents if (p / "CNAME").is_file())  # repo root by marker, safe across folder moves
+sys.path.insert(0, str(SITE_ROOT / "shared"))
 import mailer  # noqa: E402
 REPORT_DIR = Path(os.getenv("QUALITY_REPORT_DIR") or TRACKER / "quality_reports")
 NEW_FISCAL = "## New fiscal figures to check"
@@ -84,7 +85,7 @@ def write_section(subject: str, body: str, needs_tal: int) -> bool:
     pending = os.getenv("OPS_DIGEST_PENDING")
     if not pending:
         return False
-    sys.path.append(str(Path(__file__).resolve().parents[3] / "seo"))
+    sys.path.append(str(SITE_ROOT / "seo"))
     try:
         from common import write_digest_section
         page = ("<pre style=\"font-family:ui-monospace,Menlo,monospace;font-size:13px;white-space:pre-wrap\">"
