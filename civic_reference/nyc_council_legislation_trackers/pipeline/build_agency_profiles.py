@@ -19,7 +19,7 @@ explorer card).
 Usage:
     python3 pipeline/build_agency_profiles.py [--refresh-gov-bodies]
 
---refresh-gov-bodies re-parses civic_reference/nyc-gov-bodies-explorer/index.html
+--refresh-gov-bodies re-parses tools/gov-bodies/index.html
 and rewrites data/gov_bodies.json (a one-off extraction; the file is
 committed and normally reused as-is).
 
@@ -48,7 +48,7 @@ TRACKERS_DATA = HERE.parent / "data"
 IMPL_DATA = SITE_ROOT / "civic_reference/legislation_implementation_tracker/data"
 MEMBERS_PATH = HERE.parent / "data" / "members.json"
 FISCAL_DATA = SITE_ROOT / "civic_reference/nyc_council_fiscal_impacts_tracker/data"
-EXPLORER_HTML = SITE_ROOT / "civic_reference/nyc-gov-bodies-explorer/index.html"
+EXPLORER_HTML = SITE_ROOT / "tools/gov-bodies/index.html"
 GOV_BODIES_PATH = TRACKERS_DATA / "gov_bodies.json"
 OVERRIDES_PATH = HERE / "agency_code_overrides.json"
 OUT_PATH = TRACKERS_DATA / "agencies.json"
@@ -169,7 +169,7 @@ def extract_gov_bodies() -> dict:
             heads[d["id"]] = {"title": d["title"], "name": d["name"], "term": d["term"]}
 
     return {
-        "source": "civic_reference/nyc-gov-bodies-explorer/index.html (const AGENCIES + AGENCY_HEADS)",
+        "source": "tools/gov-bodies/index.html (const AGENCIES + AGENCY_HEADS)",
         "extracted_at": datetime.utcnow().isoformat(timespec="seconds") + "Z",
         "agencies": agencies,
         "heads": heads,

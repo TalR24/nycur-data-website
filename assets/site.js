@@ -27,12 +27,12 @@
       { label: 'Legislators', href: '/civic_reference/nys_legislation_trackers/legislators/' },
       { label: 'Alerts', href: '/civic_reference/nys_legislation_trackers/alerts/' }
     ]},
-    { label: 'Community Board Tools', href: '/cb-tools/', sub: [
+    { label: 'Community Board Tools', href: '/tools/community-boards/', sub: [
       { label: 'Member Tracker', href: '/cb-tools/member-tracker/' },
-      { label: 'Member Guide', href: '/civic_reference/cb_member_guide/' },
-      { label: 'Block Party archive', href: '/cb-tools/block-party/' },
-      { label: 'Robert’s Rules helper', href: '/cb-tools/roberts-rules-helper/' },
-      { label: 'AI meeting review', href: '/cb-tools/meeting-review/' }
+      { label: 'Member Guide', href: '/tools/community-boards/member-guide/' },
+      { label: 'Block Party archive', href: '/tools/community-boards/block-party/' },
+      { label: 'Robert’s Rules helper', href: '/tools/community-boards/roberts-rules-helper/' },
+      { label: 'AI meeting review', href: '/tools/community-boards/meeting-review/' }
     ]}
   ];
 

@@ -25,7 +25,8 @@ ROOT = next(p for p in pathlib.Path(__file__).resolve().parents if (p / 'CNAME')
 SITE = 'https://data.nycuriosity.com'
 TEXT_EXT = {'.html', '.js', '.css', '.json', '.py', '.sh', '.yml', '.yaml', '.md', '.txt', '.xml', '.webmanifest'}
 NO_STUB_PARTS = {'pipeline', 'data', 'cache', 'quality', 'tests', 'quality_reports'}
-SKIP_FILES = ('/cache/', 'state_capacity_ecosystem/', 'shared/move_folders.py', 'shared/batch0_root_paths.py')
+SKIP_FILES = ('/cache/', 'state_capacity_ecosystem/', 'shared/move_folders.py', 'shared/batch0_root_paths.py',
+              'shared/check_local_links.py')
 
 CR = 'civic_reference'
 POSTS = sorted(p.name for p in (ROOT / 'nycuriosity_substack_posts').iterdir() if p.is_dir()) \
@@ -55,6 +56,13 @@ BATCHES = {
 
 BOUNDARY_AFTER = r'(?=[/"\'\s?#)\]`,;<>]|$)'
 
+# Folder-root URLs that a batch empties of its hub: the exact folder URL (nothing
+# after the slash) is rewritten too, so links skip the stub hop.
+ROOT_ALIASES = {
+    'cb': [('cb-tools/', 'tools/community-boards/')],
+}
+ROOT_ALIAS_AFTER = r'(?=["\'\s?#)\]`,;<>]|$)'
+
 
 def git(*a, check=True):
     return subprocess.run(['git', *a], cwd=ROOT, capture_output=True, text=True, check=check).stdout
@@ -71,9 +79,10 @@ def tracked_text_files():
     return out
 
 
-def rewrite(pairs, dry):
+def rewrite(pairs, dry, aliases=()):
     skipped, changed = [], 0
     pats = [(re.compile(r'(?<![\w.-])' + re.escape(o) + BOUNDARY_AFTER), o, n) for o, n in pairs]
+    pats += [(re.compile(r'(?<![\w.-])' + re.escape(o) + ROOT_ALIAS_AFTER), o, n) for o, n in aliases]
     for p in tracked_text_files():
         try:
             t = p.read_text()
@@ -188,7 +197,7 @@ def main():
             (ROOT / n).parent.mkdir(parents=True, exist_ok=True)
             git('mv', o, n)
     print(f'{len(pairs)} moves, {len(moved_pages)} html files moved')
-    changed, skipped = rewrite(pairs, dry)
+    changed, skipped = rewrite(pairs, dry, ROOT_ALIASES.get(batch, ()))
     print(f'{changed} files rewritten')
     if not dry:
         print(f'{make_stubs(moved_pages, dry)} stubs written')

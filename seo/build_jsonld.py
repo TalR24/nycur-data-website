@@ -14,7 +14,7 @@ What gets a block:
     homepage, data      WebSite, published by Tal Roded
     homepage, personal  Person (identity and links from profile_facts.json)
     homepage, sce       Organization
-    tool and hub pages  Dataset: data-site civic_reference/<tool>/, cb-tools/<tool>/
+    tool and hub pages  Dataset: data-site civic_reference/<tool>/, tools/community-boards/<tool>/
                         and posts/<post>/ (minus NOT_DATASETS);
                         SCE directory pages (SCE_DATASETS)
 Everything else gets nothing. The block sits between <!-- jsonld:start --> and
@@ -42,8 +42,8 @@ DATASET_PREFIXES = {
 }
 # Pages under those prefixes that are tools, demos or decks rather than data.
 NOT_DATASETS = {
-    "data": ("/cb-tools/roberts-rules-helper/", "/cb-tools/meeting-review/", "/cb-tools/school-of-data-2026/",
-             "/cb-tools/block_party_july2026/", "/civic_reference/cb_member_guide/"),
+    "data": ("/tools/community-boards/roberts-rules-helper/", "/tools/community-boards/meeting-review/", "/tools/community-boards/school-of-data-2026/",
+             "/tools/community-boards/block_party_july2026/", "/tools/community-boards/member-guide/"),
 }
 # SCE: the directory pages only.
 SCE_DATASETS = ("/ecosystem/", "/ecosystem/organizations/", "/ecosystem/connect/")

@@ -16,7 +16,7 @@ Run this after every map refresh. make_demo.py in the resolution_engine repo
 still emits the inline form, so a fresh artifact copied over these pages will
 re-inline the payload and undo the split:
 
-    cd civic_reference/block_party_maps
+    cd tools/community-boards/block-party-maps
     python3 tools/split_map_data.py *.html --apply
 
 It is idempotent — already-split pages are skipped.

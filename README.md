@@ -19,10 +19,10 @@ The site holds three kinds of content:
 | `civic_reference/nyc_council_legislation_trackers/` | Trackers umbrella hub, Council Members, Agencies (also the NYC government bodies browser), shared multiselect and tracker-switch JS, `data/*.json`, `pipeline/`, `quality/` (gold sets and scorers), `quality_reports/`. |
 | `civic_reference/nyc_council_fiscal_impacts_tracker/` | Fiscal Impacts Tracker: bill table, overview and four chart pages, methodology, `data/`. Pipeline doc: `PIPELINE_REFERENCE.md`. |
 | `civic_reference/legislation_implementation_tracker/` | Obligations Tracker, Powers Tracker, Law Explorer (`law/`), deadline timeline, agency workload, member tools page (`alerts/`), methodology, `data/`, `pipeline/`, `quality_reports/`. |
-| `civic_reference/cb_member_guide/` | Slide deck and handout: how to be an effective community board member. |
-| `civic_reference/block_party_maps/` | Block Party demo maps for Manhattan community boards (`data/` holds per-board JS payloads). |
-| `civic_reference/nyc-gov-bodies-explorer/`, `civic_reference/state_capacity_ecosystem/` | Redirect stubs only. |
-| `cb-tools/` | Community Board tools hub (`index.html`): `member-tracker/`, `block-party/` (teaser for the members-only dashboard), `board-scorecard/`, `meeting-review/`, `roberts-rules-helper/`, talk pages (`block_party_july2026/`, `harvard-rcn-2026/`, `school-of-data-2026/`, `sogt-2026/`), shared `cb-filter.*` and `cb-switch.js`. |
+| `tools/community-boards/member-guide/` | Slide deck and handout: how to be an effective community board member. |
+| `tools/community-boards/block-party-maps/` | Block Party demo maps for Manhattan community boards (`data/` holds per-board JS payloads). |
+| `tools/gov-bodies/`, `civic_reference/state_capacity_ecosystem/` | Redirect stubs only. |
+| `tools/community-boards/` | Community Board tools hub (`index.html`): `member-tracker/`, `block-party/` (teaser for the members-only dashboard), `board-scorecard/`, `meeting-review/`, `roberts-rules-helper/`, talk pages (`block_party_july2026/`, `harvard-rcn-2026/`, `school-of-data-2026/`, `sogt-2026/`), shared `cb-filter.*` and `cb-switch.js`. |
 | `posts/` | Post data hubs (kebab-case folder names since the Nov 2026 restructure), one folder per Substack post, each with `index.html`, chart subpages and `data/`. |
 | `assets/` | `chart.css` + `chart.js` (every chart, table and card), `brand.css`, `site.js` (header nav, tool and post menus, related-work block), `whats-new.json`, `related_work.json`, `brand/` (logos, icons). |
 | `pipeline/` | Fiscal Impacts pipeline and the agency name crosswalk (`agency_canon.py`). See the fiscal `PIPELINE_REFERENCE.md`. |
@@ -52,10 +52,10 @@ Hub: `/civic_reference/nyc_council_legislation_trackers/`. Free, no data downloa
 
 Concept credit: the Obligations Tracker adapts the implementation-checklist approach Marci Dale prototyped in ["What if every new law came with a checklist?"](https://marcidale.substack.com/p/what-if-every-new-law-came-with-a).
 
-### Community Board tools (`/cb-tools/`)
+### Community Board tools (`/tools/community-boards/`)
 - **Member Tracker** (`member-tracker/`): leaders, members and term-limit openings for all 59 boards; board profiles, alerts signup, methodology. Pipeline in `member-tracker/pipeline/` (schema: `pipeline/extracted/ROSTER_SCHEMA.md`).
 - **Block Party** (`block-party/`): public teaser for the CB Resolutions Dashboard. The working dashboard is members-only on the premium origin.
-- **Board Scorecard**, **AI Meeting Review**, **Robert's Rules Helper**, and the **Member Guide** (`/civic_reference/cb_member_guide/`).
+- **Board Scorecard**, **AI Meeting Review**, **Robert's Rules Helper**, and the **Member Guide** (`/tools/community-boards/member-guide/`).
 
 ### State Capacity Ecosystem
 Lives at [statecapacityecosystem.com](https://statecapacityecosystem.com/), repo `TalR24/statecapacityecosystem`. Everything under `state_capacity_ecosystem/` here (and its old `civic_reference/` path) is a redirect stub; the one tracked asset is `state_capacity_ecosystem/assets/sce_logo.png`.
@@ -68,7 +68,7 @@ The CB Resolutions Dashboard, Ask the Trackers, member alerts, district briefs a
 
 Rules for this repo:
 - **Downloadable CSVs are members-only.** Every CSV or data download button links through `/members/?file=`, and the file lives in the premium repo. Never add a direct `<a href="...csv">` or commit a downloadable CSV here. The `check-html-scripts.sh` hook blocks direct CSV anchors. The Legislation Trackers offer no downloads at all.
-- **Never put gated tools' data in this repo.** The teaser stats in `cb-tools/block-party/index.html` and its card in `index.html` are hardcoded; update both when the database grows.
+- **Never put gated tools' data in this repo.** The teaser stats in `tools/community-boards/block-party/index.html` and its card in `index.html` are hardcoded; update both when the database grows.
 - Teasers stay indexable; the premium origin is `noindex`.
 
 ---
@@ -143,7 +143,7 @@ python3 site_health/check_site.py --dry-run              # needs Playwright; pri
 
 ## Adding a post data hub or tool
 
-1. Confirm the folder name and bucket (Substack post under `posts/<folder>/`, tool under `civic_reference/<tool>/` or `cb-tools/<tool>/`).
+1. Confirm the folder name and bucket (Substack post under `posts/<folder>/`, tool under `civic_reference/<tool>/` or `tools/community-boards/<tool>/`).
 2. Copy the chrome from a reference page of the same kind. Hub at `<folder>/index.html`, chart subpages in subfolders, source data in `data/`. Full steps are in the `visualization-style-guide` skill (Step 5b covers registration).
 3. Register it: homepage card (newest first), `assets/site.js` menu, `assets/whats-new.json`, `assets/related_work.json` if it links to related work.
 4. Run `python3 seo/build_sitemap.py --site data`.
@@ -153,7 +153,7 @@ python3 site_health/check_site.py --dry-run              # needs Playwright; pri
 
 - **Pull before editing.** Stage explicit paths only; never `git add .` or `git add -A` (the repo carries long-standing untracked files, and a hook blocks both).
 - **Hooks** (workspace `.claude/hooks/`): inline-script syntax and restricted-global-name check (a top-level `const top` or `name` blanks a chart's SVG), direct-CSV-link ban, SEO head gate on save, unpushed-commit warning.
-- **Buy Me a Coffee**: every page carries a "Support my work" link to `https://buymeacoffee.com/nycuriosity` in the header and footer. Skip it on redirect stubs and on chrome-less pages (`civic_reference/cb_member_guide/` pages).
+- **Buy Me a Coffee**: every page carries a "Support my work" link to `https://buymeacoffee.com/nycuriosity` in the header and footer. Skip it on redirect stubs and on chrome-less pages (`tools/community-boards/member-guide/` pages).
 - **Colour and fonts** come from `assets/brand.css` variables only. Almost nothing in the palette passes contrast as text on cream; check the `nycuriosity-brand` skill first.
 - **Voice** in any visible text: no em dashes or double hyphens, headlines that state the takeaway, no weasel words, exact numbers.
 - **Redirect stubs** keep query strings and hashes. Do not delete them.

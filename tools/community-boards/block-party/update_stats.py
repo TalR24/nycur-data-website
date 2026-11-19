@@ -2,15 +2,15 @@
 """One source for the Block Party headline numbers on this site (Nov 10 2026).
 
 The resolution count was hand-written on six pages and had drifted into three different figures. This script
-writes cb-tools/block-party/data/stats.json and rewrites every marked number on the pages listed in PAGES:
+writes tools/community-boards/block-party/data/stats.json and rewrites every marked number on the pages listed in PAGES:
 
     <!--bp:resolutions-->39,568<!--/bp:resolutions-->     <!--bp:boards-->27<!--/bp:boards-->
 
 Run locally (it never runs in CI; the engine repo is private):
 
-    python3 cb-tools/block-party/update_stats.py                      # from the engine's committed weekly export
-    python3 cb-tools/block-party/update_stats.py --from-json FILE     # from a live database count (bp_count.py output)
-    python3 cb-tools/block-party/update_stats.py --check              # exit 1 if a page disagrees with stats.json
+    python3 tools/community-boards/block-party/update_stats.py                      # from the engine's committed weekly export
+    python3 tools/community-boards/block-party/update_stats.py --from-json FILE     # from a live database count (bp_count.py output)
+    python3 tools/community-boards/block-party/update_stats.py --check              # exit 1 if a page disagrees with stats.json
 
 Definition (same as the engine's public export, src/storage/exporters.py): rows of full_resolutions that are not
 superseded or excluded, on boards marked `active: true` in the engine's config/community_boards. Boards still in
@@ -31,12 +31,12 @@ import sys
 
 SITE = str(next(p for p in __import__("pathlib").Path(__file__).resolve().parents if (p / "CNAME").is_file()))
 ENGINE = os.path.join(os.path.dirname(SITE), "block_party", "resolution_engine")
-STATS = os.path.join(SITE, "cb-tools/block-party/data/stats.json")
+STATS = os.path.join(SITE, "tools/community-boards/block-party/data/stats.json")
 PAGES = [
     "index.html",
     "members/index.html",
-    "cb-tools/index.html",
-    "cb-tools/block-party/index.html",
+    "tools/community-boards/index.html",
+    "tools/community-boards/block-party/index.html",
     "civic_reference/legislation_implementation_tracker/alerts/index.html",
     "civic_reference/nys_legislation_trackers/alerts/index.html",
     "cb-tools/member-tracker/alerts/index.html",

@@ -34,7 +34,7 @@ TOOLS = {
     'nys_legislation_trackers': '/civic_reference/nys_legislation_trackers/duties/',
 }
 
-# Cards on the tool hubs (Obligations, Powers, Fiscal overview, /cb-tools/): file name -> target page.
+# Cards on the tool hubs (Obligations, Powers, Fiscal overview, /tools/community-boards/): file name -> target page.
 # A target with nothing visual (methodology) gets no file and the card shows a flat palette block.
 LT = '/civic_reference/legislation_implementation_tracker/'
 FT = '/civic_reference/nyc_council_fiscal_impacts_tracker/'
@@ -52,12 +52,12 @@ TOOL_CARDS = {
     'tool--intro-year-impact': FT + 'intro-year-impact/',
     'tool--cost-revenue-breakdown': FT + 'cost-revenue-breakdown/',
     'tool--fiscal-methodology': FT + 'methodology/',
-    'tool--cb-member-guide': '/civic_reference/cb_member_guide/',
-    'tool--roberts-rules-helper': '/cb-tools/roberts-rules-helper/',
-    'tool--meeting-review': '/cb-tools/meeting-review/',
+    'tool--cb-member-guide': '/tools/community-boards/member-guide/',
+    'tool--roberts-rules-helper': '/tools/community-boards/roberts-rules-helper/',
+    'tool--meeting-review': '/tools/community-boards/meeting-review/',
     # the tool page is only a 'moved to Block Party' notice; show the resolutions-by-board chart instead (Nov 11 2026)
     'tool--block-party': '/posts/block-party-updates-2026/by-board/',
-    'tool--board-scorecard': '/cb-tools/board-scorecard/',
+    'tool--board-scorecard': '/tools/community-boards/board-scorecard/',
 }
 
 

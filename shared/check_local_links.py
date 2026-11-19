@@ -17,12 +17,12 @@ import pathlib, re, subprocess, sys, urllib.parse
 ROOT = next(p for p in pathlib.Path(__file__).resolve().parents if (p / 'CNAME').is_file())
 SITE_PREFIXES = ('https://data.nycuriosity.com', 'http://data.nycuriosity.com', '//data.nycuriosity.com')
 SKIP = ('/cache/', 'state_capacity_ecosystem/', 'node_modules/')
-TOP = ('/tools/', '/posts/', '/civic_reference/', '/cb-tools/', '/nycuriosity_substack_posts/', '/assets/')
 ATTR = re.compile(r'\b(?:href|src|action|data-src|data-cb-link)\s*=\s*"([^"]*)"|\b(?:href|src)\s*=\s*\'([^\']*)\'', re.I)
 FETCH = re.compile(r'fetch\(\s*([\'"])([^\'"$`]+)\1')
 JSPATH = re.compile(r'([\'"])(/(?:tools|posts|civic_reference|cb-tools|nycuriosity_substack_posts)/[^\'"\s$`]*)\1')
 
-tracked = set(subprocess.run(['git', 'ls-files'], cwd=ROOT, capture_output=True, text=True).stdout.splitlines())
+tracked = set(subprocess.run(['git', 'ls-files', '--cached', '--others', '--exclude-standard'], cwd=ROOT,
+                             capture_output=True, text=True).stdout.splitlines())
 present = set(tracked)
 for f in tracked:  # every folder that holds a tracked file exists
     parts = f.split('/')
