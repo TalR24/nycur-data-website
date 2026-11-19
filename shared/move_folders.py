@@ -307,6 +307,19 @@ def main():
             (ROOT / n).parent.mkdir(parents=True, exist_ok=True)
             git('mv', o, n)
     print(f'{len(pairs)} moves, {len(moved_pages)} html files moved')
+    # Downloadable documents get shared as direct links and Pages cannot redirect them:
+    # keep a copy at the old path (frozen files, so the copy cannot drift).
+    if not dry:
+        import shutil
+        kept = 0
+        for o, n in pairs:
+            for f in git('ls-files', n).splitlines():
+                if f.lower().endswith(('.pdf', '.pptx', '.docx', '.xlsx', '.zip')):
+                    dest = ROOT / (o + f[len(n):])
+                    dest.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(ROOT / f, dest)
+                    kept += 1
+        print(f'{kept} downloadable documents kept at their old paths too')
     changed, skipped = rewrite(pairs, dry, ROOT_ALIASES.get(batch, ()))
     print(f'{changed} files rewritten')
     if not dry:
