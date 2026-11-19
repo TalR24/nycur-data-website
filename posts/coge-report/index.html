@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#170C03">
+  <title>COGE Report &mdash; NYCuriosity</title>
+  <meta name="description" content="Charts behind NYCuriosity's analysis of Mayor Mamdani's Commission on Government Efficiency: the five November ballot questions, and the procurement and technology reforms that did not make it onto the ballot.">
+  <link rel="canonical" href="https://data.nycuriosity.com/posts/coge-report/">
+  <meta property="og:image" content="https://data.nycuriosity.com/website_logo.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta property="og:type"        content="website">
+  <meta property="og:url"         content="https://data.nycuriosity.com/posts/coge-report/">
+  <meta property="og:title"       content="COGE Report &mdash; NYCuriosity">
+  <meta property="og:description" content="The five COGE ballot questions New Yorkers vote on in November, and the reforms that went to an appendix instead.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/brand.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue:       #C84609;
+      --blue-hover: #A44D00;
+      --blue-light: #FAF6F1;
+      --blue-mid:   #EDC3A5;
+      --text:       #1A1208;
+      --text-mid:   #4A3B2C;
+      --text-muted: #6B5B4A;
+      --text-faint: #9A8B7A;
+      --bg:         #FAF6F1;
+      --surface:    #ffffff;
+      --border:     #E7DDCE;
+      --shadow-sm:  0 1px 3px rgba(26,18,8,0.08);
+      --shadow-md:  0 4px 16px rgba(207,75,12,0.10);
+      --radius:     10px;
+    }
+
+    body {
+      font-family: 'Helvetica Neue', Helvetica, Arial, 'Inter', system-ui, sans-serif;
+      background: var(--bg); color: var(--text);
+      min-height: 100vh; display: flex; flex-direction: column;
+    }
+
+    header { background: #170C03; border-bottom: 1px solid #2E1C0C; padding: 0 clamp(20px, 5vw, 48px); }
+    .header-inner { max-width: 1100px; margin: 0 auto; height: 56px; display: flex; align-items: center; gap: 16px; }
+    .back-link {
+      font-family: var(--b-sans); font-size: 0.75rem; font-weight: 600;
+      color: #9A8B7A; text-decoration: none; display: flex; align-items: center; gap: 5px;
+      padding: 4px 8px 4px 4px; border-radius: 5px; transition: color 0.15s, background 0.15s; white-space: nowrap;
+    }
+    .back-link:hover { color: #FFD23F; background: rgba(255,210,63,0.1); }
+    .header-divider { width: 1px; height: 20px; background: #4A3B2C; flex-shrink: 0; }
+    header .site-header-title { margin: 0; font-weight: 500; font-family: var(--b-display); font-size: 0.95rem; font-weight: 500; color: #E7DDCE; letter-spacing: -0.02em; }
+
+    .hero { background: var(--surface); border-bottom: 1px solid var(--border); padding: clamp(32px, 5vw, 52px) clamp(20px, 5vw, 48px); }
+    .hero-inner { max-width: 1100px; margin: 0 auto; }
+    .breadcrumb {
+      font-family: var(--b-sans); font-size: 0.72rem; color: var(--text-faint);
+      margin-bottom: 14px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+    }
+    .breadcrumb a { color: var(--blue); text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+    .breadcrumb span:last-child { color: #A44D00; }
+    .hero-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .hero-tag {
+      font-family: var(--b-sans); font-size: 0.68rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: normal; color: var(--b-topic-govtech-ink);
+      background: #FAF6F1; border: 1px solid #E7DDCE; border-radius: 4px; padding: 3px 8px;
+    }
+    .hero-updated { font-family: var(--b-mono); font-size: 0.72rem; color: var(--text-faint); }
+    .hero h1 { font-family: 'Playfair Display', Georgia, serif; font-weight: 500; color: var(--text); letter-spacing: -0.012em; line-height: 1.2; margin-bottom: 10px; }
+    .hero h1 span { color: var(--blue); }
+    .hero p { font-size: 0.975rem; color: var(--text-muted); max-width: 680px; line-height: 1.7; }
+    .hero p a { color: var(--blue); text-decoration: none; border-bottom: 1px solid var(--blue-mid); }
+    .hero p a:hover { border-color: var(--blue); }
+    .hero p.hero-press { margin-top: 16px; font-size: 0.78rem; color: var(--text-faint); }
+    .hero p.hero-press a { color: var(--text-muted); text-decoration: none; border-bottom: 1px solid var(--border); }
+    .hero p.hero-press a:hover { color: var(--blue); border-color: var(--blue); }
+
+    footer { background: var(--surface); border-top: 1px solid var(--border); padding: 20px clamp(20px, 5vw, 48px); margin-top: auto; }
+    .footer-inner { max-width: 1100px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+    .footer-copy { font-size: 0.8rem; color: var(--text-faint); }
+    .footer-links { display: flex; gap: 20px; align-items: center; }
+    .footer-links a { font-size: 0.8rem; color: var(--text-muted); text-decoration: none; transition: color 0.15s; }
+    .footer-links a:hover { color: var(--blue); }
+    .footer-support { display: inline-flex; align-items: center; gap: 5px; font-size: 0.8rem; font-weight: 500; color: #C84609; text-decoration: none; padding: 5px 11px; border: 1px solid rgba(207,75,12,0.45); border-radius: 6px; transition: color .15s, border-color .15s, background .15s; vertical-align: middle; }
+    .footer-support:hover { color: #fff; background: #C84609; border-color: #C84609; }
+    .footer-support svg { flex-shrink: 0; }
+
+    .hero h1 { font-size: clamp(1.5rem, 3.5vw, 2rem); }
+
+    .stat-row { background: var(--surface); border-bottom: 1px solid var(--border); padding: clamp(16px, 3vw, 24px) clamp(20px, 5vw, 48px); }
+    .stat-row-inner { max-width: 1100px; margin: 0 auto; display: flex; flex-wrap: wrap; gap: 12px; }
+    .stat-pill {
+      display: flex; flex-direction: column; gap: 2px;
+      padding: 12px 18px; background: var(--bg); border: 1px solid var(--border);
+      border-radius: var(--radius); flex: 1; min-width: 140px;
+    }
+    .stat-pill .sp-num { font-family: var(--b-mono); font-size: 1.3rem; font-weight: 700; color: var(--text); letter-spacing: -0.03em; line-height: 1; }
+    .stat-pill .sp-num.blue { color: var(--blue); }
+    .stat-pill .sp-label { font-size: 0.75rem; color: var(--text-muted); line-height: 1.3; }
+
+    .charts-section { flex: 1; padding: clamp(32px, 5vw, 56px) clamp(20px, 5vw, 48px); }
+    .charts-inner { max-width: 1100px; margin: 0 auto; }
+    .section-label {
+      font-family: var(--b-sans); font-size: 0.7rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: normal; color: var(--text-faint); margin-bottom: 20px;
+    }
+    .charts-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; }
+
+    .hub-card {
+      background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius);
+      box-shadow: var(--shadow-sm); text-decoration: none; color: inherit;
+      display: flex; flex-direction: column; overflow: hidden;
+      transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+    }
+    .hub-card:hover { border-color: var(--blue); box-shadow: var(--shadow-md); transform: translateY(-3px); }
+    .hub-card-icon { aspect-ratio: 2 / 1; background: var(--b-line-strong); overflow: hidden; flex-shrink: 0; }
+    .hub-card-icon img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: top left; }
+    .hub-card-body { padding: 20px 24px 24px; flex: 1; display: flex; flex-direction: column; }
+    .hub-card-label { font-family: var(--b-sans); font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: normal; color: var(--blue); margin-bottom: 8px; }
+    .hub-card-title { font-family: var(--b-display); font-size: 1.05rem; font-weight: 500; color: var(--text); letter-spacing: -0.02em; line-height: 1.25; margin-bottom: 10px; }
+    .hub-card-desc { font-size: 0.875rem; color: var(--text-muted); line-height: 1.6; flex: 1; margin-bottom: 20px; }
+    .hub-card-meta { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .hub-card-stat { font-family: var(--b-mono); font-size: 0.72rem; color: var(--text-faint); }
+    .hub-card-cta { font-family: var(--b-sans); font-size: 0.78rem; font-weight: 700; color: var(--blue); display: flex; align-items: center; gap: 5px; transition: gap 0.15s; }
+    .hub-card:hover .hub-card-cta { gap: 9px; }
+  
+    /* ── TOPIC COLOUR (2026 rebrand) ──────────────────────
+       Colour encodes what KIND of thing something is. The bright fills are
+       decorative only; the -ink twins are the only variants safe for text
+       (each is tuned to 4.5:1 on Canvas Cream). Tokens: assets/brand.css */
+    .card[data-topics~="transit"] .card-category { color: var(--b-topic-transit-ink); }
+    .card[data-topics~="cb"]      .card-category { color: var(--b-topic-cb-ink); }
+    .card[data-topics~="budget"]  .card-category { color: var(--b-topic-budget-ink); }
+    .card[data-topics~="govtech"] .card-category { color: var(--b-topic-govtech-ink); }
+    .tf-pill[data-topic="transit"]:hover  { border-color: var(--b-topic-transit-ink); color: var(--b-topic-transit-ink); }
+    .tf-pill[data-topic="cb"]:hover       { border-color: var(--b-topic-cb-ink); color: var(--b-topic-cb-ink); }
+    .tf-pill[data-topic="budget"]:hover   { border-color: var(--b-topic-budget-ink); color: var(--b-topic-budget-ink); }
+    .tf-pill[data-topic="govtech"]:hover  { border-color: var(--b-topic-govtech-ink); color: var(--b-topic-govtech-ink); }
+    .tf-pill[data-topic="transit"].active { background: var(--b-topic-transit-ink); border-color: var(--b-topic-transit-ink); color: #fff; }
+    .tf-pill[data-topic="cb"].active      { background: var(--b-topic-cb-ink); border-color: var(--b-topic-cb-ink); color: #fff; }
+    .tf-pill[data-topic="budget"].active  { background: var(--b-topic-budget-ink); border-color: var(--b-topic-budget-ink); color: #fff; }
+    .tf-pill[data-topic="govtech"].active { background: var(--b-topic-govtech-ink); border-color: var(--b-topic-govtech-ink); color: #fff; }
+    /* A row of figures should not read as one colour. */
+    .stat-pill:nth-child(4n+1) .sp-num { color: var(--b-topic-budget-ink); }
+    .stat-pill:nth-child(4n+2) .sp-num { color: var(--b-topic-transit-ink); }
+    .stat-pill:nth-child(4n+3) .sp-num { color: var(--b-topic-cb-ink); }
+    .stat-pill:nth-child(4n+4) .sp-num { color: var(--b-brown); }
+  
+    /* Header action buttons on subpages (Tal, Sep 2026 — previously hub-only). */
+    .header-actions { display:flex; align-items:center; gap:12px; margin-left:auto; flex-shrink:0; }
+    .header-link { font-size:0.8rem; font-weight:500; color:#9A8B7A; text-decoration:none; display:inline-flex; align-items:center; gap:5px; padding:5px 11px; border:1px solid rgba(255,255,255,0.15); border-radius:6px; transition:color .15s,border-color .15s,background .15s; white-space:nowrap; }
+    .header-link:hover { color:#fff; border-color:rgba(255,255,255,0.35); background:rgba(255,255,255,0.08); }
+    .header-link svg, .support-link svg { flex-shrink:0; }
+    .support-link { font-size:0.8rem; font-weight:500; color:#FFD23F; text-decoration:none; display:inline-flex; align-items:center; gap:5px; padding:5px 11px; border:1px solid rgba(200,70,9,0.45); border-radius:6px; transition:color .15s,border-color .15s,background .15s; white-space:nowrap; }
+    .support-link:hover { color:#fff; background:#C84609; border-color:#C84609; }
+    /* The subpage header also carries a back-link and a page title, so shed the
+       optional buttons before the row can overflow. The footer keeps all three. */
+  
+    /* The subpage header carries a mark, a back-link, a page title AND the
+       action buttons, so shed the optional links before the row can overflow.
+       These MUST live in the last style block on the page: several pages carry
+       a second <style id="support-btn-css"> that re-declares .header-actions
+       and would otherwise override the media query. */
+    header .header-inner { min-width: 0; }
+    header .site-header-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    @media (max-width: 900px) { .header-actions .header-link { display: none; } }
+    @media (max-width: 560px) { .header-actions { display: none; } }
+    @media (max-width: 560px) { header .site-header-title { white-space: normal; } }
+  </style>
+  <script defer src="/assets/site.js?v=20261119"></script>
+<!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d0dce16d32c14809bc15038314fb9a13"}'></script><!-- End Cloudflare Web Analytics -->
+<!-- jsonld:start -->
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@type": "Dataset",
+ "name": "COGE Report",
+ "description": "Charts behind NYCuriosity's analysis of Mayor Mamdani's Commission on Government Efficiency: the five November ballot questions, and the procurement and technology reforms that did not make it onto the ballot.",
+ "url": "https://data.nycuriosity.com/posts/coge-report/",
+ "creator": {
+  "@type": "Person",
+  "name": "Tal Roded",
+  "url": "https://talroded.nycuriosity.com/"
+ },
+ "isAccessibleForFree": true,
+ "inLanguage": "en-US",
+ "spatialCoverage": {
+  "@type": "Place",
+  "name": "New York City"
+ }
+}
+</script>
+<!-- jsonld:end -->
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <a href="/" class="header-mark" aria-label="NYCuriosity Data home"><img src="/assets/brand/Talbot.svg" alt="" style="height:32px;width:auto;display:block"></a>
+    <a href="/" class="brand" aria-label="NYCuriosity Data home"><img src="/assets/brand/SubLogo_W.svg" alt="NYCuriosity Data" style="height:19px;width:auto;display:block"></a>
+    <a href="/" class="back-link">&larr; All posts</a>
+    <div class="header-divider"></div>
+    <p class="site-header-title">COGE Report</p>
+    <div class="header-actions">
+      <a href="https://talroded.nycuriosity.com" class="header-link" target="_blank" rel="noopener"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>About</a>
+      <a href="https://www.nycuriosity.com" class="header-link" target="_blank" rel="noopener"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v4H4z"/><path d="M4 10h16v10l-8-4-8 4z"/></svg>Substack</a>
+      <a href="https://buymeacoffee.com/nycuriosity" class="support-link" target="_blank" rel="noopener" aria-label="Support my work on Buy Me a Coffee"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>Support my work</a>
+    </div>
+  </div>
+</header>
+
+<div class="hero">
+  <div class="hero-inner">
+    <div class="breadcrumb">
+      <a href="/">data.nycuriosity.com</a>
+      <span>&rsaquo;</span>
+      <span>COGE Report</span>
+    </div>
+    <div class="hero-meta">
+      <span class="hero-tag">Government Efficiency</span>
+      <span class="hero-updated">August 2026</span>
+    </div>
+    <h1>What Mamdani's Efficiency Commission <span>Put on the Ballot</span></h1>
+    <p>
+      Mayor Mamdani convened the Commission on Government Efficiency in May 2026. It studied twelve areas of the City
+      Charter, adopted its final report unanimously on July 23, and sent five questions to voters this November. These
+      charts measure what each question would reach: contracting and payment, street safety and City land, building
+      permits, and the reserves target. Plus the technology problem the Charter did not reach at all.
+    </p>
+    <p class="hero-press">Featured in <a href="https://www.thecityreporter.nyc/2026/09/23/ballot-questions-voting-november-election/" target="_blank" rel="noopener">The City Reporter&rsquo;s guide to the ballot proposals</a> (Sep 2026)</p>
+  </div>
+</div>
+
+<div class="stat-row">
+  <div class="stat-row-inner">
+    <div class="stat-pill">
+      <span class="sp-num blue">5</span>
+      <span class="sp-label">Ballot questions on the November 2026 ballot</span>
+    </div>
+    <div class="stat-pill">
+      <span class="sp-num">12</span>
+      <span class="sp-label">Charter areas studied in the preliminary report</span>
+    </div>
+    <div class="stat-pill">
+      <span class="sp-num blue">387</span>
+      <span class="sp-label">Median days for a City RFP, FY2025</span>
+    </div>
+    <div class="stat-pill">
+      <span class="sp-num">39%</span>
+      <span class="sp-label">Contracts registered on time, FY2025</span>
+    </div>
+  </div>
+</div>
+
+<section class="charts-section">
+  <div class="charts-inner">
+    <p class="section-label">Charts in this post</p>
+    <div class="charts-grid">
+
+      <a class="hub-card" href="ballot-disposition/">
+        <div class="hub-card-icon"><img src="/assets/thumbs/coge_report.jpg" width="640" height="320" loading="lazy" decoding="async" alt="From Study to Ballot"></div>
+        <div class="hub-card-body">
+          <div class="hub-card-label">Matrix</div>
+          <div class="hub-card-title">From Study to Ballot</div>
+          <div class="hub-card-desc">COGE studied twelve areas of the City Charter and put five questions on the November ballot. This is where each area landed, including the technology chapter that became an appendix.</div>
+          <div class="hub-card-meta">
+            <span class="hub-card-stat">12 areas &middot; 5 questions</span>
+            <span class="hub-card-cta">Open the chart &rarr;</span>
+          </div>
+        </div>
+      </a>
+
+      <a class="hub-card" href="contract-timeliness/">
+        <div class="hub-card-icon"><img src="/assets/thumbs/coge_report--contract-timeliness.jpg" width="640" height="320" loading="lazy" decoding="async" alt="Contract Timeliness"></div>
+        <div class="hub-card-body">
+          <div class="hub-card-label">Stacked Columns</div>
+          <div class="hub-card-title">Contract Timeliness</div>
+          <div class="hub-card-desc">New York City registered 39% of its contracts before their start date last year, the best rate in five years. Vendors cannot be paid for work done before registration.</div>
+          <div class="hub-card-meta">
+            <span class="hub-card-stat">FY2021&ndash;FY2025</span>
+            <span class="hub-card-cta">Open the chart &rarr;</span>
+          </div>
+        </div>
+      </a>
+
+      <a class="hub-card" href="rfp-cycle-time/">
+        <div class="hub-card-icon"><img src="/assets/thumbs/coge_report--rfp-cycle-time.jpg" width="640" height="320" loading="lazy" decoding="async" alt="Where the 387 Days Go"></div>
+        <div class="hub-card-body">
+          <div class="hub-card-label">Stacked Bars</div>
+          <div class="hub-card-title">Where the 387 Days Go</div>
+          <div class="hub-card-desc">The median City RFP took 387 days end to end in FY2025. Evaluation and post-award review account for 234 of them, and the charter amendment touches neither.</div>
+          <div class="hub-card-meta">
+            <span class="hub-card-stat">FY2022&ndash;FY2025 &middot; 5 phases</span>
+            <span class="hub-card-cta">Open the chart &rarr;</span>
+          </div>
+        </div>
+      </a>
+
+      <a class="hub-card" href="cycle-time-by-agency/">
+        <div class="hub-card-icon"><img src="/assets/thumbs/coge_report--cycle-time-by-agency.jpg" width="640" height="320" loading="lazy" decoding="async" alt="Cycle Time by Agency"></div>
+        <div class="hub-card-body">
+          <div class="hub-card-label">Ranked Bars</div>
+          <div class="hub-card-title">Cycle Time by Agency</div>
+          <div class="hub-card-desc">Median RFP times run from 227 days at the Department for the Aging to 1,372 at the Office of Technology and Innovation, the agency that buys the City's technology.</div>
+          <div class="hub-card-meta">
+            <span class="hub-card-stat">18 agencies &middot; FY2025</span>
+            <span class="hub-card-cta">Open the chart &rarr;</span>
+          </div>
+        </div>
+      </a>
+
+      <a class="hub-card" href="nonprofit-payment/">
+        <div class="hub-card-icon"><img src="/assets/thumbs/coge_report--nonprofit-payment.jpg" width="640" height="320" loading="lazy" decoding="async" alt="Nonprofit Payment"></div>
+        <div class="hub-card-body">
+          <div class="hub-card-label">Stacked Bars</div>
+          <div class="hub-card-title">Nonprofit Payment</div>
+          <div class="hub-card-desc">Whether a human services nonprofit is paid on schedule turns on which agency hired it. On-time submission ran from 8% at Small Business Services to 93% at ACS.</div>
+          <div class="hub-card-meta">
+            <span class="hub-card-stat">10 agencies &middot; FY2025</span>
+            <span class="hub-card-cta">Open the chart &rarr;</span>
+          </div>
+        </div>
+      </a>
+
+      <a class="hub-card" href="street-safety-and-land/">
+        <div class="hub-card-icon"><img src="/assets/thumbs/coge_report--street-safety-and-land.jpg" width="640" height="320" loading="lazy" decoding="async" alt="Streets and City Land"></div>
+        <div class="hub-card-body">
+          <div class="hub-card-label">Ranked Bars</div>
+          <div class="hub-card-title">Streets and City Land</div>
+          <div class="hub-card-desc">Ballot Question 3. Three quarters of the City's 5,442 vacant lots are small enough for the new expedited review, but they hold only a twentieth of the vacant land.</div>
+          <div class="hub-card-meta">
+            <span class="hub-card-stat">Q3 &middot; 5,442 lots</span>
+            <span class="hub-card-cta">Open the chart &rarr;</span>
+          </div>
+        </div>
+      </a>
+
+      <a class="hub-card" href="building-permits/">
+        <div class="hub-card-icon"><img src="/assets/thumbs/coge_report--building-permits.jpg" width="640" height="320" loading="lazy" decoding="async" alt="Building Permits"></div>
+        <div class="hub-card-body">
+          <div class="hub-card-label">Ranked Bars</div>
+          <div class="hub-card-title">Building Permits</div>
+          <div class="hub-card-desc">Ballot Question 4. A routine alteration permits in 15 days and a new building takes 166. The permits that produce housing wait eleven times longer than the ones that do not.</div>
+          <div class="hub-card-meta">
+            <span class="hub-card-stat">Q4 &middot; FY2024&ndash;FY2025</span>
+            <span class="hub-card-cta">Open the chart &rarr;</span>
+          </div>
+        </div>
+      </a>
+
+      <a class="hub-card" href="rainy-day-fund/">
+        <div class="hub-card-icon"><img src="/assets/thumbs/coge_report--rainy-day-fund.jpg" width="640" height="320" loading="lazy" decoding="async" alt="Rainy Day Fund"></div>
+        <div class="hub-card-body">
+          <div class="hub-card-label">Columns</div>
+          <div class="hub-card-title">Rainy Day Fund</div>
+          <div class="hub-card-desc">Ballot Question 5. A 12% reserves target works out to $9.8 billion against next year's tax base, roughly twice the revenue the City lost in the pandemic year.</div>
+          <div class="hub-card-meta">
+            <span class="hub-card-stat">Q5 &middot; FY2017&ndash;FY2026</span>
+            <span class="hub-card-cta">Open the chart &rarr;</span>
+          </div>
+        </div>
+      </a>
+
+      <a class="hub-card" href="/civic_reference/legislation_implementation_tracker/">
+        <div class="hub-card-icon"><img src="/assets/thumbs/coge_report--legislation_implementation_tracker.jpg" width="640" height="320" loading="lazy" decoding="async" alt="Legislation Implementation Tracker"></div>
+        <div class="hub-card-body">
+          <div class="hub-card-label">Interactive Tool</div>
+          <div class="hub-card-title">Legislation Implementation Tracker</div>
+          <div class="hub-card-desc">COGE counted roughly 1,000 reports a year across City agencies and left the fix to a future commission. The tracker counts the same burden from the law text: 864 reports due at least annually.</div>
+          <div class="hub-card-meta">
+            <span class="hub-card-stat">8,231 obligations</span>
+            <span class="hub-card-cta">Open tracker &rarr;</span>
+          </div>
+        </div>
+      </a>
+
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-inner">
+    <span class="footer-copy">&copy; NYCuriosity &middot; Tal Roded</span>
+    <nav class="footer-links">
+      <a href="https://buymeacoffee.com/nycuriosity" class="footer-support" target="_blank" rel="noopener" aria-label="Support my work on Buy Me a Coffee"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>Support my work</a>
+      <a href="https://talroded.nycuriosity.com" target="_blank" rel="noopener">About</a>
+      <a href="https://www.nycuriosity.com" target="_blank" rel="noopener">Substack</a>
+      <a href="https://github.com/TalR24/nycur-data-website" target="_blank" rel="noopener">GitHub</a>
+      <a href="https://www.youtube.com/@nycuriosity-yt" target="_blank" rel="noopener">YouTube</a>
+    </nav>
+  </div>
+</footer>
+
+</body>
+</html>

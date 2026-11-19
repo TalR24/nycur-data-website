@@ -23,7 +23,7 @@ The site holds three kinds of content:
 | `civic_reference/block_party_maps/` | Block Party demo maps for Manhattan community boards (`data/` holds per-board JS payloads). |
 | `civic_reference/nyc-gov-bodies-explorer/`, `civic_reference/state_capacity_ecosystem/` | Redirect stubs only. |
 | `cb-tools/` | Community Board tools hub (`index.html`): `member-tracker/`, `block-party/` (teaser for the members-only dashboard), `board-scorecard/`, `meeting-review/`, `roberts-rules-helper/`, talk pages (`block_party_july2026/`, `harvard-rcn-2026/`, `school-of-data-2026/`, `sogt-2026/`), shared `cb-filter.*` and `cb-switch.js`. |
-| `nycuriosity_substack_posts/` | 16 post data hubs, one folder per Substack post, each with `index.html`, chart subpages and `data/`. |
+| `posts/` | Post data hubs (kebab-case folder names since the Nov 2026 restructure), one folder per Substack post, each with `index.html`, chart subpages and `data/`. |
 | `assets/` | `chart.css` + `chart.js` (every chart, table and card), `brand.css`, `site.js` (header nav, tool and post menus, related-work block), `whats-new.json`, `related_work.json`, `brand/` (logos, icons). |
 | `pipeline/` | Fiscal Impacts pipeline and the agency name crosswalk (`agency_canon.py`). See the fiscal `PIPELINE_REFERENCE.md`. |
 | `seo/` | Head-tag check, sitemap, `llms.txt`, JSON-LD, static snapshots, Search Console report and email scripts. Serves all three public sites. |
@@ -143,7 +143,7 @@ python3 site_health/check_site.py --dry-run              # needs Playwright; pri
 
 ## Adding a post data hub or tool
 
-1. Confirm the folder name and bucket (Substack post under `nycuriosity_substack_posts/<folder>/`, tool under `civic_reference/<tool>/` or `cb-tools/<tool>/`).
+1. Confirm the folder name and bucket (Substack post under `posts/<folder>/`, tool under `civic_reference/<tool>/` or `cb-tools/<tool>/`).
 2. Copy the chrome from a reference page of the same kind. Hub at `<folder>/index.html`, chart subpages in subfolders, source data in `data/`. Full steps are in the `visualization-style-guide` skill (Step 5b covers registration).
 3. Register it: homepage card (newest first), `assets/site.js` menu, `assets/whats-new.json`, `assets/related_work.json` if it links to related work.
 4. Run `python3 seo/build_sitemap.py --site data`.

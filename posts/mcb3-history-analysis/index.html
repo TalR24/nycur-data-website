@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#170C03">
+  <title>MCB3 History Analysis — NYCuriosity Data</title>
+  <meta name="description" content="Data and charts from NYCuriosity's analysis of MCB3 resolution history from 2002 to 2026 — topics, trends, and how the board's focus has shifted over time.">
+  <link rel="canonical" href="https://data.nycuriosity.com/posts/mcb3-history-analysis/">
+  <meta property="og:type"        content="website">
+  <meta property="og:url"         content="https://data.nycuriosity.com/posts/mcb3-history-analysis/">
+  <meta property="og:title"       content="MCB3 History Analysis — NYCuriosity Data">
+  <meta property="og:description" content="24 years of MCB3 resolutions: topic breakdowns, trend analysis, and comparison to citywide data.">
+  <meta property="og:image"       content="https://data.nycuriosity.com/website_logo.png">
+  <meta name="twitter:card"       content="summary_large_image">
+  <meta name="twitter:image"      content="https://data.nycuriosity.com/website_logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/brand.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --blue: #C84609; --blue-hover: #A44D00; --blue-light: #FAF6F1; --blue-mid: #EDC3A5;
+      --text: #1A1208; --text-mid: #4A3B2C; --text-muted: #6B5B4A; --text-faint: #9A8B7A;
+      --bg: #FAF6F1; --surface: #ffffff; --border: #E7DDCE;
+      --shadow-sm: 0 1px 3px rgba(26,18,8,0.08); --shadow-md: 0 4px 20px rgba(207,75,12,0.13);
+      --radius: 10px;
+    }
+    body { font-family:'Helvetica Neue', Helvetica, Arial, 'Inter', system-ui, sans-serif; background:var(--bg); color:var(--text); min-height:100vh; display:flex; flex-direction:column; }
+
+    header { background:#170C03; border-bottom:1px solid #2E1C0C; padding:0 clamp(20px,5vw,48px); }
+    .header-inner { max-width:1100px; margin:0 auto; height:56px; display:flex; align-items:center; gap:16px; }
+    .back-link { font-family: var(--b-sans); font-size:0.75rem; font-weight:600; color:#9A8B7A; text-decoration:none; display:flex; align-items:center; gap:5px; padding:4px 8px 4px 4px; border-radius:5px; transition:color 0.15s,background 0.15s; white-space:nowrap; }
+    .back-link:hover { color:#FFD23F; background:rgba(255,210,63,0.1); }
+    .header-divider { width:1px; height:20px; background:#4A3B2C; flex-shrink:0; }
+    header .site-header-title { margin: 0; font-weight: 500; font-family: var(--b-display); font-size:0.95rem; font-weight: 500; color:#E7DDCE; letter-spacing:-0.02em; }
+
+    .hero { background:var(--surface); border-bottom:1px solid var(--border); padding:clamp(32px,5vw,52px) clamp(20px,5vw,48px); }
+    .hero-inner { max-width:1100px; margin:0 auto; }
+    .breadcrumb { font-family: var(--b-sans); font-size:0.72rem; color:var(--text-faint); margin-bottom:14px; display:flex; align-items:center; gap:6px; }
+    .breadcrumb a { color:var(--blue); text-decoration:none; }
+    .breadcrumb a:hover { text-decoration:underline; }
+    .breadcrumb span:last-child { color: #A44D00; }
+    .hero-meta { display:flex; flex-wrap:wrap; align-items:center; gap:12px; margin-bottom:14px; }
+    .hero-tag { font-family: var(--b-sans); font-size:0.68rem; font-weight:600; text-transform:uppercase; letter-spacing: normal; color:#A44D00; background:#FAF6F1; border:1px solid #E7DDCE; border-radius:4px; padding:3px 8px; }
+    .hero-updated { font-family: var(--b-mono); font-size:0.72rem; color:var(--text-faint); }
+    .hero h1 { font-family: 'Playfair Display', Georgia, serif; font-size:clamp(1.4rem,3vw,1.9rem); font-weight: 500; color:var(--text); letter-spacing: -0.012em; line-height:1.2; margin-bottom:10px; }
+    .hero h1 span { color:var(--blue); }
+    .hero p { font-size:0.975rem; color:var(--text-muted); max-width:680px; line-height:1.7; }
+
+    .stat-row { background:var(--surface); border-bottom:1px solid var(--border); padding:clamp(16px,3vw,24px) clamp(20px,5vw,48px); }
+    .stat-row-inner { max-width:1100px; margin:0 auto; display:flex; flex-wrap:wrap; gap:12px; }
+    .stat-pill { display:flex; flex-direction:column; gap:2px; padding:12px 18px; background:var(--bg); border:1px solid var(--border); border-radius:var(--radius); flex:1; min-width:130px; }
+    .stat-pill .sp-num { font-family: var(--b-mono); font-size:1.3rem; font-weight:700; color:var(--text); letter-spacing:-0.03em; line-height:1; }
+    .stat-pill .sp-num.blue { color:var(--blue); }
+    .stat-pill .sp-label { font-size:0.75rem; color:var(--text-muted); line-height:1.3; }
+
+    .charts-section { flex:1; padding:clamp(32px,5vw,56px) clamp(20px,5vw,48px); }
+    .charts-inner { max-width:1100px; margin:0 auto; }
+    .section-label { font-family: var(--b-sans); font-size:0.7rem; font-weight:600; text-transform:uppercase; letter-spacing: normal; color:var(--text-faint); margin-bottom:20px; }
+    .charts-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:20px; }
+
+    .hub-card { background:var(--surface); border:1.5px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow-sm); text-decoration:none; color:inherit; display:flex; flex-direction:column; overflow:hidden; transition:border-color 0.2s,box-shadow 0.2s,transform 0.15s; }
+    .hub-card:hover { border-color:var(--blue); box-shadow:var(--shadow-md); transform:translateY(-3px); }
+
+    .hub-card-icon { aspect-ratio: 2 / 1; background: var(--b-line-strong); overflow: hidden; flex-shrink: 0; }
+    .hub-card-icon img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: top left; }
+    .icon-stacked { display:flex; align-items:flex-end; gap:5px; height:56px; }
+    .icon-stacked-bar { border-radius:3px 3px 0 0; width:16px; display:flex; flex-direction:column; justify-content:flex-end; overflow:hidden; }
+    .icon-stacked-seg { width:100%; flex-shrink:0; }
+
+    .hub-card-body { padding:20px 24px 24px; flex:1; display:flex; flex-direction:column; }
+    .hub-card-label { font-family: var(--b-sans); font-size:0.68rem; font-weight:600; text-transform:uppercase; letter-spacing: normal; color:var(--blue); margin-bottom:8px; }
+    .hub-card-title { font-family: var(--b-display); font-size:1.05rem; font-weight: 500; color:var(--text); letter-spacing:-0.02em; line-height:1.25; margin-bottom:10px; }
+    .hub-card-desc { font-size:0.875rem; color:var(--text-muted); line-height:1.6; flex:1; margin-bottom:20px; }
+    .hub-card-meta { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+    .hub-card-stat { font-family: var(--b-mono); font-size:0.72rem; color:var(--text-faint); }
+    .hub-card-cta { font-family: var(--b-sans); font-size:0.78rem; font-weight:700; color:var(--blue); display:flex; align-items:center; gap:5px; transition:gap 0.15s; }
+    .hub-card:hover .hub-card-cta { gap:9px; }
+
+    footer { background:var(--surface); border-top:1px solid var(--border); padding:20px clamp(20px,5vw,48px); }
+    .footer-inner { max-width:1100px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; }
+    .footer-copy { font-size:0.8rem; color:var(--text-faint); }
+    .footer-links { display:flex; gap:20px; }
+    .footer-links a { font-size:0.8rem; color:var(--text-muted); text-decoration:none; }
+    .footer-links a:hover { color:var(--blue); }
+  
+    /* ── TOPIC COLOUR (2026 rebrand) ──────────────────────
+       Colour encodes what KIND of thing something is. The bright fills are
+       decorative only; the -ink twins are the only variants safe for text
+       (each is tuned to 4.5:1 on Canvas Cream). Tokens: assets/brand.css */
+    .card[data-topics~="transit"] .card-category { color: var(--b-topic-transit-ink); }
+    .card[data-topics~="cb"]      .card-category { color: var(--b-topic-cb-ink); }
+    .card[data-topics~="budget"]  .card-category { color: var(--b-topic-budget-ink); }
+    .card[data-topics~="govtech"] .card-category { color: var(--b-topic-govtech-ink); }
+    .tf-pill[data-topic="transit"]:hover  { border-color: var(--b-topic-transit-ink); color: var(--b-topic-transit-ink); }
+    .tf-pill[data-topic="cb"]:hover       { border-color: var(--b-topic-cb-ink); color: var(--b-topic-cb-ink); }
+    .tf-pill[data-topic="budget"]:hover   { border-color: var(--b-topic-budget-ink); color: var(--b-topic-budget-ink); }
+    .tf-pill[data-topic="govtech"]:hover  { border-color: var(--b-topic-govtech-ink); color: var(--b-topic-govtech-ink); }
+    .tf-pill[data-topic="transit"].active { background: var(--b-topic-transit-ink); border-color: var(--b-topic-transit-ink); color: #fff; }
+    .tf-pill[data-topic="cb"].active      { background: var(--b-topic-cb-ink); border-color: var(--b-topic-cb-ink); color: #fff; }
+    .tf-pill[data-topic="budget"].active  { background: var(--b-topic-budget-ink); border-color: var(--b-topic-budget-ink); color: #fff; }
+    .tf-pill[data-topic="govtech"].active { background: var(--b-topic-govtech-ink); border-color: var(--b-topic-govtech-ink); color: #fff; }
+    /* A row of figures should not read as one colour. */
+    .stat-pill:nth-child(4n+1) .sp-num { color: var(--b-topic-budget-ink); }
+    .stat-pill:nth-child(4n+2) .sp-num { color: var(--b-topic-transit-ink); }
+    .stat-pill:nth-child(4n+3) .sp-num { color: var(--b-topic-cb-ink); }
+    .stat-pill:nth-child(4n+4) .sp-num { color: var(--b-brown); }
+  </style>
+<style id="support-btn-css">
+.header-actions{display:flex;align-items:center;gap:12px;margin-left:auto;flex-shrink:0;}
+.header-link{font-size:0.8rem;font-weight:500;color:#9A8B7A;text-decoration:none;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border:1px solid rgba(255,255,255,0.15);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
+.header-link:hover{color:#fff;border-color:rgba(255,255,255,0.35);background:rgba(255,255,255,0.08);}
+.header-link svg{flex-shrink:0;}
+.support-link{display:inline-flex;align-items:center;gap:5px;font-size:0.8rem;font-weight:500;color:#FFD23F;text-decoration:none;padding:5px 11px;border:1px solid rgba(207,75,12,0.45);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
+.support-link:hover{color:#fff;background:#C84609;border-color:#C84609;}
+.support-link svg{flex-shrink:0;}
+.footer-support{display:inline-flex;align-items:center;gap:5px;font-size:0.8rem;font-weight:500;color:#C84609;text-decoration:none;padding:5px 11px;border:1px solid rgba(207,75,12,0.45);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
+.footer-support:hover{color:#fff;background:#C84609;border-color:#C84609;}
+.footer-support svg{flex-shrink:0;}
+.footer-support{vertical-align:middle;}
+.footer-links{align-items:center;}
+
+    /* The subpage header carries a mark, a back-link, a page title AND the
+       action buttons, so shed the optional links before the row can overflow.
+       These MUST live in the last style block on the page: several pages carry
+       a second <style id="support-btn-css"> that re-declares .header-actions
+       and would otherwise override the media query. */
+    header .header-inner { min-width: 0; }
+    header .site-header-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    @media (max-width: 900px) { .header-actions .header-link { display: none; } }
+    @media (max-width: 560px) { .header-actions { display: none; } }
+    @media (max-width: 560px) { header .site-header-title { white-space: normal; } }
+  </style>
+  <script defer src="/assets/site.js?v=20261119"></script>
+<!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d0dce16d32c14809bc15038314fb9a13"}'></script><!-- End Cloudflare Web Analytics -->
+<!-- jsonld:start -->
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@type": "Dataset",
+ "name": "MCB3 History Analysis",
+ "description": "Data and charts from NYCuriosity's analysis of MCB3 resolution history from 2002 to 2026 — topics, trends, and how the board's focus has shifted over time.",
+ "url": "https://data.nycuriosity.com/posts/mcb3-history-analysis/",
+ "creator": {
+  "@type": "Person",
+  "name": "Tal Roded",
+  "url": "https://talroded.nycuriosity.com/"
+ },
+ "isAccessibleForFree": true,
+ "inLanguage": "en-US",
+ "spatialCoverage": {
+  "@type": "Place",
+  "name": "New York City"
+ }
+}
+</script>
+<!-- jsonld:end -->
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <a href="/" class="header-mark" aria-label="NYCuriosity Data home"><img src="/assets/brand/Talbot.svg" alt="" style="height:32px;width:auto;display:block"></a>
+    <a href="/" class="brand" aria-label="NYCuriosity Data home"><img src="/assets/brand/SubLogo_W.svg" alt="NYCuriosity Data" style="height:19px;width:auto;display:block"></a>
+    <a href="/" class="back-link">← All posts</a>
+    <div class="header-divider"></div>
+    <p class="site-header-title">MCB3 History Analysis</p>
+    <div class="header-actions">
+      <a href="https://talroded.nycuriosity.com" class="header-link" target="_blank" rel="noopener"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>About</a>
+      <a href="https://www.nycuriosity.com" class="header-link" target="_blank" rel="noopener"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v4H4z"/><path d="M4 10h16v10l-8-4-8 4z"/></svg>Substack</a>
+      <a href="https://buymeacoffee.com/nycuriosity" class="support-link" target="_blank" rel="noopener" aria-label="Support my work on Buy Me a Coffee"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>Support my work</a>
+    </div>
+  </div>
+</header>
+
+<div class="hero">
+  <div class="hero-inner">
+    <div class="breadcrumb">
+      <a href="/">nycuriosity/data</a> <span>/</span> <span>mcb3-history-analysis</span>
+    </div>
+    <div class="hero-meta">
+      <span class="hero-tag">Community Board</span>
+      <span class="hero-tag">NYC Policy</span>
+      <span class="hero-updated">Updated March 2026</span>
+    </div>
+    <h1>CB Knowledge Base Case Study:<br><span>What has MCB3 focused on over time?</span></h1>
+    <p>An analysis of 7,134 MCB3 full board resolutions from January 2002 through February 2026, examining how the board's topical focus has shifted, how SLA processing changes reshaped the resolution landscape, and how MCB3's formal agenda compares to the 311 complaints residents actually file.</p>
+  </div>
+</div>
+
+<div class="stat-row">
+  <div class="stat-row-inner">
+    <div class="stat-pill">
+      <span class="sp-num blue">7,134</span>
+      <span class="sp-label">total resolutions</span>
+    </div>
+    <div class="stat-pill">
+      <span class="sp-num">268</span>
+      <span class="sp-label">full board meetings</span>
+    </div>
+    <div class="stat-pill">
+      <span class="sp-num">24</span>
+      <span class="sp-label">years covered (2002–2026)</span>
+    </div>
+    <div class="stat-pill">
+      <span class="sp-num">10</span>
+      <span class="sp-label">topic categories analyzed</span>
+    </div>
+    <div class="stat-pill">
+      <span class="sp-num blue">605</span>
+      <span class="sp-label">peak year (2004)</span>
+    </div>
+  </div>
+</div>
+
+<div class="charts-section">
+  <div class="charts-inner">
+    <div class="section-label">Charts in this post</div>
+    <div class="charts-grid">
+
+      <a href="./topics-over-time/" class="hub-card">
+        <div class="hub-card-icon"><img src="/assets/thumbs/mcb3_history_analysis.jpg" width="640" height="320" loading="lazy" decoding="async" alt="Resolution Topics Over Time"></div>
+        <div class="hub-card-body">
+          <div class="hub-card-label">Stacked Bar Chart</div>
+          <div class="hub-card-title">Resolution Topics Over Time</div>
+          <div class="hub-card-desc">Annual resolution counts broken down by topic category, 2004–2025. Toggle between absolute counts and percentage view to see how SLA's dominance has shifted relative to substantive policy topics.</div>
+          <div class="hub-card-meta">
+            <span class="hub-card-stat">22 years × 10 categories</span>
+            <span class="hub-card-cta">Open the chart →</span>
+          </div>
+        </div>
+      </a>
+
+      <a href="./topics-comparison/" class="hub-card">
+        <div class="hub-card-icon"><img src="/assets/thumbs/mcb3_history_analysis--topics-comparison.jpg" width="640" height="320" loading="lazy" decoding="async" alt="MCB3 Resolutions vs. 311 Complaints"></div>
+        <div class="hub-card-body">
+          <div class="hub-card-label">Grouped Bar Chart</div>
+          <div class="hub-card-title">MCB3 Resolutions vs. 311 Complaints</div>
+          <div class="hub-card-desc">Side-by-side percentage comparison across 10 topic categories, revealing a 48% vs. 0% gap on liquor licensing and a 45% vs. 4% gap on public safety.</div>
+          <div class="hub-card-meta">
+            <span class="hub-card-stat">7,134 resolutions · 377,536 complaints</span>
+            <span class="hub-card-cta">Open the chart →</span>
+          </div>
+        </div>
+      </a>
+
+
+      <a href="./agencies-comparison/" class="hub-card">
+        <div class="hub-card-icon"><img src="/assets/thumbs/mcb3_history_analysis--agencies-comparison.jpg" width="640" height="320" loading="lazy" decoding="async" alt="Agencies: MCB3 vs. 311"></div>
+        <div class="hub-card-body">
+          <div class="hub-card-label">Grouped Bar Chart</div>
+          <div class="hub-card-title">Agencies: MCB3 vs. 311</div>
+          <div class="hub-card-desc">Side-by-side comparison of which agencies MCB3 formally addresses (60% SLA) vs. which agencies CD3 residents actually call 311 about (86% NYPD + HPD). A structural mismatch across 15 agencies.</div>
+          <div class="hub-card-meta">
+            <span class="hub-card-stat">15 agencies · 3,828 mentions · 652K complaints</span>
+            <span class="hub-card-cta">Open the chart →</span>
+          </div>
+        </div>
+      </a>
+
+      <a href="./311-vs-resolutions/" class="hub-card">
+        <div class="hub-card-icon"><img src="/assets/thumbs/mcb3_history_analysis--311-vs-resolutions.jpg" width="640" height="320" loading="lazy" decoding="async" alt="311 Spikes vs. MCB3 Resolutions"></div>
+        <div class="hub-card-body">
+          <div class="hub-card-label">Line Chart + Annotations</div>
+          <div class="hub-card-title">311 Spikes vs. MCB3 Resolutions</div>
+          <div class="hub-card-desc">Monthly "Noise – Street/Sidewalk" 311 complaints in CD3 overlaid with the dates of corresponding MCB3 resolutions, showing a 21× spike in June 2020 and a 1–13 month lag before the board formally responded.</div>
+          <div class="hub-card-meta">
+            <span class="hub-card-stat">72 months · 3 resolutions</span>
+            <span class="hub-card-cta">Open the chart →</span>
+          </div>
+        </div>
+      </a>
+
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-inner">
+    <span class="footer-copy">NYCuriosity Data · Source: NYC.gov MCB3 meeting minutes</span>
+    <div class="footer-links">
+      <a href="https://buymeacoffee.com/nycuriosity" class="footer-support" target="_blank" rel="noopener" aria-label="Support my work on Buy Me a Coffee"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>Support my work</a>
+      <a href="https://talroded.nycuriosity.com" target="_blank" rel="noopener">About</a>
+      <a href="https://www.nycuriosity.com/">Subscribe</a>
+      <a href="https://github.com/TalR24/nycur-data-website">GitHub</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

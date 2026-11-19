@@ -39,32 +39,32 @@
 
   var POSTS_MENU = [
     { cat: 'Transit & Streets', topic: 'transit', items: [
-      { label: 'The Croton Aqueduct and the case for big swings', href: '/nycuriosity_substack_posts/croton_aqueduct/' },
-      { label: 'Livable streets beyond Manhattan', href: '/nycuriosity_substack_posts/livable_streets_cuf/' },
-      { label: 'Two Years of G Train Weekend Shutdowns', href: '/nycuriosity_substack_posts/g_train_weekend_shutdowns/' },
-      { label: 'West 4th St Station Deep Dive', href: '/nycuriosity_substack_posts/west_4th_st_station/' },
-      { label: 'New York Needs to Grow', href: '/nycuriosity_substack_posts/nyc_building_strategies/' }
+      { label: 'The Croton Aqueduct and the case for big swings', href: '/posts/croton-aqueduct/' },
+      { label: 'Livable streets beyond Manhattan', href: '/posts/livable-streets-cuf/' },
+      { label: 'Two Years of G Train Weekend Shutdowns', href: '/posts/g-train-weekend-shutdowns/' },
+      { label: 'West 4th St Station Deep Dive', href: '/posts/west-4th-st-station/' },
+      { label: 'New York Needs to Grow', href: '/posts/nyc-building-strategies/' }
     ]},
     { cat: 'Community Boards', topic: 'cb', items: [
-      { label: 'What 52 community boards vote on', href: '/nycuriosity_substack_posts/block_party_updates_2026/' },
-      { label: 'Suggestions to Improve NYC Community Boards', href: '/nycuriosity_substack_posts/community_board_suggestions/' },
-      { label: 'What Has MCB3 Focused On Over Time?', href: '/nycuriosity_substack_posts/mcb3_history_analysis/' }
+      { label: 'What 52 community boards vote on', href: '/posts/block-party-updates-2026/' },
+      { label: 'Suggestions to Improve NYC Community Boards', href: '/posts/community-board-suggestions/' },
+      { label: 'What Has MCB3 Focused On Over Time?', href: '/posts/mcb3-history-analysis/' }
     ]},
     { cat: 'Budget & Policy', topic: 'budget', items: [
-      { label: 'Party competition in New York City', href: '/nycuriosity_substack_posts/robust_opposition/' },
-      { label: 'Fair Housing Growth Strategy targets', href: '/nycuriosity_substack_posts/fair_housing_growth_strategy/' },
-      { label: 'Park restroom costs', href: '/nycuriosity_substack_posts/public_restrooms/' },
-      { label: 'Labor Costs and the 2026 Bargaining Round', href: '/nycuriosity_substack_posts/public_sector_unions_2026/' },
-      { label: 'What the Council Asks of NYC Agencies', href: '/nycuriosity_substack_posts/council_obligations/' },
-      { label: 'Medicaid’s Check Register Is Public', href: '/nycuriosity_substack_posts/medicaid_provider_spending/' }
+      { label: 'Party competition in New York City', href: '/posts/robust-opposition/' },
+      { label: 'Fair Housing Growth Strategy targets', href: '/posts/fair-housing-growth-strategy/' },
+      { label: 'Park restroom costs', href: '/posts/public-restrooms/' },
+      { label: 'Labor Costs and the 2026 Bargaining Round', href: '/posts/public-sector-unions-2026/' },
+      { label: 'What the Council Asks of NYC Agencies', href: '/posts/council-obligations/' },
+      { label: 'Medicaid’s Check Register Is Public', href: '/posts/medicaid-provider-spending/' }
     ]},
     { cat: 'Government & Technology', topic: 'govtech', items: [
-      { label: 'A city has to publish its rules as data before AI can help run it', href: '/nycuriosity_substack_posts/urban_tech_summit_2026/' },
-      { label: 'By the time the City Council votes, the decision is already made', href: '/nycuriosity_substack_posts/political_starlight/' },
-      { label: 'Community data pipeline', href: '/nycuriosity_substack_posts/vital_city_community_data/' },
-      { label: 'Duties, Powers and Staffing in the Legislation Trackers Update', href: '/nycuriosity_substack_posts/legislation_trackers_update/' },
-      { label: 'What Mamdani’s Efficiency Commission Put on the Ballot', href: '/nycuriosity_substack_posts/coge_report/' },
-      { label: 'State Capacity Has a New Toolkit', href: '/nycuriosity_substack_posts/state_capacity_ai/' }
+      { label: 'A city has to publish its rules as data before AI can help run it', href: '/posts/urban-tech-summit-2026/' },
+      { label: 'By the time the City Council votes, the decision is already made', href: '/posts/political-starlight/' },
+      { label: 'Community data pipeline', href: '/posts/vital-city-community-data/' },
+      { label: 'Duties, Powers and Staffing in the Legislation Trackers Update', href: '/posts/legislation-trackers-update/' },
+      { label: 'What Mamdani’s Efficiency Commission Put on the Ballot', href: '/posts/coge-report/' },
+      { label: 'State Capacity Has a New Toolkit', href: '/posts/state-capacity-ai/' }
     ]}
   ];
 

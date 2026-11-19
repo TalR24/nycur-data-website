@@ -15,7 +15,7 @@ What gets a block:
     homepage, personal  Person (identity and links from profile_facts.json)
     homepage, sce       Organization
     tool and hub pages  Dataset: data-site civic_reference/<tool>/, cb-tools/<tool>/
-                        and nycuriosity_substack_posts/<post>/ (minus NOT_DATASETS);
+                        and posts/<post>/ (minus NOT_DATASETS);
                         SCE directory pages (SCE_DATASETS)
 Everything else gets nothing. The block sits between <!-- jsonld:start --> and
 <!-- jsonld:end --> before </head>; reruns replace it. build_sitemap.py runs
@@ -35,9 +35,9 @@ START, END = "<!-- jsonld:start -->", "<!-- jsonld:end -->"
 BLOCK_RE = re.compile(re.escape(START) + r".*?" + re.escape(END) + r"\n?", re.S)
 SUFFIX_RE = re.compile(r"\s+[—|]\s+(NYCuriosity|State Capacity Ecosystem|Tal Roded).*$")
 # Standing decision (Tal, Aug 24 2026): no search attention on these until the post is out.
-HOLD = ("/nycuriosity_substack_posts/medicaid_provider_spending/",)
+HOLD = ("/posts/medicaid-provider-spending/",)
 DATASET_PREFIXES = {
-    "data": ("civic_reference", "cb-tools", "nycuriosity_substack_posts"),
+    "data": ("tools", "posts", "civic_reference", "cb-tools"),
     "personal": (),
 }
 # Pages under those prefixes that are tools, demos or decks rather than data.

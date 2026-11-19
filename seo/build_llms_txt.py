@@ -24,14 +24,14 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from common import load_pages, repo_path, site_config  # noqa: E402
 
 # Standing decision (Tal, Aug 24 2026): no search attention on these until the post is out.
-HOLD = ("/nycuriosity_substack_posts/medicaid_provider_spending/",)
+HOLD = ("/posts/medicaid-provider-spending/",)
 
 # First path segment -> section heading; pages deeper than `depth` go to Optional.
 LAYOUT = {
     "data": {"depth": 2, "sections": [
         ("civic_reference", "NYC civic reference tools"),
         ("cb-tools", "Community board tools"),
-        ("nycuriosity_substack_posts", "Data behind NYCuriosity posts"),
+        ("posts", "Data behind NYCuriosity posts"),
     ], "related": [("NYCuriosity on Substack", "https://www.nycuriosity.com/",
                     "the newsletter these data pages accompany"),
                    ("Tal Roded", "https://talroded.nycuriosity.com/", "author's site")]},

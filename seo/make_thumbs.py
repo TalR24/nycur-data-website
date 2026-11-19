@@ -24,7 +24,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, 'assets', 'thumbs')
 W, H = 640, 320          # stored size, 2:1
 MAX_BYTES = 60 * 1024
-POSTS = '/nycuriosity_substack_posts/'
+POSTS = '/posts/'
 
 # Homepage tool cards: slug -> page whose top is the best miniature of the tool.
 TOOLS = {
@@ -56,7 +56,7 @@ TOOL_CARDS = {
     'tool--roberts-rules-helper': '/cb-tools/roberts-rules-helper/',
     'tool--meeting-review': '/cb-tools/meeting-review/',
     # the tool page is only a 'moved to Block Party' notice; show the resolutions-by-board chart instead (Nov 11 2026)
-    'tool--block-party': '/nycuriosity_substack_posts/block_party_updates_2026/by-board/',
+    'tool--block-party': '/posts/block-party-updates-2026/by-board/',
     'tool--board-scorecard': '/cb-tools/board-scorecard/',
 }
 

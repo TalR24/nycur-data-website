@@ -40,7 +40,7 @@ BRAND_CSS = REPO_ROOT / "assets" / "brand.css"
 CHANGES_REL = "nycur-data-premium/seo_reports/changes.md"
 
 # Standing decision (Tal, Aug 24 2026): no search work on these until the post is out.
-HOLD_PREFIXES = ("https://data.nycuriosity.com/nycuriosity_substack_posts/medicaid_provider_spending/",)
+HOLD_PREFIXES = ("https://data.nycuriosity.com/posts/medicaid-provider-spending/",)
 # Pages Tal reviewed and chose to leave as they are: no rewrite or query cards.
 DECLINED = {
     "https://www.nycuriosity.com/p/west-4th-street-station": "keep current SEO title and description (Tal, Oct 2 2026)",
@@ -547,7 +547,7 @@ def build(sections, period, session, changes_path=None, extra_actions=None):
                 continue
             path = urlsplit(u).path.strip("/").split("/")
             key = "/".join(path[:2]) if path and path[0] in (
-                "nycuriosity_substack_posts", "civic_reference", "cb-tools", "wiki", "services", "community",
+                "posts", "tools", "civic_reference", "cb-tools", "wiki", "services", "community",
                 "events") else (path[0] if path and path[0] else "")
             groups.setdefault((s["host"], s["prop"], key), []).append(u)
     ranked = sorted(groups.items(), key=lambda kv: -len(kv[1]))

@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#170C03">
+  <title>Ranking the MTA's Expansion Wishlist — NYCuriosity</title>
+  <meta name="description" content="Every candidate expansion project in the MTA's 2023 20-Year Needs Assessment Comparative Evaluation, ranked by cost per minute of door-to-door travel time saved over 30 years.">
+  <link rel="canonical" href="https://data.nycuriosity.com/posts/nyc-building-strategies/expansion-rankings/">
+  <meta property="og:image" content="https://data.nycuriosity.com/website_logo.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta property="og:type"        content="website">
+  <meta property="og:url"         content="https://data.nycuriosity.com/posts/nyc-building-strategies/expansion-rankings/">
+  <meta property="og:title"       content="Ranking the MTA's Expansion Wishlist — NYCuriosity">
+  <meta property="og:description" content="Every candidate expansion project in the MTA's 2023 20-Year Needs Assessment Comparative Evaluation, ranked by cost per minute of door-to-door travel time saved over 30 years.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/brand.css">
+  <link rel="stylesheet" href="/assets/chart.css?v=20260927">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue:       #C84609;
+      --blue-hover: #A44D00;
+      --blue-light: #FAF6F1;
+      --blue-mid:   #EDC3A5;
+      --text:       #1A1208;
+      --text-mid:   #4A3B2C;
+      --text-muted: #6B5B4A;
+      --text-faint: #9A8B7A;
+      --bg:         #FAF6F1;
+      --surface:    #ffffff;
+      --border:     #E7DDCE;
+      --shadow-sm:  0 1px 3px rgba(26,18,8,0.08);
+      --shadow-md:  0 4px 16px rgba(207,75,12,0.10);
+      --radius:     10px;
+      --bar-ibx:    #C84609;
+      --bar-sas:    #FFD23F;
+      --bar-other:  #6B5B4A;
+      --alert:      #A44D00;
+    }
+
+    body {
+      font-family: 'Helvetica Neue', Helvetica, Arial, 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── HEADER ──────────────────────────────────────────── */
+    header {
+      background: #170C03;
+      border-bottom: 1px solid #2E1C0C;
+      padding: 0 clamp(20px, 5vw, 48px);
+    }
+    .header-inner {
+      max-width: 900px; margin: 0 auto; height: 56px;
+      display: flex; align-items: center; gap: 16px;
+    }
+    .back-link {
+      font-family: var(--b-sans); font-size: 0.75rem; font-weight: 600;
+      color: #9A8B7A; text-decoration: none; display: flex; align-items: center; gap: 5px;
+      padding: 4px 8px 4px 4px; border-radius: 5px; transition: color 0.15s, background 0.15s; white-space: nowrap;
+    }
+    .back-link:hover { color: #FFD23F; background: rgba(255,210,63,0.1); }
+    .header-divider { width: 1px; height: 20px; background: #4A3B2C; flex-shrink: 0; }
+    header .site-header-title { margin: 0; font-weight: 500;
+      font-family: var(--b-display); font-size: 0.95rem; font-weight: 500;
+      color: #E7DDCE; letter-spacing: -0.02em;
+    }
+
+    /* ── PILL NAV ─────────────────────────────────────────── */
+    .pill-nav {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 10px clamp(20px, 5vw, 48px);
+      display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+    }
+    .pill-nav a {
+      font-size: 0.78rem; font-family: var(--b-sans); font-weight: 600;
+      padding: 4px 12px; border-radius: 20px; text-decoration: none;
+      border: 1px solid var(--border); color: var(--text-muted); background: var(--bg);
+      transition: all 0.15s; white-space: nowrap;
+    }
+    .pill-nav a:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
+    .pill-nav a.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+    .pill-label { font-size: 0.72rem; color: var(--text-faint); font-family: var(--b-sans); white-space: nowrap; }
+
+    /* ── HERO ────────────────────────────────────────────── */
+    .hero {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: clamp(32px, 5vw, 52px) clamp(20px, 5vw, 48px);
+    }
+    .hero-inner { max-width: 900px; margin: 0 auto; }
+    .breadcrumb {
+      font-family: var(--b-sans);
+      font-size: 0.72rem;
+      color: var(--text-faint);
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .breadcrumb a { color: var(--blue); text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+    .breadcrumb span:last-child { color: #A44D00; }
+    .hero-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .hero-tag {
+      font-family: var(--b-sans);
+      font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: normal;
+      color: var(--b-topic-transit-ink); background: #FAF6F1; border: 1px solid #E7DDCE;
+      border-radius: 4px; padding: 3px 8px;
+    }
+    .hero-updated { font-family: var(--b-mono); font-size: 0.72rem; color: var(--text-faint); }
+    .hero h1 {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: clamp(1.4rem, 3vw, 1.85rem);
+      font-weight: 500; color: var(--text);
+      letter-spacing: -0.012em; line-height: 1.2; margin-bottom: 10px;
+    }
+    .hero h1 span { color: var(--blue); }
+    .hero p {
+      font-size: 0.975rem; color: var(--text-muted); max-width: 680px; line-height: 1.7;
+    }
+    .hero p a { color: var(--blue); text-decoration: none; border-bottom: 1px solid var(--blue-mid); }
+    .hero p a:hover { border-color: var(--blue); }
+    .hero-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 20px; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-family: var(--b-sans); font-size: 0.75rem; font-weight: 600;
+      text-decoration: none; border-radius: 7px; padding: 8px 14px;
+      transition: background 0.15s, border-color 0.15s; cursor: pointer; border: none;
+    }
+    .btn-outline { background: var(--surface); color: var(--text-muted); border: 1.5px solid var(--border); }
+    .btn-outline:hover { color: var(--blue); border-color: var(--blue-mid); background: var(--blue-light); }
+
+    /* ── MAIN ────────────────────────────────────────────── */
+    main {
+      flex: 1;
+      padding: clamp(28px, 4vw, 48px) clamp(20px, 5vw, 48px);
+    }
+    .main-inner { max-width: 900px; margin: 0 auto; }
+
+    /* ── CHART ───────────────────────────────────────────── */
+    .chart { display: flex; flex-direction: column; gap: 9px; }
+
+    .bar-row {
+      display: grid;
+      grid-template-columns: 290px 1fr auto;
+      align-items: center;
+      gap: 12px;
+    }
+    @media (max-width: 600px) {
+      .bar-row { grid-template-columns: 1fr; gap: 4px; }
+      .bar-track { order: 2; }
+      .bar-value { order: 3; }
+    }
+
+    .bar-label {
+      font-size: 0.8rem;
+      color: var(--text-mid);
+      font-weight: 500;
+      line-height: 1.3;
+      text-align: right;
+      padding-right: 4px;
+    }
+    .bar-label .sublabel {
+      display: block;
+      font-size: 0.7rem;
+      color: var(--text-faint);
+      font-weight: 400;
+      margin-top: 2px;
+    }
+    @media (max-width: 600px) {
+      .bar-label { text-align: left; padding-right: 0; }
+    }
+
+    .bar-track {
+      height: 24px;
+      background: var(--border);
+      border-radius: 4px;
+      overflow: hidden;
+      position: relative;
+    }
+    .bar-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.6s cubic-bezier(0.4,0,0.2,1);
+    }
+    .bar-fill.ibx   { background: var(--bar-ibx); }
+    .bar-fill.sas   { background: var(--bar-sas); }
+    .bar-fill.other { background: var(--bar-other); }
+
+    .bar-value {
+      font-family: var(--b-mono);
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text);
+      white-space: nowrap;
+      min-width: 96px;
+      text-align: left;
+    }
+    .bar-value.ibx { color: var(--bar-ibx); }
+    .bar-value.outlier { color: var(--alert); }
+
+    .scale-note {
+      font-family: var(--b-sans);
+      font-size: 0.7rem;
+      color: var(--text-faint);
+      margin-top: 12px;
+    }
+
+    /* ── OUTLIER SECTION ─────────────────────────────────── */
+    .outlier-section {
+      margin-top: 28px;
+      padding-top: 20px;
+      border-top: 2px dashed var(--border);
+    }
+    .outlier-title {
+      font-family: var(--b-sans);
+      font-size: 0.8rem; font-weight: 700;
+      color: var(--alert);
+      text-transform: uppercase; letter-spacing: normal;
+      margin-bottom: 6px;
+    }
+    .outlier-note {
+      font-size: 0.78rem; color: var(--text-muted); line-height: 1.55;
+      margin-bottom: 16px; max-width: 720px;
+    }
+    .outlier-section .bar-track { background: #FAF6F1; }
+
+    /* ── CONTEXT BOX ─────────────────────────────────────── */
+    .context-box {
+      margin-top: 28px;
+      padding: 16px 20px;
+      background: var(--blue-light);
+      border: 1px solid var(--blue-mid);
+      border-radius: var(--radius);
+    }
+    .context-box p {
+      font-size: 0.85rem;
+      color: var(--text-mid);
+      line-height: 1.65;
+    }
+    .context-box p + p { margin-top: 8px; }
+    .context-box strong { color: var(--text); }
+
+    /* ── SECONDARY CHART (bubble scatter) ────────────────── */
+    #scatter svg { width: 100%; height: auto; display: block; }
+    .dp-axis { font-family: var(--b-mono); font-size: 13px; fill: var(--text-muted); letter-spacing: 0.02em; }
+    .dp-axis-title { font-family: var(--b-mono); font-size: 13px; font-weight: 700; fill: var(--text-mid); }
+    .sc-name { font-family: var(--b-sans); font-size: 13px; font-weight: 600; }
+    .sc-name-hl { font-family: var(--b-sans); font-size: 14.5px; font-weight: 700; }
+    /* PNG text breathing room (commas/parentheses) */
+    .bar-value, .bar-label .sublabel { letter-spacing: 0.012em; }
+
+    /* ── DATA TABLE ──────────────────────────────────────── */
+    .data-section { margin-top: 28px; }
+    .data-section-head { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+    .data-section-title { font-family: var(--b-display); font-size: 0.95rem; font-weight: 500; color: var(--text); letter-spacing: -0.02em; }
+    .data-section-note { font-size: 0.78rem; color: var(--text-faint); }
+    .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); overflow-x: auto; }
+    table.data-table { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
+    table.data-table thead th { font-family: var(--b-sans); font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: normal; color: var(--text-muted); text-align: left; padding: 11px 14px; border-bottom: 2px solid var(--border); background: var(--bg); white-space: nowrap; }
+    table.data-table tbody td { padding: 10px 14px; border-bottom: 1px solid var(--border); color: var(--text-mid); line-height: 1.4; vertical-align: top; }
+    table.data-table tbody tr:last-child td { border-bottom: none; }
+    table.data-table tbody tr:hover { background: var(--blue-light); }
+    table.data-table .num { font-family: var(--b-mono); text-align: right; white-space: nowrap; color: var(--text); font-weight: 600; }
+    table.data-table th.num { text-align: right; }
+    table.data-table .name-cell { font-weight: 600; color: var(--text); }
+    table.data-table .sub { display: block; font-size: 0.72rem; color: var(--text-faint); font-weight: 400; margin-top: 2px; }
+    .tbl-tag { display: inline-block; font-family: var(--b-sans); font-size: 0.66rem; font-weight: 600; padding: 2px 7px; border-radius: 4px; background: var(--blue-light); color: var(--blue); border: 1px solid var(--blue-mid); white-space: nowrap; }
+    .tbl-tag.done { background: #DCEDF4; color: #226287; border-color: #C6E4EF; }
+    .tbl-tag.plan { background: #FDF3D8; color: #A44D00; border-color: #FFE59A; }
+    @media (max-width: 560px) { table.data-table { font-size: 0.78rem; } table.data-table thead th, table.data-table tbody td { padding: 8px 10px; } }
+
+    /* ── FOOTNOTES ───────────────────────────────────────── */
+    .footnotes {
+      margin-top: 16px;
+      padding: 14px 18px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+    .footnotes p { font-size: 0.78rem; color: var(--text-muted); line-height: 1.6; }
+    .footnotes p + p { margin-top: 6px; }
+    .footnotes strong { color: var(--text-mid); }
+    .footnotes a { color: var(--blue); text-decoration: none; border-bottom: 1px solid var(--blue-mid); }
+    .footnotes a:hover { border-color: var(--blue); }
+
+    /* ── FOOTER ──────────────────────────────────────────── */
+    footer {
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      padding: 20px clamp(20px, 5vw, 48px);
+      margin-top: auto;
+    }
+    .footer-inner {
+      max-width: 900px; margin: 0 auto;
+      display: flex; align-items: center; justify-content: space-between;
+      flex-wrap: wrap; gap: 12px;
+    }
+    .footer-copy { font-size: 0.8rem; color: var(--text-faint); }
+    .footer-links { display: flex; gap: 20px; }
+    .footer-links a { font-size: 0.8rem; color: var(--text-muted); text-decoration: none; transition: color 0.15s; }
+    .footer-links a:hover { color: var(--blue); }
+
+    /* ── EMBED MODAL ───────────────────────────────────────── */
+    .embed-modal { position:fixed; inset:0; background:rgba(0,0,0,0.45); display:flex; align-items:center; justify-content:center; z-index:1000; }
+    .embed-modal-box { background:var(--surface); border-radius:10px; padding:24px; max-width:540px; width:90%; box-shadow:0 8px 32px rgba(0,0,0,0.18); }
+    .embed-modal-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+    .embed-modal-title { font-family: var(--b-display); font-weight: 500; font-size:0.9rem; color:var(--text); }
+    .embed-close { background:none; border:none; font-size:1.1rem; color:var(--text-muted); cursor:pointer; padding:2px 6px; border-radius:4px; }
+    .embed-close:hover { color:var(--text); background:var(--bg); }
+    .embed-modal-box > p { font-size:0.83rem; color:var(--text-muted); margin-bottom:10px; }
+    .embed-textarea { width:100%; height:80px; font-family: var(--b-mono); font-size:0.72rem; border:1px solid var(--border); border-radius:6px; padding:10px; resize:none; color:var(--text-mid); background:var(--bg); margin-bottom:12px; }
+    .embed-copy-btn { background:var(--blue); color:#fff; font-family: var(--b-sans); font-size:0.8rem; font-weight:600; padding:7px 18px; border:none; border-radius:6px; cursor:pointer; transition:background 0.15s; }
+    .embed-copy-btn:hover { background:#A44D00; }
+  
+    /* ── TOPIC COLOUR (2026 rebrand) ──────────────────────
+       Colour encodes what KIND of thing something is. The bright fills are
+       decorative only; the -ink twins are the only variants safe for text
+       (each is tuned to 4.5:1 on Canvas Cream). Tokens: assets/brand.css */
+    .card[data-topics~="transit"] .card-category { color: var(--b-topic-transit-ink); }
+    .card[data-topics~="cb"]      .card-category { color: var(--b-topic-cb-ink); }
+    .card[data-topics~="budget"]  .card-category { color: var(--b-topic-budget-ink); }
+    .card[data-topics~="govtech"] .card-category { color: var(--b-topic-govtech-ink); }
+    .tf-pill[data-topic="transit"]:hover  { border-color: var(--b-topic-transit-ink); color: var(--b-topic-transit-ink); }
+    .tf-pill[data-topic="cb"]:hover       { border-color: var(--b-topic-cb-ink); color: var(--b-topic-cb-ink); }
+    .tf-pill[data-topic="budget"]:hover   { border-color: var(--b-topic-budget-ink); color: var(--b-topic-budget-ink); }
+    .tf-pill[data-topic="govtech"]:hover  { border-color: var(--b-topic-govtech-ink); color: var(--b-topic-govtech-ink); }
+    .tf-pill[data-topic="transit"].active { background: var(--b-topic-transit-ink); border-color: var(--b-topic-transit-ink); color: #fff; }
+    .tf-pill[data-topic="cb"].active      { background: var(--b-topic-cb-ink); border-color: var(--b-topic-cb-ink); color: #fff; }
+    .tf-pill[data-topic="budget"].active  { background: var(--b-topic-budget-ink); border-color: var(--b-topic-budget-ink); color: #fff; }
+    .tf-pill[data-topic="govtech"].active { background: var(--b-topic-govtech-ink); border-color: var(--b-topic-govtech-ink); color: #fff; }
+    /* A row of figures should not read as one colour. */
+    .stat-pill:nth-child(4n+1) .sp-num { color: var(--b-topic-budget-ink); }
+    .stat-pill:nth-child(4n+2) .sp-num { color: var(--b-topic-transit-ink); }
+    .stat-pill:nth-child(4n+3) .sp-num { color: var(--b-topic-cb-ink); }
+    .stat-pill:nth-child(4n+4) .sp-num { color: var(--b-brown); }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
+  <script defer src="/assets/chart.js?v=20260927"></script>
+<style id="support-btn-css">
+.header-actions{display:flex;align-items:center;gap:12px;margin-left:auto;flex-shrink:0;}
+.header-link{font-size:0.8rem;font-weight:500;color:#9A8B7A;text-decoration:none;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border:1px solid rgba(255,255,255,0.15);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
+.header-link:hover{color:#fff;border-color:rgba(255,255,255,0.35);background:rgba(255,255,255,0.08);}
+.header-link svg{flex-shrink:0;}
+.support-link{display:inline-flex;align-items:center;gap:5px;font-size:0.8rem;font-weight:500;color:#FFD23F;text-decoration:none;padding:5px 11px;border:1px solid rgba(207,75,12,0.45);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
+.support-link:hover{color:#fff;background:#C84609;border-color:#C84609;}
+.support-link svg{flex-shrink:0;}
+.footer-support{display:inline-flex;align-items:center;gap:5px;font-size:0.8rem;font-weight:500;color:#C84609;text-decoration:none;padding:5px 11px;border:1px solid rgba(207,75,12,0.45);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
+.footer-support:hover{color:#fff;background:#C84609;border-color:#C84609;}
+.footer-support svg{flex-shrink:0;}
+.footer-support{vertical-align:middle;}
+.footer-links{align-items:center;}
+
+    /* The subpage header carries a mark, a back-link, a page title AND the
+       action buttons, so shed the optional links before the row can overflow.
+       These MUST live in the last style block on the page: several pages carry
+       a second <style id="support-btn-css"> that re-declares .header-actions
+       and would otherwise override the media query. */
+    header .header-inner { min-width: 0; }
+    header .site-header-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    @media (max-width: 900px) { .header-actions .header-link { display: none; } }
+    @media (max-width: 560px) { .header-actions { display: none; } }
+    @media (max-width: 560px) { header .site-header-title { white-space: normal; } }
+  </style>
+  <script defer src="/assets/site.js?v=20261119"></script>
+<!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d0dce16d32c14809bc15038314fb9a13"}'></script><!-- End Cloudflare Web Analytics -->
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="header-inner">
+    <a href="/" class="header-mark" aria-label="NYCuriosity Data home"><img src="/assets/brand/Talbot.svg" alt="" style="height:32px;width:auto;display:block"></a>
+    <a href="/" class="brand" aria-label="NYCuriosity Data home"><img src="/assets/brand/SubLogo_W.svg" alt="NYCuriosity Data" style="height:19px;width:auto;display:block"></a>
+    <a href="/posts/nyc-building-strategies/" class="back-link">← New York Needs to Grow</a>
+    <div class="header-divider"></div>
+    <p class="site-header-title">MTA Expansion Rankings</p>
+    <div class="header-actions">
+      <a href="https://talroded.nycuriosity.com" class="header-link" target="_blank" rel="noopener"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>About</a>
+      <a href="https://www.nycuriosity.com" class="header-link" target="_blank" rel="noopener"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v4H4z"/><path d="M4 10h16v10l-8-4-8 4z"/></svg>Substack</a>
+      <a href="https://buymeacoffee.com/nycuriosity" class="support-link" target="_blank" rel="noopener" aria-label="Support my work on Buy Me a Coffee"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>Support my work</a>
+    </div>
+  </div>
+</header>
+
+<!-- VISUALS NAV -->
+<div class="pill-nav">
+  <span class="pill-label">Visuals in this post:</span>  <a href="../construction-costs/">Construction Costs</a>
+  <a href="../funding-mix/">Funding Mix</a>
+  <a href="../city-of-yes-rezonings/">City of Yes vs. Rezonings</a>
+  <a href="./" class="active">Expansion Rankings</a></div>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-inner">
+    <div class="breadcrumb">
+      <a href="/">data.nycuriosity.com</a>
+      <span>›</span>
+      <a href="/posts/nyc-building-strategies/">New York Needs to Grow</a>
+      <span>›</span>
+      <span>Expansion Rankings</span>
+    </div>
+    <div class="hero-meta">
+      <span class="hero-tag">Transit &amp; Housing</span>
+      <span class="hero-updated">June 2026</span>
+    </div>
+    <h1>Ranking the MTA's <span>Expansion Wishlist</span></h1>
+    <p>
+      Every candidate expansion project in the MTA's 2023
+      <a href="https://future.mta.info/" target="_blank" rel="noopener">20-Year Needs Assessment</a>
+      Comparative Evaluation, ranked by its official cost-effectiveness metric: <strong>cost per minute of door-to-door
+      travel time saved over 30 years</strong> (lower is better). Note the metric carefully, this is cost per
+      <em>minute saved</em>, not cost per rider. The values span $0 to $262 per minute; the chart caps at $15
+      per minute, with five extreme outliers above that range listed in the full data table below.
+    </p>
+    <div class="hero-actions">
+      <a href="/members/?file=nycuriosity_substack_posts/nyc_building_strategies/data/expansion_rankings.csv" class="btn btn-outline">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download CSV (members)
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- CHART -->
+<main>
+  <div class="main-inner">
+
+    <div class="c-actions">
+      <button class="c-action-btn" onclick="downloadChart(this)">&#11015; Download PNG</button>
+      <button class="c-action-btn" onclick="showEmbed()">&#60;/&#62; Embed</button>
+    </div>
+
+    <figure class="chart-card" id="chart-box" data-slug="mta-expansion-rankings">
+      <div class="c-head">
+        <h2 class="c-title">The Interborough Express is the cheapest new rail line the MTA studied, at $1.29 per minute of travel time saved</h2>
+        <p class="c-deck">The MTA's own cost-effectiveness metric: 30-year net present value of capital plus operating costs divided by total door-to-door travel time saved, in 2027 dollars. <strong>This is cost per minute saved, not cost per rider.</strong> Sublabels show project type, total projected 2045 daily riders, and construction cost. Lower is better.</p>
+        <ul class="c-legend">
+          <li class="c-legend-item"><span class="sw" style="background:var(--bar-ibx)"></span> Interborough Express (IBX)</li>
+          <li class="c-legend-item"><span class="sw" style="background:var(--bar-sas)"></span> Second Ave Subway 125th St extension</li>
+          <li class="c-legend-item"><span class="sw" style="background:var(--bar-other)"></span> All other projects</li>
+        </ul>
+      </div>
+      <div class="c-plot">
+        <div class="chart" id="chart"></div>
+        <p class="scale-note">Scale: $0&ndash;$15 per minute saved. Five projects scored above this range and are listed in the full data table below.</p>
+      </div>
+      <figcaption class="c-foot">
+        <div class="c-foot-text">
+          <span>Source: <a href="https://future.mta.info/documents/20-YearNeedsAssessment_ComparativeEvaluation.pdf" target="_blank" rel="noopener">MTA 20-Year Needs Assessment, Comparative Evaluation (2023)</a></span>
+          <span>Note: the Ridgewood Busway scores $0.00 because its projected operating savings exceed its capital cost.</span>
+        </div>
+      </figcaption>
+    </figure>
+
+    <div class="c-actions" style="margin-top:20px;">
+      <button class="c-action-btn" onclick="downloadChart(this)">&#11015; Download PNG</button>
+    </div>
+
+    <figure class="chart-card" data-slug="mta-expansion-bubble-scatter">
+      <div class="c-head">
+        <h2 class="c-title">Three of the four projects that would outcarry the Interborough Express are Second Avenue Subway extensions</h2>
+        <p class="c-deck">Each bubble is one project. Horizontal position is cost per minute of travel time saved, so further left is more efficient; vertical position is projected 2045 daily riders; bubble size is construction cost. The five projects above $15 per minute are off this scale.</p>
+        <ul class="c-legend">
+          <li class="c-legend-item"><span class="sw" style="background:#C84609;border-radius:50%"></span> Interborough Express</li>
+          <li class="c-legend-item"><span class="sw" style="background:#89C4E1;border-radius:50%"></span> 2nd Ave Subway 125th St ext.</li>
+          <li class="c-legend-item"><span class="sw" style="background:#9A8B7A;border-radius:50%"></span> Other projects</li>
+          <li class="c-legend-item" style="color:var(--text-faint)">Bubble size = construction cost</li>
+        </ul>
+      </div>
+      <div class="c-plot">
+        <div id="scatter"></div>
+      </div>
+      <figcaption class="c-foot">
+        <div class="c-foot-text">
+          <span>Source: <a href="https://future.mta.info/documents/20-YearNeedsAssessment_ComparativeEvaluation.pdf" target="_blank" rel="noopener">MTA 20-Year Needs Assessment, Comparative Evaluation (2023)</a></span>
+          <span>Note: ridership counts total 2045 daily riders, including riders diverted from existing MTA service.</span>
+        </div>
+      </figcaption>
+    </figure>
+
+    <div class="context-box">
+      <p>
+        <strong>The IBX scored best of any proposed new line at $1.29 per minute saved</strong>, and it was the
+        only project rated in the top category on 7 of 8 evaluation criteria. Three small projects technically
+        scored better on the raw metric (the Ridgewood Busway and two junction/capacity fixes), but none of them
+        is a new transit line. Among genuine expansion lines, the Second Ave Subway's crosstown extension to
+        125th St/Broadway came in second at $1.43/min.
+      </p>
+    </div>
+
+    <div class="data-section">
+      <div class="data-section-head">
+        <span class="data-section-title">The data behind the chart</span>
+        <span class="data-section-note">All 27 ranked projects, including the five outliers.</span>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr><th class="num">#</th><th>Project</th><th>Type</th><th class="num">Cost/min saved</th><th class="num">Daily riders 2045</th><th class="num">Construction cost</th></tr>
+          </thead>
+          <tbody id="data-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="footnotes">
+      <p><strong>The metric:</strong> "Cost/Time Saved (30 yrs)" is the MTA's own cost-effectiveness measure, the 30-year net present value of capital costs (construction plus fleet, in 2027 dollars) and operating &amp; maintenance costs, divided by total door-to-door travel time saved. The MTA cautions that these are conceptual-level planning estimates, not rigorous cost estimates. The Ridgewood Busway shows $0/min because its projected operating savings over the project lifetime exceed its capital cost.</p>
+      <p><strong>Ridership figures:</strong> The riders shown in each sublabel are <em>total</em> projected 2045 daily riders on the project, including riders diverted from existing MTA services, not net-new riders to the system. The gap can be large: the Second Ave Subway extension to Houston St projects 230,400 total daily riders but only 2,900 net-new.</p>
+      <p><strong>Second Ave Subway Phase 2:</strong> Phase 2 proper (96th St to 125th St/Lexington) was excluded from the Comparative Evaluation because it was already committed and funded. The project evaluated here is the crosstown extension along 125th St to Broadway that would build beyond Phase 2.</p>
+      <p><strong>IBX ridership vintages:</strong> The 118,700 figure shown is the 2023 evaluation's 2045 forecast. The MTA's <a href="https://www.mta.info/project/interborough-express" target="_blank" rel="noopener">current project page</a> estimates 160,000 weekday riders, a later planning estimate, not the same forecast.</p>
+      <p><strong>Excluded from the bars:</strong> Two LIRR infill stations (Elmhurst and Sunnyside) were evaluated but have no computed cost-effectiveness value because they produce no net travel time savings, they add stops that delay existing riders. They are in the downloadable CSV.</p>
+      <p><strong>Sources:</strong> <a href="https://future.mta.info/documents/20-YearNeedsAssessment_ComparativeEvaluation.pdf" target="_blank" rel="noopener">MTA 20-Year Needs Assessment, Appendix 06: Comparative Evaluation (2023)</a>; the full assessment is at <a href="https://future.mta.info/" target="_blank" rel="noopener">future.mta.info</a>. IBX current estimates from the <a href="https://www.mta.info/project/interborough-express" target="_blank" rel="noopener">MTA Interborough Express project page</a>.</p>
+    </div>
+
+  </div>
+</main>
+
+<!-- EMBED MODAL -->
+<div id="embedModal" class="embed-modal" style="display:none">
+  <div class="embed-modal-box">
+    <div class="embed-modal-header">
+      <span class="embed-modal-title">Embed this chart</span>
+      <button class="embed-close" onclick="closeEmbed()">✕</button>
+    </div>
+    <p>Copy and paste into your webpage:</p>
+    <textarea id="embedCode" class="embed-textarea" readonly></textarea>
+    <button class="embed-copy-btn" onclick="copyEmbed()">Copy code</button>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <span class="footer-copy">© NYCuriosity · Tal Roded</span>
+    <nav class="footer-links" style="flex-wrap:wrap">
+      <a href="https://buymeacoffee.com/nycuriosity" class="footer-support" target="_blank" rel="noopener" aria-label="Support my work on Buy Me a Coffee"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>Support my work</a>
+      <a href="https://talroded.nycuriosity.com" target="_blank" rel="noopener">About</a>
+      <a href="https://www.nycuriosity.com" target="_blank" rel="noopener" aria-label="NYCuriosity on Substack" title="Substack" style="display:inline-flex;align-items:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M22.539 8.242H1.46V5.406h21.08v2.836zM1.46 10.812V24L12 18.11 22.54 24V10.812H1.46zM22.54 0H1.46v2.836h21.08V0z"/></svg></a>
+      <a href="https://www.linkedin.com/in/tal-roded" target="_blank" rel="noopener" aria-label="Tal Roded on LinkedIn" title="LinkedIn" style="display:inline-flex;align-items:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.225 0z"/></svg></a>
+      <a href="https://x.com/TalR24" target="_blank" rel="noopener" aria-label="NYCuriosity on X" title="X" style="display:inline-flex;align-items:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z"/></svg></a>
+      <a href="https://www.instagram.com/talroded" target="_blank" rel="noopener" aria-label="Tal Roded on Instagram" title="Instagram" style="display:inline-flex;align-items:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg></a>
+      <a href="https://www.tiktok.com/@tal_nycuriosity" target="_blank" rel="noopener" aria-label="NYCuriosity on TikTok" title="TikTok" style="display:inline-flex;align-items:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/></svg></a>
+      <a href="https://www.youtube.com/@nycuriosity-yt" target="_blank" rel="noopener" aria-label="NYCuriosity on YouTube" title="YouTube" style="display:inline-flex;align-items:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814z M9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg></a>
+      <a href="https://github.com/TalR24/nycur-data-website" target="_blank" rel="noopener" aria-label="TalR24 on GitHub" title="GitHub" style="display:inline-flex;align-items:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg></a>
+    </nav>
+  </div>
+</footer>
+
+<script>
+  // Cost per minute of door-to-door travel time saved over 30 years (2027 dollars).
+  // Source: MTA 20-Year Needs Assessment, Appendix 06: Comparative Evaluation (2023).
+  // riders = total projected 2045 daily riders (incl. diverted); costB = construction cost, billions of 2027$.
+  const MAIN = [
+    { name: "Ridgewood Busway",                                          cat: "busway",               val: 0.00,  riders: 8900,   costB: 0.03  },
+    { name: "Utica–Nostrand Junction Capacity Improvements",             cat: "capacity improvement", val: 0.28,  riders: 319900, costB: 0.41  },
+    { name: "Utica Ave BRT — Alt A (Kings Plaza to Woodhull Hospital)",  cat: "BRT",                  val: 0.36,  riders: 71900,  costB: 0.30  },
+    { name: "Interborough Express LRT (IBX)",                            cat: "light rail",           val: 1.29,  riders: 118700, costB: 5.54, type: "ibx" },
+    { name: "Second Ave Subway West to 125th St/Broadway",               cat: "subway extension",     val: 1.43,  riders: 239700, costB: 7.54, type: "sas" },
+    { name: "Staten Island North Shore BRT",                             cat: "BRT",                  val: 1.46,  riders: 32000,  costB: 1.30  },
+    { name: "Second Ave Subway West to 137th St/Broadway (alt.)",        cat: "subway extension",     val: 1.52,  riders: 256800, costB: 9.10  },
+    { name: "Utica Ave — Alt C Subway to Church Ave plus BRT",           cat: "subway extension",     val: 1.73,  riders: 81200,  costB: 6.86  },
+    { name: "Staten Island West Shore BRT via Korean War Veterans Pkwy", cat: "BRT",                  val: 1.95,  riders: 16900,  costB: 1.87  },
+    { name: "Harlem Line Capacity Improvements",                         cat: "capacity improvement", val: 2.46,  riders: 83700,  costB: 1.00  },
+    { name: "Staten Island West Shore BRT via West Shore Expwy (alt.)",  cat: "BRT",                  val: 3.34,  riders: 8200,   costB: 2.10  },
+    { name: "Second Ave Subway South to Houston St",                     cat: "subway extension",     val: 4.47,  riders: 230400, costB: 13.50 },
+    { name: "Hudson Line to Penn Station",                               cat: "commuter rail",        val: 4.54,  riders: 18900,  costB: 0.75  },
+    { name: "Utica Ave — Alt B Subway to Kings Plaza",                   cat: "subway extension",     val: 4.82,  riders: 55600,  costB: 15.79 },
+    { name: "Inner New Haven Line Yard (Port Chester)",                  cat: "capacity improvement", val: 5.07,  riders: 6000,   costB: 0.39  },
+    { name: "Port Jefferson Branch Capacity Improvements",               cat: "capacity improvement", val: 6.18,  riders: 27900,  costB: 3.12  },
+    { name: "Danbury–Southeast Connection",                              cat: "commuter rail",        val: 6.35,  riders: 2600,   costB: 0.82  },
+    { name: "Rockaway Beach Branch Reactivation (NYCT subway)",          cat: "subway extension",     val: 6.72,  riders: 39200,  costB: 5.94  },
+    { name: "New Lots Ave 3 Line Extension to Flatlands",                cat: "subway extension",     val: 8.64,  riders: 8600,   costB: 1.78  },
+    { name: "Stewart Airport Commuter Rail",                             cat: "commuter rail",        val: 10.65, riders: 4300,   costB: 1.40  },
+    { name: "New Lots Ave 3 Line Extension to Spring Creek (alt.)",      cat: "subway extension",     val: 11.74, riders: 9800,   costB: 2.50  },
+    { name: "Speonk–Montauk Capacity Improvements",                      cat: "capacity improvement", val: 13.66, riders: 1500,   costB: 0.26  }
+  ];
+
+  const OUTLIERS = [
+    { name: "Port Jervis Line Capacity Improvements (Midpoint Yard)",    cat: "capacity improvement", val: 40.46,  riders: 11000, costB: 0.36  },
+    { name: "Lower Montauk Branch Reactivation",                         cat: "commuter rail",        val: 62.41,  riders: 9200,  costB: 4.23  },
+    { name: "Tenth Ave Station on 7 Line",                               cat: "infill station",       val: 81.29,  riders: 55000, costB: 1.90  },
+    { name: "W Line to Red Hook",                                        cat: "subway extension",     val: 90.46,  riders: 7600,  costB: 11.21 },
+    { name: "Rockaway Beach Branch Reactivation (LIRR alt.)",            cat: "commuter rail",        val: 262.26, riders: 14500, costB: 4.10  }
+  ];
+
+  const MAIN_MAX = 15;        // main chart linear scale cap, $/min
+  const OUTLIER_MAX = 262.26; // outlier section compressed scale, $/min
+
+  function fmtCost(b) {
+    const n = b * 1e9;
+    if (n >= 1e9) return '$' + (n / 1e9).toFixed(1).replace(/\.0$/, '') + 'B';
+    if (n >= 1e6) return '$' + Math.round(n / 1e6) + 'M';
+    return '$' + n.toLocaleString();
+  }
+  function fmtVal(v) {
+    return '$' + v.toFixed(2) + '/min';
+  }
+
+  function renderRows(items, containerId, max, outlier) {
+    const el = document.getElementById(containerId);
+    items.forEach(item => {
+      const type = item.type || 'other';
+      const pct = Math.min(item.val / max * 100, 100).toFixed(2);
+      const valueClass = outlier ? type + ' outlier' : type;
+      const row = document.createElement('div');
+      row.className = 'bar-row';
+      row.innerHTML = `
+        <div class="bar-label">
+          ${item.name}
+          <span class="sublabel">${item.cat} · ${item.riders.toLocaleString()} riders · ${fmtCost(item.costB)}</span>
+        </div>
+        <div class="bar-track">
+          <div class="bar-fill ${type}" style="width:0%" data-pct="${pct}"></div>
+        </div>
+        <div class="bar-value ${valueClass}">${fmtVal(item.val)}</div>
+      `;
+      el.appendChild(row);
+    });
+  }
+
+  renderRows(MAIN, 'chart', MAIN_MAX, false);
+
+  // Animate bars in after a short delay
+  requestAnimationFrame(() => {
+    setTimeout(() => {
+      document.querySelectorAll('.bar-fill').forEach(el => {
+        el.style.width = el.dataset.pct + '%';
+      });
+    }, 80);
+  });
+
+  // Secondary visual: bubble scatter — cost per minute vs. ridership, size = construction cost
+  (function buildScatter() {
+    const wrap = document.getElementById('scatter');
+    if (!wrap) return;
+    const W = 1000, H = 470, x0 = 78, x1 = 976, yt = 28, yb = 396;
+    const xMax = 15, yMax = 330000;
+    const xOf = v => x0 + Math.min(v, xMax) / xMax * (x1 - x0);
+    const yOf = r => yb - Math.min(r, yMax) / yMax * (yb - yt);
+    const rOf = b => 5 + Math.sqrt(b) * 5.5;
+    let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Scatter plot of MTA expansion projects: cost per minute saved versus projected daily riders, bubble size by construction cost">`;
+    [0, 100000, 200000, 300000].forEach(r => {
+      const gy = yOf(r).toFixed(1);
+      s += `<line x1="${x0}" y1="${gy}" x2="${x1}" y2="${gy}" stroke="#F3F2F1" stroke-width="1"/>`;
+      s += `<text x="${x0 - 10}" y="${(+gy + 4).toFixed(1)}" text-anchor="end" class="dp-axis">${r / 1000}k</text>`;
+    });
+    s += `<line x1="${x0}" y1="${yb}" x2="${x1}" y2="${yb}" stroke="#D3C4AF" stroke-width="1.5"/>`;
+    [0, 5, 10, 15].forEach(v => {
+      const gx = xOf(v).toFixed(1);
+      s += `<line x1="${gx}" y1="${yt}" x2="${gx}" y2="${yb}" stroke="#F2EBE1" stroke-width="1"/>`;
+      s += `<text x="${gx}" y="${yb + 22}" text-anchor="middle" class="dp-axis">$${v}</text>`;
+    });
+    s += `<text x="${((x0 + x1) / 2).toFixed(1)}" y="${yb + 46}" text-anchor="middle" class="dp-axis-title">Cost per minute of travel time saved (lower is better)</text>`;
+    const midY = ((yt + yb) / 2).toFixed(1);
+    s += `<text x="18" y="${midY}" text-anchor="middle" class="dp-axis-title" transform="rotate(-90 18 ${midY})">Projected 2045 daily riders</text>`;
+    MAIN.forEach(d => {
+      let fill = 'rgba(156,163,175,0.45)', stroke = '#9A8B7A';
+      if (d.type === 'ibx') { fill = 'rgba(207,75,12,0.75)'; stroke = '#A44D00'; }
+      else if (d.type === 'sas') { fill = 'rgba(194,65,12,0.70)'; stroke = '#9A3F12'; }
+      s += `<circle cx="${xOf(d.val).toFixed(1)}" cy="${yOf(d.riders).toFixed(1)}" r="${rOf(d.costB).toFixed(1)}" fill="${fill}" stroke="${stroke}" stroke-width="1.3"/>`;
+    });
+    const LABEL = {
+      'Interborough Express LRT (IBX)': 'IBX',
+      'Second Ave Subway West to 125th St/Broadway': 'SAS to 125th St',
+      'Utica–Nostrand Junction Capacity Improvements': 'Utica–Nostrand',
+      'Second Ave Subway South to Houston St': '2nd Ave to Houston'
+    };
+    MAIN.forEach(d => {
+      if (!LABEL[d.name]) return;
+      const cx = xOf(d.val), cy = yOf(d.riders), r = rOf(d.costB);
+      const hl = d.type === 'ibx' || d.type === 'sas';
+      const col = d.type === 'ibx' ? '#692807' : d.type === 'sas' ? '#9A3F12' : '#6B5B4A';
+      s += `<text x="${(cx + r + 6).toFixed(1)}" y="${(cy + 4).toFixed(1)}" text-anchor="start" class="${hl ? 'sc-name-hl' : 'sc-name'}" fill="${col}">${LABEL[d.name]}</text>`;
+    });
+    s += `</svg>`;
+    wrap.innerHTML = s;
+  })();
+
+  // Build the data table from the same MAIN + OUTLIERS arrays that drive the chart
+  (function buildTable() {
+    const tbody = document.getElementById('data-table-body');
+    if (!tbody) return;
+    MAIN.concat(OUTLIERS).forEach((item, i) => {
+      const tr = document.createElement('tr');
+      if (item.type === 'ibx' || item.type === 'sas') tr.style.background = 'var(--blue-light)';
+      tr.innerHTML = `
+        <td class="num">${i + 1}</td>
+        <td class="name-cell">${item.name}</td>
+        <td>${item.cat}</td>
+        <td class="num">${fmtVal(item.val)}</td>
+        <td class="num">${item.riders.toLocaleString()}</td>
+        <td class="num">${fmtCost(item.costB)}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  })();
+</script>
+
+</body>
+</html>
