@@ -46,7 +46,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from fetch_fiscal_impacts import OUTPUT_PATH, BASE_URL, create_session, save_output, fetch_legistar_file  # noqa: E402
 
 LAWS_PATH = (Path(__file__).resolve().parent.parent
-             / "civic_reference/legislation_implementation_tracker/data/laws.json")
+             / "tools/legislation/implementation/data/laws.json")
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s", datefmt="%H:%M:%S")
 log = logging.getLogger("backfill")

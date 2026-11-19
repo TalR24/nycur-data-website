@@ -6,7 +6,7 @@ Code subagents on the Max plan; the API path needs Tal's approval first.
 
 Independent LLM verification of every record in fiscal_impacts.json against
 the statement actually used, judged by the fiscal rules in
-civic_reference/nyc_council_legislation_trackers/quality/criteria.md.
+tools/legislation/quality/criteria.md.
 
 Runs in GitHub Actions (ANTHROPIC_API_KEY). Mirrors the SDK usage of
 extract_fiscal_data() in fetch_fiscal_impacts.py: model "claude-opus-5",
@@ -49,11 +49,11 @@ from claude_batch import cached_content, Usage, message_text  # noqa: E402
 
 USAGE = Usage()  # caching only here (verify_fiscal.py is not in batch mode's scope)
 
-FISCAL_DATA = REPO / "civic_reference" / "nyc_council_fiscal_impacts_tracker" / "data" / "fiscal_impacts.json"
+FISCAL_DATA = REPO / "tools/legislation/fiscal/data/fiscal_impacts.json"
 OVERRIDES_PATH = HERE / "fiscal_overrides.json"
-CRITERIA = REPO / "civic_reference" / "nyc_council_legislation_trackers" / "quality" / "criteria.md"
+CRITERIA = REPO / "tools/legislation/quality/criteria.md"
 CACHE_DIR = HERE / "cache" / "fiscal_verify"
-OUT_DIR = REPO / "civic_reference" / "nyc_council_legislation_trackers" / "quality"
+OUT_DIR = REPO / "tools/legislation/quality"
 
 VERIFY_MODEL = "claude-opus-5"
 TEXT_CAP = 150_000

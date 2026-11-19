@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Build compact inline-SVG paths for the 59 community districts, adapted from
-civic_reference/nyc_council_legislation_trackers/pipeline/build_district_map.py
+tools/legislation/pipeline/build_district_map.py
 (same projection, ring-splitting Douglas-Peucker, and output shape).
 
 Source: NYC Open Data "Community Districts" (5crt-au7u), boro_cd +

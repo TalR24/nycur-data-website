@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Regression suite for the NYC Council Fiscal Impacts Tracker data
-(civic_reference/nyc_council_fiscal_impacts_tracker/data/fiscal_impacts.json).
+(tools/legislation/fiscal/data/fiscal_impacts.json).
 
 Sibling of the implementation tracker's validate_obligations.py, written Sep 2
 2026 after two defects sat in the live table for months because every earlier
@@ -43,11 +43,11 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent
-TRACKER = REPO / "civic_reference" / "nyc_council_fiscal_impacts_tracker"
+TRACKER = REPO / "tools/legislation/fiscal"
 DATA = TRACKER / "data" / "fiscal_impacts.json"
 AGENCY_DATA = TRACKER / "agency-fiscal-impact" / "data.json"
 SKIP = HERE / "no_impact_matters.json"
-LAWS = REPO / "civic_reference" / "legislation_implementation_tracker" / "data" / "laws.json"
+LAWS = REPO / "tools/legislation/implementation/data/laws.json"
 
 sys.path.insert(0, str(HERE))
 from agency_canon import canonicalize  # noqa: E402

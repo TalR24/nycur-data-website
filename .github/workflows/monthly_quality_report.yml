@@ -4,7 +4,7 @@
 # tracker's validate_fiscal_impacts.py (Sep 2026), score_gold.py --strict-new,
 # the NYS validate_duties.py and an input-freshness check (Nov 10 2026), commits a dated
 # report with a month-over-month diff to
-# civic_reference/legislation_implementation_tracker/quality_reports/,
+# tools/legislation/implementation/quality_reports/,
 # and, until Oct 17 2026, emailed Tal the headline + delta. Now
 # DIGEST_DELIVERY=file: the summary goes to premium ops_digest/pending/
 # trackers_quality.{html,txt,json} for monthly_ops_digest.yml (one monthly ops
@@ -51,22 +51,22 @@ jobs:
         # only requests crashed them on Oct 3 2026 and the report still said clean
         run: |
           pip install -r pipeline/requirements.txt
-          pip install -r civic_reference/legislation_implementation_tracker/pipeline/requirements.txt
+          pip install -r tools/legislation/implementation/pipeline/requirements.txt
 
       - name: Crosswalk copies are identical
-        run: python3 civic_reference/legislation_implementation_tracker/pipeline/tests/test_crosswalk_copies.py
+        run: python3 tools/legislation/implementation/pipeline/tests/test_crosswalk_copies.py
 
       - name: Run quality report
         id: report
         continue-on-error: true   # commit the report, then fail the run below
-        working-directory: civic_reference/legislation_implementation_tracker
+        working-directory: tools/legislation/implementation
         run: python3 pipeline/monthly_quality_report.py
 
       - name: Commit report
         run: |
           git config user.name "quality-report-bot"
           git config user.email "actions@github.com"
-          git add civic_reference/legislation_implementation_tracker/quality_reports/
+          git add tools/legislation/implementation/quality_reports/
           if git diff --cached --quiet; then
             echo "No report changes."
           else
@@ -97,7 +97,7 @@ jobs:
         # With no premium checkout the folder is missing: use email mode then.
         run: |
           if [ ! -d "$RUNNER_TEMP/premium/.git" ]; then export DIGEST_DELIVERY=email; fi
-          python3 civic_reference/legislation_implementation_tracker/pipeline/email_quality_summary.py
+          python3 tools/legislation/implementation/pipeline/email_quality_summary.py
 
       - name: Push the section to the premium repo
         id: push
@@ -127,7 +127,7 @@ jobs:
           DIGEST_DELIVERY: email
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
-        run: python3 civic_reference/legislation_implementation_tracker/pipeline/email_quality_summary.py
+        run: python3 tools/legislation/implementation/pipeline/email_quality_summary.py
 
       - name: Fail the run if a validator crashed
         if: ${{ always() && steps.report.outcome == 'failure' }}

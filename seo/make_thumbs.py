@@ -28,7 +28,7 @@ POSTS = '/posts/'
 
 # Homepage tool cards: slug -> page whose top is the best miniature of the tool.
 TOOLS = {
-    'nyc_council_legislation_trackers': '/civic_reference/nyc_council_fiscal_impacts_tracker/agency-fiscal-impact/',
+    'nyc_council_legislation_trackers': '/tools/legislation/fiscal/agency-fiscal-impact/',
     'cb-tools': '/cb-tools/member-tracker/',
     'state_capacity_ecosystem': 'https://statecapacityecosystem.com/ecosystem/',
     'nys_legislation_trackers': '/civic_reference/nys_legislation_trackers/duties/',
@@ -36,8 +36,8 @@ TOOLS = {
 
 # Cards on the tool hubs (Obligations, Powers, Fiscal overview, /tools/community-boards/): file name -> target page.
 # A target with nothing visual (methodology) gets no file and the card shows a flat palette block.
-LT = '/civic_reference/legislation_implementation_tracker/'
-FT = '/civic_reference/nyc_council_fiscal_impacts_tracker/'
+LT = '/tools/legislation/implementation/'
+FT = '/tools/legislation/fiscal/'
 TOOL_CARDS = {
     'tool--obligations-table': LT + 'obligations-table/',
     'tool--agency-workload': LT + 'agency-workload/',
@@ -142,8 +142,8 @@ OVERRIDES = {
     # pages that draw with divs or a map rather than svg/canvas/table: take the viewport below the header
     'https://statecapacityecosystem.com/ecosystem/': {},
     # Nov 11 2026: these two showed the nav pills and page title; capture the tool itself
-    '/civic_reference/legislation_implementation_tracker/deadline-timeline/': {'sel': '#content', 'top': True},
-    '/civic_reference/legislation_implementation_tracker/law/': {'sel': '#lawList', 'top': True},
+    '/tools/legislation/implementation/deadline-timeline/': {'sel': '#content', 'top': True},
+    '/tools/legislation/implementation/law/': {'sel': '#lawList', 'top': True},
 }
 
 

@@ -7,7 +7,7 @@ Runs on the Max plan as PACKETS, no API key and no model call:
     (subagents answer each packet into DIR/results/<key>.json)
     python3 extract_duties.py --ingest DIR --session Y   validate, resolve agencies, write data/duties/Y.json, powers/Y.json, reask/Y.json, dropped/Y.json
 
-Reuses the Council extractor (civic_reference/legislation_implementation_tracker/pipeline/extract_obligations.py): its
+Reuses the Council extractor (tools/legislation/implementation/pipeline/extract_obligations.py): its
 schema, duty/power/neither definitions, quote checks, deadline arithmetic, packet emit/ingest and agency matcher. Only the
 prompt wording (state and local government instead of NYC agencies) and the agency crosswalk are NYS-specific.
 """
@@ -19,7 +19,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 SITE_ROOT = next(p for p in Path(__file__).resolve().parents if (p / "CNAME").is_file())  # repo root by marker, safe across folder moves
 DATA = HERE.parent / "data"
-COUNCIL = SITE_ROOT / "civic_reference/legislation_implementation_tracker"
+COUNCIL = SITE_ROOT / "tools/legislation/implementation"
 sys.path.insert(0, str(COUNCIL / "pipeline"))
 sys.path.insert(0, str(HERE))
 import extract_obligations as eo  # noqa: E402

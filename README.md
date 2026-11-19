@@ -16,9 +16,9 @@ The site holds three kinds of content:
 | Path | What it holds |
 |---|---|
 | `index.html` | Homepage: start cards, tool cards, post cards (newest first). |
-| `civic_reference/nyc_council_legislation_trackers/` | Trackers umbrella hub, Council Members, Agencies (also the NYC government bodies browser), shared multiselect and tracker-switch JS, `data/*.json`, `pipeline/`, `quality/` (gold sets and scorers), `quality_reports/`. |
-| `civic_reference/nyc_council_fiscal_impacts_tracker/` | Fiscal Impacts Tracker: bill table, overview and four chart pages, methodology, `data/`. Pipeline doc: `PIPELINE_REFERENCE.md`. |
-| `civic_reference/legislation_implementation_tracker/` | Obligations Tracker, Powers Tracker, Law Explorer (`law/`), deadline timeline, agency workload, member tools page (`alerts/`), methodology, `data/`, `pipeline/`, `quality_reports/`. |
+| `tools/legislation/` | Trackers umbrella hub, Council Members, Agencies (also the NYC government bodies browser), shared multiselect and tracker-switch JS, `data/*.json`, `pipeline/`, `quality/` (gold sets and scorers), `quality_reports/`. |
+| `tools/legislation/fiscal/` | Fiscal Impacts Tracker: bill table, overview and four chart pages, methodology, `data/`. Pipeline doc: `PIPELINE_REFERENCE.md`. |
+| `tools/legislation/implementation/` | Obligations Tracker, Powers Tracker, Law Explorer (`law/`), deadline timeline, agency workload, member tools page (`alerts/`), methodology, `data/`, `pipeline/`, `quality_reports/`. |
 | `tools/community-boards/member-guide/` | Slide deck and handout: how to be an effective community board member. |
 | `tools/community-boards/block-party-maps/` | Block Party demo maps for Manhattan community boards (`data/` holds per-board JS payloads). |
 | `tools/gov-bodies/`, `civic_reference/state_capacity_ecosystem/` | Redirect stubs only. |
@@ -44,9 +44,9 @@ Other repos this site touches: `statecapacityecosystem` (the State Capacity Ecos
 ## Tools
 
 ### NYC Council Legislation Trackers
-Hub: `/civic_reference/nyc_council_legislation_trackers/`. Free, no data downloads for anyone, members included.
-- **Fiscal Impacts Tracker** (`/civic_reference/nyc_council_fiscal_impacts_tracker/`): Council bills with a Finance Division fiscal impact statement showing a new non-zero cost or revenue, by agency, sponsor, committee and year.
-- **Obligations Tracker** (`/civic_reference/legislation_implementation_tracker/`): the duties each enacted local law since 2014 gives agencies, with deadlines and DORIS report filing status. **Powers Tracker** (`.../powers/`): the powers those laws grant.
+Hub: `/tools/legislation/`. Free, no data downloads for anyone, members included.
+- **Fiscal Impacts Tracker** (`/tools/legislation/fiscal/`): Council bills with a Finance Division fiscal impact statement showing a new non-zero cost or revenue, by agency, sponsor, committee and year.
+- **Obligations Tracker** (`/tools/legislation/implementation/`): the duties each enacted local law since 2014 gives agencies, with deadlines and DORIS report filing status. **Powers Tracker** (`.../powers/`): the powers those laws grant.
 - **Council Members** and **Agencies** profiles, and the **Law Explorer** (`.../law/`).
 - Member email alerts and "Ask the Trackers" live on the premium origin; this repo builds their inputs (`send_alerts.py`, `build_ask_index.py`).
 
@@ -85,9 +85,9 @@ All CSS and JS are loaded from shared assets or inline per page; there is no bui
 ### Data pipelines
 | Dataset | Scripts | Output |
 |---|---|---|
-| Fiscal impacts | `pipeline/fetch_fiscal_impacts.py`, `regenerate_agency_data.py`, `validate_fiscal_impacts.py` | `civic_reference/nyc_council_fiscal_impacts_tracker/data/fiscal_impacts.json`, `agency-fiscal-impact/data.json` |
-| Obligations and powers | `civic_reference/legislation_implementation_tracker/pipeline/` (`fetch_enacted_laws.py`, `extract_obligations.py`, `reextract_queued.py`, `build_report_filings.py`, `label_kinds.py`, `validate_obligations.py`) | `legislation_implementation_tracker/data/` (`laws.json`, `obligations.json`, `powers.json`, `report_filings.json`) |
-| Council members, agencies | `civic_reference/nyc_council_legislation_trackers/pipeline/` (`rebuild_profiles.sh` runs the roster, stats, agency, votes and context builders) | `nyc_council_legislation_trackers/data/*.json` |
+| Fiscal impacts | `pipeline/fetch_fiscal_impacts.py`, `regenerate_agency_data.py`, `validate_fiscal_impacts.py` | `tools/legislation/fiscal/data/fiscal_impacts.json`, `agency-fiscal-impact/data.json` |
+| Obligations and powers | `tools/legislation/implementation/pipeline/` (`fetch_enacted_laws.py`, `extract_obligations.py`, `reextract_queued.py`, `build_report_filings.py`, `label_kinds.py`, `validate_obligations.py`) | `legislation_implementation_tracker/data/` (`laws.json`, `obligations.json`, `powers.json`, `report_filings.json`) |
+| Council members, agencies | `tools/legislation/pipeline/` (`rebuild_profiles.sh` runs the roster, stats, agency, votes and context builders) | `nyc_council_legislation_trackers/data/*.json` |
 | CB member tracker | `cb-tools/member-tracker/pipeline/` (`fetch_open_data.py`, `fetch_board_pages.py`, `recrawl_gaps.py`, `extract_rosters.py`, `build_tracker_data.py`) | `member-tracker/data/boards.json`, `members.json`, `pipeline/extracted/rosters/` |
 | Ask index | `build_ask_index.py` | `worker/ask_index.json` in the premium repo |
 
@@ -96,7 +96,7 @@ Extraction runs on the Claude Max plan first (a monthly cloud routine using `--e
 ### SEO and LLM readiness (`seo/`)
 - Every live page needs title, meta description, canonical and og tags. `seo/seo_check.py` checks the contract (`--file` for one page, `--all --live` for production, including fetches as GPTBot, ClaudeBot and PerplexityBot and a check of `/llms.txt`).
 - `python3 seo/build_sitemap.py --site data` regenerates `sitemap.xml`, `llms.txt` and the JSON-LD together; add `--check` to report drift. Never hand-edit `sitemap.xml`. Run it after adding, renaming or removing a page.
-- `seo/static_snapshot.py` writes pre-rendered copies of JS-built content between `<!-- static:<id>:start -->` and `<!-- static:<id>:end -->` markers inside the element the JS fills, so crawlers without JavaScript read real numbers (10 rows at most). Builders: `pipeline/build_fiscal_static_snapshots.py`, `civic_reference/legislation_implementation_tracker/pipeline/build_static_snapshots.py` (11 obligations and umbrella pages), `cb-tools/member-tracker/pipeline/build_static_boards.py`.
+- `seo/static_snapshot.py` writes pre-rendered copies of JS-built content between `<!-- static:<id>:start -->` and `<!-- static:<id>:end -->` markers inside the element the JS fills, so crawlers without JavaScript read real numbers (10 rows at most). Builders: `pipeline/build_fiscal_static_snapshots.py`, `tools/legislation/implementation/pipeline/build_static_snapshots.py` (11 obligations and umbrella pages), `cb-tools/member-tracker/pipeline/build_static_boards.py`.
 - `robots.txt` explicitly allows the AI crawlers.
 - `seo/gsc_pull.py` and `seo/report_email.py` build the monthly SEO report; `seo/sce_monthly.py` builds the State Capacity Ecosystem report.
 

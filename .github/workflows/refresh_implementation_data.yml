@@ -71,10 +71,10 @@ jobs:
           python-version-file: .python-version
 
       - name: Install dependencies
-        run: pip install -r civic_reference/legislation_implementation_tracker/pipeline/requirements.txt
+        run: pip install -r tools/legislation/implementation/pipeline/requirements.txt
 
       - name: Fetch newly enacted laws
-        working-directory: civic_reference/legislation_implementation_tracker
+        working-directory: tools/legislation/implementation
         run: python3 pipeline/fetch_enacted_laws.py --incremental
 
       # BILLING: the marker gate (MAX_REFRESH_GATE=1) skips any id the Max
@@ -83,7 +83,7 @@ jobs:
       # price, cached instructions); a manual "sync" dispatch input can force
       # the old synchronous path (still cached, just not batched) instead.
       - name: Re-extract queued laws
-        working-directory: civic_reference/legislation_implementation_tracker
+        working-directory: tools/legislation/implementation
         continue-on-error: true
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
@@ -100,13 +100,13 @@ jobs:
       # went green with report_filings.json a month stale).
       - name: Refresh DORIS report filing status
         id: filings
-        working-directory: civic_reference/legislation_implementation_tracker
+        working-directory: tools/legislation/implementation
         continue-on-error: true
         run: python3 pipeline/build_report_filings.py
 
       # BILLING: same marker gate + batch + caching as above.
       - name: Extract obligations for new laws
-        working-directory: civic_reference/legislation_implementation_tracker
+        working-directory: tools/legislation/implementation
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           CLAUDE_BATCH: ${{ github.event.inputs.sync == 'true' && '0' || '1' }}
@@ -118,16 +118,16 @@ jobs:
       # and the last step of the job turns the run red after the commit
       - name: Rebuild agency and council member profiles
         id: profiles
-        working-directory: civic_reference/nyc_council_legislation_trackers
+        working-directory: tools/legislation
         continue-on-error: true
         run: bash pipeline/rebuild_profiles.sh
 
       - name: Pre-render static snapshots (tracker pages readable without JS)
         continue-on-error: true
         run: |
-          python3 civic_reference/legislation_implementation_tracker/pipeline/build_static_snapshots.py
-          git add -u -- 'civic_reference/legislation_implementation_tracker/*index.html' \
-                        'civic_reference/nyc_council_legislation_trackers/*index.html'
+          python3 tools/legislation/implementation/pipeline/build_static_snapshots.py
+          git add -u -- 'tools/legislation/implementation/*index.html' \
+                        'tools/legislation/*index.html'
 
       # a failed push must never lose a batch again (Sep 26 2026, copied from
       # claude_backfill.yml): the rebuilt data survives 30 days as an artifact
@@ -137,20 +137,20 @@ jobs:
         with:
           name: monthly-refresh-output
           path: |
-            civic_reference/legislation_implementation_tracker/data/laws.json
-            civic_reference/legislation_implementation_tracker/data/obligations.json
-            civic_reference/legislation_implementation_tracker/data/powers.json
-            civic_reference/legislation_implementation_tracker/data/restated_links.json
-            civic_reference/legislation_implementation_tracker/data/summary.json
-            civic_reference/legislation_implementation_tracker/data/report_filings.json
-            civic_reference/legislation_implementation_tracker/pipeline/reextract_queue.json
-            civic_reference/legislation_implementation_tracker/pipeline/batch_state_new.json
-            civic_reference/legislation_implementation_tracker/pipeline/batch_state_reextract.json
-            civic_reference/nyc_council_legislation_trackers/data/members.json
-            civic_reference/nyc_council_legislation_trackers/data/agencies.json
-            civic_reference/nyc_council_legislation_trackers/data/member_votes.json
-            civic_reference/nyc_council_legislation_trackers/data/member_context.json
-            civic_reference/nyc_council_legislation_trackers/data/council_members.json
+            tools/legislation/implementation/data/laws.json
+            tools/legislation/implementation/data/obligations.json
+            tools/legislation/implementation/data/powers.json
+            tools/legislation/implementation/data/restated_links.json
+            tools/legislation/implementation/data/summary.json
+            tools/legislation/implementation/data/report_filings.json
+            tools/legislation/implementation/pipeline/reextract_queue.json
+            tools/legislation/implementation/pipeline/batch_state_new.json
+            tools/legislation/implementation/pipeline/batch_state_reextract.json
+            tools/legislation/data/members.json
+            tools/legislation/data/agencies.json
+            tools/legislation/data/member_votes.json
+            tools/legislation/data/member_context.json
+            tools/legislation/data/council_members.json
           retention-days: 30
 
       # a hard failure blocks the commit and fails the job (review finding 9,
@@ -158,33 +158,33 @@ jobs:
       # which holds text only for the laws it just fetched (cache/ is
       # gitignored), so only the structural checks can fire here.
       - name: Data validator (a hard failure blocks the commit)
-        working-directory: civic_reference/legislation_implementation_tracker
+        working-directory: tools/legislation/implementation
         run: python3 pipeline/validate_obligations.py --strict
 
       - name: Commit and push if data changed
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add civic_reference/legislation_implementation_tracker/data/laws.json \
-                  civic_reference/legislation_implementation_tracker/data/obligations.json \
-                  civic_reference/legislation_implementation_tracker/data/powers.json \
-                  civic_reference/legislation_implementation_tracker/data/restated_links.json \
-                  civic_reference/legislation_implementation_tracker/data/summary.json \
-                  civic_reference/legislation_implementation_tracker/data/report_filings.json \
-                  civic_reference/legislation_implementation_tracker/pipeline/reextract_queue.json \
-                  civic_reference/nyc_council_legislation_trackers/data/members.json \
-                  civic_reference/nyc_council_legislation_trackers/data/agencies.json \
-                  civic_reference/nyc_council_legislation_trackers/data/member_votes.json \
-                  civic_reference/nyc_council_legislation_trackers/data/member_context.json \
-                  civic_reference/nyc_council_legislation_trackers/data/council_members.json
+          git add tools/legislation/implementation/data/laws.json \
+                  tools/legislation/implementation/data/obligations.json \
+                  tools/legislation/implementation/data/powers.json \
+                  tools/legislation/implementation/data/restated_links.json \
+                  tools/legislation/implementation/data/summary.json \
+                  tools/legislation/implementation/data/report_filings.json \
+                  tools/legislation/implementation/pipeline/reextract_queue.json \
+                  tools/legislation/data/members.json \
+                  tools/legislation/data/agencies.json \
+                  tools/legislation/data/member_votes.json \
+                  tools/legislation/data/member_context.json \
+                  tools/legislation/data/council_members.json
           # batch_state_new.json / batch_state_reextract.json exist only
           # while their batch is pending: `-A` stages the file whether this
           # run created it, changed it, or (clear_state, batch done) deleted
           # it. A plain `git add <path>` on an already-deleted, never-tracked
           # path is a no-op, so a completed batch's deletion never committed
           # without this (Sep 28 2026 review).
-          for f in civic_reference/legislation_implementation_tracker/pipeline/batch_state_new.json \
-                  civic_reference/legislation_implementation_tracker/pipeline/batch_state_reextract.json \
+          for f in tools/legislation/implementation/pipeline/batch_state_new.json \
+                  tools/legislation/implementation/pipeline/batch_state_reextract.json \
                   pipeline/max_refresh.json; do
             if git ls-files --error-unmatch "$f" >/dev/null 2>&1 || [ -f "$f" ]; then
               git add -A -- "$f"
@@ -208,7 +208,7 @@ jobs:
       - name: Lint the alert scripts
         run: |
           pip install --quiet pyflakes
-          python3 -m pyflakes civic_reference/nyc_council_legislation_trackers/pipeline/send_alerts.py cb-tools/member-tracker/pipeline/send_cb_alerts.py
+          python3 -m pyflakes tools/legislation/pipeline/send_alerts.py cb-tools/member-tracker/pipeline/send_cb_alerts.py
 
       - name: Send member alerts
         id: alerts
@@ -223,7 +223,7 @@ jobs:
           # Access), never in this public repo. The trackers offer no data
           # downloads (Tal, Sep 24 2026), so no CSV is copied there.
           git clone --depth 1 "https://TalR24:${PREMIUM_PUSH_TOKEN}@github.com/TalR24/nycur-data-premium.git" /tmp/premium
-          PREMIUM_DIR=/tmp/premium python3 civic_reference/nyc_council_legislation_trackers/pipeline/send_alerts.py
+          PREMIUM_DIR=/tmp/premium python3 tools/legislation/pipeline/send_alerts.py
           cd /tmp/premium
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -255,7 +255,7 @@ jobs:
           if [ ! -d /tmp/premium ]; then
             git clone --depth 1 "https://TalR24:${PREMIUM_PUSH_TOKEN}@github.com/TalR24/nycur-data-premium.git" /tmp/premium
           fi
-          PREMIUM_DIR=/tmp/premium python3 civic_reference/nyc_council_legislation_trackers/pipeline/build_ask_index.py
+          PREMIUM_DIR=/tmp/premium python3 tools/legislation/pipeline/build_ask_index.py
           cd /tmp/premium
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -282,7 +282,7 @@ jobs:
 
       - name: Fail the run if the DORIS filings were not refreshed
         if: ${{ always() && steps.filings.outcome != 'skipped' }}
-        working-directory: civic_reference/legislation_implementation_tracker
+        working-directory: tools/legislation/implementation
         run: |
           if [ "${{ steps.filings.outcome }}" = "failure" ]; then
             echo "::error::Refresh DORIS report filing status failed after retries; report_filings.json was not refreshed."
@@ -312,7 +312,7 @@ jobs:
           python-version-file: .python-version
 
       - name: Install dependencies
-        run: pip install -r civic_reference/legislation_implementation_tracker/pipeline/requirements.txt
+        run: pip install -r tools/legislation/implementation/pipeline/requirements.txt
 
       # BILLING: this resumes a pending batch (still half price, still
       # cached); it makes no new API call when neither state file is present.
@@ -321,7 +321,7 @@ jobs:
       # json), so a pending new-laws batch is not re-submitted as a
       # re-extraction batch or vice versa.
       - name: Resume pending batches, if any
-        working-directory: civic_reference/legislation_implementation_tracker
+        working-directory: tools/legislation/implementation
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           CLAUDE_BATCH: "1"
@@ -346,7 +346,7 @@ jobs:
       # and the last step of the job turns the run red after the commit
       - name: Rebuild agency and council member profiles
         id: profiles
-        working-directory: civic_reference/nyc_council_legislation_trackers
+        working-directory: tools/legislation
         continue-on-error: true
         if: env.RESUME_RAN == '1'
         run: bash pipeline/rebuild_profiles.sh
@@ -355,9 +355,9 @@ jobs:
         continue-on-error: true
         if: env.RESUME_RAN == '1'
         run: |
-          python3 civic_reference/legislation_implementation_tracker/pipeline/build_static_snapshots.py
-          git add -u -- 'civic_reference/legislation_implementation_tracker/*index.html' \
-                        'civic_reference/nyc_council_legislation_trackers/*index.html'
+          python3 tools/legislation/implementation/pipeline/build_static_snapshots.py
+          git add -u -- 'tools/legislation/implementation/*index.html' \
+                        'tools/legislation/*index.html'
 
       - name: Upload resume output
         if: ${{ always() && env.RESUME_RAN == '1' }}
@@ -365,23 +365,23 @@ jobs:
         with:
           name: resume-refresh-output
           path: |
-            civic_reference/legislation_implementation_tracker/data/obligations.json
-            civic_reference/legislation_implementation_tracker/data/powers.json
-            civic_reference/legislation_implementation_tracker/data/summary.json
-            civic_reference/legislation_implementation_tracker/pipeline/reextract_queue.json
-            civic_reference/legislation_implementation_tracker/pipeline/batch_state_new.json
-            civic_reference/legislation_implementation_tracker/pipeline/batch_state_reextract.json
-            civic_reference/nyc_council_legislation_trackers/data/members.json
-            civic_reference/nyc_council_legislation_trackers/data/agencies.json
-            civic_reference/nyc_council_legislation_trackers/data/member_votes.json
-            civic_reference/nyc_council_legislation_trackers/data/member_context.json
-            civic_reference/nyc_council_legislation_trackers/data/council_members.json
+            tools/legislation/implementation/data/obligations.json
+            tools/legislation/implementation/data/powers.json
+            tools/legislation/implementation/data/summary.json
+            tools/legislation/implementation/pipeline/reextract_queue.json
+            tools/legislation/implementation/pipeline/batch_state_new.json
+            tools/legislation/implementation/pipeline/batch_state_reextract.json
+            tools/legislation/data/members.json
+            tools/legislation/data/agencies.json
+            tools/legislation/data/member_votes.json
+            tools/legislation/data/member_context.json
+            tools/legislation/data/council_members.json
           if-no-files-found: ignore
           retention-days: 30
 
       - name: Data validator (a hard failure blocks the commit)
         if: env.RESUME_RAN == '1'
-        working-directory: civic_reference/legislation_implementation_tracker
+        working-directory: tools/legislation/implementation
         run: python3 pipeline/validate_obligations.py --strict
 
       - name: Commit and push if resume produced data
@@ -389,19 +389,19 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add civic_reference/legislation_implementation_tracker/data/obligations.json \
-                  civic_reference/legislation_implementation_tracker/data/powers.json \
-                  civic_reference/legislation_implementation_tracker/data/summary.json \
-                  civic_reference/legislation_implementation_tracker/pipeline/reextract_queue.json \
-                  civic_reference/nyc_council_legislation_trackers/data/members.json \
-                  civic_reference/nyc_council_legislation_trackers/data/agencies.json \
-                  civic_reference/nyc_council_legislation_trackers/data/member_votes.json \
-                  civic_reference/nyc_council_legislation_trackers/data/member_context.json \
-                  civic_reference/nyc_council_legislation_trackers/data/council_members.json
+          git add tools/legislation/implementation/data/obligations.json \
+                  tools/legislation/implementation/data/powers.json \
+                  tools/legislation/implementation/data/summary.json \
+                  tools/legislation/implementation/pipeline/reextract_queue.json \
+                  tools/legislation/data/members.json \
+                  tools/legislation/data/agencies.json \
+                  tools/legislation/data/member_votes.json \
+                  tools/legislation/data/member_context.json \
+                  tools/legislation/data/council_members.json
           # -A so a completed batch's state-file DELETION (clear_state) is
           # staged too, not just a creation or a content change.
-          for f in civic_reference/legislation_implementation_tracker/pipeline/batch_state_new.json \
-                  civic_reference/legislation_implementation_tracker/pipeline/batch_state_reextract.json \
+          for f in tools/legislation/implementation/pipeline/batch_state_new.json \
+                  tools/legislation/implementation/pipeline/batch_state_reextract.json \
                   pipeline/max_refresh.json; do
             if git ls-files --error-unmatch "$f" >/dev/null 2>&1 || [ -f "$f" ]; then
               git add -A -- "$f"
@@ -427,7 +427,7 @@ jobs:
       # timeout before the resumed data is safely pushed.
       - name: Refresh DORIS report filing status
         id: filings
-        working-directory: civic_reference/legislation_implementation_tracker
+        working-directory: tools/legislation/implementation
         continue-on-error: true
         if: env.RESUME_RAN == '1'
         run: python3 pipeline/build_report_filings.py
@@ -437,7 +437,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add civic_reference/legislation_implementation_tracker/data/report_filings.json
+          git add tools/legislation/implementation/data/report_filings.json
           if git diff --cached --quiet; then echo "Filings unchanged."; exit 0; fi
           git commit -m "Resume refresh: DORIS report filing status"
           pushed=0
@@ -463,7 +463,7 @@ jobs:
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
         run: |
           git clone --depth 1 "https://TalR24:${PREMIUM_PUSH_TOKEN}@github.com/TalR24/nycur-data-premium.git" /tmp/premium
-          PREMIUM_DIR=/tmp/premium python3 civic_reference/nyc_council_legislation_trackers/pipeline/send_alerts.py
+          PREMIUM_DIR=/tmp/premium python3 tools/legislation/pipeline/send_alerts.py
           cd /tmp/premium
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -492,7 +492,7 @@ jobs:
           if [ ! -d /tmp/premium ]; then
             git clone --depth 1 "https://TalR24:${PREMIUM_PUSH_TOKEN}@github.com/TalR24/nycur-data-premium.git" /tmp/premium
           fi
-          PREMIUM_DIR=/tmp/premium python3 civic_reference/nyc_council_legislation_trackers/pipeline/build_ask_index.py
+          PREMIUM_DIR=/tmp/premium python3 tools/legislation/pipeline/build_ask_index.py
           cd /tmp/premium
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"

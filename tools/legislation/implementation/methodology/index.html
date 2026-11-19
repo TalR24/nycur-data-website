@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#170C03">
+  <title>Methodology — Obligations Tracker — NYCuriosity</title>
+  <meta name="description" content="How the Obligations Tracker works: where the law text comes from, what counts as an agency obligation, how quotes are verified, how deadlines are computed, and how agencies are identified and normalized.">
+  <link rel="canonical" href="https://data.nycuriosity.com/tools/legislation/implementation/methodology/">
+  <meta property="og:image" content="https://data.nycuriosity.com/website_logo.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta property="og:type"        content="website">
+  <meta property="og:url"         content="https://data.nycuriosity.com/tools/legislation/implementation/methodology/">
+  <meta property="og:title"       content="Methodology — Obligations Tracker">
+  <meta property="og:description" content="How the tracker turns 2,100+ enacted local laws into a verified database of agency obligations.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/brand.css">
+  <link rel="stylesheet" href="/assets/chart.css?v=20260927">
+  <script defer src="/assets/chart.js?v=20260927"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --blue: #C84609; --blue-hover: #A44D00; --blue-light: #FAF6F1; --blue-mid: #EDC3A5;
+      --text: #1A1208; --text-mid: #4A3B2C; --text-muted: #6B5B4A; --text-faint: #9A8B7A;
+      --bg: #FAF6F1; --surface: #ffffff; --border: #E7DDCE;
+      --shadow-sm: 0 1px 3px rgba(26,18,8,0.08); --radius: 10px; --red: #A44D00;
+    }
+    body { font-family: 'Helvetica Neue', Helvetica, Arial, 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
+
+    header { background: #170C03; border-bottom: 1px solid #2E1C0C; padding: 0 clamp(20px, 5vw, 48px); }
+    .header-inner { max-width: 1100px; margin: 0 auto; height: 56px; display: flex; align-items: center; gap: 16px; }
+    .back-link { font-family: var(--b-sans); font-size: 0.75rem; font-weight: 600; color: #9A8B7A; text-decoration: none; white-space: nowrap; }
+    .back-link:hover { color: #FFD23F; }
+    .header-divider { width: 1px; height: 20px; background: #4A3B2C; }
+    header .site-header-title { margin: 0; font-weight: 500; font-family: var(--b-display); font-size: 0.95rem; font-weight: 500; color: #E7DDCE; letter-spacing: -0.02em; }
+
+    .pill-nav { background: var(--surface); border-bottom: 1px solid var(--border); padding: 10px clamp(20px, 5vw, 48px); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .pill-nav a { font-size: 0.78rem; font-family: var(--b-sans); font-weight: 600; padding: 4px 12px; border-radius: 20px; text-decoration: none; border: 1px solid var(--border); color: var(--text-muted); background: var(--bg); transition: all 0.15s; white-space: nowrap; }
+    .pill-nav a:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
+    .pill-nav a.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+    .pill-label { font-size: 0.72rem; color: var(--text-faint); font-family: var(--b-sans); white-space: nowrap; }
+
+    .hero { background: var(--surface); border-bottom: 1px solid var(--border); padding: clamp(28px, 4vw, 44px) clamp(20px, 5vw, 48px); }
+    .hero-inner { max-width: 1100px; margin: 0 auto; }
+    .breadcrumb { font-family: var(--b-sans); font-size: 0.72rem; color: var(--text-faint); margin-bottom: 14px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .breadcrumb a { color: var(--blue); text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+    .breadcrumb span:last-child { color: #A44D00; }
+    .hero-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .hero-tag { font-family: var(--b-sans); font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: normal; color: var(--blue); background: #FAF6F1; border: 1px solid #E7DDCE; border-radius: 4px; padding: 3px 8px; }
+    .hero h1 { font-family: 'Playfair Display', Georgia, serif; font-size: clamp(1.4rem, 3vw, 1.8rem); font-weight: 500; letter-spacing: -0.012em; line-height: 1.25; margin-bottom: 10px; }
+    .hero h1 span { color: var(--blue); }
+    .hero p { font-size: 0.95rem; color: var(--text-muted); max-width: 720px; line-height: 1.7; }
+
+    main { flex: 1; padding: clamp(24px, 4vw, 40px) clamp(20px, 5vw, 48px); }
+    .main-inner { max-width: 780px; margin: 0 auto; }
+    .m-section { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 22px 26px; margin-bottom: 16px; }
+    .m-section h2 { font-family: var(--b-display); font-size: 1rem; font-weight: 500; letter-spacing: -0.02em; line-height: 1.35; margin-bottom: 10px; }
+    .m-section p { font-size: 0.9rem; color: var(--text-mid); line-height: 1.75; margin-bottom: 10px; }
+    .m-section p:last-child { margin-bottom: 0; }
+    .m-section a { color: var(--blue); text-decoration: none; border-bottom: 1px solid var(--blue-mid); }
+    .m-section a:hover { border-color: var(--blue); }
+    .m-section ul { margin: 0 0 10px 20px; }
+    .m-section li { font-size: 0.9rem; color: var(--text-mid); line-height: 1.7; margin-bottom: 6px; }
+    .m-section code { font-family: var(--b-mono); font-size: 0.8rem; background: var(--bg); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; }
+    .type-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px; margin-bottom: 10px; }
+    .type-chip { font-family: var(--b-sans); font-size: 0.72rem; padding: 5px 10px; border-radius: 6px; background: var(--blue-light); border: 1px solid var(--blue-mid); color: var(--text-mid); }
+
+    footer { background: var(--surface); border-top: 1px solid var(--border); padding: 20px clamp(20px, 5vw, 48px); }
+    .footer-inner { max-width: 1100px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+    .footer-copy { font-size: 0.8rem; color: var(--text-faint); }
+    .footer-links { display: flex; gap: 20px; align-items: center; }
+    .footer-links a { font-size: 0.8rem; color: var(--text-muted); text-decoration: none; }
+    .footer-links a:hover { color: var(--blue); }
+    .footer-support { display: inline-flex; align-items: center; gap: 5px; font-size: 0.8rem; font-weight: 500; color: #C84609; text-decoration: none; padding: 5px 11px; border: 1px solid rgba(207,75,12,0.45); border-radius: 6px; transition: color .15s, border-color .15s, background .15s; vertical-align: middle; }
+    .footer-support:hover { color: #fff; background: #C84609; border-color: #C84609; }
+  
+    /* ── TOPIC COLOUR (2026 rebrand) ──────────────────────
+       Colour encodes what KIND of thing something is. The bright fills are
+       decorative only; the -ink twins are the only variants safe for text
+       (each is tuned to 4.5:1 on Canvas Cream). Tokens: assets/brand.css */
+    .card[data-topics~="transit"] .card-category { color: var(--b-topic-transit-ink); }
+    .card[data-topics~="cb"]      .card-category { color: var(--b-topic-cb-ink); }
+    .card[data-topics~="budget"]  .card-category { color: var(--b-topic-budget-ink); }
+    .card[data-topics~="govtech"] .card-category { color: var(--b-topic-govtech-ink); }
+    .tf-pill[data-topic="transit"]:hover  { border-color: var(--b-topic-transit-ink); color: var(--b-topic-transit-ink); }
+    .tf-pill[data-topic="cb"]:hover       { border-color: var(--b-topic-cb-ink); color: var(--b-topic-cb-ink); }
+    .tf-pill[data-topic="budget"]:hover   { border-color: var(--b-topic-budget-ink); color: var(--b-topic-budget-ink); }
+    .tf-pill[data-topic="govtech"]:hover  { border-color: var(--b-topic-govtech-ink); color: var(--b-topic-govtech-ink); }
+    .tf-pill[data-topic="transit"].active { background: var(--b-topic-transit-ink); border-color: var(--b-topic-transit-ink); color: #fff; }
+    .tf-pill[data-topic="cb"].active      { background: var(--b-topic-cb-ink); border-color: var(--b-topic-cb-ink); color: #fff; }
+    .tf-pill[data-topic="budget"].active  { background: var(--b-topic-budget-ink); border-color: var(--b-topic-budget-ink); color: #fff; }
+    .tf-pill[data-topic="govtech"].active { background: var(--b-topic-govtech-ink); border-color: var(--b-topic-govtech-ink); color: #fff; }
+    /* A row of figures should not read as one colour. */
+    .stat-pill:nth-child(4n+1) .sp-num { color: var(--b-topic-budget-ink); }
+    .stat-pill:nth-child(4n+2) .sp-num { color: var(--b-topic-transit-ink); }
+    .stat-pill:nth-child(4n+3) .sp-num { color: var(--b-topic-cb-ink); }
+    .stat-pill:nth-child(4n+4) .sp-num { color: var(--b-brown); }
+  
+    /* Header action buttons on subpages (Tal, Sep 2026 — previously hub-only). */
+    .header-actions { display:flex; align-items:center; gap:12px; margin-left:auto; flex-shrink:0; }
+    .header-link { font-size:0.8rem; font-weight:500; color:#9A8B7A; text-decoration:none; display:inline-flex; align-items:center; gap:5px; padding:5px 11px; border:1px solid rgba(255,255,255,0.15); border-radius:6px; transition:color .15s,border-color .15s,background .15s; white-space:nowrap; }
+    .header-link:hover { color:#fff; border-color:rgba(255,255,255,0.35); background:rgba(255,255,255,0.08); }
+    .header-link svg, .support-link svg { flex-shrink:0; }
+    .support-link { font-size:0.8rem; font-weight:500; color:#FFD23F; text-decoration:none; display:inline-flex; align-items:center; gap:5px; padding:5px 11px; border:1px solid rgba(200,70,9,0.45); border-radius:6px; transition:color .15s,border-color .15s,background .15s; white-space:nowrap; }
+    .support-link:hover { color:#fff; background:#C84609; border-color:#C84609; }
+    /* The subpage header also carries a back-link and a page title, so shed the
+       optional buttons before the row can overflow. The footer keeps all three. */
+  
+    /* The subpage header carries a mark, a back-link, a page title AND the
+       action buttons, so shed the optional links before the row can overflow.
+       These MUST live in the last style block on the page: several pages carry
+       a second <style id="support-btn-css"> that re-declares .header-actions
+       and would otherwise override the media query. */
+    header .header-inner { min-width: 0; }
+    header .site-header-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    @media (max-width: 900px) { .header-actions .header-link { display: none; } }
+    @media (max-width: 560px) { .header-actions { display: none; } }
+    @media (max-width: 560px) { header .site-header-title { white-space: normal; } }
+    @media (max-width: 520px) { header .site-header-title { display: none; } }
+  </style>
+  <script defer src="/assets/site.js?v=20261119"></script>
+<!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d0dce16d32c14809bc15038314fb9a13"}'></script><!-- End Cloudflare Web Analytics -->
+  <script defer src="/tools/legislation/assets/tracker-switch.js?v=8"></script>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <a href="/" class="header-mark" aria-label="NYCuriosity Data home"><img src="/assets/brand/Talbot.svg" alt="" style="height:32px;width:auto;display:block"></a>
+    <a href="/" class="brand" aria-label="NYCuriosity Data home"><img src="/assets/brand/SubLogo_W.svg" alt="NYCuriosity Data" style="height:19px;width:auto;display:block"></a>
+    <a href="../" class="back-link">← Obligations Tracker</a>
+    <div class="header-divider"></div>
+    <p class="site-header-title">Methodology</p>
+    <div class="header-actions">
+      <a href="https://talroded.nycuriosity.com" class="header-link" target="_blank" rel="noopener"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>About</a>
+      <a href="https://www.nycuriosity.com" class="header-link" target="_blank" rel="noopener"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v4H4z"/><path d="M4 10h16v10l-8-4-8 4z"/></svg>Substack</a>
+      <a href="https://buymeacoffee.com/nycuriosity" class="support-link" target="_blank" rel="noopener" aria-label="Support my work on Buy Me a Coffee"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>Support my work</a>
+    </div>
+  </div>
+</header>
+
+<div class="pill-nav">
+  <!-- shared views bar: every tracker page that belongs to no single tracker (Tal, Sep 24 2026) -->
+  <span class="pill-label">Views in this tool:</span>
+  <a href="/tools/legislation/fiscal/overview/">Fiscal Impacts overview</a>
+  <a href="/tools/legislation/implementation/">Obligations overview</a>
+  <a href="/tools/legislation/implementation/powers/">Powers overview</a>
+  <a href="/tools/legislation/council-members/">Council Members</a>
+  <a href="/tools/legislation/agencies/">Agencies</a>
+  <a href="/tools/legislation/implementation/law/">Law Explorer</a>
+  <a href="/tools/legislation/implementation/methodology/" class="active">Methodology</a>
+</div>
+
+<div class="hero">
+  <div class="hero-inner">
+    <div class="breadcrumb">
+      <a href="/">data.nycuriosity.com</a>
+      <span>›</span>
+      <a href="/tools/legislation/">NYC Council Legislation Trackers</a>
+      <span>›</span>
+      <span>Methodology</span>
+    </div>
+    <div class="hero-meta">
+      <span class="hero-tag">Civic Reference</span>
+    </div>
+    <h1>How every local law since 2014 becomes <span>a verified obligations database</span></h1>
+    <p>
+      Every number on this tracker traces back to the enacted text of a local law. This page explains
+      each step: where the text comes from, what counts as an obligation, how every quote is checked,
+      how deadlines are computed, and how agencies are identified.
+    </p>
+  </div>
+</div>
+
+<main>
+  <div class="main-inner">
+
+    <div class="m-section">
+      <h2>The source is the enacted law text itself, not summaries</h2>
+      <p>
+        The tracker covers every Introduction enacted as a local law from January 2014 to the present,
+        enumerated from <a href="https://legistar.council.nyc.gov" target="_blank" rel="noopener">NYC Legistar</a>
+        and refreshed monthly. For each law it reads the full enacted text as published on the law's
+        Legistar page, the version signed into law, not the bill summary, the committee report, or press
+        coverage. Fiscal impact statements are a separate document and feed the companion
+        <a href="/tools/legislation/fiscal/">Fiscal Impacts Tracker</a>.
+      </p>
+    </div>
+
+    <div class="m-section">
+      <h2>An obligation is a mandatory duty placed on city government</h2>
+      <p>
+        Each law is parsed into individual obligations: one record per distinct duty the law imposes on a
+        NYC government entity, an agency, office, commission, board, or officer. The rules:
+      </p>
+      <ul>
+        <li><strong>Mandatory language only.</strong> "Shall", "must", "is required to", or a prohibition on the agency. Authority a law grants with "may" is a power, listed in its own table (next section).</li>
+        <li><strong>City government only.</strong> Duties the law places on private parties (employers, landlords, businesses) appear only through the agency work they create: the enforcement, rulemaking, or notices the law assigns to government.</li>
+        <li><strong>One record per duty.</strong> A recurring annual report is one obligation with annual recurrence, not one per year. A duty shared by several named agencies becomes one record per agency.</li>
+        <li><strong>Consultation is not responsibility.</strong> "In consultation with" agencies are not credited with the duty; only the lead agency is.</li>
+        <li><strong>Street co-namings collapse to one DOT record.</strong> Designating a street name implies DOT fabricates and installs the signs, a single signage obligation rather than one per honoree.</li>
+      </ul>
+    </div>
+
+    <div class="m-section" id="powers">
+      <h2>Powers a law grants are listed apart from the duties it imposes</h2>
+      <p>
+        Laws also give agencies authority they can choose to use: to inspect a building, write rules,
+        charge a fee, or impose a penalty. The obligations table leaves those out, because it measures
+        what agencies must deliver. They appear in the <a href="../powers-table/">powers table</a> and on
+        each law's page, with no deadline, since nothing is due until an agency decides to act.
+      </p>
+      <ul>
+        <li><strong>A duty requires the agency to act or to refrain.</strong> "Shall", "must", "is required to". A prohibition on the agency is a duty even when it uses "may": "no agency may purchase incandescent lamps" is a burden the agency carries.</li>
+        <li><strong>A power authorizes the agency to act.</strong> "May", "is authorized to", "is empowered to", and "shall have the power to", which grants authority the agency can leave unused.</li>
+        <li><strong>A provision that requires anything is a duty.</strong> "The department shall inspect each site and may charge a fee" is recorded as a duty.</li>
+        <li><strong>Private parties' options are neither.</strong> "A tenant may elect" or "an owner may apply" grants nothing to government and is not recorded as an agency power.</li>
+      </ul>
+      <p>
+        Each record is sorted twice. A language model reads the full provision the quote comes from and
+        labels it with the definitions above, and a fixed rule in code reads the same text. The model's
+        label decides, except for a provision with no verb of its own, such as an item in a list of what a
+        report must include, where the rule reads the list's opening sentence and decides. The rule removes
+        the month of May before it reads, so "no later than May 1, 2025" is never mistaken for permission.
+        Records where the two disagree are counted every month, so a change in either shows up. In a blind
+        check of 350 records, the published label matched an independent reviewer on 86 of the 90 that
+        neither method had been tuned on. Check a record against the
+        law before relying on its category.
+      </p>
+      <p>
+        Every law is read for both its duties and its powers.
+      </p>
+    </div>
+
+    <div class="m-section">
+      <h2>Extraction is done by a language model, then checked mechanically</h2>
+      <p>
+        Duties and powers are extracted with Claude Sonnet 5, Anthropic's language model, which found 92% of
+        the duties and powers in a blind review of 37 laws, against 69% for Claude Haiku. Every law is read
+        by Sonnet 5 except the <span data-sum="protected"><!-- static:meth-protected:start -->
+10
+<!-- static:meth-protected:end --></span> whose records were corrected by hand and keep
+        those hand-checked records. For each law the model returns
+        the responsible entity, a plain-language action summary, the deliverable type, the citation, the
+        deadline clause, the recurrence, and a verbatim quote of the operative statutory language.
+      </p>
+      <p>
+        The quote is the honesty anchor: every quoted passage is mechanically string-checked against the
+        law text, after normalizing whitespace and typography, and re-extracted once if it fails. <span data-sum="quote_pct"><!-- static:meth-quote-pct:start -->
+99.6%
+<!-- static:meth-quote-pct:end --></span> of
+        quotes verify (<span data-sum="quote_n"><!-- static:meth-quote-n:start -->
+8,248
+<!-- static:meth-quote-n:end --></span> of <span data-sum="duties"><!-- static:meth-duties:start -->
+8,285
+<!-- static:meth-duties:end --></span> duties, as of <span data-sum="as_of"><!-- static:meth-as-of:start -->
+November 10, 2026
+<!-- static:meth-as-of:end --></span>); records whose quote could not be verified verbatim are flagged in the
+        interface as possibly paraphrased. Interpretation of statutory language ultimately requires human
+        review, so treat the tracker as a research aid rather than legal advice.
+      </p>
+    </div>
+
+    <div class="m-section">
+      <h2>Deadlines are computed in code, never estimated by the model</h2>
+      <p>
+        The model reports only the deadline's structure, a fixed date or an offset such as "within 180 days
+        of the effective date". All date arithmetic happens in code, chained from the enactment date recorded
+        on Legistar: enactment date plus the effective-date clause plus the deadline offset. Months convert
+        at 30 days and years at 365, so a computed date can differ from an agency's own reading by a few days.
+      </p>
+      <p>
+        A sanity rule rejects impossible dates: a law cannot set a deadline earlier than its own enactment,
+        so any such date, usually a historical date mentioned in the code section being amended, or a clause
+        that lapsed before signing, is treated as undated. The deadline's original wording stays visible in
+        the record detail either way.
+      </p>
+      <p>
+        A past-due deadline means the date passed, not that the agency failed to deliver. For reports
+        DORIS tracks, the tracker shows whether they were filed (see below); for rules and every other
+        deliverable it tells you what to go ask for.
+      </p>
+    </div>
+
+    <div class="m-section">
+      <h2>Every deliverable falls into one of fourteen types</h2>
+      <div class="type-grid">
+        <span class="type-chip">rulemaking</span>
+        <span class="type-chip">report</span>
+        <span class="type-chip">study or audit</span>
+        <span class="type-chip">plan or strategy</span>
+        <span class="type-chip">program or service</span>
+        <span class="type-chip">database or data publication</span>
+        <span class="type-chip">signage or installation</span>
+        <span class="type-chip">outreach or education</span>
+        <span class="type-chip">training</span>
+        <span class="type-chip">enforcement or inspection</span>
+        <span class="type-chip">monitoring or testing</span>
+        <span class="type-chip">notice or posting</span>
+        <span class="type-chip">designation or staffing</span>
+        <span class="type-chip">other</span>
+      </div>
+      <p>
+        Reports lead the count, followed by notices or postings, data publications, and programs and services.
+        The <a href="../agency-workload/">agency workload chart</a> groups these into five buckets for readability.
+      </p>
+    </div>
+
+    <div class="m-section">
+      <h2>Agency names are normalized so every variation groups as one agency</h2>
+      <p>
+        Laws refer to the same agency many ways: "DOT", "the department of transportation", "the commissioner".
+        Every responsible entity is resolved through a crosswalk built from NYC Open Data's
+        <a href="https://data.cityofnewyork.us/City-Government/NYC-Agencies-and-Governance-Organizations/t3jq-9nkf/about_data" target="_blank" rel="noopener">NYC Agencies and Governance Organizations</a>
+        dataset, 742 name variants mapping to canonical abbreviations, including renames
+        (Department of Consumer Affairs to DCWP, DoITT to OTI). Generic references such as "the department"
+        are resolved from each law's own definitions section; a curated per-law resolution table covers the
+        cases where the definition lives elsewhere in the code. When a law names an agency inside a
+        conditional phrase ("the enforcing agency (Department of Consumer and Worker Protection or designated
+        agency)"), the resolution is accepted only when exactly one concrete agency emerges.
+      </p>
+      <p>
+        Offices, task forces and boards that sit inside a department are counted under that department and
+        shown with their own name. Duties a law gives every agency are grouped as Citywide (all agencies),
+        and the City Council and borough presidents appear as public bodies rather than agencies.
+      </p>
+      <p>
+        <span data-sum="agency_pct"><!-- static:meth-agency-pct:start -->
+99.2%
+<!-- static:meth-agency-pct:end --></span> of duties and powers resolve to a city agency or a named
+        public body. The rest name no one the trackers can place, such as a duty the law gives "the
+        administrating agency" without saying which, and are kept as written or labeled <em>Unspecified</em>
+        rather than passed off as an agency. The exact phrase the law uses is always preserved in the record detail.
+      </p>
+    </div>
+
+    <div class="m-section">
+      <h2>Council members are matched to their legislation by service years</h2>
+      <p>
+        The <a href="/tools/legislation/council-members/">Council Members page</a> joins
+        this tracker and the fiscal tracker to a roster of all 123 members who served from 2014 on, compiled
+        from official Council and election records. Sponsor names are matched with service-year checks so
+        same-surname members in different eras attribute correctly; when years cannot distinguish two
+        candidates, the sponsorship resolves through a hand-checked match list or stays unmatched; it is never guessed. State legislation resolutions,
+        whose sponsors are state legislators, are excluded entirely.
+      </p>
+    </div>
+
+    <div class="m-section">
+      <h2>An independent city list checks the coverage</h2>
+      <p>The Department of Records and Information Services keeps its own list of the reports agencies owe, built from a different process than this tracker: DORIS records the mandate, the local law behind it, and the date the report was last filed. It is the only external check available on this dataset, so every monthly run matches the two law by law.</p>
+      <p>DORIS traces 1,552 report mandates to local laws enacted since 2014, covering 661 laws this tracker also holds. <strong>On only one of those laws, Local Law 152 of 2023 (the Multi-Agency Response to Community Hotspots report), does DORIS name a reporting duty this tracker did not find.</strong> On 71 of those laws the tracker recorded the duty under a different label, because DORIS counts plans, data publications, and outreach materials as required reports while this tracker splits them into their own deliverable types. Read the report counts here as reports narrowly defined; DORIS totals will run higher.</p>
+      <p>Because DORIS also records filing dates, the match gives each reporting duty here a filing status, described in the next section. Josh Greenman's <a href="https://joshgreenman1973.github.io/nyc-overdue-reports/" target="_blank" rel="noopener">overdue reports dashboard</a> applies this analysis to all of DORIS, including mandates older than 2014, and is the better tool for compliance questions. Re-run the match with <code>pipeline/validate_against_doris.py</code>.</p>
+      <p>One related caution, argued well by <a href="https://www.maximumnewyork.com/p/2023-reporting-requirements" target="_blank" rel="noopener">Maximum New York</a>: Legistar's own "Report Required" index tag is an unreliable count of reporting laws, applied inconsistently and blind to frequency and type. This tracker stores that tag as metadata but never counts from it; every obligation here comes from the enacted text.</p>
+    </div>
+
+    <div class="m-section">
+      <h2>Whether the reports actually arrive</h2>
+      <p>A law can require a report without the report ever being written. The Department of Records and Information Services keeps the city's list of required reports and the catalog of what agencies have filed, and Charter section 1133(d), added by Local Law 29 of 2019, makes it post a delinquent notice when one is late. Matching that against the reporting duties tracked here gives each one a filing status.</p>
+      <p>Of the <span data-sum="matched"><!-- static:meth-matched:start -->
+594
+<!-- static:meth-matched:end --></span> reporting obligations matched to a DORIS mandate, <span data-sum="never"><!-- static:meth-never:start -->
+162
+<!-- static:meth-never:end --></span> have never been filed, <span data-sum="overdue"><!-- static:meth-overdue:start -->
+117
+<!-- static:meth-overdue:end --></span> are overdue, <span data-sum="current"><!-- static:meth-current:start -->
+198
+<!-- static:meth-current:end --></span> are up to date, and the rest are completed, waived or carry no schedule, including <span data-sum="unknown"><!-- static:meth-unknown:start -->
+4
+<!-- static:meth-unknown:end --></span> marked not matched because their agency could not be tied to a DORIS mandate. Filter the obligations table by filing status to see them, or open any report obligation for its last filing date, how late it is, and a link to its filings on the DORIS portal.</p>
+      <p><strong>This method is Josh Greenman's.</strong> His <a href="https://joshgreenman1973.github.io/nyc-overdue-reports/" target="_blank" rel="noopener">NYC Overdue Reports tracker</a> works out the status vocabulary used here (never filed, overdue, up to date, completed, waived, superseded, no schedule), the rule that a report is overdue once its last filing plus its stated interval has passed, and the handling of the city's own delinquent notices; his <a href="https://github.com/joshgreenman1973/nyc-overdue-reports" target="_blank" rel="noopener">code and methodology</a> are public. His dashboard covers every DORIS mandate, including those created before 2014, so it is the better tool for compliance questions across the whole city. What this tracker adds is the join to the law text: the duty as enacted, next to whether it is being met.</p>
+      <p>Two cautions. A mandate is matched to an obligation by local law, agency and title, so where a law creates several reports the pairing can be wrong; the matched DORIS title is shown next to every status, and the filings link lets you check. And 889 of the 1,470 reporting duties here, about 60%, have no DORIS counterpart at all, usually because the report goes to the Council or the mayor rather than being published through DORIS; those show no status rather than a clean bill of health.</p>
+    </div>
+
+    <div class="m-section">
+      <h2>Known limitations</h2>
+      <ul>
+        <li>A law too long for the model to read at once, such as Local Law 47 of 2022, which recodifies the Fire Code, is read in section-sized windows so no part of its text is skipped.</li>
+        <li>Counts measure distinct obligations, not their difficulty or cost. A one-time report and a permanent enforcement duty each count once.</li>
+        <li>159 laws repeal themselves on a date or on an event ("expires and is deemed repealed on December 31, 2024"), 81 of them on a stated date, and 64 of those dates have passed (as of October 2026). Those laws carry a sunset date, and the standing-obligation charts subtract the recurring obligations of laws that have already lapsed. Sunsets tied to an event rather than a date keep the clause with no date, the same way event-anchored deadlines are handled.</li>
+        <li>A duty the law places on "each city agency" carries the tag <strong>All agencies</strong> rather than a named agency. The Charter defines agency to include community boards and other city bodies, so these citywide duties bind agencies that never appear by name in the law text. They are distinct from <strong>Unspecified</strong>, which means the law leaves the actor genuinely undetermined.</li>
+        <li>Only local laws enacted since 2014 are in scope. Duties created by the City Charter itself, such as a community board's annual report to the mayor or its budget priority hearings, have no local law to attach to and do not appear here even though they bind the same bodies.</li>
+        <li>A handful of obligations name several agencies in a single duty; where the law itself does not divide the work, neither does the tracker.</li>
+        <li>Deadline dates inherit any imprecision in the law's own drafting, and effective-date provisions with contingencies (collective bargaining carve-outs, agency certifications) are computed from the primary rule.</li>
+        <li>When a law amends an existing code section, Legistar reprints the whole section and marks only the new matter. A duty or power quoted entirely from the reprinted part predates the amending law. If an earlier law in the tracker created it, the record is linked to that law and not counted twice; otherwise it stays, marked as existing code, and counts for its agency but not for the amending law or its sponsors. <span data-sum="reprinted"><!-- static:meth-reprinted:start -->
+695
+<!-- static:meth-reprinted:end --></span> duty and power records carry that mark. Quotes with no marked new matter that sit outside any reprinted block stay counted as new, because they can be new sections the law adds without codifying them.</li>
+        <li>Deadlines that run from a recurring or future event (each complaint received, each inspection completed, the formation of a body) carry the law's own deadline clause but no calendar date, because no single date exists.</li>
+        <li>Some laws publish their enacted text only as a Legistar attachment rather than on the detail page. The pipeline reads those attachments (PDF and Word) and extracts their obligations like any other law; no law in the corpus is skipped for this reason.</li>
+        <li>DORIS can list more reports for a law than this tracker records, because it splits one statutory duty into several register entries, or counts a plan or data publication the tracker files under its own deliverable type.</li>
+        <li>The data is audited blind after every major change: independent reviewers check fresh samples of laws against the original Legistar text. In the latest audit (September 28, 2026), 124 of 134 recorded duties and powers in laws read by Sonnet 5 were correct (92.5%, 95% confidence interval 86.8% to 95.9%), and the records captured 124 of the 130 the reviewers found in the law text (95.4%). Each confirmed error becomes a check run across the whole database, and every record it flags is judged blind and corrected. Audited records also form a gold set of more than 2,500 hand-verified entries; as of October 6, 2026 the data agrees with it on 98% of agencies, 97% of deadline dates and 99% of duty-or-power labels. Treat any single record as right about nine times in ten: the aggregate counts are sound, but verify an individual duty against the law before relying on it. Corrections are continuous; use the feedback address below to report an error.</li>
+      </ul>
+    </div>
+
+    <div class="m-section">
+      <h2>The data refreshes on the first of every month</h2>
+      <p>
+        A monthly job ingests newly enacted laws, extracts their duties and powers, and rebuilds every view,
+        including the member and agency profiles. Members can set up
+        <a href="https://premium.nycuriosity.com/civic_reference/legislation_implementation_tracker/alerts/">personalized alerts</a>
+        for the agencies, council members, council districts and keywords they follow. The underlying pipeline code is public in the
+        <a href="https://github.com/TalR24/nycur-data-website" target="_blank" rel="noopener">site's GitHub repository</a>.
+      </p>
+    </div>
+
+  </div>
+</main>
+
+<footer>
+  <div class="footer-inner">
+    <span class="footer-copy">© NYCuriosity · Tal Roded</span>
+    <nav class="footer-links" style="flex-wrap:wrap">
+      <a href="https://buymeacoffee.com/nycuriosity" class="footer-support" target="_blank" rel="noopener" aria-label="Support my work on Buy Me a Coffee"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>Support my work</a>
+      <a href="https://talroded.nycuriosity.com" target="_blank" rel="noopener">About</a>
+      <a href="https://www.nycuriosity.com" target="_blank" rel="noopener" aria-label="NYCuriosity on Substack" title="Substack" style="display:inline-flex;align-items:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M22.539 8.242H1.46V5.406h21.08v2.836zM1.46 10.812V24L12 18.11 22.54 24V10.812H1.46zM22.54 0H1.46v2.836h21.08V0z"/></svg></a>
+      <a href="https://www.linkedin.com/in/tal-roded" target="_blank" rel="noopener" aria-label="Tal Roded on LinkedIn" title="LinkedIn" style="display:inline-flex;align-items:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.225 0z"/></svg></a>
+      <a href="https://x.com/TalR24" target="_blank" rel="noopener" aria-label="NYCuriosity on X" title="X" style="display:inline-flex;align-items:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z"/></svg></a>
+      <a href="https://www.instagram.com/talroded" target="_blank" rel="noopener" aria-label="Tal Roded on Instagram" title="Instagram" style="display:inline-flex;align-items:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg></a>
+      <a href="https://www.tiktok.com/@tal_nycuriosity" target="_blank" rel="noopener" aria-label="NYCuriosity on TikTok" title="TikTok" style="display:inline-flex;align-items:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/></svg></a>
+      <a href="https://www.youtube.com/@nycuriosity-yt" target="_blank" rel="noopener" aria-label="NYCuriosity on YouTube" title="YouTube" style="display:inline-flex;align-items:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814z M9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg></a>
+      <a href="https://github.com/TalR24/nycur-data-website" target="_blank" rel="noopener" aria-label="TalR24 on GitHub" title="GitHub" style="display:inline-flex;align-items:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg></a>
+    </nav>
+  </div>
+</footer>
+
+<script>
+/* headline counts come from data/summary.json, written by every data build, so
+   this page never goes stale (the numbers in the HTML are the fallback) */
+(function () {
+  fetch('../data/summary.json').then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
+    if (!d) return;
+    var n = function (x) { return (x == null ? '' : Number(x).toLocaleString('en-US')); };
+    var st = d.doris_status_counts || {};
+    var prot = 0; Object.keys(d.model_counts || {}).forEach(function (k) { if (k.indexOf('protected') !== -1) prot += d.model_counts[k]; });
+    var vals = {
+      protected: n(prot), duties: n(d.duties), quote_n: n(d.duty_quotes_verified),
+      quote_pct: d.duties ? (100 * d.duty_quotes_verified / d.duties).toFixed(1) + '%' : '',
+      as_of: d.generated_at ? new Date(d.generated_at.slice(0, 10) + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '',
+      agency_pct: d.records_total ? (100 * d.records_agency_matched / d.records_total).toFixed(1) + '%' : '',
+      reprinted: n(d.reprinted_existing_code), matched: n(d.doris_matched), never: n(st['never filed']), overdue: n(st.overdue), current: n(st.current), unknown: n(st.unknown)
+    };
+    document.querySelectorAll('[data-sum]').forEach(function (el) { var v = vals[el.getAttribute('data-sum')]; if (v) el.textContent = v; });
+  }).catch(function () {});
+})();
+</script>
+</body>
+</html>

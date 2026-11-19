@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#170C03">
+  <title>Deadline Timeline — Obligations Tracker — NYCuriosity</title>
+  <meta name="description" content="Statutory deadlines from NYC local laws in chronological order: what city agencies owe, when it is due, what is past due, and the recurring duties that never expire.">
+  <link rel="canonical" href="https://data.nycuriosity.com/tools/legislation/implementation/deadline-timeline/">
+  <meta property="og:image" content="https://data.nycuriosity.com/website_logo.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta property="og:type"        content="website">
+  <meta property="og:url"         content="https://data.nycuriosity.com/tools/legislation/implementation/deadline-timeline/">
+  <meta property="og:title"       content="Deadline Timeline — Obligations Tracker">
+  <meta property="og:description" content="Statutory deadlines from NYC local laws in chronological order: what city agencies owe, when it is due, and what is past due.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/brand.css">
+  <link rel="stylesheet" href="/assets/chart.css?v=20260927">
+  <script defer src="/assets/chart.js?v=20260927"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --blue: #C84609; --blue-hover: #A44D00; --blue-light: #FAF6F1; --blue-mid: #EDC3A5;
+      --text: #1A1208; --text-mid: #4A3B2C; --text-muted: #6B5B4A; --text-faint: #9A8B7A;
+      --bg: #FAF6F1; --surface: #ffffff; --border: #E7DDCE;
+      --shadow-sm: 0 1px 3px rgba(26,18,8,0.08); --radius: 10px;
+      --red: #A44D00; --red-light: #FAF6F1; --green: #226287;
+    }
+    body { font-family: 'Helvetica Neue', Helvetica, Arial, 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; }
+
+    header { background: #170C03; border-bottom: 1px solid #2E1C0C; padding: 0 clamp(20px, 5vw, 48px); }
+    .header-inner { max-width: 1100px; margin: 0 auto; height: 56px; display: flex; align-items: center; gap: 16px; }
+    .back-link { font-family: var(--b-sans); font-size: 0.75rem; font-weight: 600; color: #9A8B7A; text-decoration: none; display: flex; align-items: center; gap: 5px; padding: 4px 8px 4px 4px; border-radius: 5px; transition: color 0.15s, background 0.15s; white-space: nowrap; }
+    .back-link:hover { color: #FFD23F; background: rgba(255,210,63,0.1); }
+    .header-divider { width: 1px; height: 20px; background: #4A3B2C; flex-shrink: 0; }
+    header .site-header-title { margin: 0; font-weight: 500; font-family: var(--b-display); font-size: 0.95rem; font-weight: 500; color: #E7DDCE; letter-spacing: -0.02em; }
+
+    .pill-nav { background: var(--surface); border-bottom: 1px solid var(--border); padding: 10px clamp(20px, 5vw, 48px); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .pill-nav a { font-size: 0.78rem; font-family: var(--b-sans); font-weight: 600; padding: 4px 12px; border-radius: 20px; text-decoration: none; border: 1px solid var(--border); color: var(--text-muted); background: var(--bg); transition: all 0.15s; white-space: nowrap; }
+    .pill-nav a:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
+    .pill-nav a.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+    .pill-label { font-size: 0.72rem; color: var(--text-faint); font-family: var(--b-sans); white-space: nowrap; }
+
+    .hero { background: var(--surface); border-bottom: 1px solid var(--border); padding: clamp(28px, 4vw, 44px) clamp(20px, 5vw, 48px); }
+    .hero-inner { max-width: 1100px; margin: 0 auto; }
+    .breadcrumb { font-family: var(--b-sans); font-size: 0.72rem; color: var(--text-faint); margin-bottom: 14px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .breadcrumb a { color: var(--blue); text-decoration: none; }
+    .breadcrumb a:hover { text-decoration: underline; }
+    .breadcrumb span:last-child { color: #A44D00; }
+    .hero-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .hero-tag { font-family: var(--b-sans); font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: normal; color: var(--b-topic-cb-ink); background: #FAF6F1; border: 1px solid #E7DDCE; border-radius: 4px; padding: 3px 8px; }
+    .hero-updated { font-family: var(--b-mono); font-size: 0.72rem; color: var(--text-faint); }
+    .hero h1 { font-family: 'Playfair Display', Georgia, serif; font-size: clamp(1.4rem, 3vw, 1.8rem); font-weight: 500; letter-spacing: -0.012em; line-height: 1.2; margin-bottom: 10px; }
+    .hero h1 span { color: var(--blue); }
+    .hero p { font-size: 0.95rem; color: var(--text-muted); max-width: 680px; line-height: 1.7; }
+    .hero-actions { margin-top: 18px; display: flex; gap: 10px; flex-wrap: wrap; }
+    .btn { font-family: var(--b-sans); font-size: 0.78rem; font-weight: 600; padding: 8px 14px; border-radius: 7px; text-decoration: none; display: inline-flex; align-items: center; gap: 7px; cursor: pointer; border: 1.5px solid var(--blue); transition: all 0.15s; }
+    .btn-outline { color: var(--blue); background: var(--surface); }
+    .btn-outline:hover { background: var(--blue-light); }
+
+    main { flex: 1; padding: clamp(24px, 4vw, 40px) clamp(20px, 5vw, 48px); }
+    .main-inner { max-width: 900px; margin: 0 auto; }
+
+    .filters { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 16px 18px; margin-bottom: 16px; display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; }
+    .filters .msf { flex: 1 1 190px; min-width: 165px; }
+    .filters select { flex: 1 1 170px; min-width: 150px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 7px; font-family: var(--b-sans); font-size: 0.75rem; background: var(--bg); color: var(--text-mid); cursor: pointer; }
+    .filters select:focus { outline: 2px solid var(--blue-mid); border-color: var(--blue); }
+    .reset-btn { font-family: var(--b-sans); font-size: 0.72rem; font-weight: 600; color: var(--text-muted); background: none; border: 1px solid var(--border); border-radius: 7px; padding: 8px 12px; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+    .reset-btn:hover { color: var(--red); border-color: var(--red); }
+
+    .tab-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 20px; }
+    .tab-btn { font-family: var(--b-sans); font-size: 0.75rem; font-weight: 600; padding: 7px 14px; border-radius: 20px; border: 1px solid var(--border); background: var(--surface); color: var(--text-muted); cursor: pointer; transition: all 0.15s; }
+    .tab-btn:hover { border-color: var(--blue); color: var(--blue); }
+    .tab-btn.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+    .tab-btn .count { opacity: 0.75; }
+
+    .timeline { position: relative; padding-left: 26px; }
+    .timeline::before { content: ''; position: absolute; left: 7px; top: 6px; bottom: 6px; width: 2px; background: var(--border); }
+    .month-group { margin-bottom: 26px; }
+    .month-label { font-family: var(--b-sans); font-size: 0.78rem; font-weight: 700; color: var(--text); margin-bottom: 12px; position: relative; }
+    .month-label::before { content: ''; position: absolute; left: -25px; top: 3px; width: 12px; height: 12px; border-radius: 50%; background: var(--blue); border: 2px solid var(--surface); box-shadow: 0 0 0 2px var(--blue-mid); }
+    .month-group.overdue .month-label { color: var(--red); }
+    .month-group.overdue .month-label::before { background: var(--red); box-shadow: 0 0 0 2px #F8DDD0; }
+
+    .tl-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 14px 16px; margin-bottom: 10px; cursor: pointer; transition: border-color 0.15s; }
+    .tl-card:hover { border-color: var(--blue); }
+    .tl-top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; }
+    .tl-date { font-family: var(--b-mono); font-size: 0.72rem; font-weight: 700; color: var(--text); white-space: nowrap; }
+    .tl-date.overdue { color: var(--red); }
+    .agency-badge.unspec { background: var(--bg); color: var(--text-faint); border-color: var(--border); font-style: italic; }
+    .agency-badge { font-family: var(--b-sans); font-size: 0.68rem; font-weight: 600; padding: 2px 8px; border-radius: 10px; background: var(--blue-light); color: var(--blue); border: 1px solid var(--blue-mid); white-space: nowrap; display: inline-block; max-width: min(260px, 100%); overflow: hidden; text-overflow: ellipsis; vertical-align: bottom; }
+    .tl-law { font-family: var(--b-mono); font-size: 0.68rem; color: var(--text-faint); }
+    .tl-action { font-size: 0.86rem; color: var(--text-mid); line-height: 1.55; }
+    .tl-detail { display: none; margin-top: 10px; border-top: 1px solid var(--border); padding-top: 10px; }
+    .tl-card.open .tl-detail { display: block; }
+    .tl-quote { border-left: 3px solid var(--blue); background: var(--blue-light); padding: 10px 14px; border-radius: 0 7px 7px 0; font-style: italic; font-size: 0.82rem; color: var(--text-mid); line-height: 1.6; margin-bottom: 8px; }
+    .tl-meta { font-family: var(--b-mono); font-size: 0.7rem; color: var(--text-muted); line-height: 1.8; }
+    .tl-links { margin-top: 6px; display: flex; gap: 14px; flex-wrap: wrap; }
+    .tl-links a { font-family: var(--b-sans); font-size: 0.72rem; font-weight: 600; color: var(--blue); text-decoration: none; }
+    .tl-links a:hover { text-decoration: underline; }
+
+    .recur-section { margin-top: 8px; }
+    .recur-head { font-family: var(--b-sans); font-size: 0.78rem; font-weight: 700; color: var(--text); margin: 22px 0 12px; }
+    .loading-note { font-family: var(--b-sans); font-size: 0.85rem; color: var(--text-faint); padding: 40px; text-align: center; }
+    .empty-note { font-family: var(--b-sans); font-size: 0.8rem; color: var(--text-faint); padding: 20px 0; }
+
+    .footnotes { margin-top: 24px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; }
+    .footnotes p { font-size: 0.8rem; color: var(--text-muted); line-height: 1.65; margin-bottom: 10px; }
+    .footnotes p:last-child { margin-bottom: 0; }
+    .footnotes a { color: var(--blue); text-decoration: none; }
+    .footnotes a:hover { text-decoration: underline; }
+
+    footer { background: var(--surface); border-top: 1px solid var(--border); padding: 20px clamp(20px, 5vw, 48px); }
+    .footer-inner { max-width: 1100px; margin: 0 auto; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+    .footer-copy { font-size: 0.8rem; color: var(--text-faint); }
+    .footer-links { display: flex; gap: 20px; align-items: center; }
+    .footer-links a { font-size: 0.8rem; color: var(--text-muted); text-decoration: none; transition: color 0.15s; }
+    .footer-links a:hover { color: var(--blue); }
+    .footer-support { display: inline-flex; align-items: center; gap: 5px; font-size: 0.8rem; font-weight: 500; color: #C84609; text-decoration: none; padding: 5px 11px; border: 1px solid rgba(207,75,12,0.45); border-radius: 6px; transition: color .15s, border-color .15s, background .15s; vertical-align: middle; }
+    .footer-support:hover { color: #fff; background: #C84609; border-color: #C84609; }
+  
+    /* ── TOPIC COLOUR (2026 rebrand) ──────────────────────
+       Colour encodes what KIND of thing something is. The bright fills are
+       decorative only; the -ink twins are the only variants safe for text
+       (each is tuned to 4.5:1 on Canvas Cream). Tokens: assets/brand.css */
+    .card[data-topics~="transit"] .card-category { color: var(--b-topic-transit-ink); }
+    .card[data-topics~="cb"]      .card-category { color: var(--b-topic-cb-ink); }
+    .card[data-topics~="budget"]  .card-category { color: var(--b-topic-budget-ink); }
+    .card[data-topics~="govtech"] .card-category { color: var(--b-topic-govtech-ink); }
+    .tf-pill[data-topic="transit"]:hover  { border-color: var(--b-topic-transit-ink); color: var(--b-topic-transit-ink); }
+    .tf-pill[data-topic="cb"]:hover       { border-color: var(--b-topic-cb-ink); color: var(--b-topic-cb-ink); }
+    .tf-pill[data-topic="budget"]:hover   { border-color: var(--b-topic-budget-ink); color: var(--b-topic-budget-ink); }
+    .tf-pill[data-topic="govtech"]:hover  { border-color: var(--b-topic-govtech-ink); color: var(--b-topic-govtech-ink); }
+    .tf-pill[data-topic="transit"].active { background: var(--b-topic-transit-ink); border-color: var(--b-topic-transit-ink); color: #fff; }
+    .tf-pill[data-topic="cb"].active      { background: var(--b-topic-cb-ink); border-color: var(--b-topic-cb-ink); color: #fff; }
+    .tf-pill[data-topic="budget"].active  { background: var(--b-topic-budget-ink); border-color: var(--b-topic-budget-ink); color: #fff; }
+    .tf-pill[data-topic="govtech"].active { background: var(--b-topic-govtech-ink); border-color: var(--b-topic-govtech-ink); color: #fff; }
+    /* A row of figures should not read as one colour. */
+    .stat-pill:nth-child(4n+1) .sp-num { color: var(--b-topic-budget-ink); }
+    .stat-pill:nth-child(4n+2) .sp-num { color: var(--b-topic-transit-ink); }
+    .stat-pill:nth-child(4n+3) .sp-num { color: var(--b-topic-cb-ink); }
+    .stat-pill:nth-child(4n+4) .sp-num { color: var(--b-brown); }
+  
+    /* Header action buttons on subpages (Tal, Sep 2026 — previously hub-only). */
+    .header-actions { display:flex; align-items:center; gap:12px; margin-left:auto; flex-shrink:0; }
+    .header-link { font-size:0.8rem; font-weight:500; color:#9A8B7A; text-decoration:none; display:inline-flex; align-items:center; gap:5px; padding:5px 11px; border:1px solid rgba(255,255,255,0.15); border-radius:6px; transition:color .15s,border-color .15s,background .15s; white-space:nowrap; }
+    .header-link:hover { color:#fff; border-color:rgba(255,255,255,0.35); background:rgba(255,255,255,0.08); }
+    .header-link svg, .support-link svg { flex-shrink:0; }
+    .support-link { font-size:0.8rem; font-weight:500; color:#FFD23F; text-decoration:none; display:inline-flex; align-items:center; gap:5px; padding:5px 11px; border:1px solid rgba(200,70,9,0.45); border-radius:6px; transition:color .15s,border-color .15s,background .15s; white-space:nowrap; }
+    .support-link:hover { color:#fff; background:#C84609; border-color:#C84609; }
+    /* The subpage header also carries a back-link and a page title, so shed the
+       optional buttons before the row can overflow. The footer keeps all three. */
+  
+    /* The subpage header carries a mark, a back-link, a page title AND the
+       action buttons, so shed the optional links before the row can overflow.
+       These MUST live in the last style block on the page: several pages carry
+       a second <style id="support-btn-css"> that re-declares .header-actions
+       and would otherwise override the media query. */
+    header .header-inner { min-width: 0; }
+    header .site-header-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    @media (max-width: 900px) { .header-actions .header-link { display: none; } }
+    @media (max-width: 560px) { .header-actions { display: none; } }
+    @media (max-width: 560px) { header .site-header-title { white-space: normal; } }
+    @media (max-width: 520px) { header .site-header-title { display: none; } }
+  </style>
+  <script defer src="/assets/site.js?v=20261119"></script>
+<!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d0dce16d32c14809bc15038314fb9a13"}'></script><!-- End Cloudflare Web Analytics -->
+  <script defer src="/tools/legislation/assets/tracker-switch.js?v=8"></script>
+  <style id="tracker-theme">
+    /* each tracker's accents use its Trackers-bar colour (Tal, Sep 24 2026):
+       Fiscal orange, Obligations blue, Powers pink */
+    :root {
+      --blue: var(--b-topic-transit-ink);
+      --blue-hover: color-mix(in srgb, var(--b-topic-transit-ink) 80%, var(--b-ink));
+      --blue-light: color-mix(in srgb, var(--b-topic-transit-ink) 7%, var(--b-cream));
+      --blue-mid: color-mix(in srgb, var(--b-topic-transit-ink) 32%, var(--b-cream));
+      --c-cat-1: var(--b-topic-transit-ink);
+    }
+    .hero-tag { color: var(--blue) !important; }
+    .stat-pill .sp-num, .qs-num, .stat-num { color: var(--b-topic-transit-ink) !important; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <a href="/" class="header-mark" aria-label="NYCuriosity Data home"><img src="/assets/brand/Talbot.svg" alt="" style="height:32px;width:auto;display:block"></a>
+    <a href="/" class="brand" aria-label="NYCuriosity Data home"><img src="/assets/brand/SubLogo_W.svg" alt="NYCuriosity Data" style="height:19px;width:auto;display:block"></a>
+    <a href="../" class="back-link">← Obligations Tracker</a>
+    <div class="header-divider"></div>
+    <p class="site-header-title">Deadline Timeline</p>
+    <div class="header-actions">
+      <a href="https://talroded.nycuriosity.com" class="header-link" target="_blank" rel="noopener"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>About</a>
+      <a href="https://www.nycuriosity.com" class="header-link" target="_blank" rel="noopener"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v4H4z"/><path d="M4 10h16v10l-8-4-8 4z"/></svg>Substack</a>
+      <a href="https://buymeacoffee.com/nycuriosity" class="support-link" target="_blank" rel="noopener" aria-label="Support my work on Buy Me a Coffee"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>Support my work</a>
+    </div>
+  </div>
+</header>
+
+<div class="pill-nav">
+  <span class="pill-label">Views in this tool:</span>
+  <a href="../">Obligations overview</a>
+  <a href="../obligations-table/">Obligations Table</a>
+  <a href="../agency-workload/">Agency Workload</a>
+  <a href="./" class="active">Deadline Timeline</a>
+  <a href="../law/">Law Explorer</a>
+  <a href="../methodology/">Methodology</a>
+</div>
+
+<div class="hero">
+  <div class="hero-inner">
+    <div class="breadcrumb">
+      <a href="/">data.nycuriosity.com</a>
+      <span>›</span>
+      <a href="/tools/legislation/">NYC Council Legislation Trackers</a>
+      <span>›</span>
+      <a href="../">Obligations Tracker</a>
+      <span>›</span>
+      <span>Deadline Timeline</span>
+    </div>
+    <div class="hero-meta">
+      <span class="hero-tag">Obligations Tracker</span>
+      <span class="hero-updated" id="heroUpdated"></span>
+    </div>
+    <h1>The Council set the deadlines. <span>Here is the calendar.</span></h1>
+    <p>
+      Every dated statutory deadline from local laws enacted since 2014, in chronological order,
+      plus the recurring duties that come due again every year or quarter. Past-due items show
+      what a law required by a date that has already passed; whether the agency delivered is the
+      follow-up question this page is built to prompt.
+    </p>
+  </div>
+</div>
+
+<main>
+  <div class="main-inner">
+
+    <div class="filters">
+      <div id="msAgency"></div>
+      <div id="msType"></div>
+      <button class="reset-btn" id="fReset">Reset all</button>
+    </div>
+
+    <div class="tab-row" id="tabRow">
+      <button class="tab-btn active" data-tab="upcoming">Upcoming <span class="count" id="cntUpcoming"><!-- static:dt-cnt-upcoming:start -->
+(144)
+<!-- static:dt-cnt-upcoming:end --></span></button>
+      <button class="tab-btn" data-tab="overdue">Past due <span class="count" id="cntOverdue"><!-- static:dt-cnt-overdue:start -->
+(1,189)
+<!-- static:dt-cnt-overdue:end --></span></button>
+      <button class="tab-btn" data-tab="recurring">Recurring duties <span class="count" id="cntRecurring"><!-- static:dt-cnt-recurring:start -->
+(4,573)
+<!-- static:dt-cnt-recurring:end --></span></button>
+    </div>
+
+    <div id="content"><!-- static:dt-content:start -->
+<div class="timeline"><div class="month-group"><div class="month-label">December 2026</div><div class="tl-card" tabindex="0"><div class="tl-top"><span class="tl-date">Dec 1, 2026</span><span class="agency-badge" title="New York City Department of Sanitation">DSNY</span><span class="tl-law">Local Law 118 of 2026</span></div><div class="tl-action">Designate additional covered establishments subject to the commercial organic waste requirements by December 1, 2026.</div><div class="tl-detail"><div class="tl-quote">“the commissioner shall designate additional covered establishments by December 1, 2026”</div><div class="tl-meta">NYC Admin. Code § 16-306.1(b)(2) · by December 1, 2026</div><div class="tl-links"><a href="../law/?law=7861374">Full law checklist →</a><a href="https://legistar.council.nyc.gov/LegislationDetail.aspx?ID=7861374&amp;GUID=34505287-D0AC-48AF-95F0-055CA00F2BB3" target="_blank" rel="noopener">View on Legistar ↗</a></div></div></div><div class="tl-card" tabindex="0"><div class="tl-top"><span class="tl-date">Dec 1, 2026</span><span class="agency-badge" title="Office of the Mayor">Mayor&#x27;s Office</span><span class="tl-law">Local Law 119 of 2023</span></div><div class="tl-action">Submit a final report to the speaker of the council covering the cost, impact, and effectiveness of the clubhouses along with recommendations.</div><div class="tl-detail"><div class="tl-quote">“No later than December 1, 2026, the mayor shall submit a report to the speaker of the council that includes the cost of operating such clubhouses, an analysis of the impact and effectiveness of such clubhouses, and any other information or recommendations the mayor deems relevant.”</div><div class="tl-meta">Section 1(c) of the local law · No later than December 1, 2026</div><div class="tl-links"><a href="../law/?law=6179131">Full law checklist →</a><a href="https://legistar.council.nyc.gov/LegislationDetail.aspx?ID=6179131&amp;GUID=1A0BCFE1-49E1-4083-8371-BD61D5AE1166" target="_blank" rel="noopener">View on Legistar ↗</a></div></div></div><div class="tl-card" tabindex="0"><div class="tl-top"><span class="tl-date">Dec 4, 2026</span><span class="agency-badge" title="Office of the Mayor">Mayor&#x27;s Office</span><span class="tl-law">Local Law 173 of 2025</span></div><div class="tl-action">Designate an agency to conduct a pay equity study of the private workforce.</div><div class="tl-detail"><div class="tl-quote">“No later than 1 year after the effective date of the local law that added this section, the mayor shall designate an agency that shall conduct a pay equity study of the private workforce”</div><div class="tl-meta">NYC Admin. Code § 12-208.2(b)(1) · No later than 1 year after the effective date of the local law that added this section</div><div class="tl-links"><a href="../law/?law=6788483">Full law checklist →</a><a href="https://legistar.council.nyc.gov/LegislationDetail.aspx?ID=6788483&amp;GUID=CDAAC0E3-EEC3-4CBA-8467-476D863BB303" target="_blank" rel="noopener">View on Legistar ↗</a></div></div></div><div class="tl-card" tabindex="0"><div class="tl-top"><span class="tl-date">Dec 11, 2026</span><span class="agency-badge" title="Department of Parks and Recreation">DPR</span><span class="tl-law">Local Law 140 of 2026</span></div><div class="tl-action">Provide written notice about the pilot program and how to apply to each dog run group that maintains a dog run.</div><div class="tl-detail"><div class="tl-quote">“Within 90 days of the effective date of this local law, the commissioner of parks and recreation shall provide written notice to each dog run group that maintains a dog run.”</div><div class="tl-meta">Section 1(e) of the local law · Within 90 days of the effective date of this local law</div><div class="tl-links"><a href="../law/?law=7998331">Full law checklist →</a><a href="https://legistar.council.nyc.gov/LegislationDetail.aspx?ID=7998331&amp;GUID=0842F088-D9D5-4954-997C-ADF56747A190" target="_blank" rel="noopener">View on Legistar ↗</a></div></div></div><div class="tl-card" tabindex="0"><div class="tl-top"><span class="tl-date">Dec 24, 2026</span><span class="agency-badge" title="Department of Social Services">DSS</span><span class="tl-law">Local Law 88 of 2025</span></div><div class="tl-action">Deliver a report to the mayor and speaker of the council on the resources needed to extend application confirmation notices and document receipts to all other department benefits and services.</div><div class="tl-detail"><div class="tl-quote">“the commissioner shall deliver to the mayor and the speaker of the council a report on the department resources that would be required to provide application confirmation notices and document receipts in the form and manner required by subdivisions a and b of section 21-153 of the administrative code”</div><div class="tl-meta">Section 2 of the local law · No later than 1 year after the effective date of subdivisions a through c of section 21-153 of the administrative code, as added by this local law</div><div class="tl-links"><a href="../law/?law=7075824">Full law checklist →</a><a href="https://legistar.council.nyc.gov/LegislationDetail.aspx?ID=7075824&amp;GUID=44E03EE8-7660-41A4-91F9-51E87385EE80" target="_blank" rel="noopener">View on Legistar ↗</a></div></div></div><div class="tl-card" tabindex="0"><div class="tl-top"><span class="tl-date">Dec 31, 2026</span><span class="agency-badge" title="New York City Public Schools">NYCPS</span><span class="tl-law">Local Law 114 of 2026</span></div><div class="tl-action">Make age-appropriate signage describing the department&#x27;s policies on school property access and participation in or assistance with immigration enforcement available at each school and via department and school websites and online portals, by December 31, 2026.</div><div class="tl-detail"><div class="tl-quote">“No later than December 31, 2026, the department shall make age-appropriate versions of signage describing the department’s policies regarding access to school property and participation in or assistance with immigration enforcement available”</div><div class="tl-meta">NYC Admin. Code § 21-977(f) · No later than December 31, 2026,</div><div class="tl-links"><a href="../law/?law=7861433">Full law checklist →</a><a href="https://legistar.council.nyc.gov/LegislationDetail.aspx?ID=7861433&amp;GUID=5D1F3401-2B72-4B3F-A514-8C4949AA50AF" target="_blank" rel="noopener">View on Legistar ↗</a></div></div></div><div class="tl-card" tabindex="0"><div class="tl-top"><span class="tl-date">Dec 31, 2026</span><span class="agency-badge" title="New York City Taxi and Limousine Commission">TLC</span><span class="tl-law">Local Law 84 of 2025</span></div><div class="tl-action">Conduct a study on costs, challenges, and opportunities related to increasing the use of electric for-hire vehicles and installing new charging infrastructure, and submit a report on the study&#x27;s findings to the mayor and the speaker of the council.</div><div class="tl-detail"><div class="tl-quote">“No later than December 31, 2026, the taxi and limousine commission shall submit a report on the study’s findings to the mayor and the speaker of the council.”</div><div class="tl-meta">Section 1 of the local law · No later than December 31, 2026</div><div class="tl-links"><a href="../law/?law=6584122">Full law checklist →</a><a href="https://legistar.council.nyc.gov/LegislationDetail.aspx?ID=6584122&amp;GUID=B293B419-A588-4438-987D-1F9F2E2918D8" target="_blank" rel="noopener">View on Legistar ↗</a></div></div></div><div class="tl-card" tabindex="0"><div class="tl-top"><span class="tl-date">Dec 31, 2026</span><span class="agency-badge" title="Department of Parks and Recreation">DPR</span><span class="tl-law">Local Law 56 of 2023</span></div><div class="tl-action">Ensure three quarters of covered park restrooms have a diaper changing station, deck, table or similar amenity by December 31, 2026.</div><div class="tl-detail"><div class="tl-quote">“By December 31, 2026, three quarters of the restrooms subject to the requirements of subdivision a of this section shall have a diaper changing station, deck, table or similar amenity, as described in such subdivision.”</div><div class="tl-meta">NYC Admin. Code § 18-159(b) · By December 31, 2026</div><div class="tl-links"><a href="../law/?law=5534276">Full law checklist →</a><a href="https://legistar.council.nyc.gov/LegislationDetail.aspx?ID=5534276&amp;GUID=5CA64A8E-3AC7-409C-833D-7A37629D589C" target="_blank" rel="noopener">View on Legistar ↗</a></div></div></div><div class="tl-card" tabindex="0"><div class="tl-top"><span class="tl-date">Dec 31, 2026</span><span class="agency-badge" title="Mayor&#x27;s Office of Climate and Environmental Justice">MOCEJ</span><span class="tl-law">Local Law 41 of 2021</span></div><div class="tl-action">Submit the climate resiliency design guidelines developed under the pilot program to the speaker of the council.</div><div class="tl-detail"><div class="tl-quote">“No later than December 31, 2026, the office shall submit to the speaker of the council and publish on its website the climate resiliency design guidelines developed pursuant to the pilot program described in subdivision c.”</div><div class="tl-meta">NYC Admin. Code § 3-131(d) · No later than December 31, 2026</div><div class="tl-links"><a href="../law/?law=4648590">Full law checklist →</a><a href="https://legistar.council.nyc.gov/LegislationDetail.aspx?ID=4648590&amp;GUID=F7CCBD21-44D7-4280-AB54-3D419D2AE033" target="_blank" rel="noopener">View on Legistar ↗</a></div></div></div><div class="tl-card" tabindex="0"><div class="tl-top"><span class="tl-date">Dec 31, 2026</span><span class="agency-badge" title="Mayor&#x27;s Office of Climate and Environmental Justice">MOCEJ</span><span class="tl-law">Local Law 41 of 2021</span></div><div class="tl-action">Publish the climate resiliency design guidelines developed under the pilot program on the office&#x27;s website.</div><div class="tl-detail"><div class="tl-quote">“No later than December 31, 2026, the office shall submit to the speaker of the council and publish on its website the climate resiliency design guidelines developed pursuant to the pilot program described in subdivision c.”</div><div class="tl-meta">NYC Admin. Code § 3-131(d) · No later than December 31, 2026</div><div class="tl-links"><a href="../law/?law=4648590">Full law checklist →</a><a href="https://legistar.council.nyc.gov/LegislationDetail.aspx?ID=4648590&amp;GUID=F7CCBD21-44D7-4280-AB54-3D419D2AE033" target="_blank" rel="noopener">View on Legistar ↗</a></div></div></div></div></div>
+<!-- static:dt-content:end --></div>
+
+    <div class="footnotes">
+      <p><strong>How dates are computed:</strong> from the law's enactment date on <a href="https://legistar.council.nyc.gov" target="_blank" rel="noopener">NYC Legistar</a> plus the effective-date and deadline clauses in the enacted text. Months are converted at 30 days and years at 365 days, so a computed date can differ from an agency's own reading by a few days.</p>
+      <p><strong>Past due means the deadline passed, not that the agency failed.</strong> For reports DORIS tracks, the obligations table shows whether they were filed; for everything else, this calendar tells you what to go ask for.</p>
+      <p><strong>Recurring duties</strong> list the obligations that repeat on a schedule (annual, quarterly, monthly and others) or apply on an ongoing basis. Their first due date appears when the law states one.</p>
+    </div>
+
+  </div>
+</main>
+
+<footer>
+  <div class="footer-inner">
+    <span class="footer-copy">© NYCuriosity · Tal Roded</span>
+    <nav class="footer-links" style="flex-wrap:wrap">
+      <a href="https://buymeacoffee.com/nycuriosity" class="footer-support" target="_blank" rel="noopener" aria-label="Support my work on Buy Me a Coffee"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>Support my work</a>
+      <a href="https://talroded.nycuriosity.com" target="_blank" rel="noopener">About</a>
+      <a href="https://www.nycuriosity.com" target="_blank" rel="noopener" aria-label="NYCuriosity on Substack" title="Substack" style="display:inline-flex;align-items:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M22.539 8.242H1.46V5.406h21.08v2.836zM1.46 10.812V24L12 18.11 22.54 24V10.812H1.46zM22.54 0H1.46v2.836h21.08V0z"/></svg></a>
+      <a href="https://www.linkedin.com/in/tal-roded" target="_blank" rel="noopener" aria-label="Tal Roded on LinkedIn" title="LinkedIn" style="display:inline-flex;align-items:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.225 0z"/></svg></a>
+      <a href="https://x.com/TalR24" target="_blank" rel="noopener" aria-label="NYCuriosity on X" title="X" style="display:inline-flex;align-items:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z"/></svg></a>
+      <a href="https://www.instagram.com/talroded" target="_blank" rel="noopener" aria-label="Tal Roded on Instagram" title="Instagram" style="display:inline-flex;align-items:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg></a>
+      <a href="https://www.tiktok.com/@tal_nycuriosity" target="_blank" rel="noopener" aria-label="NYCuriosity on TikTok" title="TikTok" style="display:inline-flex;align-items:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/></svg></a>
+      <a href="https://www.youtube.com/@nycuriosity-yt" target="_blank" rel="noopener" aria-label="NYCuriosity on YouTube" title="YouTube" style="display:inline-flex;align-items:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814z M9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg></a>
+      <a href="https://github.com/TalR24/nycur-data-website" target="_blank" rel="noopener" aria-label="TalR24 on GitHub" title="GitHub" style="display:inline-flex;align-items:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg></a>
+    </nav>
+  </div>
+</footer>
+
+<script src="/tools/legislation/assets/multiselect.js?v=3"></script>
+<script>
+(function () {
+  var ALL = [];
+  var activeTab = 'upcoming';
+
+  fetch('../data/obligations.json')
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+      ALL = data.obligations || [];
+      if (data.generated_at) {
+        var gen = new Date(data.generated_at);
+        var months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+        document.getElementById('heroUpdated').textContent = 'Updated ' + months[gen.getMonth()] + ' ' + gen.getFullYear();
+      }
+      buildFilters();
+      render();
+    })
+    .catch(function () {
+      document.getElementById('content').innerHTML = '<p class="loading-note">Data failed to load.</p>';
+    });
+
+  var MS = {};
+
+  function buildFilters() {
+    var agLabel = {};
+    ALL.forEach(function (o) {
+      if (!o.agency_matched || agLabel[o.agency]) return;
+      var full = (o.agency_full || o.agency).replace(/^New York City /, '');
+      agLabel[o.agency] = full !== o.agency ? full + ' (' + o.agency + ')' : full;
+    });
+    var types = {};
+    ALL.forEach(function (o) { types[o.deliverable_type] = 1; });
+    MS.agency = new MSFilter('msAgency', { label: 'Agency', allLabel: 'All agencies',
+      sort: 'alpha', onChange: render,
+      options: Object.keys(agLabel).map(function (a) { return { v: a, l: agLabel[a] }; }) });
+    MS.type = new MSFilter('msType', { label: 'Deliverable type', allLabel: 'All types',
+      sort: 'alpha', onChange: render,
+      options: Object.keys(types).map(function (t) { return { v: t, l: t }; }) });
+    document.getElementById('fReset').addEventListener('click', function () {
+      Object.keys(MS).forEach(function (k) { MS[k].reset(); });
+      render();
+    });
+    document.querySelectorAll('.tab-btn').forEach(function (b) {
+      b.addEventListener('click', function () {
+        activeTab = b.getAttribute('data-tab');
+        document.querySelectorAll('.tab-btn').forEach(function (x) { x.classList.remove('active'); });
+        b.classList.add('active');
+        render();
+      });
+    });
+  }
+
+  function filtered() {
+    return ALL.filter(function (o) {
+      if (!MS.agency.pass(o.agency)) return false;
+      if (!MS.type.pass(o.deliverable_type)) return false;
+      return true;
+    });
+  }
+
+  function render() {
+    var rows = filtered();
+    var today = new Date(); today.setHours(0, 0, 0, 0);
+
+    var upcoming = [], overdue = [], recurring = [];
+    rows.forEach(function (o) {
+      // same rule as the obligations table and agency workload: one-time and as-needed duties are not recurring
+      if (o.recurrence !== 'one-time') { if (o.recurrence !== 'as-needed') recurring.push(o); return; }
+      if (!o.deadline_date) return;
+      var d = new Date(o.deadline_date + 'T00:00:00');
+      if (d < today) overdue.push(o); else upcoming.push(o);
+    });
+
+    document.getElementById('cntUpcoming').textContent = '(' + upcoming.length.toLocaleString() + ')';
+    document.getElementById('cntOverdue').textContent = '(' + overdue.length.toLocaleString() + ')';
+    document.getElementById('cntRecurring').textContent = '(' + recurring.length.toLocaleString() + ')';
+
+    var el = document.getElementById('content');
+    if (activeTab === 'upcoming') {
+      upcoming.sort(byDate(1));
+      el.innerHTML = timelineHtml(upcoming, false) ||
+        '<p class="empty-note">No upcoming dated deadlines match these filters.</p>';
+    } else if (activeTab === 'overdue') {
+      overdue.sort(byDate(-1));
+      el.innerHTML = timelineHtml(overdue, true) ||
+        '<p class="empty-note">No past-due deadlines match these filters.</p>';
+    } else {
+      el.innerHTML = recurringHtml(recurring) ||
+        '<p class="empty-note">No recurring duties match these filters.</p>';
+    }
+    bindCards();
+  }
+
+  function byDate(dir) {
+    return function (a, b) { return dir * a.deadline_date.localeCompare(b.deadline_date); };
+  }
+
+  function timelineHtml(items, isOverdue) {
+    if (!items.length) return '';
+    var months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    var groups = {};
+    var order = [];
+    items.forEach(function (o) {
+      var k = o.deadline_date.slice(0, 7);
+      if (!groups[k]) { groups[k] = []; order.push(k); }
+      groups[k].push(o);
+    });
+    var html = '<div class="timeline">';
+    order.forEach(function (k) {
+      var y = k.slice(0, 4), m = parseInt(k.slice(5, 7), 10);
+      html += '<div class="month-group' + (isOverdue ? ' overdue' : '') + '">'
+        + '<div class="month-label">' + months[m - 1] + ' ' + y + '</div>';
+      groups[k].forEach(function (o) { html += card(o, isOverdue); });
+      html += '</div>';
+    });
+    return html + '</div>';
+  }
+
+  function recurringHtml(items) {
+    if (!items.length) return '';
+    var labels = {
+      annual: 'Annual', biennial: 'Biennial', quarterly: 'Quarterly',
+      monthly: 'Monthly', 'every n years': 'Multi-year cycle',
+      ongoing: 'Ongoing duties', semiannual: 'Semiannual', weekly: 'Weekly'
+    };
+    // group by every cadence present, most common first
+    var counts = {};
+    items.forEach(function (o) { counts[o.recurrence] = (counts[o.recurrence] || 0) + 1; });
+    var buckets = Object.keys(counts).sort(function (a, b) { return counts[b] - counts[a]; });
+    var html = '<div class="recur-section">';
+    buckets.forEach(function (b) {
+      var group = items.filter(function (o) { return o.recurrence === b; });
+      group.sort(function (x, y) { return (x.agency || '').localeCompare(y.agency || ''); });
+      var label = labels[b] || (b.charAt(0).toUpperCase() + b.slice(1));
+      html += '<div class="recur-head">' + esc(label) + ' (' + group.length + ')</div>';
+      group.forEach(function (o) { html += card(o, false); });
+    });
+    return html + '</div>';
+  }
+
+  function card(o, isOverdue) {
+    var dateBit = o.deadline_date
+      ? '<span class="tl-date' + (isOverdue ? ' overdue' : '') + '">' + fmtDate(o.deadline_date) + '</span>'
+      : '';
+    return '<div class="tl-card" tabindex="0">'
+      + '<div class="tl-top">' + dateBit
+      + '<span class="agency-badge' + (o.agency === 'Unspecified' ? ' unspec' : '') + '" title="' + esc(o.agency_full) + '">' + esc(o.agency) + '</span>'
+      + '<span class="tl-law">' + esc(o.law_number_display || o.file_number) + '</span>'
+      + '</div>'
+      + '<div class="tl-action">' + esc(o.action_summary) + '</div>'
+      + '<div class="tl-detail">'
+      + (o.quote ? '<div class="tl-quote">“' + esc(o.quote) + '”</div>' : '')
+      + '<div class="tl-meta">' + esc(o.citation || '')
+      + (o.deadline_text ? ' · ' + esc(o.deadline_text) : '') + '</div>'
+      + '<div class="tl-links">'
+      + '<a href="../law/?law=' + encodeURIComponent(o.matter_id) + '">Full law checklist →</a>'
+      + '<a href="' + esc(o.legistar_url) + '" target="_blank" rel="noopener">View on Legistar ↗</a>'
+      + '</div></div></div>';
+  }
+
+  function bindCards() {
+    document.querySelectorAll('.tl-card').forEach(function (c) {
+      c.addEventListener('click', function (e) {
+        if (e.target.tagName === 'A') return;
+        c.classList.toggle('open');
+      });
+    });
+  }
+
+  function fmtDate(iso) {
+    var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var p = iso.split('-');
+    return months[parseInt(p[1], 10) - 1] + ' ' + parseInt(p[2], 10) + ', ' + p[0];
+  }
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+})();
+</script>
+
+</body>
+</html>

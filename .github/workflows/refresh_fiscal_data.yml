@@ -211,18 +211,18 @@ jobs:
         run: |
           python pipeline/build_fiscal_static_snapshots.py
           # the umbrella hub's fiscal stat pills read fiscal_impacts.json too
-          python civic_reference/legislation_implementation_tracker/pipeline/build_static_snapshots.py
+          python tools/legislation/implementation/pipeline/build_static_snapshots.py
 
       - name: Commit and push updated data
         if: steps.idle.outputs.idle != 'true'
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add civic_reference/nyc_council_fiscal_impacts_tracker/data/fiscal_impacts.json \
-                  civic_reference/nyc_council_fiscal_impacts_tracker/agency-fiscal-impact/data.json \
-                  civic_reference/nyc_council_fiscal_impacts_tracker/overview/index.html \
-                  civic_reference/nyc_council_fiscal_impacts_tracker/index.html \
-                  civic_reference/nyc_council_legislation_trackers/index.html \
+          git add tools/legislation/fiscal/data/fiscal_impacts.json \
+                  tools/legislation/fiscal/agency-fiscal-impact/data.json \
+                  tools/legislation/fiscal/overview/index.html \
+                  tools/legislation/fiscal/index.html \
+                  tools/legislation/index.html \
                   pipeline/no_impact_matters.json \
                   pipeline/skip_attachments.json
           # fiscal_batch_state.json / fiscal_batch_pending.json: a batch still
@@ -241,7 +241,7 @@ jobs:
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else
-            COUNT=$(python3 -c "import json; d=json.load(open('civic_reference/nyc_council_fiscal_impacts_tracker/data/fiscal_impacts.json')); print(d['metadata']['total_records'])")
+            COUNT=$(python3 -c "import json; d=json.load(open('tools/legislation/fiscal/data/fiscal_impacts.json')); print(d['metadata']['total_records'])")
             git commit -m "data: refresh fiscal impacts — $COUNT records [$(date -u '+%Y-%m-%d')]"
             # The pipeline runs 30 min to several hours; other pushes can land
             # on main in that window and reject a plain push (Aug 20 2026), and
@@ -267,8 +267,8 @@ jobs:
         with:
           name: fiscal-data
           path: |
-            civic_reference/nyc_council_fiscal_impacts_tracker/data/fiscal_impacts.json
-            civic_reference/nyc_council_fiscal_impacts_tracker/agency-fiscal-impact/data.json
+            tools/legislation/fiscal/data/fiscal_impacts.json
+            tools/legislation/fiscal/agency-fiscal-impact/data.json
             pipeline/no_impact_matters.json
             pipeline/skip_attachments.json
             pipeline/fiscal_batch_state.json

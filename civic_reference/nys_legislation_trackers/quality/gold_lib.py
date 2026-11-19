@@ -46,7 +46,7 @@ def wilson(k, n, z=1.96):
 _XWALK = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data", "agency_crosswalk_nys.json")
 # Nov 1 2026: NYC bodies are stored under the Council crosswalk's codes (DOF, HPD, DOHMH ...) while gold expectations copied from
 # older data spell them out ("Department of Finance of New York City"); the scorer resolves both through the same table.
-_XWALK_NYC = os.path.join(str(next(p for p in __import__("pathlib").Path(__file__).resolve().parents if (p / "CNAME").is_file())), "civic_reference/legislation_implementation_tracker/data/agency_crosswalk.json")
+_XWALK_NYC = os.path.join(str(next(p for p in __import__("pathlib").Path(__file__).resolve().parents if (p / "CNAME").is_file())), "tools/legislation/implementation/data/agency_crosswalk.json")
 # normalised auditor phrasing -> canonical name; keys and values go through _plain
 _ALIASES = {
     "education department": "SED",

@@ -11,7 +11,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "pipeline"))
-sys.path.insert(0, str(ROOT / "civic_reference/legislation_implementation_tracker/pipeline"))
+sys.path.insert(0, str(ROOT / "tools/legislation/implementation/pipeline"))
 
 import anthropic  # noqa: E402
 import fetch_fiscal_impacts as fis  # noqa: E402

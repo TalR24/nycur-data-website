@@ -37,7 +37,7 @@ PAGES = [
     "members/index.html",
     "tools/community-boards/index.html",
     "tools/community-boards/block-party/index.html",
-    "civic_reference/legislation_implementation_tracker/alerts/index.html",
+    "tools/legislation/implementation/alerts/index.html",
     "civic_reference/nys_legislation_trackers/alerts/index.html",
     "cb-tools/member-tracker/alerts/index.html",
 ]

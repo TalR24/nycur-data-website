@@ -37,7 +37,7 @@ SUFFIX_RE = re.compile(r"\s+[—|]\s+(NYCuriosity|State Capacity Ecosystem|Tal R
 # Standing decision (Tal, Aug 24 2026): no search attention on these until the post is out.
 HOLD = ("/posts/medicaid-provider-spending/",)
 DATASET_PREFIXES = {
-    "data": ("tools", "posts", "civic_reference", "cb-tools"),
+    "data": ("tools", "posts", "civic_reference", "cb-tools"),  # path-ok: first-segment list
     "personal": (),
 }
 # Pages under those prefixes that are tools, demos or decks rather than data.
@@ -83,7 +83,7 @@ def graph_for(key, page, person):
                     "sameAs": ["https://substack.statecapacityecosystem.com/"]}
     segs = [s for s in path.strip("/").split("/") if s]
     is_dataset = (path in SCE_DATASETS if key == "sce" else
-                  len(segs) == 2 and segs[0] in DATASET_PREFIXES[key] and path.endswith("/")
+                  is_hub(segs) and segs[0] in DATASET_PREFIXES[key] and path.endswith("/")
                   and path not in NOT_DATASETS.get(key, ()))
     if is_dataset and not path.startswith(HOLD) and len(desc) >= 50:
         creator = ({k: v for k, v in person.items() if k in ("@type", "name", "url")} if key == "data" else
@@ -92,6 +92,19 @@ def graph_for(key, page, person):
                 "url": url, "creator": creator, "isAccessibleForFree": True, "inLanguage": "en-US",
                 "spatialCoverage": {"@type": "Place", "name": "New York City"} if key == "data" else None}
     return None
+
+
+def is_hub(segs):
+    """A tool or post hub: posts/<post>/, tools/<tool>/, and one level deeper for the
+    two suites that hold several tools (tools/legislation/{implementation,fiscal}/,
+    tools/community-boards/<tool>/). Same set of pages as before the Nov 2026 move."""
+    if not segs:
+        return False
+    if segs[0] == "tools" and len(segs) >= 2 and segs[1] == "community-boards":
+        return len(segs) == 3
+    if segs[0] == "tools" and len(segs) == 3 and segs[1] == "legislation":
+        return segs[2] in ("implementation", "fiscal")
+    return len(segs) == 2
 
 
 def render(graph):

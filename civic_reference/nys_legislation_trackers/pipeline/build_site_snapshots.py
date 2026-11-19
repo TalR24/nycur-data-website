@@ -6,7 +6,7 @@ Mirrors the markup and labels the pages' own JS builds; the JS replaces the bloc
     python3 civic_reference/nys_legislation_trackers/pipeline/build_site_snapshots.py
 
 No network, no model calls, idempotent. Uses the same marker helper as the NYC builder
-(civic_reference/legislation_implementation_tracker/pipeline/build_static_snapshots.py, via seo/static_snapshot.py)."""
+(tools/legislation/implementation/pipeline/build_static_snapshots.py, via seo/static_snapshot.py)."""
 import json
 import sys
 from html import escape

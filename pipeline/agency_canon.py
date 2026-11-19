@@ -4,7 +4,7 @@ Canonical NYC agency naming for the Fiscal Impacts Tracker.
 
 Wraps pipeline/agency_crosswalk.json, built from NYC Open Data t3jq-9nkf
 (NYC Agencies and Governance Organizations) by the data website's
-civic_reference/legislation_implementation_tracker/pipeline/build_agency_crosswalk.py
+tools/legislation/implementation/pipeline/build_agency_crosswalk.py
 (that script is the single source of truth; regenerate there and copy the JSON
 here when the dataset updates).
 

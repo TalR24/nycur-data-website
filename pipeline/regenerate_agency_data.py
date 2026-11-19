@@ -9,7 +9,7 @@ import re
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).parent.parent
-TRACKER = REPO_ROOT / "civic_reference" / "nyc_council_fiscal_impacts_tracker"
+TRACKER = REPO_ROOT / "tools/legislation/fiscal"
 INPUT_PATH = TRACKER / "data" / "fiscal_impacts.json"
 OUTPUT_PATH = TRACKER / "agency-fiscal-impact" / "data.json"
 

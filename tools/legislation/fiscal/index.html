@@ -1,0 +1,1645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#170C03">
+  <title>NYC Council Fiscal Impacts Tracker — NYCuriosity Data</title>
+  <meta name="description" content="Explore estimated fiscal impacts of NYC Council legislation: costs, revenues, and net fiscal impacts by agency and council member.">
+  <link rel="canonical" href="https://data.nycuriosity.com/tools/legislation/fiscal/">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://data.nycuriosity.com/tools/legislation/fiscal/">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta property="og:title"       content="NYC Council Fiscal Impacts Tracker">
+  <meta property="og:description" content="Explore estimated fiscal impacts of NYC Council legislation: costs, revenues, and net fiscal impacts by agency and council member.">
+  <meta property="og:image"       content="https://data.nycuriosity.com/website_logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/brand.css">
+  <link rel="stylesheet" href="/assets/chart.css?v=20260927">
+  <script defer src="/assets/chart.js?v=20260927"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue:        #C84609;
+      --blue-hover:  #A44D00;
+      --blue-light:  #FAF6F1;
+      --blue-mid:    #EDC3A5;
+      --orange:      #A44D00;
+      --text:        #1A1208;
+      --text-mid:    #4A3B2C;
+      --text-muted:  #6B5B4A;
+      --text-faint:  #9A8B7A;
+      --bg:          #FAF6F1;
+      --surface:     #ffffff;
+      --border:      #E7DDCE;
+      --border-mid:  #D3C4AF;
+      --shadow-sm:   0 1px 3px rgba(26,18,8,0.08);
+      --shadow-md:   0 4px 16px rgba(207,75,12,0.10);
+      --radius:      10px;
+      --red:         #A44D00;
+      --red-light:   #FAF6F1;
+      --green:       #226287;
+      --green-light: #EFF7FA;
+      --yellow:      #A44D00;
+    }
+
+    body {
+      font-family: 'Helvetica Neue', Helvetica, Arial, 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── HEADER ─────────────────────────────────────────────── */
+    header {
+      background: #170C03;
+      border-bottom: 1px solid #2E1C0C;
+      padding: 0 clamp(16px, 4vw, 48px);
+    }
+    .header-inner {
+      max-width: 1300px;
+      margin: 0 auto;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .brand { display: flex; align-items: baseline; gap: 6px; text-decoration: none; }
+    .brand-name { font-family: var(--b-sans); font-size: 0.95rem; font-weight: 700; color: #FFD23F; letter-spacing: -0.02em; }
+    .brand-slash { font-family: var(--b-sans); font-size: 0.95rem; color: #60574E; }
+    .brand-section { font-family: var(--b-sans); font-size: 0.95rem; font-weight: 600; color: #E7DDCE; }
+    .header-link { font-size: 0.78rem; font-weight: 500; color: #9A8B7A; text-decoration: none; display: flex; align-items: center; gap: 5px; transition: color 0.15s; }
+    .header-link:hover { color: #FFD23F; }
+    .back-link { font-family: var(--b-sans); font-size: 0.75rem; font-weight: 600; color: #9A8B7A; text-decoration: none; display: flex; align-items: center; gap: 5px; padding: 4px 8px; border-radius: 6px; }
+    .back-link:hover { color: #FFD23F; background: rgba(255,210,63,0.1); }
+    .header-divider { width: 1px; height: 20px; background: #4A3B2C; flex-shrink: 0; }
+    header .site-header-title { margin: 0; font-weight: 500; font-family: var(--b-display); font-size: 0.95rem; color: #E7DDCE; letter-spacing: -0.02em; }
+
+    /* ── BREADCRUMB ─────────────────────────────────────────── */
+    .breadcrumb {
+      padding: 14px clamp(16px, 4vw, 48px) 0;
+    }
+    .breadcrumb-inner {
+      max-width: 1300px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--b-sans);
+      font-size: 0.72rem;
+      font-weight: 500;
+      color: var(--text-faint);
+    }
+    .breadcrumb a { color: var(--text-faint); text-decoration: none; transition: color 0.15s; }
+    .breadcrumb a:hover { color: var(--blue); }
+    .breadcrumb .current { color: var(--orange); }
+    .breadcrumb-sep { color: var(--border-mid); }
+
+    /* ── HERO ────────────────────────────────────────────────── */
+    .hero {
+      padding: clamp(20px, 4vw, 40px) clamp(16px, 4vw, 48px) 0;
+    }
+    .hero-inner {
+      max-width: 1300px;
+      margin: 0 auto;
+      padding-bottom: clamp(12px, 2vw, 20px);
+    }
+    .hero h1 {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: clamp(1.3rem, 3.5vw, 1.9rem);
+      font-weight: 500;
+      color: var(--text);
+      letter-spacing: -0.012em;
+      line-height: 1.2;
+      margin-bottom: 8px;
+    }
+    .hero h1 span { color: var(--blue); }
+    .hero p { font-size: 0.9rem; color: var(--text-muted); max-width: 620px; line-height: 1.6; margin-bottom: 16px; }
+
+    /* Stat pills */
+    .stat-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 4px;
+    }
+    .pill {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      padding: 5px 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.8rem;
+    }
+    .pill-label { color: var(--text-muted); font-size: 0.72rem; }
+    .pill-value { font-family: var(--b-mono); font-weight: 700; color: var(--text); }
+    .pill-value.blue   { color: var(--blue); }
+    .pill-value.orange { color: var(--orange); }
+    .pill-value.red    { color: var(--red); }
+    .pill-value.green  { color: var(--green); }
+
+    /* ── CHART NAV STRIP ────────────────────────────────────── */
+    .chart-nav {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 10px clamp(16px, 4vw, 48px);
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .chart-nav-label { font-size: 0.75rem; color: var(--text-muted); font-weight: 500; white-space: nowrap; margin-right: 4px; }
+    .chart-nav a {
+      font-size: 0.78rem;
+      font-family: var(--b-sans);
+      font-weight: 600;
+      padding: 4px 12px;
+      border-radius: 20px;
+      text-decoration: none;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      background: var(--bg);
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .chart-nav a:hover { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
+    .chart-nav a.active { background: var(--blue); color: #fff; border-color: var(--blue); }
+
+    /* ── MAIN CONTENT ────────────────────────────────────────── */
+    .main {
+      flex: 1;
+      padding: clamp(16px, 3vw, 28px) clamp(16px, 4vw, 48px) clamp(40px, 6vw, 64px);
+    }
+    .main-inner { max-width: 1300px; margin: 0 auto; }
+
+    /* ── FILTER BAR ──────────────────────────────────────────── */
+    .filter-section {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      margin-bottom: 16px;
+      box-shadow: var(--shadow-sm);
+    }
+    .filter-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: flex-end;
+    }
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      min-width: 140px;
+    }
+    .filter-group.wide { min-width: 220px; }
+    .filter-group.search { flex: 1; min-width: 200px; }
+    .filter-label {
+      font-family: var(--b-sans);
+      font-size: 0.65rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: normal;
+      color: var(--text-muted);
+    }
+    .filter-select, .filter-input {
+      height: 34px;
+      border: 1px solid var(--border-mid);
+      border-radius: 6px;
+      padding: 0 10px;
+      font-size: 0.82rem;
+      font-family: 'Inter', sans-serif;
+      color: var(--text);
+      background: var(--bg);
+      outline: none;
+      transition: border-color 0.15s;
+      width: 100%;
+    }
+    .filter-select:focus, .filter-input:focus { border-color: var(--blue); }
+    .btn-reset {
+      height: 34px;
+      padding: 0 14px;
+      background: transparent;
+      border: 1px solid var(--border-mid);
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-family: var(--b-sans);
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.15s;
+      white-space: nowrap;
+      align-self: flex-end;
+    }
+    .btn-reset:hover { border-color: var(--blue); color: var(--blue); }
+
+    /* ── MULTI-SELECT (shared MSFilter widget) ── */
+    .filter-row .msf { flex: 1 1 150px; min-width: 135px; }
+
+    /* ── RESULTS SUMMARY BAR ─────────────────────────────────── */
+    .results-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 12px;
+      padding: 0 2px;
+    }
+    .results-count {
+      font-family: var(--b-mono);
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+    .results-count strong { color: var(--text); }
+    .results-totals {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .total-item {
+      font-size: 0.78rem;
+    }
+    .total-item .total-label { color: var(--text-faint); font-size: 0.7rem; display: block; }
+    .total-item .total-val { font-family: var(--b-mono); font-weight: 600; }
+    .total-item .total-val.red   { color: var(--red); }
+    .total-item .total-val.green { color: var(--green); }
+    .total-item .total-val.blue  { color: var(--blue); }
+
+    /* ── TABLE ───────────────────────────────────────────────── */
+    .table-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+    }
+    /* the bill table runs edge to edge inside its card */
+    .chart-card > .c-plot { padding: 0; }
+    .table-scroll { overflow-x: auto; }
+    /* Fixed layout: column widths come from the <colgroup>, not from whichever
+       50 rows happen to be on the page. With auto layout, sorting onto a page
+       with long bill numbers or committee names widened those columns past the
+       card and the only way back was the horizontal scrollbar at the foot of
+       the table. Below 1000px the table scrolls sideways inside the card. */
+    table {
+      width: 100%;
+      min-width: 1000px;
+      border-collapse: collapse;
+      table-layout: fixed;
+      font-size: 0.82rem;
+    }
+    thead th {
+      background: #FAF6F1;
+      border-bottom: 1.5px solid var(--border-mid);
+      padding: 10px 12px;
+      text-align: left;
+      font-family: var(--b-sans);
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: normal;
+      color: var(--text-muted);
+      white-space: nowrap;
+      cursor: pointer;
+      user-select: none;
+      transition: color 0.15s;
+    }
+    thead th:hover { color: var(--blue); }
+    thead th.sorted { color: var(--blue); }
+    thead th .sort-icon { margin-left: 4px; opacity: 0.5; font-style: normal; }
+    thead th.sorted .sort-icon { opacity: 1; }
+
+    tbody tr {
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover  { background: var(--blue-light); }
+    tbody tr.expanded { background: var(--blue-light); }
+
+    td {
+      padding: 10px 12px;
+      vertical-align: middle;
+      color: var(--text-mid);
+      /* Fixed layout: a cell can never grow, so anything oversized (a long
+         agency tag, an odd bill number) must clip inside its own column
+         rather than paint over the next one (Tal caught an agency tag
+         crossing four columns on Sep 3 2026). */
+      overflow: hidden;
+      min-width: 0;
+    }
+    td.file-cell {
+      font-family: var(--b-mono);
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--blue);
+      overflow-wrap: anywhere;
+      line-height: 1.35;
+    }
+    td.file-cell a {
+      color: inherit;
+      text-decoration: none;
+    }
+    td.file-cell a:hover { text-decoration: underline; }
+    .detail-section p.detail-narrative + p.detail-narrative { margin-top: 8px; }
+    .status-pill {
+      display: inline-block;
+      margin-top: 3px;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: var(--b-sans);
+      font-size: 0.6rem;
+      font-weight: 600;
+      line-height: 1.3;
+      text-transform: uppercase;
+      letter-spacing: normal;
+    }
+    .status-pill.status-enacted        { color: var(--b-brown);          background: var(--b-cream); }
+    .status-pill.status-awaiting_mayor { color: var(--b-tangerine-deep); background: var(--blue-light); }
+    .status-pill.status-in_progress    { color: var(--b-tangerine-deep); background: var(--blue-light); }
+    .status-pill.status-lapsed      { color: var(--b-ink-3);          background: var(--b-line); }
+    .detail-summary.clamped { max-height: 13em; overflow: hidden; position: relative; }
+    .detail-summary.clamped::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 3em; background: linear-gradient(to bottom, transparent, var(--blue-light)); }
+    .summary-toggle { margin-top: 6px; font-family: var(--b-sans); font-size: 0.7rem; font-weight: 600; color: var(--blue); background: none; border: 1px solid var(--blue-mid); border-radius: 5px; padding: 4px 10px; cursor: pointer; }
+    .summary-toggle:hover { background: var(--blue-light); }
+    .year-chip {
+      margin-left: 10px;
+      padding: 2px 8px;
+      border: 1px solid var(--b-line);
+      border-radius: 999px;
+      background: var(--blue-light);
+      color: var(--text);
+      font: inherit;
+      font-size: 0.72rem;
+      cursor: pointer;
+    }
+    .year-chip:hover { border-color: var(--blue); color: var(--blue); }
+    /* Type column is 10% of the table; at the 1000px minimum that is 100px,
+       and the widest badge ("Pre-Consid.") is ~84px, so the cell's own
+       padding has to be lean or the badge truncates. */
+    td.type-cell { padding-left: 8px; padding-right: 6px; }
+    td.title-cell {
+      max-width: 280px;
+    }
+    td.title-cell .title-text {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      line-height: 1.4;
+    }
+    td.amount-cell {
+      font-family: var(--b-mono);
+      font-size: 0.8rem;
+      text-align: right;
+      white-space: nowrap;
+    }
+    td.amount-cell.net-cost   { color: var(--red); }
+    td.amount-cell.net-rev    { color: var(--green); }
+    td.amount-cell.net-zero   { color: var(--text-faint); }
+    td.amount-cell.net-unk    { color: var(--text-faint); font-style: italic; }
+
+    .type-badge {
+      display: inline-block;
+      font-family: var(--b-sans);
+      font-size: 0.65rem;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 4px;
+      white-space: nowrap;
+      /* Fixed table layout: the cell cannot grow for the badge, so the badge
+         must never grow past the cell. "Pre-Consid." needs ~84px; the Type
+         column is 10% (>= 100px at the 1000px table minimum). If a future
+         label is longer it truncates with an ellipsis instead of spilling
+         into the Title column (Tal caught that on Sep 3 2026). */
+      max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      vertical-align: middle;
+    }
+    .type-badge.intro { background: #FAF6F1; color: #A44D00; }
+    .type-badge.res   { background: #FDF3D8; color: #773903; }
+    .type-badge.other { background: #F2EBE1; color: #6B5B4A; }
+
+    .agency-tags { display: flex; flex-wrap: wrap; gap: 3px; }
+    .agency-tag {
+      font-family: var(--b-sans);
+      font-size: 0.65rem;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: #F2EBE1;
+      color: var(--text-mid);
+      white-space: nowrap;
+          max-width: 100%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .expand-icon {
+      color: var(--text-faint);
+      font-size: 1rem;
+      line-height: 1;
+      transition: transform 0.2s;
+    }
+    tr.expanded .expand-icon { transform: rotate(90deg); color: var(--blue); }
+
+    /* ── DETAIL PANEL ────────────────────────────────────────── */
+    .detail-row { background: var(--blue-light) !important; }
+    .detail-row td { padding: 0; }
+    .detail-panel {
+      padding: 20px 24px 24px;
+      border-top: 1px solid var(--blue-mid);
+    }
+    @media (max-width: 768px) {
+      .detail-panel {
+        position: sticky;
+        left: 0;
+        width: min(100%, calc(100vw - 64px));
+        white-space: normal;
+        box-sizing: border-box;
+        overflow-x: auto;
+      }
+    }
+    .detail-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+    @media (max-width: 768px) { .detail-grid { grid-template-columns: 1fr; } }
+
+    .detail-section h4 {
+      font-family: var(--b-sans);
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: normal;
+      color: var(--orange);
+      margin-bottom: 10px;
+    }
+    .detail-field {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      margin-bottom: 8px;
+    }
+    .detail-field-label {
+      font-size: 0.7rem;
+      color: var(--text-faint);
+      font-weight: 500;
+    }
+    .detail-field-value {
+      font-size: 0.83rem;
+      color: var(--text-mid);
+      line-height: 1.5;
+    }
+    .detail-field-value.mono {
+      font-family: var(--b-mono);
+      font-size: 0.8rem;
+    }
+    .detail-narrative {
+      font-size: 0.82rem;
+      line-height: 1.65;
+      color: var(--text-mid);
+    }
+
+    .package-note-banner {
+      background: #FDFAED;
+      border: 1px solid #EDCE5C;
+      border-radius: 6px;
+      padding: 10px 14px;
+      font-size: 0.80rem;
+      line-height: 1.55;
+      color: #773903;
+      margin-bottom: 16px;
+    }
+
+    /* Fiscal mini-table */
+    .fiscal-mini-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.79rem;
+      margin-top: 8px;
+    }
+    .fiscal-mini-table th {
+      background: #F2EBE1;
+      border: 1px solid var(--border);
+      padding: 5px 10px;
+      font-family: var(--b-sans);
+      font-size: 0.67rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: normal;
+      color: var(--text-muted);
+      text-align: right;
+    }
+    .fiscal-mini-table th:first-child { text-align: left; }
+    /* long column labels wrap instead of inheriting the main header's nowrap */
+    .fiscal-mini-table th { white-space: normal; vertical-align: bottom; min-width: 7rem; }
+    .fiscal-mini-table th:first-child { min-width: 0; }
+    .mini-table-scroll { overflow-x: auto; max-width: 100%; }
+    .fiscal-mini-table td {
+      border: 1px solid var(--border);
+      padding: 5px 10px;
+      font-family: var(--b-mono);
+      font-size: 0.8rem;
+      text-align: right;
+      color: var(--text-mid);
+    }
+    .fiscal-mini-table td:first-child {
+      text-align: left;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .fiscal-mini-table tr:last-child td { background: #FAF6F1; font-weight: 700; }
+
+    /* Program breakdown table */
+    .breakdown-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.78rem;
+      margin-top: 8px;
+    }
+    .breakdown-table th {
+      background: #F2EBE1;
+      border: 1px solid var(--border);
+      padding: 5px 10px;
+      font-family: var(--b-sans);
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: normal;
+      color: var(--text-muted);
+      text-align: left;
+    }
+    .breakdown-table td {
+      border: 1px solid var(--border);
+      padding: 5px 10px;
+      color: var(--text-mid);
+      vertical-align: top;
+    }
+    .breakdown-table td.amt {
+      font-family: var(--b-mono);
+      text-align: right;
+      white-space: nowrap;
+    }
+
+    .detail-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--blue);
+      text-decoration: none;
+      padding: 5px 12px;
+      border: 1px solid var(--blue-mid);
+      border-radius: 6px;
+      background: var(--blue-light);
+      transition: all 0.15s;
+      margin-top: 12px;
+    }
+    .detail-link:hover { background: var(--blue); color: #fff; }
+    button.detail-link { font-family: inherit; cursor: pointer; margin-left: 8px; }
+    .net-basis { font-family: var(--b-sans); font-size: 0.62rem; font-weight: 600;
+      letter-spacing: normal; text-transform: uppercase; color: var(--text-faint); margin-top: 2px; white-space: normal; line-height: 1.25; }
+    .copy-fallback { width: 18rem; max-width: 100%; margin-left: 8px; font-size: 0.75rem; padding: 4px 6px;
+      border: 1px solid var(--border-mid); border-radius: 4px; }
+    @keyframes row-flash { from { background: var(--blue-mid); } to { background: transparent; } }
+    tr.row-flash > td { animation: row-flash 2s ease-out; }
+    @media (prefers-reduced-motion: reduce) { tr.row-flash > td { animation: none; } }
+
+    /* ── PAGINATION ──────────────────────────────────────────── */
+    .pagination {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 16px;
+      border-top: 1px solid var(--border);
+    }
+    .page-btn {
+      height: 30px;
+      min-width: 30px;
+      padding: 0 10px;
+      border: 1px solid var(--border-mid);
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-family: var(--b-sans);
+      background: var(--surface);
+      color: var(--text-mid);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .page-btn:hover { border-color: var(--blue); color: var(--blue); }
+    .page-btn.active { background: var(--blue); border-color: var(--blue); color: #fff; }
+    .page-btn:disabled { opacity: 0.4; cursor: default; }
+
+    /* ── EMPTY / LOADING ─────────────────────────────────────── */
+    .state-msg {
+      text-align: center;
+      padding: 48px 24px;
+      color: var(--text-faint);
+    }
+    .state-msg h3 { font-family: var(--b-display); font-size: 1rem; margin-bottom: 6px; color: var(--text-muted); font-weight: 500; }
+    .state-msg p  { font-size: 0.85rem; }
+
+    /* ── DATA NOTE ───────────────────────────────────────────── */
+    .data-note {
+      margin-top: 20px;
+      padding: 12px 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--orange);
+      border-radius: 6px;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+    .data-note strong { color: var(--text); }
+
+    /* ── FOOTER ──────────────────────────────────────────────── */
+    footer {
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      padding: 18px clamp(16px, 4vw, 48px);
+    }
+    .footer-inner {
+      max-width: 1300px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .footer-copy { font-size: 0.78rem; color: var(--text-faint); }
+    .footer-links { display: flex; gap: 18px; }
+    .footer-links a { font-size: 0.78rem; color: var(--text-faint); text-decoration: none; transition: color 0.15s; }
+    .footer-links a:hover { color: var(--blue); }
+
+    @media (max-width: 640px) {
+      .brand-slash, .brand-section { display: none; }
+      .results-totals { display: none; }
+      td.title-cell { max-width: 160px; }
+    }
+  
+    /* ── TOPIC COLOUR (2026 rebrand) ──────────────────────
+       Colour encodes what KIND of thing something is. The bright fills are
+       decorative only; the -ink twins are the only variants safe for text
+       (each is tuned to 4.5:1 on Canvas Cream). Tokens: assets/brand.css */
+    .card[data-topics~="transit"] .card-category { color: var(--b-topic-transit-ink); }
+    .card[data-topics~="cb"]      .card-category { color: var(--b-topic-cb-ink); }
+    .card[data-topics~="budget"]  .card-category { color: var(--b-topic-budget-ink); }
+    .card[data-topics~="govtech"] .card-category { color: var(--b-topic-govtech-ink); }
+    .tf-pill[data-topic="transit"]:hover  { border-color: var(--b-topic-transit-ink); color: var(--b-topic-transit-ink); }
+    .tf-pill[data-topic="cb"]:hover       { border-color: var(--b-topic-cb-ink); color: var(--b-topic-cb-ink); }
+    .tf-pill[data-topic="budget"]:hover   { border-color: var(--b-topic-budget-ink); color: var(--b-topic-budget-ink); }
+    .tf-pill[data-topic="govtech"]:hover  { border-color: var(--b-topic-govtech-ink); color: var(--b-topic-govtech-ink); }
+    .tf-pill[data-topic="transit"].active { background: var(--b-topic-transit-ink); border-color: var(--b-topic-transit-ink); color: #fff; }
+    .tf-pill[data-topic="cb"].active      { background: var(--b-topic-cb-ink); border-color: var(--b-topic-cb-ink); color: #fff; }
+    .tf-pill[data-topic="budget"].active  { background: var(--b-topic-budget-ink); border-color: var(--b-topic-budget-ink); color: #fff; }
+    .tf-pill[data-topic="govtech"].active { background: var(--b-topic-govtech-ink); border-color: var(--b-topic-govtech-ink); color: #fff; }
+    /* A row of figures should not read as one colour. */
+    .stat-pill:nth-child(4n+1) .sp-num { color: var(--b-topic-budget-ink); }
+    .stat-pill:nth-child(4n+2) .sp-num { color: var(--b-topic-transit-ink); }
+    .stat-pill:nth-child(4n+3) .sp-num { color: var(--b-topic-cb-ink); }
+    .stat-pill:nth-child(4n+4) .sp-num { color: var(--b-brown); }
+  </style>
+<style id="support-btn-css">
+.header-actions{display:flex;align-items:center;gap:12px;margin-left:auto;flex-shrink:0;}
+.header-link{font-size:0.8rem;font-weight:500;color:#9A8B7A;text-decoration:none;white-space:nowrap;display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border:1px solid rgba(255,255,255,0.15);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
+.header-link:hover{color:#fff;border-color:rgba(255,255,255,0.35);background:rgba(255,255,255,0.08);}
+.header-link svg{flex-shrink:0;}
+.support-link{display:inline-flex;align-items:center;gap:5px;font-size:0.8rem;font-weight:500;color:#FFD23F;text-decoration:none;padding:5px 11px;border:1px solid rgba(207,75,12,0.45);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
+.support-link:hover{color:#fff;background:#C84609;border-color:#C84609;}
+.support-link svg{flex-shrink:0;}
+.footer-support{display:inline-flex;align-items:center;gap:5px;font-size:0.8rem;font-weight:500;color:#C84609;text-decoration:none;padding:5px 11px;border:1px solid rgba(207,75,12,0.45);border-radius:6px;transition:color .15s,border-color .15s,background .15s;}
+.footer-support:hover{color:#fff;background:#C84609;border-color:#C84609;}
+.footer-support svg{flex-shrink:0;}
+.footer-support{vertical-align:middle;}
+.footer-links{align-items:center;}
+
+    /* The subpage header carries a mark, a back-link, a page title AND the
+       action buttons, so shed the optional links before the row can overflow.
+       These MUST live in the last style block on the page: several pages carry
+       a second <style id="support-btn-css"> that re-declares .header-actions
+       and would otherwise override the media query. */
+    header .header-inner { min-width: 0; }
+    header h1 { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    @media (max-width: 900px) { .header-actions .header-link { display: none; } }
+    @media (max-width: 560px) { .header-actions { display: none; } }
+    @media (max-width: 560px) { header h1 { white-space: normal; } }
+    @media (max-width: 520px) { header h1 { display: none; } }
+  </style>
+  <script defer src="/assets/site.js?v=20261119"></script>
+<!-- Cloudflare Web Analytics --><script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "d0dce16d32c14809bc15038314fb9a13"}'></script><!-- End Cloudflare Web Analytics -->
+  <script defer src="/tools/legislation/assets/tracker-switch.js?v=8"></script>
+<!-- jsonld:start -->
+<script type="application/ld+json">
+{
+ "@context": "https://schema.org",
+ "@type": "Dataset",
+ "name": "NYC Council Fiscal Impacts Tracker",
+ "description": "Explore estimated fiscal impacts of NYC Council legislation: costs, revenues, and net fiscal impacts by agency and council member.",
+ "url": "https://data.nycuriosity.com/tools/legislation/fiscal/",
+ "creator": {
+  "@type": "Person",
+  "name": "Tal Roded",
+  "url": "https://talroded.nycuriosity.com/"
+ },
+ "isAccessibleForFree": true,
+ "inLanguage": "en-US",
+ "spatialCoverage": {
+  "@type": "Place",
+  "name": "New York City"
+ }
+}
+</script>
+<!-- jsonld:end -->
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="header-inner">
+    <a href="/" class="header-mark" aria-label="NYCuriosity Data home"><img src="/assets/brand/Talbot.svg" alt="" style="height:32px;width:auto;display:block"></a>
+    <a href="/" class="brand" aria-label="NYCuriosity Data home"><img src="/assets/brand/SubLogo_W.svg" alt="NYCuriosity Data" style="height:19px;width:auto;display:block"></a>
+    <a href="/tools/legislation/" class="back-link">&larr; NYC Council Legislation Trackers</a>
+    <div class="header-divider"></div>
+    <p class="site-header-title">Fiscal Impacts Tracker</p>
+    <div class="header-actions">
+      <a href="https://talroded.nycuriosity.com" class="header-link" target="_blank" rel="noopener"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>About</a>
+      <a href="https://nycuriosity.substack.com" class="header-link" target="_blank" rel="noopener">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v4H4z"/><path d="M4 10h16v10l-8-4-8 4z"/></svg>
+      Substack
+    </a>
+      <a href="https://buymeacoffee.com/nycuriosity" class="support-link" target="_blank" rel="noopener" aria-label="Support my work on Buy Me a Coffee"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>Support my work</a>
+    </div>
+  </div>
+</header>
+
+<!-- HERO -->
+<div class="chart-nav">
+  <span class="chart-nav-label">Views in this tool:</span>
+  <a href="/tools/legislation/fiscal/overview/">Fiscal Impacts overview</a>
+  <a href="/tools/legislation/fiscal/" class="active">Bill Table</a>
+  <a href="/tools/legislation/fiscal/agency-fiscal-impact/">By Agency</a>
+  <a href="/tools/legislation/fiscal/sponsor-fiscal-impact/">By Sponsor</a>
+  <a href="/tools/legislation/fiscal/intro-year-impact/">By Year Legislated</a>
+  <a href="/tools/legislation/fiscal/cost-revenue-breakdown/">Costs vs. Revenue</a>
+  <a href="/tools/legislation/implementation/law/">Law Explorer</a>
+  <a href="/tools/legislation/fiscal/methodology/">Methodology</a>
+</div>
+
+<div class="hero">
+  <div class="hero-inner">
+    <!-- BREADCRUMB -->
+    <div class="breadcrumb">
+      <div class="breadcrumb-inner">
+        <a href="https://data.nycuriosity.com/">NYCuriosity Data</a>
+        <span class="breadcrumb-sep">/</span>
+        <a href="/tools/legislation/">NYC Council Legislation Trackers</a>
+        <span class="breadcrumb-sep">/</span>
+        <span class="current">NYC Council Fiscal Impacts Tracker</span>
+      </div>
+    </div>
+    <h1>NYC Council <span>Fiscal Impacts</span> Tracker</h1>
+    <p>Explore the estimated fiscal impact of New York City Council legislation, operational costs, capital costs, revenues, and net fiscal impact by agency, committee, and council member.</p>
+    <div class="stat-pills" id="stat-pills">
+      <div class="pill"><span class="pill-label">Bills tracked</span><span class="pill-value blue" id="pill-total">—</span></div>
+      <div class="pill"><span class="pill-label">Net fiscal cost</span><span class="pill-value red" id="pill-net">—</span></div>
+      <div class="pill"><span class="pill-label">Total expense</span><span class="pill-value" id="pill-expense">—</span></div>
+      <div class="pill"><span class="pill-label">Last updated</span><span class="pill-value orange" id="pill-updated">—</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- CHART NAV -->
+
+<!-- MAIN -->
+<div class="main">
+  <div class="main-inner">
+
+    <!-- FILTERS -->
+    <div class="filter-section">
+      <div class="filter-row">
+        <div class="filter-group search">
+          <label class="filter-label" for="f-search">Search bill # or title</label>
+          <input type="text" id="f-search" class="filter-input" placeholder="e.g. Int. No. 246 or cool pavements …">
+        </div>
+        <div id="ms-type"></div>
+        <div id="ms-status"></div>
+        <div id="ms-agency"></div>
+        <div id="ms-committee"></div>
+        <div id="ms-sponsor"></div>
+        <div id="ms-fy"></div>
+        <div id="ms-impact"></div>
+        <button class="btn-reset" id="btn-reset">Reset all</button>
+      </div>
+    </div>
+
+    <!-- RESULTS BAR -->
+    <div class="results-bar">
+      <div class="results-count" id="results-count"><!-- static:results-count:start -->
+Showing <strong>481</strong> of <strong>481</strong> bills
+<!-- static:results-count:end --></div>
+      <div class="results-totals" id="results-totals"></div>
+    </div>
+
+    <!-- TABLE -->
+    <figure class="chart-card table-wrap" id="chart-box" data-slug="nyc-council-fiscal-impacts-bill-table">
+      <div class="c-plot">
+      <div class="table-scroll">
+        <table id="main-table">
+          <colgroup>
+            <col style="width:11%"><col style="width:10%"><col style="width:13%"><col style="width:12%">
+            <col style="width:10%"><col style="width:7%"><col style="width:8%"><col style="width:8%">
+            <col style="width:7%"><col style="width:7%"><col style="width:7%"><col style="width:28px">
+          </colgroup>
+          <thead>
+            <tr>
+              <th data-col="file_number">Bill # <i class="sort-icon">↕</i></th>
+              <th data-col="legislation_type">Type <i class="sort-icon">↕</i></th>
+              <th data-col="title">Title <i class="sort-icon">↕</i></th>
+              <th data-col="committee">Committee <i class="sort-icon">↕</i></th>
+              <th data-col="prime_sponsor">Prime Sponsor <i class="sort-icon">↕</i></th>
+              <th>Agencies</th>
+              <th data-col="date_prepared">Date <i class="sort-icon">↕</i></th>
+              <th data-col="net_fiscal_impact" style="text-align:right">Net Impact <i class="sort-icon">↕</i></th>
+              <th data-col="total_expenditure" style="text-align:right">Expense <i class="sort-icon">↕</i></th>
+              <th data-col="total_capital" style="text-align:right">Capital <i class="sort-icon">↕</i></th>
+              <th data-col="total_revenue" style="text-align:right">Revenue <i class="sort-icon">↕</i></th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="table-body">
+            <!-- static:bill-rows:start -->
+<tr class="data-row" data-id="7862972"><td class="file-cell"><a href="https://legistar.council.nyc.gov/LegislationDetail.aspx?ID=7862972&amp;GUID=7B8B03EB-260A-43F3-977C-76E051ED472E" target="_blank" rel="noopener">Int 0445-2026</a><div><span class="status-pill status-in_progress" title="Laid Over in Committee">In progress</span></div></td><td class="type-cell"><span class="type-badge intro">Int.</span></td><td class="title-cell"><div class="title-text">A Local Law to amend the administrative code of the city of New York, in relation to requiring the department of small business services to expand the business pathways program</div></td><td>Small Business</td><td>Stevens</td><td><div class="agency-tags"><span class="agency-tag">SBS</span></div></td><td style="white-space:nowrap;color:var(--text-faint);font-size:0.75rem">2026-10-26</td><td class="amount-cell net-cost">−$300K</td><td class="amount-cell">$300K</td><td class="amount-cell">—</td><td class="amount-cell">$0</td><td style="text-align:center"><span class="expand-icon">›</span></td></tr>
+<tr class="data-row" data-id="7879334"><td class="file-cell"><a href="https://legistar.council.nyc.gov/LegislationDetail.aspx?ID=7879334&amp;GUID=756FB699-9A75-435A-8D2D-68942D97F5D9" target="_blank" rel="noopener">Int 0613-2026</a><div><span class="status-pill status-in_progress" title="Laid Over in Committee">In progress</span></div></td><td class="type-cell"><span class="type-badge intro">Int.</span></td><td class="title-cell"><div class="title-text">A Local Law to amend the administrative code of the city of New York, in relation to the installation of protected bicycle lanes</div></td><td>Transportation and Infrastructure</td><td>Joseph</td><td><div class="agency-tags"><span class="agency-tag">DOT</span></div></td><td style="white-space:nowrap;color:var(--text-faint);font-size:0.75rem">2026-10-22</td><td class="amount-cell net-cost">−$59.2M</td><td class="amount-cell">$59.2M</td><td class="amount-cell">—</td><td class="amount-cell">$0</td><td style="text-align:center"><span class="expand-icon">›</span></td></tr>
+<tr class="data-row" data-id="8206967"><td class="file-cell"><a href="https://legistar.council.nyc.gov/LegislationDetail.aspx?ID=8206967&amp;GUID=F2CBAD7A-89A2-41FE-B971-0220260D0075" target="_blank" rel="noopener">Int 1022-2026</a><div><span class="status-pill status-in_progress" title="Laid Over in Committee">In progress</span></div></td><td class="type-cell"><span class="type-badge intro">Int.</span></td><td class="title-cell"><div class="title-text">A Local Law to amend the administrative code of the city of New York, in relation to establishing ferry service to West 125th Street</div></td><td>Transportation and Infrastructure</td><td>Abreu</td><td><div class="agency-tags"><span class="agency-tag">NYCEDC</span></div></td><td style="white-space:nowrap;color:var(--text-faint);font-size:0.75rem">2026-10-19</td><td class="amount-cell net-cost">−$2.0M</td><td class="amount-cell">$2.0M</td><td class="amount-cell">—</td><td class="amount-cell">$0</td><td style="text-align:center"><span class="expand-icon">›</span></td></tr>
+<tr class="data-row" data-id="8206781"><td class="file-cell"><a href="https://legistar.council.nyc.gov/LegislationDetail.aspx?ID=8206781&amp;GUID=8ED78CA7-955E-4D13-AD71-AEC7C7C9A8A4" target="_blank" rel="noopener">Int 1032-2026</a><div><span class="status-pill status-in_progress" title="Laid Over in Committee">In progress</span></div></td><td class="type-cell"><span class="type-badge intro">Int.</span></td><td class="title-cell"><div class="title-text">A Local Law in relation to ferry service to City Island</div></td><td>Transportation and Infrastructure</td><td>Farías</td><td><div class="agency-tags"><span class="agency-tag">DOT</span></div></td><td style="white-space:nowrap;color:var(--text-faint);font-size:0.75rem">2026-10-19</td><td class="amount-cell net-cost">−$250K</td><td class="amount-cell">$250K</td><td class="amount-cell">—</td><td class="amount-cell">$0</td><td style="text-align:center"><span class="expand-icon">›</span></td></tr>
+<tr class="data-row" data-id="7984667"><td class="file-cell"><a href="https://legistar.council.nyc.gov/LegislationDetail.aspx?ID=7984667&amp;GUID=EDCC7C44-0CCD-4F41-A1D5-729EBFA62809" target="_blank" rel="noopener">Int 0846-2026</a><div><span class="status-pill status-in_progress" title="Laid Over in Committee">In progress</span></div></td><td class="type-cell"><span class="type-badge intro">Int.</span></td><td class="title-cell"><div class="title-text">A Local Law to amend the administrative code of the city of New York, in relation to ferry service to Willets Point</div></td><td>Transportation and Infrastructure</td><td>Thomas-Henry</td><td><div class="agency-tags"><span class="agency-tag">DOT</span></div></td><td style="white-space:nowrap;color:var(--text-faint);font-size:0.75rem">2026-10-19</td><td class="amount-cell net-cost">−$2.5M</td><td class="amount-cell">$2.5M</td><td class="amount-cell">—</td><td class="amount-cell">$0</td><td style="text-align:center"><span class="expand-icon">›</span></td></tr>
+<tr class="data-row" data-id="7927441"><td class="file-cell"><a href="https://legistar.council.nyc.gov/LegislationDetail.aspx?ID=7927441&amp;GUID=7E0C1A15-0EF2-4282-83BB-066A5DFA321A" target="_blank" rel="noopener">Int 0704-2026</a><div><span class="status-pill status-in_progress" title="Laid Over in Committee">In progress</span></div></td><td class="type-cell"><span class="type-badge intro">Int.</span></td><td class="title-cell"><div class="title-text">A Local Law to amend the administrative code of the city of New York, in relation to establishing ferry service at Canarsie Pier</div></td><td>Transportation and Infrastructure</td><td>Narcisse</td><td><div class="agency-tags"><span class="agency-tag">NYCEDC</span></div></td><td style="white-space:nowrap;color:var(--text-faint);font-size:0.75rem">2026-10-19</td><td class="amount-cell net-cost">−$2.0M</td><td class="amount-cell">$2.0M</td><td class="amount-cell">—</td><td class="amount-cell">$0</td><td style="text-align:center"><span class="expand-icon">›</span></td></tr>
+<tr class="data-row" data-id="8206845"><td class="file-cell"><a href="https://legistar.council.nyc.gov/LegislationDetail.aspx?ID=8206845&amp;GUID=6AC9C3AF-2CE8-42A3-965A-F5C262BE178D" target="_blank" rel="noopener">Int 1051-2026</a><div><span class="status-pill status-in_progress" title="Laid Over in Committee">In progress</span></div></td><td class="type-cell"><span class="type-badge intro">Int.</span></td><td class="title-cell"><div class="title-text">A Local Law to amend the administrative code of the city of New York, in relation to the alternative exemption for seriously disabled veterans</div></td><td>Veterans</td><td>Morano</td><td><div class="agency-tags">—</div></td><td style="white-space:nowrap;color:var(--text-faint);font-size:0.75rem">2026-10-15</td><td class="amount-cell net-cost">−$12.9M</td><td class="amount-cell">$12.9M</td><td class="amount-cell">—</td><td class="amount-cell">$0</td><td style="text-align:center"><span class="expand-icon">›</span></td></tr>
+<tr class="data-row" data-id="8239234"><td class="file-cell"><a href="https://legistar.council.nyc.gov/LegislationDetail.aspx?ID=8239234&amp;GUID=75E3ADBA-51CD-4CF8-B8B7-6A1B9A1F22FE" target="_blank" rel="noopener">T2026-2605</a><div><span class="status-pill status-in_progress" title="Committee">In progress</span></div></td><td class="type-cell"><span class="type-badge intro">Int.</span></td><td class="title-cell"><div class="title-text">A Local Law to amend the administrative code of the city of New York, in relation to civilian enforcement of artificial intelligence violations</div></td><td>Committee of the Whole</td><td>Menin (Speaker)</td><td><div class="agency-tags"><span class="agency-tag">DCWP</span></div></td><td style="white-space:nowrap;color:var(--text-faint);font-size:0.75rem">2026-09-29</td><td class="amount-cell net-cost">−$206K</td><td class="amount-cell">$206K</td><td class="amount-cell">—</td><td class="amount-cell">$0</td><td style="text-align:center"><span class="expand-icon">›</span></td></tr>
+<tr class="data-row" data-id="8170046"><td class="file-cell"><a href="https://legistar.council.nyc.gov/LegislationDetail.aspx?ID=8170046&amp;GUID=011A3822-B437-4CEB-A09B-D686B810ADD4" target="_blank" rel="noopener">Int 1004-2026</a><div><span class="status-pill status-in_progress" title="Laid Over in Committee">In progress</span></div></td><td class="type-cell"><span class="type-badge intro">Int.</span></td><td class="title-cell"><div class="title-text">A Local Law to amend the administrative code of the city of New York, in relation to pedestrian safety</div></td><td>Transportation and Infrastructure</td><td>Maloney</td><td><div class="agency-tags"><span class="agency-tag">DOT</span></div></td><td style="white-space:nowrap;color:var(--text-faint);font-size:0.75rem">2026-09-28</td><td class="amount-cell net-cost">−$500K</td><td class="amount-cell">$500K</td><td class="amount-cell">—</td><td class="amount-cell">$0</td><td style="text-align:center"><span class="expand-icon">›</span></td></tr>
+<tr class="data-row" data-id="8223711"><td class="file-cell"><a href="https://legistar.council.nyc.gov/LegislationDetail.aspx?ID=8223711&amp;GUID=DFD67A5C-A443-4615-B9C0-78C0770309BC" target="_blank" rel="noopener">Int 1069-2026</a><div><span class="status-pill status-in_progress" title="Laid Over in Committee">In progress</span></div></td><td class="type-cell"><span class="type-badge intro">Int.</span></td><td class="title-cell"><div class="title-text">A Local Law to amend the administrative code of the city of New York, in relation to the study of safe delivery times by contracted delivery workers and the promulgation of safe delivery time standards</div></td><td>Consumer and Worker Protection</td><td>Abreu</td><td><div class="agency-tags"><span class="agency-tag">DCWP</span></div></td><td style="white-space:nowrap;color:var(--text-faint);font-size:0.75rem">2026-09-28</td><td class="amount-cell net-cost">−$250K</td><td class="amount-cell">$250K</td><td class="amount-cell">—</td><td class="amount-cell">$0</td><td style="text-align:center"><span class="expand-icon">›</span></td></tr>
+<!-- static:bill-rows:end -->
+          </tbody>
+        </table>
+      </div>
+      </div>
+      <div class="pagination" id="pagination"></div>
+      <figcaption class="c-foot">
+        <div class="c-foot-text">
+          <span>Created by Tal Roded · NYCuriosity</span>
+        </div>
+      </figcaption>
+    </figure>
+
+    <!-- DATA NOTE -->
+    <div class="data-note">
+      <strong>About this dataset:</strong> This tracker covers NYC City Council legislation where a fiscal impact statement was found on <a href="https://legistar.council.nyc.gov" target="_blank" rel="noopener">NYC Legistar</a> <em>and</em> where the Finance Division estimated a non-zero fiscal impact. Bills with $0 estimated impact, unquantifiable impacts, or no fiscal impact statement are excluded. Figures are <em>estimates</em> prepared by the City Council Finance Division, and they likely understate what laws cost: statements often assume agencies will absorb new work "within existing resources" and rarely price staff time (see <a href="methodology/#limits">Limitations</a>). Data is refreshed monthly. <strong>Net Impact</strong> = revenues minus expenditures minus capital costs; negative values represent a net cost to the city.
+    </div>
+
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <span class="footer-copy">Created by Tal Roded · NYCuriosity</span>
+    <div class="footer-links">
+      <a href="https://buymeacoffee.com/nycuriosity" class="footer-support" target="_blank" rel="noopener" aria-label="Support my work on Buy Me a Coffee"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>Support my work</a>
+      <a href="https://nycuriosity.substack.com" target="_blank" rel="noopener">Substack</a>
+      <a href="https://legistar.council.nyc.gov" target="_blank" rel="noopener">Source: NYC Legistar</a>
+      <a href="https://data.nycuriosity.com/">← All tools &amp; data</a>
+    </div>
+  </div>
+</footer>
+
+<script src="/tools/legislation/assets/multiselect.js?v=3"></script>
+<script>
+// ── State ────────────────────────────────────────────────────────────────────
+let allRecords  = [];
+let filtered    = [];
+let sortCol     = "date_prepared";
+let sortDir     = -1;  // -1 = descending
+let page        = 1;
+const PAGE_SIZE = 50;
+let expandedId  = null;
+
+// ── Utilities ─────────────────────────────────────────────────────────────────
+const fmt = new Intl.NumberFormat("en-US");
+const fmtCurr = v => v === null || v === undefined ? null : (
+  Math.abs(v) === 0 ? "$0" :
+  Math.abs(v) >= 1e9 ? "$" + (v/1e9).toFixed(2) + "B" :
+  Math.abs(v) >= 1e6 ? "$" + (v/1e6).toFixed(1) + "M" :
+  Math.abs(v) >= 1e3 ? "$" + (v/1e3).toFixed(0) + "K" :
+  "$" + Math.abs(v).toFixed(0)
+);
+const fmtCurrFull = v => v === null || v === undefined ? "Unknown" :
+  new Intl.NumberFormat("en-US", {style:"currency",currency:"USD",maximumFractionDigits:0}).format(v);
+
+const sign = v => v === null ? "unk" : v < 0 ? "cost" : v > 0 ? "rev" : "zero";
+
+function netLabel(r) {
+  if (!r.cost_estimable) return { cls: "net-unk", txt: "unestimable" };
+  if (r.package_note && (r.net_fiscal_impact === null || r.net_fiscal_impact === undefined))
+    return { cls: "net-unk", txt: "see package" };
+  const n = r.net_fiscal_impact;
+  if (n === null || n === undefined) return { cls: "net-unk", txt: "—" };
+  if (n === 0) return { cls: "net-zero", txt: "$0" };
+  if (n < 0)   return { cls: "net-cost", txt: "−" + fmtCurr(Math.abs(n)) };
+  return               { cls: "net-rev",  txt: "+" + fmtCurr(n) };
+}
+
+function typeBadge(t) {
+  if (!t) return `<span class="type-badge other">?</span>`;
+  if (t.includes("Pre-Considered")) return `<span class="type-badge res">Pre-Consid.</span>`;
+  if (t === "Introduction")         return `<span class="type-badge intro">Int.</span>`;
+  if (t === "Resolution")           return `<span class="type-badge res">Res.</span>`;
+  return `<span class="type-badge other">${t.slice(0,6)}</span>`;
+}
+
+function esc(s) {
+  return (s || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+// Bill number shown in the table. `legistar_file` is Legistar's own File #
+// ("Int 1002-2026"), backfilled Sep 2026; `file_number` is whatever the
+// fiscal impact statement itself printed ("Intro. No. 831-A", "Preconsidered
+// Int. No.", or nothing at all for bills numbered after the statement was
+// drafted). Prefer Legistar's, fall back to the statement's.
+function billLabel(r) {
+  return r.legistar_file || r.file_number || "No number";
+}
+// Sort key for the Bill # column: session year then bill number, so
+// "Int 0039-2024" sorts before "Int 1002-2024" and after "Int 1501-2023".
+function billKey(r) {
+  const m = (r.legistar_file || "").match(/^(\w+)\s+0*(\d+)-(\d{4})/);
+  if (m) return m[3] * 10000 + Number(m[2]);
+  const y = ((r.date_prepared || "").match(/^\d{4}/) || [0])[0];
+  const n = ((r.file_number || "").match(/\d{2,4}/) || [0])[0];
+  return Number(y) * 10000 + Number(n);
+}
+
+// ── Data loading ─────────────────────────────────────────────────────────────
+async function loadData() {
+  try {
+    const resp = await fetch("./data/fiscal_impacts.json");
+    if (!resp.ok) throw new Error("HTTP " + resp.status);
+    const json = await resp.json();
+
+    allRecords = json.records || [];
+
+    // Update hero pills
+    const meta = json.metadata || {};
+    document.getElementById("pill-total").textContent = allRecords.length.toLocaleString();
+
+    const totalNet = allRecords.reduce((s, r) =>
+      s + (r.net_fiscal_impact !== null && r.net_fiscal_impact !== undefined ? r.net_fiscal_impact : 0), 0);
+    const totalExp = allRecords.reduce((s, r) =>
+      s + (r.total_expenditure || 0), 0);
+
+    document.getElementById("pill-net").textContent =
+      totalNet < 0 ? "−" + fmtCurr(Math.abs(totalNet)) :
+      totalNet > 0 ? "+" + fmtCurr(totalNet) : "$0";
+    document.getElementById("pill-expense").textContent = fmtCurr(totalExp) || "$0";
+
+    if (meta.last_updated) {
+      const d = new Date(meta.last_updated);
+      document.getElementById("pill-updated").textContent = d.toLocaleDateString("en-US", {month:"short", day:"numeric", year:"numeric"});
+    }
+
+    populateFilters();
+
+    // URL parameters: type, status, agency, committee, sponsor, fy, impact
+    // (comma-separated option values), q (search text), year (introduced in).
+    // Charts link here with these, e.g. ?agency=DOT&committee=Finance.
+    const urlParams = new URLSearchParams(location.search);
+    let paramApplied = false;
+    // ?bill= wins: when it names a record, the other filter params are ignored
+    // so the bill cannot be filtered out of its own link.
+    const billWins = !!urlParams.get("bill") && allRecords.some(r => String(r.matter_id) === String(urlParams.get("bill")));
+    Object.keys(MS).forEach(k => {
+      const v = billWins ? null : urlParams.get(k);
+      if (v) {
+        let vals = v.split(",").map(x => x.trim()).filter(Boolean);
+        // ?status= accepts the old group value "passed" as an alias for enacted + awaiting_mayor.
+        if (k === "status") vals = [...new Set(vals.flatMap(x => x === "passed" ? ["enacted", "awaiting_mayor"] : [x]))];
+        MS[k].set(vals); paramApplied = true;
+      }
+    });
+    const qParam = billWins ? null : urlParams.get("q");
+    if (qParam) { document.getElementById("f-search").value = qParam; paramApplied = true; }
+    const yearParam = (billWins ? "" : urlParams.get("year") || "").match(/^\d{4}$/);
+    if (yearParam) { yearFilter = parseInt(yearParam[0], 10); paramApplied = true; }
+
+    // Deep link: ?intro=692 (or ?intro=Int.%20No.%20692) filters to that bill,
+    // expands its row, and scrolls to the table. Matches on the digit sequence
+    // with leading zeros stripped, since file_number formats vary
+    // ("Int. No. 692" / "Int. 579" / "Int. No. 0296"). Legistar's own File #
+    // is tried first, the statement's number second. Records are in data
+    // order, newest session last, so a duplicate intro number across sessions
+    // resolves to the most recent one.
+    // ?bill=<matter_id> is the exact deep link (intro numbers repeat across
+    // sessions: 32 numbers cover 66 records); profile pages and the
+    // costs-vs-revenue chart use it. ?intro= stays for hand-typed links.
+    const billParam = new URLSearchParams(location.search).get("bill");
+    const introParam = new URLSearchParams(location.search).get("intro");
+    let introMatch = null;
+    if (billParam) {
+      introMatch = allRecords.find(r => String(r.matter_id) === String(billParam)) || null;
+      document.getElementById("f-search").value = introMatch ? billLabel(introMatch) : billParam;
+      if (introMatch) expandedId = introMatch.matter_id;
+    } else if (introParam) {
+      const digits = (introParam.match(/\d+/) || [""])[0].replace(/^0+/, "");
+      const firstDigits = s => ((s || "").match(/\d+/) || [""])[0].replace(/^0+/, "");
+      const byLegistar = allRecords.filter(r => firstDigits(r.legistar_file) === digits);
+      const byStatement = allRecords.filter(r => firstDigits(r.file_number) === digits);
+      const pool = byLegistar.length ? byLegistar : byStatement;
+      introMatch = digits && pool.length ? pool.reduce((a, b) => billKey(b) >= billKey(a) ? b : a) : null;
+      document.getElementById("f-search").value = introMatch ? billLabel(introMatch) : introParam;
+      if (introMatch) expandedId = introMatch.matter_id;
+    }
+
+    applyFilters();
+
+    if (billParam || introParam || paramApplied) {
+      if (expandedId !== null) revealExpanded();
+      else document.getElementById("main-table").scrollIntoView({ behavior: "smooth" });
+    }
+
+  } catch (e) {
+    document.getElementById("table-body").innerHTML =
+      `<tr><td colspan="12"><div class="state-msg"><h3>Could not load data</h3><p>${e.message}</p></div></td></tr>`;
+  }
+}
+
+// ── Filters (shared MSFilter widget) ─────────────────────────────────────────
+const MS = {};
+let yearFilter = null;  // hidden filter: year the bill was introduced
+const onFilterChange = () => { expandedId = null; syncUrl(); applyFilters(); };
+
+// Year the bill was introduced. Mirrors get_intro_year() in
+// pipeline/regenerate_agency_data.py so chart bars and table rows agree.
+function introYear(r) {
+  const ok = y => y >= 2010 && y <= 2030;
+  let m = String(r.legistar_file || "").match(/-(20\d{2})$/);
+  if (m && ok(+m[1])) return +m[1];
+  m = String(r.date_prepared || "").match(/\b(20\d{2})\b/);
+  if (m && ok(+m[1])) return +m[1];
+  const fn = String(r.file_number || "");
+  m = fn.match(/\bT(20\d{2})\b/);
+  if (m && ok(+m[1])) return +m[1];
+  m = fn.match(/-(20\d{2})$/);
+  if (m && ok(+m[1])) return +m[1];
+  m = String(r.processed_at || "");
+  return m ? parseInt(m.slice(0, 4), 10) : null;
+}
+
+// Write the active filters back to the URL (params at "all" are omitted);
+// an untouched view clears the query string. Drops ?intro= once filters change.
+function syncUrl() {
+  if (!MS.type) return;
+  const p = new URLSearchParams();
+  Object.keys(MS).forEach(k => {
+    const sel = MS[k].selected();
+    if (sel !== null) p.set(k, [...sel].join(","));
+  });
+  const q = document.getElementById("f-search").value.trim();
+  if (q) p.set("q", q);
+  if (yearFilter !== null) p.set("year", String(yearFilter));
+  const qs = p.toString();
+  history.replaceState(null, "", location.pathname + (qs ? "?" + qs : ""));
+}
+
+function populateFilters() {
+  const agencies   = new Set();
+  const committees = new Set();
+  const sponsors   = new Set();
+  const fys        = new Set();
+
+  allRecords.forEach(r => {
+    (r.agencies_abbrev || []).forEach(a => agencies.add(a));
+    if (r.committee)    committees.add(r.committee.trim());
+    if (r.prime_sponsor) sponsors.add(r.prime_sponsor.trim());
+    if (r.fy_full_impact) fys.add(r.fy_full_impact.trim());
+  });
+
+  const opts = vals => vals.map(v => ({v: v, l: v}));
+
+  MS.type = new MSFilter('ms-type', {
+    label: 'Type', allLabel: 'All types', sort: 'none', onChange: onFilterChange,
+    options: [
+      {v:'Introduction',              l:'Introduction'},
+      {v:'Resolution',                l:'Resolution'},
+      {v:'Pre-Considered Resolution', l:'Pre-Considered Res.'},
+    ]
+  });
+  MS.status = new MSFilter('ms-status', {
+    label: 'Status', allLabel: 'All statuses', sort: 'none', onChange: onFilterChange,
+    options: [
+      {v:'enacted',        l:'Enacted or adopted'},
+      {v:'awaiting_mayor', l:'Passed, awaiting mayor'},
+      {v:'in_progress',    l:'In progress'},
+      {v:'lapsed',         l:'Lapsed or failed'},
+      {v:'unknown',        l:'Status unknown'},
+    ]
+  });
+  MS.agency = new MSFilter('ms-agency', {
+    label: 'Agency', allLabel: 'All agencies', sort: 'alpha', onChange: onFilterChange,
+    options: opts([...agencies])
+  });
+  MS.committee = new MSFilter('ms-committee', {
+    label: 'Committee', allLabel: 'All committees', sort: 'alpha', onChange: onFilterChange,
+    options: opts([...committees])
+  });
+  MS.sponsor = new MSFilter('ms-sponsor', {
+    label: 'Prime Sponsor', allLabel: 'All sponsors', sort: 'alpha', onChange: onFilterChange,
+    options: opts([...sponsors])
+  });
+  MS.fy = new MSFilter('ms-fy', {
+    label: 'Full Impact FY', allLabel: 'All fiscal years', sort: 'none', onChange: onFilterChange,
+    options: opts([...fys].sort().reverse())
+  });
+  MS.impact = new MSFilter('ms-impact', {
+    label: 'Net Impact', allLabel: 'All impact types', sort: 'none', onChange: onFilterChange,
+    options: [
+      {v:'cost',    l:'Net cost (negative)'},
+      {v:'revenue', l:'Net revenue/savings'},
+      {v:'zero',    l:'Zero cost'},
+      {v:'unknown', l:'Unestimable'},
+    ]
+  });
+}
+
+function applyFilters() {
+  if (!MS.type) return;  // data not loaded yet
+  const search  = document.getElementById("f-search").value.toLowerCase().trim();
+  const agencyF = MS.agency.selected();
+  const impactF = MS.impact.selected();
+
+  filtered = allRecords.filter(r => {
+    if (search) {
+      const hay = (
+        (r.legistar_file || "") + " " + (r.file_number || "") + " " + (r.title || "") + " " +
+        (r.prime_sponsor || "") + " " + (r.sponsors || []).join(" ") + " " +
+        (r.agencies_full || []).join(" ") + " " + (r.agencies_abbrev || []).join(" ")
+      ).toLowerCase();
+      if (!hay.includes(search)) return false;
+    }
+    if (!MS.type.pass(r.legislation_type)) return false;
+    if (!MS.status.pass(r.status_bucket || 'unknown')) return false;
+    if (yearFilter !== null && introYear(r) !== yearFilter) return false;
+    if (agencyF !== null) {
+      const agencies = r.agencies_abbrev || [];
+      if (agencies.length && !agencies.some(a => agencyF.has(a))) return false;
+    }
+    if (!MS.committee.pass((r.committee || "").trim())) return false;
+    if (!MS.sponsor.pass((r.prime_sponsor || "").trim())) return false;
+    if (!MS.fy.pass((r.fy_full_impact || "").trim())) return false;
+    if (impactF !== null) {
+      const s = sign(r.net_fiscal_impact);
+      const matches =
+        (impactF.has('cost')    && s === 'cost') ||
+        (impactF.has('revenue') && s === 'rev')  ||
+        (impactF.has('zero')    && s === 'zero') ||
+        (impactF.has('unknown') && !r.cost_estimable);
+      if (!matches) return false;
+    }
+    return true;
+  });
+
+  // Sort
+  // For date_prepared: fall back to year in file_number (e.g. "Int 0620-2015" → "2015-01-01")
+  // so historical bills without a date_prepared still sort by intro year
+  function dateKey(r) {
+    if (r.date_prepared) return r.date_prepared;
+    const m = (r.file_number || "").match(/-(\d{4})$/);
+    if (m) return m[1] + "-01-01";
+    return "";
+  }
+  filtered.sort((a, b) => {
+    let va, vb;
+    if (sortCol === "date_prepared") {
+      va = dateKey(a);
+      vb = dateKey(b);
+    } else if (sortCol === "file_number") {
+      va = billKey(a);
+      vb = billKey(b);
+    } else {
+      va = a[sortCol] ?? "";
+      vb = b[sortCol] ?? "";
+    }
+    if (sortCol === "net_fiscal_impact" || sortCol === "total_expenditure" || sortCol === "total_capital" || sortCol === "total_revenue") {
+      va = va === null || va === "" ? -Infinity : va;
+      vb = vb === null || vb === "" ? -Infinity : vb;
+    }
+    // sortDir -1 = descending (larger / later / higher first), +1 = ascending.
+    // Before Sep 2 2026 the signs were flipped, so the "most recent first"
+    // default actually showed the 16 undated 2014-era bills at the top.
+    if (va < vb) return -sortDir;
+    if (va > vb) return sortDir;
+    return 0;
+  });
+
+  page = 1;
+  updateResultsBar();
+  renderTable();
+  renderPagination();
+}
+
+function updateResultsBar() {
+  document.getElementById("results-count").innerHTML =
+    `Showing <strong>${filtered.length}</strong> of <strong>${allRecords.length}</strong> bills` +
+    (yearFilter !== null ? `<button type="button" class="year-chip" id="year-chip" aria-label="Clear the year filter">Introduced in ${yearFilter} ×</button>` : "");
+  const chip = document.getElementById("year-chip");
+  if (chip) chip.addEventListener("click", () => { yearFilter = null; expandedId = null; syncUrl(); applyFilters(); });
+
+  const totExp = filtered.reduce((s, r) => s + (r.total_expenditure || 0), 0);
+  const totCap = filtered.reduce((s, r) => s + (r.total_capital || 0), 0);
+  const totRev = filtered.reduce((s, r) => s + (r.total_revenue || 0), 0);
+  const totNet = filtered.reduce((s, r) => s + (r.net_fiscal_impact ?? 0), 0);
+
+  const netCls = totNet < 0 ? "red" : totNet > 0 ? "green" : "";
+  // a package member's figures sit on another bill: a view of only such
+  // bills says so instead of "$0" (fiscal audit round 2, ?intro=894)
+  const onlyPackage = filtered.length > 0 && filtered.every(r => r.package_note && r.net_fiscal_impact == null);
+  const netTxt = onlyPackage ? "see package" : totNet < 0 ? "−" + fmtCurr(Math.abs(totNet)) : totNet > 0 ? "+" + fmtCurr(totNet) : "$0";
+
+  document.getElementById("results-totals").innerHTML = `
+    <div class="total-item"><span class="total-label">Net impact</span><span class="total-val ${netCls}">${netTxt}</span></div>
+    <div class="total-item"><span class="total-label">Expense</span><span class="total-val blue">${onlyPackage ? "see package" : fmtCurr(totExp)}</span></div>
+    <div class="total-item"><span class="total-label">Capital</span><span class="total-val blue">${fmtCurr(totCap)}</span></div>
+    <div class="total-item"><span class="total-label">Revenue</span><span class="total-val green">${fmtCurr(totRev)}</span></div>
+  `;
+}
+
+// ── Table rendering ───────────────────────────────────────────────────────────
+function renderTable() {
+  const tbody = document.getElementById("table-body");
+  const start = (page - 1) * PAGE_SIZE;
+  const slice = filtered.slice(start, start + PAGE_SIZE);
+
+  if (slice.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="12"><div class="state-msg"><h3>No bills match the current filters</h3><p>Try adjusting the filters above.</p></div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = slice.map(r => renderRow(r)).join("");
+
+  // Attach click handlers
+  tbody.querySelectorAll("tr.data-row").forEach(tr => {
+    tr.addEventListener("click", () => toggleDetail(tr.dataset.id));
+  });
+}
+
+function statusPill(r) {
+  const g = r.status_bucket;
+  if (!g || g === "unknown") return "";
+  const txt = g === "in_progress" ? "In progress" : g === "lapsed" ? "Lapsed"
+    : g === "awaiting_mayor" ? "Passed, awaiting mayor"
+    : /Introduction/.test(r.legislation_type || "") ? "Enacted" : (r.status || "Enacted");
+  return `<div><span class="status-pill status-${g}" title="${esc(r.status || "")}">${esc(txt)}</span></div>`;
+}
+
+function renderRow(r) {
+  const nl = netLabel(r);
+  const expTxt = r.total_expenditure !== null && r.total_expenditure !== undefined ? fmtCurr(r.total_expenditure) : "—";
+  const capTxt = r.total_capital     !== null && r.total_capital     !== undefined ? fmtCurr(r.total_capital)     : "—";
+  const revTxt = r.total_revenue     !== null && r.total_revenue     !== undefined ? fmtCurr(r.total_revenue)     : "—";
+
+  const agencyHtml = (r.agencies_abbrev || []).slice(0,4).map(a =>
+    `<span class="agency-tag">${esc(a)}</span>`).join("") +
+    ((r.agencies_abbrev || []).length > 4 ? `<span class="agency-tag">+${(r.agencies_abbrev||[]).length-4}</span>` : "");
+
+  const expanded = expandedId === r.matter_id;
+
+  return `<tr class="data-row${expanded ? " expanded" : ""}" data-id="${r.matter_id}">
+    <td class="file-cell">
+      ${r.legistar_url
+        ? `<a href="${esc(r.legistar_url)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">${esc(billLabel(r))}</a>`
+        : `<span title="No Legistar page could be matched to this historical record">${esc(billLabel(r))}</span>`}
+      ${statusPill(r)}
+    </td>
+    <td class="type-cell">${typeBadge(r.legislation_type)}</td>
+    <td class="title-cell"><div class="title-text">${esc(r.title || "")}</div></td>
+    <td>${esc(r.committee || "—")}</td>
+    <td>${esc(r.prime_sponsor || "—")}</td>
+    <td><div class="agency-tags">${agencyHtml || "—"}</div></td>
+    <td style="white-space:nowrap;color:var(--text-faint);font-size:0.75rem">${esc(r.date_prepared || "")}</td>
+    <td class="amount-cell ${nl.cls}">${nl.txt}${r.totals_basis === "program_life_sum" && !r.time_limited_program ? `<div class="net-basis" title="Whole-plan total from the statement, not an annual figure">multi-year</div>` : ""}</td>
+    <td class="amount-cell">${expTxt}</td>
+    <td class="amount-cell">${capTxt}</td>
+    <td class="amount-cell">${revTxt}</td>
+    <td style="text-align:center"><span class="expand-icon">›</span></td>
+  </tr>
+  ${expanded ? renderDetailRow(r) : ""}`;
+}
+
+function renderDetailRow(r) {
+  // Fiscal table
+  const cols = r.fiscal_table_columns || [];
+  let fiscalHtml = "";
+  if (cols.length) {
+    const headers = cols.map(c => `<th>${esc(c.label)}</th>`).join("");
+    const mkRow = (label, key) => {
+      const vals = cols.map(c => {
+        const v = c[key];
+        return `<td>${v === null || v === undefined ? "—" : fmtCurrFull(v)}</td>`;
+      }).join("");
+      return `<tr><td>${label}</td>${vals}</tr>`;
+    };
+    fiscalHtml = `
+      <div class="mini-table-scroll"><table class="fiscal-mini-table">
+        <thead><tr><th></th>${headers}</tr></thead>
+        <tbody>
+          ${mkRow("Revenues (+)",     "revenue")}
+          ${mkRow("Expenditures (−)", "expenditure")}
+          ${cols.some(c => c.capital !== null && c.capital !== undefined) ? mkRow("Capital (−)", "capital") : ""}
+          ${mkRow("Net",              "net")}
+        </tbody>
+      </table></div>`;
+  }
+
+  // Program breakdown
+  const bd = r.program_breakdowns || [];
+  let bdHtml = "";
+  if (bd.length) {
+    bdHtml = `<table class="breakdown-table">
+      <thead><tr><th>Agency</th><th>Program / Line Item</th><th>Type</th><th>FY Range</th><th class="amt">Amount</th></tr></thead>
+      <tbody>
+        ${bd.map(b => `<tr>
+          <td><strong>${esc(b.agency)}</strong></td>
+          <td>${esc(b.program)}<br><small style="color:var(--text-faint)">${esc(b.description || "")}</small></td>
+          <td>${esc(b.cost_type)}</td>
+          <td>${esc(b.fy_range || "—")}</td>
+          <td class="amt">${b.amount !== null ? fmtCurrFull(b.amount) : "—"}</td>
+        </tr>`).join("")}
+      </tbody>
+    </table>`;
+  }
+
+  const sponsors = (r.sponsors || []).join(", ");
+  const reviewers = (r.estimate_reviewed_by || []).join("; ");
+
+  // Time-limited programs (Tal, Sep 26 2026): a whole-run total only when the
+  // statement prices every year; otherwise the annual figure, with the end year
+  let pilotNote = "";
+  if (r.time_limited_program && (r.outlasts_statement || r.totals_basis === "program_life_sum")) {
+    const fys = [...new Set(cols.map(c => ((c.label || "").match(/FY\s*'?(\d{2,4})/gi) || [])
+      .map(m => parseInt(m.replace(/\D/g, ""), 10) % 100)).flat())].sort((a, b) => a - b);
+    const priced = fys.length > 1 ? `FY${fys[0]} to FY${fys[fys.length - 1]}` : fys.length ? `FY${fys[0]}` : "";
+    const end = r.program_end_fy ? ` It runs through FY${r.program_end_fy}.` : "";
+    const quote = r.sunset_quote ? ` The statement: “${esc(r.sunset_quote)}”` : "";
+    pilotNote = r.outlasts_statement
+      ? `<strong>Time-limited program.</strong>${end} The statement prices ${priced || "only its first years"}, so the figure shown is the annual cost at full implementation.${quote}`
+      : `<strong>Time-limited program.</strong>${end} The figure shown is its whole run, the sum of the years the statement prices${priced ? ", " + priced : ""}.${quote}`;
+  }
+
+  // Audited figure choice, in words (e.g. a ten-year plan priced by its total column)
+  const figureNote = r.figure_note ? `<strong>How this figure was set.</strong> ${esc(r.figure_note)}` : "";
+
+  return `<tr class="detail-row">
+    <td colspan="12">
+      <div class="detail-panel">
+        ${figureNote ? `<div class="package-note-banner">${figureNote}</div>` : ""}
+        ${pilotNote ? `<div class="package-note-banner">${pilotNote}</div>` : ""}
+        ${r.package_note ? `<div class="package-note-banner">
+          <strong>Package assessment note:</strong> ${esc(r.package_note)}
+        </div>` : ""}
+        <div class="detail-grid">
+          <div class="detail-section">
+            <h4>Legislation</h4>
+            <div class="detail-field">
+              <span class="detail-field-label">Title</span>
+              <span class="detail-field-value">${esc(r.title || "")}</span>
+            </div>
+            ${statusField(r)}
+            <div class="detail-field">
+              <span class="detail-field-label">All Sponsors</span>
+              <span class="detail-field-value">${esc(sponsors || "—")}</span>
+            </div>
+            <div class="detail-field">
+              <span class="detail-field-label">Committee</span>
+              <span class="detail-field-value">${esc(r.committee || "—")}</span>
+            </div>
+            <div class="detail-field">
+              <span class="detail-field-label">Effective Date</span>
+              <span class="detail-field-value">${esc(r.effective_date || "—")}</span>
+            </div>
+            <div class="detail-field">
+              <span class="detail-field-label">FY First Effective / Full Impact</span>
+              <span class="detail-field-value mono">${esc(r.fy_first_effective || "—")} → ${esc(r.fy_full_impact || "—")}</span>
+            </div>
+            <div class="detail-field">
+              <span class="detail-field-label">Source of Funds</span>
+              <span class="detail-field-value">${esc(r.source_of_funds || "—")}</span>
+            </div>
+            ${r.hearing_date ? `<div class="detail-field">
+              <span class="detail-field-label">Hearing Date</span>
+              <span class="detail-field-value">${esc(r.hearing_date)}</span>
+            </div>` : ""}
+            <div class="detail-field">
+              <span class="detail-field-label">Agencies Affected</span>
+              <span class="detail-field-value">${esc((r.agencies_full || []).join("; ") || "—")}</span>
+            </div>
+          </div>
+
+          <div class="detail-section">
+            <h4>Finance Division</h4>
+            <div class="detail-field">
+              <span class="detail-field-label">Estimate Prepared By</span>
+              <span class="detail-field-value">${esc(r.estimate_prepared_by || "—")}</span>
+            </div>
+            ${reviewers ? `<div class="detail-field">
+              <span class="detail-field-label">Estimate Reviewed By</span>
+              <span class="detail-field-value">${esc(reviewers)}</span>
+            </div>` : ""}
+            <div class="detail-field">
+              <span class="detail-field-label">Date Prepared</span>
+              <span class="detail-field-value">${esc(r.date_prepared || "—")}</span>
+            </div>
+            ${r.omb_estimate_notes ? `<div class="detail-field">
+              <span class="detail-field-label">OMB Estimate</span>
+              <span class="detail-field-value">${esc(r.omb_estimate_notes)}</span>
+            </div>` : ""}
+          </div>
+        </div>
+
+        ${r.summary_of_legislation ? `<div class="detail-section" style="margin-bottom:16px">
+          <h4>What the bill does</h4>
+          <div class="detail-summary${String(r.summary_of_legislation).length > 2500 ? " clamped" : ""}" id="sum-${esc(String(r.matter_id))}">${String(r.summary_of_legislation).split(/\n\n+/).filter(Boolean).map(t => `<p class="detail-narrative">${esc(t)}</p>`).join("")}</div>
+          ${String(r.summary_of_legislation).length > 2500 ? `<button type="button" class="summary-toggle" onclick="event.stopPropagation(); const d = document.getElementById('sum-${esc(String(r.matter_id))}'); d.classList.toggle('clamped'); this.textContent = d.classList.contains('clamped') ? 'Show the full summary' : 'Show less';">Show the full summary</button>` : ""}
+          <p class="detail-field-label" style="margin-top:8px;text-transform:none;letter-spacing:0">Quoted from the Summary of Legislation section of the fiscal impact statement.</p>
+        </div>` : ""}
+
+        ${fiscalHtml ? `<div class="detail-section" style="margin-bottom:16px">
+          <h4>Fiscal Impact Table</h4>
+          ${fiscalHtml}
+        </div>` : ""}
+
+        ${bdHtml ? `<div class="detail-section" style="margin-bottom:16px">
+          <h4>Program / Line Item Breakdown</h4>
+          ${bdHtml}
+        </div>` : ""}
+
+        ${r.impact_narrative_revenue ? `<div class="detail-section" style="margin-bottom:12px">
+          <h4>Fiscal impact: revenues</h4>
+          <p class="detail-narrative">${esc(r.impact_narrative_revenue)}</p>
+        </div>` : ""}
+
+        ${r.impact_narrative_expenditure ? `<div class="detail-section" style="margin-bottom:12px">
+          <h4>Fiscal impact: expenditures</h4>
+          <p class="detail-narrative">${esc(r.impact_narrative_expenditure)}</p>
+        </div>` : ""}
+
+        ${r.legistar_url ? `<a href="${esc(r.legistar_url)}" target="_blank" rel="noopener" class="detail-link">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          View on Legistar
+        </a>` : `<p class="detail-narrative" style="color:var(--text-faint)">No Legistar page could be matched to this historical record${r.file_number ? `, numbered "${esc(r.file_number)}" on its fiscal impact statement` : ""}.</p>`}
+        <button type="button" class="detail-link" data-url="${esc(location.origin + location.pathname + "?bill=" + encodeURIComponent(r.matter_id))}" onclick="copyRowLink(event, this, 'bill')">Copy link to this bill</button>
+      </div>
+    </td>
+  </tr>`;
+}
+
+const STATUS_LABEL = {enacted: "Enacted or adopted", awaiting_mayor: "Passed, awaiting mayor",
+  in_progress: "In progress", lapsed: "Lapsed or failed"};
+function statusField(r) {
+  const g = r.status_bucket;
+  if (!STATUS_LABEL[g]) return "";
+  const raw = r.status || STATUS_LABEL[g];
+  let txt = raw;
+  if (raw !== STATUS_LABEL[g] && !(g === "enacted" && /^(Enacted|Adopted)/.test(raw))) txt += " (" + STATUS_LABEL[g] + ")";
+  if (r.enacted_law) txt += txt.endsWith(")") ? ", " + r.enacted_law : " (" + r.enacted_law + ")";
+  return `<div class="detail-field">
+              <span class="detail-field-label">Status</span>
+              <span class="detail-field-value">${esc(txt)}</span>
+            </div>`;
+}
+
+// Copy a record's absolute link; falls back to selecting a read-only input.
+function copyRowLink(ev, btn, noun) {
+  ev.stopPropagation();
+  const url = btn.dataset.url;
+  const label = "Copy link to this " + noun;
+  const done = () => { btn.textContent = "Link copied"; setTimeout(() => { btn.textContent = label; }, 2000); };
+  const fallback = () => {
+    let inp = btn.parentNode.querySelector("input.copy-fallback");
+    if (!inp) {
+      inp = document.createElement("input");
+      inp.type = "text"; inp.readOnly = true; inp.className = "copy-fallback";
+      btn.insertAdjacentElement("afterend", inp);
+    }
+    inp.value = url; inp.focus(); inp.select();
+    try { if (document.execCommand("copy")) done(); } catch (e) { /* the selected input lets the reader copy by hand */ }
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(done, fallback);
+  else fallback();
+}
+
+// Deep link landing: put the expanded record's page on screen, scroll to it, pulse it.
+function revealExpanded() {
+  if (expandedId === null) return;
+  const idx = filtered.findIndex(r => r.matter_id === expandedId);
+  if (idx < 0) return;
+  const wantPage = Math.floor(idx / PAGE_SIZE) + 1;
+  if (wantPage !== page) { page = wantPage; renderTable(); renderPagination(); }
+  const tr = document.querySelector(`tr.data-row[data-id="${CSS.escape(String(expandedId))}"]`);
+  if (!tr) return;
+  tr.classList.add("row-flash");
+  const detail = tr.nextElementSibling;
+  if (detail && detail.classList.contains("detail-row")) detail.classList.add("row-flash");
+  tr.scrollIntoView({ behavior: "smooth", block: "start" });
+  setTimeout(() => { tr.classList.remove("row-flash"); if (detail) detail.classList.remove("row-flash"); }, 2100);
+}
+
+function toggleDetail(id) {
+  expandedId = (expandedId === id) ? null : id;
+  renderTable();
+}
+
+// ── Sorting ───────────────────────────────────────────────────────────────────
+document.getElementById("main-table").addEventListener("click", e => {
+  const th = e.target.closest("th[data-col]");
+  if (!th) return;
+  const col = th.dataset.col;
+  if (sortCol === col) {
+    sortDir = -sortDir;
+  } else {
+    sortCol = col;
+    sortDir = col === "date_prepared" ? -1 : -1;
+  }
+  document.querySelectorAll("thead th").forEach(t => t.classList.remove("sorted"));
+  th.classList.add("sorted");
+  th.querySelector(".sort-icon").textContent = sortDir === -1 ? "↓" : "↑";
+  applyFilters();
+});
+
+// ── Pagination ─────────────────────────────────────────────────────────────────
+function renderPagination() {
+  const total = Math.ceil(filtered.length / PAGE_SIZE);
+  const pag = document.getElementById("pagination");
+  if (total <= 1) { pag.innerHTML = ""; return; }
+
+  let html = `<button class="page-btn" onclick="goPage(${page-1})" ${page===1?"disabled":""}>‹</button>`;
+  for (let i = 1; i <= total; i++) {
+    if (i === 1 || i === total || Math.abs(i - page) <= 2) {
+      html += `<button class="page-btn ${i===page?"active":""}" onclick="goPage(${i})">${i}</button>`;
+    } else if (Math.abs(i - page) === 3) {
+      html += `<span style="color:var(--text-faint);padding:0 4px">…</span>`;
+    }
+  }
+  html += `<button class="page-btn" onclick="goPage(${page+1})" ${page===total?"disabled":""}>›</button>`;
+  pag.innerHTML = html;
+}
+
+function goPage(p) {
+  const total = Math.ceil(filtered.length / PAGE_SIZE);
+  page = Math.max(1, Math.min(p, total));
+  expandedId = null;
+  renderTable();
+  renderPagination();
+  window.scrollTo({top: document.querySelector(".table-wrap").offsetTop - 20, behavior: "smooth"});
+}
+
+// ── Filter wiring ─────────────────────────────────────────────────────────────
+document.getElementById("f-search").addEventListener("input", () => {
+  expandedId = null;
+  syncUrl();
+  applyFilters();
+});
+
+document.getElementById("btn-reset").addEventListener("click", () => {
+  Object.values(MS).forEach(ms => ms.reset());
+  document.getElementById("f-search").value = "";
+  yearFilter = null;
+  expandedId = null;
+  syncUrl();
+  applyFilters();
+});
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+loadData();
+</script>
+</body>
+</html>

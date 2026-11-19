@@ -13,7 +13,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 SITE_ROOT = next(p for p in Path(__file__).resolve().parents if (p / "CNAME").is_file())  # repo root by marker, safe across folder moves
 DATA = HERE.parent / "data"
-COUNCIL = SITE_ROOT / "civic_reference/legislation_implementation_tracker/pipeline"
+COUNCIL = SITE_ROOT / "tools/legislation/implementation/pipeline"
 sys.path.insert(0, str(COUNCIL))
 import extract_obligations as eo  # noqa: E402
 

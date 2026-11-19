@@ -21,9 +21,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from fetch_fiscal_impacts import normalize_agency_attribution
 
-DATA = (Path(__file__).resolve().parent.parent /
-        "civic_reference" / "nyc_council_fiscal_impacts_tracker" / "data" /
-        "fiscal_impacts.json")
+DATA = (Path(__file__).resolve().parent.parent / "tools/legislation/fiscal/data/fiscal_impacts.json")
 
 
 def agency_counts(records: list[dict]) -> Counter:

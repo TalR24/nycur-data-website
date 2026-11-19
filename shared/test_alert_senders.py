@@ -70,7 +70,7 @@ def write(path, obj):
 
 def nyc_cases(tmp):
     out = []
-    mod = load("civic_reference/nyc_council_legislation_trackers/pipeline", "send_alerts")
+    mod = load("tools/legislation/pipeline", "send_alerts")
     d = date.today() - timedelta(days=5)
     impl = tmp / "impl"
     write(impl / "laws.json", {"laws": [

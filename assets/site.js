@@ -11,12 +11,12 @@
   var isHome = path === '/' || path === '/index.html';
 
   var TOOLS_MENU = [
-    { label: 'NYC Council Legislation Trackers', href: '/civic_reference/nyc_council_legislation_trackers/', sub: [
-      { label: 'Fiscal Impacts', href: '/civic_reference/nyc_council_fiscal_impacts_tracker/overview/' },
-      { label: 'Obligations', href: '/civic_reference/legislation_implementation_tracker/' },
-      { label: 'Powers', href: '/civic_reference/legislation_implementation_tracker/powers/' },
-      { label: 'Council Members', href: '/civic_reference/nyc_council_legislation_trackers/council-members/' },
-      { label: 'Agencies', href: '/civic_reference/nyc_council_legislation_trackers/agencies/' }
+    { label: 'NYC Council Legislation Trackers', href: '/tools/legislation/', sub: [
+      { label: 'Fiscal Impacts', href: '/tools/legislation/fiscal/overview/' },
+      { label: 'Obligations', href: '/tools/legislation/implementation/' },
+      { label: 'Powers', href: '/tools/legislation/implementation/powers/' },
+      { label: 'Council Members', href: '/tools/legislation/council-members/' },
+      { label: 'Agencies', href: '/tools/legislation/agencies/' }
     ]},
     { label: 'NYS Legislation Trackers', href: '/civic_reference/nys_legislation_trackers/', max: 7, sub: [
       { label: 'Overview', href: '/civic_reference/nys_legislation_trackers/' },

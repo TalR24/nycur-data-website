@@ -547,7 +547,7 @@ def build(sections, period, session, changes_path=None, extra_actions=None):
                 continue
             path = urlsplit(u).path.strip("/").split("/")
             key = "/".join(path[:2]) if path and path[0] in (
-                "posts", "tools", "civic_reference", "cb-tools", "wiki", "services", "community",
+                "posts", "tools", "civic_reference", "cb-tools", "wiki", "services", "community",  # path-ok
                 "events") else (path[0] if path and path[0] else "")
             groups.setdefault((s["host"], s["prop"], key), []).append(u)
     ranked = sorted(groups.items(), key=lambda kv: -len(kv[1]))

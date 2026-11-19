@@ -30,14 +30,14 @@ jobs:
           python-version-file: .python-version
 
       - name: Rebuild date-dependent snapshots
-        run: python3 civic_reference/legislation_implementation_tracker/pipeline/build_static_snapshots.py
+        run: python3 tools/legislation/implementation/pipeline/build_static_snapshots.py
 
       - name: Commit and push if a snapshot changed
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add -u -- 'civic_reference/legislation_implementation_tracker/*index.html' \
-                        'civic_reference/nyc_council_legislation_trackers/*index.html'
+          git add -u -- 'tools/legislation/implementation/*index.html' \
+                        'tools/legislation/*index.html'
           if git diff --cached --quiet; then
             echo "Snapshots unchanged."
             exit 0

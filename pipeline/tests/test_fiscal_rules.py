@@ -2,7 +2,7 @@
 """
 Regression cases for totals_from_columns, program_end_fy and reconcile_totals
 (pipeline/fetch_fiscal_impacts.py), built from gold fiscal records
-(civic_reference/nyc_council_legislation_trackers/quality/gold_fiscal.json)
+(tools/legislation/quality/gold_fiscal.json)
 where the statement's own columns are known and the audited right value is
 known. Every case names its source (matter_id + audit round).
 

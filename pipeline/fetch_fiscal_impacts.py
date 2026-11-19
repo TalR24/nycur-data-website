@@ -60,7 +60,7 @@ log = logging.getLogger(__name__)
 SCRIPT_DIR   = Path(__file__).parent
 REPO_ROOT    = SCRIPT_DIR.parent   # data_website/ root (this repo)
 CACHE_DIR    = SCRIPT_DIR / "cache" / "docx"
-OUTPUT_PATH  = REPO_ROOT / "civic_reference" / "nyc_council_fiscal_impacts_tracker" / "data" / "fiscal_impacts.json"
+OUTPUT_PATH  = REPO_ROOT / "tools/legislation/fiscal/data/fiscal_impacts.json"
 BASE_URL     = "https://legistar.council.nyc.gov"
 # Matters already downloaded and found to have no storable fiscal impact
 # (all-zero, unestimable, budget modification, proposed). Committed by the
@@ -68,7 +68,7 @@ BASE_URL     = "https://legistar.council.nyc.gov"
 SKIP_PATH    = SCRIPT_DIR / "no_impact_matters.json"
 SKIP_ATT_PATH = SCRIPT_DIR / "skip_attachments.json"   # matter_id -> attachment the skip was judged on
 # Enacted-law universe from the implementation tracker (web matter_id + GUID).
-LAWS_PATH    = REPO_ROOT / "civic_reference" / "legislation_implementation_tracker" / "data" / "laws.json"
+LAWS_PATH    = REPO_ROOT / "tools/legislation/implementation/data/laws.json"
 # Sonnet 5 since Sep 24 2026: Haiku 4.5 misapplied the judgment rules (lowest
 # "at least" scenario, whether the costed program itself sunsets) in blind
 # audit rounds 3 and 4; Tal approved the switch

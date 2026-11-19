@@ -51,9 +51,17 @@ BATCHES = {
     'council': [(f'{CR}/nyc_council_legislation_trackers', 'tools/legislation')],
     'implementation': [(f'{CR}/legislation_implementation_tracker', 'tools/legislation/implementation')],
     'nys': [(f'{CR}/nys_legislation_trackers', 'tools/nys-legislation')],
-    'member-tracker': [('cb-tools/member-tracker', 'tools/community-boards/member-tracker')],
 }
+# relink needs every move that landed since HEAD, in one list
+BATCHES['legislation'] = BATCHES['council'] + BATCHES['fiscal'] + BATCHES['implementation']
+BATCHES.update({
+    'member-tracker': [('cb-tools/member-tracker', 'tools/community-boards/member-tracker')],
+})
 
+# Files that exist only in the premium repo (private alert data); a line naming one
+# describes a premium path, which keeps the old folder names.
+PREMIUM_ONLY_FILES = ('alert_subscriptions.csv', 'alerts_state.json', 'cb_alert_subscriptions.csv',
+                      'cb_alerts_state.json', 'nys_bill_follows.csv', 'nys_bill_alerts_state.json')
 BOUNDARY_AFTER = r'(?=[/"\'\s?#)\]`,;<>]|$)'
 
 # Folder-root URLs that a batch empties of its hub: the exact folder URL (nothing
@@ -95,13 +103,17 @@ def rewrite(pairs, dry, aliases=()):
         for i, line in enumerate(lines):
             if not any(o in line for _, o, _ in pats):
                 continue
-            if script_like and 'premium' in line.lower():
-                skipped.append(f'{p.relative_to(ROOT)}:{i + 1}: {line.strip()[:150]}')
+            if any(f in line for f in PREMIUM_ONLY_FILES):
+                skipped.append(f'{p.relative_to(ROOT)}:{i + 1}: [premium-only file] {line.strip()[:120]}')
                 continue
             for rx, o, n in pats:
                 def sub(m, n=n):
                     before = line[max(0, m.start() - 40):m.start()]
-                    if 'premium.nycuriosity.com/' in before or re.search(r'file=/?$', before):
+                    # premium keeps the old folder names: a path inside the premium checkout,
+                    # a PREMIUM_* path constant, a premium URL, or a /members/?file= value
+                    if ('premium.nycuriosity.com/' in before or re.search(r'file=/?$', before)
+                            or re.search(r'premium/$', before, re.I)
+                            or re.search(r'PREMIUM_\w*\s*=\s*["\']?$', before)):
                         skipped.append(f'{p.relative_to(ROOT)}:{i + 1}: [premium/file=] {m.group(0)}')
                         return m.group(0)
                     return n
@@ -113,6 +125,100 @@ def rewrite(pairs, dry, aliases=()):
             if not dry:
                 p.write_text(new)
     return changed, skipped
+
+
+EXTERNAL_REPOS = ('nycur-data-premium', 'personal_website', 'statecapacityecosystem')
+
+
+def rewrite_external(pairs, dry):
+    """Other sites link and fetch data.nycuriosity.com/<old>; JSON fetches cannot follow a
+    stub, so those URLs move in the same cutover. Only full data.nycuriosity.com URLs change."""
+    out = []
+    for repo in EXTERNAL_REPOS:
+        base = ROOT.parent / repo
+        files = subprocess.run(['git', 'ls-files'], cwd=base, capture_output=True, text=True).stdout.splitlines()
+        for rel in files:
+            if any(s in rel for s in ('node_modules/', 'local_folders_backup/', 'claude_context/', '/cache/',
+                                      'seo_reports/', 'ops_digest/', 'planning/', 'mention_monitor_state/',
+                                      'opportunities/')):  # archives keep the URLs they recorded
+                continue
+            p = base / rel
+            if p.suffix.lower() not in TEXT_EXT or not p.is_file():
+                continue
+            try:
+                t = p.read_text()
+            except UnicodeDecodeError:
+                continue
+            new = t
+            for o, n in pairs:
+                new = re.sub(r'data\.nycuriosity\.com/' + re.escape(o) + BOUNDARY_AFTER, 'data.nycuriosity.com/' + n, new)
+            if new != t:
+                out.append(f'{repo}/{rel}')
+                if not dry:
+                    p.write_text(new)
+    return out
+
+REL_ATTR = re.compile(r'((?:href|src|data-src|data-cb-link)\s*=\s*)(["\'])([^"\']+)\2', re.I)
+REL_FETCH = re.compile(r'(fetch\(\s*)(["\'])([^"\'$`]+)\2')
+
+
+def _is_relative(ref):
+    return not (ref.startswith(('/', '#', 'http:', 'https:', 'mailto:', 'tel:', 'javascript:', 'data:', '{'))
+                or '${' in ref or "' +" in ref)
+
+
+def _map(path, pairs):
+    """Map a repo-relative path (no leading slash) through the batch's moves."""
+    for o, n in pairs:
+        if path == o or path.startswith(o + '/'):
+            return n + path[len(o):]
+    return path
+
+
+def relink(pairs, dry):
+    """Relative links that resolved before the move but not after are rewritten to the
+    absolute new URL. Reads the pre-move tree from HEAD, so run it before committing."""
+    import posixpath
+    fixed = 0
+    head = git('ls-tree', '-r', '--name-only', 'HEAD').splitlines()
+    for old_file in head:
+        if not old_file.endswith('.html') or any(s in old_file for s in SKIP_FILES):
+            continue
+        new_file = _map(old_file, pairs)
+        p = ROOT / new_file
+        if not p.is_file():
+            continue
+        old_text = git('show', f'HEAD:{old_file}', check=False)
+        refs = set()
+        for rx in (REL_ATTR, REL_FETCH):
+            refs |= {m.group(3) for m in rx.finditer(old_text) if _is_relative(m.group(3))}
+        if not refs:
+            continue
+        text = p.read_text()
+        new_text = text
+        for ref in refs:
+            core = re.split(r'[?#]', ref, 1)[0]
+            tail = ref[len(core):]
+            old_target = posixpath.normpath(posixpath.join(posixpath.dirname(old_file), core))
+            if core.endswith('/') and not old_target.endswith('/'):
+                old_target += '/'
+            if old_target.startswith('..'):
+                continue
+            new_target = _map(old_target.rstrip('/'), pairs) + ('/' if old_target.endswith('/') else '')
+            now = posixpath.normpath(posixpath.join(posixpath.dirname(new_file), core))
+            if core.endswith('/') and not now.endswith('/'):
+                now += '/'
+            if now == new_target or now.rstrip('/') == new_target.rstrip('/'):
+                continue
+            absolute = '/' + new_target + tail
+            for rx in (REL_ATTR, REL_FETCH):
+                new_text = rx.sub(lambda m: m.group(1) + m.group(2) + absolute + m.group(2)
+                                  if m.group(3) == ref else m.group(0), new_text)
+        if new_text != text:
+            fixed += 1
+            if not dry:
+                p.write_text(new_text)
+    return fixed
 
 
 def page_meta(text):
@@ -184,6 +290,10 @@ def make_stubs(moved_pages, dry):
 
 def main():
     batch = sys.argv[1]
+    if batch == 'relink':
+        n = relink(BATCHES[sys.argv[2]], '--dry-run' in sys.argv)
+        print(f'{n} files relinked')
+        return
     dry = '--dry-run' in sys.argv
     pairs = BATCHES[batch]
     for o, n in pairs:
@@ -201,6 +311,8 @@ def main():
     print(f'{changed} files rewritten')
     if not dry:
         print(f'{make_stubs(moved_pages, dry)} stubs written')
+    ext = rewrite_external(pairs + list(ROOT_ALIASES.get(batch, ())), dry)
+    print(f'{len(ext)} files in other repos rewritten: ' + ', '.join(ext))
     print(f'{len(skipped)} premium/file= references left on the old path (review):')
     for s in skipped:
         print('   ', s)

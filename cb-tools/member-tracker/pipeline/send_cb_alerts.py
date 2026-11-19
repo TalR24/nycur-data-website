@@ -2,7 +2,7 @@
 """
 Send CB member-tracker alert emails when leadership or rosters change.
 
-Adapted from civic_reference/nyc_council_legislation_trackers/pipeline/
+Adapted from tools/legislation/pipeline/
 send_alerts.py (same env contract, premium-repo state pattern, and Gmail
 sender). Runs in the monthly refresh Action AFTER build_tracker_data.py, and
 last in the workflow so a Gmail failure cannot block the data commit.
@@ -76,7 +76,7 @@ EVENT_TYPES = ("chair", "dm", "committee_chair", "members")
 
 def load_premium_paths() -> tuple[Path, Path]:
     return alert_engine.premium_paths(
-        ("cb-tools", "member-tracker", "data"),
+        ("cb-tools", "member-tracker", "data"),  # path-ok: premium keeps the old folder names
         "cb_alert_subscriptions.csv", "cb_alerts_state.json")
 
 

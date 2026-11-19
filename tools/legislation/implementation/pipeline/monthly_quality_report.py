@@ -1,0 +1,331 @@
+"""
+Monthly quality report for the legislation trackers — the standing
+decay detector (same pattern as the resolution engine's
+quality_reports/: dated report + metrics JSON committed monthly, with
+a month-over-month diff up top).
+
+Runs the existing instruments rather than reinventing them:
+  1. pipeline/validate_obligations.py --json  (the regression suite
+     from the Aug 2026 audit campaign: hard failures + soft counts)
+  2. pipeline/validate_against_doris.py       (external check against
+     the city's own required-reports register)
+  3. <repo>/pipeline/validate_fiscal_impacts.py --json  (the fiscal
+     tracker's sibling suite, Sep 2026: invariants, dead-link shape,
+     coverage vs the enacted-law universe)
+
+  4. quality/score_gold.py --strict-new  (Council gold set; fails only on
+     regressions absent from the previous gold_score.json; Nov 10 2026)
+  5. nys_legislation_trackers/pipeline/validate_duties.py --per-session
+     (NYS sibling suite, HARD count only)
+  6. input freshness: report_filings.json and the NYS signed index, each
+     flagged when older than 35 days (build_report_filings.py --check and
+     refresh_signed_index.py --check do the checking)
+
+Writes  quality_reports/quality_report_YYYY-MM-DD.{md,json}  under the
+implementation tracker (one report for both trackers; the fiscal
+metrics are prefixed `fiscal_`).
+
+Sep 2 2026 fix: this wrapper read the validator JSON under the keys
+"hard"/"soft" but the validator writes "hard_failures"/"soft_counts",
+so every metric was silently dropped, the diff never fired, and the
+Aug 20 2026 headline said "clean" over 1,933 hard failures. Any HARD failure or a rising soft count is a
+signal to run a quality loop (database-expansion-playbook skill).
+
+Oct 14 2026: the three fiscal soft checks that point at one bill
+(later_column_dwarfs_total, narrative_multi_year_total,
+full_impact_column_earlier_than_succeeding) have their flagged bill labels
+recorded in the metrics JSON (`_fiscal_flagged`); any label not flagged in the
+previous report is listed under "New fiscal figures to check" and becomes a
+TO DO item in the email. A previous report that predates `_fiscal_flagged`
+gives no baseline, so nothing is listed as new that month.
+
+Usage:  python3 pipeline/monthly_quality_report.py
+        (from tools/legislation/implementation/)
+        --previous PATH   use this report JSON as the baseline (testing)
+        --out-dir DIR     write the report here instead of quality_reports/ (testing)
+"""
+from __future__ import annotations
+
+import argparse
+import json
+import re
+import subprocess
+import sys
+from datetime import date
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+TRACKER = HERE.parent
+SITE_ROOT = next(p for p in Path(__file__).resolve().parents if (p / "CNAME").is_file())  # repo root by marker, safe across folder moves
+REPO = SITE_ROOT
+FISCAL_VALIDATOR = REPO / "pipeline" / "validate_fiscal_impacts.py"
+GOLD_SCORER = REPO / "tools/legislation/quality/score_gold.py"
+NYS = REPO / "civic_reference/nys_legislation_trackers"
+NYS_VALIDATOR = NYS / "pipeline" / "validate_duties.py"
+SIGNED_REFRESH = NYS / "pipeline" / "refresh_signed_index.py"
+SIGNED_STATE = NYS / "data" / "signed_state.json"
+BILL_INDEX_DIR = NYS / "data" / "bills"
+FILINGS_BUILDER = HERE / "build_report_filings.py"
+MAX_INPUT_AGE_DAYS = 35
+NYS_TEXT_DIR = NYS / "pipeline" / "cache" / "text_marked"
+NYS_SIGNED_DIR = NYS / "data" / "signed"
+NYS_SKIP_LINE = "NYS validator skipped: text cache not present in this checkout (it runs nightly on the Mac)"
+
+
+def nys_text_cache_usable(text_dir: Path = NYS_TEXT_DIR, signed_dir: Path = NYS_SIGNED_DIR) -> bool:
+    """validate_duties.py counts every record as a HARD failure when its gitignored
+    text cache is missing (a CI checkout), so it only runs where the cache holds
+    text for at least 90% of the signed laws."""
+    if not text_dir.is_dir():
+        return False
+    have = sum(1 for _ in text_dir.glob("*.txt")) or sum(1 for _ in text_dir.iterdir())
+    total = 0
+    for f in signed_dir.glob("*.json"):
+        try:
+            total += len(json.loads(f.read_text()))
+        except (OSError, ValueError):
+            pass
+    return have >= max(1, 0.9 * total)
+OUT_DIR = TRACKER / "quality_reports"
+FISCAL_FLAG_CHECKS = ("later_column_dwarfs_total", "narrative_multi_year_total",
+                      "full_impact_column_earlier_than_succeeding")
+
+
+def run(cmd):
+    proc = subprocess.run(
+        cmd, cwd=TRACKER, capture_output=True, text=True, timeout=1800,
+    )
+    return proc.returncode, proc.stdout + proc.stderr
+
+
+def freshness_section(today: date, filings: tuple, signed_check: tuple,
+                      state_path: Path = SIGNED_STATE, bills_dir: Path = BILL_INDEX_DIR,
+                      max_age: int = MAX_INPUT_AGE_DAYS) -> tuple[list, list]:
+    """(lines, flagged) for the input-freshness section. `filings` and
+    `signed_check` are (exit code, output) of build_report_filings.py --check
+    and refresh_signed_index.py --check. The NYS signed index is aged by the
+    refresh date recorded for the newest session in signed_state.json, and
+    the bill index it is checked against by that index's own `generated` date."""
+    flagged, lines = [], []
+
+    def last(out: str) -> str:
+        """Last real line of a check's output (stderr warnings are mixed in)."""
+        keep = [l.strip() for l in out.splitlines() if l.strip() and "warn" not in l.lower()]
+        return keep[-1] if keep else "no output"
+
+    rc, out = filings
+    lines.append(f"- {last(out)}")
+    if rc:
+        flagged.append("report_filings.json")
+    rc, out = signed_check
+    lines.append(f"- NYS signed index vs its bill index: {last(out)}")
+    if rc:
+        flagged.append("NYS signed index (stale against the bill index)")
+    try:
+        state = json.loads(state_path.read_text())
+        sessions = sorted((state.get("refreshed") or {}), key=int)
+        newest = sessions[-1] if sessions else None
+        if newest is None:
+            lines.append("- NYS signed index: no refresh date recorded in signed_state.json")
+            flagged.append("NYS signed index (no refresh date recorded)")
+        else:
+            ref = date.fromisoformat(state["refreshed"][newest])
+            age = (today - ref).days
+            lines.append(f"- NYS signed index (session {newest}) last refreshed {ref}, {age} days ago")
+            if age > max_age:
+                flagged.append(f"NYS signed index refreshed {age} days ago")
+            bill = bills_dir / f"{newest}.json"
+            if bill.exists():
+                gen = date.fromisoformat(json.loads(bill.read_text())["generated"])
+                lines.append(f"- NYS bill index (session {newest}) generated {gen}, {(today - gen).days} days ago")
+                if (today - gen).days > max_age:
+                    flagged.append(f"NYS bill index generated {(today - gen).days} days ago")
+    except (OSError, ValueError, KeyError) as e:
+        lines.append(f"- NYS signed index: freshness unreadable ({e})")
+        flagged.append("NYS signed index (unreadable)")
+    return lines, flagged
+
+
+def new_fiscal_flags(now: dict, prev: dict | None) -> dict:
+    """{label: [checks]} for bills flagged now that the previous report did not
+    flag under that check. No `_fiscal_flagged` in the previous report means
+    no baseline: nothing is new."""
+    if not prev or "_fiscal_flagged" not in prev:
+        return {}
+    out: dict = {}
+    for check, labels in now.items():
+        before = set(prev["_fiscal_flagged"].get(check) or [])
+        for lab in labels:
+            if lab not in before:
+                out.setdefault(lab, []).append(check)
+    return out
+
+
+def main(argv=None) -> int:
+    global OUT_DIR
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--previous", help="baseline report JSON (default: newest earlier report)")
+    ap.add_argument("--out-dir", help="write the report here (default quality_reports/)")
+    args = ap.parse_args(argv)
+    if args.out_dir:
+        OUT_DIR = Path(args.out_dir)
+    tag = f"quality_report_{date.today().isoformat()}"
+    OUT_DIR.mkdir(parents=True, exist_ok=True)
+    vjson = OUT_DIR / f"{tag}.validator.json"
+
+    rc_v, out_v = run([
+        sys.executable, "pipeline/validate_obligations.py",
+        "--json", str(vjson),
+    ])
+    rc_d, out_d = run([sys.executable, "pipeline/validate_against_doris.py"])
+    fjson = OUT_DIR / f"{tag}.fiscal.json"
+    rc_f, out_f = run([sys.executable, str(FISCAL_VALIDATOR), "--json", str(fjson)])
+
+    rc_g, out_g = run([sys.executable, str(GOLD_SCORER), "--strict-new"])
+    nys_skipped = not nys_text_cache_usable()
+    if nys_skipped:
+        rc_n, out_n = 0, NYS_SKIP_LINE
+    else:
+        rc_n, out_n = run([sys.executable, str(NYS_VALIDATOR), "--per-session"])
+    rc_fb, out_fb = run([sys.executable, str(FILINGS_BUILDER), "--check"])
+    rc_sr, out_sr = run([sys.executable, str(SIGNED_REFRESH), "--check"])
+
+    metrics = {"_gold_exit": rc_g, "_nys_exit": rc_n, "_validator_exit": rc_v, "_doris_exit": rc_d, "_fiscal_exit": rc_f}
+
+    def absorb(path: Path, prefix: str) -> None:
+        """Both validators write {"hard_failures": {check: [ids]},
+        "soft_counts": {check: n}}; flatten to <prefix>hard:<check> = n."""
+        if not path.exists():
+            return
+        raw = json.loads(path.read_text())
+        for k, v in (raw.get("hard_failures") or {}).items():
+            metrics[f"{prefix}hard:{k}"] = len(v) if isinstance(v, list) else v
+        for k, v in (raw.get("soft_counts") or {}).items():
+            metrics[f"{prefix}soft:{k}"] = len(v) if isinstance(v, list) else v
+
+    absorb(vjson, "")
+    absorb(fjson, "fiscal_")
+    # a validator that crashed writes no JSON: never read that as "clean" or
+    # "improved" (Oct 3 2026: both crashed on a missing python-docx and the
+    # report said "Hard failures: 0 (clean)", every fiscal count "improved")
+    crashed = [name for name, path in (("validate_obligations.py", vjson),
+                                       ("validate_fiscal_impacts.py", fjson)) if not path.exists()]
+    # score_gold.py exits 1 on a new regression (a result); any other non-zero
+    # exit, or no summary line, is a crash. validate_duties.py without its
+    # "HARD FAILURES" line is a crash.
+    gold_counts = re.findall(r"^regressions: (\d+)", out_g, re.M)
+    if rc_g > 1 or len(gold_counts) < 2:
+        crashed.append("score_gold.py")
+    else:
+        metrics["gold:regressions_obligations"] = int(gold_counts[0])
+        metrics["gold:regressions_fiscal"] = int(gold_counts[1])
+        metrics["gold:new_regressions_exit"] = rc_g
+    nys_hard = re.search(r"^HARD FAILURES: (\d+)", out_n, re.M)
+    metrics["_skipped"] = []
+    if nys_skipped:
+        metrics["nys_hard:total"] = None
+        metrics["_skipped"].append("nys_validate_duties")
+    elif not nys_hard:
+        crashed.append("validate_duties.py")
+    else:
+        metrics["nys_hard:total"] = int(nys_hard.group(1))
+    metrics["_crashed"] = crashed
+    fiscal_flagged: dict = {}
+    if fjson.exists():
+        detail = json.loads(fjson.read_text()).get("soft_detail") or {}
+        fiscal_flagged = {c: list(detail.get(c) or []) for c in FISCAL_FLAG_CHECKS}
+    metrics["_fiscal_flagged"] = fiscal_flagged
+
+    # Month-over-month diff vs the newest earlier metrics JSON.
+    prev_name, prev = None, {}
+    if args.previous:
+        prev_name, prev = Path(args.previous).stem, json.loads(Path(args.previous).read_text())
+    for older in ([] if args.previous else sorted(OUT_DIR.glob("quality_report_*.json"), reverse=True)):
+        if older.stem != tag and not older.name.endswith((".validator.json", ".fiscal.json")):
+            cand = json.loads(older.read_text())
+            # a crashed run has no counts: never use it as the baseline (round 2:
+            # the Oct 3 crash would have made every count a false REGRESSION)
+            if cand.get("_crashed") or not any(":" in k for k in cand):
+                continue
+            prev_name, prev = older.stem, cand
+            break
+    delta, carried = [], []
+    for k in sorted(set(metrics) | set(prev)):
+        if k.startswith("_"):
+            continue
+        if (k.startswith("fiscal_") and "validate_fiscal_impacts.py" in crashed) or \
+           (k.startswith("gold:") and "score_gold.py" in crashed) or \
+           (k.startswith("nys_") and "validate_duties.py" in crashed) or \
+           (not k.startswith(("fiscal_", "gold:", "nys_")) and "validate_obligations.py" in crashed):
+            continue
+        now_v, then_v = metrics.get(k, 0), prev.get(k, 0)
+        if now_v is None or then_v is None:   # a skipped check is neither better nor worse
+            continue
+        if now_v != then_v:
+            if now_v > then_v and k not in prev:
+                # the baseline report has no such check, so the count is a backlog measured for the first
+                # time, not a failure that appeared this month (Nov 10 2026 emails review: 18 lines read as new failures)
+                carried.append(f"- {k}: {then_v} → {now_v} (carried over, first measured now, +{now_v - then_v})")
+                continue
+            arrow = "REGRESSION +" if now_v > then_v else "improved -"
+            delta.append(f"- **{k}**: {then_v} → {now_v} ({arrow}{abs(now_v - then_v)})")
+    n_new = sum(1 for d in delta if "(REGRESSION +" in d)
+    if prev:
+        delta = ([f"New regressions since {prev_name}: {n_new}. Carried-over known counts (checks the earlier report "
+                  f"did not have, so they are not new failures): {len(carried)}.", ""] + delta
+                 + (["", "Carried over, first measured now:"] + carried if carried else []))
+    if prev and not (n_new or carried or any("improved" in d for d in delta)):
+        delta = ["- No metric changed. Quiet month."]
+
+    hard_total = sum(
+        v for k, v in metrics.items()
+        if k.startswith(("hard:", "fiscal_hard:", "nys_hard:")) and v is not None
+    )
+    fresh_lines, stale_inputs = freshness_section(date.today(), (rc_fb, out_fb), (rc_sr, out_sr))
+    metrics["_stale_inputs"] = stale_inputs
+    lines = [
+        f"# Legislation trackers quality report, {tag}",
+        "",
+        (f"**VALIDATOR CRASHED: {', '.join(crashed)}. No result for it this month; see its output below.** "
+         f"Hard failures in the validator that ran: **{hard_total}**"
+         if crashed else
+         f"Hard failures: **{hard_total}**" + (": RUN A QUALITY LOOP" if hard_total else
+                                           (" (clean in the checks that ran; NYS validator skipped)" if nys_skipped else " (clean)"))),
+        "",
+    ]
+    if prev:
+        lines += [f"## Change vs {prev_name}", ""] + delta + [""]
+    if nys_skipped:
+        lines += [f"**{NYS_SKIP_LINE}**", ""]
+    lines += ["## Input freshness (limit 35 days)", ""] + fresh_lines
+    lines += ([f"- **STALE INPUT: {', '.join(stale_inputs)}**"] if stale_inputs else ["- All inputs fresh."]) + [""]
+    new_flags = new_fiscal_flags(fiscal_flagged, prev) if "validate_fiscal_impacts.py" not in crashed else {}
+    metrics["_fiscal_new"] = new_flags
+    if new_flags:
+        lines += ["## New fiscal figures to check", ""]
+        lines += [f"- {lab}: {', '.join(chk)}" for lab, chk in sorted(new_flags.items())]
+        lines += [""]
+    lines += ["## validate_obligations.py", "```", out_v.strip()[:12000], "```",
+              "", "## validate_against_doris.py", "```",
+              out_d.strip()[:8000], "```",
+              "", "## validate_fiscal_impacts.py (fiscal tracker)", "```",
+              out_f.strip()[:8000], "```",
+              "", "## score_gold.py --strict-new (Council gold set)", "```",
+              out_g.strip()[:6000], "```",
+              "", "## validate_duties.py --per-session (NYS)", "```",
+              out_n.strip()[:4000], "```"]
+
+    (OUT_DIR / f"{tag}.md").write_text("\n".join(lines) + "\n")
+    (OUT_DIR / f"{tag}.json").write_text(json.dumps(metrics, indent=1))
+    vjson.unlink(missing_ok=True)   # detail lives in the md; keep folder lean
+    fjson.unlink(missing_ok=True)
+    print("\n".join(lines[:14]))
+    print(f"\nwrote {OUT_DIR / (tag + '.md')}")
+    if crashed:
+        print(f"::error::validator crashed: {', '.join(crashed)}")
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

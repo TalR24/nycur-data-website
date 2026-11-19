@@ -720,7 +720,7 @@ def _nyc_cw():
     if not _NYC_CW:
         import json
         from pathlib import Path
-        d = json.loads((next(p for p in Path(__file__).resolve().parents if (p / "CNAME").is_file()) / "civic_reference/legislation_implementation_tracker/data/agency_crosswalk.json").read_text())
+        d = json.loads((next(p for p in Path(__file__).resolve().parents if (p / "CNAME").is_file()) / "tools/legislation/implementation/data/agency_crosswalk.json").read_text())
         _NYC_CW.update(lookup=d["lookup"], by={a["canonical"]: a for a in d["agencies"]})
     return _NYC_CW
 

@@ -69,7 +69,7 @@ jobs:
           # only legacy .doc statements need antiword, and an empty read is retried next run
           timeout 300 bash -c 'sudo apt-get update -q && sudo apt-get install -y -q --no-install-recommends antiword' || echo "::warning::antiword not installed; .doc statements retried next run"
           pip install -r pipeline/requirements.txt
-          pip install -r civic_reference/legislation_implementation_tracker/pipeline/requirements.txt
+          pip install -r tools/legislation/implementation/pipeline/requirements.txt
 
       - name: Canary
         if: ${{ inputs.task == 'canary' }}
@@ -79,7 +79,7 @@ jobs:
 
       - name: Label duty / power / neither
         if: ${{ inputs.task == 'label_kinds' }}
-        working-directory: civic_reference/legislation_implementation_tracker
+        working-directory: tools/legislation/implementation
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           LABEL_WORKERS: "6"
@@ -87,7 +87,7 @@ jobs:
 
       - name: Re-extract queued laws and rebuild
         if: ${{ inputs.task == 'reextract_obligations' }}
-        working-directory: civic_reference/legislation_implementation_tracker
+        working-directory: tools/legislation/implementation
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           REEXTRACT_LIMIT: "250"   # sync: ~60 min at 4 workers; batch: one submission
@@ -118,7 +118,7 @@ jobs:
 
       - name: Reconcile re-extracted protected laws
         if: ${{ inputs.task == 'verify_obligations' }}
-        working-directory: civic_reference/legislation_implementation_tracker
+        working-directory: tools/legislation/implementation
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           PYTHONUNBUFFERED: "1"
@@ -132,15 +132,15 @@ jobs:
         with:
           name: verify-output
           path: |
-            civic_reference/nyc_council_legislation_trackers/quality/fiscal_verification_*.json
-            civic_reference/legislation_implementation_tracker/pipeline/reconcile_protected.json
-            civic_reference/legislation_implementation_tracker/pipeline/reconcile_decisions.json
+            tools/legislation/quality/fiscal_verification_*.json
+            tools/legislation/implementation/pipeline/reconcile_protected.json
+            tools/legislation/implementation/pipeline/reconcile_decisions.json
           if-no-files-found: ignore
           retention-days: 30
 
       - name: Pilot another model on a few laws (no commit)
         if: ${{ inputs.task == 'pilot_obligations' }}
-        working-directory: civic_reference/legislation_implementation_tracker
+        working-directory: tools/legislation/implementation
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
@@ -165,18 +165,18 @@ jobs:
         with:
           name: reextract-output
           path: |
-            civic_reference/legislation_implementation_tracker/data/obligations.json
-            civic_reference/legislation_implementation_tracker/data/powers.json
-            civic_reference/legislation_implementation_tracker/data/laws.json
-            civic_reference/legislation_implementation_tracker/data/restated_links.json
-            civic_reference/legislation_implementation_tracker/data/summary.json
-            civic_reference/legislation_implementation_tracker/pipeline/reextract_queue.json
-            civic_reference/legislation_implementation_tracker/pipeline/cache/extracted/
-            civic_reference/nyc_council_legislation_trackers/data/members.json
-            civic_reference/nyc_council_legislation_trackers/data/agencies.json
-            civic_reference/nyc_council_legislation_trackers/data/member_votes.json
-            civic_reference/nyc_council_legislation_trackers/data/member_context.json
-            civic_reference/nyc_council_legislation_trackers/data/council_members.json
+            tools/legislation/implementation/data/obligations.json
+            tools/legislation/implementation/data/powers.json
+            tools/legislation/implementation/data/laws.json
+            tools/legislation/implementation/data/restated_links.json
+            tools/legislation/implementation/data/summary.json
+            tools/legislation/implementation/pipeline/reextract_queue.json
+            tools/legislation/implementation/pipeline/cache/extracted/
+            tools/legislation/data/members.json
+            tools/legislation/data/agencies.json
+            tools/legislation/data/member_votes.json
+            tools/legislation/data/member_context.json
+            tools/legislation/data/council_members.json
           retention-days: 30
 
       # finding 9 (Nov 10 2026): obligations data never commits unvalidated.
@@ -185,7 +185,7 @@ jobs:
       - name: Data validator (a hard failure blocks the commit)
         id: validate
         if: ${{ always() && (inputs.task == 'reextract_obligations' || inputs.task == 'label_kinds' || inputs.task == 'verify_obligations') }}
-        working-directory: civic_reference/legislation_implementation_tracker
+        working-directory: tools/legislation/implementation
         run: python3 pipeline/validate_obligations.py --strict
 
       - name: Commit results
@@ -193,16 +193,16 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          L=civic_reference/legislation_implementation_tracker
+          L=tools/legislation/implementation
           for f in $L/pipeline/kind_labels.json $L/data/obligations.json $L/data/powers.json \
                    $L/data/laws.json $L/data/restated_links.json $L/data/summary.json $L/pipeline/reextract_queue.json \
-                   civic_reference/nyc_council_legislation_trackers/data/members.json \
-                   civic_reference/nyc_council_legislation_trackers/data/agencies.json \
-                   civic_reference/nyc_council_legislation_trackers/data/member_votes.json \
-                   civic_reference/nyc_council_legislation_trackers/data/member_context.json \
-                   civic_reference/nyc_council_legislation_trackers/data/council_members.json \
+                   tools/legislation/data/members.json \
+                   tools/legislation/data/agencies.json \
+                   tools/legislation/data/member_votes.json \
+                   tools/legislation/data/member_context.json \
+                   tools/legislation/data/council_members.json \
                    $L/pipeline/reconcile_protected.json $L/pipeline/reconcile_decisions.json \
-                   civic_reference/nyc_council_legislation_trackers/quality/fiscal_verification_*.json; do
+                   tools/legislation/quality/fiscal_verification_*.json; do
             if [ -f "$f" ]; then git add "$f"; fi
           done
           # batch state: stage additions AND deletions (a finished batch clears it)

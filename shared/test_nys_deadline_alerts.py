@@ -47,7 +47,7 @@ def write(path, obj):
 
 
 def setup(tmp, subs_csv):
-    sys.path.insert(0, str(ROOT / "civic_reference/nyc_council_legislation_trackers/pipeline"))
+    sys.path.insert(0, str(ROOT / "tools/legislation/pipeline"))
     sys.modules.pop("send_alerts", None)
     mod = importlib.import_module("send_alerts")
     d = date.today() - timedelta(days=5)

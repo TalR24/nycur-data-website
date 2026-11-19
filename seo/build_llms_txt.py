@@ -29,9 +29,9 @@ HOLD = ("/posts/medicaid-provider-spending/",)
 # First path segment -> section heading; pages deeper than `depth` go to Optional.
 LAYOUT = {
     "data": {"depth": 2, "sections": [
-        ("civic_reference", "NYC civic reference tools"),
-        ("cb-tools", "Community board tools"),
-        ("posts", "Data behind NYCuriosity posts"),
+        ("civic_reference", "NYC civic reference tools"),  # path-ok: section list
+        ("cb-tools", "Community board tools"),  # path-ok
+        ("posts", "Data behind NYCuriosity posts"),  # path-ok
     ], "related": [("NYCuriosity on Substack", "https://www.nycuriosity.com/",
                     "the newsletter these data pages accompany"),
                    ("Tal Roded", "https://talroded.nycuriosity.com/", "author's site")]},
