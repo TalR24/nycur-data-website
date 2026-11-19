@@ -15,6 +15,7 @@ the summary, the tool and hub pages under named sections, deeper pages (chart
 subpages, methodology, legal) under "Optional", which llms.txt readers may skip.
 """
 
+from build_jsonld import is_hub
 import argparse
 import re
 import sys
@@ -29,6 +30,7 @@ HOLD = ("/posts/medicaid-provider-spending/",)
 # First path segment -> section heading; pages deeper than `depth` go to Optional.
 LAYOUT = {
     "data": {"depth": 2, "sections": [
+        ("tools", "NYC civic tools"),  # path-ok: section list
         ("civic_reference", "NYC civic reference tools"),  # path-ok: section list
         ("cb-tools", "Community board tools"),  # path-ok
         ("posts", "Data behind NYCuriosity posts"),  # path-ok
@@ -68,7 +70,11 @@ def build(key, repo=None):
         if p["url"] == "/":
             continue
         segs = [s for s in p["url"].strip("/").split("/") if s]
-        deep = len(segs) > layout["depth"] or any(h in p["url"] for h in OPTIONAL_HINTS) or p["url"].endswith(".html")
+        # tools/ and posts/ hold nested suites (Nov 2026 restructure): the hubs are the same
+        # pages build_jsonld.is_hub marks as datasets, plus the bare /tools/legislation/ hub
+        too_deep = (not (is_hub(segs) or len(segs) == 2) if segs and segs[0] in ("tools", "posts") and len(segs) > 1
+                    else len(segs) > layout["depth"])
+        deep = too_deep or any(h in p["url"] for h in OPTIONAL_HINTS) or p["url"].endswith(".html")
         if deep:
             optional.append(p)
         elif segs and segs[0] in named:

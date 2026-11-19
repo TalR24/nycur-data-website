@@ -80,7 +80,7 @@ jobs:
       TASK: ${{ inputs.task }}
       SESSION: ${{ inputs.session }}
       LIMIT: ${{ inputs.limit }}
-      NYS: civic_reference/nys_legislation_trackers
+      NYS: tools/nys-legislation
     steps:
       - uses: actions/checkout@v4
         with:
@@ -116,10 +116,10 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: |
-            civic_reference/nys_legislation_trackers/pipeline/cache/html/${{ inputs.session }}-*.html
-            civic_reference/nys_legislation_trackers/pipeline/cache/text/${{ inputs.session }}-*.txt
-            civic_reference/nys_legislation_trackers/pipeline/cache/memo/${{ inputs.session }}-*.txt
-            civic_reference/nys_legislation_trackers/pipeline/cache/text_marked/${{ inputs.session }}-*.txt
+            tools/nys-legislation/pipeline/cache/html/${{ inputs.session }}-*.html
+            tools/nys-legislation/pipeline/cache/text/${{ inputs.session }}-*.txt
+            tools/nys-legislation/pipeline/cache/memo/${{ inputs.session }}-*.txt
+            tools/nys-legislation/pipeline/cache/text_marked/${{ inputs.session }}-*.txt
           key: nys-texts-${{ inputs.session }}-restore
           restore-keys: nys-texts-${{ inputs.session }}-
 
@@ -182,14 +182,14 @@ jobs:
         if: ${{ inputs.task == 'extract' || inputs.task == 'resume' }}
         uses: actions/cache/restore@v4
         with:
-          path: civic_reference/nys_legislation_trackers/pipeline/cache/api
+          path: tools/nys-legislation/pipeline/cache/api
           key: nys-api-restore
           restore-keys: nys-api-
 
       # --- fetch_bills: committed per session ---
       - name: Fetch the bill universe for one session
         if: ${{ inputs.task == 'fetch_bills' }}
-        working-directory: civic_reference/nys_legislation_trackers/pipeline
+        working-directory: tools/nys-legislation/pipeline
         run: |
           ARGS="--session $SESSION --resume"
           if [ -n "$LIMIT" ]; then ARGS="$ARGS --limit $LIMIT"; fi
@@ -198,7 +198,7 @@ jobs:
       # --- fetch_texts ---
       - name: Fetch and convert the signed-law texts for one session
         if: ${{ inputs.task == 'fetch_texts' }}
-        working-directory: civic_reference/nys_legislation_trackers/pipeline
+        working-directory: tools/nys-legislation/pipeline
         run: |
           ARGS="--session $SESSION"
           if [ -n "$LIMIT" ]; then ARGS="$ARGS --limit $LIMIT"; fi
@@ -209,16 +209,16 @@ jobs:
         uses: actions/cache/save@v4
         with:
           path: |
-            civic_reference/nys_legislation_trackers/pipeline/cache/html/${{ inputs.session }}-*.html
-            civic_reference/nys_legislation_trackers/pipeline/cache/text/${{ inputs.session }}-*.txt
-            civic_reference/nys_legislation_trackers/pipeline/cache/memo/${{ inputs.session }}-*.txt
-            civic_reference/nys_legislation_trackers/pipeline/cache/text_marked/${{ inputs.session }}-*.txt
+            tools/nys-legislation/pipeline/cache/html/${{ inputs.session }}-*.html
+            tools/nys-legislation/pipeline/cache/text/${{ inputs.session }}-*.txt
+            tools/nys-legislation/pipeline/cache/memo/${{ inputs.session }}-*.txt
+            tools/nys-legislation/pipeline/cache/text_marked/${{ inputs.session }}-*.txt
           key: nys-texts-${{ inputs.session }}-${{ github.run_id }}
 
       # --- canary: N real laws, synchronously; usage and the projected cost; nothing committed ---
       - name: Canary
         if: ${{ inputs.task == 'canary' }}
-        working-directory: civic_reference/nys_legislation_trackers/pipeline
+        working-directory: tools/nys-legislation/pipeline
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           PYTHONUNBUFFERED: "1"
@@ -236,7 +236,7 @@ jobs:
       # --- extract / resume ---
       - name: Submit and collect Message Batches
         if: ${{ inputs.task == 'extract' || inputs.task == 'resume' }}
-        working-directory: civic_reference/nys_legislation_trackers/pipeline
+        working-directory: tools/nys-legislation/pipeline
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           PYTHONUNBUFFERED: "1"
@@ -257,7 +257,7 @@ jobs:
       # --- long_windows: the long laws' windows, one batch request each; answers go to the artifact only ---
       - name: Long-law windows through the Batches API
         if: ${{ inputs.task == 'long_windows' }}
-        working-directory: civic_reference/nys_legislation_trackers/pipeline
+        working-directory: tools/nys-legislation/pipeline
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           PYTHONUNBUFFERED: "1"
@@ -276,12 +276,12 @@ jobs:
         if: ${{ always() && (inputs.task == 'extract' || inputs.task == 'resume') }}
         uses: actions/cache/save@v4
         with:
-          path: civic_reference/nys_legislation_trackers/pipeline/cache/api
+          path: tools/nys-legislation/pipeline/cache/api
           key: nys-api-${{ github.run_id }}
 
       - name: Ingest the answers
         if: ${{ (inputs.task == 'extract' || inputs.task == 'resume') && !inputs.answers_only }}
-        working-directory: civic_reference/nys_legislation_trackers/pipeline
+        working-directory: tools/nys-legislation/pipeline
         run: |
           SARGS=""
           if [ -n "$SESSION" ]; then SARGS="--session $SESSION"; fi
@@ -290,7 +290,7 @@ jobs:
       # a hard failure blocks the commit; the data still survives as the artifact below
       - name: Validate (a hard failure blocks the commit)
         if: ${{ (inputs.task == 'extract' || inputs.task == 'resume') && !inputs.answers_only }}
-        working-directory: civic_reference/nys_legislation_trackers/pipeline
+        working-directory: tools/nys-legislation/pipeline
         run: python3 validate_duties.py --per-session --strict
 
       - name: Commit and push data
@@ -333,22 +333,22 @@ jobs:
         with:
           name: nys-extract-output
           path: |
-            civic_reference/nys_legislation_trackers/data/bills/
-            civic_reference/nys_legislation_trackers/data/signed/
-            civic_reference/nys_legislation_trackers/data/duties/
-            civic_reference/nys_legislation_trackers/data/powers/
-            civic_reference/nys_legislation_trackers/data/effective_dates/
-            civic_reference/nys_legislation_trackers/data/deferred_long.json
-            civic_reference/nys_legislation_trackers/data/deferred_skipped.json
-            civic_reference/nys_legislation_trackers/data/dropped/
-            civic_reference/nys_legislation_trackers/data/reask/
-            civic_reference/nys_legislation_trackers/data/mechanical_flags/
-            civic_reference/nys_legislation_trackers/data/reask_history.json
-            civic_reference/nys_legislation_trackers/data/reask_manual.json
-            civic_reference/nys_legislation_trackers/pipeline/batch_state*.json
-            civic_reference/nys_legislation_trackers/pipeline/canary_output.txt
-            civic_reference/nys_legislation_trackers/pipeline/long_windows_output.txt
-            civic_reference/nys_legislation_trackers/pipeline/cache/api/long/
-            civic_reference/nys_legislation_trackers/pipeline/cache/api/
+            tools/nys-legislation/data/bills/
+            tools/nys-legislation/data/signed/
+            tools/nys-legislation/data/duties/
+            tools/nys-legislation/data/powers/
+            tools/nys-legislation/data/effective_dates/
+            tools/nys-legislation/data/deferred_long.json
+            tools/nys-legislation/data/deferred_skipped.json
+            tools/nys-legislation/data/dropped/
+            tools/nys-legislation/data/reask/
+            tools/nys-legislation/data/mechanical_flags/
+            tools/nys-legislation/data/reask_history.json
+            tools/nys-legislation/data/reask_manual.json
+            tools/nys-legislation/pipeline/batch_state*.json
+            tools/nys-legislation/pipeline/canary_output.txt
+            tools/nys-legislation/pipeline/long_windows_output.txt
+            tools/nys-legislation/pipeline/cache/api/long/
+            tools/nys-legislation/pipeline/cache/api/
           if-no-files-found: ignore
           retention-days: 30

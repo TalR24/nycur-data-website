@@ -24,6 +24,7 @@ import html, pathlib, re, subprocess, sys
 ROOT = next(p for p in pathlib.Path(__file__).resolve().parents if (p / 'CNAME').is_file())
 SITE = 'https://data.nycuriosity.com'
 TEXT_EXT = {'.html', '.js', '.css', '.json', '.py', '.sh', '.yml', '.yaml', '.md', '.txt', '.xml', '.webmanifest'}
+TEXT_NAMES = {'.gitignore', '.assetsignore'}  # no suffix, still path lists
 NO_STUB_PARTS = {'pipeline', 'data', 'cache', 'quality', 'tests', 'quality_reports'}
 SKIP_FILES = ('/cache/', 'state_capacity_ecosystem/', 'shared/move_folders.py', 'shared/batch0_root_paths.py',
               'shared/check_local_links.py')
@@ -82,7 +83,7 @@ def tracked_text_files():
         if any(s in rel for s in SKIP_FILES):
             continue
         p = ROOT / rel
-        if p.suffix.lower() in TEXT_EXT and p.is_file():
+        if (p.suffix.lower() in TEXT_EXT or p.name in TEXT_NAMES) and p.is_file():
             out.append(p)
     return out
 

@@ -108,7 +108,7 @@ try:
                     ("dry: section printed", "New York State deadlines" in log, True)]
         log, sent = run_main(mod, dry=False)
         both = body_of(sent["both@example.test"])
-        url = "https://data.nycuriosity.com/civic_reference/nys_legislation_trackers/duties/?id="
+        url = "https://data.nycuriosity.com/tools/nys-legislation/duties/?id="
         results += [("new: recipients", set(sent), {"old@example.test", "both@example.test", "nys@example.test", "empty@example.test"}),
                     ("new: unchanged body for subscriber without the field", body_of(sent["old@example.test"]), old_body),
                     ("new: heading", "New York State deadlines" in both, True),

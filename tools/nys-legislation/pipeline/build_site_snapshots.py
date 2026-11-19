@@ -3,7 +3,7 @@
 methodology note, and the methodology page's figures) from data/site/ and quality/gold_score.json, so crawlers that skip JavaScript see real content.
 Mirrors the markup and labels the pages' own JS builds; the JS replaces the blocks on load.
 
-    python3 civic_reference/nys_legislation_trackers/pipeline/build_site_snapshots.py
+    python3 tools/nys-legislation/pipeline/build_site_snapshots.py
 
 No network, no model calls, idempotent. Uses the same marker helper as the NYC builder
 (tools/legislation/implementation/pipeline/build_static_snapshots.py, via seo/static_snapshot.py)."""

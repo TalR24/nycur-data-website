@@ -105,8 +105,8 @@ MEMBER_PROFILE_URL = "https://data.nycuriosity.com/tools/legislation/council-mem
 DISTRICT_BRIEF_URL = "https://premium.nycuriosity.com/civic_reference/nyc_council_legislation_trackers/district-briefs/?district="
 
 DEADLINE_WINDOW_DAYS = 45
-NYS_SITE = SITE_ROOT / "civic_reference/nys_legislation_trackers/data/site"
-NYS_DUTY_URL = "https://data.nycuriosity.com/civic_reference/nys_legislation_trackers/duties/?id="
+NYS_SITE = SITE_ROOT / "tools/nys-legislation/data/site"
+NYS_DUTY_URL = "https://data.nycuriosity.com/tools/nys-legislation/duties/?id="
 
 
 def load_premium_paths() -> tuple[Path, Path]:

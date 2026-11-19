@@ -18,14 +18,14 @@
       { label: 'Council Members', href: '/tools/legislation/council-members/' },
       { label: 'Agencies', href: '/tools/legislation/agencies/' }
     ]},
-    { label: 'NYS Legislation Trackers', href: '/civic_reference/nys_legislation_trackers/', max: 7, sub: [
-      { label: 'Overview', href: '/civic_reference/nys_legislation_trackers/' },
-      { label: 'Bill Explorer', href: '/civic_reference/nys_legislation_trackers/bills/' },
-      { label: 'Duties Tracker', href: '/civic_reference/nys_legislation_trackers/duties/' },
-      { label: 'Powers Tracker', href: '/civic_reference/nys_legislation_trackers/powers/' },
-      { label: 'Public bodies', href: '/civic_reference/nys_legislation_trackers/public-bodies/' },
-      { label: 'Legislators', href: '/civic_reference/nys_legislation_trackers/legislators/' },
-      { label: 'Alerts', href: '/civic_reference/nys_legislation_trackers/alerts/' }
+    { label: 'NYS Legislation Trackers', href: '/tools/nys-legislation/', max: 7, sub: [
+      { label: 'Overview', href: '/tools/nys-legislation/' },
+      { label: 'Bill Explorer', href: '/tools/nys-legislation/bills/' },
+      { label: 'Duties Tracker', href: '/tools/nys-legislation/duties/' },
+      { label: 'Powers Tracker', href: '/tools/nys-legislation/powers/' },
+      { label: 'Public bodies', href: '/tools/nys-legislation/public-bodies/' },
+      { label: 'Legislators', href: '/tools/nys-legislation/legislators/' },
+      { label: 'Alerts', href: '/tools/nys-legislation/alerts/' }
     ]},
     { label: 'Community Board Tools', href: '/tools/community-boards/', sub: [
       { label: 'Member Tracker', href: '/cb-tools/member-tracker/' },
