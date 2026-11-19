@@ -88,7 +88,7 @@ All CSS and JS are loaded from shared assets or inline per page; there is no bui
 | Fiscal impacts | `pipeline/fetch_fiscal_impacts.py`, `regenerate_agency_data.py`, `validate_fiscal_impacts.py` | `tools/legislation/fiscal/data/fiscal_impacts.json`, `agency-fiscal-impact/data.json` |
 | Obligations and powers | `tools/legislation/implementation/pipeline/` (`fetch_enacted_laws.py`, `extract_obligations.py`, `reextract_queued.py`, `build_report_filings.py`, `label_kinds.py`, `validate_obligations.py`) | `legislation_implementation_tracker/data/` (`laws.json`, `obligations.json`, `powers.json`, `report_filings.json`) |
 | Council members, agencies | `tools/legislation/pipeline/` (`rebuild_profiles.sh` runs the roster, stats, agency, votes and context builders) | `nyc_council_legislation_trackers/data/*.json` |
-| CB member tracker | `cb-tools/member-tracker/pipeline/` (`fetch_open_data.py`, `fetch_board_pages.py`, `recrawl_gaps.py`, `extract_rosters.py`, `build_tracker_data.py`) | `member-tracker/data/boards.json`, `members.json`, `pipeline/extracted/rosters/` |
+| CB member tracker | `tools/community-boards/member-tracker/pipeline/` (`fetch_open_data.py`, `fetch_board_pages.py`, `recrawl_gaps.py`, `extract_rosters.py`, `build_tracker_data.py`) | `member-tracker/data/boards.json`, `members.json`, `pipeline/extracted/rosters/` |
 | Ask index | `build_ask_index.py` | `worker/ask_index.json` in the premium repo |
 
 Extraction runs on the Claude Max plan first (a monthly cloud routine using `--emit-packets` and `--ingest`), and the workflows call the Anthropic API only for what the routine left. Details: the `legislation-trackers` and `fiscal-impacts-tracker` skills.
@@ -96,7 +96,7 @@ Extraction runs on the Claude Max plan first (a monthly cloud routine using `--e
 ### SEO and LLM readiness (`seo/`)
 - Every live page needs title, meta description, canonical and og tags. `seo/seo_check.py` checks the contract (`--file` for one page, `--all --live` for production, including fetches as GPTBot, ClaudeBot and PerplexityBot and a check of `/llms.txt`).
 - `python3 seo/build_sitemap.py --site data` regenerates `sitemap.xml`, `llms.txt` and the JSON-LD together; add `--check` to report drift. Never hand-edit `sitemap.xml`. Run it after adding, renaming or removing a page.
-- `seo/static_snapshot.py` writes pre-rendered copies of JS-built content between `<!-- static:<id>:start -->` and `<!-- static:<id>:end -->` markers inside the element the JS fills, so crawlers without JavaScript read real numbers (10 rows at most). Builders: `pipeline/build_fiscal_static_snapshots.py`, `tools/legislation/implementation/pipeline/build_static_snapshots.py` (11 obligations and umbrella pages), `cb-tools/member-tracker/pipeline/build_static_boards.py`.
+- `seo/static_snapshot.py` writes pre-rendered copies of JS-built content between `<!-- static:<id>:start -->` and `<!-- static:<id>:end -->` markers inside the element the JS fills, so crawlers without JavaScript read real numbers (10 rows at most). Builders: `pipeline/build_fiscal_static_snapshots.py`, `tools/legislation/implementation/pipeline/build_static_snapshots.py` (11 obligations and umbrella pages), `tools/community-boards/member-tracker/pipeline/build_static_boards.py`.
 - `robots.txt` explicitly allows the AI crawlers.
 - `seo/gsc_pull.py` and `seo/report_email.py` build the monthly SEO report; `seo/sce_monthly.py` builds the State Capacity Ecosystem report.
 

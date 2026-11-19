@@ -16,7 +16,7 @@ boards/boroughs they watch:
                    appeared/disappeared)
   members          members added to / no longer on the published roster
 
-Inputs (public repo):    cb-tools/member-tracker/data/boards.json + members.json
+Inputs (public repo):    tools/community-boards/member-tracker/data/boards.json + members.json
 Inputs (premium checkout, path via PREMIUM_DIR):
   cb-tools/member-tracker/data/cb_alert_subscriptions.csv
       columns: email,
@@ -68,7 +68,7 @@ DATA = HERE.parent / "data"
 sys.path.insert(0, str(SITE_ROOT / "shared"))
 import alert_engine  # noqa: E402
 
-TRACKER_URL = "https://data.nycuriosity.com/cb-tools/member-tracker/"
+TRACKER_URL = "https://data.nycuriosity.com/tools/community-boards/member-tracker/"
 ALERTS_URL = "https://premium.nycuriosity.com/cb-tools/member-tracker/alerts/"
 
 EVENT_TYPES = ("chair", "dm", "committee_chair", "members")

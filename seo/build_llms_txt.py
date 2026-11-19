@@ -72,7 +72,7 @@ def build(key, repo=None):
         segs = [s for s in p["url"].strip("/").split("/") if s]
         # tools/ and posts/ hold nested suites (Nov 2026 restructure): the hubs are the same
         # pages build_jsonld.is_hub marks as datasets, plus the bare /tools/legislation/ hub
-        too_deep = (not (is_hub(segs) or len(segs) == 2) if segs and segs[0] in ("tools", "posts") and len(segs) > 1
+        too_deep = (not (is_hub(segs) or len(segs) == 2) if segs and segs[0] in ("tools", "posts") and len(segs) > 1  # path-ok
                     else len(segs) > layout["depth"])
         deep = too_deep or any(h in p["url"] for h in OPTIONAL_HINTS) or p["url"].endswith(".html")
         if deep:

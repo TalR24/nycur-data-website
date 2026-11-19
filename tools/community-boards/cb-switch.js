@@ -7,7 +7,7 @@
 (function () {
   var INK = '--b-topic-cb-ink';
   var TOOLS = [
-    { key: 'member-tracker', label: 'Member Tracker', href: '/cb-tools/member-tracker/' },
+    { key: 'member-tracker', label: 'Member Tracker', href: '/tools/community-boards/member-tracker/' },
     { key: 'cb_member_guide', label: 'Member Guide', href: '/tools/community-boards/member-guide/' },
     { key: 'roberts-rules-helper', label: "Robert's Rules", href: '/tools/community-boards/roberts-rules-helper/' },
     { key: 'meeting-review', label: 'Meeting Review', href: '/tools/community-boards/meeting-review/' },
@@ -27,7 +27,7 @@
     for (var i = 0; i < BLOCK_PARTY_PATHS.length; i++) {
       if (p.indexOf(BLOCK_PARTY_PATHS[i]) !== -1) return 'block-party';
     }
-    if (p.indexOf('/cb-tools/member-tracker/') !== -1) return 'member-tracker';
+    if (p.indexOf('/tools/community-boards/member-tracker/') !== -1) return 'member-tracker';
     if (p.indexOf('/tools/community-boards/roberts-rules-helper/') !== -1) return 'roberts-rules-helper';
     if (p.indexOf('/tools/community-boards/meeting-review/') !== -1) return 'meeting-review';
     if (p.indexOf('/tools/community-boards/board-scorecard/') !== -1) return 'board-scorecard';

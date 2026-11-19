@@ -28,7 +28,7 @@
       { label: 'Alerts', href: '/tools/nys-legislation/alerts/' }
     ]},
     { label: 'Community Board Tools', href: '/tools/community-boards/', sub: [
-      { label: 'Member Tracker', href: '/cb-tools/member-tracker/' },
+      { label: 'Member Tracker', href: '/tools/community-boards/member-tracker/' },
       { label: 'Member Guide', href: '/tools/community-boards/member-guide/' },
       { label: 'Block Party archive', href: '/tools/community-boards/block-party/' },
       { label: 'Robert’s Rules helper', href: '/tools/community-boards/roberts-rules-helper/' },

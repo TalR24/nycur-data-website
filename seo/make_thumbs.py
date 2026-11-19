@@ -29,7 +29,7 @@ POSTS = '/posts/'
 # Homepage tool cards: slug -> page whose top is the best miniature of the tool.
 TOOLS = {
     'nyc_council_legislation_trackers': '/tools/legislation/fiscal/agency-fiscal-impact/',
-    'cb-tools': '/cb-tools/member-tracker/',
+    'cb-tools': '/tools/community-boards/member-tracker/',
     'state_capacity_ecosystem': 'https://statecapacityecosystem.com/ecosystem/',
     'nys_legislation_trackers': '/tools/nys-legislation/duties/',
 }

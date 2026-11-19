@@ -4,7 +4,7 @@ Write pre-rendered HTML into a page between marker comments, so crawlers that
 do not run JavaScript (most AI crawlers, and Google on a first pass) see a
 page's real content instead of a "Loading..." placeholder.
 
-The pattern, generalized from cb-tools/member-tracker/pipeline/build_static_boards.py:
+The pattern, generalized from tools/community-boards/member-tracker/pipeline/build_static_boards.py:
 
     <div id="lawGrid">
       <!-- static:law-grid:start -->

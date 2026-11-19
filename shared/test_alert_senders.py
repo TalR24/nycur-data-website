@@ -125,7 +125,7 @@ def nyc_cases(tmp):
 
 def cb_cases(tmp):
     out = []
-    mod = load("cb-tools/member-tracker/pipeline", "send_cb_alerts")
+    mod = load("tools/community-boards/member-tracker/pipeline", "send_cb_alerts")
     mod.DATA = tmp / "cbdata"
     mod.DATA.mkdir()
     shutil.copy(FIX / "cb_boards.json", mod.DATA / "boards.json")
@@ -154,7 +154,7 @@ def cb_cases(tmp):
             ("cb live: a subject", sent["a@example.test"]["Subject"], "NYCuriosity alert: 2 community board changes on your watchlist"),
             ("cb live: a body", all(s in body_of(sent["a@example.test"]) for s in
                                     ("chair is now Alice Example (was Old Chair Person)", "1 member added to the published roster: Alice Example",
-                                     "Board page: https://data.nycuriosity.com/cb-tools/member-tracker/board/?cd=101")), True),
+                                     "Board page: https://data.nycuriosity.com/tools/community-boards/member-tracker/board/?cd=101")), True),
             ("cb live: failure logged by position and type only", "Send failed for subscriber 2/5: SMTPRecipientsRefused" in log, True),
             ("cb live: no address in the log", "@" in log, False),
             ("cb live: sent count", "State updated. 2 emails sent." in log, True)]

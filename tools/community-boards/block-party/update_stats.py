@@ -39,7 +39,7 @@ PAGES = [
     "tools/community-boards/block-party/index.html",
     "tools/legislation/implementation/alerts/index.html",
     "tools/nys-legislation/alerts/index.html",
-    "cb-tools/member-tracker/alerts/index.html",
+    "tools/community-boards/member-tracker/alerts/index.html",
 ]
 MARK = r"<!--bp:{k}-->(.*?)<!--/bp:{k}-->"
 

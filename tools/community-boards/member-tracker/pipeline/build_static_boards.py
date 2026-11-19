@@ -3,7 +3,7 @@
 Pre-render the 59 board cards into index.html so search engines see the board
 names, neighborhoods and chairs without running JavaScript.
 
-    python3 pipeline/build_static_boards.py        # from cb-tools/member-tracker/
+    python3 pipeline/build_static_boards.py        # from tools/community-boards/member-tracker/
 
 Before Aug 25 2026 the #boardGrid held only "Loading boards..." until
 buildGrid() filled it from data/boards.json, so the page had no crawlable

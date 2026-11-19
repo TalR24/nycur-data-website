@@ -581,7 +581,7 @@ def build(sections, period, session, changes_path=None, extra_actions=None):
                        + (f" and {len(urls) - 12} more" if len(urls) > 12 else "") + ". Run "
                        f"`python3 seo/seo_check.py --all --live` from data_website/ and report their results, check "
                        f"whether each page's main content is rendered by JavaScript from JSON, and count inbound "
-                       f"links to each. Propose fixes (pre-rendered static text like cb-tools/member-tracker/, links "
+                       f"links to each. Propose fixes (pre-rendered static text like tools/community-boards/member-tracker/, links "
                        f"from the hub or the post) for my approval, and tell me which ones I should inspect in "
                        f"Search Console."),
         })
