@@ -250,11 +250,39 @@ def long_writer(mid, res):
     write_cache(mid, res)
 
 
+APPLY_LONG_KEEP_WHOLE = True          # Nov 20 2026: 2011-A55's five windows answered 15 obligations against 99 in its whole-law re-ask and replaced it
+LONG_KEPT_WHOLE = []
+
+
+def long_window_thinner(key, text, root=None):
+    """True when a law short enough for one read (<= MAX_CHARS) has a valid whole-law re-ask answer with more obligations than all its window answers together."""
+    if len(text) > MAX_CHARS:
+        return False
+    yd = Path(root or PACKETS_ROOT) / key.split("-")[0]
+    rp = yd / "results_reask" / (key + ".json")
+    if not rp.exists():
+        return False
+    try:
+        whole = len(json.loads(rp.read_text()).get("obligations") or [])
+    except (json.JSONDecodeError, AttributeError):
+        return False
+    win = 0
+    for f in (yd / "long" / "results").glob(key + "__w*.json"):
+        try:
+            win += len(json.loads(f.read_text()).get("obligations") or [])
+        except (json.JSONDecodeError, AttributeError):
+            pass
+    return win < whole
+
+
 def ingest_long(todo, root, lookup, by_canon, model, schema=None):
     """Merge the window answers of the long laws in todo (laws whose windowed answers are all present). Returns (done, left)."""
     done, left = [], []
     for law, text in todo:
         if not long_answered(law["key"], root):
+            continue
+        if APPLY_LONG_KEEP_WHOLE and long_window_thinner(law["key"], text, root):
+            LONG_KEPT_WHOLE.append(law["key"])
             continue
         d = long_dir(law["key"], root)
         with long_windows():
