@@ -1654,6 +1654,24 @@ class OfflineSiteUpdateTests(unittest.TestCase):
         files = {f for f, _ in targets}
         self.assertIn(self.cfg["site_update_rules"]["implementation_tracker_file"], files)
 
+    def test_targets_by_post_restructure_paths(self):
+        # Nov 19 2026: the trackers moved to /tools/legislation/... and post hubs
+        # to /posts/<kebab>/. Links to either the old or the new paths must
+        # still point at the right tracker pages.
+        rules = self.cfg["site_update_rules"]
+        cases = [
+            ("https://data.nycuriosity.com/tools/legislation/implementation/law/?law=1", "implementation_tracker_file"),
+            ("https://data.nycuriosity.com/posts/council-obligations/", "implementation_tracker_file"),
+            ("https://data.nycuriosity.com/tools/legislation/fiscal/overview/", "fiscal_tracker_file"),
+            ("https://data.nycuriosity.com/civic_reference/"
+             "nyc_council_fiscal_impacts_tracker/", "fiscal_tracker_file"),
+        ]
+        for url, key in cases:
+            with self.subTest(url=url):
+                files = {f for f, _ in monitor.site_update_targets(self._item(own_link_url=url), self.cfg)}
+                self.assertIn(rules[key], files)
+                self.assertIn(rules["trackers_hub_file"], files)
+
     def test_targets_by_query_id(self):
         item = self._item(queries={"fiscal-tracker"})
         targets = monitor.site_update_targets(item, self.cfg)
