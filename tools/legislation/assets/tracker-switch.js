@@ -65,7 +65,7 @@
         ' style="--ink:var(' + t.ink + ')"' + (t.key === cur ? ' aria-current="page"' : '') + '>' +
         t.label + ' <span class="trk-note">' + t.note + '</span></a>';
     });
-    html += '<a class="trk-all" href="' + BASE + 'nyc_council_legislation_trackers/">All trackers &rarr;</a>';
+    html += '<a class="trk-all" href="' + BASE + '">All trackers &rarr;</a>';
     bar.innerHTML = html;
     // top of the page's own content: right under the site nav (site.js puts
     // .sitenav directly after <header>; if it arrives later it still lands
