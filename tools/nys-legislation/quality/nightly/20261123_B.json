@@ -1,0 +1,812 @@
+{
+ "_scoring": {
+  "auditor": "B",
+  "night": "20261123",
+  "laws": 11,
+  "stored_records": 42,
+  "correct": 20,
+  "wrong_fields": 8,
+  "not_real": 14,
+  "missed": 1,
+  "precision_strict": "20/42 = 47.6% (Wilson 95% 33.4-62.3)",
+  "precision_real": "28/42 = 66.7% (Wilson 95% 51.6-79.0)",
+  "recall": "24/25 = 96.0% (Wilson 95% 80.5-99.3)",
+  "effective_dates": "11/11 correct",
+  "calibration": {
+   "2009-A10126": {
+    "records": {
+     "2009-A10126-01": "correct"
+    }
+   },
+   "2009-A7505": {
+    "records": {
+     "2009-A7505-01": "wrong",
+     "2009-A7505-02": "wrong",
+     "2009-A7505-03": "wrong"
+    }
+   }
+  }
+ },
+ "_classes": [
+  {
+   "name": "technical-correction reprints: citation renumbering or gender-word swap stored as records",
+   "criteria": [
+    "1",
+    "7"
+   ],
+   "instances": [
+    "2021-A10229-01",
+    "2021-A10229-02",
+    "2021-A10229-03",
+    "2021-A10229-04",
+    "2021-A10229-05",
+    "2021-A10229-06",
+    "2021-A10229-07",
+    "2021-A10229-08",
+    "2021-A10229-09",
+    "2021-A10229-11",
+    "2021-A10229-12",
+    "2021-A10229-13",
+    "2021-A10229-14",
+    "2021-A10229-15"
+   ],
+   "rule": "python (/tmp/auditB_classes.py, refined): rebuild the post-amendment text from the packet with a per-char braced flag; take the braced chars inside the stored quote; match if extends_existing and, after removing number words/digits, citation words (section|subsection|paragraph|of|this|the|financial services law|chapter|article|and|or|hereof|that|which), gender/title words (he|his|her|superintendent('s)|commissioner('s)) and punctuation, no letters remain; braced text holds a citation or gender word; no year, 'dollars' or 'percent'.",
+   "db_matches": 75,
+   "db_examples": [
+    "2023-S7189-01",
+    "2009-S8380-20",
+    "2021-S7111-27"
+   ],
+   "needs_judgment": false,
+   "note": "Rule finds 9 of the 14 sample instances (misses -03 days', -09, -12 hyphen, -13, -14: quote spans or apostrophe/hyphen tokens); 1459 records could not be located in packet text. Gate reprinted_gender_neutral caught only -10."
+  },
+  {
+   "name": "court actor left Unspecified",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2021-A297-01",
+    "2021-A297-03",
+    "2021-A297-04"
+   ],
+   "rule": "agency=='Unspecified' and re.search(r'court|justice', actor_raw+' '+actor_resolved_model, re.I)",
+   "db_matches": 42,
+   "db_examples": [
+    "2009-A6192-02",
+    "2011-A55-93",
+    "2011-A676-21"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "Municipalities (all) where the law names a narrower group (assessing units; defined municipality)",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2019-S5886-04",
+    "2019-S5886-05",
+    "2019-S5886-07",
+    "2019-S5886-08",
+    "2019-S5886-09",
+    "2009-A7505-01",
+    "2009-A7505-02",
+    "2009-A7505-03"
+   ],
+   "rule": "agency=='Municipalities (all)' and (re.search(r'assessing unit', actor_raw, re.I) or not re.match(r'\\s*(all |the )?municipalit', actor_resolved_model, re.I))",
+   "db_matches": 218,
+   "db_examples": [
+    "2009-A10835-01",
+    "2009-A11237-01",
+    "2009-A11308-30"
+   ],
+   "needs_judgment": false,
+   "note": "218 of 1193 Municipalities (all) records; laws that define 'municipality' broadly but the model kept the bare word are not caught (needs_judgment for those)."
+  }
+ ],
+ "2021-A3354": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2021-03-12",
+   "computed": "2021-03-12",
+   "verdict": "correct",
+   "note": "'shall take effect immediately and shall expire and be deemed repealed December 31, 2022'; signed 2021-03-12; expiry stored 2022-12-31. No records: 159-c 'shall be entitled to absent himself' is an entitlement, 196-c binds employers."
+  }
+ },
+ "2021-A10229": {
+  "records": {
+   "2021-A10229-01": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "7"
+    ],
+    "fields": {},
+    "quote": "to make an examination into the affairs of every system, including compliance with the standards established pursuant to paragraph two of this section, at least once in every five years in accordance with the provisions of sections three hundred ten, three hundred eleven and three hundred twelve of this article",
+    "note": "Law makes technical corrections only; braced matter in this sentence is a citation renumbering ('section three hundred [three] {{four}} of [this chapter] {{the financial services law}}') and/or a gender-word swap ('[he] {{the superintendent}}'); the duty/power is reprinted unchanged text and widens nothing. Only new matter: '[hereof] {{of this section}}' and the cost-recovery citation."
+   },
+   "2021-A10229-02": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "7"
+    ],
+    "fields": {},
+    "quote": "Whenever the superintendent believes this section is being violated, the superintendent shall serve upon the insurer or insurers and the director or directors, as the case may be, a notice pursuant to section three hundred four of the financial services law of a hearing before the superintendent to be held not less than thirty days after such service",
+    "note": "Law makes technical corrections only; braced matter in this sentence is a citation renumbering ('section three hundred [three] {{four}} of [this chapter] {{the financial services law}}') and/or a gender-word swap ('[he] {{the superintendent}}'); the duty/power is reprinted unchanged text and widens nothing. '[he] {{the superintendent}} shall serve' + 'section three hundred [three] {{four}}'."
+   },
+   "2021-A10229-03": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "7"
+    ],
+    "fields": {},
+    "quote": "The superintendent may summarily suspend or revoke any temporary permit issued pursuant to this subsection upon ten days' notice in writing to the permittee of the superintendent's intention to do so, which notice shall be given in accordance with the applicable provisions of subsections (a) and (d) of section three hundred four of the financial services law.",
+    "note": "Law makes technical corrections only; braced matter in this sentence is a citation renumbering ('section three hundred [three] {{four}} of [this chapter] {{the financial services law}}') and/or a gender-word swap ('[he] {{the superintendent}}'); the duty/power is reprinted unchanged text and widens nothing. 'ten [days] {{days'}} notice' + citation."
+   },
+   "2021-A10229-04": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "7"
+    ],
+    "fields": {},
+    "quote": "(3) Before revoking the license of any non-resident insurance producer in accordance with this section, the superintendent shall give ten days' notice in writing to such producer of the action proposed to be taken, which notice shall be given in accordance with the applicable provisions of subsections (a) and (d) of section three hundred four of the financial services law.",
+    "note": "Law makes technical corrections only; braced matter in this sentence is a citation renumbering ('section three hundred [three] {{four}} of [this chapter] {{the financial services law}}') and/or a gender-word swap ('[he] {{the superintendent}}'); the duty/power is reprinted unchanged text and widens nothing. citation only."
+   },
+   "2021-A10229-05": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "7"
+    ],
+    "fields": {},
+    "quote": "the superintendent shall serve upon the person in the manner provided by section three hundred four of the financial services law, a statement of the charges and notice of a hearing to be held at a time not less than ten days after the date of service of the notice and at the place fixed in the notice.",
+    "note": "Law makes technical corrections only; braced matter in this sentence is a citation renumbering ('section three hundred [three] {{four}} of [this chapter] {{the financial services law}}') and/or a gender-word swap ('[he] {{the superintendent}}'); the duty/power is reprinted unchanged text and widens nothing. '[he] {{the superintendent}}' + citation."
+   },
+   "2021-A10229-06": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "7"
+    ],
+    "fields": {},
+    "quote": "After the hearing, the superintendent shall make a written report containing the superintendent's findings, and shall serve a copy of the report upon the person and any intervenor.",
+    "note": "Law makes technical corrections only; braced matter in this sentence is a citation renumbering ('section three hundred [three] {{four}} of [this chapter] {{the financial services law}}') and/or a gender-word swap ('[he] {{the superintendent}}'); the duty/power is reprinted unchanged text and widens nothing. only '[his] {{the superintendent's}} findings'; gender-word-only reprint (fixed Oct 17 class recurring)."
+   },
+   "2021-A10229-07": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "7"
+    ],
+    "fields": {},
+    "quote": "Any costs incurred as a result of the operation of this subsection shall be assessed on all domestic insurers in the same manner as provided for in section two hundred six of the financial services law.",
+    "note": "Law makes technical corrections only; braced matter in this sentence is a citation renumbering ('section three hundred [three] {{four}} of [this chapter] {{the financial services law}}') and/or a gender-word swap ('[he] {{the superintendent}}'); the duty/power is reprinted unchanged text and widens nothing. citation only; also a passive cost-assessment sentence."
+   },
+   "2021-A10229-08": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "7"
+    ],
+    "fields": {},
+    "quote": "of such society in accordance with sections three hundred four, three hundred five and three hundred six of the financial services law, the superintendent finds any one or more of the following grounds therefor:",
+    "note": "Law makes technical corrections only; braced matter in this sentence is a citation renumbering ('section three hundred [three] {{four}} of [this chapter] {{the financial services law}}') and/or a gender-word swap ('[he] {{the superintendent}}'); the duty/power is reprinted unchanged text and widens nothing. citation + gender; quote is a fragment of the grounds lead-in."
+   },
+   "2021-A10229-09": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "7"
+    ],
+    "fields": {},
+    "quote": "In connection with such examinations, the superintendent may exercise the powers set forth in sections three hundred six, three hundred eight, three hundred ten, three hundred eleven, and three hundred twelve of this chapter and subsection (f) of section two hundred six and sections three hundred five and three hundred six of the financial services law",
+    "note": "Law makes technical corrections only; braced matter in this sentence is a citation renumbering ('section three hundred [three] {{four}} of [this chapter] {{the financial services law}}') and/or a gender-word swap ('[he] {{the superintendent}}'); the duty/power is reprinted unchanged text and widens nothing. deleted Insurance Law 304/305/313 references replaced by FSL 206(f)/305/306: renumbering after the FSL transfer, no new power."
+   },
+   "2021-A10229-11": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "7"
+    ],
+    "fields": {},
+    "quote": "There is established within the department an arbitration administration fund which shall be considered to be an expense of the department and shall be funded by order of the superintendent, pursuant to section two hundred six of the financial services law in such amount as shall be sufficient to defray the actual administrative expenses",
+    "note": "Law makes technical corrections only; braced matter in this sentence is a citation renumbering ('section three hundred [three] {{four}} of [this chapter] {{the financial services law}}') and/or a gender-word swap ('[he] {{the superintendent}}'); the duty/power is reprinted unchanged text and widens nothing. citation + '[twelve month] {{twelve-month}}'."
+   },
+   "2021-A10229-12": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "7"
+    ],
+    "fields": {},
+    "quote": "If the amount assessed for any twelve-month period is insufficient to defray expenses during that period, a further assessment may be ordered by the superintendent.",
+    "note": "Law makes technical corrections only; braced matter in this sentence is a citation renumbering ('section three hundred [three] {{four}} of [this chapter] {{the financial services law}}') and/or a gender-word swap ('[he] {{the superintendent}}'); the duty/power is reprinted unchanged text and widens nothing. only '[twelve month] {{twelve-month}}' hyphenation."
+   },
+   "2021-A10229-13": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "7"
+    ],
+    "fields": {},
+    "quote": "The superintendent shall recover such costs in the manner prescribed in subsection (f) of section two hundred six of the financial services law.",
+    "note": "Law makes technical corrections only; braced matter in this sentence is a citation renumbering ('section three hundred [three] {{four}} of [this chapter] {{the financial services law}}') and/or a gender-word swap ('[he] {{the superintendent}}'); the duty/power is reprinted unchanged text and widens nothing. '{{subsection (f) of}} section [three] {{two}} hundred [thirteen] {{six}}' citation only."
+   },
+   "2021-A10229-14": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "7"
+    ],
+    "fields": {},
+    "quote": "Such examinations shall be conducted in accordance with the provisions of sections three hundred ten, three hundred eleven, three hundred twelve of this chapter and subsection (f) of section two hundred six of the financial services law.",
+    "note": "Law makes technical corrections only; braced matter in this sentence is a citation renumbering ('section three hundred [three] {{four}} of [this chapter] {{the financial services law}}') and/or a gender-word swap ('[he] {{the superintendent}}'); the duty/power is reprinted unchanged text and widens nothing. '[and three hundred thirteen] ... {{and subsection (f) of section two hundred six of the financial services law}}' citation only."
+   },
+   "2021-A10229-15": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "7"
+    ],
+    "fields": {},
+    "quote": "four hundred seven of this chapter or section two hundred six of the financial services law, the superintendent may order such company, association or person to pay to the people of this state the following penalties:",
+    "note": "Law makes technical corrections only; braced matter in this sentence is a citation renumbering ('section three hundred [three] {{four}} of [this chapter] {{the financial services law}}') and/or a gender-word swap ('[he] {{the superintendent}}'); the duty/power is reprinted unchanged text and widens nothing. '[three hundred thirteen, three hundred thirty-two,] ... {{or section two hundred six of the financial services law}}' citation only."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2022-07-21",
+   "computed": "2022-07-21",
+   "verdict": "correct",
+   "note": "'This act shall take effect immediately.' signed 2022-07-21. Dropped -10 (reprinted_gender_neutral) correctly."
+  }
+ },
+ "2021-A3173": {
+  "records": {
+   "2021-A3173-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "an application may be made by the attorney general in the name of the people of the state of New York to a court or justice having jurisdiction by a special proceeding to issue an injunction",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Attorney General",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A3173-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the attorney general is authorized to take proof and make a determination of the relevant facts and to issue subpoenas in accordance with the civil practice law and rules.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Attorney General",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A3173-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "an injunction may be issued by such court or justice, enjoining and restraining any further violation, without requiring proof that any person has, in fact been injured or damaged thereby.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A3173-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the court may impose a civil penalty of not more than one hundred dollars for the first violation and two hundred dollars for each violation thereafter",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2022-04-06",
+   "computed": "2022-04-06",
+   "verdict": "correct",
+   "note": "'on the one hundred eightieth day after it shall have become a law'; 2021-10-08 + 180 days."
+  }
+ },
+ "2019-S6367": {
+  "records": {
+   "2019-S6367-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "No employee contributions made to the New York state and local police and fire retirement system by any police officer or firefighter who elects to make such change in plan coverage pursuant to this act shall be returned to such officer or firefighter.",
+    "note": "\u00a72 is new (non-amending) act text; prohibition on the retirement system.",
+    "fields_at_audit": {
+     "agency": "New York State and Local Police and Fire Retirement System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S6367-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Such employee contribution shall be used to offset any past service costs incurred by operation of the provisions of this act.",
+    "note": "'Such employee contribution shall be used to offset any past service costs' - distinct application duty.",
+    "fields_at_audit": {
+     "agency": "New York State and Local Police and Fire Retirement System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2020-01-01",
+   "computed": "2020-01-01",
+   "verdict": "correct",
+   "note": "immediately; signed 2020-01-01."
+  }
+ },
+ "2019-A8136": {
+  "records": {
+   "2019-A8136-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Title to the land described in section three of this act shall be approved by the attorney general",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Attorney General",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-A8136-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the deeds to the people of the state of New York of such described lands shall be approved by the attorney general as to the form and manner of execution and recordability prior to its delivery to the respective county clerk office for recording",
+    "note": "separate approval of the deeds 'as to the form and manner of execution and recordability'.",
+    "fields_at_audit": {
+     "agency": "Attorney General",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2019-09-13",
+   "computed": "2019-09-13",
+   "verdict": "correct",
+   "note": "immediately."
+  }
+ },
+ "2019-S4098": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2019-10-23",
+   "computed": "2019-10-23",
+   "verdict": "correct",
+   "note": "immediately; the Jan 1 2020 proviso is an applicability date for taxes, not the effective date. No records: the benevolent association is a private membership corporation."
+  }
+ },
+ "2019-S5886": {
+  "records": {
+   "2019-S5886-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The state comptroller shall make available an application form that provides the state comptroller with information regarding the technology and security practices maintained by the nationally recognized electronic securities bidding service",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State Comptroller",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S5886-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "If the state comptroller determines that the requirements and conditions of the open auction are in accordance with the provisions of this chapter and the bidding service provides a secure, open and competitive opportunity for qualified bidders to submit proposals, the application shall be deemed approved.",
+    "note": "comptroller's approval determination; kind duty acceptable ('approved by the state comptroller').",
+    "fields_at_audit": {
+     "agency": "State Comptroller",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S5886-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The state comptroller shall post information regarding the nationally recognized electronic securities bidding services that have been approved for use by municipalities on the state comptroller website.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State Comptroller",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S5886-04": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Counties; Cities; Towns"
+    },
+    "quote": "Notice of any bond sale shall provide for the manner in which the bidding period may be extended and the basis for determination of the winning bidder.",
+    "note": "Law defines 'Municipality' as 'a county with a population of four hundred thousand or more, or a city or town with a population of one hundred thousand or more'; group should be Counties; Cities; Towns, not Municipalities (all) (which includes villages)."
+   },
+   "2019-S5886-05": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Counties; Cities; Towns"
+    },
+    "quote": "The municipality's chief fiscal officer shall administer the program and shall publish its policies and procedures for the procurement of nationally recognized electronic securities bidding services on the municipality's internet website.",
+    "note": "Law defines 'Municipality' as 'a county with a population of four hundred thousand or more, or a city or town with a population of one hundred thousand or more'; group should be Counties; Cities; Towns, not Municipalities (all) (which includes villages)."
+   },
+   "2019-S5886-07": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Counties; Cities; Towns"
+    },
+    "quote": "Such policies and procedures shall include policies to prevent fraud.",
+    "note": "Law defines 'Municipality' as 'a county with a population of four hundred thousand or more, or a city or town with a population of one hundred thousand or more'; group should be Counties; Cities; Towns, not Municipalities (all) (which includes villages)."
+   },
+   "2019-S5886-08": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Counties; Cities; Towns"
+    },
+    "quote": "The municipality's chief fiscal officer shall review the electronic open auction bidding process to ensure that the bond sale was completed in a timely fashion; the sale was completed without errors; and the process was favorable as compared to the method currently used by the municipality.",
+    "note": "Law defines 'Municipality' as 'a county with a population of four hundred thousand or more, or a city or town with a population of one hundred thousand or more'; group should be Counties; Cities; Towns, not Municipalities (all) (which includes villages)."
+   },
+   "2019-S5886-09": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Counties; Cities; Towns"
+    },
+    "quote": "The municipality shall conduct evaluations of the program annually with a summary evaluation at the end of the two year program. The municipality shall submit the evaluations to the state comptroller, the temporary president of the senate and the speaker of the assembly.",
+    "note": "Law defines 'Municipality' as 'a county with a population of four hundred thousand or more, or a city or town with a population of one hundred thousand or more'; group should be Counties; Cities; Towns, not Municipalities (all) (which includes villages)."
+   }
+  },
+  "missed": [
+   {
+    "blind": "b4",
+    "quote": "There is hereby established an electronic open auction bond sale pilot program authorizing municipalities to conduct open auction public bond sales through any nationally recognized electronic securities bidding service approved by the state comptroller.",
+    "kind": "power",
+    "agency": "Counties; Cities; Towns",
+    "dropped_by": null,
+    "note": "Core grant of the pilot (wholly new \u00a758.10(b)(1)); no stored or dropped record. Related: (c) 'If the chief fiscal officer of the municipality has authorized the receipt of bids in an electronic open auction format, such electronic bids may be submitted'."
+   }
+  ],
+  "effective_date": {
+   "stored": "2020-01-01",
+   "computed": "2020-01-01",
+   "verdict": "correct",
+   "note": "'first of January next succeeding' 2019-12-12; expires 2022-01-01 stored correctly."
+  }
+ },
+ "2019-S8362": {
+  "records": {
+   "2019-S8362-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "that hires persons after the effective date of this act to perform contact tracing pertaining to COVID-19 infections within the city of New York, shall, to the greatest extent possible, hire contact tracers who are representative of the cultural and linguistic diversity of the communities in which they serve.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOHMH",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S8362-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "that hires persons after the effective date of this act to perform contact tracing pertaining to COVID-19 infections within the city of New York, shall, to the greatest extent possible, hire contact tracers who are representative of the cultural and linguistic diversity of the communities in which they serve.",
+    "note": "'any other New York city agency' left Unspecified is acceptable (no single body); could be a City of New York group.",
+    "fields_at_audit": {
+     "agency": "DOHMH",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S8362-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "that hires persons after the effective date of this act to perform contact tracing pertaining to COVID-19 infections within the city of New York, shall, to the greatest extent possible, hire contact tracers who are representative of the cultural and linguistic diversity of the communities in which they serve.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOHMH",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S8362-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "and the New York city health and hospitals corporation shall annually submit a report on contact tracer worker diversity within the city of New York including outreach efforts to recruit a diverse workforce to the governor, the temporary president of the senate and the speaker of the assembly beginning no later than December 31, 2020.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOHMH",
+     "kind": "duty",
+     "deadline_kind": "fixed_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S8362-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "and the New York city health and hospitals corporation shall annually submit a report on contact tracer worker diversity within the city of New York including outreach efforts to recruit a diverse workforce to the governor, the temporary president of the senate and the speaker of the assembly beginning no later than December 31, 2020.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOHMH",
+     "kind": "duty",
+     "deadline_kind": "fixed_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2020-06-17",
+   "computed": "2020-06-17",
+   "verdict": "correct",
+   "note": "immediately; expires 2022-01-01 stored."
+  }
+ },
+ "2019-S660": {
+  "records": {
+   "2019-S660-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "award damages, including, but not limited to, back pay, benefits and reasonable attorneys' fees and costs incurred to a prevailing plaintiff;",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S660-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "afford injunctive relief against any employer that commits or proposes to commit a violation of the provisions of this section; (c) order reinstatement; and/or",
+    "note": "quote spans '(b) afford injunctive relief ... (c) order reinstatement'; -03 duplicate correctly dropped.",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S660-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "award liquidated damages equal to one hundred percent of the award for damages pursuant to paragraph (a) of this subdivision unless an employer proves a good faith basis to believe that its actions in violation of this section were in compliance with the law.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2019-11-08",
+   "computed": "2019-11-08",
+   "verdict": "correct",
+   "note": "immediately."
+  }
+ },
+ "2021-A297": {
+  "records": {
+   "2021-A297-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "City Courts (Unified Court System)"
+    },
+    "quote": "the claim relates to such tenancy or lease and the notice of claim cannot be sent under paragraph one or two of this subdivision, at any place in the county or an adjoining county where claimant may mail or otherwise deliver rent",
+    "note": "Actor is the court whose small-claims procedure 'shall provide for the sending of notice' (the clerk); should resolve to the court, not Unspecified. Uniform City Court Act \u00a71803(a)."
+   },
+   "2021-A297-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the claim relates to such tenancy or lease and the notice of claim cannot be sent under paragraph one or two of this subdivision, at any place in the state where claimant may mail or otherwise deliver rent",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "District Courts",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2021-A297-03": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Town and Village Justice Courts (Unified Court System)"
+    },
+    "quote": "the claim relates to such tenancy or lease and the notice of claim cannot be sent under paragraph one or two of this subdivision, at any place in the county or an adjoining county where claimant may mail or otherwise deliver rent",
+    "note": "Actor is the court whose small-claims procedure 'shall provide for the sending of notice' (the clerk); should resolve to the court, not Unspecified. Uniform Justice Court Act \u00a71803(a)."
+   },
+   "2021-A297-04": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "New York City Civil Court (Unified Court System)"
+    },
+    "quote": "the claim relates to such tenancy or lease and the notice of claim cannot be sent under paragraph one or two of this subdivision, at any place in the state where plaintiff may mail or otherwise deliver rent",
+    "note": "Actor is the court whose small-claims procedure 'shall provide for the sending of notice' (the clerk); should resolve to the court, not Unspecified. NYC Civil Court Act \u00a71803(a)."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2022-09-01",
+   "computed": "2022-09-01",
+   "verdict": "correct",
+   "note": "'first of September next succeeding' 2021-10-22."
+  }
+ },
+ "2019-S5936": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2019-11-20",
+   "computed": "2019-11-20",
+   "verdict": "correct",
+   "note": "immediately. No records: residency exemption for the Pavilion highway superintendent binds no actor."
+  }
+ },
+ "2009-A10126": {
+  "records": {
+   "2009-A10126-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "paragraphs (a) and (c) of subdivision 3 of section 538 of the labor law as added by section one of this act shall remain in full force and effect until December 31, 2012.",
+    "note": "Earlier chapter's sunset sentence '[2010] {{2012}}' is an extension record (Oct 16/19): power, extends_existing true. Holder DOL is not named in the text or the title ('relating to fees and expenses in unemployment insurance proceedings'); unverifiable from the packet, plausible.",
+    "fields_at_audit": {
+     "agency": "DOL",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2010-07-30",
+   "computed": "2010-07-30",
+   "verdict": "correct",
+   "note": "immediately."
+  }
+ },
+ "2009-A7505": {
+  "records": {
+   "2009-A7505-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Cities; Towns"
+    },
+    "quote": "Two or more assessing units, except villages, within the same county or adjoining counties may establish a coordinated assessment program, without referendum, by entering into an agreement meeting the criteria set forth in this section at least forty-five days before the taxable status date of the first assessment roll to which such program is to apply.",
+    "note": "'an assessing unit is a city or town, not its county'; assessing units here exclude villages ('Two or more assessing units, except villages'), so agency should be Cities; Towns, not Municipalities (all). Timing change '{{at least forty-five days before the taxable status date}}' correctly extends_existing."
+   },
+   "2009-A7505-02": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Cities; Towns"
+    },
+    "quote": "the local law or resolution providing for the withdrawal must be approved by a majority of the voting strength of its governing body at least forty-five days before the taxable status date of the first assessment roll to which it is to apply and filed with the state Board on or before such taxable status date.",
+    "note": "'an assessing unit is a city or town, not its county'; assessing units here exclude villages ('Two or more assessing units, except villages'), so agency should be Cities; Towns, not Municipalities (all). '[six months] {{forty-five days}}' + '{{and filed with the state Board}}'."
+   },
+   "2009-A7505-03": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Cities; Towns; Counties"
+    },
+    "quote": "the local laws or resolutions providing for the termination must be approved by a majority of the voting strength of its governing body at least forty-five days before the taxable status date of the first assessment roll to which it is to apply and filed with the state Board on or before such taxable status date.",
+    "note": "'an assessing unit is a city or town, not its county'; assessing units here exclude villages ('Two or more assessing units, except villages'), so agency should be Cities; Towns, not Municipalities (all). Termination clause also names 'the county' for programs with direct county involvement."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2009-05-29",
+   "computed": "2009-05-29",
+   "verdict": "correct",
+   "note": "immediately. (D) automatic termination binds no actor ('in the event the state Board becomes aware')."
+  }
+ }
+}

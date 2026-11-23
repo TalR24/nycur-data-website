@@ -255,7 +255,7 @@ LONG_KEPT_WHOLE = []
 
 
 def long_window_thinner(key, text, root=None):
-    """True when a law short enough for one read (<= MAX_CHARS) has a valid whole-law re-ask answer with more obligations than all its window answers together."""
+    """True when a law short enough for one read (<= MAX_CHARS) has a valid whole-law re-ask answer with at least as many obligations as all its window answers together."""
     if len(text) > MAX_CHARS:
         return False
     yd = Path(root or PACKETS_ROOT) / key.split("-")[0]
@@ -272,7 +272,7 @@ def long_window_thinner(key, text, root=None):
             win += len(json.loads(f.read_text()).get("obligations") or [])
         except (json.JSONDecodeError, AttributeError):
             pass
-    return win < whole
+    return win <= whole          # Nov 23 2026: windows replace a whole-law re-ask only when they find more (2015-S5949: 103 vs 103, stored 68 vs 100)
 
 
 def ingest_long(todo, root, lookup, by_canon, model, schema=None):
@@ -4648,6 +4648,22 @@ def b91_court_clerk(o):
     return True
 
 
+B98_HOUSED = {"state athletic commission": "DOS", "athletic commission": "DOS"}          # Nov 23 2026 (B98): a body the law places within a department; window answers named it alone (2015-S5949, gold: DOS / unit State Athletic Commission)
+
+
+def b98_housed_body(o):
+    """B98: a named_body agency that is housed within a department resolves to that department, the body kept as the unit."""
+    ag = (o.get("agency") or "").strip()
+    parent = B98_HOUSED.get(re.sub(r"^(?:the|new york)\s+", "", ag.lower()))
+    if o.get("agency_source") != "named_body" or not parent or parent not in BY_CANON:
+        return False
+    sub = o.get("agency_unit")
+    o.update(agency=parent, agency_full=BY_CANON[parent].get("full") or parent, agency_matched=True, jurisdiction="state",
+             agency_org_type=BY_CANON[parent].get("org_type") or "department", agency_group=None,
+             agency_unit=sub or "State Athletic Commission", agency_source="housed_body_b98")
+    return True
+
+
 def apply_holder_verdicts(law, text, lists):
     """Match each sunset-extension record to its verdict by law and quote; drop private and not_extension, set the agency of a named government holder."""
     if not APPLY_HOLDER_VERDICTS or law["key"] not in load_holder_verdicts():
@@ -5142,7 +5158,7 @@ def build_records(laws):
                 SUNSET_UNNAMED[law["key"]] = sx_unnamed
         if APPLY_B91:
             for o in law_d + law_p:
-                b91_court_clerk(o)
+                b91_court_clerk(o) or b98_housed_body(o)
         for lst in (law_d, law_p):       # never merge across jurisdictions or named localities
             keep = []
             for jur in {(o.get("jurisdiction"), o.get("agency_unit")) for o in lst}:
