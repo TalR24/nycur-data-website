@@ -2339,7 +2339,7 @@ def af3_trivial_reprint(sent):
     if all(triv(b) for b in blocks):
         return True
     rest = re.sub(r"\{\{(.*?)\}\}", lambda m: "" if triv(m.group(1)) else m.group(0), sent, flags=re.S)
-    return reprinted_name_swap(rest) or (APPLY_AG7 and ag7_term_swap(rest)) or (APPLY_B69 and b69_conforming_swap(rest))
+    return reprinted_name_swap(rest) or (APPLY_AG7 and ag7_term_swap(rest)) or (APPLY_B69 and b69_conforming_swap(rest)) or (APPLY_B75 and b75_respectful_swap(sent))
 
 
 APPLY_AG7 = False         # OFF, 219 stored ids flip (cap 40); one-word swaps still 113 and include real changes (employees/persons, municipal/international); needs a semantic test. Nov 11 2026 (coordinator AG7): a reprinted sentence whose only braced matter 1:1 replaces a bracketed word or phrase of at most 4 words, with no modal, verb, digit or new actor, is no new matter
@@ -2390,6 +2390,25 @@ def b69_conforming_swap(sent):
             if not any(w.lower() in B69_CITE_NOUNS for w in before):
                 return False          # a bare number swap ([six] {{seven}}) is a citation change only when a citation noun leads it
     return True
+
+
+APPLY_B75 = True          # Nov 21 2026 (B75): ON; full dry run changed 6 records, all 2017-A7178, each checked against the text. A reprint whose only new matter swaps a disability or status term for respectful language ([hearing impaired] {{deaf and hard of hearing}}, [handicapped] {{with disabilities}}) is not a record
+B75_OLD = re.compile(r"hearing[\s-]+impair|handicap|retard|crippl|insane|lunatic|idiot|imbecile|deaf[\s-]+mute|\billegal\s+aliens?\b|\baliens?\b|wheelchair[\s-]+bound|confined\s+to\s+a\s+wheelchair|addict", re.I)
+B75_NEW = re.compile(r"\bdeaf\b|hard\s+of\s+hearing|disabilit|intellectual|developmental|noncitizen|non-citizen|immigrant|mental\s+illness|substance\s+use|uses?\s+a\s+wheelchair|wheelchair\s+user", re.I)
+B75_FILL = frozenset("a an the is are was were has have had with who whom whose that which or and of to for person persons people individual individuals child children student students hearing loss impaired impairment impairments disability disabilities disorder disorders deaf hard intellectual developmental mental illness illnesses noncitizen noncitizens non citizen citizens immigrant immigrants substance use uses using wheelchair user users".split())
+
+
+def b75_respectful_swap(sent):
+    """B75: the sentence's only changes delete a disability or status term ([hearing impaired], [handicapped]) and insert respectful
+    wording ({{who is deaf or hard of hearing}}), with only function words around them; at least one deletion removes an old term."""
+    ins = re.findall(r"\{\{(.*?)\}\}", sent, re.S)
+    dels = re.findall(r"\[([^\[\]{}]{1,120})\]", re.sub(r"\{\{.*?\}\}", " ", sent, flags=re.S))
+    if not ins or not dels or not any(B75_OLD.search(x) or re.search(r"(?i)\bimpair", x) for x in dels):
+        return False
+    for blk in ins + dels:
+        if any(w not in B75_FILL and not B75_OLD.search(w) for w in (x.lower() for x in re.findall(r"[A-Za-z]+", blk))):
+            return False
+    return any(B75_NEW.search(x) for x in ins) or not ins
 
 
 AG7_BAD = re.compile(NAME_SWAP_BAD.pattern + r"|\d|\b(?:shall|must|may|can|will|required|authorized|empowered|directed|within|after|before|until|not|no)\b", re.I)

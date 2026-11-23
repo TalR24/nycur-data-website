@@ -1,0 +1,1581 @@
+{
+ "_scoring": {
+  "auditor": "A",
+  "night": "20261121",
+  "laws": 11,
+  "stored_records": 84,
+  "correct": 51,
+  "wrong_fields": 20,
+  "not_real": 13,
+  "missed": 7,
+  "precision_strict": "51/84 = 60.7% (Wilson 95% 50.0-70.5)",
+  "precision_real": "71/84 = 84.5% (Wilson 95% 75.3-90.7)",
+  "recall": "71/78 = 91.0% (Wilson 95% 82.6-95.6)",
+  "effective_dates": "11/11 correct",
+  "calibration": {
+   "2019-S6492": {
+    "records": {
+     "2019-S6492-01": "correct",
+     "2019-S6492-02": "correct",
+     "2019-S6492-03": "correct",
+     "2019-S6492-04": "correct",
+     "2019-S6492-05": "correct"
+    }
+   },
+   "2021-A8021": {
+    "records": {
+     "2021-A8021-01": "wrong"
+    }
+   }
+  }
+ },
+ "_classes": [
+  {
+   "name": "reprinted_gender_neutral drop fires on real non-gender changes",
+   "criteria": [
+    "1",
+    "7"
+   ],
+   "instances": [
+    "2017-S8345 (dropped dedication duty)",
+    "2011-A8691 (dropped 19-506(h)(1) seizure widening)"
+   ],
+   "rule": "dropped rule=='reprinted_gender_neutral' AND the quote's span in the packet holds a [deletion] or a braced piece that is not a gender pronoun phrase (GENDER regex)",
+   "db_matches": 128,
+   "db_examples": [
+    "2009-A1002 dropped: 'poll clerk or Election inspector shall c...'",
+    "2009-A10634 dropped: 'No such claims shall be audited or order...'",
+    "2009-A11352 dropped: 'the chair shall also in the same manner...'"
+   ],
+   "needs_judgment": false,
+   "note": "rule caught S8345 but not the A8691 seizure drop (span match failed), so 128 is a floor"
+  },
+  {
+   "name": "on_effective_date on a deadline anchored to an undated event",
+   "criteria": [
+    "5"
+   ],
+   "instances": [
+    "2011-A8691-03",
+    "2011-A8691-07",
+    "2011-A8691-36"
+   ],
+   "rule": "deadline_kind=='on_effective_date' AND (deadline_text not null OR quote ~ /no later than|not later than|prior to|within \\w+ (days|months|years) (from|of|after)/i)",
+   "db_matches": 100,
+   "db_examples": [
+    "2009-A11171-06",
+    "2009-A2294-01",
+    "2009-A5667-01"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "named NYC or local actor left Unspecified",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2011-A8691-30",
+    "2011-A8691-40",
+    "2011-A8691-41",
+    "2011-A8691-42",
+    "2017-S4628-01",
+    "2017-S4628-02"
+   ],
+   "rule": "agency=='Unspecified' AND actor_raw ~ /\\b(city|tlc|commission|department|board|town|village|county|commissioner)\\b/i AND NOT actor_raw ~ /section|application|act/",
+   "db_matches": 175,
+   "db_examples": [
+    "2009-A10770-03",
+    "2009-A3563-01",
+    "2009-A4234-03"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "'will'/'must' duty stored as power",
+   "criteria": [
+    "4"
+   ],
+   "instances": [
+    "2011-A8691-09",
+    "2011-A8691-37"
+   ],
+   "rule": "powers file AND quote ~ /\\b(will|must) \\w+/ (excluding 'must not be required')",
+   "db_matches": 137,
+   "db_examples": [
+    "2009-A11515-03",
+    "2009-A2209-72",
+    "2009-A9033-02"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "same provision stored twice (identical quote, or content clause of a stored duty)",
+   "criteria": [
+    "9"
+   ],
+   "instances": [
+    "2019-A1565-04",
+    "2019-A1565-05",
+    "2019-A1565-06",
+    "2017-S7325-03",
+    "2019-A3619-02"
+   ],
+   "rule": "same matter_id+agency+file with quotes equal after trimming trailing punctuation (catches -04 only; the 5-500 repeats differ by 'email'/'e-mail' and content clauses need judgment)",
+   "db_matches": 1119,
+   "db_examples": [
+    "2009-A10507-07",
+    "2009-A10507-08",
+    "2009-A10681-18"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "reprinted sentence whose only new matter is 'or successor agency'",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2011-A8691-04",
+    "2011-A8691-51",
+    "2011-A8691-55",
+    "2011-A8691-56",
+    "2011-A8691-57"
+   ],
+   "rule": "quote contains 'successor agency' AND every braced piece in its packet span is 'or successor agency'/'tlc' AND no deletion in the span",
+   "db_matches": 7,
+   "db_examples": [
+    "2011-A8691-51",
+    "2011-A8691-55",
+    "2011-A8691-56"
+   ],
+   "needs_judgment": false,
+   "note": "2 of 7 (2011-A8691-01, -23) are false positives: -23 sits in a wholly new section, -01 carries other changes outside the quote"
+  },
+  {
+   "name": "extends_existing true on wholly new act sections (and false on added classes)",
+   "criteria": [
+    "7"
+   ],
+   "instances": [
+    "2011-A8691-06",
+    "2011-A8691-07",
+    "2011-A8691-08",
+    "2011-A8691-15",
+    "2011-A8691-45",
+    "2011-A8691-46",
+    "2021-A8021-01",
+    "2019-A6575-01",
+    "2019-A6575-03"
+   ],
+   "rule": "proxy: extends_existing true AND quote's packet span has no deletion and no braced piece beyond the pre-2017 uppercase artifacts (Hail, tlc, Such, Any...)",
+   "db_matches": 176,
+   "db_examples": [
+    "2009-A10468-20",
+    "2009-A11144-09",
+    "2009-A40026-05"
+   ],
+   "needs_judgment": true,
+   "note": "proxy also flags -41/-42 (ext true correct, quote wrong); the false-direction cases (A6575) need judgment"
+  },
+  {
+   "name": "act-clause sentence stored as a record",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2017-S4628-03"
+   ],
+   "rule": "first 80 chars of the normalised quote appear in effective_dates[law].raw_clause",
+   "db_matches": 52,
+   "db_examples": [
+    "2011-A4731-02",
+    "2011-A7836-03",
+    "2011-A8265-08"
+   ],
+   "needs_judgment": false,
+   "note": "recurrence of the act_clause class the gate should drop"
+  },
+  {
+   "name": "sunset extension with no named holder stored as a duty",
+   "criteria": [
+    "3",
+    "4"
+   ],
+   "instances": [
+    "2017-S5370-01"
+   ],
+   "rule": "quote ~ /expire and be deemed repealed/ AND agency=='Unspecified' AND duties file",
+   "db_matches": 13,
+   "db_examples": [
+    "2009-S3860-01",
+    "2009-S5114-01",
+    "2009-S6699-01"
+   ],
+   "needs_judgment": false,
+   "note": "53 Unspecified sunset records in both files; 13 are duties"
+  },
+  {
+   "name": "private or individual obligation stored as a duty",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2017-S886-01",
+    "2017-S7398-04"
+   ],
+   "rule": "none mechanical",
+   "db_matches": 0,
+   "db_examples": [],
+   "needs_judgment": true,
+   "affected_laws": [
+    "2017-S886",
+    "2017-S7398"
+   ]
+  }
+ ],
+ "2017-S886": {
+  "records": {
+   "2017-S886-01": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "note": "'shall continue to serve ... upon the taking and filing of an oath' binds an individual elected member, not a government body; an entitlement to continue in office",
+    "quote": "shall continue to serve in such capacity and for the full term to which he or she was elected upon the taking and filing of an oath of office consistent with section 10 of the public officers law provided such oath is taken and filed within 30 calendar days after the effective date of this act."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2017-02-01",
+   "computed": "2017-02-01",
+   "verdict": "correct",
+   "note": "immediately, signed 2017-02-01"
+  }
+ },
+ "2019-A1565": {
+  "records": {
+   "2019-A1565-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "5-210(5)(k)(iii) new matter",
+    "quote": "if an e-mail address is furnished, all notices and communications otherwise required to be sent by the state board of elections to the voter by postal mail shall be sent by e-mail in addition to postal mail",
+    "fields_at_audit": {
+     "agency": "Board of Elections",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-A1565-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "Counties for county boards of elections is the handled local-BOE class",
+    "quote": "County boards of elections and the board of elections of the city of New York shall have the option of sending notices and communications otherwise required to be sent to the voter by postal mail by e-mail in addition to postal mail if the voter furnishes an email address.",
+    "fields_at_audit": {
+     "agency": "Counties",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-A1565-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "County boards of elections and the board of elections of the city of New York shall have the option of sending notices and communications otherwise required to be sent to the voter by postal mail by e-mail in addition to postal mail if the voter furnishes an email address.",
+    "fields_at_audit": {
+     "agency": "Counties",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-A1565-04": {
+    "verdict": "not_real",
+    "criteria": [
+     "9"
+    ],
+    "fields": {},
+    "note": "same SBOE e-mail duty repeated in 5-500(4)(d); one duty, stated twice ('all notices and communications otherwise required to be sent by the state board of elections ... shall be sent by e-mail')",
+    "quote": "if an e-mail address is furnished, all notices and communications otherwise required to be sent by the state board of elections to the voter by postal mail shall be sent by e-mail in addition to postal mail"
+   },
+   "2019-A1565-05": {
+    "verdict": "not_real",
+    "criteria": [
+     "9"
+    ],
+    "fields": {},
+    "note": "same county-board option as -02, repeated in 5-500(4)(d)",
+    "quote": "County boards of elections and the board of elections of the city of New York shall have the option of sending notices and communications otherwise required to be sent to the voter by postal mail by e-mail in addition to postal mail if the voter furnishes an e-mail address"
+   },
+   "2019-A1565-06": {
+    "verdict": "not_real",
+    "criteria": [
+     "9"
+    ],
+    "fields": {},
+    "note": "same NYC BOE option as -03, repeated in 5-500(4)(d)",
+    "quote": "County boards of elections and the board of elections of the city of New York shall have the option of sending notices and communications otherwise required to be sent to the voter by postal mail by e-mail in addition to postal mail if the voter furnishes an e-mail address"
+   }
+  },
+  "missed": [
+   {
+    "blind": "b2",
+    "quote": "A space for the furnishing of an e-mail address, the furnishing of which shall be optional, together with a notice stating that if an e-mail address is furnished",
+    "kind": "duty",
+    "agency": "Board of Elections (State)",
+    "dropped_by": null,
+    "note": "new item (iii) the State board's registration form must carry; extends_existing true"
+   }
+  ],
+  "effective_date": {
+   "stored": "2020-11-25",
+   "computed": "2020-11-25",
+   "verdict": "correct",
+   "note": "one year after 2019-11-25"
+  }
+ },
+ "2017-S7325": {
+  "records": {
+   "2017-S7325-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "Shall establish and maintain an online database to catalogue and make available information on workforce development funding programs and may publish any analysis conducted by the department on such data",
+    "fields_at_audit": {
+     "agency": "DOL",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2017-S7325-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "Shall establish and maintain an online database to catalogue and make available information on workforce development funding programs and may publish any analysis conducted by the department on such data",
+    "fields_at_audit": {
+     "agency": "DOL",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2017-S7325-03": {
+    "verdict": "not_real",
+    "criteria": [
+     "9"
+    ],
+    "fields": {},
+    "note": "'the online database shall include ... the following information' is the content of the -01 database duty, not a separate duty",
+    "quote": "For each workforce development funding program, the online database shall include, but not be limited to, the following information for each funding program:"
+   },
+   "2017-S7325-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "45 days after each program's fiscal year end: event-anchored, kind none acceptable",
+    "quote": "Any state agency or instrumentality thereof that administers or oversees workforce development funding programs shall report to the commissioner of labor, within 45 days of the end of the applicable fiscal year for the funding program, the information specified in subdivision 15 of section 21 of the labor law",
+    "fields_at_audit": {
+     "agency": "State agencies",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2017-S7325-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "'reported through an electronic reporting system developed by the department of labor'",
+    "quote": "This information shall be reported through an electronic reporting system developed by the department of labor.",
+    "fields_at_audit": {
+     "agency": "DOL",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2018-04-18",
+   "computed": "2018-04-18",
+   "verdict": "correct",
+   "note": "law-level immediately 2018-04-18 correct; section one same as the 2017 chapter (S3789/A1956) left unresolved, the known D1 bill-number parser gap"
+  }
+ },
+ "2017-S8954": {
+  "records": {
+   "2017-S8954-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "The commissioner of transportation shall provide for the installation and maintenance of adequate signing of the state highway system as designated pursuant to section one of this act.",
+    "fields_at_audit": {
+     "agency": "NYSDOT",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2018-10-01",
+   "computed": "2018-10-01",
+   "verdict": "correct",
+   "note": "immediately 2018-10-01"
+  }
+ },
+ "2019-A6575": {
+  "records": {
+   "2019-A6575-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "7"
+    ],
+    "fields": {
+     "extends_existing": true
+    },
+    "note": "adds class '(c) all home visiting programs' to the existing council mapping duty in 483-h(1)",
+    "quote": "(c) all home visiting programs that meet the criteria as required by section four hundred twenty-nine of this chapter regardless of whether they have a contract with or receive funding from the state"
+   },
+   "2019-A6575-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "a general description of eligible individuals and families served by the particular recipient, provider or program",
+    "fields_at_audit": {
+     "agency": "Council on Children and Families",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2019-A6575-03": {
+    "verdict": "wrong",
+    "criteria": [
+     "7"
+    ],
+    "fields": {
+     "extends_existing": true
+    },
+    "note": "adds item '(3) home visiting programs' to OCFS's existing 17(i) make-available duty",
+    "quote": "home visiting programs that meet the criteria as required by section four hundred twenty-nine of this chapter regardless of whether they have a contract with or receive funding from the state. Such information shall be provided in accordance with the requirements set forth in subdivision two of section four hundred eighty-three-h of this chapter."
+   },
+   "2019-A6575-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "new PHL 201(1)(w)",
+    "quote": "make available to the council on children and families information, in a format identified by the council, regarding home visiting programs that meet the criteria as required by section four hundred twenty-nine of the social services law",
+    "fields_at_audit": {
+     "agency": "DOH",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2020-02-23",
+   "computed": "2020-02-23",
+   "verdict": "correct",
+   "note": "90th day after 2019-11-25 = 2020-02-23"
+  }
+ },
+ "2019-A3619": {
+  "records": {
+   "2019-A3619-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "require all employees of approved programs providing care to runaway and/or homeless youth to complete training as set forth in regulations promulgated by the office.",
+    "fields_at_audit": {
+     "agency": "OCFS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-A3619-02": {
+    "verdict": "not_real",
+    "criteria": [
+     "9"
+    ],
+    "fields": {},
+    "note": "'Such training shall require all employees ... to receive instruction' describes the content of the -01 training requirement, same provision (item 7)",
+    "quote": "Such training shall require all employees of such residential facilities to receive instruction as specified by the office in the regulations, except where an employee has already received training which would satisfy such requirements, and shall, at a minimum, include instruction in issues pertaining to lesbian, gay, bisexual, and transgender youth with particular emphasis on:"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2020-01-01",
+   "computed": "2020-01-01",
+   "verdict": "correct",
+   "note": "first of January next succeeding 2019-10-11"
+  }
+ },
+ "2017-S5370": {
+  "records": {
+   "2017-S5370-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "3",
+     "4"
+    ],
+    "fields": {
+     "kind": "power",
+     "agency": "needs_judgment: holder not named in sentence or title ('relating to the enforcement of support through the suspension of driving privileges'); Oct 19 rule sends it to re-ask"
+    },
+    "note": "sunset extension '[2017] {{2019}}' is a power with extends_existing true per the Oct 19 decision, stored as a duty with agency Unspecified",
+    "quote": "Sections two hundred one, two hundred eight, two hundred eleven, two hundred thirteen, two hundred fifteen and two hundred sixteen of this act shall expire and be deemed repealed on August 31, 2019."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2017-07-25",
+   "computed": "2017-07-25",
+   "verdict": "correct",
+   "note": "immediately 2017-07-25, deemed in force on and after 2017-08-31 (retroactive_to stored)"
+  }
+ },
+ "2017-S4628": {
+  "records": {
+   "2017-S4628-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "New York City (only city of one million or more), via the Council crosswalk"
+    },
+    "note": "'in a city with a population of one million or more fifty thousand dollars ... as may be provided by the local law': raising the cap is a power (Kind ruling), correctly kind power ext true, but agency Unspecified",
+    "quote": "twenty-nine thousand dollars beginning July first, two thousand nine, and in a city with a population of one million or more fifty thousand dollars beginning July first, two thousand seventeen, as may be provided by the local law, ordinance or resolution adopted pursuant to this section"
+   },
+   "2017-S4628-02": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "New York City"
+    },
+    "note": "same as -01 for RPTL 459-c",
+    "quote": "twenty-nine thousand dollars beginning July first, two thousand nine, and in a city with a population of one million or more fifty thousand dollars beginning July first, two thousand seventeen, as may be provided by the local law or resolution adopted pursuant to this section"
+   },
+   "2017-S4628-03": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "note": "from the act clause \u00a7 3; 'Applications ... shall be considered timely if they are filed' is a filing condition for applicants, not a government duty",
+    "quote": "Applications received for the city fiscal year commencing in 2017 shall be considered timely if they are filed on or before the one hundred twentieth day following the effective date of the local law implementing the provisions of this act."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2017-07-25",
+   "computed": "2017-07-25",
+   "verdict": "correct",
+   "note": "immediately 2017-07-25"
+  }
+ },
+ "2017-S7398": {
+  "records": {
+   "2017-S7398-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "adjustment to the mandatory continuing education requirement may be granted by the department for reasons of health that are certified by an appropriate health care professional, for extended active duty with the armed forces of the United States, or for other good cause acceptable to the department which may prevent compliance.",
+    "fields_at_audit": {
+     "agency": "SED",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2017-S7398-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "prohibition on the department",
+    "quote": "A psychologist who has not satisfied the mandatory continuing education requirement shall not be issued a triennial registration certificate by the department and shall not practice unless and until a conditional registration is issued as provided for in subdivision three of this section.",
+    "fields_at_audit": {
+     "agency": "SED",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2017-S7398-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "The department, in its discretion, may issue a conditional registration to a psychologist who fails to meet the continuing education requirements established in subdivision two of this section, but who agrees to make up any deficiencies and complete any additional education which the department may require.",
+    "fields_at_audit": {
+     "agency": "SED",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2017-S7398-04": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "note": "'The duration of such conditional registration shall be determined by the department, but shall not exceed one year' is a limit on the -03 conditional-registration power",
+    "quote": "The duration of such conditional registration shall be determined by the department, but shall not exceed one year."
+   },
+   "2017-S7398-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "The department may, in its discretion and as needed to contribute to the health and welfare of the public, require the completion of continuing education credits in specific subjects to fulfill this mandatory continuing education requirement.",
+    "fields_at_audit": {
+     "agency": "SED",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2017-S7398-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "The mandatory continuing education fee shall be determined by the department.",
+    "fields_at_audit": {
+     "agency": "SED",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [
+   {
+    "blind": "b8",
+    "quote": "Formal courses must be taken from a sponsor approved by the department, based upon an application and fee, pursuant to the regulations of the commissioner.",
+    "kind": "power",
+    "agency": "SED",
+    "dropped_by": null,
+    "note": "new \u00a7 7607(3)(b)(ii): department approves sponsors on application and fee"
+   }
+  ],
+  "effective_date": {
+   "stored": "2021-01-01",
+   "computed": "2021-01-01",
+   "verdict": "correct",
+   "note": "fixed January 1, 2021"
+  }
+ },
+ "2021-A8021": {
+  "records": {
+   "2021-A8021-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "7"
+    ],
+    "fields": {
+     "extends_existing": false
+    },
+    "note": "\u00a7 1 is a wholly new uncodified section: 'a school district may provide educational services in the 2021-22 and 2022-23 school years'",
+    "quote": "a school district may provide educational services in the 2021-22 and 2022-23 school years to a student who turned twenty-one years old during the 2019-20 or 2020-21 school years and was enrolled in the school district"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2021-06-29",
+   "computed": "2021-06-29",
+   "verdict": "correct",
+   "note": "immediately 2021-06-29, expires 2023-06-30"
+  }
+ },
+ "2019-S6492": {
+  "records": {
+   "2019-S6492-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "The commissioner shall develop a demonstration program (the \"program\") to provide access to insulin and other life sustaining maintenance prescription drugs identified by the commissioner for residents of the state who are without health coverage",
+    "fields_at_audit": {
+     "agency": "DOH",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S6492-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "list item under the mandatory lead-in 'the commissioner shall:'",
+    "quote": "consider modeling the program on the state's HIV/AIDS drug assistance program providing access to eligible individuals at certain income thresholds above the federal poverty level",
+    "fields_at_audit": {
+     "agency": "DOH",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S6492-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "engage with pharmaceutical manufacturers to explore a public private partnership to bring affordable drugs through the program to eligible individuals.",
+    "fields_at_audit": {
+     "agency": "DOH",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S6492-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "'no later than three months after the effective date' = 2021-04-30",
+    "quote": "The commissioner shall report to the governor, the temporary president of the senate, the speaker of the assembly, and the chairs of the senate and assembly health committees on the available options to establish the program",
+    "fields_at_audit": {
+     "agency": "DOH",
+     "kind": "duty",
+     "deadline_kind": "days_after_effective",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S6492-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "The report shall be a public document posted on the department's website.",
+    "fields_at_audit": {
+     "agency": "DOH",
+     "kind": "duty",
+     "deadline_kind": "days_after_effective",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2021-01-30",
+   "computed": "2021-01-30",
+   "verdict": "correct",
+   "note": "immediately, signed 2021-01-30"
+  }
+ },
+ "2011-A8691": {
+  "records": {
+   "2011-A8691-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "The New York city taxi and limousine commission or successor agency is hereby authorized to issue non-transferable permits to for-hire vehicle base stations established pursuant to section 19-511 of the administrative code of the city of New York",
+    "fields_at_audit": {
+     "agency": "TLC",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2011-A8691-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "Such renewal fee amount may be increased by such taxi and limousine commission or successor agency to account for changes in the new york - northern new Jersey - long island consumer price index, adjusted for inflation.",
+    "fields_at_audit": {
+     "agency": "TLC",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2011-A8691-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "The tlc is hereby authorized to issue hail accessible inter-borough licenses.",
+    "fields_at_audit": {
+     "agency": "TLC",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A8691-10": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "Twelve months after the first issuance, the tlc may issue up to six thousand additional Hail licenses (the \"second issuance\").",
+    "fields_at_audit": {
+     "agency": "TLC",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A8691-11": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "One year after the second issuance, the tlc may issue up to six thousand additional Hail licenses (\"third issuance\").",
+    "fields_at_audit": {
+     "agency": "TLC",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A8691-12": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "The tlc may reissue pursuant to this act a Hail license that is revoked or has otherwise reverted to the tlc.",
+    "fields_at_audit": {
+     "agency": "TLC",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A8691-14": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "three months after the first issuance any remaining Hail licenses in the first issuance restricted to accessible vehicles authorized for issuance may be issued without regard to such restrictions in a manner to be determined by the tlc.",
+    "fields_at_audit": {
+     "agency": "TLC",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A8691-16": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "upon payment of a renewal fee in an amount to be specified by the tlc, if the owner is in good standing.",
+    "fields_at_audit": {
+     "agency": "TLC",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A8691-17": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "The tlc may designate additional areas outside of Manhattan to be included in the Hail exclusionary zone, based upon the Hail market analysis pursuant to section six of this act.",
+    "fields_at_audit": {
+     "agency": "TLC",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A8691-18": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "The tlc may by rule govern the equipment of such vehicles, including but not limited to meters that calculate the fares that may be charged for trips in such vehicles.",
+    "fields_at_audit": {
+     "agency": "TLC",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A8691-19": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "The tlc may by rule provide for the licensing of businesses which manufacture and provide such equipment to the owners of Hail vehicles and adopt penalties for drivers who charge fares in excess of the approved rate of fare",
+    "fields_at_audit": {
+     "agency": "TLC",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A8691-20": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "provided further that the tlc shall, before revoking or suspending any such license, provide such licensee notice and an opportunity for an adjudication pursuant to section 1046 of the charter of the city of New York.",
+    "fields_at_audit": {
+     "agency": "TLC",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A8691-21": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "The city of New York, acting through the tlc, is hereby authorized and empowered to take such actions as are necessary and desirable to implement the provisions of this section and section nine of this act",
+    "fields_at_audit": {
+     "agency": "TLC",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A8691-22": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "Prior to the second issuance and third issuance, the tlc shall prepare and submit (i) to the council of the city of New York for its comments, (ii) for public comment, and (iii) to the New York state department of transportation for its comments, a Hail market analysis",
+    "fields_at_audit": {
+     "agency": "TLC",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A8691-23": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "The city of New York may, acting by the mayor alone, administratively authorize the tlc or its successor agency to issue up to two thousand taxicab licenses in addition to those already issued",
+    "fields_at_audit": {
+     "agency": "New York City",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A8691-24": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "The tlc shall prescribe by regulation the procedures for the issuance and public sale of such additional licenses, by public auction, sealed bids or other competitive process.",
+    "fields_at_audit": {
+     "agency": "TLC",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A8691-25": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "The tlc shall establish a program to support the introduction of accessible vehicles into the Hail vehicle fleet by: (i) providing grants to purchasers of Hail licenses restricted to accessible vehicles",
+    "fields_at_audit": {
+     "agency": "TLC",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A8691-26": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "The tlc may increase the amount of each grant by an amount it deems necessary to encourage the availability of accessible vehicles.",
+    "fields_at_audit": {
+     "agency": "TLC",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A8691-27": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "The tlc shall administer the program established pursuant to this section and shall establish rules and regulations necessary to implement the provisions of this section.",
+    "fields_at_audit": {
+     "agency": "TLC",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A8691-28": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "All accessible vehicles shall be inspected at an inspection facility operated by the tlc not less than once every eight months, in accordance with a procedure to be established by the tlc to ensure that such vehicles are accessible vehicles.",
+    "fields_at_audit": {
+     "agency": "TLC",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A8691-29": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "If any such vehicle fails to pass its inspection for any reason relating to such standards, it shall be reinspected.",
+    "fields_at_audit": {
+     "agency": "TLC",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A8691-31": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "The date of the inspection of such vehicle and the signature of the persons making the inspection shall be recorded upon a certificate to be posted in each such vehicle.",
+    "fields_at_audit": {
+     "agency": "TLC",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A8691-32": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "An owner shall be ordered by the tlc to repair or replace his or her vehicle where it appears that it is no longer an accessible vehicle.",
+    "fields_at_audit": {
+     "agency": "TLC",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A8691-34": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "upon failure of such owner to comply with any such order within one hundred twenty days after service thereof, the license may, at the discretion of the tlc, be deemed to have been abandoned by non-use.",
+    "fields_at_audit": {
+     "agency": "TLC",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A8691-35": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "Not later than one year after the initial issuance of Hail vehicle licenses, the tlc shall prepare and submit to the New York state department of transportation a comprehensive plan",
+    "fields_at_audit": {
+     "agency": "TLC",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A8691-38": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "TLC half of a joint grant; the DOT half is missed (joint-actor class)",
+    "quote": "The city of New York, acting through the tlc, and the New York state department of transportation are hereby authorized and empowered to take such actions as are necessary and desirable to implement the provisions of this section",
+    "fields_at_audit": {
+     "agency": "TLC",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A8691-39": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "The tlc shall not be permitted to issue more than four hundred of the taxicab licenses authorized to be issued pursuant to this act until this plan is approved by the New York state department of transportation.",
+    "fields_at_audit": {
+     "agency": "TLC",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A8691-43": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "The tlc shall also furnish, or cause to be furnished, in a format prescribed by the commissioner, Any records or information in the possession of the tlc, Any agent or contractor of the City or the tlc, or Any other person the tlc has authorized or required to obtain or possess Such records or information",
+    "fields_at_audit": {
+     "agency": "TLC",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A8691-44": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "Such cooperation shall also include the tlc assigning identifying numbers and other identifying indicia to Hail bases, Hail vehicle owners, Hail vehicles, and drivers of Hail vehicles in a format prescribed by the commissioner",
+    "fields_at_audit": {
+     "agency": "TLC",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A8691-47": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "The new york City taxi and limousine commission or successor agency shall advise Such owner or operator holding the Hail license of his or her potential liability pursuant to this section upon a finding that a violation of paragraph (i) of this subdivision was committed in a vehicle with a valid Hail license.",
+    "fields_at_audit": {
+     "agency": "TLC",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A8691-48": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "A violation of this subdivision shall result in Revocation of the driver's license issued pursuant to paragraphs (i) and (iii) of subdivision a of section 19-505 of this chapter when Such violation is committed by a driver who has previously been convicted of two violations of this section within the immediately preceding one hundred twenty months.",
+    "fields_at_audit": {
+     "agency": "TLC",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A8691-49": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "A driver's third conviction of this subdivision within one hundred twenty months shall result in Revocation of a Hail license if each Such violation occurred in a vehicle subject to a Hail license held by Such owner or operator of one or more of Such Hail licenses.",
+    "fields_at_audit": {
+     "agency": "TLC",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A8691-52": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "The commission or successor agency may, for good cause shown relating to a direct and substantial threat to the public health or safety and prior to giving notice and an opportunity for a hearing, suspend a taxicab, for-hire vehicle license or a Hail license issued pursuant to this chapter",
+    "fields_at_audit": {
+     "agency": "TLC",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2011-A8691-53": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "The commission or successor agency may also, without having suspended a taxicab, for-hire vehicle license or a Hail license, issue a determination to seek suspension or revocation of such license and after notice and an opportunity for a hearing, suspend or revoke such license.",
+    "fields_at_audit": {
+     "agency": "TLC",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2011-A8691-54": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "note": "",
+    "quote": "Notice of such suspension or of a determination by the commission or successor agency to seek suspension or revocation of a taxicab, for-hire vehicle license or a Hail license shall be served on the licensee by personal delivery or by certified and regular mail within five calendar days of the pre-hearing suspension or of such determination.",
+    "fields_at_audit": {
+     "agency": "TLC",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2011-A8691-03": {
+    "verdict": "wrong",
+    "criteria": [
+     "5"
+    ],
+    "fields": {
+     "deadline_kind": "none"
+    },
+    "note": "'shall be issued beginning no later than the public sale of the additional taxicab licenses': undated event, not on_effective_date",
+    "quote": "Such hail base permits shall be issued beginning no later than the public sale of the additional taxicab licenses issued pursuant to section eight of the chapter of the laws of 2012 which amended this section."
+   },
+   "2011-A8691-06": {
+    "verdict": "wrong",
+    "criteria": [
+     "7"
+    ],
+    "fields": {
+     "extends_existing": false
+    },
+    "note": "\u00a7 5 of this act is a wholly new section: 'No more than eighteen thousand Hail licenses shall be issued'",
+    "quote": "No more than eighteen thousand Hail licenses shall be issued."
+   },
+   "2011-A8691-07": {
+    "verdict": "wrong",
+    "criteria": [
+     "5",
+     "7"
+    ],
+    "fields": {
+     "deadline_kind": "none",
+     "extends_existing": false
+    },
+    "note": "'within twelve months from the date on which the first Hail license is issued' is anchored to an undated event; \u00a7 5 wholly new",
+    "quote": "Six thousand of such Hail licenses shall be issued within twelve months from the date on which the first Hail license is issued"
+   },
+   "2011-A8691-08": {
+    "verdict": "wrong",
+    "criteria": [
+     "7"
+    ],
+    "fields": {
+     "extends_existing": false
+    },
+    "note": "\u00a7 5(b) wholly new",
+    "quote": "Twenty percent of the Hail licenses issued in the first issuance will be restricted to accessible vehicles, and for every block of one thousand Hail licenses issued, the twenty percent requirement must be met prior to the issuance of any additional Hail licenses."
+   },
+   "2011-A8691-09": {
+    "verdict": "wrong",
+    "criteria": [
+     "4"
+    ],
+    "fields": {
+     "kind": "duty"
+    },
+    "note": "'The tlc will study and report on the accessibility': 'will <verb>' with a government subject is a duty",
+    "quote": "The tlc will study and report on the accessibility of vehicles with Hail licenses in the Disabled Accessibility Plan and may recommend that a different percentage of Hail licenses be restricted to accessible vehicles for the remaining twelve thousand Hail licenses."
+   },
+   "2011-A8691-13": {
+    "verdict": "wrong",
+    "criteria": [
+     "4"
+    ],
+    "fields": {
+     "kind": "duty"
+    },
+    "note": "'Hail licenses may be issued only to owners ...' is a restriction on the TLC's issuance (a prohibition on the government actor)",
+    "quote": "Within the first three years of the first issuance, Hail licenses may be issued only to owners of for-hire vehicles or for-hire drivers who have been licensed by the tlc for at least one year and are in good standing with the tlc"
+   },
+   "2011-A8691-15": {
+    "verdict": "wrong",
+    "criteria": [
+     "7"
+    ],
+    "fields": {
+     "extends_existing": false
+    },
+    "note": "\u00a7 5(d) wholly new fee schedule",
+    "quote": "Hail licenses shall be issued for a fee in the amount of one thousand five hundred dollars in the first issuance, three thousand dollars in the second issuance and four thousand five hundred dollars in the third issuance."
+   },
+   "2011-A8691-30": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "TLC"
+    },
+    "note": "'The tlc or any other agency authorized by law may conduct on-street inspections': named actor is the TLC",
+    "quote": "The tlc or any other agency authorized by law may conduct on-street inspections of vehicles licensed pursuant to the provisions of this act."
+   },
+   "2011-A8691-36": {
+    "verdict": "wrong",
+    "criteria": [
+     "5"
+    ],
+    "fields": {
+     "deadline_kind": "none"
+    },
+    "note": "submission of the plan to the council precedes its submission to DOT, which is due 'Not later than one year after the initial issuance': undated event",
+    "quote": "The disabled accessibility plan shall be prepared in consultation and cooperation with disability rights advocates and other stakeholders and shall be submitted to the council of the city of New York for its comments, which comments shall be considered by the tlc prior to its submission"
+   },
+   "2011-A8691-37": {
+    "verdict": "wrong",
+    "criteria": [
+     "4"
+    ],
+    "fields": {
+     "kind": "duty"
+    },
+    "note": "'must approve or reject the disabled accessibility plan within sixty days of submission': the sentence imposes a duty",
+    "quote": "The New York state department of transportation may recommend changes or amendments to the tlc as a condition of its approval and must approve or reject the disabled accessibility plan within sixty days of submission by the tlc."
+   },
+   "2011-A8691-40": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "TLC (New York City)"
+    },
+    "note": "'the city or the tlc shall adopt or amend ordinances or regulations': NYC actors, not Unspecified",
+    "quote": "the city or the tlc shall adopt or amend ordinances or regulations to ensure that the economic incidence of the tax is passed through to passengers, such as by increasing taxicab or Hail vehicle trip fares."
+   },
+   "2011-A8691-41": {
+    "verdict": "wrong",
+    "criteria": [
+     "2",
+     "3"
+    ],
+    "fields": {
+     "agency": "TLC (New York City)",
+     "quote": "should include the braced widening '... must timely require that any taximeter in a taxicab or Hail vehicle used to provide trips that originate in the city be adjusted to include the pass-through'"
+    },
+    "note": "stored quote holds no new matter beyond the {{tlc}} token",
+    "quote": "The city or the tlc must adjust trip fares to include therein the pass-through of the economic incidence of the tax imposed by this article, as the rate of such tax may from time to time change"
+   },
+   "2011-A8691-42": {
+    "verdict": "wrong",
+    "criteria": [
+     "2",
+     "3"
+    ],
+    "fields": {
+     "agency": "TLC (New York City)",
+     "quote": "'Such cooperation shall include the City or tlc obtaining, furnishing, and timely updating current, complete and accurate names, addresses ...' (the braced matter)"
+    },
+    "note": "stored quote is the reprinted lead sentence of \u00a7 1289",
+    "quote": "The city and the tlc shall cooperate with and assist the commissioner to effect the purposes of this article and the commissioner's responsibilities under this article."
+   },
+   "2011-A8691-45": {
+    "verdict": "wrong",
+    "criteria": [
+     "7"
+    ],
+    "fields": {
+     "extends_existing": false
+    },
+    "note": "\u00a7 23 of this act is a wholly new section: 'the New York state police may enforce any laws, rules or regulations related to vehicles with Hail licenses'",
+    "quote": "the New York state police may enforce any laws, rules or regulations related to vehicles with Hail licenses"
+   },
+   "2011-A8691-46": {
+    "verdict": "wrong",
+    "criteria": [
+     "3",
+     "7"
+    ],
+    "fields": {
+     "agency": "NYC adjudicating tribunal (TLC / OATH via Council crosswalk)",
+     "extends_existing": false
+    },
+    "note": "agency stored as junk 'Commission Or Tribunal That Adjudicates Liability'; \u00a7 23 wholly new",
+    "quote": "The commission or tribunal that adjudicates liability for a violation relating to Hail vehicles, for-hire vehicles and vehicles that operate as a vehicle licensed by the New York City taxi and limousine commission shall pay the money owed and collected to the entity that issued the summons for the violation."
+   },
+   "2011-A8691-04": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "note": "only braced matter is '{{or successor agency,}}': 'The city of New York, acting through such taxi and limousine commission or successor agency, is hereby authorized and empowered' is reprinted",
+    "quote": "The city of New York, acting through such taxi and limousine commission or successor agency, is hereby authorized and empowered to take such actions as are necessary and desirable to implement the provisions of this section"
+   },
+   "2011-A8691-51": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "note": "19-506(h)(4) reprinted; only '{{or successor agency}}' braced in 'shall promulgate rules and regulations setting forth the procedure'",
+    "quote": "The commission or successor agency shall promulgate rules and regulations setting forth the procedure for such an administrative adjudication, which shall include provision for a hearing."
+   },
+   "2011-A8691-55": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "note": "19-512.1 hearing-scheduling sentence reprinted; only '{{or successor agency}}' braced",
+    "quote": "Upon request such hearing shall be scheduled within ten calendar days, unless the commission or successor agency or other administrative tribunal of competent jurisdiction determines that such hearing would be prejudicial to an ongoing criminal or civil investigation."
+   },
+   "2011-A8691-56": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "note": "19-507(a) 'shall fine any driver' reprinted; only '{{or successor agency}}' braced",
+    "quote": "The commission or successor agency shall fine any driver, or suspend or revoke the driver's license of any driver, as provided in subdivision b of this section, who shall have been found in violation of any of the following:"
+   },
+   "2011-A8691-57": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "note": "19-516(a) 'may establish such disciplinary actions' reprinted; only '{{or successor agency}}' braced",
+    "quote": "The commission or successor agency may establish such disciplinary actions as it deems appropriate for failure to abide by the provisions of this chapter."
+   }
+  },
+  "missed": [
+   {
+    "blind": "a32",
+    "quote": "The city of New York, acting through the tlc, and the New York state department of transportation are hereby authorized and empowered to take such actions as are necessary and desirable to implement the provisions of this section",
+    "kind": "power",
+    "agency": "NYSDOT",
+    "dropped_by": null,
+    "note": "joint grant stored only for the TLC (-38)"
+   },
+   {
+    "blind": "c5b",
+    "quote": "the Port Authority police department may enforce any laws, rules or regulations related to vehicles with Hail licenses at facilities owned or leased by the Port Authority of New York and New Jersey",
+    "kind": "power",
+    "agency": "Port Authority of New York and New Jersey",
+    "dropped_by": null,
+    "note": "\u00a7 23 wholly new; only the State Police half stored (-45)"
+   },
+   {
+    "blind": "a27b",
+    "quote": "Upon failure of such owner to have his or her vehicle inspected or to comply with any such order within ten days after service thereof, the license shall be suspended",
+    "kind": "duty",
+    "agency": "TLC",
+    "dropped_by": "instrument_term",
+    "note": "\u00a7 9(e) wholly new; passive suspension duty of the TLC"
+   },
+   {
+    "blind": "c7",
+    "quote": "Any officer or employee of the commission designated by the chairperson of the commission and any police officer may seize any vehicle which he or she has probable cause to believe is operated or offered to be operated without an appropriate vehicle license",
+    "kind": "power",
+    "agency": "TLC",
+    "dropped_by": "reprinted_gender_neutral",
+    "note": "19-506(h)(1) widened by '{{or}} K' (seizure for the new subdivision k violations): extends_existing true"
+   }
+  ],
+  "effective_date": {
+   "stored": "2012-02-17",
+   "computed": "2012-02-17",
+   "verdict": "correct",
+   "note": "immediately 2012-02-17; sections 2-3 same as ch 602 of 2011 = 2011-12-21 (chapter_index)"
+  }
+ },
+ "2017-S8345": {
+  "records": {},
+  "missed": [
+   {
+    "blind": "b1",
+    "quote": "the town of Orangetown, acting through its town board, shall dedicate lands from the description of lands below that the town of Orangetown has never used for public open space or park purposes",
+    "kind": "duty",
+    "agency": "Towns / town of Orangetown",
+    "dropped_by": "reprinted_gender_neutral",
+    "note": "new matter is '{{and}}', the deletions '[all]' and '[, and that such lands form one contiguous park]' and a wholly new land description: extends_existing true; no gender words involved, so the drop rule misfired"
+   }
+  ],
+  "effective_date": {
+   "stored": "2018-12-28",
+   "computed": "2018-12-28",
+   "verdict": "correct",
+   "note": "immediately, signed 2018-12-28"
+  }
+ }
+}

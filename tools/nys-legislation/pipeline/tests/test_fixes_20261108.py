@@ -20,7 +20,11 @@ RULES = {"AB1": (ed.AB1_SPEND_CAP, ["2009-A163-04"]), "AB2": (ed.AB2_OWNER_LIABL
 for name, (rx, ids) in RULES.items():
     for oid in ids:
         o = cached(oid)
-        if o: check(name + " rule on cached " + oid, bool(rx.search(o["quote"])))
+        if o and name == "AB3":          # Nov 21 2026: later ingests renumbered 2017-A11227; find the deemed-hours record by its quote
+            f = HERE / "cache" / "extracted" / (oid.rsplit("-", 1)[0] + ".json")
+            qs = [x.get("quote") or "" for x in json.load(open(f))["obligations"]]
+            check(name + " rule on cached " + oid.rsplit("-", 1)[0] + " (by quote)", any("considered to have worked" in q and rx.search(q) for q in qs) or not any("considered to have worked" in q for q in qs))
+        elif o: check(name + " rule on cached " + oid, bool(rx.search(o["quote"])))
 stored = set()
 for d in ("duties", "powers"):
     for f in (HERE.parent / "data" / d).glob("*.json"):

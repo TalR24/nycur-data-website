@@ -1,0 +1,1152 @@
+{
+ "_scoring": {
+  "auditor": "B",
+  "night": "20261121",
+  "laws": 11,
+  "stored_records": 49,
+  "correct": 38,
+  "wrong_fields": 7,
+  "not_real": 4,
+  "missed": 1,
+  "precision_strict": "38/49 = 77.6% (Wilson 95% 64.1-87.0)",
+  "precision_real": "45/49 = 91.8% (Wilson 95% 80.8-96.8)",
+  "recall": "45/46 = 97.8% (Wilson 95% 88.7-99.6)",
+  "effective_dates": "10/11 correct",
+  "method": "blind list saved to /Users/troded/.claude/jobs/c1df60cb/tmp/blind_B_20261121.txt before opening data/duties|powers; records filtered by matter_id from data/duties/{Y}.json and data/powers/{Y}.json; class rules run over all 9 sessions (33,813 records, 2009-2025)",
+  "calibration": {
+   "2013-S7232": {
+    "records": {
+     "2013-S7232-01": "correct",
+     "2013-S7232-02": "correct",
+     "2013-S7232-03": "wrong",
+     "2013-S7232-04": "wrong",
+     "2013-S7232-13": "wrong",
+     "2013-S7232-14": "correct",
+     "2013-S7232-15": "correct",
+     "2013-S7232-16": "correct"
+    }
+   },
+   "2021-S7399": {
+    "records": {
+     "2021-S7399-01": "wrong",
+     "2021-S7399-02": "wrong"
+    }
+   }
+  }
+ },
+ "_classes": [
+  {
+   "name": "extends_existing false on added list items/classes of an existing amended duty (siblings in same law flagged true)",
+   "criteria": [
+    "7"
+   ],
+   "instances": [
+    "2017-S7312-06",
+    "2017-S7312-07",
+    "2017-S7312-09",
+    "2017-S7312-10",
+    "2017-S7312-11"
+   ],
+   "rule": "group records by (matter_id, agency, kind); in groups where any record has extends_existing true, match records with extends_existing false whose quote ends in ';' or ':' or starts lowercase",
+   "db_matches": 1377,
+   "db_examples": [
+    "2009-A10681-02",
+    "2009-A10681-05",
+    "2009-A10681-13"
+   ],
+   "needs_judgment": false,
+   "note": "broad candidate rule; some matches are genuinely new items in mixed laws"
+  },
+  {
+   "name": "raised cap on a local power stored extends_existing false (Kind ruling Nov 12)",
+   "criteria": [
+    "7"
+   ],
+   "instances": [
+    "2021-S7399-01",
+    "2021-S7399-02"
+   ],
+   "rule": "kind=='power' and not extends_existing and re.search(r'may (extend|increase|raise) the (maximum|number|limit)|for up to an additional', quote, re.I)",
+   "db_matches": 7,
+   "db_examples": [
+    "2009-A7967-05",
+    "2017-A9814-05",
+    "2021-S1091-01"
+   ],
+   "needs_judgment": false,
+   "note": "2009-A7967-05/2017-A9814-05 are contract-term extension powers and may be wholly new; review"
+  },
+  {
+   "name": "co-chair sentence split onto a co-actor whose name is reprinted unchanged text",
+   "criteria": [
+    "1",
+    "2"
+   ],
+   "instances": [
+    "2017-S7312-02"
+   ],
+   "rule": "records whose identical (matter_id, quote) carries >=2 agencies and quote matches r'chaired by|co-?chair'; then test whether actor_raw sits outside {{ }} in the packet text",
+   "db_matches": 17,
+   "db_examples": [
+    "2015-S7873-02",
+    "2015-S7873-03",
+    "2017-S5929-02"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "government cost-recovery limit (cap) stored as a power",
+   "criteria": [
+    "1",
+    "3"
+   ],
+   "instances": [
+    "2017-S9100-08"
+   ],
+   "rule": "re.search(r'\\bshall only recover\\b|\\bshall recover only\\b|\\bshall only (charge|collect|retain)\\b', quote, re.I)",
+   "db_matches": 2,
+   "db_examples": [
+    "2017-S9100-08",
+    "2019-S501-11"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "private party's submission-content list item stored as a government duty",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2017-S9100-07"
+   ],
+   "rule": "re.match(r'(Provides|Certifies|Details|Describes|Explains|Includes|Identifies|Lists)\\b', quote)",
+   "db_matches": 3,
+   "db_examples": [
+    "2013-A8340-01",
+    "2017-S9100-07",
+    "2025-A3005-83"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "content specification of a database/report stored as its own record with the deliverable as actor",
+   "criteria": [
+    "3",
+    "9"
+   ],
+   "instances": [
+    "2017-S7325-03"
+   ],
+   "rule": "re.match(r'(the )?(online )?(database|report|plan|application|proposal|form|website|catalogue)\\b', actor_raw, re.I)",
+   "db_matches": 10,
+   "db_examples": [
+    "2009-A5462-08",
+    "2015-S8139-07",
+    "2015-S8139-08"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "one-time appointment setup duty with deadline none (criterion 5 wants on_effective_date)",
+   "criteria": [
+    "5"
+   ],
+   "instances": [
+    "2017-S7312-04",
+    "2017-S7312-05"
+   ],
+   "rule": "deliverable_type=='designation or staffing' and recurrence=='one-time' and deadline_kind=='none' and 'appoint' in quote+actor_raw",
+   "db_matches": 42,
+   "db_examples": [
+    "2009-S8314-01",
+    "2011-A55-39",
+    "2011-A9450-01"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "protocol sub-items not inheriting the act's stated development date",
+   "criteria": [
+    "5"
+   ],
+   "instances": [
+    "2013-S7232-03",
+    "2013-S7232-04"
+   ],
+   "rule": "in a (matter_id, agency, kind) group holding a fixed_date record whose quote names protocols/procedures/plan, flag plan-or-strategy records with deadline_kind none/on_effective_date",
+   "db_matches": 65,
+   "db_examples": [
+    "2009-A41011-02",
+    "2009-A5877-24",
+    "2009-A5877-27"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "junk agency built from a descriptive actor phrase",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2013-S7232-13"
+   ],
+   "rule": "re.match(r'(agency|entity|body|person|provider|facility) ', agency, re.I)",
+   "db_matches": 14,
+   "db_examples": [
+    "2013-S7232-13",
+    "2017-A11050-77",
+    "2017-A11050-79"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "sub_item_of_parent drop removing a distinct power",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2013-S7232-05 (dropped)"
+   ],
+   "rule": "dropped rule=='sub_item_of_parent' and re.search(r'\\b(may|is authorized|is empowered)\\b', quote) (case-sensitive: pre-2017 texts carry capitalised 'May' as a token, which the case-insensitive version wrongly matched in 2013-S7232-09)",
+   "db_matches": 1,
+   "db_examples": [
+    "2023-S7462-01"
+   ],
+   "needs_judgment": true,
+   "note": "2013-S7232-05 itself is missed by the regex because its 'May' is capitalised in the pre-2017 text; affected laws 2013-S7232"
+  },
+  {
+   "name": "same-as-chapter section date left unresolved",
+   "criteria": [
+    "8"
+   ],
+   "instances": [
+    "2017-S7325"
+   ],
+   "rule": "effective_dates rule or any section_dates rule == 'same_as_chapter_unresolved'",
+   "db_matches": 24,
+   "db_examples": [
+    "2009-A6633",
+    "2009-A6924",
+    "2011-A3882"
+   ],
+   "needs_judgment": false,
+   "note": "law-level count; referenced bill 2017-S3789 absent from data/chapter_index.json"
+  }
+ ],
+ "2019-A1565": {
+  "records": {
+   "2019-A1565-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "if an e-mail address is furnished, all notices and communications otherwise required to be sent by the state board of elections to the voter by postal mail shall be sent by e-mail in addition to postal mail",
+    "note": "Election Law 5-210(5)(k)(iii)",
+    "fields_at_audit": {
+     "agency": "Board of Elections",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-A1565-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "if an e-mail address is furnished, all notices and communications otherwise required to be sent by the state board of elections to the voter by postal mail shall be sent by e-mail in addition to postal mail",
+    "note": "5-500(4)(d), separate section, not a duplicate"
+   },
+   "2019-A1565-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "County boards of elections and the board of elections of the city of New York shall have the option of sending notices and communications otherwise required to be sent to the voter by postal mail by e-mail in addition to postal mail if the voter furnishes an email address.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Counties",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-A1565-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "County boards of elections and the board of elections of the city of New York shall have the option of sending notices and communications otherwise required to be sent to the voter by postal mail by e-mail in addition to postal mail if the voter furnishes an email address.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Counties",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-A1565-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "County boards of elections and the board of elections of the city of New York shall have the option of sending notices and communications otherwise required to be sent to the voter by postal mail by e-mail in addition to postal mail if the voter furnishes an e-mail address",
+    "note": ""
+   },
+   "2019-A1565-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "County boards of elections and the board of elections of the city of New York shall have the option of sending notices and communications otherwise required to be sent to the voter by postal mail by e-mail in addition to postal mail if the voter furnishes an e-mail address",
+    "note": ""
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2020-11-25",
+   "computed": "2020-11-25",
+   "verdict": "correct",
+   "note": "one year after signing 2019-11-25"
+  }
+ },
+ "2017-S7325": {
+  "records": {
+   "2017-S7325-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Shall establish and maintain an online database to catalogue and make available information on workforce development funding programs and may publish any analysis conducted by the department on such data",
+    "note": "record effective/deadline date 2018-04-18 should follow section one's same-as-chapter date (see effective_date)",
+    "fields_at_audit": {
+     "agency": "DOL",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2017-S7325-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Shall establish and maintain an online database to catalogue and make available information on workforce development funding programs and may publish any analysis conducted by the department on such data",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOL",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2017-S7325-03": {
+    "verdict": "not_real",
+    "criteria": [
+     "3",
+     "9"
+    ],
+    "fields": {},
+    "quote": "For each workforce development funding program, the online database shall include, but not be limited to, the following information for each funding program:",
+    "note": "content list of the -01 database ('the online database shall include'), actor_raw is the deliverable; same duty as -01"
+   },
+   "2017-S7325-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Any state agency or instrumentality thereof that administers or oversees workforce development funding programs shall report to the commissioner of labor, within 45 days of the end of the applicable fiscal year for the funding program, the information specified in subdivision 15 of section 21 of the labor law",
+    "note": "takes effect 'on the first of October next succeeding' per amended chapter s3; record effective 2018-04-18 not that date",
+    "fields_at_audit": {
+     "agency": "State agencies",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2017-S7325-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "This information shall be reported through an electronic reporting system developed by the department of labor.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOL",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2018-04-18; section one same_as_chapter_unresolved",
+   "computed": "2018-04-18 for the act; section one = effective date of the 2017 chapter from S.3789/A.1956 (not in chapter_index.json, could not resolve)",
+   "verdict": "wrong",
+   "note": "s3: 'section one of this act shall take effect on the same date and in the same manner as a chapter of the laws 2017 ... S. 3789 and A. 1956'"
+  }
+ },
+ "2017-S7312": {
+  "records": {
+   "2017-S7312-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The taskforce shall be chaired by a representative of the executive chamber and the commissioners of the office of children and family services and the department of labor, or their designees.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Governor",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2017-S7312-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The taskforce shall be chaired by a representative of the executive chamber and the commissioners of the office of children and family services and the department of labor, or their designees.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Governor",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2017-S7312-02": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "2"
+    ],
+    "fields": {},
+    "quote": "The taskforce shall be chaired by a representative of the executive chamber and the commissioners of the office of children and family services and the department of labor, or their designees.",
+    "note": "OCFS chair is reprinted text: only '{{a representative of the executive chamber and}}' and '{{the department of labor}}' are new"
+   },
+   "2017-S7312-04": {
+    "verdict": "wrong",
+    "criteria": [
+     "5"
+    ],
+    "fields": {
+     "deadline_kind": "on_effective_date"
+    },
+    "quote": "three individuals shall be appointed upon the recommendation of the speaker of the assembly, at least one of whom shall be a parent who has utilized subsidized child care;",
+    "note": "one-time setup appointment, no stated deadline; siblings -06/-07 use on_effective_date"
+   },
+   "2017-S7312-05": {
+    "verdict": "wrong",
+    "criteria": [
+     "5"
+    ],
+    "fields": {
+     "deadline_kind": "on_effective_date"
+    },
+    "quote": "three individuals shall be appointed upon the recommendation of the temporary president of the senate, at least one of whom shall be a parent who has utilized subsidized child care;",
+    "note": "same as -04"
+   },
+   "2017-S7312-06": {
+    "verdict": "wrong",
+    "criteria": [
+     "7"
+    ],
+    "fields": {
+     "extends_existing": true
+    },
+    "quote": "two representatives from unions that represent child care providers; and",
+    "note": "adds a class to the existing 'members of the taskforce shall be appointed by the governor' duty"
+   },
+   "2017-S7312-07": {
+    "verdict": "wrong",
+    "criteria": [
+     "7"
+    ],
+    "fields": {
+     "extends_existing": true
+    },
+    "quote": "at least one representative from each of the following entities:",
+    "note": "adds classes to the existing appointment duty"
+   },
+   "2017-S7312-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The taskforce shall examine the following: (a) affordable child care with a focus on the cost of care for families and factors that contribute to such costs;",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "OCFS",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": true,
+     "agency_unit": "Child Care Availability Taskforce"
+    }
+   },
+   "2017-S7312-09": {
+    "verdict": "wrong",
+    "criteria": [
+     "7"
+    ],
+    "fields": {
+     "extends_existing": true
+    },
+    "quote": "access to and availability of subsidized child care, including the identification of barriers families eligible under state law face obtaining or utilizing such subsidies",
+    "note": "new topic under the existing 'The taskforce shall examine the following:'"
+   },
+   "2017-S7312-10": {
+    "verdict": "wrong",
+    "criteria": [
+     "7"
+    ],
+    "fields": {
+     "extends_existing": true
+    },
+    "quote": "availability of quality child care by economic development region including identification of underserved communities",
+    "note": "same"
+   },
+   "2017-S7312-11": {
+    "verdict": "wrong",
+    "criteria": [
+     "7"
+    ],
+    "fields": {
+     "extends_existing": true
+    },
+    "quote": "business incentives to increase child care access and the impact on tax credits and deductions relating to child care;",
+    "note": "same"
+   },
+   "2017-S7312-12": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "ways to address concerns identified in the course of the examination required by this subdivision;",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "OCFS",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": true,
+     "agency_unit": "Child Care Availability Taskforce"
+    }
+   },
+   "2017-S7312-13": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The taskforce shall report its interim findings and recommendations in accordance with subdivision three of this section to the governor, the speaker of the assembly and the temporary president of the senate no later than November first, two thousand eighteen and its final findings and recommendations no later than December thirty-first, two thousand twenty.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "OCFS",
+     "kind": "duty",
+     "deadline_kind": "fixed_date",
+     "extends_existing": true,
+     "agency_unit": "Child Care Availability Taskforce"
+    }
+   }
+  },
+  "missed": [
+   {
+    "blind": "b3",
+    "quote": "whether regulatory or statutory changes could promote access to child care and improve health and safety standards in child care programs;",
+    "kind": "duty",
+    "agency": "OCFS (unit Child Care Availability Taskforce)",
+    "dropped_by": null,
+    "note": "new item (i) under 'The taskforce shall examine the following:'; every other new topic got a record"
+   }
+  ],
+  "effective_date": {
+   "stored": "2018-04-18; section one 2017-12-18 same_as_chapter",
+   "computed": "2018-04-18; section one 2017-12-18",
+   "verdict": "correct",
+   "note": "Signed 2018-04-18 after ch.493 of 2017 took effect 2017-12-18, so that date stands (criterion 8)."
+  }
+ },
+ "2017-S9032": {
+  "records": {
+   "2017-S9032-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner of transportation shall provide for the installation and maintenance of adequate signing of the state highway system as designated pursuant to section one of this act.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "NYSDOT",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2018-10-01",
+   "computed": "2018-10-01",
+   "verdict": "correct",
+   "note": ""
+  }
+ },
+ "2017-S7324": {
+  "records": {
+   "2017-S7324-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "such contracts in blank shall be first approved by the commissioner of labor, except that in the city of New York, such contracts in blank shall be first approved by the commissioner of consumer affairs of such city, pursuant to section one hundred eighty-nine of the general business law, and his or her determination shall be reviewable by certiorari.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Department of Consumer Affairs of the City of New York",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2017-12-18",
+   "computed": "2017-12-18",
+   "verdict": "correct",
+   "note": "same as ch.496 of 2017 (S6369), immediate 2017-12-18"
+  }
+ },
+ "2017-S7319": {
+  "records": {
+   "2017-S7319-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner of agriculture and markets shall convene a working group to examine the need for statewide standards for therapy dogs, as such term is defined in subdivision 26 of section 108 of article 7 of the agriculture and markets law",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DAM",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2017-S7319-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The working group shall include representatives from the department of agriculture and markets, the department of health, the office of mental health, the division of human rights, the office of alcoholism and substance abuse services, the office of children and family services, the office for the aging, the division of veterans' affairs and relevant stakeholders",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DAM",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": true,
+     "agency_unit": "Working Group"
+    }
+   },
+   "2017-S7319-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The working group shall report to the governor, the temporary president of the senate and the speaker of the assembly no later than October 1, 2018 on the findings regarding the need for standards and public information regarding therapy dogs.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DAM",
+     "kind": "duty",
+     "deadline_kind": "fixed_date",
+     "extends_existing": true,
+     "agency_unit": "Working Group"
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2017-12-18",
+   "computed": "2017-12-18",
+   "verdict": "correct",
+   "note": "same as ch.497 of 2017 (S6565)"
+  }
+ },
+ "2019-A3235": {
+  "records": {
+   "2019-A3235-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the superintendent shall take into account, among other factors, an assessment, in writing, of the record of performance of the banking institution in helping to meet the credit needs of its entire community, including low and moderate-income neighborhoods and minority- and women-owned businesses, consistent with safe and sound operation of the banking institution.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DFS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2019-A3235-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The banking institution's participation, including investments, in local community development and redevelopment projects or programs and in technical assistance programs for small businesses and minority- and women-owned businesses;",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DFS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2019-A3235-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The banking institution's origination of residential mortgage loans, housing rehabilitation loans, home improvement loans and small business or small farm or minority- and women-owned business loans within its community or the purchase of such loans originated in its community;",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DFS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2020-01-11",
+   "computed": "2020-01-11",
+   "verdict": "correct",
+   "note": "120th day after 2019-09-13"
+  }
+ },
+ "2017-S9039": {
+  "records": {
+   "2017-S9039-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the trust may enter into a lease for a term coterminous with its lease with the state of New York provided for in paragraph (b) of subdivision 3 of this section",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "HRPT",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2017-S9039-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "except that a permanent vested easement may be granted for the Hudson river rail tunnel between New York and New Jersey crossing under the surface of the park between West 27th and West 30th Streets",
+    "note": "agency Unspecified accepted: grantor not named, trust is only the approver ('subject to approval of the trust')",
+    "fields_at_audit": {
+     "agency": "Unspecified",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2018-12-28",
+   "computed": "2018-12-28",
+   "verdict": "correct",
+   "note": ""
+  }
+ },
+ "2017-S9100": {
+  "records": {
+   "2017-S9100-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "shall provide the department with a list of manufacturers that produce covered drugs. The department may request updated lists at its discretion.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOH",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2017-S9100-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Within sixty days of receipt of a proposed drug take back program, the department, in consultation with the department of environmental conservation, shall determine whether such proposed drug take back program complies with the requirements of this article and notify the applicant.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOH",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2017-S9100-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The department may conduct a noticed public hearing prior to approval.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOH",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2017-S9100-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "If the drug take back program is approved, the department shall notify the applicant in writing. If the drug take back program is not approved, the department shall notify the applicant in writing",
+    "note": "close to -02's 'and notify the applicant'; kept as the written-notice duty",
+    "fields_at_audit": {
+     "agency": "DOH",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2017-S9100-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The department shall provide, and update annually, on its website a list of all manufacturers participating in a drug take back program approved by the department.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOH",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2017-S9100-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The department shall submit an annual report to the governor, speaker of the assembly and temporary president of the senate by January first detailing all program activities, the weight collected by each program",
+    "note": "first Jan 1 on/after 2019-01-06 = 2020-01-01",
+    "fields_at_audit": {
+     "agency": "DOH",
+     "kind": "duty",
+     "deadline_kind": "fixed_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2017-S9100-07": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "Provides contact information for the person submitting the planned drug take back program with whom the department shall direct all inquiries;",
+    "note": "item (b) of what the manufacturer's proposal must contain ('submit to the department ... a proposed drug take back program that meets ... the following requirements'); a private party's obligation"
+   },
+   "2017-S9100-08": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "3"
+    ],
+    "fields": {},
+    "quote": "Exclusive of fines and penalties, the state shall only recover its actual cost of administration and enforcement.",
+    "note": "a cap on cost recovery in a wholly new article, not a grant; if kept it would be a duty on State agencies with extends_existing false"
+   },
+   "2017-S9100-09": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "For any city with a population of one hundred twenty-five thousand or more as of the last decennial census, the commissioner shall establish by regulation a distribution plan that ensures that on-site collection receptacle or dropbox placement shall be reasonably accessible to all residents and that provides for program cost efficiency.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOH",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2017-S9100-10": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The department shall oversee a program for the safe disposal of unused controlled substances by consumers in accordance with federal law and article two-B of this chapter.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOH",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2017-S9100-11": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Safe disposal methods shall be publicized consistent with the prescription pain medication awareness program established pursuant to section thirty-three hundred nine-a of this article and article two-B of this chapter.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOH",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2017-S9100-12": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The department of health may adopt regulations as necessary to implement and enforce the provisions of this title.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOH",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2019-01-06",
+   "computed": "2019-01-06",
+   "verdict": "correct",
+   "note": "180th day after 2018-07-10"
+  }
+ },
+ "2017-S894": {
+  "records": {
+   "2017-S894-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner of transportation shall provide for the installation and maintenance of adequate signing of the state highway system as designated pursuant to section one of this act.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "NYSDOT",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2017-06-29",
+   "computed": "2017-06-29",
+   "verdict": "correct",
+   "note": ""
+  }
+ },
+ "2019-A3275": {
+  "records": {
+   "2019-A3275-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The department of financial services is hereby authorized and directed to prepare or have prepared a study to review the process in which financial institutions provide loans to landlords acquiring or refinancing property that includes rent-regulated and/or small business tenants.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DFS",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-A3275-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the department of financial services shall report to the legislature and the governor on the findings of the study conducted pursuant to section two of this act including on the scope, nature and frequency of involvement in predatory equity",
+    "note": "18 months after 2020-12-23 = 2022-06-23",
+    "fields_at_audit": {
+     "agency": "DFS",
+     "kind": "duty",
+     "deadline_kind": "days_after_effective",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2020-12-23",
+   "computed": "2020-12-23",
+   "verdict": "correct",
+   "note": ""
+  }
+ },
+ "2013-S7232": {
+  "records": {
+   "2013-S7232-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "To carry out investigations by observing critical protocols and procedures to ensure the safety of a vulnerable person or persons in light of their clinical, personal considerations and the need for the timely completion of an effective investigation.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Justice Center for the Protection of People with Special Needs",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-S7232-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Such protocols and procedures shall be developed by the justice center in consultation with the advisory council established pursuant to section five hundred sixty-one of this article and the appropriate state agency.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Justice Center for the Protection of People with Special Needs",
+     "kind": "duty",
+     "deadline_kind": "fixed_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-S7232-03": {
+    "verdict": "wrong",
+    "criteria": [
+     "5"
+    ],
+    "fields": {
+     "deadline_kind": "fixed_date",
+     "deadline_date": "2015-01-01"
+    },
+    "quote": "protocols and procedures shall be established for ascertaining whether or not interviewing such person is clinically contraindicated prior to such interview taking place.",
+    "note": "s3: 'Protocols and procedure required by this act shall be developed by January 1, 2015'"
+   },
+   "2013-S7232-04": {
+    "verdict": "wrong",
+    "criteria": [
+     "5"
+    ],
+    "fields": {
+     "deadline_kind": "fixed_date",
+     "deadline_date": "2015-01-01"
+    },
+    "quote": "the justice center shall Develop appropriate procedures and protocols to ensure that any interview is conducted safely and in a timely fashion in light of relevant clinical, behavioral and other facts relating to the individual's disability, safety and wellbeing.",
+    "note": "same s3 date"
+   },
+   "2013-S7232-13": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Unspecified (actor_raw 'the agency serving such vulnerable person')"
+    },
+    "quote": "Such information shall be readily available to the justice center on a form it prescribes prior to any contact between the justice center and such individual.",
+    "note": "'Agency Serving Such Vulnerable Person' is not an agency; the serving agency is undetermined and may be a private provider"
+   },
+   "2013-S7232-14": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Such standards, curricula and training shall address topics including, but not limited to: (a) how to identify and investigate reportable incidents; (b) the duty to report reportable incidents; (c) the requirements of all codes of conduct; (d) all applicable disciplinary processes; (e) protocols and procedures pursuant to subdivision twenty-eight of this section;",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Justice Center for the Protection of People with Special Needs",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2013-S7232-15": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Protocols and procedure required by this act shall be developed by January 1, 2015 and shall be submitted to the majority leader of the senate and the speaker of the assembly and implemented by the justice center by March 1, 2015.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Justice Center for the Protection of People with Special Needs",
+     "kind": "duty",
+     "deadline_kind": "fixed_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-S7232-16": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Regulations describing and implementing such protocols and procedures shall be finalized no later than April 1, 2015.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Justice Center for the Protection of People with Special Needs",
+     "kind": "duty",
+     "deadline_kind": "fixed_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [
+   {
+    "blind": "b5",
+    "quote": "the justice center May determine not to grant such exemption if, in accordance with protocols and procedures developed pursuant to this section, it determines that there exists an overriding Health and safety need to proceed with an interview of the vulnerable person",
+    "kind": "power",
+    "agency": "Justice Center for the Protection of People with Special Needs",
+    "dropped_by": "sub_item_of_parent",
+    "note": "a discretionary power of its own, not a protocol content item"
+   }
+  ],
+  "effective_date": {
+   "stored": "2014-09-23",
+   "computed": "2014-09-23",
+   "verdict": "correct",
+   "note": ""
+  }
+ },
+ "2021-S7399": {
+  "records": {
+   "2021-S7399-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "7"
+    ],
+    "fields": {
+     "extends_existing": true
+    },
+    "quote": "The governing board of a political subdivision may extend the maximum number of years for which a participant may receive credit for a year of ambulance service for up to an additional ten years, to a maximum of fifty years",
+    "note": "Kind ruling Nov 12: raising a cap (forty -> up to fifty years) widens a power"
+   },
+   "2021-S7399-02": {
+    "verdict": "wrong",
+    "criteria": [
+     "7"
+    ],
+    "fields": {
+     "extends_existing": true
+    },
+    "quote": "The governing board of a political subdivision may extend the maximum number of years of service for which a participant may receive a contribution for up to an additional ten years, to a maximum of fifty years",
+    "note": "same, GML 219-f(3)"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2022-11-23",
+   "computed": "2022-11-23",
+   "verdict": "correct",
+   "note": ""
+  }
+ }
+}
