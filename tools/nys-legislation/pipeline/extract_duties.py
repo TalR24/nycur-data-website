@@ -4632,6 +4632,22 @@ def holder_resolves(o, holder, text, law):
     return None
 
 
+APPLY_B91 = True          # Nov 22 2026 (B91): court clerks and the court system named as their own body fold into Unified Court System (audit B: 2015-A8083 x5)
+B91_COURT = re.compile(r"^(?:clerk\s+of\s+(?:the\s+)?courts?\b.*|new york state unified court system|district court)$", re.I)
+
+
+def b91_court_clerk(o):
+    """B91: a named_body agency that is a court clerk or the court system itself resolves to Unified Court System, the clerk kept as the unit."""
+    ag = (o.get("agency") or "").strip()
+    if o.get("agency_source") != "named_body" or not B91_COURT.match(ag) or "Unified Court System" not in BY_CANON:
+        return False
+    unit = None if ag.lower().endswith("unified court system") else ag[0].upper() + ag[1:].lower()
+    o.update(agency="Unified Court System", agency_full="Unified Court System", agency_matched=True, jurisdiction="state",
+             agency_org_type=BY_CANON["Unified Court System"].get("org_type") or "judiciary", agency_group=None,
+             agency_unit=o.get("agency_unit") or unit, agency_source="court_clerk_b91")
+    return True
+
+
 def apply_holder_verdicts(law, text, lists):
     """Match each sunset-extension record to its verdict by law and quote; drop private and not_extension, set the agency of a named government holder."""
     if not APPLY_HOLDER_VERDICTS or law["key"] not in load_holder_verdicts():
@@ -5124,6 +5140,9 @@ def build_records(laws):
             apply_holder_verdicts(law, text, (law_d, law_p))
             if sx_unnamed:
                 SUNSET_UNNAMED[law["key"]] = sx_unnamed
+        if APPLY_B91:
+            for o in law_d + law_p:
+                b91_court_clerk(o)
         for lst in (law_d, law_p):       # never merge across jurisdictions or named localities
             keep = []
             for jur in {(o.get("jurisdiction"), o.get("agency_unit")) for o in lst}:

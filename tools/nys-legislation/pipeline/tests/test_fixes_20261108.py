@@ -96,9 +96,11 @@ print("dry run AC3", len(ac3), ac3[:10], "(over 40: rule is the lead's own modal
 # AC2 refinement: a shortened sunset is dropped as sunset_shortened, an extension is kept
 ts = (HERE / "cache" / "text_marked" / "2009-S8314.txt").read_text()
 dq = {d["obligation_id"]: d["quote"] for d in json.load(open(HERE.parent / "data" / "dropped" / "2009.json"))["dropped"]}
-rec = {"quote": dq["2009-S8314-58"], "quote_verified": True, "agency": "X", "agency_unit": None, "actor_raw": "x"}
-g = ed.gate_record(rec, ts, True)
-check("AC2 shortened sunset (S8314 sentence) dropped as sunset_shortened", bool(g) and g[0] == "sunset_shortened")
+_q58 = dq.get("2009-S8314-58") or "The provisions of section sixty-two through sixty-six of this act shall expire on December thirty-first, two thousand sixteen, except that:"   # Nov 22 2026: the law is now read by windows and its records renumbered; the gate check uses the sentence itself
+if True:
+    rec = {"quote": _q58, "quote_verified": True, "agency": "X", "agency_unit": None, "actor_raw": "x"}
+    g = ed.gate_record(rec, ts, True)
+    check("AC2 shortened sunset (S8314 sentence) dropped as sunset_shortened", bool(g) and g[0] == "sunset_shortened")
 t5 = (HERE / "cache" / "text_marked" / "2015-S5149.txt").read_text()
 _q5 = [d["quote"] for d in json.load(open(HERE.parent / "data" / "dropped" / "2015.json"))["dropped"] if d["obligation_id"] == "2015-S5149-01"]
 if not _q5:   # Nov 8 2026: once AC2 is live the record is stored, not dropped

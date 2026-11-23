@@ -1098,8 +1098,8 @@ def fix_20261031(o, by_canon, lookup=None, text=""):
         unit = None
         for src in (raw, o.get("quote"), o.get("law_title"), text):
             mm = COUNTY_NAMED.search(src or "")
-            if mm:
-                unit = "County of " + (mm.group(1) or mm.group(2)).strip()
+            if mm and county_name((mm.group(1) or mm.group(2)).strip()):          # Nov 22 2026: an unvalidated capture gave 'County of The' (17 BOE records)
+                unit = "County of " + county_name((mm.group(1) or mm.group(2)).strip())
                 break
         unit = unit or o.get("agency_unit")
         if unit and not str(unit).lower().startswith(("county of", "city of")):
@@ -1114,8 +1114,8 @@ def fix_20261031(o, by_canon, lookup=None, text=""):
                 unit = mm.group(1).title() + " of " + mm.group(2).strip()
                 break
             mm = COUNTY_NAMED.search(src or "")
-            if mm:
-                unit = "County of " + (mm.group(1) or mm.group(2)).strip()
+            if mm and county_name((mm.group(1) or mm.group(2)).strip()):          # Nov 22 2026: an unvalidated capture gave 'County of The' (17 BOE records)
+                unit = "County of " + county_name((mm.group(1) or mm.group(2)).strip())
                 break
         if unit:
             _set_group(o, "Municipalities (all)", "local", "local government group", unit, "assessing_unit_r7")

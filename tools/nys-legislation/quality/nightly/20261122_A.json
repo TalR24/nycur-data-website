@@ -1,0 +1,1407 @@
+{
+ "_scoring": {
+  "auditor": "A",
+  "night": "20261122",
+  "laws": 11,
+  "stored_records": 78,
+  "correct": 50,
+  "wrong_fields": 17,
+  "not_real": 11,
+  "missed": 3,
+  "precision_strict": "50/78 = 64.1% (Wilson 95% 53.0-73.9)",
+  "precision_real": "67/78 = 85.9% (Wilson 95% 76.5-91.9)",
+  "recall": "67/70 = 95.7% (Wilson 95% 88.1-98.5) (record level: every stored real record matched a blind item or was a correct record the blind pass skipped: 2019-A8511-09, -11, 2019-S3965-05)",
+  "effective_dates": "11/11 correct",
+  "calibration": {
+   "2021-A8839": {
+    "records": {
+     "2021-A8839-01": "correct"
+    },
+    "missed": 0,
+    "effective_date": "correct"
+   },
+   "2023-A10269": {
+    "records": {},
+    "missed": 0,
+    "effective_date": "correct"
+   }
+  }
+ },
+ "_classes": [
+  {
+   "name": "list_item_split",
+   "criteria": [
+    "9"
+   ],
+   "instances": [
+    "2019-A8511-17",
+    "2019-A8511-18",
+    "2019-A8511-21",
+    "2019-A8511-22",
+    "2019-A8511-25",
+    "2019-A8511-26",
+    "2019-A8511-27",
+    "2019-A8511-28",
+    "2019-A8511-29"
+   ],
+   "rule": "quote starts with a list marker re ^\\((?:[ivxl]+|[A-Za-z]|\\d+)\\)\\s AND another record of the same matter_id has a quote ending in ':' (alternatives or contents of one lead)",
+   "db_matches": 156,
+   "db_examples": [
+    "2009-A11144-06",
+    "2009-A11144-39",
+    "2009-A11144-40"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "member_source_as_actor",
+   "criteria": [
+    "3",
+    "7"
+   ],
+   "instances": [
+    "2017-S7312-07",
+    "2017-S7312-08",
+    "2017-S7312-09",
+    "2017-S7312-10",
+    "2017-S7312-11",
+    "2017-S7312-12",
+    "2017-S7312-13",
+    "2017-S7312-14"
+   ],
+   "rule": "deliverable_type=='designation or staffing' AND actor_raw not ~ /governor|mayor|speaker|president|leader/i AND (quote ~ /representatives? (from|of)|at least one representative|individuals shall be appointed|appointed by the governor and comprised/i OR (quote starts with a list marker and a sibling record in the same matter_id matches that pattern))",
+   "db_matches": 61,
+   "db_examples": [
+    "2009-S7451-01",
+    "2009-S7451-02",
+    "2011-A676-14"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "mixed_extends_siblings",
+   "criteria": [
+    "7"
+   ],
+   "instances": [
+    "2017-S7312-16",
+    "2017-S7312-17",
+    "2017-S7312-18"
+   ],
+   "rule": "group by (matter_id, agency, agency_unit, deliverable_type, citation); flag extends_existing false records in groups with both true and false",
+   "db_matches": 346,
+   "db_examples": [
+    "2009-A10681-17",
+    "2009-A10847-02",
+    "2009-A10984-17"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "passive_or_junk_agency",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2019-S4216-01",
+    "2019-S5672-02"
+   ],
+   "rule": "actor_raw startswith 'passive' OR (agency == actor_raw after stripping the/such/a, agency used <=2 times DB-wide, and agency names a tax/notice/application/moneys/fee/report/plan); recurrence of handled passive-subject class",
+   "db_matches": 13,
+   "db_examples": [
+    "2009-A4234-02",
+    "2015-S4240-01",
+    "2017-A7715-04"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "quote_no_operative_words",
+   "criteria": [
+    "2"
+   ],
+   "instances": [
+    "2019-A8511-01"
+   ],
+   "rule": "quote contains none of shall|must|may|authori[sz]ed|empowered|directed|will|is required (broad: also catches legitimate list items and relocated quotes; use as a review queue)",
+   "db_matches": 3339,
+   "db_examples": [
+    "2009-A1002-01",
+    "2009-A1002-02",
+    "2009-A1002-03"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "approver_as_actor",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2017-S9039-02"
+   ],
+   "rule": "quote ~ 'subject to (the )?approval of <actor_raw>'; recurrence of handled approver class",
+   "db_matches": 12,
+   "db_examples": [
+    "2009-A11514-05",
+    "2013-S6854-07",
+    "2025-A10007-86"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "setup_duty_no_deadline",
+   "criteria": [
+    "5"
+   ],
+   "instances": [
+    "2019-A8511-13"
+   ],
+   "rule": "kind duty AND deadline_kind none AND quote ~ /shall (prescribe|determine|develop|design) (the )?forms?/i",
+   "db_matches": 1,
+   "db_examples": [
+    "2019-A8511-13"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "dated_recurring_none",
+   "criteria": [
+    "5"
+   ],
+   "instances": [
+    "2019-S5672-04"
+   ],
+   "rule": "deadline_kind none AND quote ~ /on or before the \\w+ day of each/i; recurrence of handled dated-recurring class",
+   "db_matches": 11,
+   "db_examples": [
+    "2009-S66002-36",
+    "2009-S66002-39",
+    "2013-A2296-05"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "deliverable_type_from_reprinted_clause",
+   "criteria": [
+    "6"
+   ],
+   "instances": [
+    "2019-S1799-01"
+   ],
+   "rule": "needs judgment: the deliverable type follows the reprinted half of a quote instead of the braced new matter",
+   "db_matches": null,
+   "db_examples": [],
+   "needs_judgment": true,
+   "laws": [
+    "2019-S1799"
+   ]
+  }
+ ],
+ "2019-S3965": {
+  "records": {
+   "2019-S3965-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner shall establish and implement a comprehensive pilot program to review and study the use of the internet for the administration and completion of an approved pre-licensing course",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DMV",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S3965-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner may, in his or her discretion, impose a fee for the submission of each application to participate in the pilot program established pursuant to this article.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DMV",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S3965-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Such fee shall not exceed seven thousand five hundred dollars which shall, excluding administrative expenses of the department, be deposited in the dedicated highway and bridge trust fund established pursuant to section eighty-nine-b of the state finance law.",
+    "note": "deposit of the application fee into the DHBTF is a DMV fiscal-handling duty; cap words in the same sentence",
+    "fields_at_audit": {
+     "agency": "DMV",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S3965-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner is authorized and directed to promulgate any rules and regulations necessary to implement the provisions of this article",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DMV",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S3965-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Provided, however, that any rules and regulations promulgated pursuant to this article shall not stipulate any particular location for delivery of a pre-licensing course or limit the time of day during which such course may be taken.",
+    "note": "proviso on the rulemaking is its own provision: 'shall not stipulate any particular location'",
+    "fields_at_audit": {
+     "agency": "DMV",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S3965-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner is authorized to impose a fee upon each internet pre-licensing course sponsoring agency approved for participation in the pilot program to deliver such course, which shall not exceed eight dollars for each student who completes such course",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DMV",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S3965-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Such fees, excluding administrative expenses of the department, shall be deposited in the dedicated highway and bridge trust fund established pursuant to section eighty-nine-b of the state finance law.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DMV",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S3965-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner shall conduct a pilot program designed to evaluate utilizing the internet for delivering an approved pre-licensing course",
+    "note": "399-s conduct-the-pilot sentence is a separate section from 399-p establish",
+    "fields_at_audit": {
+     "agency": "DMV",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S3965-09": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "No later than June first, two thousand twenty-five, the commissioner shall report to the governor, the temporary president of the senate and the speaker of the assembly on the pre-licensing course internet pilot program and its results.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DMV",
+     "kind": "duty",
+     "deadline_kind": "fixed_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2020-06-30",
+   "computed": "2020-06-30",
+   "verdict": "correct",
+   "note": "fixed date June 30, 2020"
+  }
+ },
+ "2019-S3227": {
+  "records": {
+   "2019-S3227-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the superintendent shall consider the following factors in assessing a banking institution's record of performance, and include in its written assessment required by this section the record of performance of such banking institution as to each of the following factors",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DFS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2020-04-04",
+   "computed": "2020-04-04",
+   "verdict": "correct",
+   "note": "signed 2019-12-06 + 120 days"
+  }
+ },
+ "2019-S4216": {
+  "records": {
+   "2019-S4216-01": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "3"
+    ],
+    "fields": {},
+    "quote": "There shall be paid to such corporation all tax imposed for the use and benefit of the fire department by sections nine thousand one hundred four and nine thousand one hundred five of the insurance law upon premiums on policies of fire-insurance",
+    "note": "'There shall be paid to such corporation all tax ...' is reprinted; new matter is only the insurance-law section renumbering and the benevolent association's (private) use of funds; actor_raw is passive"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2019-10-23",
+   "computed": "2019-10-23",
+   "verdict": "correct",
+   "note": "immediately: signing date"
+  }
+ },
+ "2019-S1799": {
+  "records": {
+   "2019-S1799-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "6"
+    ],
+    "fields": {
+     "deliverable_type": "outreach or education"
+    },
+    "quote": "The commissioner shall promulgate rules and regulations concerning the implementation of this section and shall also develop forms for patients and their partners explaining expedited partner therapy for a chlamydia trachomatis infection and other sexually transmitted infections for which the Centers for Disease Control and Prevention recommends the use of expedited partner therapy",
+    "note": "the rulemaking clause is reprinted; the new matter only widens the forms: 'develop forms for patients and their partners explaining expedited partner therapy for ... {{and other sexually transmitted infections}}'"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2020-01-01",
+   "computed": "2020-01-01",
+   "verdict": "correct",
+   "note": "first of January next succeeding 2019-09-13"
+  }
+ },
+ "2019-S4588": {
+  "records": {
+   "2019-S4588-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner of transportation shall provide for the installation and maintenance of adequate signing of the state highway system as designated pursuant to section one of this act.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "NYSDOT",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2019-08-16",
+   "computed": "2019-08-16",
+   "verdict": "correct",
+   "note": "immediately: signing date"
+  }
+ },
+ "2019-S4135": {
+  "records": {
+   "2019-S4135-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "upon the city of Newburgh filing with the state comptroller, within one year of the effective date of this act, a resolution of the city council together with certification that such police officer did not bar himself from participation in such retirement plan as a result of his own negligence",
+    "note": "'within one year of the effective date' is a cutoff on the city's filing power, not a deadline",
+    "fields_at_audit": {
+     "agency": "Cities",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "City of Newburgh"
+    }
+   },
+   "2019-S4135-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "All employer past service costs associated with implementing the provisions of this act shall be borne by the city of Newburgh and may be amortized over a ten year period.",
+    "note": "cost-bearing duty, kind none, ongoing (handled class); the amortize option sits in the same sentence",
+    "fields_at_audit": {
+     "agency": "Cities",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "City of Newburgh"
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2019-12-12",
+   "computed": "2019-12-12",
+   "verdict": "correct",
+   "note": "immediately: signing date"
+  }
+ },
+ "2019-A8511": {
+  "records": {
+   "2019-A8511-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "2"
+    ],
+    "fields": {
+     "quote": "the county clerk in each of the counties within the city of New York is authorized and empowered to maintain separate judgment docket volumes ... on behalf of ... the taxi and limousine commission, the department of consumer affairs and the commissioner of jurors of the city of New York"
+    },
+    "quote": "against individuals, corporations, and other entities on behalf of the parking violations bureau, the environmental control board, the taxi and limousine commission, the department of consumer affairs and the commissioner of jurors of the city of New York",
+    "note": "stored quote omits the operative 'is authorized and empowered to maintain'"
+   },
+   "2019-A8511-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The county clerk may, in his or her discretion, in lieu of such volumes, maintain the aforementioned data in a micrographic or computer retrievable format.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "New York City",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2019-A8511-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the department of consumer affairs may file a certified copy of the final decision or order of such department, provided that such final decision or order either: (a) awards restitution, or monetary damages, to a consumer or worker;",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DCWP",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-A8511-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The final decision or order may be enforced by and in the name of the department, or by a person who has been assigned such decision or order or a portion thereof, in the same manner and with like effect as that prescribed by the civil practice law and rules for the enforcement of a money judgment.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DCWP",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-A8511-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the department shall be authorized, upon due notice and hearing, to impose civil penalties for, and to order restitution or other forms of equitable relief, and payment of monetary damages, to a consumer or worker in connection with the violation of any laws or rules the enforcement of which is within the jurisdiction of the department",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DCWP",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2019-A8511-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The notice of violation shall contain information advising the person charged of the manner and the time in which such person may either admit or deny the violation charged in the notice.",
+    "note": "actor_raw is the passive subject 'The notice of violation' but agency DCWP is right",
+    "fields_at_audit": {
+     "agency": "DCWP",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-A8511-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Such notice of violation shall also contain a warning to advise the person charged that failure to plead in the manner and time stated in the notice may result in a default decision and order being entered against such person.",
+    "note": "actor_raw passive, agency right",
+    "fields_at_audit": {
+     "agency": "DCWP",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-A8511-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The original or a copy of the notice of violation shall be filed and retained by the department and shall be deemed a record kept in the ordinary course of business.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DCWP",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-A8511-09": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "such failure to plead or appear shall be deemed, for all purposes, to be an admission of liability for the purposes of such violation and shall be grounds for rendering a default decision and order imposing a penalty up to the maximum amount prescribed under law for the violation charged.",
+    "note": "'shall be grounds for rendering a default decision' read as DCWP's default power",
+    "fields_at_audit": {
+     "agency": "DCWP",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-A8511-10": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "At the request of a consumer or a worker, the department shall assign, without consideration or liability, a final decision or order, provided that such decision or order solely authorizes restitution, imposes an award of monetary damages or provides equitable relief to such consumer or a worker",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DCWP",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-A8511-11": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Any final decision or order of the department relating to a designated violation, whether the adjudication was had by hearing or upon default or otherwise, shall constitute a judgment that may be entered and docketed in the civil court of the city of New York",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DCWP",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-A8511-12": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "before a judgment based upon a default may be so entered and docketed, the department must have notified the respondent in accordance with this paragraph.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DCWP",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-A8511-13": {
+    "verdict": "wrong",
+    "criteria": [
+     "5"
+    ],
+    "fields": {
+     "deadline_kind": "on_effective_date",
+     "recurrence": "one-time"
+    },
+    "quote": "The commissioner shall determine the form of such notice. If the respondent is a licensee of the department, notice shall be provided by first class mail or hand delivery",
+    "note": "'The commissioner shall determine the form of such notice.' is a one-time setup duty with no stated deadline"
+   },
+   "2019-A8511-14": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "If the respondent is a licensee of the department, notice shall be provided by first class mail or hand delivery to the address the licensee has filed with the department pursuant to section 20-112 of the administrative code.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DCWP",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-A8511-15": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "For all other respondents, the notice shall be served by first class mail or hand delivery to the address where the decision or order was sent to the respondent by the department.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DCWP",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-A8511-16": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Such notice shall state that: (A) a decision and order of default was issued against the respondent by the department and the amounts of the penalty, restitution, or other monetary relief imposed;",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DCWP",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-A8511-17": {
+    "verdict": "not_real",
+    "criteria": [
+     "9"
+    ],
+    "fields": {},
+    "quote": "(B) a judgment will be entered and docketed in the civil court of the city of New York or any other place provided for the entry of civil judgments within the state of New York; and",
+    "note": "item (B) of the one list 'Such notice shall state that:'; the duty is held by 2019-A8511-16"
+   },
+   "2019-A8511-18": {
+    "verdict": "not_real",
+    "criteria": [
+     "4",
+     "9"
+    ],
+    "fields": {},
+    "quote": "(C) entry and docketing of such judgment may be avoided by requesting a stay of default for good cause shown and either requesting a new hearing or entering a plea pursuant to applicable rules within thirty days of the mailing or hand delivery date of such notice.",
+    "note": "item (C) 'entry and docketing of such judgment may be avoided by requesting a stay' is notice content and the respondent's option, stored as a DCWP power; covered by -16"
+   },
+   "2019-A8511-19": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The department shall not enter any final decision or order pursuant to this subdivision unless the notice of violation shall have been served as follows:",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DCWP",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-A8511-20": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "for any respondent that is a licensee of the department, the department shall serve a notice of violation of a designated violation in one of the following ways:",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DCWP",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-A8511-21": {
+    "verdict": "not_real",
+    "criteria": [
+     "9"
+    ],
+    "fields": {},
+    "quote": "(i) by mailing a copy of such notice to the address the licensee has filed with the department pursuant to section 20-112 of the administrative code; or",
+    "note": "alternative '(i) by mailing a copy' under 'shall serve ... in one of the following ways:' (-20)"
+   },
+   "2019-A8511-22": {
+    "verdict": "not_real",
+    "criteria": [
+     "9"
+    ],
+    "fields": {},
+    "quote": "(ii) by personally serving the respondent or delivering the notice of violation to a person of suitable age and discretion employed by the respondent at the premises at which the respondent conducts the business the operation of which gave rise to the violation.",
+    "note": "alternative '(ii) by personally serving' under -20"
+   },
+   "2019-A8511-23": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the department shall also serve a licensee or employee of such business at the location which gave rise to the violation, the secretary of state pursuant to section three hundred four of the business corporation law or an agent designated for service pursuant to rule three hundred eighteen of the civil practice law and rules",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DCWP",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-A8511-24": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "(B) For any respondent that is not a licensee of the department, the department shall serve a notice of violation of a designated violation in one of the following ways:",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DCWP",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-A8511-25": {
+    "verdict": "not_real",
+    "criteria": [
+     "9"
+    ],
+    "fields": {},
+    "quote": "(i) by serving the respondent in the same manner as is prescribed for service of process by article three of the civil practice law and rules or article three of the business corporation law;",
+    "note": "alternative '(i)' under 'in one of the following ways:' (-24)"
+   },
+   "2019-A8511-26": {
+    "verdict": "not_real",
+    "criteria": [
+     "9"
+    ],
+    "fields": {},
+    "quote": "(ii) by delivering such notice to a person of suitable age and discretion employed by the respondent at the premises where the respondent is operating;",
+    "note": "alternative (ii) under -24"
+   },
+   "2019-A8511-27": {
+    "verdict": "not_real",
+    "criteria": [
+     "9"
+    ],
+    "fields": {},
+    "quote": "(iii) by affixing such notice in a conspicuous place to the premises where the respondent is operating and delivering such notice by first class mail to the address of such premises;",
+    "note": "alternative (iii) under -24"
+   },
+   "2019-A8511-28": {
+    "verdict": "not_real",
+    "criteria": [
+     "9"
+    ],
+    "fields": {},
+    "quote": "(iv) by sending such notice by certified mail, return receipt requested, to the respondent's last known business address, provided that delivery of such notice shall be restricted to the respondent; or",
+    "note": "alternative (iv) under -24"
+   },
+   "2019-A8511-29": {
+    "verdict": "not_real",
+    "criteria": [
+     "9"
+    ],
+    "fields": {},
+    "quote": "(v) by sending such notice by electronic mail to the respondent's electronic mail address, provided that the department has received communication from such electronic mail address in the one year prior to the electronic mailing of such notice, and provided further that service in the manner prescribed by clauses (i) though (iv) of this subparagraph are impracticable.",
+    "note": "alternative (v) under -24"
+   },
+   "2019-A8511-30": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Proof of service made pursuant to paragraph seven of this subdivision shall be maintained by, and preserved within, the department for at least six years following the date of the final decision or order relating to the adjudication of the subject notice of violation.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DCWP",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2020-10-07",
+   "computed": "2020-10-07",
+   "verdict": "correct",
+   "note": "immediately: signing date"
+  }
+ },
+ "2017-S7312": {
+  "records": {
+   "2017-S7312-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The taskforce shall be chaired by a representative of the executive chamber and the commissioners of the office of children and family services and the department of labor, or their designees.",
+    "note": "new co-chair '{{a representative of the executive chamber and}}'",
+    "fields_at_audit": {
+     "agency": "Governor",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2017-S7312-02": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "The taskforce shall be chaired by a representative of the executive chamber and the commissioners of the office of children and family services and the department of labor, or their designees.",
+    "note": "OCFS's chair role is reprinted: 'chaired by {{a representative of the executive chamber and}} the commissioners of the office of children and family services'"
+   },
+   "2017-S7312-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The taskforce shall be chaired by a representative of the executive chamber and the commissioners of the office of children and family services and the department of labor, or their designees.",
+    "note": "'{{the department of labor}}' replaces OTDA as co-chair",
+    "fields_at_audit": {
+     "agency": "Governor",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2017-S7312-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "three individuals shall be appointed upon the recommendation of the speaker of the assembly, at least one of whom shall be a parent who has utilized subsidized child care;",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Governor",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2017-S7312-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "three individuals shall be appointed upon the recommendation of the temporary president of the senate, at least one of whom shall be a parent who has utilized subsidized child care;",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Governor",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2017-S7312-07": {
+    "verdict": "wrong",
+    "criteria": [
+     "3",
+     "7"
+    ],
+    "fields": {
+     "agency": "Governor",
+     "agency_unit": null,
+     "actor_raw": "the governor",
+     "extends_existing": true
+    },
+    "quote": "at least one representative from each of the following entities: (i) the office of temporary and disability assistance;",
+    "note": "'members of the taskforce shall be appointed by the governor and comprised as follows: ... at least one representative from each of the following entities'; the entity is the source of a member, the governor appoints; an added class widens the appointment"
+   },
+   "2017-S7312-08": {
+    "verdict": "wrong",
+    "criteria": [
+     "3",
+     "7"
+    ],
+    "fields": {
+     "agency": "Governor",
+     "agency_unit": null,
+     "actor_raw": "the governor",
+     "extends_existing": true
+    },
+    "quote": "(i) the office of temporary and disability assistance; (ii) the council on children and families;",
+    "note": "'members of the taskforce shall be appointed by the governor and comprised as follows: ... at least one representative from each of the following entities'; the entity is the source of a member, the governor appoints; an added class widens the appointment"
+   },
+   "2017-S7312-09": {
+    "verdict": "wrong",
+    "criteria": [
+     "3",
+     "7"
+    ],
+    "fields": {
+     "agency": "Governor",
+     "agency_unit": null,
+     "actor_raw": "the governor",
+     "extends_existing": true
+    },
+    "quote": "(ii) the council on children and families; (iii) the department of taxation and finance;",
+    "note": "'members of the taskforce shall be appointed by the governor and comprised as follows: ... at least one representative from each of the following entities'; the entity is the source of a member, the governor appoints; an added class widens the appointment"
+   },
+   "2017-S7312-10": {
+    "verdict": "wrong",
+    "criteria": [
+     "3",
+     "7"
+    ],
+    "fields": {
+     "agency": "Governor",
+     "agency_unit": null,
+     "actor_raw": "the governor",
+     "extends_existing": true
+    },
+    "quote": "(iii) the department of taxation and finance; (iv) a regional economic development council;",
+    "note": "'members of the taskforce shall be appointed by the governor and comprised as follows: ... at least one representative from each of the following entities'; the entity is the source of a member, the governor appoints; an added class widens the appointment"
+   },
+   "2017-S7312-11": {
+    "verdict": "wrong",
+    "criteria": [
+     "3",
+     "7"
+    ],
+    "fields": {
+     "agency": "Governor",
+     "agency_unit": null,
+     "actor_raw": "the governor",
+     "extends_existing": true
+    },
+    "quote": "(iv) a regional economic development council; (v) the state university of New York or the city university of New York;",
+    "note": "'members of the taskforce shall be appointed by the governor and comprised as follows: ... at least one representative from each of the following entities'; the entity is the source of a member, the governor appoints; an added class widens the appointment"
+   },
+   "2017-S7312-12": {
+    "verdict": "wrong",
+    "criteria": [
+     "3",
+     "7"
+    ],
+    "fields": {
+     "agency": "Governor",
+     "agency_unit": null,
+     "actor_raw": "the governor",
+     "extends_existing": true
+    },
+    "quote": "(v) the state university of New York or the city university of New York; (vi) the state education department;",
+    "note": "'members of the taskforce shall be appointed by the governor and comprised as follows: ... at least one representative from each of the following entities'; the entity is the source of a member, the governor appoints; an added class widens the appointment"
+   },
+   "2017-S7312-13": {
+    "verdict": "wrong",
+    "criteria": [
+     "3",
+     "7"
+    ],
+    "fields": {
+     "agency": "Governor",
+     "agency_unit": null,
+     "actor_raw": "the governor",
+     "extends_existing": true
+    },
+    "quote": "(vi) the state education department; (vii) the early childhood advisory council;",
+    "note": "'members of the taskforce shall be appointed by the governor and comprised as follows: ... at least one representative from each of the following entities'; the entity is the source of a member, the governor appoints; an added class widens the appointment"
+   },
+   "2017-S7312-14": {
+    "verdict": "wrong",
+    "criteria": [
+     "3",
+     "7"
+    ],
+    "fields": {
+     "agency": "Governor",
+     "agency_unit": null,
+     "actor_raw": "the governor",
+     "extends_existing": true
+    },
+    "quote": "(vii) the early childhood advisory council; (viii) a social service district or county government or an entity that advocates on behalf of social services or county governments; and",
+    "note": "'members of the taskforce shall be appointed by the governor and comprised as follows: ... at least one representative from each of the following entities'; the entity is the source of a member, the governor appoints; an added class widens the appointment"
+   },
+   "2017-S7312-15": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The taskforce shall examine the following: (a) affordable child care with a focus on the cost of care for families and factors that contribute to such costs;",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "OCFS",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": true,
+     "agency_unit": "Child Care Availability Taskforce"
+    }
+   },
+   "2017-S7312-16": {
+    "verdict": "wrong",
+    "criteria": [
+     "7"
+    ],
+    "fields": {
+     "extends_existing": true
+    },
+    "quote": "access to and availability of subsidized child care, including the identification of barriers families eligible under state law face obtaining or utilizing such subsidies",
+    "note": "adds an examination item to the existing 'The taskforce shall examine the following:'"
+   },
+   "2017-S7312-17": {
+    "verdict": "wrong",
+    "criteria": [
+     "7"
+    ],
+    "fields": {
+     "extends_existing": true
+    },
+    "quote": "availability of quality child care by economic development region including identification of underserved communities",
+    "note": "added item '{{(h) availability of quality child care by economic development region}}'"
+   },
+   "2017-S7312-18": {
+    "verdict": "wrong",
+    "criteria": [
+     "7"
+    ],
+    "fields": {
+     "extends_existing": true
+    },
+    "quote": "business incentives to increase child care access and the impact on tax credits and deductions relating to child care;",
+    "note": "added item '{{(j) business incentives to increase child care access}}'"
+   },
+   "2017-S7312-19": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "ways to address concerns identified in the course of the examination required by this subdivision;",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "OCFS",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": true,
+     "agency_unit": "Child Care Availability Taskforce"
+    }
+   },
+   "2017-S7312-20": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The taskforce shall report its interim findings and recommendations in accordance with subdivision three of this section to the governor, the speaker of the assembly and the temporary president of the senate no later than November first, two thousand eighteen and its final findings and recommendations no later than December thirty-first, two thousand twenty.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "OCFS",
+     "kind": "duty",
+     "deadline_kind": "fixed_date",
+     "extends_existing": true,
+     "agency_unit": "Child Care Availability Taskforce"
+    }
+   }
+  },
+  "missed": [
+   {
+    "blind": "b3g",
+    "quote": "(g) two representatives from unions that represent child care providers; and",
+    "kind": "duty",
+    "agency": "Governor",
+    "dropped_by": null,
+    "note": "added appointment class, parallel to the stored -05..-14 items; no record"
+   },
+   {
+    "blind": "b3h9",
+    "quote": "(ix) a non-profit child care advocacy organization",
+    "kind": "duty",
+    "agency": "Governor",
+    "dropped_by": null,
+    "note": "added appointment class under (h); no record"
+   },
+   {
+    "blind": "b1i",
+    "quote": "(i) whether regulatory or statutory changes could promote access to child care and improve health and safety standards in child care programs;",
+    "kind": "duty",
+    "agency": "OCFS",
+    "dropped_by": null,
+    "note": "added examination item; items (a),(b),(h),(j),(k) are stored, (i) is not"
+   }
+  ],
+  "effective_date": {
+   "stored": "2018-04-18",
+   "computed": "2018-04-18",
+   "verdict": "correct",
+   "note": "act immediately (signed 2018-04-18); section one same as ch 493 of 2017 (S5929) effective 2017-12-18, which predates signing so it stands"
+  }
+ },
+ "2017-S9039": {
+  "records": {
+   "2017-S9039-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the trust may enter into a lease for a term coterminous with its lease with the state of New York provided for in paragraph (b) of subdivision 3 of this section",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "HRPT",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2017-S9039-02": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "State agencies",
+     "agency_unit": "State of New York"
+    },
+    "quote": "except that a permanent vested easement may be granted for the Hudson river rail tunnel between New York and New Jersey crossing under the surface of the park between West 27th and West 30th Streets (the \"Hudson river rail tunnel\") subject to approval of the trust",
+    "note": "'a permanent vested easement may be granted ... subject to approval of the trust': the trust is the approver, not the grantor (the State owns the underlying property under the state lease)"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2018-12-28",
+   "computed": "2018-12-28",
+   "verdict": "correct",
+   "note": "immediately: signing date"
+  }
+ },
+ "2019-S1826": {
+  "records": {
+   "2019-S1826-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner shall compile an annual list of all call center employers that relocate or reduce call volume pursuant to subdivision one of this section, and such list shall be made available to the public",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOL",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S1826-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner shall make the list created pursuant to subdivision three of this section, available to the public and shall prominently display a link to the list on the department's website.",
+    "note": "subdivision 4 restates the publication duty with the website link; kept as its own provision",
+    "fields_at_audit": {
+     "agency": "DOL",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S1826-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "except that the commissioner may reduce such amount for just cause shown.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOL",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S1826-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner, in consultation with the appropriate agency providing a loan or grant, may waive the requirement provided under subdivision two of this section if the call center employer demonstrates that such requirement would",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOL",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S1826-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The head of each state agency shall ensure that all state-business-related contracts for call center and customer service work be performed by state contractors or other agents or subcontractors entirely within the state of New York.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State agencies",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S1826-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner shall promulgate such rules and regulations as shall be necessary and proper to effectuate the purposes and provisions of this article.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOL",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2020-06-30",
+   "computed": "2020-06-30",
+   "verdict": "correct",
+   "note": "signed 2020-01-02 + 180 days"
+  }
+ },
+ "2019-S5672": {
+  "records": {
+   "2019-S5672-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Madison county, acting through its local legislative body, is hereby authorized and empowered to adopt and amend local laws imposing in such county a tax of twenty-five cents for each one hundred dollars",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Counties",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "County of Madison"
+    }
+   },
+   "2019-S5672-02": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Counties",
+     "agency_unit": "County of Madison"
+    },
+    "quote": "The taxes imposed under the authority of this section shall be administered and collected in the same manner as the taxes imposed under subdivision one of section two hundred fifty-three and paragraph (b) of subdivision one of section two hundred fifty-five of this article.",
+    "note": "'The taxes imposed under the authority of this section shall be administered and collected' : agency stored as the passive subject 'Taxes Imposed Under the Authority of This Section'"
+   },
+   "2019-S5672-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Where real property is situated within and without the county imposing such tax, the recording officer of the jurisdiction in which the mortgage is first recorded shall be required to collect the taxes imposed pursuant to this section.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Counties",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S5672-04": {
+    "verdict": "wrong",
+    "criteria": [
+     "5"
+    ],
+    "fields": {
+     "deadline_kind": "fixed_date",
+     "deadline_date": "2019-11-10"
+    },
+    "quote": "shall be paid over by such officer on or before the tenth day of each succeeding month to the treasurer of Madison county and, after the deduction by such treasurer of the necessary expenses of his or her office provided in section two hundred sixty-two of this article shall be deposited in the general fund of the county of Madison.",
+    "note": "'on or before the tenth day of each succeeding month' is a dated recurring deadline"
+   },
+   "2019-S5672-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the tax so imposed and paid upon mortgages covering real property situated in two or more counties, which under the provisions of this section or section two hundred sixty of this article are first to be apportioned by the commissioner, shall be paid over by the recording officer receiving the same as provided by the determination of the commissioner.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Counties",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S5672-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Certified copies of any local law described in this section shall also be filed with the county clerk of the county of Madison, the secretary of state and the state comptroller within five days after the date it is duly enacted.",
+    "note": "'within five days after the date it is duly enacted' is event-triggered, kind none",
+    "fields_at_audit": {
+     "agency": "Counties",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "County of Madison"
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2019-10-03",
+   "computed": "2019-10-03",
+   "verdict": "correct",
+   "note": "immediately; expires 2022-12-01"
+  }
+ },
+ "2021-A8839": {
+  "records": {
+   "2021-A8839-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The department shall translate and make available to all facilities the statement in the ten most common non-English languages spoken by individuals with limited-English proficiency in New York state as based on the most recent United States census.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOH",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2022-04-20",
+   "computed": "2022-04-20",
+   "verdict": "correct",
+   "note": "sections 1-2 same as ch 705 of 2021 (S4377), whose effective clause this act amends to the 120th day after it became law: 2022-04-20"
+  }
+ },
+ "2023-A10269": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2024-07-03",
+   "computed": "2024-07-03",
+   "verdict": "correct",
+   "note": "immediately: signing date"
+  },
+  "note": "no stored record; the sunset-extension record was dropped as sunset_private_holder. The title names no government body ('applicability of the security guard act ... to facilities owned by a public sports venue'), so under the Oct 19 rule this is an unnamed-holder case, not a miss; not verifiable from this text whether ch 429 of 2021 binds a public owner"
+ }
+}

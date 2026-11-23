@@ -1,0 +1,2809 @@
+{
+ "_scoring": {
+  "auditor": "B",
+  "night": "20261122",
+  "laws": 11,
+  "stored_records": 171,
+  "correct": 153,
+  "wrong_fields": 16,
+  "not_real": 2,
+  "missed": 10,
+  "precision_strict": "153/171 = 89.5% (Wilson 95% 84.0-93.2)",
+  "precision_real": "169/171 = 98.8% (Wilson 95% 95.8-99.7)",
+  "recall": "169/179 = 94.4% (Wilson 95% 90.0-96.9)",
+  "effective_dates": "11/11 correct",
+  "calibration": {
+   "2019-S4417": {
+    "records": {
+     "2019-S4417-01": {
+      "verdict": "correct",
+      "criteria": [],
+      "quote": "the town of Webster, county of Monroe, acting by and through its governing body, and upon such terms and conditions as determined by such body, is hereby authorized to discontinue as parklands and alienate the lands more particularly described in section three of this act"
+     }
+    },
+    "missed": [],
+    "effective_date": "correct"
+   },
+   "2013-A371": {
+    "records": {
+     "2013-A371-01": {
+      "verdict": "correct",
+      "criteria": [],
+      "quote": "the chairs of the thruway authority, the office for the aging, the metropolitan transportation authority, the port authority of New York and New Jersey, the chief professional officer of the state coordinating chapter of the American Red Cross"
+     }
+    },
+    "missed": [],
+    "effective_date": "correct"
+   }
+  }
+ },
+ "_classes": [
+  {
+   "name": "Junk locality unit 'County of The' on unnamed county boards",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2019-S2300-01",
+    "2019-S2300-02",
+    "2019-S2300-30"
+   ],
+   "rule": "re.match(r'^(County|City|Town|Village) of (The|Such|Each|Said|Any|A)\\b', agency_unit, re.I)",
+   "db_matches": 20,
+   "db_examples": [
+    "2009-A10946-03",
+    "2009-A10946-04",
+    "2009-A10946-05"
+   ],
+   "needs_judgment": false,
+   "note": "recurrence of the Oct 17 'Entity County' fix in a new form"
+  },
+  {
+   "name": "Non-canonical agency 'Clerk of the Court' (court clerk not resolved to Unified Court System)",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2015-A8083-21",
+    "2015-A8083-27",
+    "2015-A8083-39",
+    "2015-A8083-44",
+    "2015-A8083-57"
+   ],
+   "rule": "agency == 'Clerk of the Court'",
+   "db_matches": 10,
+   "db_examples": [
+    "2015-A8083-21",
+    "2015-A8083-27",
+    "2015-A8083-39"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "Passive notification duty left Unspecified",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2015-A8083-20",
+    "2015-A8083-38",
+    "2015-A8083-56"
+   ],
+   "rule": "agency=='Unspecified' and actor_raw.lower()=='unspecified' and re.search(r'\\bshall (also )?be (notified|afforded|posted|sought|provided|furnished|given)\\b', quote)",
+   "db_matches": 3,
+   "db_examples": [
+    "2015-A8083-20",
+    "2015-A8083-38",
+    "2015-A8083-56"
+   ],
+   "needs_judgment": false,
+   "note": "recurrence of the known passive-subject class"
+  },
+  {
+   "name": "Prohibition on a government actor ('X may not <verb>') stored as a power",
+   "criteria": [
+    "4"
+   ],
+   "instances": [
+    "2015-A8083-41"
+   ],
+   "rule": "kind power and re.search(r'\\b(he or she|the [a-z ]{2,40}|commissioner|department|board|administrator|authority) may not (eliminate|approve|place|issue|impose|grant|require|enter|deny|use|charge|exceed|accept|award|expend|establish)\\b', quote, re.I)",
+   "db_matches": 3,
+   "db_examples": [
+    "2015-A8083-41",
+    "2019-S8046-01",
+    "2025-S8415-57"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "'shall not prohibit X from' permission stored as a duty",
+   "criteria": [
+    "4"
+   ],
+   "instances": [
+    "2015-A8083-49"
+   ],
+   "rule": "kind duty and re.search(r'shall not (be construed to )?(prohibit|prevent|preclude|bar)\\b[^.]*\\bfrom\\b', quote, re.I)",
+   "db_matches": 3,
+   "db_examples": [
+    "2011-A5744-01",
+    "2011-A5744-03",
+    "2015-A8083-49"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "Sunset-extension law ingested with zero stored and zero dropped records",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2019-A7788"
+   ],
+   "rule": "packet law with no record in duties/powers/dropped whose pre-act-clause text matches r'(expire|repeal|remain in (full )?force)[^.]{0,200}\\[[^\\]]{0,40}\\d{4}\\]\\s*\\{\\{[^}]{0,40}\\d{4}\\}\\}'",
+   "db_matches": 8,
+   "db_examples": [
+    "2013-A8479",
+    "2025-A8275",
+    "2025-A8479"
+   ],
+   "needs_judgment": false,
+   "note": "should be on the sunset_extension_unnamed_holder re-ask path; nothing is logged in dropped"
+  },
+  {
+   "name": "Sibling list items of a long ballot-spec section silently skipped",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2019-S2300 7-104(17),(18),(20),(21),(24),(25),(26)"
+   ],
+   "rule": "no mechanical rule: needs per-subdivision coverage check against packet",
+   "db_matches": null,
+   "db_examples": [],
+   "needs_judgment": true,
+   "laws": [
+    "2019-S2300",
+    "2019-A842"
+   ]
+  },
+  {
+   "name": "extends_existing false on amended or re-enacted provisions that widen place or duty",
+   "criteria": [
+    "7"
+   ],
+   "instances": [
+    "2019-S2300-29",
+    "2019-S2300-30",
+    "2019-S2300-32",
+    "2019-A842-01"
+   ],
+   "rule": "no reliable mechanical rule",
+   "db_matches": null,
+   "db_examples": [],
+   "needs_judgment": true,
+   "laws": [
+    "2019-S2300",
+    "2019-A842"
+   ]
+  },
+  {
+   "name": "Method/condition sentence stored as its own duty or duplicate restriction half-sentence",
+   "criteria": [
+    "1",
+    "9"
+   ],
+   "instances": [
+    "2019-S4278-02",
+    "2015-A8083-24"
+   ],
+   "rule": "no reliable mechanical rule",
+   "db_matches": null,
+   "db_examples": [],
+   "needs_judgment": true,
+   "laws": [
+    "2019-S4278",
+    "2015-A8083"
+   ]
+  }
+ ],
+ "2019-S3965": {
+  "records": {
+   "2019-S3965-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner shall establish and implement a comprehensive pilot program to review and study the use of the internet for the administration and completion of an approved pre-licensing course",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DMV",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S3965-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner may, in his or her discretion, impose a fee for the submission of each application to participate in the pilot program established pursuant to this article.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DMV",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S3965-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Such fee shall not exceed seven thousand five hundred dollars which shall, excluding administrative expenses of the department, be deposited in the dedicated highway and bridge trust fund established pursuant to section eighty-nine-b of the state finance law.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DMV",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S3965-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner is authorized and directed to promulgate any rules and regulations necessary to implement the provisions of this article",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DMV",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S3965-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Provided, however, that any rules and regulations promulgated pursuant to this article shall not stipulate any particular location for delivery of a pre-licensing course or limit the time of day during which such course may be taken.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DMV",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S3965-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner is authorized to impose a fee upon each internet pre-licensing course sponsoring agency approved for participation in the pilot program to deliver such course, which shall not exceed eight dollars for each student who completes such course",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DMV",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S3965-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Such fees, excluding administrative expenses of the department, shall be deposited in the dedicated highway and bridge trust fund established pursuant to section eighty-nine-b of the state finance law.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DMV",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S3965-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner shall conduct a pilot program designed to evaluate utilizing the internet for delivering an approved pre-licensing course",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DMV",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S3965-09": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "No later than June first, two thousand twenty-five, the commissioner shall report to the governor, the temporary president of the senate and the speaker of the assembly on the pre-licensing course internet pilot program and its results.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DMV",
+     "kind": "duty",
+     "deadline_kind": "fixed_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2020-06-30",
+   "computed": "2020-06-30",
+   "verdict": "correct",
+   "note": "This act shall take effect June 30, 2020"
+  }
+ },
+ "2019-S3227": {
+  "records": {
+   "2019-S3227-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the superintendent shall consider the following factors in assessing a banking institution's record of performance, and include in its written assessment required by this section the record of performance of such banking institution as to each of the following factors",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DFS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2020-04-04",
+   "computed": "2020-04-04",
+   "verdict": "correct",
+   "note": "120th day after signing 2019-12-06"
+  }
+ },
+ "2015-A8083": {
+  "records": {
+   "2015-A8083-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "not later than April first in each calendar year, the Chief administrator of the courts shall submit to the legislature, the governor and the Chief judge of the state a report evaluating the state's experience with programs in the use of electronic means for the commencement of actions and proceedings",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "fixed_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-A8083-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "In the preparation of such report, the Chief administrator shall consult with each county clerk in whose county a program has been implemented in civil cases in the supreme Court",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-A8083-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Public comments shall also be sought via a prominent posting on the website of the Office of Court Administration.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-A8083-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "All comments received from any source shall be posted for public review on the same website.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-A8083-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The report submitted hereunder in the two thousand seventeen calendar year shall include:",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "fixed_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-A8083-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "In the report, the Chief administrator also shall address issues that bear upon the need for the courts, district attorneys and others to retain papers filed with courts or served upon parties in criminal proceedings",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-A8083-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the Chief administrator shall maintain an advisory Committee to consult with him or her in the implementation of laws affecting the program in the use of electronic means for the commencement of civil actions and proceedings and the service and filing of papers therein in the supreme Court.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-A8083-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Such Committee shall help the Chief administrator to evaluate the impact of such electronic filing program on litigants including unrepresented parties, practitioners and the courts and to obtain input from those who are or would be affected by such electronic filing program",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "Advisory Committee on Electronic Filing in Civil Actions in the Supreme Court"
+    }
+   },
+   "2015-A8083-09": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the Chief administrator shall maintain an advisory Committee to consult with him or her in the implementation of laws affecting the program in the use of electronic means for the commencement of actions and proceedings and the service and filing of papers therein in the surrogate's Court.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-A8083-10": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Such Committee shall help the Chief administrator to evaluate the impact of such electronic filing program on litigants including unrepresented parties, practitioners and the courts and to obtain input from those who are or would be affected by such electronic filing program",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "Advisory Committee on Electronic Filing in Civil Actions in the Supreme Court"
+    }
+   },
+   "2015-A8083-11": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the Chief administrator shall maintain an advisory Committee to consult with him or her in the implementation of laws affecting the program in the use of electronic means for the commencement of actions and proceedings and the service and filing of papers therein in the civil Court of the city of new york.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-A8083-12": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Such Committee shall help the Chief administrator to evaluate the impact of such electronic filing program on litigants including unrepresented parties, practitioners and the courts and to obtain input from those who are or would be affected by such electronic filing program",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "Advisory Committee on Electronic Filing in Civil Actions in the Supreme Court"
+    }
+   },
+   "2015-A8083-13": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The Chief administrator shall maintain an advisory Committee to consult with him or her in the implementation of laws affecting the program in the use of electronic means for the commencement of criminal actions and the filing and service of papers in pending criminal actions and proceedings",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-A8083-14": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Such Committee shall help the Chief administrator to evaluate the impact of such electronic filing program on litigants including unrepresented parties, practitioners and the courts and to obtain input from those who are or would be affected by such electronic filing program",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "Advisory Committee on Electronic Filing in Civil Actions in the Supreme Court"
+    }
+   },
+   "2015-A8083-15": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the Chief administrator shall maintain an advisory Committee to consult with him or her in the implementation of laws affecting the program in the use of electronic means for the origination of juvenile delinquency proceedings under article three of the family Court act and abuse or neglect proceedings pursuant to article ten of the family Court act in family Court",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-A8083-16": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Such Committee shall help the Chief administrator to evaluate the impact of such electronic filing program on litigants including unrepresented parties, practitioners and the courts and to obtain input from those who are or would be affected by such electronic filing program",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "Advisory Committee on Electronic Filing in Civil Actions in the Supreme Court"
+    }
+   },
+   "2015-A8083-17": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "No fewer than half of the members of this advisory Committee shall be upon the recommendation of the new york state association of county clerks.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-A8083-18": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the Chief administrator of the courts, with the approval of the administrative board of the courts, may promulgate rules authorizing a program in the use of facsimile transmission only in the Court of claims and electronic means in the supreme Court",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-A8083-19": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the Chief administrator shall consult with the county clerk of a county outside the city of new york before the use of electronic means is to be authorized in the supreme Court of such county",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-A8083-20": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Unified Court System"
+    },
+    "quote": "All parties shall be notified clearly, in plain language, about their options to participate in e-filing.",
+    "note": "Passive 'All parties shall be notified clearly, in plain language, about their options to participate in e-filing' (CPLR 2111(b)1): the notifying body is the court system administering the program, not Unspecified."
+   },
+   "2015-A8083-21": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Unified Court System",
+     "agency_unit": "clerk of the court"
+    },
+    "quote": "Where a party is not represented by counsel, the clerk shall explain such party's options for electronic filing in plain language, including the option for expedited processing, and shall inquire whether he or she wishes to participate",
+    "note": "'the clerk shall explain such party's options for electronic filing' (CPLR 2111(b)1): the clerk is a court officer; 'Clerk of the Court' is not a canonical agency."
+   },
+   "2015-A8083-22": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "In the rules promulgated pursuant to subdivision (a) of this section, the Chief administrator may eliminate the requirement of consent to participation in this program in:",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-A8083-23": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the Chief administrator shall not eliminate the requirement of consent in any county until after he or she shall have consulted with members of the organized bar including but not limited to city, state, county and women's bar associations;",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-A8083-24": {
+    "verdict": "not_real",
+    "criteria": [
+     "9",
+     "4"
+    ],
+    "fields": {},
+    "quote": "only after affording them the opportunity to submit comments with respect thereto, considering any such comments, including but not limited to comments related to unrepresented litigants and, in the instance of any county outside the city of new york, obtaining the agreement thereto of the county clerk thereof.",
+    "note": "'(Ii) only after affording them the opportunity to submit comments ... obtaining the agreement thereto of the county clerk' is the second half of the same sentence as -23 ('shall not eliminate the requirement of consent in any county until after he or she shall have consulted ... and'); stored again, and as a power although it is a restriction."
+   },
+   "2015-A8083-25": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "All such comments shall be posted for public review on the Office of Court administration's website.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-A8083-26": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Where the Chief administrator eliminates the requirement of consent as provided in paragraph two of this subdivision, he or she shall afford counsel the opportunity to opt out of the program, via presentation of a prescribed form to be filed with the clerk of the Court Where the action is pending.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-A8083-27": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Unified Court System",
+     "agency_unit": "clerk of the court"
+    },
+    "quote": "Where a party is not represented by counsel, the clerk shall explain such party's options for electronic filing in plain language and shall inquire whether he or she wishes to participate",
+    "note": "'the clerk shall explain such party's options for electronic filing in plain language' (CPLR 2111(b)3 closing paragraph): clerk is a court officer."
+   },
+   "2015-A8083-28": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "a party not represented by counsel who has chosen to participate in the program shall be afforded the opportunity to opt out of the program for any reason via presentation of a prescribed form to be filed with the clerk of the Court Where the proceeding is pending",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-A8083-29": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "a Court may exempt any attorney from being required to participate in the program upon application for such exemption, showing good cause therefor.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-A8083-30": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the appellate division in each judicial department may promulgate rules authorizing a program in the use of electronic means for: (I) appeals to such Court from the judgment or order of a Court of original instance or from that of another appellate Court",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-A8083-31": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the appellate division may not eliminate the requirement of consent to participation in appeals in such a program involving matrimonial actions as defined by this chapter, election law proceedings",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-A8083-32": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "such rules shall not require an unrepresented party or any attorney who furnishes a certificate specified in subparagraph (a) or (b) of paragraph three of subdivision (b) of section twenty-one hundred eleven of this article to take or perfect an appeal by electronic means.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-A8083-33": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "before promulgating any such rules, the appellate division in each judicial department shall consult with the Chief administrator of the courts and shall provide an opportunity for review and comment by all those who are or would be affected",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-A8083-34": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "To the extent practicable, rules promulgated by the appellate division in each judicial department pursuant to this section shall be uniform.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-A8083-35": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the Chief administrator of the courts, with the approval of the administrative board of the courts, may authorize a program in the voluntary use of facsimile transmission and electronic means in the Court as provided in article twenty-one-a of the civil practice law and rules.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-A8083-36": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the Chief administrator, with the approval of the administrative board of the courts, may promulgate rules authorizing a program in the use of electronic means (\"e-filing\") in the supreme Court and in the county Court",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-A8083-37": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the Chief administrator shall consult with the county clerk of a county outside the city of new york before the use of electronic means is to be authorized in the supreme Court or county Court of such county",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-A8083-38": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Unified Court System"
+    },
+    "quote": "All parties shall be notified clearly, in plain language, about their options to participate in e-filing.",
+    "note": "Same passive sentence in CPL 10.40(2)(b): 'All parties shall be notified clearly...'; actor is the court system."
+   },
+   "2015-A8083-39": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Unified Court System",
+     "agency_unit": "clerk of the court"
+    },
+    "quote": "Where a party is not represented by counsel, the clerk shall explain such party's options for electronic filing in plain language, including the option for expedited processing, and shall inquire whether he or she wishes to participate",
+    "note": "CPL 10.40(2)(b) 'the clerk shall explain such party's options'; clerk is a court officer."
+   },
+   "2015-A8083-40": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the Chief administrator may eliminate the requirement of consent to participation in this program in supreme and county courts of not more than six counties",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-A8083-41": {
+    "verdict": "wrong",
+    "criteria": [
+     "4",
+     "7"
+    ],
+    "fields": {
+     "provision_kind": "duty",
+     "extends_existing": false
+    },
+    "quote": "provided he or she may not eliminate such requirement for a Court without the consent of the district attorney, the consent of the criminal defense bar as defined in subdivision three of this section and the consent of the county clerk of the county in which such Court presides.",
+    "note": "'provided he or she may not eliminate such requirement for a Court without the consent of the district attorney' is a prohibition on the Chief administrator (duty), and CPL 10.40(2) is wholly new matter, so extends_existing false."
+   },
+   "2015-A8083-42": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the Chief administrator shall not eliminate the requirement of consent to participation in a county hereunder until he or she shall have provided all persons and organizations, or their representative or representatives, who regularly appear in criminal actions or proceedings in the superior Court of such county with reasonable notice and opportunity to submit comments",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-A8083-43": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "he or she shall afford counsel the opportunity to opt out of the program, via presentation of a prescribed form to be filed with the Court Where the criminal action is pending.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-A8083-44": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Unified Court System",
+     "agency_unit": "clerk of the court"
+    },
+    "quote": "(A) Where a party is not represented by counsel, the clerk shall explain such party's options for electronic filing in plain language, including the option for expedited processing, and shall inquire whether he or she wishes to participate",
+    "note": "CPL 10.40(2)(c) '(A) Where a party is not represented by counsel, the clerk shall explain'; clerk is a court officer."
+   },
+   "2015-A8083-45": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "a party not represented by counsel who has chosen to participate in the program shall be afforded the opportunity to opt out of the program for any reason via presentation of a prescribed form to be filed with the clerk of the Court Where the proceeding is pending",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-A8083-46": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "a Court may exempt any attorney from being required to participate in the program upon application for such exemption, showing good cause therefor.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-A8083-47": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "no paper or document that is filed by electronic means in a criminal proceeding in supreme Court or county Court shall be available for public inspection on-line.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-A8083-49": {
+    "verdict": "wrong",
+    "criteria": [
+     "4"
+    ],
+    "fields": {
+     "provision_kind": "power"
+    },
+    "quote": "this paragraph shall not prohibit the Chief administrator, in the exercise of his or her discretion, from posting papers or documents that have not been sealed pursuant to law on a public website maintained by the unified Court system",
+    "note": "'this paragraph shall not prohibit the Chief administrator, in the exercise of his or her discretion, from posting papers or documents' leaves posting to discretion: a power, not a duty."
+   },
+   "2015-A8083-50": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the Chief administrator, in determining whether posting papers or documents on a public website is in the public interest, shall, at a minimum, take into account for each posting the following factors",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-A8083-51": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the appellate division in each judicial department may promulgate rules authorizing a program in the use of electronic means for the taking and perfection of appeals in accordance with the provisions of section twenty-one hundred twelve of the civil practice law and rules.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-A8083-52": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "such rules shall not require an unrepresented party or any attorney who furnishes a certification specified in subparagraph (i) or (ii) of paragraph (c) of subdivision two of section 10.40 of this chapter to take or perfect an appeal by electronic means.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-A8083-53": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "before promulgating any such rules, the appellate division in each judicial department shall consult with the Chief administrator of the courts and shall provide an opportunity for review and comment by all those who are or would be affected",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-A8083-54": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "To the extent practicable, rules promulgated by the appellate division in each judicial department pursuant to this section shall be uniform.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-A8083-55": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the Chief administrator, with the approval of the administrative board of the courts, may promulgate rules authorizing a program in the use of electronic means (\"e-filing\") in the family Court",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-A8083-56": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Unified Court System"
+    },
+    "quote": "All parties shall be notified clearly, in plain language, about their options to participate in e-filing.",
+    "note": "Same passive sentence in FCA 214(b)(ii): 'All parties shall be notified clearly...'; actor is the court system."
+   },
+   "2015-A8083-57": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Unified Court System",
+     "agency_unit": "clerk of the court"
+    },
+    "quote": "Where a party is not represented by counsel, the clerk shall explain such party's options for electronic filing in plain language, including the option for expedited processing, and shall inquire whether he or she wishes to participate",
+    "note": "FCA 214(b)(ii) 'the clerk shall explain such party's options'; clerk is a court officer."
+   },
+   "2015-A8083-58": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the Chief administrator may eliminate the requirement of consent to participation in this program in family courts of not more than six counties for:",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-A8083-59": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the Chief administrator shall not eliminate the requirement of consent to participation without the consent of each authorized presentment agency, child protective agency of an affected county, the family Court bar providing representation to parents, and the family Court bar providing representation to children",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-A8083-60": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the Chief administrator may not eliminate the requirement of consent to participation in a county hereunder until he or she shall have provided all persons or organizations, or their representative or representatives, who regularly appear in proceedings in the family Court of such county",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-A8083-61": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "he or she shall afford counsel the opportunity to opt out of the program, via presentation of a prescribed form to be filed with the clerk of the Court Where the proceeding is pending.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-A8083-62": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Where a party or a person entitled to notice of the proceedings is not represented by counsel, the Court shall explain such party's options for electronic filing in plain language, including the option for expedited processing, and shall inquire whether he or she wishes to participate",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-A8083-63": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "a party who is not represented by counsel who has chosen to participate in the program shall be afforded the opportunity to opt out of the program for any reason via presentation of a prescribed form to be filed with the clerk of the Court Where the proceeding is pending",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-A8083-64": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "a Court may exempt any attorney from being required to participate in the program upon application for such exemption, showing good cause therefor.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-A8083-65": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "no paper or document that is filed by electronic means in a proceeding in family Court shall be available for public inspection on-line.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-A8083-67": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the appellate division in each judicial department may promulgate rules authorizing a program in the use of electronic means for the taking and perfection of appeals in accordance with the provisions of section twenty-one hundred twelve of the civil practice law and rules.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-A8083-68": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "such rules shall not require an unrepresented party or any attorney who furnishes a certificate specified in paragraph (i) or (ii) of subdivision (c) of section two hundred fourteen of this chapter to take or perfect an appeal by electronic means.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-A8083-69": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "before promulgating any such rules, the appellate division in each judicial department shall consult with the Chief administrator of the courts and shall provide an opportunity for review and comment by all those who are or would be affected",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-A8083-70": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "To the extent practicable, rules promulgated by the appellate division in each judicial department pursuant to this section shall be uniform.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-A8083-71": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the Chief administrator of the courts may authorize a program in the use of electronic means in the civil Court of the city of new york as provided in article twenty-one-a of the civil practice law and rules.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-A8083-72": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the Chief administrator of the courts may authorize a program in the use of electronic means in the surrogate's Court as provided in article twenty-one-a of the civil practice law and rules.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-A8083-73": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "no party or his or her counsel shall be charged a fee for viewing information filed by electronic means, or for downloading or printing such information through the use of such party's or counsel's own equipment.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-A8083-74": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The chief administrator of the courts shall ensure that sufficient computer terminals and staff are available at the courthouse of each court participating in the program in the use of electronic means, to enable parties and their counsel to access information",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [
+   {
+    "blind": "b18",
+    "quote": "the exclusion in such paragraph of residential foreclosure actions involving a home loan ... from those classes of cases in which the Chief administrator may eliminate the requirement of consent to participation in a program in the use of electronic means shall not apply to any county in which, prior to the effective date of this section, the Chief administrator had eliminated",
+    "kind": "power",
+    "agency": "Unified Court System",
+    "dropped_by": null,
+    "note": "CPLR 2111(b)2-a widens the power to eliminate consent to foreclosure and consumer-credit cases in named counties (power, extends_existing true; expires Sep 1 2017)."
+   }
+  ],
+  "effective_date": {
+   "stored": "2015-08-31",
+   "computed": "2015-08-31",
+   "verdict": "correct",
+   "note": "immediately; signed 2015-08-31 (2-a expiry Sep 1 2017 not in section_dates)"
+  }
+ },
+ "2019-A7788": {
+  "records": {},
+  "missed": [
+   {
+    "blind": "b1",
+    "quote": "Sections two hundred one, two hundred eight, two hundred eleven, two hundred thirteen, two hundred fifteen and two hundred sixteen of this act shall expire and be deemed repealed on August 31, 2021.",
+    "kind": "power",
+    "agency": "DMV (holder unnamed; title: enforcement of support through the suspension of driving privileges)",
+    "dropped_by": null,
+    "note": "Sunset extension '[2019] {{2021}}' of an earlier chapter; zero stored and zero dropped records. Title/act clause names no government body, so under the Oct 19 decision the law should be on the sunset_extension_unnamed_holder re-ask path, but it was ingested tonight with nothing logged."
+   }
+  ],
+  "effective_date": {
+   "stored": "2019-08-14",
+   "computed": "2019-08-14",
+   "verdict": "correct",
+   "note": "immediately; signed 2019-08-14, before Aug 31 2019, so the 'deemed in effect on and after August 31, 2019' proviso does not apply; stored retroactive_to 2019-08-31 is spurious"
+  }
+ },
+ "2019-S2300": {
+  "records": {
+   "2019-S2300-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency_unit": null
+    },
+    "quote": "The county board of elections in such counties shall instruct, in their poll worker training and materials, the procedures to be followed to ensure that each voter receives a ballot with the appropriate language as determined by the state board.",
+    "note": "'The county board of elections in such counties shall instruct' names no locality; agency_unit 'County of The' is a junk unit."
+   },
+   "2019-S2300-02": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency_unit": null
+    },
+    "quote": "In those counties in which ballots are required by federal law, or otherwise, to be provided in a language other than English, there shall be versions of the ballot printed in English and in each of the additional languages required",
+    "note": "'In those counties in which ballots are required by federal law ... there shall be versions of the ballot printed in English' names no locality; unit 'County of The' is junk."
+   },
+   "2019-S2300-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The state board of elections shall provide line drawing illustrations to supplement these instructions. At a minimum, an illustration of the correct way to mark the ballot shall be provided",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Board of Elections",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S2300-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "shall be in as plain and clear a type or display as the space will reasonably permit, using only sans serif print fonts",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Boards of elections",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2019-S2300-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The officer or board charged with the duty of certifying the candidates for such office shall request each such candidate to indicate, in writing, the shortened form in which, subject to this restriction, his or her name shall be printed.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Boards of elections",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2019-S2300-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "to be designated by the candidate in a writing filed with the officer or board charged with the duty of certifying the candidates for such office, or if such person shall fail to so designate, the names of such independent bodies shall appear in such row or column as such officer or board shall determine.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Boards of elections",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2019-S2300-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "designated by such person in a writing filed with the officer or board charged with the duty of certifying the candidates for such office and in connection with the name of such person in such row or column shall appear the name of each independent body nominating him or her",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Boards of elections",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2019-S2300-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "in the place designated by the officer or board charged with the duty of certifying the candidates for such office, and in connection with his or her name there shall appear the name of each independent body nominating him or her",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Boards of elections",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2019-S2300-09": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "A column/row designating number may be affixed to the name of each candidate, or in the case of presidential electors, to the names of the candidates for president and vice-president of such party.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Boards of elections",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S2300-10": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Each office shall occupy as many columns or rows on the ballot as the number of candidates to be elected to that office, except where candidate placements due to cross endorsements require additional columns or rows.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Boards of elections",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2019-S2300-11": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "If any type of machine used in any county or city contains any feature approved by the state board of elections, the use of which is neither required nor prohibited by the provisions of this chapter, the board of elections may, by resolution, require that one or more of such features shall be used in such county.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Boards of elections",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2019-S2300-12": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Each ballot shall contain instructions for marking the ballot. The instructions shall be printed in line lengths no wider than five inches.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Boards of elections",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S2300-13": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The offices appearing on all ballots shall be listed in the customary order.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Boards of elections",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S2300-14": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "If two or more candidates are nominated for the same office for different terms, the term for which each is nominated shall be printed as a part of the title of the office.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Boards of elections",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S2300-15": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The text for ballot instructions shall be substantially as follows, so that it accurately reflects the ballot layout:",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Boards of elections",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S2300-16": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "When a question or proposal is included on the ballot, instructions substantially like the following shall be included:",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Boards of elections",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S2300-17": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "When a question or proposal appears on the back of the ballot, there shall appear on the front of the ballot words or a symbol indicating that the voter should turn over the ballot.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Boards of elections",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S2300-18": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The ballot shall use one font or font family with enough variations for all text needs.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Boards of elections",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S2300-19": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The names of candidates for the same office shall appear on the same page and in the same column or columns or row or rows of that page of a printed ballot, and may not be separated by a perforation.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Boards of elections",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S2300-20": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "All text, including the title of each office and the name of each candidate, shall be printed flush left and shall not be centered on the ballot or in any column or row appearing on the ballot;",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Boards of elections",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S2300-21": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "To the extent practicable, the ballot shall also comply with the following specifications:",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Boards of elections",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S2300-22": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Such ballots shall be printed on paper of a quality, size, color, and weight specified in the voting system's technical requirements documentation and shall be clearly distinguishable from sample ballots by size, color or other means.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Boards of elections",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2019-S2300-23": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Ballot proposals shall appear on the ballot in a separate section or on a separate sheet or card.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Boards of elections",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2019-S2300-24": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "On the face of the official ballot for a primary election contests and candidates for nomination for public office shall appear first, followed by contests and candidates for party positions.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Boards of elections",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2019-S2300-26": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "on the official primary election ballot, the ballot endorsement shall include the name of the party for which such ballot is valid.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Boards of elections",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S2300-27": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The state board of elections shall include with the board's ballot certification a certificate stating the colors so selected.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Board of Elections",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S2300-28": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "to the extent practicable, the name of the candidate designated or nominated to fill such vacancy shall be printed in the place so determined for the original candidate.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Boards of elections",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2019-S2300-29": {
+    "verdict": "wrong",
+    "criteria": [
+     "7"
+    ],
+    "fields": {
+     "extends_existing": true
+    },
+    "quote": "In cases where a name is added to or removed from the ballot by court order too late to make a complete adjustment to these requirements feasible, the name may be added at the end of the list of candidates in all election districts, or removed from the ballot in all election districts",
+    "note": "'{{(a) In cases where a name is added to or removed from the ballot by court order too late ... the name may be added at the end of the list}}' re-enacts the deleted NYC-only provision for all boards: a widened place, extends_existing true."
+   },
+   "2019-S2300-30": {
+    "verdict": "wrong",
+    "criteria": [
+     "3",
+     "7"
+    ],
+    "fields": {
+     "agency_unit": null,
+     "extends_existing": true
+    },
+    "quote": "the title of each public office or party position and the names of the candidates for such office or position appearing on any ballot used for primary elections over which the county board of elections has jurisdiction shall appear on such ballot immediately adjacent to one another, either horizontally or vertically;",
+    "note": "'any ballot used for primary elections over which the county board of elections has jurisdiction' names no locality (unit 'County of The' junk), and it widens the deleted NYC-only rule ('[In the city of New York, the ballot on the voting machine for primary elections shall conform...]') to every county: extends_existing true."
+   },
+   "2019-S2300-31": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The board of elections shall provide facsimile and sample ballots which shall be arranged in the form of a diagram showing such part of the face of the voting machine or ballots as shall be in use at that election.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Boards of elections",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2019-S2300-32": {
+    "verdict": "wrong",
+    "criteria": [
+     "7"
+    ],
+    "fields": {
+     "extends_existing": true
+    },
+    "quote": "In the alternative, the requirements of this subdivision may be fully satisfied by publishing such facsimile on a website maintained by the board of elections and notifying each such school of such publication.",
+    "note": "'In the alternative, the requirements of this subdivision may be fully satisfied by publishing such facsimile on a website' widens how an existing duty may be met (the parallel sample-ballot website record -33 is flagged true)."
+   },
+   "2019-S2300-33": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "a copy of such sample ballot may be published at least once within one week preceding the election in newspapers or on a website maintained by the board of elections.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Boards of elections",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2019-S2300-34": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "emergency ballots, printed or written, and of any suitable form, shall be provided by the board of elections and may be used",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Boards of elections",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2019-S2300-35": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "It shall be the duty of each board of elections to cause a sufficient number of emergency ballots to be placed at each polling place in which voting machines or voting systems are used, to be employed in the event the voting machines or voting systems break down.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Boards of elections",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2019-S2300-36": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The instructions for marking an absentee ballot shall be provided and shall be substantially as follows, so that they accurately reflect the ballot layout",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Boards of elections",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S2300-37": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "When a question or proposal is included on the ballot, instructions substantially similar to those provided in subdivision fifteen of section 7-104 of this article shall be included.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Boards of elections",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S2300-38": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "There shall be three envelopes for each absentee ballot issued by mail: the inner affirmation envelope into which a voter places his or her voted ballot, the outer envelope which shall be addressed to the absentee voter, and the mailing envelope which is addressed to the county board of elections.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Boards of elections",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S2300-39": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "There shall also be a place for two board of elections staff members or inspectors of opposite political parties to indicate, by placing their initials thereon, that they have checked and marked the voter's poll record.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Boards of elections",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2019-S2300-40": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "There shall be three envelopes for each military absentee ballot issued when the military voter's preferred method of transmission is by mail: the inner affirmation envelope into which a voter places his or her voted ballot, the outer envelope which shall be addressed to the absentee voter, and the mailing envelope which is addressed to the county board of elections.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Boards of elections",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S2300-41": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "There shall be three envelopes for each special federal absentee ballot issued by mail: the inner affirmation envelope into which a voter places his or her voted ballot, the outer envelope which shall be addressed to the absentee voter, and the mailing envelope which is addressed to the county board of elections.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Boards of elections",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S2300-42": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "There shall be three envelopes for each special presidential absentee ballot issued by mail: the inner affirmation envelope into which a voter places his or her voted ballot, the outer envelope which shall be addressed to the absentee voter, and the mailing envelope which is addressed to the county board of elections.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Boards of elections",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S2300-43": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "shall have sample ballots open to public inspection fifty days, except in the case of extraordinary circumstances in which case on the earliest day practicable, before the election for which the ballots have been prepared and the official ballots open to such inspection fifty days",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Boards of elections",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2019-S2300-44": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "shall give written notice, by first class mail, to all candidates, except candidates for member of the county committee, who are lawfully entitled to have their names appear thereon, of the time when, and the place where, they may inspect the ballots to be used for such election",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Boards of elections",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2019-S2300-45": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Each officer or board charged with the duty of preparing ballots to be used with voting machines or systems in any election shall give written notice, by first class mail, to all candidates, except candidates for member of the county committee, who are lawfully entitled to have their names appear thereon",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Boards of elections",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [
+   {
+    "blind": "b17",
+    "quote": "The voting oval or square shall be to the left of the name of the candidate.",
+    "kind": "duty",
+    "agency": "Boards of elections",
+    "dropped_by": null,
+    "note": "Election Law 7-104(17), new; siblings (11),(12),(16),(19) were stored."
+   },
+   {
+    "blind": "b18",
+    "quote": "All text, including the name of each candidate as provided in subdivision three of this section, shall be printed using standard capitalization in accordance with instructions provided by the state board of elections and shall not be printed using all capital letters.",
+    "kind": "duty",
+    "agency": "Boards of elections",
+    "dropped_by": null,
+    "note": "7-104(18), new."
+   },
+   {
+    "blind": "b20",
+    "quote": "\"Vote for one\" or \"Vote for up to ......\" (the blank space to be filled with the number of persons to be nominated for the office or elected to the position), as applicable, shall be printed immediately below each office title appearing on the ballot.",
+    "kind": "duty",
+    "agency": "Boards of elections",
+    "dropped_by": null,
+    "note": "7-104(20), new."
+   },
+   {
+    "blind": "b21",
+    "quote": "No party emblems shall be printed on the ballot.",
+    "kind": "duty",
+    "agency": "Boards of elections",
+    "dropped_by": null,
+    "note": "7-104(21), new prohibition (under 10 words; quote with neighbouring text)."
+   },
+   {
+    "blind": "b24",
+    "quote": "If used, shading shall be used consistently, so as to differentiate instructions from ballot section dividers and contest information.",
+    "kind": "duty",
+    "agency": "Boards of elections",
+    "dropped_by": null,
+    "note": "7-104(24), new."
+   },
+   {
+    "blind": "b25",
+    "quote": "Above, below, or to the right of the name of each candidate, shall be printed, in less prominent type face than that in which the candidate's name is printed, the name of the political party or independent body by which the candidate was nominated or designated.",
+    "kind": "duty",
+    "agency": "Boards of elections",
+    "dropped_by": null,
+    "note": "7-104(25), new."
+   },
+   {
+    "blind": "b26",
+    "quote": "All paper ballots of the same kind for the same polling place shall be identical.",
+    "kind": "duty",
+    "agency": "Boards of elections",
+    "dropped_by": null,
+    "note": "7-104(26), braced new subdivision."
+   }
+  ],
+  "effective_date": {
+   "stored": "2019-10-24",
+   "computed": "2019-10-24",
+   "verdict": "correct",
+   "note": "immediately"
+  }
+ },
+ "2019-S2984": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2019-07-27",
+   "computed": "2019-07-27",
+   "verdict": "correct",
+   "note": "immediately"
+  }
+ },
+ "2019-S5072": {
+  "records": {
+   "2019-S5072-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the commissioner shall furnish such committee with any reports or returns filed under this article specified in such request",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DTF",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S5072-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "prior to furnishing any report or return, the commissioner shall redact any information the disclosure of which, in the judgment of the commissioner, would violate state or federal law or would constitute an unwarranted invasion of personal privacy",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DTF",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S5072-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the commissioner shall furnish such committee with any reports filed under this article specified in such request",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DTF",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S5072-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "prior to furnishing any report, the commissioner shall redact any information the disclosure of which, in the judgment of the commissioner, would violate state or federal law or would constitute an unwarranted invasion of personal privacy",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DTF",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S5072-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the commissioner shall furnish such committee with any reports filed under this article specified in such request",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DTF",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S5072-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "prior to furnishing any report, the commissioner shall redact any information the disclosure of which, in the judgment of the commissioner, would violate state or federal law or would constitute an unwarranted invasion of personal privacy",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DTF",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S5072-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the commissioner shall furnish such committee with any returns filed under this article specified in such request",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DTF",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S5072-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "prior to furnishing any return, the commissioner shall redact any information the disclosure of which, in the judgment of the commissioner, would violate state or federal law or would constitute an unwarranted invasion of personal privacy",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DTF",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S5072-09": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the commissioner shall furnish such committee with any returns or reports filed under this article specified in such request",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DTF",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S5072-10": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "prior to furnishing any return or report, the commissioner shall redact any information the disclosure of which, in the judgment of the commissioner, would violate state or federal law or would constitute an unwarranted invasion of personal privacy",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DTF",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S5072-11": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the commissioner shall furnish such committee with any returns or reports filed under this article specified in such request",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DTF",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S5072-12": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "prior to furnishing any return or report, the commissioner shall redact any information the disclosure of which, in the judgment of the commissioner, would violate state or federal law or would constitute an unwarranted invasion of personal privacy",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DTF",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S5072-13": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the commissioner shall furnish such committee with any returns or reports filed under this article specified in such request",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DTF",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S5072-14": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "prior to furnishing any return or report, the commissioner shall redact any information the disclosure of which, in the judgment of the commissioner, would violate state or federal law or would constitute an unwarranted invasion of personal privacy",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DTF",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S5072-15": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the commissioner shall furnish such committee with any returns or reports filed under this article specified in such request",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DTF",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S5072-16": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "prior to furnishing any return or report, the commissioner shall redact any information the disclosure of which, in the judgment of the commissioner, would violate state or federal law or would constitute an unwarranted invasion of personal privacy",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DTF",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S5072-17": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the commissioner shall furnish such committee with any reports or returns filed under this article specified in such request",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DTF",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S5072-18": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "prior to furnishing any report or return, the commissioner shall redact any information the disclosure of which, in the judgment of the commissioner, would violate state or federal law or would constitute an unwarranted invasion of personal privacy",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DTF",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S5072-19": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the commissioner shall furnish such committee with any returns or reports filed under this article specified in such request",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DTF",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S5072-20": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "prior to furnishing any return or report, the commissioner shall redact any information the disclosure of which, in the judgment of the commissioner, would violate state or federal law or would constitute an unwarranted invasion of personal privacy",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DTF",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S5072-21": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the commissioner shall furnish such committee with any returns filed under this article specified in such request",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DTF",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S5072-22": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "prior to furnishing any return, the commissioner shall redact any information the disclosure of which, in the judgment of the commissioner, would violate state or federal law or would constitute an unwarranted invasion of personal privacy",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DTF",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S5072-23": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the commissioner shall furnish such committee with any returns or reports filed under this article specified in such request",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DTF",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S5072-24": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "prior to furnishing any return or report, the commissioner shall redact any information the disclosure of which, in the judgment of the commissioner, would violate state or federal law or would constitute an unwarranted invasion of personal privacy",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DTF",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S5072-25": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the commissioner shall furnish such committee with any returns filed under this article specified in such request",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DTF",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S5072-26": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "prior to furnishing any return, the commissioner shall redact any information the disclosure of which, in the judgment of the commissioner, would violate state or federal law or would constitute an unwarranted invasion of personal privacy",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DTF",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S5072-27": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the commissioner shall furnish such committee with any returns filed under this article specified in such request",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DTF",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S5072-28": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "prior to furnishing any return, the commissioner shall redact any information the disclosure of which, in the judgment of the commissioner, would violate state or federal law or would constitute an unwarranted invasion of personal privacy",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DTF",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S5072-29": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the commissioner shall furnish such committee with any returns filed under this article specified in such request",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DTF",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S5072-30": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "prior to furnishing any return, the commissioner shall redact any information the disclosure of which, in the judgment of the commissioner, would violate state or federal law or would constitute an unwarranted invasion of personal privacy",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DTF",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S5072-31": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the commissioner shall furnish such committee with any returns filed under this article specified in such request",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DTF",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S5072-32": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "prior to furnishing any return, the commissioner shall redact any information the disclosure of which, in the judgment of the commissioner, would violate state or federal law or would constitute an unwarranted invasion of personal privacy",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DTF",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S5072-33": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the commissioner of taxation and finance shall furnish such committee with any returns filed under this article specified in such request",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DTF",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S5072-34": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "prior to furnishing any return, the commissioner shall redact any information the disclosure of which, in the judgment of the commissioner, would violate state or federal law or would constitute an unwarranted invasion of personal privacy",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DTF",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2019-07-08",
+   "computed": "2019-07-08",
+   "verdict": "correct",
+   "note": "immediately (sec 499 part tied to ch 59 Part XX)"
+  }
+ },
+ "2019-S2979": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2019-11-20",
+   "computed": "2019-11-20",
+   "verdict": "correct",
+   "note": "immediately"
+  }
+ },
+ "2019-A842": {
+  "records": {
+   "2019-A842-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "7"
+    ],
+    "fields": {
+     "extends_existing": true
+    },
+    "quote": "the agency shall assure that it has actively solicited the participation of small businesses and local governments in the rule making through activities in addition to publication in the state register and posting on the agency's website, such as:",
+    "note": "Amends an existing duty: 'the agency shall assure that {{it has actively solicited the participation of}} small businesses and local governments [have been given an opportunity to participate]'; the duty is widened, as -02 (same subdivision) is flagged."
+   },
+   "2019-A842-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "(b) the direct notification of interested small businesses and local governments affected by the proposed rule or organizations representing the interests of such entities;",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State agencies",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [
+   {
+    "blind": "b1",
+    "quote": "an assessment of the minimum time that will be needed by small businesses and local governments to come into compliance with the rule, taking into consideration any applicable practical, legal and economic or fiscal constraints on such compliance, and a description of the measures that the agency intends to utilize",
+    "kind": "duty",
+    "agency": "State agencies",
+    "dropped_by": null,
+    "note": "New SAPA 202-b(2)(e): a new required element of every regulatory flexibility analysis (extends_existing true: added class item). Not stored, not dropped."
+   }
+  ],
+  "effective_date": {
+   "stored": "2020-11-01",
+   "computed": "2020-11-01",
+   "verdict": "correct",
+   "note": "first of November next succeeding 2019-12-06"
+  }
+ },
+ "2019-S4278": {
+  "records": {
+   "2019-S4278-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The department of state, in collaboration with the department of taxation and finance, shall conduct a study on the number of women directors who serve on each board of directors of domestic corporations and foreign corporations authorized to do business in this state.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOS",
+     "kind": "duty",
+     "deadline_kind": "fixed_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S4278-02": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "In conducting the study the department of state shall use information provided in the statement filed pursuant to subdivisions 1 and 8 of section 408 of the business corporation law and any other available information the department of state deems relevant.",
+    "note": "'In conducting the study the department of state shall use information provided in the statement filed pursuant to subdivisions 1 and 8 of section 408' is a method condition of the study duty -01, not a separate duty."
+   },
+   "2019-S4278-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "On or before February 1, 2022, and on or before February first of every fourth year thereafter, the department of state shall publish a report on the findings of such study and post such report on the department of state's website.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOS",
+     "kind": "duty",
+     "deadline_kind": "fixed_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S4278-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "A copy of the report shall be furnished to the governor, the temporary president of the senate and the speaker of the assembly.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOS",
+     "kind": "duty",
+     "deadline_kind": "fixed_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2020-01-29",
+   "computed": "2020-01-29",
+   "verdict": "correct",
+   "note": "30th day after 2019-12-30"
+  }
+ },
+ "2019-S1475": {
+  "records": {
+   "2019-S1475-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Whenever there shall be a violation of this section, an application may be made by the attorney general in the name of the people of the state of New York to a court or justice having jurisdiction to issue an injunction",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Attorney General",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S1475-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "In connection with any such proposed application, the attorney general is authorized to take proof and make a determination of the relevant facts and to issue subpoenas in accordance with the civil practice law and rules.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Attorney General",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S1475-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "if it shall appear to the satisfaction of the court or justice that the defendant has in fact, violated this section, an injunction may be issued by such court or justice, enjoining and restraining any further violation",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S1475-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "In any such proceeding the court may make allowances to the attorney general as provided in section eighty-three hundred three of the civil practice law and rules, and direct restitution.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S1475-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Whenever the court shall determine that a violation of this section has occurred, the court may impose a civil penalty of not more than one hundred dollars for a single violation and not more than five hundred dollars for multiple violations",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2021-02-09",
+   "computed": "2021-02-09",
+   "verdict": "correct",
+   "note": "90th day after 2020-11-11"
+  }
+ },
+ "2019-S4417": {
+  "records": {
+   "2019-S4417-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the town of Webster, county of Monroe, acting by and through its governing body, and upon such terms and conditions as determined by such body, is hereby authorized to discontinue as parklands and alienate the lands more particularly described in section three of this act",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Towns",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "Town of Webster"
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2019-10-11",
+   "computed": "2019-10-11",
+   "verdict": "correct",
+   "note": "immediately"
+  }
+ },
+ "2013-A371": {
+  "records": {
+   "2013-A371-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the chairs of the thruway authority, the office for the aging, the metropolitan transportation authority, the port authority of New York and New Jersey, the chief professional officer of the state coordinating chapter of the American Red Cross",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "NYSOFA",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2013-07-31",
+   "computed": "2013-07-31",
+   "verdict": "correct",
+   "note": "immediately"
+  }
+ }
+}

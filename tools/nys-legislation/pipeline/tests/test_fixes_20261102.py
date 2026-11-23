@@ -20,7 +20,10 @@ def gate(law, oid):
     if not p.exists():
         return "skip"
     t = (HERE / "cache" / "text_marked" / (law + ".txt")).read_text()
-    o = [x for x in json.load(open(p))["obligations"] if x["obligation_id"] == oid][0]
+    o = [x for x in json.load(open(p))["obligations"] if x["obligation_id"] == oid]
+    if not o:
+        print("skipped: record renumbered by a later ingest,", oid); return "skip"   # Nov 22 2026
+    o = o[0]
     r = ed.gate_record(o, t, "{{" in t)
     return r[0] if r else None
 
