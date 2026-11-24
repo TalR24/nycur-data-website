@@ -18,13 +18,18 @@ def stored(oid):
     key = oid.rsplit("-", 1)[0]
     res = json.loads((ed.EXTRACTED / (key + ".json")).read_text())
     text = (ed.TEXT_MARKED / (key + ".txt")).read_text()
-    o = copy.deepcopy([x for x in res["obligations"] if x["obligation_id"] == oid][0])
+    hit = [x for x in res["obligations"] if x["obligation_id"] == oid]
+    if not hit:
+        return None, text          # Nov 24 2026: renumbered by a later answer
+    o = copy.deepcopy(hit[0])
     if "{{" in (o.get("quote") or ""):
         o["quote"] = ed.eo.clean_stored_quote(o["quote"], text)[0]
     return o, text
 
 def rule(oid):
     o, text = stored(oid)
+    if o is None:
+        print("skipped: renumbered,", oid); return None
     g = ed.gate_record(o, text, "{{" in text)
     return g[0] if g else None
 

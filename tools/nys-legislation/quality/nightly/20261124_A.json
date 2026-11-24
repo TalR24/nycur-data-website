@@ -1,0 +1,1168 @@
+{
+ "_scoring": {
+  "auditor": "A",
+  "night": "20261124",
+  "laws": 11,
+  "stored_records": 48,
+  "correct": 27,
+  "wrong_fields": 3,
+  "not_real": 18,
+  "missed": 1,
+  "precision_strict": "27/48 = 56.2% (Wilson 95% 42.3-69.3)",
+  "precision_real": "30/48 = 62.5% (Wilson 95% 48.4-74.8)",
+  "recall": "28/29 = 96.6% (Wilson 95% 82.8-99.4)",
+  "effective_dates": "10/11 correct",
+  "recall_note": "blind items 29 (incl. borderline items that were stored: 2019-S7013 ABC prosecution, 2021-A978 DEC form); no stored correct record outside the blind list (2021-A9259-07/-08 both match blind b7). Blind list saved at /Users/troded/.claude/jobs/c1df60cb/tmp/blind_A_20261124.txt before stored records were opened.",
+  "calibration": {
+   "2009-A10507": {
+    "records": {
+     "2009-A10507-01": "wrong",
+     "2009-A10507-02": "not_real",
+     "2009-A10507-03": "correct",
+     "2009-A10507-04": "correct",
+     "2009-A10507-05": "correct",
+     "2009-A10507-06": "correct",
+     "2009-A10507-07": "correct",
+     "2009-A10507-08": "correct"
+    },
+    "stored": 8,
+    "correct": 6,
+    "wrong": 1,
+    "not_real": 1,
+    "missed": 0,
+    "effective_date": "correct"
+   },
+   "2015-S4978": {
+    "records": {
+     "2015-S4978-01": "wrong",
+     "2015-S4978-02": "correct",
+     "2015-S4978-03": "correct",
+     "2015-S4978-04": "correct",
+     "2015-S4978-05": "correct",
+     "2015-S4978-06": "correct",
+     "2015-S4978-07": "correct",
+     "2015-S4978-09": "correct",
+     "2015-S4978-10": "correct",
+     "2015-S4978-11": "correct"
+    },
+    "stored": 10,
+    "correct": 9,
+    "wrong": 1,
+    "not_real": 0,
+    "missed": 0,
+    "effective_date": "correct"
+   }
+  }
+ },
+ "_classes": [
+  {
+   "name": "Entitlements ('shall receive', 'shall be entitled to', 'shall be given full credit', 'placed in grade') stored as duties - known class, recurrence",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2013-S7845-07",
+    "2013-S7845-08",
+    "2013-S7845-09",
+    "2013-S7845-10",
+    "2013-S7845-11",
+    "2013-S7845-14",
+    "2013-S7845-15",
+    "2013-S7845-16",
+    "2013-S7845-17",
+    "2013-S7845-22",
+    "2013-S7845-23",
+    "2013-S7845-24",
+    "2013-S7845-33",
+    "2021-A9375-02"
+   ],
+   "rule": "kind=='duty' and re.search(r\"\\bshall (continue to )?receive\\b|\\bshall be entitled to\\b|\\bshall be given (full )?credit\\b|\\bshall be placed in his or her grade\\b\", quote, re.I)",
+   "db_matches": 137,
+   "db_examples": [
+    "2009-A11171-05",
+    "2009-A8368-01",
+    "2009-S3583-09"
+   ],
+   "needs_judgment": false,
+   "note": "benefit_entitlement gate dropped the 'shall be increased' variants in 2013-S7845 but not the 'shall receive' variants"
+  },
+  {
+   "name": "Passive payment mechanics / schedule content stored as duties (withheld pay 'shall thereafter be paid', 'shall be reduced', 'shall be made as soon as practicable', 'there shall be no longevity rates')",
+   "criteria": [
+    "1",
+    "9"
+   ],
+   "instances": [
+    "2013-S7845-25",
+    "2013-S7845-27",
+    "2013-S7845-34",
+    "2013-S7845-05"
+   ],
+   "rule": "indicative only: kind=='duty' and quote matches r'shall (thereafter )?be (paid|made|reduced)\\b' with no government noun before 'shall'; noisy",
+   "db_matches": 657,
+   "db_examples": [
+    "2009-A11144-04",
+    "2009-A11144-05",
+    "2009-A11144-21"
+   ],
+   "needs_judgment": true,
+   "laws": [
+    "2013-S7845"
+   ]
+  },
+  {
+   "name": "same_as_chapter referencing 'Part X' of an omnibus chapter resolved to the referenced chapter's act-level date instead of Part X's own clause",
+   "criteria": [
+    "8"
+   ],
+   "instances": [
+    "2021-A8763"
+   ],
+   "rule": "effective_dates: rule=='same_as_chapter' and re.search(r'same manner (as )?part [A-Z]+\\b', raw_clause, re.I) and the referenced chapter_index raw_clause mentions 'parts' and effective_date == reference.effective_date",
+   "db_matches": 5,
+   "db_examples": [
+    "2023-S842",
+    "2017-S5544",
+    "2017-A7285"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "expires_rule with_referenced_section set when the act's own clause has no 'therewith' (picked up from amended earlier-chapter text)",
+   "criteria": [
+    "8"
+   ],
+   "instances": [
+    "2015-S4978 (calibration)"
+   ],
+   "rule": "effective_dates: expires_rule=='with_referenced_section' and 'therewith' not in raw_clause",
+   "db_matches": 60,
+   "db_examples": [
+    "2009-A10790",
+    "2009-A11440",
+    "2009-A2002"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "Raised bond/note amount cap stored as duty; Kind ruling (Nov 12) makes a raised cap a power with extends_existing true (conflicts with packet rule 'bond cap ... is a duty' - needs orchestrator ruling)",
+   "criteria": [
+    "4"
+   ],
+   "instances": [
+    "2015-S4978-01 (calibration)"
+   ],
+   "rule": "kind=='duty' and extends_existing and re.search(r'aggregate principal amount (exceeding|not to exceed|of not more than)', quote, re.I)",
+   "db_matches": 25,
+   "db_examples": [
+    "2009-A8528-01",
+    "2009-A8529-01",
+    "2009-A8573-01"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "One-time special-act exemption powers (accept/grant/refund for named parcel and rolls) given recurrence 'ongoing'",
+   "criteria": [
+    "6"
+   ],
+   "instances": [
+    "2025-S9989-01",
+    "2025-S9989-02",
+    "2025-S9989-03"
+   ],
+   "rule": "kind=='power' and re.search(r'authorized to accept.{0,120}application', quote, re.I) and recurrence=='ongoing' (sibling grant/refund powers of the same law follow)",
+   "db_matches": 8,
+   "db_examples": [
+    "2011-A10102-01",
+    "2011-S4326-01",
+    "2017-A7849-01"
+   ],
+   "needs_judgment": false,
+   "note": "rare: 8 of 433 accept-application powers"
+  },
+  {
+   "name": "Citation-only correction ('[chapter] {{article}}') stored as its own record, duplicating the substantive record for the same provision",
+   "criteria": [
+    "1",
+    "9"
+   ],
+   "instances": [
+    "2009-A10507-02 (calibration)"
+   ],
+   "rule": "no mechanical rule (requires comparing braced span to deleted span)",
+   "db_matches": null,
+   "db_examples": [],
+   "needs_judgment": true,
+   "laws": [
+    "2009-A10507"
+   ]
+  }
+ ],
+ "2025-A10936": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2026-11-20",
+   "computed": "2026-11-20",
+   "verdict": "correct",
+   "note": ""
+  }
+ },
+ "2021-A4522": {
+  "records": {
+   "2021-A4522-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner may waive the provisions of this section in whole or in part upon finding by the commissioner in a particular instance that there is no significant threat to public health.",
+    "note": "\"The commissioner may waive the provisions of this section...\" matches blind b1.",
+    "fields_at_audit": {
+     "agency": "DOH",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2022-02-28",
+   "computed": "2022-02-28",
+   "verdict": "correct",
+   "note": ""
+  }
+ },
+ "2021-A9259": {
+  "records": {
+   "2021-A9259-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The director, in collaboration with the division of minority and women's business development and the department of small business services, shall develop the following standardized certification forms that must be completed under penalty of perjury prior to the prime contractor being paid:",
+    "note": "b1 forms",
+    "fields_at_audit": {
+     "agency": "ESD",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": "Division of Minority and Women-Owned Business Development"
+    }
+   },
+   "2021-A9259-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "and to use this information to create an internet based, searchable, centralized state registry detailing certifications, waivers, and all documents submitted pertaining to certification or denial of certification, or compliance with goals for utilization of minority and women-owned business enterprises;",
+    "note": "b2 registry; widens 311(3)(f)",
+    "fields_at_audit": {
+     "agency": "ESD",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": true,
+     "agency_unit": "Division of Minority and Women-Owned Business Development"
+    }
+   },
+   "2021-A9259-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "to perform inspections of minority or women-owned business's place of business, warehouse or storage facility to confirm the existence of a workforce, equipment and supplies;",
+    "note": "b3 (l)",
+    "fields_at_audit": {
+     "agency": "ESD",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "Division of Minority and Women-Owned Business Development"
+    }
+   },
+   "2021-A9259-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "to perform inspections of financial records of minority or women-owned business enterprises to ensure such enterprises are in compliance with applicable laws; and",
+    "note": "b4 (m)",
+    "fields_at_audit": {
+     "agency": "ESD",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "Division of Minority and Women-Owned Business Development"
+    }
+   },
+   "2021-A9259-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "to ensure the protection of individuals who report suspected violations of this article and applicable laws related to minority and women-owned business enterprises.",
+    "note": "b5 (n)",
+    "fields_at_audit": {
+     "agency": "ESD",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "Division of Minority and Women-Owned Business Development"
+    }
+   },
+   "2021-A9259-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Such rules and regulations shall include, but not be limited to, such matters as may be required to ensure that the established procedures thereunder shall at least be in compliance with the code of fair procedure set forth in section seventy-three of the civil rights law, and consistent with the provisions of article twenty-three-A of the correction law.",
+    "note": "b6 \"{{, and consistent with the provisions of article twenty-three-A of the correction law}}\"",
+    "fields_at_audit": {
+     "agency": "ESD",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": "Division of Minority and Women-Owned Business Development"
+    }
+   },
+   "2021-A9259-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Any fines, or portion thereof, imposed pursuant to the foregoing subdivision, or imposed by a court of competent jurisdiction related to convictions involving fraud related to this article or otherwise involving a minority or women-owned business enterprise, may be required by the entity imposing such fines to be paid to the minority and women-owned business enterprise fund",
+    "note": "b7, division as fine-imposing entity",
+    "fields_at_audit": {
+     "agency": "ESD",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "Division of Minority and Women-Owned Business Development"
+    }
+   },
+   "2021-A9259-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Any fines, or portion thereof, imposed pursuant to the foregoing subdivision, or imposed by a court of competent jurisdiction related to convictions involving fraud related to this article or otherwise involving a minority or women-owned business enterprise, may be required by the entity imposing such fines to be paid to the minority and women-owned business enterprise fund",
+    "note": "b7, \"imposed by a court of competent jurisdiction\"",
+    "fields_at_audit": {
+     "agency": "ESD",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "Division of Minority and Women-Owned Business Development"
+    }
+   },
+   "2021-A9259-09": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "There is hereby established in the joint custody of the state comptroller and the commissioner of taxation and finance a special fund to be known as the \"minority and women-owned business enterprise fund\".",
+    "note": "b8 joint custody, one per body",
+    "fields_at_audit": {
+     "agency": "State Comptroller",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A9259-10": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "There is hereby established in the joint custody of the state comptroller and the commissioner of taxation and finance a special fund to be known as the \"minority and women-owned business enterprise fund\".",
+    "note": "b8 joint custody, one per body",
+    "fields_at_audit": {
+     "agency": "State Comptroller",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2022-10-06",
+   "computed": "2022-10-06",
+   "verdict": "correct",
+   "note": ""
+  }
+ },
+ "2025-S9989": {
+  "records": {
+   "2025-S9989-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "6"
+    ],
+    "fields": {
+     "recurrence": "one-time"
+    },
+    "quote": "the assessor of the county of Rockland is hereby authorized to accept from Tovas Dovid Community Kollel, Inc., an application for exemption from real property taxes pursuant to section 430 of the real property tax law with respect to the 2023, 2024 and 2025 assessment rolls",
+    "note": "Single application for named parcel and three rolls (\"an application for exemption ... with respect to the 2023, 2024 and 2025 assessment rolls\"); not a continuous operational duty."
+   },
+   "2025-S9989-02": {
+    "verdict": "wrong",
+    "criteria": [
+     "6"
+    ],
+    "fields": {
+     "recurrence": "one-time"
+    },
+    "quote": "the assessor, upon approval by the Rockland county legislature, may grant exemption from all taxation and make appropriate corrections to the subject rolls.",
+    "note": "Single application for named parcel and three rolls (\"an application for exemption ... with respect to the 2023, 2024 and 2025 assessment rolls\"); not a continuous operational duty."
+   },
+   "2025-S9989-03": {
+    "verdict": "wrong",
+    "criteria": [
+     "6"
+    ],
+    "fields": {
+     "recurrence": "one-time"
+    },
+    "quote": "the governing body or tax department may, in its sole discretion, provide for the refund of those taxes paid and cancel any taxes, fines, penalties, interest or tax liens remaining unpaid.",
+    "note": "Single application for named parcel and three rolls (\"an application for exemption ... with respect to the 2023, 2024 and 2025 assessment rolls\"); not a continuous operational duty."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2026-11-20",
+   "computed": "2026-11-20",
+   "verdict": "correct",
+   "note": ""
+  }
+ },
+ "2013-S7845": {
+  "records": {
+   "2013-S7845-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The chief administrator of the courts shall promulgate salary schedules, as follows:",
+    "note": "b1 \"The chief administrator of the courts shall promulgate salary schedules\"",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-S7845-05": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "Also effective on such date, there shall be no longevity and extra-longevity rates for each grade.",
+    "note": "\"Also effective on such date, there shall be no longevity and extra-longevity rates\" is content of the -01 salary schedule duty (condition/part of another record), no separate actor."
+   },
+   "2013-S7845-28": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Any direction by the chief administrator pursuant to subdivision (b) of this section that salary or wages be withheld must be reported to the comptroller not later than January 15 of the fiscal year in which such withholding will occur",
+    "note": "b3",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "fixed_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-S7845-29": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the chief administrator of the courts, with the agreement of such employee organization, shall deliver to the comptroller a certificate that such collective bargaining agreement is in effect",
+    "note": "b4 triggered, kind none",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-S7845-26": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the chief administrator of the courts may direct that, notwithstanding subdivision 1 of section 200 of the state finance law or any other provision of law to the contrary, in each of the last four bi-weekly payroll periods commencing during such fiscal year up to one-half day's salary or wages shall be withheld",
+    "note": "b2",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-S7845-30": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "may be withheld in whole or in part from any nonjudicial officer or employee not in a collective negotiating unit when in the opinion of the chief administrator, such increase is not warranted or is not appropriate",
+    "note": "b5 \"when in the opinion of the chief administrator\"",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2013-S7845-07": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "Each such nonjudicial officer and employee who is eligible to receive a full or partial increment of the grade of his or her position in accordance with provisions of the judiciary law shall receive such full or partial increment, to be determined in accordance with the April, 2010 salary schedule.",
+    "note": "Entitlement (subject is the beneficiary/amount), no government actor named as acting; brief: entitlements are not duties. e.g. \"shall receive such full or partial increment\" / \"shall receive a bonus\" / \"shall receive location pay\"."
+   },
+   "2013-S7845-08": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "shall receive a bonus equaling: (i) 1,900 dollars, if he or she has less than 25 years of such service as of such date; or (ii) 2,000 dollars, if he or she has at least 25 but less than 30 years of such service as of such date;",
+    "note": "Entitlement (subject is the beneficiary/amount), no government actor named as acting; brief: entitlements are not duties. e.g. \"shall receive such full or partial increment\" / \"shall receive a bonus\" / \"shall receive location pay\"."
+   },
+   "2013-S7845-09": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "Effective October 1, 2014, each such nonjudicial officer and employee shall be placed in his or her grade on the October, 2014 salary schedule in the manner provided as follows:",
+    "note": "Entitlement (subject is the beneficiary/amount), no government actor named as acting; brief: entitlements are not duties. e.g. \"shall receive such full or partial increment\" / \"shall receive a bonus\" / \"shall receive location pay\"."
+   },
+   "2013-S7845-10": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "shall receive such full or partial increment, to be determined in accordance with the October, 2014 salary schedule.",
+    "note": "Entitlement (subject is the beneficiary/amount), no government actor named as acting; brief: entitlements are not duties. e.g. \"shall receive such full or partial increment\" / \"shall receive a bonus\" / \"shall receive location pay\"."
+   },
+   "2013-S7845-11": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "Each such nonjudicial officer and employee shall be placed in his or her grade on the April, 2015 salary schedule in the manner provided as follows:",
+    "note": "Entitlement (subject is the beneficiary/amount), no government actor named as acting; brief: entitlements are not duties. e.g. \"shall receive such full or partial increment\" / \"shall receive a bonus\" / \"shall receive location pay\"."
+   },
+   "2013-S7845-14": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "Effective April 1, 2016 and each April 1 thereafter, each such nonjudicial officer and employee in the employ of the unified court system who has completed at least 4 years of continuous service at a basic annual salary rate equal to or higher than the maximum rate",
+    "note": "Entitlement (subject is the beneficiary/amount), no government actor named as acting; brief: entitlements are not duties. e.g. \"shall receive such full or partial increment\" / \"shall receive a bonus\" / \"shall receive location pay\"."
+   },
+   "2013-S7845-15": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "Effective March 31, 2017, each such nonjudicial officer and employee in the employ of the unified court system shall receive a onetime lump sum payment of 750 dollars",
+    "note": "Entitlement (subject is the beneficiary/amount), no government actor named as acting; brief: entitlements are not duties. e.g. \"shall receive such full or partial increment\" / \"shall receive a bonus\" / \"shall receive location pay\"."
+   },
+   "2013-S7845-16": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "Each nonjudicial officer or employee of the unified court system to whom the provisions of section three of this act would apply but for the fact that he or she holds a position that is not allocated to a salary grade in the unified court system's classification structure shall receive increased compensation in accordance with this section.",
+    "note": "Entitlement (subject is the beneficiary/amount), no government actor named as acting; brief: entitlements are not duties. e.g. \"shall receive such full or partial increment\" / \"shall receive a bonus\" / \"shall receive location pay\"."
+   },
+   "2013-S7845-17": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "Effective April 1, 2011, each such nonjudicial officer and employee in the employ of the unified court system having at least 20 years of continuous service in the employ of the unified court system as of the preceding March 31 shall receive a bonus equaling: (i) 1,900 dollars",
+    "note": "Entitlement (subject is the beneficiary/amount), no government actor named as acting; brief: entitlements are not duties. e.g. \"shall receive such full or partial increment\" / \"shall receive a bonus\" / \"shall receive location pay\"."
+   },
+   "2013-S7845-22": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "whose principal place of employment is in the city of New York or Nassau, Suffolk, Rockland or Westchester county shall receive location pay at a rate of 3,697 dollars annually;",
+    "note": "Entitlement (subject is the beneficiary/amount), no government actor named as acting; brief: entitlements are not duties. e.g. \"shall receive such full or partial increment\" / \"shall receive a bonus\" / \"shall receive location pay\"."
+   },
+   "2013-S7845-23": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "whose principal place of employment is in Dutchess, Putnam or Orange county shall receive location pay at a rate of 1,848 dollars annually; and",
+    "note": "Entitlement (subject is the beneficiary/amount), no government actor named as acting; brief: entitlements are not duties. e.g. \"shall receive such full or partial increment\" / \"shall receive a bonus\" / \"shall receive location pay\"."
+   },
+   "2013-S7845-24": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "whose principal place of employment is in Monroe county and who, on March 31, 1985, was receiving annual location pay shall continue to receive location pay, at a rate of 200 dollars annually.",
+    "note": "Entitlement (subject is the beneficiary/amount), no government actor named as acting; brief: entitlements are not duties. e.g. \"shall receive such full or partial increment\" / \"shall receive a bonus\" / \"shall receive location pay\"."
+   },
+   "2013-S7845-33": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "shall be entitled to a lump sum payment for the difference between the salary to which such incumbent is entitled for such service and the compensation actually received therefor",
+    "note": "Entitlement (subject is the beneficiary/amount), no government actor named as acting; brief: entitlements are not duties. \"shall be entitled to a lump sum payment\"."
+   },
+   "2013-S7845-25": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "the amount of location pay authorized by this section shall be reduced by the amount of the location pay that was received.",
+    "note": "\"the amount of location pay authorized by this section shall be reduced\" is a computation rule on an entitlement, no actor."
+   },
+   "2013-S7845-27": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "each portion of a day's salary or wages so withheld from a nonjudicial officer or employee shall thereafter be paid to him or her when he or she leaves service in the employ of the unified court system",
+    "note": "\"each portion ... so withheld ... shall thereafter be paid to him or her when he or she leaves service\" - entitlement/condition of the -26 withholding power."
+   },
+   "2013-S7845-34": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "9"
+    ],
+    "fields": {},
+    "quote": "Such lump sum payment shall be made as soon as practicable.",
+    "note": "\"Such lump sum payment shall be made as soon as practicable.\" passive payment of the -33 entitlement; no named actor."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2014-10-08",
+   "computed": "2014-10-08",
+   "verdict": "correct",
+   "note": "immediately, retroactive to 2011-04-01; both stored."
+  }
+ },
+ "2019-S7013": {
+  "records": {
+   "2019-S7013-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The sale, delivery or giving away of ice cream or other frozen desserts made with liquor, wine, beer or cider to a person under the age of twenty-one years may be prosecuted administratively and/or criminally in accordance with the provisions of this chapter.",
+    "note": "\"may be prosecuted administratively\" now covers \"{{liquor,}}\" ice cream; class widened, extends_existing true. Borderline, accepted.",
+    "fields_at_audit": {
+     "agency": "ABC",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2020-08-03",
+   "computed": "2020-08-03",
+   "verdict": "correct",
+   "note": ""
+  }
+ },
+ "2021-A978": {
+  "records": {
+   "2021-A978-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "signed and dated by an authorized representative of the generator and with a certification in a form prescribed by the department, which shall contain a certification by the generator that the information therein is true, accurate and complete",
+    "note": "\"{{and with a certification in a form prescribed by the department}}\" - DEC form duty. deliverable_type rulemaking is debatable (a form), not scored.",
+    "fields_at_audit": {
+     "agency": "DEC",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2021-01-01",
+   "computed": "2021-01-01",
+   "verdict": "correct",
+   "note": "Same as ch 332 of 2020 (A10803), first of January next succeeding 2020-12-15 = 2021-01-01; A978 signed 2021-02-16 after it, so 2021-01-01 stands."
+  }
+ },
+ "2021-A9375": {
+  "records": {
+   "2021-A9375-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The county of Orleans may so elect within one year of the effective date of this act, by filing with the state comptroller a resolution of its local legislative body",
+    "note": "b1; \"within one year\" is a cutoff on a power, kind none acceptable under criterion 5.",
+    "fields_at_audit": {
+     "agency": "Counties",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "County of Orleans"
+    }
+   },
+   "2021-A9375-02": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "3"
+    ],
+    "fields": {},
+    "quote": "shall be given full credit in the section 553 twenty year retirement plan for such service upon the election of the county of Orleans to assume the additional cost of such service and his election to participate in such plan.",
+    "note": "\"shall be given full credit in the section 553 twenty year retirement plan\" - member credit entitlement (brief: \"members shall be credited with\" is an entitlement); comptroller not named as acting."
+   },
+   "2021-A9375-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "All employer past service costs associated with the implementation of this act shall be borne by Orleans county, and may be amortized over a period of five years.",
+    "note": "b2 cost-bearing duty \"shall be borne by Orleans county\".",
+    "fields_at_audit": {
+     "agency": "Counties",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "County of Orleans"
+    }
+   }
+  },
+  "missed": [
+   {
+    "blind": "b3",
+    "quote": "All employer past service costs associated with the implementation of this act shall be borne by Orleans county, and may be amortized over a period of five years.",
+    "kind": "power",
+    "agency": "Counties (County of Orleans)",
+    "dropped_by": null,
+    "note": "Power to amortize over five years is distinct from the cost-bearing duty (-03); not in stored or dropped. Low severity: -03 quote contains it."
+   }
+  ],
+  "effective_date": {
+   "stored": "2022-11-21",
+   "computed": "2022-11-21",
+   "verdict": "correct",
+   "note": ""
+  }
+ },
+ "2021-A3964": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2022-11-01",
+   "computed": "2022-11-01",
+   "verdict": "correct",
+   "note": ""
+  }
+ },
+ "2025-A8388": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2026-11-20",
+   "computed": "2026-11-20",
+   "verdict": "correct",
+   "note": ""
+  }
+ },
+ "2021-A8763": {
+  "records": {
+   "2021-A8763-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "In its review of each climate resilience plan filed pursuant to this subdivision, which shall be separate from a corporation's rate proceeding, the commission shall, at minimum, consider:",
+    "note": "b1 \"{{which shall be separate from a corporation's rate proceeding,}}\"",
+    "fields_at_audit": {
+     "agency": "PSC",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2021-A8763-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "a schedule for implementing each of the storm hardening and resiliency measures included in the plan;",
+    "note": "b2 amended consider item, extends",
+    "fields_at_audit": {
+     "agency": "PSC",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2021-A8763-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "At least every five years after approval of a corporation's climate resilience plan, or more frequently upon a schedule determined to be appropriate by the commission, each corporation must file, for commission review, an updated plan",
+    "note": "b3 \"{{or more frequently upon a schedule determined to be appropriate by the commission}}\"",
+    "fields_at_audit": {
+     "agency": "PSC",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2021-A8763-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commission shall authorize each electric corporation to fully recover in the context of rate proceedings the costs associated with each project included in such corporation's climate resilience plan that is approved or modified by the commission, so long as such costs were prudently incurred.",
+    "note": "b4",
+    "fields_at_audit": {
+     "agency": "PSC",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A8763-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commission may roll any unrecovered costs associated with such surcharge into base rates when the corporation's base rates are reset.",
+    "note": "b5",
+    "fields_at_audit": {
+     "agency": "PSC",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A8763-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commission shall identify in any order approving or modifying a corporation's rate plan the resiliency and storm hardening component of the revenue requirement on a cost and/or percentage basis",
+    "note": "b6",
+    "fields_at_audit": {
+     "agency": "PSC",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A8763-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "a report on the status of its activities to comply with the plan, which report the commission shall, after review, submit to the governor and the legislature",
+    "note": "b7 \"{{which report the commission shall, after review, submit to the governor and the legislature}}\"; event-anchored start, kind none ok",
+    "fields_at_audit": {
+     "agency": "PSC",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2021-12-22",
+   "computed": "2022-03-22",
+   "verdict": "wrong",
+   "note": "Same as Part A of ch 786 of 2021 (S4824-A, signed 2021-12-22). Ch 786 act clause: \"the applicable effective date of parts A through B ... shall be as specifically set forth in the last section of such parts\"; Part A \u00a73: \"This act shall take effect on the ninetieth day after it shall have become a law\" -> 2022-03-22. Stored used the act-level immediate date. A8763 signed 2022-02-24, before 2022-03-22, so that date stands (criterion 8)."
+  }
+ },
+ "2009-A10507": {
+  "records": {
+   "2009-A10507-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "4"
+    ],
+    "fields": {
+     "kind": "power"
+    },
+    "quote": "Such modifications may include the use of voting machines, as provided in subdivision one of section two thousand thirty-five of this chapter, and shall include the use of absentee ballots as provided under section two thousand eighteen-a or two thousand eighteen-b of this chapter, whichever shall apply.",
+    "note": "New matter \"{{as provided in subdivision one of section two thousand thirty-five of this chapter,}}\" sits in \"Such modifications may include the use of voting machines\"; the \"shall include the use of absentee ballots\" clause is unchanged prior law. Kind ruling: each item takes its own modal."
+   },
+   "2009-A10507-02": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "9"
+    ],
+    "fields": {},
+    "quote": "The commissioner of education may order such modifications in the manner of voting on the resolution described in subdivision two of section eighteen hundred three of this article and for the election described in subdivision seven of this section as are customary in school district elections in the community affected by such vote.",
+    "note": "Only new matter in this sentence is \"[chapter] {{article}}\", a citation correction; the widening (lever machines via 2035) is held by -03 for the same \u00a71803-a(8) provision."
+   },
+   "2009-A10507-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Such modifications may include the use of voting machines, as provided in subdivision one of section two thousand thirty-five of this chapter, and the use of nominating petitions.",
+    "note": "commissioner modifications incl. machines per 2035, extends",
+    "fields_at_audit": {
+     "agency": "SED",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2009-A10507-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "If the board of cooperative educational services shall so determine, voting machines, including lever voting machines, may be used for recording the vote at such meeting.",
+    "note": "\"{{including lever voting machines,}}\" BOCES",
+    "fields_at_audit": {
+     "agency": "BOCES",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2009-A10507-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "If the trustees or board of education of any school district shall so determine, voting machines, including lever voting machines, may be used for recording the vote on elections and questions, or either, at the school district meetings or elections, annual and special, or either, in such district.",
+    "note": "\"{{including lever voting machines,}}\" school districts",
+    "fields_at_audit": {
+     "agency": "School districts",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2009-A10507-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Voting for the election of members of such board of education shall be by voting machine, as provided in subdivision one of section two thousand thirty-five of this chapter, and shall be governed by the applicable provisions of the election law with respect to voting machines",
+    "note": "\u00a72502(9) cross-ref widening, borderline accepted",
+    "fields_at_audit": {
+     "agency": "School districts",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2009-A10507-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Voting for the election of members of such board of education shall be by voting machine, as provided in subdivision one of section two thousand thirty-five of this chapter, and shall be governed by the applicable provisions of the election law with respect to voting machines",
+    "note": "\u00a72502(9-a) Rensselaer",
+    "fields_at_audit": {
+     "agency": "School districts",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2009-A10507-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Voting for the election of members of such board of education shall be by voting machine, as provided in subdivision one of section two thousand thirty-five of this chapter, and shall be governed by the applicable provisions of the election law with respect to voting machines",
+    "note": "\u00a72553(10) cross-ref widening, borderline accepted",
+    "fields_at_audit": {
+     "agency": "School districts",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2010-08-13",
+   "computed": "2010-08-13",
+   "verdict": "correct",
+   "note": "expires 2012-12-31 stored correctly."
+  }
+ },
+ "2015-S4978": {
+  "records": {
+   "2015-S4978-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "4"
+    ],
+    "fields": {
+     "kind": "power"
+    },
+    "quote": "in an aggregate principal amount exceeding twenty-one billion seven hundred eighty million dollars, excluding bonds and notes issued to refund outstanding bonds and notes.",
+    "note": "Raises the cap \"[eighteen] {{twenty-one}} billion seven hundred eighty million dollars\"; Kind ruling (Nov 12): a law that raises a cap on what a body may do widens a power (power, extends_existing true); only an issuance cutoff stays a duty. Flag for orchestrator: prompt rule calls bond caps duties."
+   },
+   "2015-S4978-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "No such bond or note shall be issued by the agency on or after July twenty-third, two thousand seventeen, excluding bonds and notes issued to refund outstanding bonds and notes.",
+    "note": "\u00a72407(1) cutoff \"{{seventeen,}}\" stays a duty",
+    "fields_at_audit": {
+     "agency": "State of New York Mortgage Agency",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2015-S4978-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "No such bond, note or other obligation shall be issued by the agency on or after July twenty-third, two thousand seventeen, excluding bonds, notes or other obligations issued to refund outstanding bonds, notes or other obligations and no mortgages shall be purchased with the proceeds of such bonds, notes or other obligations after such date.",
+    "note": "\u00a72407(2) cutoff stays a duty",
+    "fields_at_audit": {
+     "agency": "State of New York Mortgage Agency",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2015-S4978-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "This act shall take effect immediately and shall remain in full force and effect until July 23, 2017 at which time it shall be repealed.",
+    "note": "ch 514/1983 sunset [2015] {{2017}}, HFA from title",
+    "fields_at_audit": {
+     "agency": "New York State Housing Finance Agency",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2015-S4978-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "This act shall take effect immediately, except that sections one, three, four, five and six of this act shall remain in full force and effect until July 23, 2017 at which time such sections shall be repealed.",
+    "note": "ch 396/1984 sunset, HFA",
+    "fields_at_audit": {
+     "agency": "New York State Housing Finance Agency",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2015-S4978-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the amendments to law effected by sections one through ten of this act, as amended, shall cease to be of force and effect on and after July 23, 2017, on which date the provisions of the public authorities law amended by such sections shall be as they were in force and effect immediately prior to this act taking effect",
+    "note": "ch 915/1982 SONYMA",
+    "fields_at_audit": {
+     "agency": "State of New York Mortgage Agency",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2015-S4978-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "sections six and nine through seventeen of this act, as amended, shall cease to be of force and effect on and after July 23, 2017, on which date the provisions of the public authorities law amended by such sections shall be as they were in force and effect immediately prior to this act taking effect",
+    "note": "ch 555/1989; \u00a72429-b credit support is SONYMA",
+    "fields_at_audit": {
+     "agency": "State of New York Mortgage Agency",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2015-S4978-09": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "This act shall take effect immediately and shall remain in full force and effect until July 23, 2017, whereupon such date the provisions of this act shall expire and be deemed repealed.",
+    "note": "ch 172/2002 SONYMA",
+    "fields_at_audit": {
+     "agency": "State of New York Mortgage Agency",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2015-S4978-10": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "further provided that this act shall expire and be deemed repealed July 23, 2017",
+    "note": "ch 208/2010 SONYMA",
+    "fields_at_audit": {
+     "agency": "State of New York Mortgage Agency",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2015-S4978-11": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "This act shall take effect immediately and shall expire and be deemed repealed on and after July 23, 2017",
+    "note": "ch 246/2010 SONYMA",
+    "fields_at_audit": {
+     "agency": "State of New York Mortgage Agency",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2015-07-23",
+   "computed": "2015-07-23",
+   "verdict": "correct",
+   "note": "Date correct; expires_rule \"with_referenced_section\" is spurious: own act clause is \"\u00a7 10. This act shall take effect immediately.\" (no \"therewith\"). Class C7."
+  }
+ }
+}

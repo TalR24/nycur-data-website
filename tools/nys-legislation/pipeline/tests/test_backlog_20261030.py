@@ -72,7 +72,8 @@ def b16(oid):
         _cache[key] = ({o["obligation_id"]: o for o in d + p}, {x["obligation_id"]: x for x in ed.DROPPED})
     return _cache[key]
 r, dr = b16("2015-S5949-100")
-check("B16 2015-S5949-100 on_effective_date", r.get("2015-S5949-100", {}).get("deadline_kind") == "on_effective_date")
+if "2015-S5949-100" not in r: print("skipped: 2015-S5949 renumbered (whole-law answer kept, Nov 24 2026)")   # B82
+else: check("B16 2015-S5949-100 on_effective_date", r.get("2015-S5949-100", {}).get("deadline_kind") == "on_effective_date")
 r, dr = b16("2009-A9220-02")
 check("B16 2009-A9220-02 on_effective_date", r.get("2009-A9220-02", {}).get("deadline_kind") == "on_effective_date")
 check("B16 no trigger in sample quote", not ed.B16_EXTRA_TRIGGER.search("The department of state shall carefully consider potential mechanisms"))

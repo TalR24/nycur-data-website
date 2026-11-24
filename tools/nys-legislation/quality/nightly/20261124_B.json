@@ -1,0 +1,902 @@
+{
+ "_scoring": {
+  "auditor": "B",
+  "night": "20261124",
+  "laws": 11,
+  "stored_records": 34,
+  "correct": 29,
+  "wrong_fields": 3,
+  "not_real": 2,
+  "missed": 6,
+  "precision_strict": "29/34 = 85.3% (Wilson 95% 69.9-93.6)",
+  "precision_real": "32/34 = 94.1% (Wilson 95% 80.9-98.4)",
+  "recall": "28/38 = 73.7% (Wilson 95% 58.0-85.0) [28 blind items matched of 34 blind + 4 stored correct records the blind pass missed]",
+  "effective_dates": "11/11 correct",
+  "calibration": {
+   "2019-A7540": {
+    "records": {
+     "2019-A7540-01": "correct",
+     "2019-A7540-02": "correct",
+     "2019-A7540-03": "wrong"
+    },
+    "missed": 0,
+    "effective_date": "correct"
+   },
+   "2021-A7919": {
+    "records": {
+     "2021-A7919-01": "correct",
+     "2021-A7919-04": "correct",
+     "2021-A7919-07": "correct",
+     "2021-A7919-10": "wrong"
+    },
+    "missed": 0,
+    "effective_date": "correct"
+   }
+  }
+ },
+ "_classes": [
+  {
+   "name": "passive 'may be required ... as determined by the authority' stored as duty",
+   "criteria": [
+    "4"
+   ],
+   "instances": [
+    "2021-A7818-06"
+   ],
+   "rule": "duties records where re.search(r'\\bmay be required\\b', quote, I) and no other 'shall' in quote",
+   "db_matches": 5,
+   "db_examples": [
+    "2015-A10558-19",
+    "2015-S4472-18",
+    "2021-A4257-03"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "'N times each year' recurrence stored as annual",
+   "criteria": [
+    "6"
+   ],
+   "instances": [
+    "2021-A4328-09"
+   ],
+   "rule": "recurrence=='annual' and re.search(r'\\b(two|three|four|twice|2|3|4) times (each|a|per|every) (calendar )?year|twice (each|a|per) year|quarterly|monthly', quote, I)",
+   "db_matches": 8,
+   "db_examples": [
+    "2013-A2296-05",
+    "2013-A2296-21",
+    "2013-A2296-26"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "'shall consider the following:' lead-in stored as its own record beside the policy duty",
+   "criteria": [
+    "1",
+    "9"
+   ],
+   "instances": [
+    "2021-A7564-02",
+    "2021-A7564-04"
+   ],
+   "rule": "re.search(r'shall consider the following:?\\s*$', quote.strip(), I)",
+   "db_matches": 4,
+   "db_examples": [
+    "2015-S5922-01",
+    "2019-S4865-42",
+    "2021-A7564-02"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "deadline_split gate merges a non-deadline sentence (board establishment) into an unrelated record, losing it",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2021-A4328 dropped 'There shall be established within the department the state geological planning and management board.'"
+   ],
+   "rule": "data/dropped/*.json rule=='deadline_split' and quote has no deadline words (within|no later than|on or before|prior to|days|months|year|until|by <month>); 7 of the 10 contain establish/created/hereby",
+   "db_matches": 10,
+   "db_examples": [
+    "2011-A340",
+    "2011-A8496",
+    "2011-S2911"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "'shall have the discretion ... shall not be less than' stored as power (requires a floor, so duty)",
+   "criteria": [
+    "4"
+   ],
+   "instances": [
+    "2019-A7540-03 (calibration)"
+   ],
+   "rule": "powers records where 'shall have the discretion' in quote and re.search('shall not be less than|shall be', quote)",
+   "db_matches": 4,
+   "db_examples": [
+    "2019-A7540-03",
+    "2021-A5972-03",
+    "2021-A8693-03"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "earlier chapter's sunset extension inside a chapter amendment not recorded",
+   "criteria": [
+    "1",
+    "7"
+   ],
+   "instances": [
+    "2021-A968 missed b7"
+   ],
+   "rule": "needs_judgment",
+   "db_matches": null,
+   "db_examples": [],
+   "needs_judgment": true,
+   "laws": [
+    "2021-A968"
+   ]
+  },
+  {
+   "name": "new board's appointing officials not recorded while a sibling law records the same kind of appointment",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2021-A4328 missed b8-b10"
+   ],
+   "rule": "needs_judgment",
+   "db_matches": null,
+   "db_examples": [],
+   "needs_judgment": true,
+   "laws": [
+    "2021-A4328"
+   ]
+  }
+ ],
+ "2025-A10936": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2026-11-20",
+   "computed": "2026-11-20",
+   "verdict": "correct",
+   "note": "immediately; signed 2026-11-20. Only new matter narrows a wetlands definition: no actor"
+  }
+ },
+ "2021-A4522": {
+  "records": {
+   "2021-A4522-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner may waive the provisions of this section in whole or in part upon finding by the commissioner in a particular instance that there is no significant threat to public health.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOH",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2022-02-28",
+   "computed": "2022-02-28",
+   "verdict": "correct",
+   "note": "ninetieth day after 2021-11-30"
+  }
+ },
+ "2021-A7728": {
+  "records": {},
+  "missed": [
+   {
+    "blind": "b1",
+    "quote": "for certified service-disabled veteran-owned business enterprises, projects to provide financing necessary to carry out a procurement contract with an agency or authority or other entity of the state or federal government.",
+    "kind": "power",
+    "agency": "Department of Economic Development (linked deposit program)",
+    "dropped_by": null,
+    "note": "Borderline: new eligible class added to the linked deposit program (State Finance Law 213(11)(h), 213(12)(f), 218(1)); criterion 7 class widening, extends_existing true. Not in dropped."
+   }
+  ],
+  "effective_date": {
+   "stored": "2022-11-10",
+   "computed": "2022-11-10",
+   "verdict": "correct",
+   "note": "immediately"
+  }
+ },
+ "2021-A7818": {
+  "records": {
+   "2021-A7818-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The authority shall require any person with a license to sell alcoholic beverages for consumption on the premises who indicated, pursuant to paragraph (f) of subdivision one of section one hundred ten of this chapter",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "ABC",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A7818-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The authority shall make any designated sign or poster available for download from its website or from one or more links posted on its website",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "ABC",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A7818-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the authority shall notify each licensee that is subject to the posting requirement of this section of the change",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "ABC",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A7818-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "shall require the display of one or more signs or posters with the new toll free number within thirty days of such notification",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "ABC",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A7818-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "At a minimum, the licensee shall be required to display a bilingual version of the sign or poster in English and Spanish or to display one sign or poster in English and one sign or poster in Spanish.",
+    "note": "passive; SLA must require bilingual signs",
+    "fields_at_audit": {
+     "agency": "ABC",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A7818-06": {
+    "verdict": "wrong",
+    "criteria": [
+     "4"
+    ],
+    "fields": {
+     "kind": "power"
+    },
+    "quote": "A licensee may be required to display signs or posters in other languages as determined by the authority.",
+    "note": "'A licensee may be required to display signs or posters in other languages as determined by the authority.' is a discretionary power of SLA, stored in duties"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2022-08-19",
+   "computed": "2022-08-19",
+   "verdict": "correct",
+   "note": "thirtieth day after 2022-07-20"
+  }
+ },
+ "2025-S9853": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2026-11-20",
+   "computed": "2026-11-20",
+   "verdict": "correct",
+   "note": "immediately; '[four] {{six}}' cap binds private physicians, no record"
+  }
+ },
+ "2021-A4328": {
+  "records": {
+   "2021-A4328-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner shall study and designate areas, territories and sites within the state which constitute geoparks and other sites which have geological significance.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DEC",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A4328-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "For each area, territory and site designated pursuant to subdivision two of this section, the commissioner, in cooperation with the commissioners of transportation and economic development, shall: a. establish a management plan designed to foster socio-economic development that is sustainable;",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DEC",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A4328-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "b. establish methods for conserving and enhancing its geological heritage; and",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DEC",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A4328-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "its geological heritage; and c. establish best practices for conservation.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DEC",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A4328-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner, in cooperation with the commissioners of transportation and economic development, shall establish a state geological trail to include the areas, territories and sites designated by the commissioner pursuant to subdivision two of section 49-0501 of this title.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DEC",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A4328-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "In developing and approving such trail, the commissioner shall ensure that proposed trail routes do not conflict with existing scenic byways designated pursuant to section three hundred forty-nine-dd of the highway law",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DEC",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A4328-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner, or his or her designee, shall be the chair of the board.",
+    "note": "chair designation; accepted as designation or staffing",
+    "fields_at_audit": {
+     "agency": "DEC",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A4328-09": {
+    "verdict": "wrong",
+    "criteria": [
+     "6"
+    ],
+    "fields": {
+     "recurrence": "three times a year"
+    },
+    "quote": "The board shall meet not less than three times each calendar year, and more frequently at the call of the chair of the board.",
+    "note": "'The board shall meet not less than three times each calendar year' stored recurrence annual"
+   },
+   "2021-A4328-10": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "criteria for signage on the state geological trail, including means of providing information about geological features associated with each particular portion of such trail.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DEC",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": "State Geological Planning and Management Board"
+    }
+   },
+   "2021-A4328-11": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "state geological trail publications, guidelines for interpretive programs and themes relating to portions of the state geological trail, and an internet website providing directional information on educational institutions",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DEC",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": "State Geological Planning and Management Board"
+    }
+   },
+   "2021-A4328-12": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "to cooperate with and provide assistance to the commissioners of environmental conservation and transportation to implement the provisions of title five of article forty-nine of the environmental conservation law.",
+    "note": "actor_raw says commissioner; ED Law 100 lead-in names the department; agency code ESD left as is",
+    "fields_at_audit": {
+     "agency": "ESD",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [
+   {
+    "blind": "b7",
+    "quote": "There shall be established within the department the state geological planning and management board.",
+    "kind": "duty",
+    "agency": "DEC",
+    "dropped_by": "deadline_split",
+    "note": "dropped as 'deadline clause merged into 2021-A4328-01', but the sentence has no deadline and -01 is the geopark study"
+   },
+   {
+    "blind": "b8",
+    "quote": "e. two members appointed by the governor, of whom:",
+    "kind": "duty",
+    "agency": "Governor",
+    "dropped_by": null,
+    "note": "appointment to a new board; 2021-A968 records the same kind of appointment"
+   },
+   {
+    "blind": "b9",
+    "quote": "f. two members appointed by the temporary president of the senate, having expertise in the field of ecology, conservation or trail planning; and",
+    "kind": "duty",
+    "agency": "State Legislature",
+    "dropped_by": null,
+    "note": "as b8"
+   },
+   {
+    "blind": "b10",
+    "quote": "g. two members appointed by the speaker of the assembly, having expertise in the field of ecology, conservation or trail planning.",
+    "kind": "duty",
+    "agency": "State Legislature",
+    "dropped_by": null,
+    "note": "as b8"
+   }
+  ],
+  "effective_date": {
+   "stored": "2021-12-22",
+   "computed": "2021-12-22",
+   "verdict": "correct",
+   "note": "immediately"
+  }
+ },
+ "2021-A9622": {
+  "records": {
+   "2021-A9622-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The corporation or its successor shall publish and maintain a list of all community advisory committee members, and community advisory committee meeting agendas, materials, and minutes on its website.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "ESD",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A9622-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Meeting agendas and materials shall be posted on such website at least one business day in advance of community advisory committee meetings.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "ESD",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A9622-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "All upcoming meeting times and locations shall be posted on such website at least one week in advance.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "ESD",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A9622-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Community advisory committee meetings shall be accessible for the public to view and attend live.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "ESD",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2022-12-30",
+   "computed": "2022-12-30",
+   "verdict": "correct",
+   "note": "immediately; 'or her' and 'chairperson' are gender-word reprints, correctly no record"
+  }
+ },
+ "2021-A7625": {
+  "records": {
+   "2021-A7625-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner of transportation shall provide for the installation and maintenance of adequate signing of the state highway system as designated pursuant to section one of this act.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "NYSDOT",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2022-06-30",
+   "computed": "2022-06-30",
+   "verdict": "correct",
+   "note": "immediately"
+  }
+ },
+ "2021-A7564": {
+  "records": {
+   "2021-A7564-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The state university trustees shall adopt a policy requiring that each institution of the state university of New York collaborate with students, faculty and staff to encourage campuses to eliminate the use of certain plastic items generally recognized by the public as being designed for single use.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "SUNY",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A7564-02": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "9"
+    ],
+    "fields": {},
+    "quote": "In establishing such a policy, the trustees shall consider the following:",
+    "note": "'In establishing such a policy, the trustees shall consider the following:' is part of the -01 policy duty, not a separate deliverable"
+   },
+   "2021-A7564-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The board of trustees shall adopt a policy requiring that each institution of the city university of New York collaborate with students, faculty and staff to encourage campuses to eliminate the use of certain plastic items generally recognized by the public as being designed for single use.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "CUNY",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A7564-04": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "9"
+    ],
+    "fields": {},
+    "quote": "In establishing such a policy, the trustees shall consider the following:",
+    "note": "same as -02 for CUNY; part of -03"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2022-01-31",
+   "computed": "2022-01-31",
+   "verdict": "correct",
+   "note": "ninetieth day after 2021-11-02"
+  }
+ },
+ "2021-A968": {
+  "records": {
+   "2021-A968-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "5"
+    ],
+    "fields": {
+     "deadline_kind": "days_after_effective",
+     "deadline_offset": "60 days",
+     "deadline_text": "no later than sixty days after the effective date of this act"
+    },
+    "quote": "the commissioner of labor or his or her designee; nine members appointed by the governor; the president of the Fireman's Association of the State of New York or his or her designee",
+    "note": "'All appointees of the task force shall be made no later than [thirty] {{sixty}} days after the effective date' states the deadline; on_effective_date is wrong"
+   },
+   "2021-A968-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "All appointees of the task force shall be made no later than sixty days after the effective date of this act.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Governor",
+     "kind": "duty",
+     "deadline_kind": "days_after_effective",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2021-A968-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "All appointees of the task force shall be made no later than sixty days after the effective date of this act.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Governor",
+     "kind": "duty",
+     "deadline_kind": "days_after_effective",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2021-A968-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "All appointees of the task force shall be made no later than sixty days after the effective date of this act.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Governor",
+     "kind": "duty",
+     "deadline_kind": "days_after_effective",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2021-A968-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "All appointees of the task force shall be made no later than sixty days after the effective date of this act.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Governor",
+     "kind": "duty",
+     "deadline_kind": "days_after_effective",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2021-A968-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "All appointees of the task force shall be made no later than sixty days after the effective date of this act.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Governor",
+     "kind": "duty",
+     "deadline_kind": "days_after_effective",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2021-A968-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The feasibility and necessity of creation of a bureau within the office of fire prevention and control responsible for recruitment and retention of volunteer firefighters;",
+    "note": "report content changed by '{{feasibility and necessity of}}'; deadline_date filled here but null on -02..-06",
+    "fields_at_audit": {
+     "agency": "Office of Fire Prevention and Control",
+     "kind": "duty",
+     "deadline_kind": "days_after_effective",
+     "extends_existing": true,
+     "agency_unit": "Volunteer Firefighter Recruitment and Retention Task Force"
+    }
+   }
+  },
+  "missed": [
+   {
+    "blind": "b7",
+    "quote": "This act shall take effect immediately and shall expire and be deemed repealed April 1, 2022.",
+    "kind": "power",
+    "agency": "Office of Fire Prevention and Control (task force)",
+    "dropped_by": null,
+    "note": "the 2020 chapter's own sunset '[December 31, 2021] {{April 1, 2022}}' amended inside this law: an extension record per Oct 16 decision, extends_existing true; not in dropped"
+   }
+  ],
+  "effective_date": {
+   "stored": "2020-11-11",
+   "computed": "2020-11-11",
+   "verdict": "correct",
+   "note": "same as chapter 258 of 2020 (2019-A9779), effective immediately on signing 2020-11-11; this amendment signed later leaves that date standing (criterion 8)"
+  }
+ },
+ "2025-A2330": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2026-12-20",
+   "computed": "2026-12-20",
+   "verdict": "correct",
+   "note": "thirtieth day after 2026-11-20; electronic filing binds lobbying filers, no record"
+  }
+ },
+ "2019-A7540": {
+  "records": {
+   "2019-A7540-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "a small business shall be afforded a cure period or other opportunity for ameliorative action if the violation can be corrected, the successful completion of which will prevent the imposition of penalties on the party or parties subject to enforcement.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State agencies",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-A7540-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Upon such first violation, a state agency shall (a) provide the small business with a copy of any applicable small business regulation guides pursuant to section one hundred two-a of the state administrative procedure act and any other helpful compliance information detailing the agency's rules and regulations",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State agencies",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-A7540-03": {
+    "verdict": "wrong",
+    "criteria": [
+     "4"
+    ],
+    "fields": {
+     "kind": "duty"
+    },
+    "quote": "The agency shall have the discretion to determine the appropriate period of time to allow for such ameliorative action to occur, which shall be reasonable but shall not be less than ninety days.",
+    "note": "'shall have the discretion to determine ... which shall be reasonable but shall not be less than ninety days' requires a floor: duty under the 'requires anything' rule"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2019-12-20",
+   "computed": "2019-12-20",
+   "verdict": "correct",
+   "note": "immediately"
+  }
+ },
+ "2021-A7919": {
+  "records": {
+   "2021-A7919-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Notwithstanding any other provision of law, each contract for purchase or procurement made by any department or agency of the state shall contain a provision that the rock salt, or sodium chloride, used or supplied in the performance of the contract or any subcontract thereto shall be mined or hand harvested in the United States.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State agencies",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A7919-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Notwithstanding any other provision of law, each contract for purchase or procurement made by any department or agency of a political subdivision shall contain a provision that the rock salt, or sodium chloride, used or supplied in the performance of the contract or any subcontract thereto shall be mined or hand harvested in the United States.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Municipalities (all)",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A7919-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Notwithstanding any other provision of law, each contract for purchase or procurement made by any public authority shall contain a provision that the rock salt, or sodium chloride, used or supplied in the performance of the contract or any subcontract thereto shall be mined or hand harvested in the United States.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State authorities",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A7919-10": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "governmental entities under State Finance Law 139-j (State agencies, State and local authorities, municipalities)"
+    },
+    "quote": "Notwithstanding any other provision of law, each contract for purchase or procurement made by any public authority shall contain a provision that the rock salt, or sodium chloride, used or supplied in the performance of the contract or any subcontract thereto shall be mined or hand harvested in the United States.",
+    "note": "Highway Law 12-a defines 'Public authority' as 'a governmental entity as that term is defined in section one hundred thirty-nine-j of the state finance law', broader than State authorities"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2022-12-22",
+   "computed": "2022-12-22",
+   "verdict": "correct",
+   "note": "immediately; waiver clauses correctly dropped as exemptions"
+  }
+ }
+}

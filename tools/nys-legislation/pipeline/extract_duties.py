@@ -266,12 +266,14 @@ def long_window_thinner(key, text, root=None):
         whole = len(json.loads(rp.read_text()).get("obligations") or [])
     except (json.JSONDecodeError, AttributeError):
         return False
-    win = 0
+    seen = set()          # Nov 24 2026: count unique quotes; overlapping windows repeat records (2011-S6732: 178 raw, 68 unique vs 95 whole)
     for f in (yd / "long" / "results").glob(key + "__w*.json"):
         try:
-            win += len(json.loads(f.read_text()).get("obligations") or [])
+            for o in json.loads(f.read_text()).get("obligations") or []:
+                seen.add(re.sub(r"[^a-z0-9]+", " ", (o.get("quote") or "").lower()).strip()[:120])
         except (json.JSONDecodeError, AttributeError):
             pass
+    win = len(seen)
     return win <= whole          # Nov 23 2026: windows replace a whole-law re-ask only when they find more (2015-S5949: 103 vs 103, stored 68 vs 100)
 
 
@@ -1348,11 +1350,26 @@ def ag13_layoff(q, text):
     return bool(sp) and bool(AG13_LAYOFF.search(context_sentence(sp, text)[0]))
 
 
+APPLY_B104 = True          # Nov 24 2026 (B104): an employee, officer or member who 'shall receive' pay is the beneficiary even when the employer is named first (2013-S7845 x8); dry run 16 records, all checked
+B104_PAY = re.compile(r"(?i)\bshall\s+(?:receive|continue\s+to\s+receive|be\s+entitled\s+to)\s+(?:an?\s+|the\s+|such\s+|any\s+|no\s+)?(?:[\w,-]+\s+){0,4}?(?:salary|salaries|bonus|pay|payment|increment|location\s+pay|stipend|lump\s+sum|compensation|reimbursement|allowance|differential|benefit|retirement\s+benefit|credit|increase)\b")
+B104_SUBJ = re.compile(r"(?i)^\W*(?:effective\s+[^,]{3,40}(?:,\s*\d{4})?,\s*)?(?:each|every|any|all|such|an?|the|no)?\s*(?:such\s+)?(?:[a-z-]+\s+){0,2}(?:officers?|employees?|members?|retirees?|incumbents?|beneficiar(?:y|ies)|pensioners?|survivors?)\b")
+B104_FRAG = re.compile(r"(?i)^\W*(?:who|whose)\b")          # a quote starting at the modal stays a record (M13, Oct 11 2026)
+
+
+def b104_employee_pay(q):
+    m = B104_PAY.search(q or "")
+    if not m or not (B104_SUBJ.match(q) or B104_FRAG.match(q)):
+        return False
+    return not re.search(r"(?i)\bappointed\s+by\b|\bshall\s+(?:appoint|fix|pay|establish)\b", q[:m.start()])
+
+
 def benefit_entitlement(o, q):
     """M13 (Oct 11 2026). 'Eligible dwelling units ... shall receive a partial abatement', 'such property shall be exempt', 'the owner shall be
     entitled to': the grammatical subject is the beneficiary. Dropped when no government noun precedes the modal and the record's
     actor_raw does not appear in the quote."""
     if salary_entitlement(q) or paid_entitlement(o, q):
+        return True
+    if APPLY_B104 and b104_employee_pay(q):
         return True
     if payment_timing_beneficiary(q):          # N3 (Oct 31 2026)
         return True
