@@ -62,7 +62,9 @@ try:
     ed.APPLY_AG6 = True; lead6 = "3. The members shall be appointed as follows:"
     check("AG6 appointment item keeps its record", ed.q1_item("(a) two members to be appointed by the temporary president of the senate;", lead6) is False)
     check("AG6 item without an appointer stays a sub-item", ed.q1_item("(b) one representative from a consumer organization;", "The members shall be appointed as follows:") is True)
-    ed.APPLY_AG6 = False; check("AG6 off drops the appointment item", ed.q1_item("(a) two members to be appointed by the temporary president of the senate;", lead6) is True)
+    _b110 = ed.APPLY_B110; ed.APPLY_B110 = False
+    ed.APPLY_AG6 = False; check("AG6 off drops the appointment item (with B110 off)", ed.q1_item("(a) two members to be appointed by the temporary president of the senate;", lead6) is True)
+    ed.APPLY_B110 = _b110
     ed.APPLY_AG8 = True
     qs = "For the purposes of section one hundred sixty-three of this article, no bidder shall be deemed to be the lowest bidder unless the bid will comply with the contract term."
     check("AG8 lead-in 'for the purposes of' is a strict condition", bool(ed.AG8_LEAD_COND.search(qs)) and bool(ed.STRICT_COND.search(qs)))

@@ -43,7 +43,7 @@ try:
     ed.APPLY_AI4 = True; g = gate(q4); check("AI4 drops the plan-approval condition", bool(g) and g[0] == "condition_of_other_record")
     g = gate("The commissioner shall approve each plan submitted by a library system within sixty days."); check("AI4 keeps a real approval duty", not g or "plan-approval" not in g[1])
     ed.APPLY_AI4 = False; g = gate(q4); check("AI4 off does not apply the rule", not g or "plan-approval" not in g[1])
-    check("AI1 leaves a lead with 'other members' alone (Q1)", ed.q1_item("One legislative representative to be appointed by the governor", "The council shall consist of the administrator, and ten other members to be appointed as follows:") is True)
+    check("AI1 leaves a lead with 'other members' alone (Q1; kept under B110)", ed.q1_item("One legislative representative to be appointed by the governor", "The council shall consist of the administrator, and ten other members to be appointed as follows:") is (not ed.APPLY_B110))
     # AG11: jurisdiction grants are powers
     ed.APPLY_AG11 = True
     qj = "The court shall have jurisdiction of actions and proceedings for the recovery of money."

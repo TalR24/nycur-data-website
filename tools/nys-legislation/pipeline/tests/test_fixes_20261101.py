@@ -37,14 +37,14 @@ def gate(law, oid):
 
 # Q1. items under membership / scope / report-content leads
 lead = "The council shall consist of the compact administrator, and ten other members to be appointed as follows:"
-check("Q1 membership lead", ed.q1_item("One legislative representative to be appointed by the governor upon recommendation of the speaker", lead))
+check("Q1 membership lead (an appointment item is kept under B110, Tal Nov 24 2026)", ed.q1_item("One legislative representative to be appointed by the governor upon recommendation of the speaker", lead) is (not ed.APPLY_B110))
 check("Q1 scope lead", ed.q1_item("Tort cases in supreme Court in Westchester county", "Provided, however, the following cases are not included:"))
 check("Q1 report content lead", ed.q1_item("the risk of an unauthorized breach of data", "Such report shall be made public and shall consider, evaluate and present recommendations concerning:"))
 check("Q1 item with its own modal is kept", ed.q1_item("The governor shall appoint the chair", lead) is False)
 check("Q1 ordinary duty lead is untouched", ed.q1_item("Publish the rule", "The board shall do the following:") is False)
 for law, oid in (("2011-A55", "2011-A55-80"), ("2011-A55", "2011-A55-87"), ("2019-A6787", "2019-A6787-11"), ("2009-A8956", "2009-A8956-05")):
     g = gate(law, oid)
-    check("Q1 gate %s" % oid, g in ("sub_item_of_parent", "skip"))
+    check("Q1 gate %s" % oid, g in ("sub_item_of_parent", "skip") or (ed.APPLY_B110 and oid == "2011-A55-80" and g is None))          # B110: an appointment item stays a record
 # Q2. amounts and aid
 for q in ("No service provided to an out-of-state school district pursuant to subparagraph ten shall be eligible for aid.",
           "the purposes and funding levels specified in section 54 of Part A of chapter 57 of the laws of 2009 shall be continued for such purposes and at such levels",

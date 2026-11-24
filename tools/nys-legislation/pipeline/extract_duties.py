@@ -1529,7 +1529,7 @@ def item_lead_full(span, text, max_paras=60, keep_markup=False):
     return None
 
 
-APPLY_B110 = False        # Nov 24 2026 (Tal's ruling, criteria.md "Rulings"): an appointment clause in new matter is a duty of EACH government actor that appoints; OFF until Tal's blind sample
+APPLY_B110 = True        # Nov 24 2026 (Tal's ruling, criteria.md "Rulings"): an appointment clause in new matter is a duty of EACH government actor that appoints; OFF until Tal's blind sample
 B110_ACTOR = (r"(?:governor|temporary\s+president(?:\s+of\s+the\s+senate)?|speaker(?:\s+of\s+the\s+assembly)?|(?:minority|majority)\s+leader(?:\s+of\s+the\s+(?:senate|assembly))?"
               r"|board\s+of\s+regents|mayor|county\s+executive|comptroller|attorney\s+general|chief\s+judge|board\s+of\s+supervisors|(?:county\s+)?legislature|city\s+council|town\s+board"
               r"|commissioner(?:\s+of\s+(?!and\b|or\b)[a-z]+(?:\s+(?!and\b|or\b|upon\b|with\b|to\b)[a-z]+){0,3})?)")
@@ -1558,63 +1558,66 @@ def b110_appointers(q):
     return out
 
 
-def _b110_key(s):
-    return re.sub(r"^(?:the|a|an|such|each|any)\s+", "", re.sub(r"\s+", " ", (s or "").strip().lower()))
+B110_CTX = {"text": None}          # the law text of the record gate_record is judging (set there); None outside the gate
+B110_TERM = re.compile(r"\bterms?\s+of\s+office\b|\bshall\s+serve\s+for\s+a\s+term\b|\bfor\s+a\s+term\b|\bterms?\s+of\s+(?:\w+\s+){1,2}years?\b", re.I)
+B110_REC = re.compile(r"\b(?:recommendation|nomination)\s+of\s+the\s+(" + B110_ACTOR + r")\b", re.I)
 
 
-def b110_fills_body(o, siblings=()):
-    """B110: the record's actor is the body being filled (or unnamed), not one of the quote's appointers; returns the appointer list to apply, else []."""
-    q = o.get("quote") or ""
-    aps = b110_appointers(q)
-    if not aps or not B110_COMPOSITION.search(q):
-        return []
-    if any(x is not o and x.get("quote") == q for x in siblings):
-        return []          # the sentence already has one record per actor
-    actor = _b110_key(o.get("actor_raw"))
-    if actor and any(actor in _b110_key(a) or _b110_key(a) in actor for a in aps):
-        return []
-    w = B110_WORD.search(q)
-    if actor and w and actor in re.sub(r"\s+", " ", q[w.end():].lower()):
-        return []          # the model's actor is named after the appointment word (a list of appointers the matcher read only in part): trust it
-    if actor and re.match(r"^" + B110_ACTOR + r"\b", actor, re.I):
-        return []          # the model's actor is itself an appointing actor (governor, speaker, county executive ...)
-    if actor and re.search(re.escape(actor) + r"\W+(?:\w+\W+){0,3}shall\s+(?:appoint|designate|name)\b", q, re.I):
-        return []          # the actor itself appoints (a department that 'shall appoint an advisory committee')
-    return aps
+def b110_new_matter(q, text):
+    """B110: the appointing phrase itself sits inside {{ }} new matter of its sentence; true for text with no markers (a wholly new act or section).
+    The braces are read as a per-character mask (a sentence may start inside a block opened earlier); for 'X shall appoint / designate ...' the object counts as part of the phrase."""
+    if not text or "{{" not in text:
+        return True
+    sp = locate_span(q, text)
+    if not sp:
+        return "{{" in q
+    sent = context_sentence(sp, text)[0]
+    at = text.find(sent)
+    pre = text[:at] if at >= 0 else text[:sp[0]]
+    inside = pre.rfind("{{") > pre.rfind("}}")
+    clean, mask, i = [], [], 0
+    while i < len(sent):
+        if sent.startswith("{{", i):
+            inside = True; i += 2; continue
+        if sent.startswith("}}", i):
+            inside = False; i += 2; continue
+        clean.append(sent[i]); mask.append(inside); i += 1
+    clean = "".join(clean)
+    for rx, reach in ((B110_SHALL, 90), (B110_BY, 0)):
+        for m in rx.finditer(clean):
+            if any(mask[m.start():min(len(mask), m.end() + reach)]) if reach else mask[m.start()]:
+                return True
+    return False
 
 
-def _b110_reset(c, actor):
-    c.update(actor_raw="the " + actor if not re.match(r"(?i)^(?:the|a|an)\s", actor) else actor, agency="Unspecified", agency_full="Unspecified", agency_matched=False,
-             agency_unit=None, agency_group=None, jurisdiction=None, agency_org_type=None, kind_model="duty", b110_appointer=True)
+def b110_keep(q):
+    """B110: the gates keep this quote: it names an appointing government actor in new matter and is not a term-length sentence."""
+    return bool(APPLY_B110 and b110_appointers(q) and not B110_TERM.search(q) and b110_new_matter(q, B110_CTX["text"]))
 
 
-def b110_split(res, law_key, text=None):
-    """B110: one record per appointing actor. The first appointer takes the record in place; each further appointer is appended as a copy (ids continue after
-    the last, the way b63c_split does) that runs the whole pipeline with its own actor_raw. A one-time setup (the law creates the body, no deadline stated) is on_effective_date. Returns the copies."""
+def b110_recommender_actor(o, text):
+    """B110: a record the gates kept only because of B110, whose single appointing phrase is 'upon the recommendation of X', takes X as actor_raw (the model's actor stays otherwise)."""
     if not APPLY_B110:
-        return []
-    obs = res["obligations"]
-    top = max([int(o["obligation_id"].rsplit("-", 1)[1]) for o in obs if re.search(r"-\d+$", o.get("obligation_id") or "")] or [0])
-    added = []
-    for o in list(obs):
-        aps = b110_fills_body(o, obs)
-        if not aps:
-            continue
-        taken = {_b110_key(x.get("actor_raw")) for x in obs if x is not o and x.get("quote") == o.get("quote")}
-        _b110_reset(o, aps[0])
-        if o.get("deadline_kind") in (None, "none") and text and (o.get("quote") or "") in text and B110_HEREBY.search(text[max(0, text.find(o["quote"]) - 800):text.find(o["quote"])] + o["quote"]) \
-                and not re.search(r"\b(?:if|upon|within|after|whenever)\b", o["quote"], re.I):
-            o.update(deadline_kind="on_effective_date", recurrence=o.get("recurrence") or "one-time")
-        for a in aps[1:]:
-            if _b110_key(a) in taken:
-                continue
-            top += 1
-            c = dict(o)
-            c.update(obligation_id="%s-%02d" % (law_key, top), joint_actor_split_from=o["obligation_id"])
-            _b110_reset(c, a)
-            added.append(c)
-    obs.extend(added)
-    return added
+        return False
+    q = o.get("quote") or ""
+    m = B110_REC.search(q)
+    if not m or len(b110_appointers(q)) != 1:
+        return False
+    actor = re.sub(r"\s+", " ", m.group(1))
+    if re.sub(r"^(?:the|a|an)\s+", "", (o.get("actor_raw") or "").strip().lower()) == actor.lower():
+        return False
+    import copy
+    gates = lambda flag: (globals().__setitem__("APPLY_B110", flag), gate_record(copy.deepcopy(o), text, "{{" in text))[1]
+    try:
+        off = gates(False)
+        on = gates(True)
+    finally:
+        globals()["APPLY_B110"] = True
+    if not off or on:
+        return False
+    o.update(actor_raw="the " + actor, agency="Unspecified", agency_full="Unspecified", agency_matched=False, agency_unit=None, agency_group=None,
+             jurisdiction=None, agency_org_type=None, b110_recommender=True)
+    return True
 
 
 def v_quote_rule(q):
@@ -1630,7 +1633,7 @@ def v_quote_rule(q):
         if ELECTION_MECH.search(q):
             return "designation_composition", "election mechanics for filling offices, no government actor's duty"
         m = DESIGNATION.search(q)
-        if m and not OTHER_MODAL.search(q[:m.start()] + " " + q[m.end():]) and not DUTY_NOUNS.search(q) and not re.search(r"\bselected\s+by\b", q) and not b110_appointers(q):
+        if m and not OTHER_MODAL.search(q[:m.start()] + " " + q[m.end():]) and not DUTY_NOUNS.search(q) and not re.search(r"\bselected\s+by\b", q) and not b110_keep(q):
             return "designation_composition", "a designation or composition ('shall constitute the interim', 'shall consist of'), not a duty to act"
     return None
 
@@ -1686,7 +1689,7 @@ def v_item_rule(o, span, text, hdr, sec):
         return "cap_not_duty", "a condition inside a cap ('shall be limited to:'); it limits an amount and binds no actor"
     if b63a_keep(q, tail=tail):
         return None
-    if b110_appointers(q):          # B110: an item that names its own appointing actor is that actor's record
+    if b110_keep(q):          # B110: an item that names its own appointing actor is that actor's record
         return None
     if (b30 or (APPLY_V1 and CONTENT_LEAD.search(tail)) or (APPLY_P1 and CONTENT_LEAD_P1.search(tail)) or (APPLY_V1B and CRITERIA_LEAD.search(tail) and not CRITERIA_ITEM_MODAL.search(q))) and not CONTENT_LEAD_NOT.search(tail[-120:]):
         return "sub_item_of_parent", "a list item under a lead-in that describes the content of one deliverable; part of the parent record, not a record"
@@ -2036,7 +2039,7 @@ def q1_item(q, lead):
         return False          # AG6: an item that names its own appointing official is that official's duty
     if APPLY_AG6 and APPLY_AI1 and AI1_APPOINT_LEAD.search(re.sub(r"\s+", " ", lead.strip())[-160:]) and AI1_APPOINTED_BY.search(q):
         return False          # AI1: the same for any appointment-list lead ('comprised of fifteen members to be appointed as follows:') and a government appointer
-    if b63a_keep(q, lead=lead) or b110_appointers(q):
+    if b63a_keep(q, lead=lead) or b110_keep(q):
         return False          # B63a: any membership lead; B110: an item naming its own appointing actor
     m = re.search(r"\b(?:shall|must|may|will)\b", q)
     return not m or bool(SUBORDINATE_MARK.search(q[:m.start()]))
@@ -2575,13 +2578,14 @@ def gate_record(o, text, has_markers):
     if not o.get("quote_verified"):
         return "unverified_quote", "quote not found in the law text"
     q = o.get("quote") or ""
+    B110_CTX["text"] = text
     if APPLY_P5 and (SAVINGS_CLAUSE.search(q) or (APPLY_AE3 and AE3_NOTHING_PRECLUDE.search(q))):
         return "savings_clause", "a savings clause ('nothing in this section shall be construed to ...'): it limits the reach of the law and binds no actor"
     if APPLY_AE2 and consultee_only(o, text):
         return "consultee_only", "the body appears in the sentence only as a consultee ('in consultation with X'); the body that acts carries the record"
     if b52_cap(q) and (o.get("actor_raw") or "").strip():          # B52: a cap on a named holder's power is a record (no modal, a list item or not)
         return None
-    if APPLY_D7 and QUALIFICATION.search(q):
+    if APPLY_D7 and QUALIFICATION.search(q) and not b110_keep(q):
         return "qualification", "a qualification of an officer ('shall be a resident of', 'shall be at least N years of age'), not a duty or power"
     if APPLY_D6 and d6_private(o, q):
         return "private_actor", "the sentence subject is a private party; the government body appears only inside an approval phrase, or the actor is an indefinite 'an applicant'"
@@ -2715,9 +2719,9 @@ def gate_record(o, text, has_markers):
     if span and has_markers:          # S5: the only new matter in the quoted sentence is a gender-neutral pronoun edit ('his or her', 'or she')
         sent0 = context_sentence(span, text)[0]
         blocks0 = [m.group(1) for m in re.finditer(r"\{\{(.*?)\}\}", sent0, re.S)]
-        if blocks0 and all(GENDER_EDIT.match(b) for b in blocks0):
+        if blocks0 and all(GENDER_EDIT.match(b) for b in blocks0) and not b110_keep(q):
             return "reprinted_gender_neutral", "the sentence is existing text; the only new matter is a gender-neutral pronoun edit"
-    if span and has_markers and APPLY_AF3 and af3_trivial_reprint(context_sentence(span, text)[0]):
+    if span and has_markers and APPLY_AF3 and af3_trivial_reprint(context_sentence(span, text)[0]) and not b110_keep(q):
         return "reprinted_gender_neutral", "the sentence is existing text; the only braced matter is punctuation, a conjunction, a gender-neutral edit or a name swap"
     if span and has_markers:          # G2
         if reprinted_name_swap(context_sentence(span, text)[0]):
@@ -2807,7 +2811,7 @@ def gate_record(o, text, has_markers):
             return "reprint_date_only", "the section's only new matter is a year or date; this record sits in reprinted text outside the sentence that holds the date"
         if APPLY_D4:
             lead4 = item_lead_full(span, text)
-            if lead4 and d4_item(q, lead4[-220:]) and not b110_appointers(q):
+            if lead4 and d4_item(q, lead4[-220:]) and not b110_keep(q):
                 return "sub_item_of_parent", "a list item under a nested content lead ('Such procedures shall include:'); part of the parent record, not a record"
             if APPLY_Q1 and lead4 and q1_item(q, lead4):
                 return "sub_item_of_parent", "a list item under a membership, scope or report-content lead ('shall consist of ... as follows:'); part of the parent record, not a record"
@@ -4938,8 +4942,9 @@ def build_records(laws):
         law_d, law_p = [], []
         for _c in b63c_split(res, law["key"]):
             bump("b63c_joint_actor_split")
-        for _c in b110_split(res, law["key"], text):
-            bump("b110_appointer_split")
+        for _o in res["obligations"]:
+            if b110_recommender_actor(_o, text):
+                bump("b110_recommender_actor")
         for o in res["obligations"]:
             o["deadline_date"] = eo.sanitize_deadline(o.get("deadline_date"), law["enactment_date"])
             cal = calendar_deadline(o, [res.get("effective_date"), eff.get("effective_date"), law["enactment_date"]])
