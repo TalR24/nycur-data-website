@@ -27,6 +27,12 @@ Copied verbatim from the 20261019 audit brief and the nys-legislation-trackers s
   of the clause that ends at the colon.
 
 
+## Rulings (Tal, Nov 24 2026; apply under criteria 1 and 4)
+- Appointment clauses are duties. A clause in new matter in which a government actor appoints, designates or names members,
+  officers or representatives ("the governor shall appoint", "three members appointed by the temporary president of the
+  senate", "one member upon the recommendation of the speaker") is a duty of each appointing actor, one record per appointing
+  actor. A membership sentence that names who appoints counts; the qualifications of appointees do not.
+
 ## Pilot rules (orchestrator decisions, Oct 7 2026; reversible, each a field or filter)
 - Local governments: `agency` = the group (Counties, Cities, Towns, Villages, School districts, Fire districts, Special
   districts...), `agency_unit` = the named locality, normalised. A locality's assessor, tax office or governing body is the
