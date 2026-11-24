@@ -57,7 +57,7 @@ ed.SUNSET_UNNAMED["2011-A1"] = un3
 check("U1 a body-less sunset sentence in the re-ask text", "sunset_extension_unnamed_holder" in json.dumps(ed.SUNSET_UNNAMED) or True)
 ed.SUNSET_UNNAMED.clear()
 rules = (HERE / "prompt_v2_rules.txt").read_text()
-check("U1 prompt: ten bullets and the title-holder wording", len([l for l in rules.splitlines() if l.startswith("- ")]) == 10 and "holder of the extended authority from the act title" in rules)
+check("U1 prompt: eleven bullets (appointment rule, Nov 24 2026) and the title-holder wording", len([l for l in rules.splitlines() if l.startswith("- ")]) == 11 and "holder of the extended authority from the act title" in rules)
 # the real laws: A10126 (ch 831/1981 act clause) has a sunset sentence
 real = ed.sunset_extension_sentences(law_text("2009-A10126"))
 check("U1 2009-A10126 yields the 'December 31, 2012' sentence", real and "2012" in real[0][0] and "{{" not in real[0][0] and "[2010]" not in real[0][0])

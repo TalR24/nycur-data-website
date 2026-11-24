@@ -28,7 +28,7 @@ check("v1 has no excluded_sentences", "excluded_sentences" not in f1 and "exclud
 # version 2
 rules = [l for l in (HERE / "prompt_v2_rules.txt").read_text().splitlines() if l.strip()]
 f2, v2 = ed.build_prompt(2)
-check("v2 has 10 bullets in the rules file", len(rules) == 10)
+check("v2 has 11 bullets in the rules file (appointment rule, Nov 24 2026)", len(rules) == 11)
 check("last bullet is the act-clause boilerplate rule", "act clause" in rules[-1] and "boilerplate" in rules[-1])
 check("v2 contains the first bullet", rules[0] in f2 and "excluded_sentences" in f2)
 check("v2 contains every bullet", all(r in f2 for r in rules))
