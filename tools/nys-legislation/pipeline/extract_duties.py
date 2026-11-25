@@ -1166,6 +1166,8 @@ IMPERATIVE_ITEM = re.compile(r"^\W*(?:\{\{)?\s*(?:Work|Advise|Serve|Prepare|Revi
 GRANTING_LEAD = re.compile(r"\b(?:shall|may|must)\b|\b(?:is|are)\s+(?:hereby\s+)?(?:authorized|empowered)\s+to\b", re.I)
 INFINITIVE_ITEM = re.compile(r"^\W*(?:\{\{)?\s*To\s+[a-z]+", re.I)
 POWER_LEAD = re.compile(r"\bshall\s+have\s+(?:the\s+)?(?:following\s+|general\s+)?powers?\b(?!\s+and\s+(?:dut|respons))|\b(?:may|authorized|empowered|permitted)\b", re.I)
+APPLY_B111 = True          # Nov 25 2026 (B111): a lead naming 'the following powers' / 'powers shall include' makes its items powers even after an earlier 'shall'
+B111_POWERS_LEAD = re.compile(r"\b(?:including\s+)?the\s+following\s+powers\b(?!\s+and\s+(?:dut|respons))|\bpowers\s+shall\s+include\b", re.I)
 
 
 def infinitive_lead_kind(lead, q=None):
@@ -1178,6 +1180,8 @@ def infinitive_lead_kind(lead, q=None):
         if m3:
             last = m3.group(1)
     last = last[-300:]
+    if APPLY_B111 and B111_POWERS_LEAD.search(last):
+        return "power"
     if POWER_LEAD.search(last):
         return "power"
     return "duty" if MANDATORY.search(last) else "power"
@@ -4324,6 +4328,8 @@ def lead_in_makes_duty(lead):
     """R6a: a lead-in whose modal is a bare 'shall'/'must' aimed at its actor ('shall have the following powers and duties:'), not a grant."""
     last = re.sub(r"\{\{|\}\}", "", lead or "")[-300:]
     if b58_lead_power(lead, ""):          # B58: 'shall have power:' / 'shall have the authority to:' only grants power
+        return False
+    if APPLY_B111 and B111_POWERS_LEAD.search(last):          # B111: '... which powers shall include ... the following powers' names its items as powers (2011-A373, 18 records)
         return False
     if APPLY_AG5 and AG5_MAY_ALSO.search(last):
         mand = list(MANDATORY.finditer(last))

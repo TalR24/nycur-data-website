@@ -1,0 +1,3997 @@
+{
+ "_scoring": {
+  "auditor": "B",
+  "night": "20261125",
+  "laws": 11,
+  "stored_records": 258,
+  "correct": 192,
+  "wrong_fields": 54,
+  "not_real": 12,
+  "missed": 6,
+  "precision_strict": "192/258 = 74.4% (Wilson 95% 68.8-79.4)",
+  "precision_real": "246/258 = 95.3% (Wilson 95% 92.0-97.3)",
+  "recall": "246/252 = 97.6% (Wilson 95% 94.9-98.9)",
+  "effective_dates": "11/11 correct",
+  "recall_note": "blind items matched approximated by stored real records (correct+wrong); no stored correct record was outside the blind lists",
+  "calibration": {
+   "2009-A41011": {
+    "records": {
+     "2009-A41011-01": "wrong",
+     "2009-A41011-02": "correct",
+     "2009-A41011-03": "correct",
+     "2009-A41011-04": "correct",
+     "2009-A41011-05": "correct",
+     "2009-A41011-06": "correct",
+     "2009-A41011-07": "correct",
+     "2009-A41011-08": "wrong",
+     "2009-A41011-09": "wrong",
+     "2009-A41011-11": "correct",
+     "2009-A41011-12": "wrong"
+    },
+    "stored": 11,
+    "correct": 7,
+    "wrong": 4,
+    "not_real": 0,
+    "missed": 1
+   },
+   "2021-S7191": {
+    "records": {
+     "2021-S7191-01": "correct"
+    },
+    "stored": 1,
+    "correct": 1,
+    "wrong": 0,
+    "not_real": 0,
+    "missed": 0
+   }
+  }
+ },
+ "_classes": [
+  {
+   "name": "list items under a powers lead-in (\"powers shall include ... the following\") stored as duties",
+   "criteria": [
+    "4"
+   ],
+   "instances": [
+    "2011-A373-27",
+    "2011-A373-28",
+    "2011-A373-29",
+    "2011-A373-31",
+    "2011-A373-43",
+    "2011-A373-46",
+    "..."
+   ],
+   "rule": "duty records whose quote matches ^\\s*(\\(\\d+\\)\\s*)?to [a-z] (infinitive list item)",
+   "db_matches": 133,
+   "db_examples": [
+    "2015-A10551-10",
+    "2015-A10689-10",
+    "2015-A10707-32"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "agency Unspecified although actor_raw names a body (land bank board, foreclosing governmental unit)",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2011-A373-09",
+    "2011-A373-07",
+    "2011-A373-01",
+    "2011-A373-105"
+   ],
+   "rule": "agency=='Unspecified' and actor_raw non-empty and actor_raw !~ /passive|amount|monies|payment|sum/i",
+   "db_matches": 990,
+   "db_examples": [
+    "2015-A10255-13",
+    "2015-A10255-15",
+    "2015-A10255-16"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "junk agency copied from actor_raw (passive subject or descriptive phrase) and used by <=3 records DB-wide",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2011-A373-12",
+    "2011-A373-100",
+    "2011-A373-85",
+    "2011-A373-88",
+    "2021-A3954-36"
+   ],
+   "rule": "agency used by <=3 records DB-wide AND agency == actor_raw after stripping leading article (case-insensitive); review list",
+   "db_matches": 386,
+   "db_examples": [
+    "2015-A10255-51",
+    "2015-A10558-13",
+    "2015-A10558-15"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "sunset_shortened gate drops extensions where the deleted date is relative (\"[thirty-nine years from] 1977\", \"[three years from] ... [thirteen]\")",
+   "criteria": [
+    "1",
+    "7"
+   ],
+   "instances": [
+    "2015-A9005-21",
+    "2015-A9005-22"
+   ],
+   "rule": "dropped rule=='sunset_shortened' AND the law text near the quote has a bracketed deletion containing 'years from' (relative date the gate cannot compare); full count = all sunset_shortened drops, each needs a date compare",
+   "db_matches": 3,
+   "db_examples": [
+    "2015-A9005-21",
+    "2015-A9005-22",
+    "2009-S8314-58"
+   ],
+   "needs_judgment": true
+  },
+  {
+   "name": "duplicate_provision gate drops a distinct parallel provision with near-identical wording (received vs disposition inventory)",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2011-A373-58"
+   ],
+   "rule": "dropped rule=='duplicate_provision' whose word set differs from the kept record it 'overlaps' (any differing word; review for different object nouns)",
+   "db_matches": 408,
+   "db_examples": [
+    "2015-A10251-01",
+    "2015-A10251-02",
+    "2015-A5962-02"
+   ],
+   "needs_judgment": true
+  },
+  {
+   "name": "prohibitions/limits (\"No person may\", \"In no case may ... extend\") stored as powers",
+   "criteria": [
+    "4"
+   ],
+   "instances": [
+    "2021-A2277-32",
+    "2021-A2277-40"
+   ],
+   "rule": "power records whose quote has 'No X may|may not|In no case may|shall not' and no other permissive 'may'",
+   "db_matches": 108,
+   "db_examples": [
+    "2015-A3005-11",
+    "2015-A6978-02",
+    "2015-A8083-54"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "deadline_kind fixed_date with null deadline_date",
+   "criteria": [
+    "5"
+   ],
+   "instances": [
+    "2009-A41011-01",
+    "2009-A41011-08",
+    "2009-A41011-09",
+    "2009-A41011-12"
+   ],
+   "rule": "deadline_kind=='fixed_date' and deadline_date is null",
+   "db_matches": 73,
+   "db_examples": [
+    "2015-A10707-33",
+    "2015-A9173-01",
+    "2015-A9200-01"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "identical records (same law, quote, actor_raw, agency, unit, kind): per-actor split that never names the actor",
+   "criteria": [
+    "3",
+    "9"
+   ],
+   "instances": [
+    "2021-A3954-23",
+    "2021-A3954-24",
+    "2021-A3954-25",
+    "2021-A3954-26"
+   ],
+   "rule": "group by (matter_id, quote, lower(actor_raw), agency, agency_unit, kind); count records beyond the first in each group",
+   "db_matches": 717,
+   "db_examples": [
+    "2015-A1719-03",
+    "2015-A6045-03",
+    "2015-A6715-44"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "(known class, recurrence count) dated recurring deadline stored as none",
+   "criteria": [
+    "5"
+   ],
+   "instances": [
+    "2021-S2556-03"
+   ],
+   "rule": "duty, deadline_kind none, recurrence annual, quote names a quarter or day of each year",
+   "db_matches": 2,
+   "db_examples": [
+    "2013-A4982-01",
+    "2021-S2556-03"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "(known class, recurrence count) entitlement stored as duty; terminology-only reprint stored as duty",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2015-A9005-31",
+    "2021-S2209-01"
+   ],
+   "rule": "needs_judgment",
+   "db_matches": null,
+   "db_examples": [],
+   "needs_judgment": true
+  }
+ ],
+ "2011-A373": {
+  "records": {
+   "2011-A373-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Counties / Cities / Towns / Villages (foreclosing governmental unit = tax district, RPTL 1102(6))"
+    },
+    "quote": "Any foreclosing governmental unit may create a land bank by the adoption of a Local law, ordinance, or resolution as appropriate to such foreclosing governmental unit which action specifies the following:",
+    "note": "\"foreclosing governmental unit\" is a local government; agency left Unspecified"
+   },
+   "2011-A373-02": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Counties / Cities / Towns / Villages (foreclosing governmental unit = tax district, RPTL 1102(6))"
+    },
+    "quote": "Two or more foreclosing governmental units may enter into an intergovernmental cooperation agreement which creates a single land bank to act on behalf of such foreclosing governmental units",
+    "note": "\"foreclosing governmental unit\" is a local government; agency left Unspecified"
+   },
+   "2011-A373-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Any foreclosing governmental units and any municipality may enter into an intergovernmental cooperation agreement which creates a single land bank to act on behalf of such foreclosing governmental unit or units and municipality",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Municipalities (all)",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A373-04": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Counties / Cities / Towns / Villages (foreclosing governmental unit = tax district, RPTL 1102(6))"
+    },
+    "quote": "Any foreclosing governmental units and any municipality may enter into an intergovernmental cooperation agreement which creates a single land bank to act on behalf of such foreclosing governmental unit or units and municipality",
+    "note": "\"foreclosing governmental unit\" is a local government; agency left Unspecified"
+   },
+   "2011-A373-05": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "in the event a county creates a land bank, such land bank shall have the power to acquire real property only in those portions of such county located outside of the geographical boundaries of any other land bank",
+    "note": "\"such land bank shall have the power to acquire real property only in those portions\" is a geographic limit on another power, not a grant; actor \"created by a county\""
+   },
+   "2011-A373-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "A school district may participate in a land bank pursuant to an intergovernmental cooperation agreement with the foreclosing governmental unit or units that create the land bank",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "School districts",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A373-07": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Counties / Cities / Towns / Villages (foreclosing governmental unit = tax district, RPTL 1102(6))"
+    },
+    "quote": "each foreclosing governmental unit or units proposing to create a land bank shall submit such Local law, ordinance or resolution as required by paragraph (a) of this section, to the urban development corporation, for its review and approval.",
+    "note": "\"foreclosing governmental unit\" is a local government; agency left Unspecified"
+   },
+   "2011-A373-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The office of the state comptroller shall have the authority to audit any land bank pursuant to this article.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State Comptroller",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A373-09": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Land Bank"
+    },
+    "quote": "The members of the board of directors shall select annually from among themselves a chairman, a vice-chairman, a treasurer, and such other officers as the board may determine, and shall establish their duties as may be regulated by rules adopted by the board.",
+    "note": "actor is the land bank board (\"The board shall ...\"); agency left Unspecified"
+   },
+   "2011-A373-10": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Land Bank"
+    },
+    "quote": "The board shall establish rules and requirements relative to the attendance and participation of members in its meetings, Regular or special.",
+    "note": "actor is the land bank board (\"The board shall ...\"); agency left Unspecified"
+   },
+   "2011-A373-100": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "officer conducting the RPTL 1136 sale (unnamed; Unspecified)"
+    },
+    "quote": "The deed to the land bank shall be executed, acknowledged and delivered within thirty days of the sale.",
+    "note": "\"The deed to the land bank shall be executed ...\" passive subject stored as agency \"Deed to the Land Bank\""
+   },
+   "2011-A373-101": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The land bank may, in its discretion, assign contracts for supervision and coordination to the successful bidder for any subdivision of work for which the land bank receives bids.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Land Bank",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A373-102": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The land bank shall not award any construction, demolition, renovation and reconstruction contract greater than ten thousand dollars except to the lowest bidder who, in its opinion, is qualified to perform the work required and who is responsible and reliable.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Land Bank",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A373-103": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The land bank may, however, reject any or all bids or waive any informality in a bid if it believes that the public interest will be promoted thereby.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Land Bank",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A373-104": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The land bank may reject any bid, if, in its judgment, the business and technical organization, plant, resources, financial standing, or experience of the bidder justifies such rejection in view of the work to be performed.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Land Bank",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A373-105": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Counties / Cities / Towns / Villages (foreclosing governmental unit = tax district, RPTL 1102(6))"
+    },
+    "quote": "each foreclosing governmental unit shall have at least one appointment to the board.",
+    "note": "\"foreclosing governmental unit\" is a local government; agency left Unspecified"
+   },
+   "2011-A373-11": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Land Bank"
+    },
+    "quote": "Such rules and regulations may prescribe a procedure whereby, should any member fail to comply with such rules and regulations, such member may be disqualified and removed automatically from office by no less than a majority vote of the remaining members of the board",
+    "note": "actor is the land bank board (\"The board shall ...\"); agency left Unspecified"
+   },
+   "2011-A373-12": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Counties / Cities / Towns / Villages (appointing foreclosing governmental unit)",
+     "actor_raw": "appointing foreclosing governmental unit"
+    },
+    "quote": "A vacancy on the board shall be filled in the same manner as the original appointment.",
+    "note": "\"A vacancy on the board shall be filled in the same manner as the original appointment\": passive subject stored as agency \"Vacancy on the Board\""
+   },
+   "2011-A373-13": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Land Bank"
+    },
+    "quote": "shall have the power to organize and reorganize the executive, administrative, clerical, and other departments of the land bank and to fix the duties, powers, and compensation of all employees, agents, and consultants of the land bank.",
+    "note": "actor is the land bank board (\"The board shall ...\"); agency left Unspecified"
+   },
+   "2011-A373-14": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Land Bank"
+    },
+    "quote": "The board may reimburse any member for expenses actually incurred in the performance of duties on behalf of the land bank.",
+    "note": "actor is the land bank board (\"The board shall ...\"); agency left Unspecified"
+   },
+   "2011-A373-15": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Land Bank"
+    },
+    "quote": "The board shall meet in Regular session according to a schedule adopted by the board, and also shall meet in special session as convened by the chairman or upon written notice signed by a majority of the members.",
+    "note": "actor is the land bank board (\"The board shall ...\"); agency left Unspecified"
+   },
+   "2011-A373-16": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "All actions of the board shall be approved by the affirmative vote of a majority of the members of that board present and voting",
+    "note": "board voting/quorum/proxy rules (\"All actions of the board shall be approved by ... majority\", \"Vote by proxy shall not be permitted\") are conditions on board actions, not duties"
+   },
+   "2011-A373-17": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "(1) adoption of by-laws and other rules and regulations for conduct of the land bank's business;",
+    "note": "board voting/quorum/proxy rules (\"All actions of the board shall be approved by ... majority\", \"Vote by proxy shall not be permitted\") are conditions on board actions, not duties"
+   },
+   "2011-A373-18": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "9"
+    ],
+    "fields": {},
+    "quote": "hiring or firing of any employee or contractor of the land bank. This function may, by majority vote of the total board membership, be delegated to a specified officer or Committee of the land bank",
+    "note": "item (2) supermajority for hiring/firing; the delegation power is record -19 with the same text"
+   },
+   "2011-A373-19": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Land Bank"
+    },
+    "quote": "This function may, by majority vote of the total board membership, be delegated to a specified officer or Committee of the land bank, under such terms and conditions, and to the extent, that the board may specify",
+    "note": "actor is the land bank board (\"The board shall ...\"); agency left Unspecified"
+   },
+   "2011-A373-20": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "(3) the incurring of debt; (4) adoption or amendment of the annual budget;",
+    "note": "board voting/quorum/proxy rules (\"All actions of the board shall be approved by ... majority\", \"Vote by proxy shall not be permitted\") are conditions on board actions, not duties"
+   },
+   "2011-A373-21": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "9"
+    ],
+    "fields": {},
+    "quote": "(4) adoption or amendment of the annual budget; And (5) sale, lease, encumbrance, or alienation of real property, improvements, or personal property.",
+    "note": "supermajority list items (4)-(5), overlaps record -20 on item (4)"
+   },
+   "2011-A373-23": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "Vote by proxy shall not be permitted. Any member may request a recorded vote on any resolution or action of the land bank.",
+    "note": "board voting/quorum/proxy rules (\"All actions of the board shall be approved by ... majority\", \"Vote by proxy shall not be permitted\") are conditions on board actions, not duties"
+   },
+   "2011-A373-24": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "A land bank may employ a secretary, an executive director, its own counsel and legal staff, and such technical experts, and such other agents and employees, permanent or temporary, as it may require, and may determine the qualifications and fix the compensation and benefits of such persons.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Land Bank",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A373-25": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "A land bank may also enter into contracts and agreements with municipalities for staffing services to be provided to the land bank by municipalities or agencies or departments thereof, or for a land bank to provide such staffing services to municipalities or agencies or departments thereof.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Land Bank",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A373-26": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "which powers shall include all powers necessary to carry out and effectuate the purposes and provisions of this article, including the following powers in addition to those herein otherwise granted:",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Land Bank",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A373-27": {
+    "verdict": "wrong",
+    "criteria": [
+     "4"
+    ],
+    "fields": {
+     "kind": "power"
+    },
+    "quote": "adopt, amend, and repeal bylaws for the regulation of its affairs and the conduct of its business;",
+    "note": "1607(A) lead \"which powers shall include ... the following powers\": list item is a power, stored as duty"
+   },
+   "2011-A373-28": {
+    "verdict": "wrong",
+    "criteria": [
+     "4"
+    ],
+    "fields": {
+     "kind": "power"
+    },
+    "quote": "sue and be sued in its own name and plead and be impleaded in all civil actions, including, but not limited to, actions to clear title to property of the land bank;",
+    "note": "1607(A) lead \"which powers shall include ... the following powers\": list item is a power, stored as duty"
+   },
+   "2011-A373-29": {
+    "verdict": "wrong",
+    "criteria": [
+     "4"
+    ],
+    "fields": {
+     "kind": "power"
+    },
+    "quote": "to adopt a seal and to alter the same at pleasure;",
+    "note": "1607(A) lead \"which powers shall include ... the following powers\": list item is a power, stored as duty"
+   },
+   "2011-A373-30": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "to make contracts, give guarantees and incur liabilities, borrow money at such rates of interest as the land bank may determine;",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Land Bank",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A373-31": {
+    "verdict": "wrong",
+    "criteria": [
+     "4"
+    ],
+    "fields": {
+     "kind": "power"
+    },
+    "quote": "to issue negotiable revenue bonds and notes according to the provisions of this article;",
+    "note": "1607(A) lead \"which powers shall include ... the following powers\": list item is a power, stored as duty"
+   },
+   "2011-A373-32": {
+    "verdict": "wrong",
+    "criteria": [
+     "4"
+    ],
+    "fields": {
+     "kind": "power"
+    },
+    "quote": "to procure insurance or guarantees from the state of new york or federal government of the payments of any debts or parts thereof incurred by the land bank, and to pay premiums in connection therewith;",
+    "note": "1607(A) lead \"which powers shall include ... the following powers\": list item is a power, stored as duty"
+   },
+   "2011-A373-33": {
+    "verdict": "wrong",
+    "criteria": [
+     "4"
+    ],
+    "fields": {
+     "kind": "power"
+    },
+    "quote": "to enter into contracts and other instruments necessary to the performance of its duties and the exercise of its powers, including, but not limited to, intergovernmental agreements under section one hundred nineteen-o of the general municipal law for the joint exercise of powers under this article;",
+    "note": "1607(A) lead \"which powers shall include ... the following powers\": list item is a power, stored as duty"
+   },
+   "2011-A373-34": {
+    "verdict": "wrong",
+    "criteria": [
+     "4"
+    ],
+    "fields": {
+     "kind": "power"
+    },
+    "quote": "to enter into contracts and other instruments necessary to the performance of functions by the land bank on behalf of municipalities or agencies or departments of municipalities, or the performance by municipalities or agencies or departments of municipalities of functions on behalf of the land bank;",
+    "note": "1607(A) lead \"which powers shall include ... the following powers\": list item is a power, stored as duty"
+   },
+   "2011-A373-35": {
+    "verdict": "wrong",
+    "criteria": [
+     "4"
+    ],
+    "fields": {
+     "kind": "power"
+    },
+    "quote": "to make and execute contracts and other instruments necessary to the exercise of the powers of the land bank;",
+    "note": "1607(A) lead \"which powers shall include ... the following powers\": list item is a power, stored as duty"
+   },
+   "2011-A373-36": {
+    "verdict": "wrong",
+    "criteria": [
+     "4"
+    ],
+    "fields": {
+     "kind": "power"
+    },
+    "quote": "to procure insurance against losses in connection with the real property, assets, or activities of the land bank;",
+    "note": "1607(A) lead \"which powers shall include ... the following powers\": list item is a power, stored as duty"
+   },
+   "2011-A373-37": {
+    "verdict": "wrong",
+    "criteria": [
+     "4"
+    ],
+    "fields": {
+     "kind": "power"
+    },
+    "quote": "to invest money of the land bank, at the discretion of the board of directors, in instruments, obligations, securities, or property determined proper by the board of directors, and name and use depositories for its money;",
+    "note": "1607(A) lead \"which powers shall include ... the following powers\": list item is a power, stored as duty"
+   },
+   "2011-A373-38": {
+    "verdict": "wrong",
+    "criteria": [
+     "4"
+    ],
+    "fields": {
+     "kind": "power"
+    },
+    "quote": "to enter into contracts for the management of, the collection of rent from, or the sale of real property of the land bank;",
+    "note": "1607(A) lead \"which powers shall include ... the following powers\": list item is a power, stored as duty"
+   },
+   "2011-A373-39": {
+    "verdict": "wrong",
+    "criteria": [
+     "4"
+    ],
+    "fields": {
+     "kind": "power"
+    },
+    "quote": "to design, develop, construct, demolish, reconstruct, rehabilitate, renovate, relocate, and otherwise improve real property or rights or interests in real property;",
+    "note": "1607(A) lead \"which powers shall include ... the following powers\": list item is a power, stored as duty"
+   },
+   "2011-A373-40": {
+    "verdict": "wrong",
+    "criteria": [
+     "4"
+    ],
+    "fields": {
+     "kind": "power"
+    },
+    "quote": "to fix, charge, and collect rents, fees and charges for the use of real property of the land bank and for services provided by the land bank;",
+    "note": "1607(A) lead \"which powers shall include ... the following powers\": list item is a power, stored as duty"
+   },
+   "2011-A373-41": {
+    "verdict": "wrong",
+    "criteria": [
+     "4"
+    ],
+    "fields": {
+     "kind": "power"
+    },
+    "quote": "to grant or acquire a license, easement, lease (as lessor and as lessee), or option with respect to real property of the land bank;",
+    "note": "1607(A) lead \"which powers shall include ... the following powers\": list item is a power, stored as duty"
+   },
+   "2011-A373-42": {
+    "verdict": "wrong",
+    "criteria": [
+     "4"
+    ],
+    "fields": {
+     "kind": "power"
+    },
+    "quote": "to enter into partnership, joint ventures, and other collaborative relationships with municipalities and other public and private entities for the ownership, management, development, and disposition of real property;",
+    "note": "1607(A) lead \"which powers shall include ... the following powers\": list item is a power, stored as duty"
+   },
+   "2011-A373-43": {
+    "verdict": "wrong",
+    "criteria": [
+     "4"
+    ],
+    "fields": {
+     "kind": "power"
+    },
+    "quote": "(17) to inventory vacant, abandoned and tax foreclosed properties; (18) to develop a redevelopment plan to be approved by the foreclosing governmental unit or units;",
+    "note": "1607(A) lead \"which powers shall include ... the following powers\": list item is a power, stored as duty"
+   },
+   "2011-A373-45": {
+    "verdict": "wrong",
+    "criteria": [
+     "4"
+    ],
+    "fields": {
+     "kind": "power"
+    },
+    "quote": "to enter in agreements with a foreclosing governmental unit for the distribution of revenues to the foreclosing governmental unit and school district; And",
+    "note": "1607(A) lead \"which powers shall include ... the following powers\": list item is a power, stored as duty"
+   },
+   "2011-A373-46": {
+    "verdict": "wrong",
+    "criteria": [
+     "4"
+    ],
+    "fields": {
+     "kind": "power"
+    },
+    "quote": "to do all other things necessary to achieve the objectives and purposes of the land bank or other laws that relate to the purposes and responsibility of the land bank.",
+    "note": "1607(A) lead \"which powers shall include ... the following powers\": list item is a power, stored as duty"
+   },
+   "2011-A373-47": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "to be subject to municipal building codes and zoning laws;",
+    "note": ""
+   },
+   "2011-A373-48": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "A land bank shall neither possess nor exercise the power of eminent domain.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Land Bank",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A373-49": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The land bank may acquire real property or interests in real property by gift, devise, transfer, exchange, foreclosure, purchase, or otherwise on terms and conditions and in a manner the land bank considers proper.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Land Bank",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A373-50": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The land bank may acquire real property by purchase contracts, lease purchase agreements, installment sales contracts, land contracts, and may accept transfers from municipalities upon such terms and conditions as agreed to by the land bank and the municipality.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Land Bank",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A373-51": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "any municipality may transfer to the land bank real property and interests in real property of the municipality on such terms and conditions and according to such procedures as determined by the municipality.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Municipalities (all)",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A373-52": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The land bank shall maintain all of its real property in accordance with the laws and ordinances of the jurisdiction in which the real property is located.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Land Bank",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A373-53": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The land bank shall not own or hold real property located outside the jurisdictional boundaries of the foreclosing governmental unit or units which created the land bank",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Land Bank",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A373-54": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "a land bank may be granted authority pursuant to an intergovernmental cooperation agreement with another municipality to manage and maintain real property located within the jurisdiction of such other municipality.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Land Bank",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A373-55": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "any municipality may convey to a land bank real property and interests in real property on such terms and conditions, form and substance of consideration, and procedures, all as determined by the transferring municipality in its discretion.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Municipalities (all)",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A373-56": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the acquisition of real property by a land bank pursuant to the provisions of this article, from entities other than political subdivisions, shall be limited to real property that is tax delinquent, tax foreclosed, vacant or abandoned",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Land Bank",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A373-57": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "a land bank shall have authority to enter into agreements to purchase other real property consistent with an approved redevelopment plan.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Land Bank",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A373-59": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "All parcels received by the land bank shall be listed on the received inventory established pursuant to paragraph (h) of this section within one week of acquisition and shall remain in such inventory for one week prior to disposition.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Land Bank",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A373-60": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The land bank shall hold in its own name all real property acquired by the land bank irrespective of the identity of the transferor of such property.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Land Bank",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A373-61": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The land bank shall maintain and make available for public review and inspection a complete inventory of all real property dispositions by the land bank.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Land Bank",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A373-62": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The land bank shall determine and set forth in policies and procedures of the board of directors the general terms and conditions for consideration to be received by the land bank for the transfer of real property and interests in real property",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Land Bank",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": "Board of Directors"
+    }
+   },
+   "2011-A373-63": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The land bank may convey, exchange, sell, transfer, lease as lessor, grant, release and demise, pledge any and all interests in, upon or to real property of the land bank.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Land Bank",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A373-64": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Counties / Cities / Towns / Villages (foreclosing governmental unit = tax district, RPTL 1102(6))"
+    },
+    "quote": "A foreclosing governmental unit may, in its Local law, resolution or ordinance creating a land bank, or, in the case of multiple foreclosing governmental units creating a single land bank in the applicable intergovernmental cooperation agreement, establish a hierarchical ranking of priorities for the use of real property conveyed by a land bank",
+    "note": "\"foreclosing governmental unit\" is a local government; agency left Unspecified"
+   },
+   "2011-A373-65": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Counties / Cities / Towns / Villages (foreclosing governmental unit = tax district, RPTL 1102(6))"
+    },
+    "quote": "require that any particular form of disposition of real property, or any disposition of real property located within specified jurisdictions, be subject to specified voting and approval requirements of the board of directors.",
+    "note": "\"foreclosing governmental unit\" is a local government; agency left Unspecified"
+   },
+   "2011-A373-66": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Land Bank"
+    },
+    "quote": "the board of directors may delegate to officers and employees the authority to enter into and execute agreements, instruments of conveyance and all other related documents pertaining to the conveyance of real property by the land bank.",
+    "note": "actor is the land bank board (\"The board shall ...\"); agency left Unspecified"
+   },
+   "2011-A373-67": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "All property dispositions shall be listed on the property disposition inventory established pursuant to paragraph (b) of this section within one week of disposition. Such records shall remain available for public inspection in the property disposition inventory indefinitely.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Land Bank",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A373-68": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "recoverable in an action brought by the attorney general or district attorney. The attorney general or district attorney may also seek rescission of the real property transaction.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Attorney General",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A373-69": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "recoverable in an action brought by the attorney general or district attorney. The attorney general or district attorney may also seek rescission of the real property transaction.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Attorney General",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A373-70": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "A land bank may receive funding through grants and loans from the foreclosing governmental unit or units which created the land bank, from other municipalities, from the state of new york, from the federal government, and from other public and private sources.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Land Bank",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A373-71": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "A land bank may receive and retain payments for services rendered, for rents and leasehold payments received, for consideration for disposition of real and personal property, for proceeds of insurance coverage for losses incurred, for income from investments",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Land Bank",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A373-72": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "fifty percent of the real property taxes collected on any specific parcel of real property identified by such municipality, school district or any taxing jurisdiction may be remitted to the land bank",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Municipalities (all)",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A373-73": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "fifty percent of the real property taxes collected on any specific parcel of real property identified by such municipality, school district or any taxing jurisdiction may be remitted to the land bank",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Municipalities (all)",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A373-74": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Special districts (taxing district)"
+    },
+    "quote": "fifty percent of the real property taxes collected on any specific parcel of real property identified by such municipality, school district or any taxing jurisdiction may be remitted to the land bank",
+    "note": "third of three records for \"municipality, school district or any taxing district\" repeats Municipalities instead of taxing district"
+   },
+   "2011-A373-75": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "A land bank shall have power to issue bonds for any of its corporate purposes, the principal and interest of which are payable from its revenues generally.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Land Bank",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A373-76": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Land Bank"
+    },
+    "quote": "Bonds issued by the land bank shall be authorized by resolution of the board and shall be limited obligations of the land bank",
+    "note": "actor is the land bank board (\"The board shall ...\"); agency left Unspecified"
+   },
+   "2011-A373-77": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "In the discretion of the land bank, the bonds may be additionally secured by mortgage or other security device covering all or part of the project from which the revenues so pledged may be derived.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Land Bank",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A373-78": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Land Bank"
+    },
+    "quote": "The board may sell such bonds in such manner, either at public or at private sale, and for such price as it may determine to be in the best interests of the land bank.",
+    "note": "actor is the land bank board (\"The board shall ...\"); agency left Unspecified"
+   },
+   "2011-A373-79": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The resolution issuing bonds shall be published in a newspaper of general circulation within the jurisdiction of the land bank.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Land Bank",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A373-80": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "Such bonds or other obligations of a land bank shall not be a debt of any municipality or of the state of new york, and shall so state on their face",
+    "note": "\"Such bonds ... shall not be a debt of any municipality or of the state\" is a status of the bonds, binds no actor"
+   },
+   "2011-A373-81": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Land Bank"
+    },
+    "quote": "The board shall cause minutes and a record to be kept of all its proceedings.",
+    "note": "actor is the land bank board (\"The board shall ...\"); agency left Unspecified"
+   },
+   "2011-A373-82": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Except as otherwise provided in this section, the land bank shall be subject to the open meetings law and the freedom of information law.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Land Bank",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A373-83": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "A land bank shall hold a public hearing prior to financing or issuance of bonds. The land bank shall schedule and hold a public hearing and solicit public comment.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Land Bank",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A373-84": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "After the conclusion of the public hearing and comments, the land bank shall consider the results of the public hearing and comments with respect to the proposed actions.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Land Bank",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A373-85": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Land Bank"
+    },
+    "quote": "the land bank, through its chairperson, shall annually deliver, in oral and written form, a report to the municipality. Such report shall be presented by March fifteenth of each year to the governing body or board of the municipality.",
+    "note": "junk agency \"Land Bank, Through Its Chairperson\""
+   },
+   "2011-A373-86": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "A land bank may be dissolved as a type c not-for-profit corporation sixty calendar days after an affirmative resolution approved by two-thirds of the membership of the board of directors.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Land Bank",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "Board of Directors"
+    }
+   },
+   "2011-A373-87": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Sixty calendar days advance written notice of consideration of a resolution of dissolution shall be given to the foreclosing governmental unit or units that created the land bank, shall be published in a Local newspaper of general circulation, and shall be sent certified mail to the trustee of any outstanding bonds of the land bank.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Land Bank",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A373-88": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Land Bank"
+    },
+    "quote": "No member of the board or employee of a land bank shall acquire any interest, direct or indirect, in real property of the land bank, in any real property to be acquired by the land bank, or in any real property to be acquired from the land bank.",
+    "note": "junk agency \"Members of the Board and Employees of a Land Bank\"; holder is the land bank (its members/employees)"
+   },
+   "2011-A373-89": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Land Bank"
+    },
+    "quote": "No member of the board or employee of a land bank shall have any interest, direct or indirect, in any contract or proposed contract for materials or services to be furnished or used by a land bank.",
+    "note": "junk agency \"Members of the Board and Employees of a Land Bank\"; holder is the land bank (its members/employees)"
+   },
+   "2011-A373-90": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "Land Bank"
+    },
+    "quote": "The board may adopt supplemental rules and regulations addressing potential conflicts of interest and ethical guidelines for members of the board and land bank employees.",
+    "note": "actor is the land bank board (\"The board shall ...\"); agency left Unspecified"
+   },
+   "2011-A373-91": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The municipality may enter into a contract to sell some or all of the delinquent tax liens held by it to a land bank, subject to the following conditions:",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Municipalities (all)",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A373-92": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The municipality shall set the terms and conditions of the contract of sale.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Municipalities (all)",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A373-93": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The land bank must thirty days prior to the commencement of any foreclosure action provide to the municipality a list of liens to be foreclosed.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Land Bank",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A373-94": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The municipality may, at its sole option and discretion, repurchase a lien or liens on the foreclosure list from the land bank.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Municipalities (all)",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A373-95": {
+    "verdict": "not_real",
+    "criteria": [
+     "9"
+    ],
+    "fields": {},
+    "quote": "The land bank shall provide the foreclosure list to the municipality, along with the applicable repurchase price of each lien, by certified mail",
+    "note": "\"The land bank shall provide the foreclosure list to the municipality ... by certified mail\" restates duty -93 (provide list 30 days before foreclosure)"
+   },
+   "2011-A373-96": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "If the municipality opts to purchase the lien, it shall provide payment within thirty days of receipt of the repurchase price of said lien or liens.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Municipalities (all)",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A373-97": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "If the municipality shall fail to opt to repurchase the lien or liens the land bank shall have the right to commence a foreclosure action immediately.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Land Bank",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A373-98": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "then the form, substance, and timing of the land bank's payment of the sales price may be according to such agreement as is mutually acceptable to the plaintiff and the land bank.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Land Bank",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2011-A373-99": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the land bank may tender a bid at such sale in an amount equal to the total amount of all municipal claims and liens which were the basis for the judgment.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Land Bank",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [
+   {
+    "blind": "b49",
+    "quote": "The land bank shall maintain and make available for public review and inspection a complete inventory of all property received by the land bank.",
+    "kind": "duty",
+    "agency": "Land Bank",
+    "dropped_by": "duplicate_provision",
+    "note": "1608(H) received inventory is distinct from 1609(B) disposition inventory (-61); dropped as -58 \"overlaps 2011-A373-61 by 70%+\""
+   },
+   {
+    "blind": "b10",
+    "quote": "the size of the board may be adjusted in accordance with by-laws of the land bank.",
+    "kind": "power",
+    "agency": "Land Bank",
+    "dropped_by": null,
+    "note": "1605(A)(2)"
+   },
+   {
+    "blind": "b76",
+    "quote": "Property owners shall be given at least thirty days advance notice of such sale in the same form and manner as is provided by subdivision two of section eleven hundred ninety of the real property tax law.",
+    "kind": "duty",
+    "agency": "Municipalities (selling municipality)",
+    "dropped_by": null,
+    "note": "1616(B), passive; the selling municipality gives notice"
+   }
+  ],
+  "effective_date": {
+   "stored": "2011-07-29",
+   "computed": "2011-07-29",
+   "verdict": "correct",
+   "note": "act clause applied to signing date"
+  }
+ },
+ "2021-S2733": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2021-01-28",
+   "computed": "2021-01-28",
+   "verdict": "correct",
+   "note": "act clause applied to signing date"
+  }
+ },
+ "2021-S2556": {
+  "records": {
+   "2021-S2556-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the department shall establish a process for the notification of new homeless shelters, other than short-term emergency homeless shelters.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Department of Homeless Services",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2021-S2556-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Such notification shall include elected officials and the community board for the district in which the proposed shelter is to be sited.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Department of Homeless Services",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S2556-03": {
+    "verdict": "wrong",
+    "criteria": [
+     "5"
+    ],
+    "fields": {
+     "deadline_kind": "fixed_date",
+     "deadline_date": "2022-03-31 (recurring, end of first quarter)"
+    },
+    "quote": "Such process shall also include sending a notice annually during the first quarter of each calendar year, electronically and physically, to federal, state and local elected officials requesting potential locations for homeless shelters.",
+    "note": "\"sending a notice annually during the first quarter of each calendar year\" is a dated recurring deadline, stored none"
+   },
+   "2021-S2556-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Such process shall be posted publicly on the agency's website",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Department of Homeless Services",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S2556-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The process developed by the department under this section shall also include conducting at least one public information session on the siting of any new homeless shelter.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Department of Homeless Services",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2021-S2556-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The department shall provide notice to the public of such information sessions on its website no later than fourteen days before the date such session is set to occur",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Department of Homeless Services",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S2556-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "and shall allow the public to ask questions and submit comments. Such information session shall not be conducted in a manner that delays the siting of the proposed shelter",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Department of Homeless Services",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2021-12-31",
+   "computed": "2021-12-31",
+   "verdict": "correct",
+   "note": "same_as_chapter ch 383 of 2020 (A7820/S7215-A), signed 2020-12-31, one year after -> 2021-12-31"
+  }
+ },
+ "2021-S5267": {
+  "records": {
+   "2021-S5267-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner of transportation shall provide for the installation and maintenance of adequate signing of the state highway system as designated pursuant to section one of this act.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "NYSDOT",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2021-07-30",
+   "computed": "2021-07-30",
+   "verdict": "correct",
+   "note": "act clause applied to signing date"
+  }
+ },
+ "2021-A3954": {
+  "records": {
+   "2021-A3954-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Establish a New York state council on food policy. The purpose of the council shall be to develop comprehensive, coordinated state food policies",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DAM",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A3954-02": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "The council shall work to: support and facilitate the growth of a New York-based local farm and food product economy that revitalizes rural, suburban and urban communities, creates jobs, and supports economic growth through promoting and developing local farm and food businesses and their products",
+    "note": "\"The council shall work to: support and facilitate the growth ...\" is the purpose/goal paragraph; the concrete responsibilities are the (a)(i)-(xiii) records"
+   },
+   "2021-A3954-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The responsibilities of the council shall include, but are not limited to, developing and recommending policies and plans to achieve the following:",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DAM",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "New York State Council on Food Policy"
+    }
+   },
+   "2021-A3954-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "a food policy for the state which recognizes that it is in the best interests of the state to ensure the availability of an adequate supply of affordable, fresh and nutritious food to its residents;",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DAM",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "New York State Council on Food Policy"
+    }
+   },
+   "2021-A3954-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "state policies to expand agricultural production and processing, including locally-grown and organically-grown food;",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DAM",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "New York State Council on Food Policy"
+    }
+   },
+   "2021-A3954-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "a strategic plan for implementation of the state food policy, including benchmarks and criteria for measuring progress in achieving state food policy objectives;",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DAM",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "New York State Council on Food Policy"
+    }
+   },
+   "2021-A3954-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "offer comments on state regulations, legislation and budget proposals in the area of food policy, to ensure a coordinated and comprehensive inter-agency approach to food policy issues",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DAM",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "New York State Council on Food Policy"
+    }
+   },
+   "2021-A3954-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "assist state agencies, state-owned facilities, and other entities with the purchase of local farm or food products and with tracking and reporting of such purchases in order to meet the goals established in this section",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DAM",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "New York State Council on Food Policy"
+    }
+   },
+   "2021-A3954-09": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "assist local farm and food businesses to succeed and grow, especially beginning and new owners and those historically underrepresented or marginalized in agriculture or the food industry",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DAM",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "New York State Council on Food Policy"
+    }
+   },
+   "2021-A3954-10": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "facilitate the building of infrastructure, including, but not limited to, aggregation, processing, storage, packaging, distribution, and marketing facilities necessary to move local farm or food products to local and other markets",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DAM",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "New York State Council on Food Policy"
+    }
+   },
+   "2021-A3954-11": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "support and expand programs that recruit, train, and provide technical assistance to New York farmers, food producers, food processors and residents in order to encourage the production and processing of local farm or food products",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DAM",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "New York State Council on Food Policy"
+    }
+   },
+   "2021-A3954-12": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "coordinate interagency policies, initiatives, and procedures promoting local farm and food products in New York communities, by working with and involving state, federal, and local agencies",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DAM",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "New York State Council on Food Policy"
+    }
+   },
+   "2021-A3954-13": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "eliminate statutory and legal barriers hindering the development of a local farm and food economy by working with federal, state, and local agencies, other agencies and applicable entities",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DAM",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "New York State Council on Food Policy"
+    }
+   },
+   "2021-A3954-14": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "facilitate the use of public lands for growing local farm or food products by working with governmental entities at the local, state, and federal levels",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DAM",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "New York State Council on Food Policy"
+    }
+   },
+   "2021-A3954-15": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "set annual goals for all purchases of local farm or food products by New York residents and to monitor the development and expansion of a local farm and food economy through data collection, tracking, measurement, analysis, and reporting on progress made in an annual report to the legislature",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DAM",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "New York State Council on Food Policy"
+    }
+   },
+   "2021-A3954-16": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "initiate and facilitate public awareness campaigns about the economic benefits of a local farm and food economy",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DAM",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "New York State Council on Food Policy"
+    }
+   },
+   "2021-A3954-17": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The council shall consult on a regular basis with an advisory board consisting of:",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DAM",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "New York State Council on Food Policy"
+    }
+   },
+   "2021-A3954-18": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The council shall issue a written report on the first day of December each year on: (i) the activities of the council during the preceding year; (ii) recommended food policies for the state;",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DAM",
+     "kind": "duty",
+     "deadline_kind": "fixed_date",
+     "extends_existing": false,
+     "agency_unit": "New York State Council on Food Policy"
+    }
+   },
+   "2021-A3954-19": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "six members with experience and expertise related to agriculture, nutrition, food insecurity or food policy appointed on the recommendation of the legislative leaders, two each by the temporary president of the senate and the speaker of the assembly, and one each by the minority leader of the senate, and the minority leader of the assembly",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State Legislature",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "New York State Council on Food Policy"
+    }
+   },
+   "2021-A3954-20": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "six members with experience and expertise related to agriculture, nutrition, food insecurity or food policy appointed on the recommendation of the legislative leaders, two each by the temporary president of the senate and the speaker of the assembly, and one each by the minority leader of the senate, and the minority leader of the assembly",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State Legislature",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "New York State Council on Food Policy"
+    }
+   },
+   "2021-A3954-21": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "six members with experience and expertise related to agriculture, nutrition, food insecurity or food policy appointed on the recommendation of the legislative leaders, two each by the temporary president of the senate and the speaker of the assembly, and one each by the minority leader of the senate, and the minority leader of the assembly",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State Legislature",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "New York State Council on Food Policy"
+    }
+   },
+   "2021-A3954-22": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "six members with experience and expertise related to agriculture, nutrition, food insecurity or food policy appointed on the recommendation of the legislative leaders, two each by the temporary president of the senate and the speaker of the assembly, and one each by the minority leader of the senate, and the minority leader of the assembly",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State Legislature",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "New York State Council on Food Policy"
+    }
+   },
+   "2021-A3954-23": {
+    "verdict": "wrong",
+    "criteria": [
+     "3",
+     "9"
+    ],
+    "fields": {
+     "agency": "State Legislature",
+     "actor_raw": "one each: temporary president of the senate / speaker / senate minority leader / assembly minority leader"
+    },
+    "quote": "Such persons may be nominated by organizations representing the sectors outlined in paragraph (b) of this subdivision. Vacancies shall be filled by the legislative leaders.",
+    "note": "four identical records for \"Vacancies shall be filled by the legislative leaders\" with the same actor_raw; agency \"Legislature\" vs \"State Legislature\" on the sibling records"
+   },
+   "2021-A3954-24": {
+    "verdict": "wrong",
+    "criteria": [
+     "3",
+     "9"
+    ],
+    "fields": {
+     "agency": "State Legislature",
+     "actor_raw": "one each: temporary president of the senate / speaker / senate minority leader / assembly minority leader"
+    },
+    "quote": "Such persons may be nominated by organizations representing the sectors outlined in paragraph (b) of this subdivision. Vacancies shall be filled by the legislative leaders.",
+    "note": "four identical records for \"Vacancies shall be filled by the legislative leaders\" with the same actor_raw; agency \"Legislature\" vs \"State Legislature\" on the sibling records"
+   },
+   "2021-A3954-25": {
+    "verdict": "wrong",
+    "criteria": [
+     "3",
+     "9"
+    ],
+    "fields": {
+     "actor_raw": "one each: individual legislative leader"
+    },
+    "quote": "Such persons may be nominated by organizations representing the sectors outlined in paragraph (b) of this subdivision. Vacancies shall be filled by the legislative leaders.",
+    "note": "identical to -23/-24: per-actor records that do not name the actor"
+   },
+   "2021-A3954-26": {
+    "verdict": "wrong",
+    "criteria": [
+     "3",
+     "9"
+    ],
+    "fields": {
+     "actor_raw": "one each: individual legislative leader"
+    },
+    "quote": "Such persons may be nominated by organizations representing the sectors outlined in paragraph (b) of this subdivision. Vacancies shall be filled by the legislative leaders.",
+    "note": "identical to -23/-24: per-actor records that do not name the actor"
+   },
+   "2021-A3954-27": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The six council members selected by the legislative leaders shall be appointed to three-year staggered terms as determined by the legislature.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Legislature",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": "New York State Council on Food Policy"
+    }
+   },
+   "2021-A3954-28": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the dean of the New York state college of agriculture and life sciences; and six members shall be appointed by the governor.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Governor",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "New York State Council on Food Policy"
+    }
+   },
+   "2021-A3954-29": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the commissioner of education, the commissioner of the department of economic development, the commissioner of the department of environmental conservation, the director of the office for the aging, the director of the office of general services, and eight members appointed by the governor.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Governor",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "New York State Council on Food Policy"
+    }
+   },
+   "2021-A3954-30": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The six council members selected by the governor and the dean of the New York state college of agriculture and life sciences shall be appointed to three-year staggered terms as determined by the governor.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Governor",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "New York State Council on Food Policy"
+    }
+   },
+   "2021-A3954-31": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The members of the advisory board shall be appointed to three-year staggered terms as determined by the governor.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Governor",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "New York State Council on Food Policy"
+    }
+   },
+   "2021-A3954-32": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Such persons shall be nominated by organizations representing the sectors outlined in paragraph (b) of this subdivision. Vacancies shall be filled by the governor.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Governor",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "New York State Council on Food Policy"
+    }
+   },
+   "2021-A3954-33": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "All members of the council shall serve at the pleasure of the governor and vacancies shall be filled in the same manner as original appointments.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Governor",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "New York State Council on Food Policy"
+    }
+   },
+   "2021-A3954-34": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The board of directors shall elect its presiding officers from among its members and may elect or appoint an executive committee, other committees, and subcommittees to conduct the business of the organization.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DAM",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": "New York State Council on Food Policy"
+    }
+   },
+   "2021-A3954-35": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The board of directors shall elect its presiding officers from among its members and may elect or appoint an executive committee, other committees, and subcommittees to conduct the business of the organization.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DAM",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": "New York State Council on Food Policy"
+    }
+   },
+   "2021-A3954-36": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "State agencies (unit: agencies represented on the board)"
+    },
+    "quote": "The state governmental agencies represented on the board of directors may re-direct existing staff, as appropriations permit; assist in executing the purposes of this subdivision; and provide office space, meeting space, and other research and communication services as appropriate.",
+    "note": "junk agency \"State Governmental Agencies Represented on the Board of Directors\""
+   },
+   "2021-A3954-37": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The department shall provide farms with the ability to signify that they are interested in supplying schools on the directory.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DAM",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A3954-38": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The department shall seek cooperation and coordination of the directory with the New York state council on food policy and the New York state land grant university, where necessary information overlaps.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DAM",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A3954-39": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The department may utilize any directories that exist or are in progress.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DAM",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2022-11-23",
+   "computed": "2022-11-23",
+   "verdict": "correct",
+   "note": "immediately; s3 conditional on ch 751/2021 already in effect"
+  }
+ },
+ "2021-S5231": {
+  "records": {
+   "2021-S5231-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The department of financial services, in coordination with the division of housing and community renewal, shall conduct a study to examine the increases in insurance premiums and the lack of availability of insurance coverage for affordable housing developments in New York state.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DFS",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S5231-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The department and the division shall: (a) analyze the factors that increase insurance costs for such housing developments and analyze the factors that may limit insurers from offering coverage for affordable housing projects; and",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DFS",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S5231-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "identify the potential impact, over the next ten years, of insurance premium increases and unavailability of insurance coverage for affordable housing development and preservation, including, but not limited to, the projected total reduction in affordable housing units by region",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DFS",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S5231-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The department of financial services and the division of housing and community renewal shall jointly prepare a report which shall be submitted to the governor, the temporary president of the senate, the speaker of the assembly, the minority leader of the senate and the minority leader of the assembly, within eight months after the effective date of this act",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DFS",
+     "kind": "duty",
+     "deadline_kind": "days_after_effective",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S5231-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The department and the division shall: (a) analyze the factors that increase insurance costs for such housing developments and analyze the factors that may limit insurers from offering coverage for affordable housing projects; and",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DFS",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S5231-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "identify the potential impact, over the next ten years, of insurance premium increases and unavailability of insurance coverage for affordable housing development and preservation, including, but not limited to, the projected total reduction in affordable housing units by region",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DFS",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S5231-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The department of financial services and the division of housing and community renewal shall jointly prepare a report which shall be submitted to the governor, the temporary president of the senate, the speaker of the assembly, the minority leader of the senate and the minority leader of the assembly, within eight months after the effective date of this act",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DFS",
+     "kind": "duty",
+     "deadline_kind": "days_after_effective",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2021-12-22",
+   "computed": "2021-12-22",
+   "verdict": "correct",
+   "note": "act clause applied to signing date"
+  }
+ },
+ "2021-S264": {
+  "records": {
+   "2021-S264-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "fifteenth day before the election for which the ballot is first requested and which states the address where the voter is registered and the address to which the ballot is to be mailed",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Boards of elections",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2021-07-16",
+   "computed": "2021-07-16",
+   "verdict": "correct",
+   "note": "act clause applied to signing date"
+  }
+ },
+ "2021-A2277": {
+  "records": {
+   "2021-A2277-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The inmate shall be supplied with a sufficient quantity of wholesome and nutritious food",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2021-A2277-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the department, in consultation with mental health clinicians, shall divert or remove inmates with serious mental illness, as defined in paragraph (e) of this subdivision, from segregated confinement or confinement in a residential rehabilitation unit",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2021-A2277-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Upon placement of an inmate into segregated confinement or a residential rehabilitation unit at a level one or level two facility, a suicide prevention screening instrument shall be administered by staff from the department or the office of mental health who has been trained for that purpose.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2021-A2277-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "All inmates placed in segregated confinement or a residential rehabilitation unit at a level three or level four facility shall be assessed by a mental health clinician, within seven days of such placement into segregated confinement.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2021-A2277-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "if the mental health clinician finds that an inmate suffers from a serious mental illness, that person shall be diverted or removed from segregated confinement or a residential rehabilitation unit and a recommendation shall be made whether exceptional circumstances",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2021-A2277-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The administrative process described in this clause shall be completed within seven days of the initial assessment, and if the result of such process is that the inmate should be removed from segregated confinement or a residential rehabilitation unit, such removal shall occur as soon as practicable, but in no event more than seventy-two hours",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2021-A2277-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "such inmate shall be diverted to a residential rehabilitation unit and reassessed by a mental health clinician within fourteen days of the initial assessment and at least once every fourteen days thereafter.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2021-A2277-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "A recommendation or determination shall direct the inmate's removal from segregated confinement or a residential rehabilitation unit except in the following exceptional circumstances",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2021-A2277-09": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "shall be offered a heightened level of mental health care, involving a minimum of three hours daily of out-of-cell therapeutic treatment and programming.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2021-A2277-10": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "shall be reviewed by the facility superintendent, in consultation with a mental health clinician, not less than every seven days for as long as the inmate remains in a residential rehabilitation unit.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": "Facility Superintendent"
+    }
+   },
+   "2021-A2277-11": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "All inmates in a residential rehabilitation unit in a level three or level four facility who are not assessed with a serious mental illness at the initial assessment shall be offered at least one interview with a mental health clinician within thirty days",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2021-A2277-12": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Persons in a special population as defined in subdivision thirty-three of section two of this chapter shall not be placed in segregated confinement for any length of time, except in keeplock for a period prior to a disciplinary hearing pursuant to paragraph (l) of this subdivision.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A2277-13": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Individuals in a special population who are in keeplock prior to a disciplinary hearing shall be given seven hours a day out-of-cell time or shall be transferred to a residential rehabilitation unit or residential mental health treatment unit as expeditiously as possible, but in no case longer than forty-eight hours from the time an individual is admitted to keeplock.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A2277-14": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "No person may be placed in segregated confinement for longer than necessary and no more than fifteen consecutive days or twenty total days within any sixty day period. At these limits, he or she must be released from segregated confinement or diverted to a separate residential rehabilitation unit.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A2277-15": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Such admission to a residential rehabilitation unit shall occur as expeditiously as possible and in no case take longer than forty-eight hours from the time such person is placed in segregated confinement.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A2277-16": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the department may place the person in segregated confinement until admission to a residential rehabilitation unit can be effectuated.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A2277-17": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "All segregated confinement and residential rehabilitation units shall create the least restrictive environment necessary for the safety of incarcerated persons, staff, and the security of the facility.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A2277-18": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Persons in segregated confinement shall be offered out-of-cell programming at least four hours per day, including at least one hour for recreation. Persons admitted to residential rehabilitation units shall be offered at least six hours of daily out-of-cell congregate programming, services, treatment, and/or meals, with an additional minimum of one hour for recreation.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A2277-19": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Recreation in all residential rehabilitation units shall take place in a congregate setting, unless exceptional circumstances mean doing so would create a significant and unreasonable risk to the safety and security of other incarcerated persons, staff, or the facility.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A2277-20": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "No limitation on services, treatment, or basic needs such as clothing, food and bedding shall be imposed as a form of punishment. If provision of any such services, treatment or basic needs to an individual would create a significant and unreasonable risk to the safety and security of incarcerated persons, staff, or the facility",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A2277-21": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "such services, treatment or basic needs may be withheld until it reasonably appears that the risk has ended.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A2277-22": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The department shall not impose restricted diets or any other change in diet as a form of punishment.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A2277-23": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Persons in a residential rehabilitation unit shall have access to all of their personal property unless an individual determination is made that having a specific item would pose a significant and unreasonable risk to the safety of incarcerated persons or staff or the security of the unit.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A2277-24": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Upon admission to a residential rehabilitation unit, program and mental health staff shall administer assessments and develop an individual rehabilitation plan in consultation with the resident, based upon his or her medical, mental health, and programming needs.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A2277-25": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "An incarcerated person in a residential rehabilitation unit shall have access to programs and work assignments comparable to core programs and work assignments in general population.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A2277-26": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Such incarcerated persons shall also have access to additional out-of-cell, trauma-informed therapeutic programming aimed at promoting personal development, addressing underlying causes of problematic behavior resulting in placement in a residential rehabilitation unit",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A2277-27": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the department may restrict such person's participation in programming and out-of-cell activities as necessary for the safety of other incarcerated persons and staff.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A2277-28": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "If such restrictions are imposed, the department must provide at least four hours out-of-cell time daily, including at least two hours of therapeutic programming and two hours of recreation, and must make reasonable efforts to reinstate access to programming as soon as possible.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A2277-29": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Any extension of program restrictions beyond fifteen days must be meaningfully reviewed and approved at least every fifteen days by the commissioner and, when appropriate, by the commissioner of mental health.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A2277-30": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Any extension of program restrictions beyond fifteen days must be meaningfully reviewed and approved at least every fifteen days by the commissioner and, when appropriate, by the commissioner of mental health.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A2277-31": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the commissioner must articulate in writing, with a copy provided to the incarcerated person, the specific reason why the person currently poses an extraordinary and unacceptable risk of imminent harm to the safety or security of incarcerated persons or staff.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A2277-32": {
+    "verdict": "wrong",
+    "criteria": [
+     "4"
+    ],
+    "fields": {
+     "kind": "duty"
+    },
+    "quote": "In no case may restrictions imposed by the commissioner extend beyond ninety days unless the person commits a new act defined herein justifying restrictions on program access.",
+    "note": "\"In no case may restrictions imposed by the commissioner extend beyond ninety days\" is a limit (prohibition), not a grant"
+   },
+   "2021-A2277-33": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Restraints shall not be used when incarcerated persons are participating in out-of-cell activities within a residential rehabilitation unit unless an individual assessment is made that restraints are required",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A2277-34": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The department may place a person in segregated confinement for up to three consecutive days and no longer than six days in any thirty day period if, pursuant to an evidentiary hearing, it determines that the person violated department rules which permit a penalty of segregated confinement.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A2277-35": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The department may not place a person in segregated confinement for longer than three consecutive days or six days total in a thirty day period unless the provisions of subparagraph (ii) of this paragraph are met.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A2277-36": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The department may place a person in segregated confinement beyond the limits of subparagraph (i) of this paragraph or in a residential rehabilitation unit only if, pursuant to an evidentiary hearing, it determines by written decision that the person committed one of the following acts",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A2277-37": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The department and the office of mental health shall promulgate rules and regulations pertaining to this clause;",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A2277-38": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The department and the office of mental health shall promulgate rules and regulations pertaining to this clause;",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A2277-39": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner of mental health or his or her designee shall be involved in such determination if the person is or has been on the mental health caseload or appears to require psychiatric attention.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "OMH",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A2277-40": {
+    "verdict": "wrong",
+    "criteria": [
+     "4"
+    ],
+    "fields": {
+     "kind": "duty"
+    },
+    "quote": "No person may be placed in segregated confinement or a residential rehabilitation unit based on the same act or incident that was previously used as the basis for such placement.",
+    "note": "\"No person may be placed in segregated confinement or a residential rehabilitation unit based on the same act\" is a prohibition, stored as power"
+   },
+   "2021-A2277-41": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "No person may be held in segregated confinement for protective custody. Any unit used for protective custody must, at a minimum, conform to requirements governing residential rehabilitation units.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A2277-42": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "All hearings to determine if a person may be placed in segregated confinement shall occur prior to placement in segregated confinement unless a security supervisor, with written approval of a facility superintendent or designee, reasonably believes the person fits the specified criteria",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A2277-43": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "If a hearing does not take place prior to placement, it shall occur as soon as reasonably practicable and at most within five days of such placement unless the charged person seeks a postponement of the hearing.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A2277-44": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Persons at such hearings shall be permitted to be represented by any attorney or law student, or by any paralegal or incarcerated person unless the department reasonably disapproves of such paralegal or incarcerated person",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A2277-45": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Any sanction imposed on an incarcerated person requiring segregated confinement shall run while the person is in a residential rehabilitation unit and the person shall be discharged from the unit before or at the time such sanction expires.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A2277-46": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "In any such case the decision not to discharge such person shall be immediately and automatically subjected to an independent review by the commissioner and the commissioner of mental health or their designees.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A2277-47": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "In any such case the decision not to discharge such person shall be immediately and automatically subjected to an independent review by the commissioner and the commissioner of mental health or their designees.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A2277-48": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "There shall be a meaningful periodic review of the status of each incarcerated person in a residential rehabilitation unit at least every sixty days to assess the person's progress and determine if the person should be discharged from the unit.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A2277-49": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Following such periodic review, if the person is not discharged from the unit, program and mental health staff shall specify in writing the reasons for the determination and the program, treatment, service, and/or corrective action required before discharge.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A2277-50": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "When an incarcerated person is discharged from a residential rehabilitation unit, any remaining time to serve on any underlying disciplinary sanction shall be dismissed.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A2277-51": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "All special housing unit, keeplock unit and residential rehabilitation unit staff and their supervisors shall undergo a minimum of thirty-seven hours and thirty minutes of training prior to assignment to such unit, and twenty-one hours of additional training annually thereafter",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A2277-52": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Prior to presiding over any hearings, all hearing officers shall undergo a minimum of thirty-seven hours and thirty minutes of training, with one additional day of training annually thereafter",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A2277-53": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The department shall publish monthly reports on its website, with semi-annual and annual cumulative reports, of the total number of people who are in segregated confinement and the total number of people who are in residential rehabilitation units on the first day of each month.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A2277-54": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "in which case, as a last resort, the department shall have the authority to issue misbehavior reports, pursue disciplinary charges, or impose new or additional segregated confinement sanctions.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A2277-55": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The conditions and services provided in the residential mental health treatment units shall be at least comparable to those in all residential rehabilitation units, and all residential mental health treatment units shall be in compliance with all provisions of paragraphs (i), (j), (k), and (l) of subdivision six of section one hundred thirty-seven of this chapter.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "Residential Mental Health Treatment Units"
+    }
+   },
+   "2021-A2277-56": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The residential mental health treatment units shall also provide the additional mental health treatment, services, and programming delineated in this section.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "Residential Mental Health Treatment Units"
+    }
+   },
+   "2021-A2277-57": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "such inmate shall be removed to a residential rehabilitation unit that is not a residential mental health treatment unit where alternative mental health treatment and/or other therapeutic programming, as determined by a mental health clinician, shall be provided.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2021-A2277-58": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "An inmate in a residential mental health treatment unit shall not be sanctioned with segregated confinement for misconduct on the unit, or removed from the unit and placed in segregated confinement or a residential rehabilitation unit, except in exceptional circumstances",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2021-A2277-59": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "If the result of such process is that an inmate who was immediately transferred to a residential rehabilitation unit should be removed from such unit, such removal shall occur as soon as practicable, and in no event longer than seventy-two hours from the completion of the administrative process.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": "Joint Central Office Review Committee"
+    }
+   },
+   "2021-A2277-60": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "All staff working in a residential mental health treatment unit shall also receive all training mandated in paragraph (n) of subdivision six of section one hundred thirty-seven of this chapter.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A2277-61": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The justice center shall assess the department's compliance with the provisions of sections two, one hundred thirty-seven, and one hundred thirty-eight of this chapter relating to segregated confinement and residential rehabilitation units",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Justice Center for the Protection of People with Special Needs",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A2277-62": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "shall issue a public report, no less than annually, with recommendations to the department and legislature, regarding all aspects of segregated confinement and residential rehabilitation units in state correctional facilities",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Justice Center for the Protection of People with Special Needs",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A2277-63": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Assess compliance of local correctional facilities with the terms of paragraphs (h), (i), (j), (k), (l), (m), (n) and (o) of subdivision six of section one hundred thirty-seven of this chapter.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "SCOC",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-A2277-64": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commission shall issue a public report regarding all aspects of segregated confinement and residential rehabilitation units at least annually with recommendations to local correctional facilities, the governor, the legislature",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "SCOC",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [
+   {
+    "blind": "b11",
+    "quote": "All inmates in segregated confinement in a level one or level two facility who are not assessed with a serious mental illness at the initial assessment shall be offered at least one interview with a mental health clinician within seven days of their initial mental health assessment",
+    "kind": "duty",
+    "agency": "DOCCS",
+    "dropped_by": null,
+    "note": "137(6)(d)(v) [fourteen] {{seven}}; only the level three/four sentence is stored (-11); extends_existing true"
+   }
+  ],
+  "effective_date": {
+   "stored": "2022-03-31",
+   "computed": "2022-03-31",
+   "verdict": "correct",
+   "note": "one year after 2021-03-31"
+  }
+ },
+ "2015-A9005": {
+  "records": {
+   "2015-A9005-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "This act shall take effect immediately and shall remain in full force and effect until March 31, 2017, when it shall expire and be deemed repealed.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "County District Attorneys",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2015-A9005-02": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "State Comptroller",
+     "actor_raw": "comptroller (depositor of ESRLF sums)"
+    },
+    "quote": "provided, however, that such sums shall not be deposited for state fiscal years two thousand eleven--two thousand twelve, two thousand twelve--two thousand thirteen, two thousand fourteen--two thousand fifteen , two thousand fifteen--two thousand sixteen, two thousand sixteen--two thousand seventeen and two thousand seventeen--two thousand eighteen;",
+    "note": "\"such sums shall not be deposited\": passive, agency Unspecified"
+   },
+   "2015-A9005-03": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "HESC (program of ch 268/1996, education law)"
+    },
+    "quote": "This act shall take effect January 1, 1997 and shall expire and be deemed repealed September 1, 2021; provided that any person who has begun to receive the benefits of this act",
+    "note": "sunset extension with holder in title; agency Unspecified"
+   },
+   "2015-A9005-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "provided that section 163 of the state finance law, as added by section thirty-three of this act shall remain in full force and effect until June 30, 2021 at which time it shall expire and be deemed repealed.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State agencies",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2015-A9005-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "provided, further, that sections thirteen and fourteen of this act shall take effect January 1, 2006 and shall be deemed repealed July 31, 2021",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State agencies",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2015-A9005-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "If the contracting agency has not complied with one or more provisions of this article, the state comptroller May approve the awarded contract if: A. The contracting agency determines that the noncompliance was a non-material deviation from one or more provisions of this article. For the purposes of this subdivision \"non-material deviation\" shall mean that such noncompliance did not prejudice",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State Comptroller",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-A9005-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "such notice shall be provided to all unsuccessful offerers by the state agency for the specific procurement. (Iii) the state agency, upon a request made within fifteen days of release of the written or electronic notice from the unsuccessful offerer for a debriefing, shall schedule the debriefing to occur within a reasonable time of such request. Debriefings shall be conducted",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State agencies",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-A9005-09": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Debriefings shall be conducted by the state agency with the unsuccessful offerer in-person, provided, however, the parties May mutually agree to utilize other Means such as, but not limited to, by telephone, video-conferencing or other types of electronic communications.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State agencies",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-A9005-10": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "State agency personnel participating in the debriefing discussion shall have been involved with and knowledgeable about the procurement and the evaluation and selection of the successful offerer or offerers.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State agencies",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-A9005-11": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "such debriefing shall include, but need not be limited to: (A) the reasons that the proposal, bid or offer submitted by the unsuccessful offerer was not selected for award; (B) the qualitative and quantitative analysis employed by the agency in assessing the relative merits of the proposals, bids or offers;",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State agencies",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-A9005-12": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The debriefing shall also provide, to the extent practicable, general advice and guidance to the unsuccessful offerer concerning potential Ways that their future proposals, bids or offers could be more responsive.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State agencies",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-A9005-13": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "when the value or reasonably estimated value of such consideration exceeds twenty-five thousand dollars, shall not become a valid enforceable contract unless such contract or other instrument shall first be approved by the comptroller and filed in his office.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State Comptroller",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2015-A9005-14": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the chair of the workers' compensation board shall transfer one hundred forty million dollars to the state insurance fund, for partial payment and partial satisfaction of the state's obligations to the state insurance fund under workers' compensation Law Section eighty-eight-c for two thousand sixteen.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "WCB",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-A9005-15": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the chair of the workers' compensation board shall authorize the board to expend up to sixty million dollars to implement infrastructure and system upgrades consistent with recommendations of the workers' compensation board redesign and reengineering project.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "WCB",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-A9005-16": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the chair of the workers' compensation board shall authorize the board to expend up to forty million dollars for: (A) transfer into the training and educational program on occupational safety and health fund created pursuant to chapter eight hundred eighty-six of the laws of nineteen hundred eighty-five and Section ninety-seven-c of the state Finance Law;",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "WCB",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-A9005-17": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Any and all funds remaining after accounting for the transfers and expenditures set forth above May, at the discretion of the director of the budget, either remain with the workers' compensation board or be transferred to the general fund for the purpose of reducing budget gaps.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOB",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-A9005-18": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Annually, the workers' compensation board will provide to the director of the budget, the chair of the senate Finance Committee, and the chair of the assembly Ways and Means Committee, an accounting of such funds and all associated income received.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "WCB",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-A9005-19": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Benefits under this chapter shall be payable to such volunteers in the first instance and to the extent that funds are available out of funds appropriated to the United States Department of Labor under Public Law 109-148 to reimburse the uninsured employer's fund for the payment of such benefits and thereafter from the uninsured employers' fund.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "WCB",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": "Uninsured Employers' Fund"
+    }
+   },
+   "2015-A9005-20": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The uninsured employers' fund May pay for volunteers' medical treatment Notwithstanding such medical expenses having been denied by the World Trade Center health organization.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "WCB",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "Uninsured Employers' Fund"
+    }
+   },
+   "2015-A9005-23": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "commencing on April first, two thousand fifteen, and continuing through March thirty-first, two thousand twenty-one, the comptroller is hereby authorized to transfer monies from the dedicated infrastructure investment fund to the general fund, and from the general fund to the dedicated infrastructure investment fund",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State Comptroller",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2015-A9005-24": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "on a form to be prescribed by the commissioner. Such application shall be filed on or before the appropriate taxable status date with the assessor of the municipality having the power to assess real property. Once an exemption is granted, no renewal thereof shall be necessary. \u00a7 3. Subdivision 2 of section 487 of the real property tax law, as",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DTF",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2015-A9005-25": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Provided however, in addition to the annual report required pursuant to this paragraph, the division shall issue a supplemental mid-year report for the Year two thousand sixteen, no later than June thirtieth, two thousand sixteen.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "OGS",
+     "kind": "duty",
+     "deadline_kind": "fixed_date",
+     "extends_existing": true,
+     "agency_unit": "Division of Service-disabled Veterans' Business Development"
+    }
+   },
+   "2015-A9005-26": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "State Comptroller (tribal-state compact revenue account, SFL 99-h)"
+    },
+    "quote": "This act shall take effect immediately, and shall expire and be deemed repealed December 31, 2023. \u00a7 2. Section 3 of part W of chapter 60 of the laws of 2011, amending the state finance law relating to disbursements from the tribal-state compact revenue account to certain municipalities, as amended by section 22 of part hh of chapter 57 of",
+    "note": "sunset extension; agency Unspecified, actor_raw is the account"
+   },
+   "2015-A9005-27": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "within thirty-five days upon receipt of such funds by such city, one percent or two hundred thousand dollars, whichever is greater, of the total annual amount received in each year shall be transferred to the not-for-profit organization known as the Niagara Falls Underground Railroad interpretive Center",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Cities",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": "City of Niagara Falls"
+    }
+   },
+   "2015-A9005-28": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "within thirty-five days upon receipt of such funds by such city, fifty thousand dollars of the total annual Amount received in each Year shall be transferred to the Niagara Falls housing authority established pursuant to title twelve of article thirteen of the Public housing Law for upgrades to their facilities;",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Cities",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "City of Niagara Falls"
+    }
+   },
+   "2015-A9005-29": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "within thirty-five days upon receipt of such funds by such city, fifty thousand dollars of the total Amount received in each Year shall be transferred to the western new york state first response and preparedness Center;",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Cities",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "City of Niagara Falls"
+    }
+   },
+   "2015-A9005-30": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "within thirty-five days upon receipt of such funds by such city, fifty thousand dollars of the total Amount received in each Year shall be transferred to mount saint mary's neighborhood health Center;",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Cities",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "City of Niagara Falls"
+    }
+   },
+   "2015-A9005-31": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "Any member of the assembly serving in a special capacity in a position set forth in the following schedule shall be paid the allowance set forth in such schedule only for the legislative term commencing January first, two thousand seventeen and terminating December thirty-first, two thousand eighteen:",
+    "note": "\"Any member of the assembly serving in a special capacity ... shall be paid the allowance\" is an entitlement (stipend), not a duty"
+   },
+   "2015-A9005-32": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "provided further that, the provisions of article 5-a of the legislative law as added by section eight of this act shall expire June 30, 2017 when upon such date the provisions of such article shall be deemed repealed;",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Legislature",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [
+   {
+    "blind": "b21a",
+    "quote": "The provisions of this subdivision shall expire July first, two thousand nineteen.",
+    "kind": "power",
+    "agency": "PERB",
+    "dropped_by": "sunset_shortened",
+    "note": "Part L s1: CSL 209(4)(d) expiry moves from [thirty-nine years from July first 1977] = 2016 to July 1 2019: an extension, not a shortening"
+   },
+   {
+    "blind": "b21b",
+    "quote": "The provisions of this subdivision shall expire July first, two thousand nineteen.",
+    "kind": "power",
+    "agency": "PERB",
+    "dropped_by": "sunset_shortened",
+    "note": "Part L s2: CSL 209(6)(f) \"[three years from] July first, two thousand [thirteen] nineteen\" = 2016 -> 2019, extension"
+   }
+  ],
+  "effective_date": {
+   "stored": "2016-04-13",
+   "computed": "2016-04-13",
+   "verdict": "correct",
+   "note": "act immediately 2016-04-13; Parts carry own clauses (B retro 2016-03-31)"
+  }
+ },
+ "2021-S5261": {
+  "records": {
+   "2021-S5261-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "shall be under the supervision of the regents of the university of the state of New York, shall register with the state education department and shall be issued a certificate granting such employee stock ownership plan the authority to hold shares of such corporation.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Regents of the University of the State of New York",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S5261-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "shall register with the state education department and shall be issued a certificate granting such employee stock ownership plan the authority to hold shares of such corporation.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Regents of the University of the State of New York",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S5261-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "In addition, the failure to maintain an active registration with the state education department shall also subject such certificate to discipline as provided above.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Regents of the University of the State of New York",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S5261-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The secretary of state shall be the designated agent for service of process in any disciplinary matter involving a registered employee stock ownership plan.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2024-07-21",
+   "computed": "2024-07-21",
+   "verdict": "correct",
+   "note": "two years after 2022-07-21"
+  }
+ },
+ "2021-S2209": {
+  "records": {
+   "2021-S2209-01": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "7"
+    ],
+    "fields": {},
+    "quote": "The office of addiction services and supports shall monitor programs providing care and treatment to incarcerated individuals in correctional facilities operated by the department of corrections and community supervision who have a history of alcohol or substance use disorder or dependence.",
+    "note": "only new matter in the monitoring sentence is renaming (\"office of [alcoholism and substance abuse] addiction services and supports\", \"[inmates] incarcerated individuals\"): reprinted duty, nothing widened"
+   },
+   "2021-S2209-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The office shall also develop guidelines for the operation of alcohol and substance use disorder treatment programs in such correctional facilities, based on best practices, and tailored to the nature of the individual's substance use, history of past treatment, and history of mental illness or trauma, which may include harm reduction strategies,",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "OASAS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2021-S2209-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "No later than the first day of December of each year, the office shall submit a report regarding: (1) the adequacy and effectiveness of alcohol and substance use disorder treatment programs operated by the department of corrections and community supervision",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "OASAS",
+     "kind": "duty",
+     "deadline_kind": "fixed_date",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2021-S2209-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The department of corrections and community supervision shall provide the office with information needed to complete this report.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOCCS",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2021-10-23",
+   "computed": "2021-10-23",
+   "verdict": "correct",
+   "note": "act clause applied to signing date"
+  }
+ },
+ "2009-A41011": {
+  "records": {
+   "2009-A41011-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "5"
+    ],
+    "fields": {
+     "deadline_date": "2010-09-16"
+    },
+    "quote": "the individual payments from all undisbursed general fund and state special revenue fund aid to localities appropriations, commencing on September 16, 2010, shall be uniformly reduced by the percentage set forth in the written allocation plan required by this section",
+    "note": "fixed_date with null date; text \"commencing on September 16, 2010\""
+   },
+   "2009-A41011-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Reductions under this section shall commence on September 16, 2010 and be made in accordance with a written allocation plan prepared by the director of the budget, which shall be filed with the state comptroller, the chairman of the senate finance committee and the chairman of the assembly ways and means committee.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOB",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2009-A41011-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The director of the budget shall prepare appropriately reduced certificates, which shall be filed with the state comptroller, the chairman of the senate finance committee and the chairman of the assembly ways and means committee.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOB",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2009-A41011-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Upon request of the director of the budget, the comptroller shall transfer the cash equal to the uniform appropriation reduction to the fmap contingency fund established pursuant to section 99-r of the state finance law to the extent such cash is available.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State Comptroller",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2009-A41011-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "If an extension of enhanced fmap is not enacted by November 15, 2010, the governor, temporary president of the senate, and the speaker of the assembly shall cause their respective appropriate personnel to meet to review the impact of the uniform reductions and discuss potential alternative reductions.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Governor",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2009-A41011-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "If an extension of enhanced fmap is not enacted by November 15, 2010, the governor, temporary president of the senate, and the speaker of the assembly shall cause their respective appropriate personnel to meet to review the impact of the uniform reductions and discuss potential alternative reductions.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Governor",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2009-A41011-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "If an extension of enhanced fmap is not enacted by November 15, 2010, the governor, temporary president of the senate, and the speaker of the assembly shall cause their respective appropriate personnel to meet to review the impact of the uniform reductions and discuss potential alternative reductions.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Governor",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2009-A41011-08": {
+    "verdict": "wrong",
+    "criteria": [
+     "5"
+    ],
+    "fields": {
+     "deadline_date": "2011-03-31"
+    },
+    "quote": "On March 31, 2011, the director of the budget shall calculate the difference, if any, between the actual closing balance in the general fund on March 31, 2011 and the closing balance projected by the division of the budget in the 2010-11 enacted budget financial plan.",
+    "note": "\"On March 31, 2011, the director of the budget shall calculate\": fixed_date with null date"
+   },
+   "2009-A41011-09": {
+    "verdict": "wrong",
+    "criteria": [
+     "3",
+     "5"
+    ],
+    "fields": {
+     "agency": "DOB",
+     "deadline_date": "2011-04-15"
+    },
+    "quote": "the amount of the difference shall be disbursed by April 15, 2011 or, in the case of Medicaid, as soon as practicable following the receipt of all necessary federal approvals, to uniformly mitigate the uniform reductions made pursuant to section one of this act",
+    "note": "\"the amount of the difference shall be disbursed by April 15, 2011\" passive; agency Unspecified, date null"
+   },
+   "2009-A41011-11": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "monies in the fund on such date not required to be paid pursuant to the provisions of Section two of the chapter of the laws of two thousand ten which added this Section may be transferred to the general fund",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOB",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2009-A41011-12": {
+    "verdict": "wrong",
+    "criteria": [
+     "3",
+     "5"
+    ],
+    "fields": {
+     "agency": "SED (paying State body for 3609-a/b/d/f school aid)",
+     "deadline_date": "2010-09-30"
+    },
+    "quote": "for the 2010-11 school year shall be due and payable on or before September 30, 2010.",
+    "note": "\"shall be due and payable on or before September 30, 2010\": agency Unspecified, date null"
+   }
+  },
+  "missed": [
+   {
+    "blind": "b4",
+    "quote": "all payment amounts withheld pursuant to this section shall be paid to the recipients from which they were withheld by March 31, 2011",
+    "kind": "duty",
+    "agency": "DOB",
+    "dropped_by": null,
+    "note": "Part A s2(a), wholly new section; passive, conditional repayment duty with fixed date"
+   }
+  ],
+  "effective_date": {
+   "stored": "2010-08-04",
+   "computed": "2010-08-04",
+   "verdict": "correct",
+   "note": "immediately 2010-08-04 (Part A expires 2011-04-15, Part B retro 2010-04-01)"
+  }
+ },
+ "2021-S7191": {
+  "records": {
+   "2021-S7191-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "A write-in ballot cast in a party primary for a candidate not enrolled in such party shall be void and not counted.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Boards of elections",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2021-10-08",
+   "computed": "2021-10-08",
+   "verdict": "correct",
+   "note": "act clause applied to signing date"
+  }
+ }
+}
