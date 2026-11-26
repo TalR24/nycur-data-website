@@ -3043,7 +3043,26 @@ def _norm_actor(s):
     return "" if s in ("", "unspecified", "none", "null") else s
 
 
-def dedupe_law(lst):
+APPLY_B120 = True          # Nov 26 2026 (B120): parallel provisions far apart in the law (different Parts or sections, both auditors: 2019-S6555 -05/-17, 2021-S6362) are distinct
+
+
+def b120_far_apart(a, b, text, gap=1500):
+    """B120: both quotes located in the law, not overlapping, and at least `gap` characters apart."""
+    if not text:
+        return False
+    ca, cb = (re.split(r"\s+\(", (x.get("citation") or "").strip())[0].lower() for x in (a, b))
+    if ca and ca == cb:          # same code provision cited: one duty, even when the act restates it (judge Nov 26: 2025-S9009-94, 2013-A9206-56)
+        return False
+    sa, sb = locate_span(a.get("quote") or "", text), locate_span(b.get("quote") or "", text)
+    if not sa or not sb:
+        return False
+    (a0, a1), (b0, b1) = sa[:2], sb[:2]
+    if a0 < b1 and b0 < a1:
+        return False
+    return (b0 - a1 if a1 <= b0 else a0 - b1) >= gap
+
+
+def dedupe_law(lst, text=None):
     """Rule 4: same actor, quotes overlapping 70%+: keep the one with a stated deadline, else the longer quote. A deadline
     clause split off as its own duty ('The campaign shall begin no later than 90 days ...') merges into the main duty."""
     out = list(lst)
@@ -3063,6 +3082,8 @@ def dedupe_law(lst):
             if same_provision(a.get("quote"), b.get("quote")) and a.get("kind") == b.get("kind"):
                 if distinct_provisions(a, b):
                     bump("dedupe_kept_distinct"); continue
+                if APPLY_B120 and b120_far_apart(a, b, text):
+                    bump("b120_far_apart_kept"); continue
                 has_a, has_b = a.get("deadline_kind") not in (None, "none"), b.get("deadline_kind") not in (None, "none")
                 keep, lose = (a, b) if (has_a and not has_b) or (has_a == has_b and len(a["quote"]) >= len(b["quote"])) else (b, a)
                 out.remove(lose); drop(lose, "duplicate_provision", "overlaps %s by 70%%+" % keep["obligation_id"])
@@ -5241,8 +5262,8 @@ def build_records(laws):
         if APPLY_B70:
             resolve_bare_defined_term(law_d + law_p, text)
         appointment_period(law_d + law_p, text)
-        law_d = drop_prepare_duplicates(drop_conditions(dedupe_law(law_d)))
-        law_p = drop_prepare_duplicates(drop_conditions(dedupe_law(law_p)))
+        law_d = drop_prepare_duplicates(drop_conditions(dedupe_law(law_d, text)))
+        law_p = drop_prepare_duplicates(drop_conditions(dedupe_law(law_p, text)))
         if APPLY_U1:
             sx_recs, sx_unnamed = sunset_extension_records(law, text, eff, law_d + law_p, res)
             if APPLY_AG9 and sx_recs:          # AG9: a holder-less extension built from a sentence that moves an EFFECTIVE date is no extension

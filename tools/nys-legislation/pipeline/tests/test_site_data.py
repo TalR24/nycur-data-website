@@ -51,7 +51,8 @@ if (b.DATA and os.path.isdir(os.path.join(b.DATA, "duties"))):
     allr = [r for p in glob.glob(str(real / "records_*.json")) for r in json.load(open(p))]
     check("real: every law key in laws.json", all(r["l"] in lk for r in allr))
     check("real: id and quote everywhere", all(r["i"] and r["q"] for r in allr))
-    check("real: record files under 3 MB", all(os.path.getsize(p) < 3e6 for p in glob.glob(str(real / "records_*.json"))))
+    import gzip as _gz          # Nov 26 2026: the load budget is what readers download (GitHub Pages gzips); raw ceiling kept at 4 MB
+    check("real: record files under 700 KB gzipped and 4 MB raw", all(len(_gz.compress(open(p, "rb").read(), 6)) < 700_000 and os.path.getsize(p) < 4e6 for p in glob.glob(str(real / "records_*.json"))))
 else:
     print("(real-data smoke skipped: data/ absent)")
 print("%d passed, %d failed" % (passed, failed))

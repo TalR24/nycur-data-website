@@ -1,0 +1,1143 @@
+{
+ "_scoring": {
+  "auditor": "B",
+  "night": "20261126",
+  "laws": 11,
+  "stored_records": 55,
+  "correct": 49,
+  "wrong_fields": 4,
+  "not_real": 2,
+  "missed": 9,
+  "precision_strict": "49/55 = 89.1% (Wilson 95% 78.2-94.9)",
+  "precision_real": "53/55 = 96.4% (Wilson 95% 87.7-99.0)",
+  "recall": "53/62 = 85.5% (Wilson 95% 74.7-92.2)",
+  "effective_dates": "11/11 correct",
+  "calibration": {
+   "2015-A564": {
+    "records": {
+     "2015-A564-01": {
+      "verdict": "correct",
+      "criteria": [],
+      "fields": {},
+      "quote": "the commissioner shall take into consideration the impact on the horticulture and other plant based industries in the state of new york, including but not limited to greenhouse, nursery, and fruit and vegetable production.",
+      "note": ""
+     }
+    },
+    "missed": [],
+    "effective_date": {
+     "stored": "2015-08-13",
+     "computed": "immediately",
+     "verdict": "correct",
+     "note": ""
+    }
+   },
+   "2015-S3217": {
+    "records": {
+     "2015-S3217-01": {
+      "verdict": "correct",
+      "criteria": [],
+      "fields": {},
+      "quote": "the authority may issue a retail license for on-premises consumption for a premises which shall be located within two hundred feet of a building occupied exclusively as a church, synagogue, or other place of worship",
+      "note": "ABC 64(7)(e-7) wholly new paragraph widening the place where the authority may license; extends true"
+     }
+    },
+    "missed": [],
+    "effective_date": {
+     "stored": "2015-09-25",
+     "computed": "immediately",
+     "verdict": "correct",
+     "note": ""
+    }
+   }
+  },
+  "note": "recall denominator = real stored records (all on or accepted against the blind list) + misses; laws with no records: 2021-S763 (veteran definition), 2021-S7744 (insurer duties), 2021-S7655 (beer definition)"
+ },
+ "_classes": [
+  {
+   "name": "duplicate_provision gate drops parallel provisions from a different chapter/section",
+   "criteria": [
+    "9",
+    "1"
+   ],
+   "instances": [
+    "2021-S6362-03",
+    "2021-S6362-04",
+    "2021-S6362-10",
+    "2021-S6362-11",
+    "2021-S5357-06"
+   ],
+   "rule": "dropped rule=='duplicate_provision' AND overlapped record (from reason 'overlaps <id>') has same matter_id and same agency AND dropped quote != kept quote (near-parallel text, not identical); dropped records carry no citation, so this over-counts true near-duplicates",
+   "db_matches": 245,
+   "db_examples": [
+    "2009-A10468-12",
+    "2009-A10468-13",
+    "2009-A10468-14"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "condition_of_other_record drops a separate prohibition in another section",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2021-S7171-07"
+   ],
+   "rule": "needs_judgment: dropped records carry no citation to compare with the target record",
+   "db_matches": null,
+   "db_examples": [],
+   "needs_judgment": true,
+   "laws": [
+    "2021-S7171"
+   ]
+  },
+  {
+   "name": "sunset extension stored with agency Unspecified when the extended provision names its holder",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2021-S6362-13",
+    "2021-S6362-18"
+   ],
+   "rule": "record_source startswith 'sunset_extension' AND agency in ('Unspecified','',None)",
+   "db_matches": 30,
+   "db_examples": [
+    "2009-S8169-37",
+    "2011-S7408-01",
+    "2013-S2605-73"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "entitlement stored as a duty (known class, recurrence count)",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2021-S7232-14"
+   ],
+   "rule": "provision_kind!='power' AND quote ~ /\\b(employees?|members?|officers?)\\b[^.]{0,120}\\bshall (be paid|receive|continue to receive)\\b/i",
+   "db_matches": 30,
+   "db_examples": [
+    "2009-A11144-23",
+    "2009-A9174-04",
+    "2009-S3583-09"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "State-convened labor-management committee stored as its own agency",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2021-S7232-15"
+   ],
+   "rule": "agency ~ /labor-management/i (committee stored as agency instead of OER parent + agency_unit)",
+   "db_matches": 31,
+   "db_examples": [
+    "2009-A8955-05",
+    "2009-S8245-07",
+    "2009-S8412-09"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "signage installation-and-maintenance duty not recurrence ongoing",
+   "criteria": [
+    "6"
+   ],
+   "instances": [
+    "2021-S6765-01"
+   ],
+   "rule": "deliverable_type=='signage or installation' AND quote ~ /installation and maintenance/i AND recurrence!='ongoing'",
+   "db_matches": 52,
+   "db_examples": [
+    "2009-A8252-01",
+    "2009-S6237-01",
+    "2009-S6459-01"
+   ],
+   "needs_judgment": false
+  },
+  {
+   "name": "narrowing amendment of an existing power stored as an extends_existing power",
+   "criteria": [
+    "1",
+    "7"
+   ],
+   "instances": [
+    "2021-S7171-08"
+   ],
+   "rule": "extends_existing AND quote ~ /shall have the power to/i AND quote ~ /\\bparagraph\\b/ (weak; true class needs the bracket/brace diff)",
+   "db_matches": 1,
+   "db_examples": [
+    "2021-S7171-08"
+   ],
+   "needs_judgment": true,
+   "laws": [
+    "2021-S7171"
+   ]
+  },
+  {
+   "name": "joint actor stored for one body (known class): 'upon audit and warrant of the comptroller ... and by the appropriate fiscal officer'",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2021-S4308 (396-a(1),(2))"
+   ],
+   "rule": "needs_judgment: stored quotes omit the second actor",
+   "db_matches": null,
+   "db_examples": [],
+   "needs_judgment": true,
+   "laws": [
+    "2021-S4308"
+   ]
+  }
+ ],
+ "2021-S7232": {
+  "records": {
+   "2021-S7232-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Notwithstanding the provisions of this section, the director of the budget may reduce the salary of any such position which is or becomes vacant.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOB",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S7232-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the director of the budget is authorized to add appropriate adjustments and/or payments to the compensation which such officers and employees are otherwise entitled to receive.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOB",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S7232-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The director of the budget shall issue certificates which shall contain schedules of positions and the salaries and/or payments thereof for which adjustments and/or payments are made pursuant to the provisions of this subdivision",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOB",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S7232-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "any increase in compensation may be withheld in whole or in part from any employee to whom the provisions of this section are applicable when, in the opinion of the director of the budget and the director of employee relations, such increase is not warranted or is not appropriate for any reason.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOB",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S7232-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "any increase in compensation may be withheld in whole or in part from any employee to whom the provisions of this section are applicable when, in the opinion of the director of the budget and the director of employee relations, such increase is not warranted or is not appropriate for any reason.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOB",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S7232-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the state comptroller is authorized to pay any amounts required during the fiscal year commencing April 1, 2019, April 1, 2020 or April 1, 2021, by the provisions of this act for any state department or agency",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State Comptroller",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S7232-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the director of the budget is authorized to allocate to the various departments and agencies, from any appropriations available in any fund, the amounts necessary to pay such amounts.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOB",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S7232-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the state shall contribute an amount designated in such agreement and for the period covered by such agreement to the accounts of such employees enrolled for dependent care deductions",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State agencies",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "State of New York"
+    }
+   },
+   "2021-S7232-14": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "employees in eligible titles who fall under the pilot workers compensation program that was collectively negotiated by the state and an employee organization shall be paid in accordance with the terms of that agreed upon program.",
+    "note": "\u00a7 13(b) 'employees in eligible titles ... shall be paid in accordance with the terms of that agreed upon program' is an entitlement: the subject is the beneficiary"
+   },
+   "2021-S7232-15": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "OER",
+     "agency_unit": "statewide labor-management committee"
+    },
+    "quote": "which shall after April 2, 2019, have the responsibility of studying, making recommendations concerning the major issues of productivity, the quality of work life and implementing the agreements reached.",
+    "note": "\u00a7 9 'there shall be a statewide labor-management committee continued and administered pursuant to the terms of the agreement negotiated between the state and an employee organization': a body the State convenes under the agreement; parent agency (Governor's Office of Employee Relations) with the committee as unit, not a free-standing agency"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2021-06-11 (retroactive_to 2019-04-02)",
+   "computed": "2021-06-11, deemed in effect on and after 2019-04-02",
+   "verdict": "correct",
+   "note": ""
+  }
+ },
+ "2021-S7171": {
+  "records": {
+   "2021-S7171-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the probation service may adjust a proceeding where the court has referred a case to the probation service in accordance with section 320.6 of this article in conjunction with or subsequent to the issuance of an order pursuant to subdivision one of section 345.1",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "County Probation Department",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S7171-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the probation service shall adjust the matter unless good cause is shown and is documented in its records.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "County Probation Department",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S7171-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "nor shall the detention of a child adjudicated solely for an act that would constitute a violation as defined in subdivision three of section 10.00 of the penal law, be directed",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S7171-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "there shall be a rebuttable presumption that the court shall adjourn the case in contemplation of dismissal pursuant to this section, refer the case to the probation service for adjustment services pursuant to section 320.6 of this article or dismiss the case pursuant to subdivision two of section 352.1 of this article.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S7171-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "there shall be a rebuttable presumption that the court shall refer the case to the probation service for adjustment services in accordance with this subdivision, dismiss the case pursuant to subdivision two of section 352.1 of this article or adjourn the case in contemplation of dismissal pursuant to section 315.3 of this article.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S7171-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "there shall be a rebuttable presumption that the court shall refer the case to the probation service for adjustment services in accordance with section 320.6 of this article, dismiss the case pursuant to subdivision two of section 352.1 of this article or adjourn the case in contemplation of dismissal pursuant to section 315.3 of this article.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S7171-09": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The court shall not order detention, probation or placement of a youth solely adjudicated under this subdivision.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S7171-10": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the court may modify the conditions of the conditional discharge but may not order any other disposition under section 352.2 of this article",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S7171-11": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the records shall be sealed automatically at the expiration, as applicable, of a successful period of an adjustment, adjournment in contemplation of dismissal or conditional discharge.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S7171-12": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "nor shall a principal under the age specified who is charged solely with a violation as defined in subdivision three of section 10.00 of the penal law be subject to detention",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S7171-08": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "7"
+    ],
+    "fields": {},
+    "quote": "the court shall have the power to enter an order of disposition in accordance with paragraph (a) of subdivision one of this section.",
+    "note": "FCA 352.2(4): the only new matter in the quoted clause, '[paragraphs] {{paragraph}} (a) [and (b)]', NARROWS the existing dispositional power (plus new conditions 'solely' and 'if the presumption ... has been rebutted'); a narrowing is not a widening extension and the new duty is already -09 'The court shall not order detention, probation or placement'"
+   }
+  },
+  "missed": [
+   {
+    "blind": "b7",
+    "quote": "provided, however, that if the respondent has been found to have committed solely a violation as defined in subdivision three of section 10.00 of the penal law, the respondent shall not be detained pending disposition",
+    "kind": "duty",
+    "agency": "Unified Court System",
+    "dropped_by": "condition_of_other_record",
+    "note": "FCA 350.1(1) is its own prohibition (pending disposition) in a different section from -03 (FCA 304.1(3)); dropped id 2021-S7171-07"
+   }
+  ],
+  "effective_date": {
+   "stored": "2021-12-29",
+   "computed": "immediately",
+   "verdict": "correct",
+   "note": ""
+  }
+ },
+ "2021-S7744": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2022-12-30",
+   "computed": "immediately, signed 2022-12-30",
+   "verdict": "correct",
+   "note": ""
+  }
+ },
+ "2021-S6547": {
+  "records": {
+   "2021-S6547-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner of transportation shall provide for the installation and maintenance of adequate signing of the state highway system as designated pursuant to section one of this act.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "NYSDOT",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2021-10-08",
+   "computed": "immediately",
+   "verdict": "correct",
+   "note": ""
+  }
+ },
+ "2021-S4308": {
+  "records": {
+   "2021-S4308-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "shall thereafter deduct from the retirement allowance of such electing employee the amount of membership dues and such amounts required to be paid by such electing employee for such authorized employee organization-sponsored benefit plans, and shall transmit the sum so deducted to said retiree organization.",
+    "note": "comptroller acts 'upon audit and warrant'; designated insurer is private. Whether 'the comptroller' in \u00a7 6257 (CUNY ORP) is the State comptroller is unverified",
+    "fields_at_audit": {
+     "agency": "State Comptroller",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S4308-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "shall determine the cost of administering deductions for voluntary contributions to the political committee and the cost incurred for administering such contributions shall be paid from the funds of the political committee.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State Comptroller",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S4308-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The designated insurer or insurers upon audit and warrant of the comptroller shall thereafter deduct from the retirement allowance of such member the amount of membership dues and such amounts required to be paid by such member for such authorized employee organization-sponsored benefit plans, and shall transmit the sum so deducted to said retiree organization.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State Comptroller",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S4308-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The designated insurer or insurers upon audit and warrant of the comptroller shall determine the cost of administering deductions for voluntary contributions to the political committee and the cost incurred for administering such contributions shall be paid from the funds of the political committee.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State Comptroller",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [
+   {
+    "blind": "b2",
+    "quote": "The designated insurer or insurers upon audit and warrant of the comptroller for employees of the state university and by the appropriate fiscal officer for employees of an electing employer shall thereafter deduct from the retirement allowance",
+    "kind": "duty",
+    "agency": "electing employers' fiscal officers (local/community college sponsors)",
+    "dropped_by": null,
+    "note": "Educ 396-a(1) joint actor: only the comptroller was stored (-01)"
+   },
+   {
+    "blind": "b3b",
+    "quote": "The designated insurer or insurers upon audit and warrant of the comptroller for employees of the state university and by the appropriate fiscal officer for employees of an electing employer shall determine the cost of administering deductions",
+    "kind": "duty",
+    "agency": "electing employers' fiscal officers",
+    "dropped_by": null,
+    "note": "Educ 396-a(2) joint actor: only the comptroller stored (-02)"
+   }
+  ],
+  "effective_date": {
+   "stored": "2022-12-10",
+   "computed": "one year after 2021-12-10 = 2022-12-10",
+   "verdict": "correct",
+   "note": ""
+  }
+ },
+ "2021-S7031": {
+  "records": {
+   "2021-S7031-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The date or dates by which applications for an abatement pursuant to this section shall be made for the fiscal years beginning in calendar years two thousand fourteen through two thousand twenty-two shall be established by the commissioner of finance by rule",
+    "note": "RPTL 467-a(3)(a) 'through two thousand [twenty] {{twenty-two}} shall be established by the commissioner of finance by rule'; NYC DOF, extends true",
+    "fields_at_audit": {
+     "agency": "Department of Finance of the City of New York",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2021-06-29",
+   "computed": "immediately",
+   "verdict": "correct",
+   "note": ""
+  }
+ },
+ "2021-S6765": {
+  "records": {
+   "2021-S6765-01": {
+    "verdict": "wrong",
+    "criteria": [
+     "6"
+    ],
+    "fields": {
+     "recurrence": "ongoing"
+    },
+    "quote": "The commissioner of transportation shall provide for the installation and maintenance of adequate signing of the state highway system as designated pursuant to section one of this act.",
+    "note": "'shall provide for the installation and maintenance of adequate signing' - maintenance is continuous; identical sibling 2021-S6547-01 is stored ongoing"
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2021-08-20",
+   "computed": "immediately",
+   "verdict": "correct",
+   "note": ""
+  }
+ },
+ "2021-S6362": {
+  "records": {
+   "2021-S6362-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "No court shall issue a judgment in any proceeding authorizing a warrant of eviction against a respondent who has defaulted, or authorize the enforcement of an eviction pursuant to a default judgment, prior to August 31, 2021, without first holding a hearing",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2021-S6362-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "if the tenant provides a hardship declaration to the petitioner, the court, or an agent of the petitioner or the court, the eviction proceeding shall be stayed until at least August 31, 2021.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2021-S6362-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "if the mortgagor provides a hardship declaration to the foreclosing party, the court, or an agent of the foreclosing party or the court, the proceeding shall be stayed until at least August 31, 2021.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2021-S6362-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "if the mortgagor provides a hardship declaration to the foreclosing party, the court, or an agent of the foreclosing party or the court, prior to the execution of the judgment, the execution shall be stayed until at least August 31, 2021.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2021-S6362-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "if the tenant provides a hardship declaration to the petitioner or plaintiff, the court, or an agent of the petitioner or plaintiff or the court, the eviction proceeding shall be stayed until at least August 31, 2021.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2021-S6362-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "if the tenant provides a hardship declaration to the petitioner or plaintiff, the court, or an agent of the petitioner or plaintiff or the court, prior to the execution of the warrant or judgment, the execution shall be stayed until at least August 31, 2021.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2021-S6362-09": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "If the petitioner or plaintiff fails to establish that the tenant persistently and unreasonably engaged in such behavior and the tenant provides or has provided a hardship declaration to the petitioner, petitioner's or plaintiff's agent or the court, the court shall stay or continue to stay any further proceedings until at least August 31, 2021.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2021-S6362-12": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "This act shall take effect immediately and sections one, two, three, four, five, six, seven, eight, nine, ten and twelve of this act shall expire August 31, 2021.",
+    "note": "title names no government body; courts inferred from Part A stays (sections 4-9 are court stays)",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2021-S6362-16": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "This act shall take effect immediately and sections one, two, three, four, five, six, seven, eight, nine, ten and twelve of this act shall expire August 31, 2021.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2021-S6362-17": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "This act shall take effect immediately and sections one, two, three, four, five, six, seven, eight, nine and eleven of this act shall expire August 31, 2021.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2021-S6362-13": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "local taxing jurisdictions (Counties/Cities/Towns/Villages)"
+    },
+    "quote": "This act shall take effect immediately and sections one and two and subdivisions one, two, three, four and five of section three shall expire August 31, 2021.",
+    "note": "ch 381 Part B subpart B \u00a7 3(3): 'shall act as a temporary stay applicable to all entities and persons of all such tax lien sales and tax foreclosure actions' - the extended provisions bind local tax enforcing units; stored agency Unspecified"
+   },
+   "2021-S6362-18": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "local taxing jurisdictions (Counties/Cities/Towns/Villages)"
+    },
+    "quote": "This act shall take effect immediately and sections one and two and subdivisions one, two, three, four and five of section three shall expire August 31, 2021.",
+    "note": "ch 73 Part B subpart B \u00a7 3(3) same tax-lien stay; stored agency Unspecified"
+   },
+   "2021-S6362-15": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "This act shall take effect immediately and shall expire August 31, 2021.",
+    "note": "subpart D of ch 381 Part B sunset; the subpart's substance is not in this law's text so the holder cannot be verified from it; Unspecified left as is",
+    "fields_at_audit": {
+     "agency": "Unspecified",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [
+   {
+    "blind": "b3",
+    "quote": "if the tenant provides a hardship declaration to the petitioner, the court, or an agent of the petitioner or the court, prior to the execution of the warrant, the execution shall be stayed until at least August 31, 2021.",
+    "kind": "duty",
+    "agency": "Unified Court System",
+    "dropped_by": "duplicate_provision",
+    "note": "ch 381/2020 Part A \u00a7 8(a)(ii) (residential) dropped as overlap of -08 which is ch 73/2021 (commercial); different chapter. dropped id 2021-S6362-03"
+   },
+   {
+    "blind": "b4",
+    "quote": "If the petitioner fails to establish that the tenant persistently and unreasonably engaged in such behavior and the tenant provides or has provided a hardship declaration to the petitioner, petitioner's agent or the court, the court shall stay or continue to stay any further proceedings until at least August 31, 2021.",
+    "kind": "duty",
+    "agency": "Unified Court System",
+    "dropped_by": "duplicate_provision",
+    "note": "ch 381 Part A \u00a7 9(4), dropped as overlap of -09 (ch 73 \u00a7 9(4)); dropped id 2021-S6362-04"
+   },
+   {
+    "blind": "b19",
+    "quote": "if the mortgagor provides a hardship declaration to the foreclosing party, the court, or an agent of the foreclosing party or the court, the proceeding shall be stayed until at least August 31, 2021.",
+    "kind": "duty",
+    "agency": "Unified Court System",
+    "dropped_by": "duplicate_provision",
+    "note": "ch 73/2021 Part B subpart A \u00a7 7 (commercial), dropped as overlap of -05 (ch 381 version); dropped id 2021-S6362-10"
+   },
+   {
+    "blind": "b20",
+    "quote": "if the mortgagor provides a hardship declaration to the foreclosing party, the court, or an agent of the foreclosing party or the court, prior to the execution of the judgment, the execution shall be stayed until at least August 31, 2021.",
+    "kind": "duty",
+    "agency": "Unified Court System",
+    "dropped_by": "duplicate_provision",
+    "note": "ch 73 Part B subpart A \u00a7 8, dropped as overlap of -06; dropped id 2021-S6362-11"
+   },
+   {
+    "blind": "b9",
+    "quote": "This act shall take effect immediately and sections one, two, three, four, five, six, seven, eight, nine and eleven of this act shall expire August 31, 2021.",
+    "kind": "power",
+    "agency": "Unified Court System",
+    "dropped_by": null,
+    "note": "ch 381/2020 Part B subpart A \u00a7 12 sunset (amended by \u00a7 7 of this act) has no stored record; -17 is the ch 73 counterpart (\u00a7 24). The identical quote may have been deduped silently (no dropped entry)"
+   }
+  ],
+  "effective_date": {
+   "stored": "2021-05-04",
+   "computed": "2021-05-04, deemed in effect 2021-05-01",
+   "verdict": "correct",
+   "note": "retroactive_to is null though \u00a7 30 says 'deemed to have been in full force and effect on May 1, 2021' (parser gap, not scored)"
+  }
+ },
+ "2021-S7655": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2022-06-30",
+   "computed": "immediately, signed 2022-06-30",
+   "verdict": "correct",
+   "note": ""
+  }
+ },
+ "2021-S5357": {
+  "records": {
+   "2021-S5357-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The governor may extend or modify any directive, by executive order, that has been issued and remains in effect on the effective date of this act for additional 30 day increments in a manner provided for in this section",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Governor",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S5357-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "No later than 5 days prior to the extension or modification of such a directive, the governor shall notify including via electronic means the relevant committee chairs in the assembly and senate and the speaker of the assembly and temporary president of the senate",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Governor",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S5357-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "he or she shall provide such certification required by the commissioner of health as provided in subdivision 1 of this section as soon as possible, but in any event, prior to the issuance of an extension or modification of such a directive.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Governor",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S5357-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The governor shall provide an opportunity to comment on any such directive by the relevant committee chairs, which comments may be received after the issuance of the directive and shall not affect the validity thereof.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Governor",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S5357-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "No later than 5 days prior to the extension or modification of a directive only explicitly affecting specific municipalities, the governor shall notify including via electronic means the relevant executive leaders of such municipalities and such municipal legislature",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Governor",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S5357-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The governor shall provide an opportunity to comment on any such directive by such executive leaders and legislatures, which comments may be received after the issuance of the directive and shall not affect the validity thereof.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Governor",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S5357-09": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "No directive shall be extended or modified to the extent that such directive prohibits the adoption by any municipality of this state a local executive order within such municipality's existing power except where such an order conflicts with any executive order issued by the state.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Governor",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S5357-11": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The legislature may terminate by concurrent resolution executive orders issued under this section at any time.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Legislature",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S5357-12": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Directives shall be effective from the time and in the manner prescribed in such orders and shall be published as soon as practicable in the state bulletin and as provided in this section.",
+    "note": "actor_raw 'directives' is the passive subject; agency Governor is right",
+    "fields_at_audit": {
+     "agency": "Governor",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S5357-13": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Such certification shall include a detailed explanation of how such directive will address the spread and/or reduction of the COVID-19 virus, facilitate vaccine distribution or administration, or require the use of face coverings",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOH",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S5357-14": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Within 15 days of the effective date of this section all current suspensions and directives authorized pursuant to executive orders 202 and 205 of 2020 and this act shall be posted on the website for the office of the governor in a searchable format",
+    "note": "deadline 2021-03-22 = 15 days after 2021-03-07; actor_raw is the website (passive) but agency right",
+    "fields_at_audit": {
+     "agency": "Governor",
+     "kind": "duty",
+     "deadline_kind": "days_after_effective",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S5357-15": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Such website shall be updated upon the issuance of every suspension or directive pursuant to this act.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Governor",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S5357-16": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Every thirty days, such website shall also be updated with responses to written comments or information requests from relevant committee chairs or municipal government entities received pursuant to the provisions of this act.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Governor",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S5357-17": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The legislature may terminate at any time a state disaster emergency issued under this section by concurrent resolution.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Legislature",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [
+   {
+    "blind": "b4c",
+    "quote": "If the governor certifies that the extension or modification of such a directive is necessary to address any exigent circumstances that address an imminent threat to the public health or safety, he or she shall provide such certification required by the commissioner of health as provided in subdivision 1 of this section, as soon as possible",
+    "kind": "duty",
+    "agency": "Governor",
+    "dropped_by": "duplicate_provision",
+    "note": "\u00a7 2(2)(c) municipal-notice counterpart of -03 (\u00a7 2(2)(b)); a separate provision dropped as a 70% overlap (dropped id 2021-S5357-06)"
+   }
+  ],
+  "effective_date": {
+   "stored": "2021-03-07",
+   "computed": "immediately, signed 2021-03-07",
+   "verdict": "correct",
+   "note": "\u00a7 2 expiry tied to the end of EO 202 emergency, undated"
+  }
+ },
+ "2021-S763": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2021-11-11",
+   "computed": "immediately",
+   "verdict": "correct",
+   "note": ""
+  }
+ }
+}

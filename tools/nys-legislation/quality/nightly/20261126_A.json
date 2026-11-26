@@ -1,0 +1,1554 @@
+{
+ "_scoring": {
+  "auditor": "A",
+  "night": "20261126",
+  "laws": 11,
+  "stored_records": 70,
+  "correct": 58,
+  "wrong_fields": 6,
+  "not_real": 6,
+  "missed": 9,
+  "precision_strict": "58/70 = 82.9% (Wilson 95% 72.4-89.9)",
+  "precision_real": "64/70 = 91.4% (Wilson 95% 82.5-96.0)",
+  "recall": "64/73 = 87.7% (Wilson 95% 78.2-93.4)",
+  "effective_dates": "11/11 correct",
+  "recall_note": "every stored correct/wrong record was on the blind list, so matched = correct + wrong",
+  "calibration": {
+   "2009-A4687": {
+    "records": {
+     "2009-A4687-01": "correct"
+    },
+    "counts": {
+     "stored": 1,
+     "correct": 1,
+     "wrong": 0,
+     "not_real": 0,
+     "missed": 0
+    }
+   },
+   "2021-S1594": {
+    "records": {
+     "2021-S1594-01": "correct",
+     "2021-S1594-02": "correct",
+     "2021-S1594-03": "correct",
+     "2021-S1594-04": "correct",
+     "2021-S1594-05": "correct",
+     "2021-S1594-07": "correct",
+     "2021-S1594-09": "correct",
+     "2021-S1594-10": "correct",
+     "2021-S1594-11": "wrong"
+    },
+    "counts": {
+     "stored": 9,
+     "correct": 8,
+     "wrong": 1,
+     "not_real": 0,
+     "missed": 2
+    }
+   }
+  }
+ },
+ "_classes": [
+  {
+   "name": "Appointment-by-recommendation clauses with no record per appointer",
+   "criteria": [
+    "1",
+    "3"
+   ],
+   "instances": [
+    "2021-S7764 (temporary president, speaker, minority leaders, comptroller)"
+   ],
+   "rule": "packet new matter (braced text, or whole text when unbraced) matches r'(appointed by|upon the recommendation of|on the recommendation of|recommended by) the (governor|speaker of the assembly|temporary president of the senate|minority (majority) leader of the senate/assembly|comptroller|attorney general|mayor)' and no stored record of the law has that appointer in actor_raw; count = law:appointer pairs",
+   "db_matches": 120,
+   "db_examples": [
+    "2009-A11438:minority leader of the assembly",
+    "2009-A11438:minority leader of the senate",
+    "2009-A11438:speaker of the assembly"
+   ],
+   "needs_judgment": false,
+   "note": "upper bound: does not exclude laws where the appointing sentence is reprinted text quoted inside braces only partly"
+  },
+  {
+   "name": "Offset deadline stored without a computed date",
+   "criteria": [
+    "5"
+   ],
+   "instances": [
+    "2021-S7764-02"
+   ],
+   "rule": "deadline_kind in (days_after_effective, days_after_enactment) and deadline_date is null",
+   "db_matches": 16,
+   "db_examples": [
+    "2009-S8293-01",
+    "2009-S8293-02",
+    "2013-A5503-32"
+   ],
+   "needs_judgment": false,
+   "note": ""
+  },
+  {
+   "name": "Entitlement stored as duty (known class, recurrence)",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2021-S7232-14",
+    "2019-S6555-14"
+   ],
+   "rule": "provision_kind duty and quote matches r'shall be paid (to|in accordance)|shall continue to be a death benefit|payable by the state|shall be entitled to|shall receive (a|an|the) (salary|stipend|lump|payment|benefit|allowance)|employees .{0,80}shall be paid'",
+   "db_matches": 122,
+   "db_examples": [
+    "2009-A7008-02",
+    "2009-A7344-02",
+    "2009-A8893-06"
+   ],
+   "needs_judgment": false,
+   "note": ""
+  },
+  {
+   "name": "Agency left Unspecified when actor_raw names SUNY, the state or an official",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2019-S6555-08",
+    "2019-S6555-25",
+    "2019-S6555-26"
+   ],
+   "rule": "agency == 'Unspecified' and actor_raw matches r'state university|executive branch|governor|comptroller|director of|commissioner of|chancellor|\\bthe state\\b|attorney general|superintendent of'",
+   "db_matches": 78,
+   "db_examples": [
+    "2009-A11144-26",
+    "2009-A11144-43",
+    "2009-S68010-17"
+   ],
+   "needs_judgment": false,
+   "note": ""
+  },
+  {
+   "name": "duplicate_provision gate drops parallel provisions from other sections or Parts",
+   "criteria": [
+    "1",
+    "9"
+   ],
+   "instances": [
+    "2019-S6555-05",
+    "2019-S6555-17"
+   ],
+   "rule": "data/dropped rule == duplicate_provision and the dropped quote (whitespace-normalised, lowercased) equals no stored quote of the same law",
+   "db_matches": 436,
+   "db_examples": [
+    "2009-A10468-12",
+    "2009-A10468-13",
+    "2009-A10468-14"
+   ],
+   "needs_judgment": false,
+   "note": "upper bound: also counts true duplicates whose kept twin carries a trimmed or relocated quote"
+  },
+  {
+   "name": "Body established within a named agency dropped as designation_no_actor",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2021-S2987-01"
+   ],
+   "rule": "data/dropped rule == designation_no_actor and quote matches r'hereby (established|created) (within|in) the (department|office|division|state)'",
+   "db_matches": 2,
+   "db_examples": [
+    "2017-S5349-01",
+    "2021-S2987-01"
+   ],
+   "needs_judgment": false,
+   "note": ""
+  },
+  {
+   "name": "Prohibition proviso on the court dropped as condition_of_other_record",
+   "criteria": [
+    "1"
+   ],
+   "instances": [
+    "2021-S7171-07"
+   ],
+   "rule": "data/dropped rule == condition_of_other_record and quote matches r'shall not be (detained|directed|ordered|subject)|shall not (order|issue|approve)'",
+   "db_matches": 1,
+   "db_examples": [
+    "2021-S7171-07"
+   ],
+   "needs_judgment": false,
+   "note": ""
+  },
+  {
+   "name": "Record on reprinted or narrowing text (no or one word of new matter in the quote)",
+   "criteria": [
+    "1",
+    "7"
+   ],
+   "instances": [
+    "2021-S7764-01",
+    "2021-S7764-03",
+    "2021-S7171-08"
+   ],
+   "rule": "law has {{ }}; locate the quote in the post-amendment text ([..] removed); count braced words inside the quote span: 0 -> quote_no_new_matter (3087), 1 -> quote_one_new_word (3410, the db_matches/examples given here)",
+   "db_matches": 3410,
+   "db_examples": [
+    "2009-A10096-01",
+    "2009-A10096-02",
+    "2009-A10164-01"
+   ],
+   "needs_judgment": true,
+   "note": "noisy: zero-new-matter count 3087 includes free-standing unbraced act sections in laws that brace another section (2019-S6555 Part B), so the rule needs a section-is-amended filter before use; affected laws 2021-S7764, 2021-S7171"
+  },
+  {
+   "name": "Quote omits the operative modal",
+   "criteria": [
+    "2"
+   ],
+   "instances": [
+    "2021-S7772-02"
+   ],
+   "rule": "quote has no match for r'\\b(shall|may|must|authori[sz]ed|empowered|directed|will|hereby|responsibility|power|discretion|is to|are to)\\b'",
+   "db_matches": 3402,
+   "db_examples": [
+    "2009-A1002-01",
+    "2009-A1002-02",
+    "2009-A1002-03"
+   ],
+   "needs_judgment": false,
+   "note": "upper bound: includes list items under a modal lead-in, which are acceptable"
+  },
+  {
+   "name": "Passive-subject actor_raw (known class, recurrence)",
+   "criteria": [
+    "3"
+   ],
+   "instances": [
+    "2021-S1594-11",
+    "2019-S6555-12"
+   ],
+   "rule": "actor_raw matches none of a government-noun list (department, office, board, county, town, director, commissioner, court, program, committee, ...)",
+   "db_matches": 2234,
+   "db_examples": [
+    "2009-A10241-03",
+    "2009-A10468-20",
+    "2009-A10468-22"
+   ],
+   "needs_judgment": false,
+   "note": "rule catches -11 but not -12 (\"programs\" is in the noun list); upper bound with many false positives"
+  },
+  {
+   "name": "Study duty duplicated by its own list lead-in",
+   "criteria": [
+    "9"
+   ],
+   "instances": [
+    "2021-S2987-03"
+   ],
+   "rule": "same law, agency and unit, second quote is the \"shall study:\" list lead-in of the first",
+   "db_matches": null,
+   "db_examples": [],
+   "needs_judgment": true,
+   "note": "affects 2021-S2987; mechanical same-first-four-words rule (4092 matches) misses it because the lead says \"work group\" vs \"working group\""
+  }
+ ],
+ "2021-S7232": {
+  "records": {
+   "2021-S7232-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Notwithstanding the provisions of this section, the director of the budget may reduce the salary of any such position which is or becomes vacant.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOB",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S7232-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the director of the budget is authorized to add appropriate adjustments and/or payments to the compensation which such officers and employees are otherwise entitled to receive.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOB",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S7232-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The director of the budget shall issue certificates which shall contain schedules of positions and the salaries and/or payments thereof for which adjustments and/or payments are made pursuant to the provisions of this subdivision",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOB",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S7232-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "any increase in compensation may be withheld in whole or in part from any employee to whom the provisions of this section are applicable when, in the opinion of the director of the budget and the director of employee relations, such increase is not warranted or is not appropriate for any reason.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOB",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S7232-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "any increase in compensation may be withheld in whole or in part from any employee to whom the provisions of this section are applicable when, in the opinion of the director of the budget and the director of employee relations, such increase is not warranted or is not appropriate for any reason.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOB",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S7232-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the state comptroller is authorized to pay any amounts required during the fiscal year commencing April 1, 2019, April 1, 2020 or April 1, 2021, by the provisions of this act for any state department or agency",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State Comptroller",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S7232-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the director of the budget is authorized to allocate to the various departments and agencies, from any appropriations available in any fund, the amounts necessary to pay such amounts.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOB",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S7232-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the state shall contribute an amount designated in such agreement and for the period covered by such agreement to the accounts of such employees enrolled for dependent care deductions",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State agencies",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "State of New York"
+    }
+   },
+   "2021-S7232-14": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "employees in eligible titles who fall under the pilot workers compensation program that was collectively negotiated by the state and an employee organization shall be paid in accordance with the terms of that agreed upon program.",
+    "note": "\"employees in eligible titles ... shall be paid in accordance with the terms of that agreed upon program\" is an entitlement (subject is the beneficiary), same as the five lump-sum sentences dropped as benefit_entitlement."
+   },
+   "2021-S7232-15": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "which shall after April 2, 2019, have the responsibility of studying, making recommendations concerning the major issues of productivity, the quality of work life and implementing the agreements reached.",
+    "note": "Correct as a continued State-union committee; holder named as the committee itself (judgment)."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2021-06-11",
+   "computed": "2021-06-11",
+   "verdict": "correct",
+   "note": "immediately on signing 2021-06-11, retroactive to 2019-04-02 (stored retroactive_to matches)."
+  }
+ },
+ "2021-S7171": {
+  "records": {
+   "2021-S7171-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the probation service may adjust a proceeding where the court has referred a case to the probation service in accordance with section 320.6 of this article in conjunction with or subsequent to the issuance of an order pursuant to subdivision one of section 345.1",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "County Probation Department",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S7171-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the probation service shall adjust the matter unless good cause is shown and is documented in its records.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "County Probation Department",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S7171-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "nor shall the detention of a child adjudicated solely for an act that would constitute a violation as defined in subdivision three of section 10.00 of the penal law, be directed",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S7171-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "there shall be a rebuttable presumption that the court shall adjourn the case in contemplation of dismissal pursuant to this section, refer the case to the probation service for adjustment services pursuant to section 320.6 of this article or dismiss the case pursuant to subdivision two of section 352.1 of this article.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S7171-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "there shall be a rebuttable presumption that the court shall refer the case to the probation service for adjustment services in accordance with this subdivision, dismiss the case pursuant to subdivision two of section 352.1 of this article or adjourn the case in contemplation of dismissal pursuant to section 315.3 of this article.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S7171-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "there shall be a rebuttable presumption that the court shall refer the case to the probation service for adjustment services in accordance with section 320.6 of this article, dismiss the case pursuant to subdivision two of section 352.1 of this article or adjourn the case in contemplation of dismissal pursuant to section 315.3 of this article.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S7171-08": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "7"
+    ],
+    "fields": {},
+    "quote": "the court shall have the power to enter an order of disposition in accordance with paragraph (a) of subdivision one of this section.",
+    "note": "\"the court shall have the power to enter an order of disposition in accordance with [paragraphs] {{paragraph}} (a) [and (b)]\": the power is reprinted and the amendment narrows it (strikes (b)); extends_existing true is wrong."
+   },
+   "2021-S7171-09": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The court shall not order detention, probation or placement of a youth solely adjudicated under this subdivision.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S7171-10": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the court may modify the conditions of the conditional discharge but may not order any other disposition under section 352.2 of this article",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S7171-11": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the records shall be sealed automatically at the expiration, as applicable, of a successful period of an adjustment, adjournment in contemplation of dismissal or conditional discharge.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S7171-12": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "nor shall a principal under the age specified who is charged solely with a violation as defined in subdivision three of section 10.00 of the penal law be subject to detention",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unified Court System",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [
+   {
+    "blind": "b6",
+    "quote": "provided, however, that if the respondent has been found to have committed solely a violation as defined in subdivision three of section 10.00 of the penal law, the respondent shall not be detained pending disposition",
+    "kind": "duty",
+    "agency": "Unified Court System",
+    "dropped_by": "condition_of_other_record",
+    "note": "Family Court Act 350.1(1) new matter; a prohibition on the court parallel to stored -03, -09, -12, not a condition of another record."
+   }
+  ],
+  "effective_date": {
+   "stored": "2021-12-29",
+   "computed": "2021-12-29",
+   "verdict": "correct",
+   "note": "immediately on signing date"
+  }
+ },
+ "2019-S6555": {
+  "records": {
+   "2019-S6555-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the director shall provide for the payment of monies to such employee organization for the establishment and maintenance of an employee benefit fund established by the employee organization for the employees in the collective negotiating unit covered by the controlling provisions of such agreement",
+    "note": "\"the director\" read as director of employee relations (Part A sec 2); not defined in the visible text, unverified.",
+    "fields_at_audit": {
+     "agency": "OER",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S6555-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The director shall enter into an agreement with an employee organization, which sets forth the specific terms and conditions for the transmittal of monies pursuant to this section.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "OER",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S6555-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "in which case the state comptroller shall establish procedures to ensure repayment from said special or administrative funds.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State Comptroller",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S6555-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "commencing April 1, 2019, the state comptroller is authorized to pay any amounts required by the provisions of this act to any state department or agency from any appropriation or other funds available to such state department or agency for personal service, nonpersonal service and fringe benefits.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State Comptroller",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S6555-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "commencing July 2, 2019, the state comptroller is authorized to pay any amounts required by the provisions of this act to any state department or agency from any appropriation or other funds available to such state department or agency for personal service, nonpersonal service and fringe benefits.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State Comptroller",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S6555-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the director of the budget is authorized to allocate to the various departments and agencies, from any appropriations available in any fund, the amounts necessary to make such payments.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOB",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S6555-08": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "SUNY"
+    },
+    "quote": "any increase in compensation or lump sum payment may be withheld in whole or in part from any employee to whom the provisions of this section are applicable when, in the opinion of the chancellor of the state university of New York, the director of the budget, and the director of the governor's office of employee relations",
+    "note": "actor_raw \"the chancellor of the state university of New York\" resolved to Unspecified."
+   },
+   "2019-S6555-09": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "any increase in compensation or lump sum payment may be withheld in whole or in part from any employee to whom the provisions of this section are applicable when, in the opinion of the chancellor of the state university of New York, the director of the budget, and the director of the governor's office of employee relations",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unspecified",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S6555-10": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "any increase in compensation or lump sum payment may be withheld in whole or in part from any employee to whom the provisions of this section are applicable when, in the opinion of the chancellor of the state university of New York, the director of the budget, and the director of the governor's office of employee relations",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Unspecified",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S6555-11": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "there shall be continued a joint labor management advisory board to study and make recommendations concerning issues of work-life services programs and implement agreements that may be entered into between the state and such employee organization concerning such issues.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "SUNY",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": "Joint Labor Management Advisory Board"
+    }
+   },
+   "2019-S6555-12": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "actor_raw": "the state university of New York"
+    },
+    "quote": "there shall be continued work-life services and pre-tax programs to be administered in accordance with such agreement within the appropriations made available therefor.",
+    "note": "actor_raw \"work-life services and pre-tax programs\" is the passive subject of \"there shall be continued work-life services and pre-tax programs to be administered\"."
+   },
+   "2019-S6555-13": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "there shall be continued a professional development committee to review, make recommendations and implement programs for professional development.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "SUNY",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": true,
+     "agency_unit": "Professional Development Committee"
+    }
+   },
+   "2019-S6555-14": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "there shall continue to be a death benefit in the amount of fifty thousand dollars, in the event an employee dies on or after July 2, 2007 as the result of an accidental on-the-job injury and a death benefit is paid pursuant to the workers' compensation law, payable by the state",
+    "note": "\"there shall continue to be a death benefit in the amount of fifty thousand dollars ... payable by the state\" is an employee entitlement."
+   },
+   "2019-S6555-15": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The specific graduate degree programs eligible for enhanced compensation pursuant to this section shall be at the discretion of the state university of New York.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "SUNY",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S6555-16": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The specific location adjustments funded pursuant to this section shall be at the discretion of the state university of New York.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "SUNY",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S6555-23": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "for distribution to such incumbents on the payroll on June 30 of each such year and at the time of payment by the state university trustees in their discretion, and subject to the approval of the chancellor and the director of the budget.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "SUNY",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S6555-24": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Such distributions as described in this paragraph shall occur not later than December 31 of each year, and shall be retroactive to July 1 of such year.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "SUNY",
+     "kind": "duty",
+     "deadline_kind": "fixed_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2019-S6555-25": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "State agencies",
+     "agency_unit": "State of New York"
+    },
+    "quote": "during the period April 1, 2018 through March 31, 2023, there shall continue to be a committee on health benefits funded in the following amounts:",
+    "note": "\"Pursuant to the terms of an agreement negotiated between the executive branch of the state of New York ... there shall continue to be a committee on health benefits\": the state is named; Oct 16 rule resolves it to State agencies / State of New York, not Unspecified."
+   },
+   "2019-S6555-26": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "agency": "State agencies",
+     "agency_unit": "State of New York"
+    },
+    "quote": "during the period April 1, 2018 through March 31, 2023, there shall continue to be a professional development and quality of working life committee funded in the following amounts",
+    "note": "Same as -25 for \"there shall continue to be a professional development and quality of working life committee\"."
+   }
+  },
+  "missed": [
+   {
+    "blind": "a6",
+    "quote": "the director of the budget is authorized to allocate to the various departments and agencies, from any appropriations available in any fund, the amounts necessary to pay such amounts.",
+    "kind": "power",
+    "agency": "DOB",
+    "dropped_by": "duplicate_provision",
+    "note": "Part A sec 22; the Part B sec 14 sentence (\"make such payments\") is stored as -07; the comptroller pair is kept as two records (-04, -06), so this is a parallel provision, not a duplicate."
+   },
+   {
+    "blind": "b3a",
+    "quote": "The specific doctoral programs eligible for enhanced compensation pursuant to this section shall be at the discretion of the state university of New York.",
+    "kind": "power",
+    "agency": "SUNY",
+    "dropped_by": "duplicate_provision",
+    "note": "Part B sec 2; sec 3 and sec 5 twins are stored as -15 and -16."
+   }
+  ],
+  "effective_date": {
+   "stored": "2019-10-03",
+   "computed": "2019-10-03",
+   "verdict": "correct",
+   "note": "immediately on signing 2019-10-03; Part dates also immediate; Part retroactivity not checked in full."
+  }
+ },
+ "2021-S7739": {
+  "records": {
+   "2021-S7739-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the county of Suffolk acting through its legislative body is hereby authorized to discontinue and convey the use of a portion of county parkland more particularly described in section two of this act, and to convey its interest in the real property to the town of Southold",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Counties",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "County of Suffolk"
+    }
+   },
+   "2021-S7739-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "such town of Southold shall continue to provide access to such parkland and/or recreational facilities to all residents of the county of Suffolk and the town shall not enact any fees or charges which are higher for county residents who are not town residents",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Towns",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "Town of Southold"
+    }
+   },
+   "2021-S7739-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Any revenues received from the county from the transfer shall be used for capital improvements of existing park or recreational and/or the acquisition of additional park or recreational facilities.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Counties",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "County of Suffolk"
+    }
+   },
+   "2021-S7739-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The land to be transferred pursuant to this act and all structures and facilities situated on such land shall be maintained, owned and operated for park purposes by the town of Southold.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Towns",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "Town of Southold"
+    }
+   },
+   "2021-S7739-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The use of such parkland and facilities shall continue to be made available to the general public of the state of New York, including all residents of Suffolk county and the town of Southold. Where the availability of such facilities is limited, use of such facilities must be determined by an equitable method.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Towns",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": "Town of Southold"
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2022-12-16",
+   "computed": "2022-12-16",
+   "verdict": "correct",
+   "note": "immediately on signing date"
+  }
+ },
+ "2021-S7799": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2022-01-24",
+   "computed": "2022-01-24",
+   "verdict": "correct",
+   "note": "immediately on signing date"
+  }
+ },
+ "2021-S2987": {
+  "records": {
+   "2021-S2987-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The working group shall study issues related to racism as a public health crisis, and develop recommendations for legislative or other actions that can be undertaken to reduce or eliminate racial and ethnic disparities.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOH",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": "Racial Equity Working Group"
+    }
+   },
+   "2021-S2987-03": {
+    "verdict": "not_real",
+    "criteria": [
+     "9"
+    ],
+    "fields": {},
+    "quote": "The work group shall study: (a) methods for community engagement and tools for government agencies to engage with communities of color regarding healthcare services;",
+    "note": "Same provision as 2021-S2987-02: section 3 \"The work group shall study: (a) ...\" is the list under \"The working group shall study issues related to racism\"."
+   },
+   "2021-S2987-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The working group shall issue a report on its findings, including any legislative recommendations to the governor, temporary president of the senate, and speaker of the assembly by December 31, 2021, and every two years thereafter.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOH",
+     "kind": "duty",
+     "deadline_kind": "fixed_date",
+     "extends_existing": false,
+     "agency_unit": "Racial Equity Working Group"
+    }
+   },
+   "2021-S2987-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the commissioner of health may conduct such study and report in conjunction with any other department, division, board, bureau, commission, agency, or public authority of the state he or she deems necessary.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOH",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S2987-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the commissioner of health shall be authorized to request, receive, and utilize such resources and data of any other department, division, board, bureau, commission, agency, or public authority of the state as he or she may reasonably request",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOH",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S2987-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "(b) one member appointed by the state commissioner of health; (c) two members appointed by the governor; (d) one member appointed by the speaker of the assembly;",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOH",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": "Racial Equity Working Group"
+    }
+   },
+   "2021-S2987-08": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "(b) one member appointed by the state commissioner of health; (c) two members appointed by the governor; (d) one member appointed by the speaker of the assembly;",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOH",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": "Racial Equity Working Group"
+    }
+   },
+   "2021-S2987-09": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "(c) two members appointed by the governor; (d) one member appointed by the speaker of the assembly; (e) one member appointed by the temporary president of the senate;",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State Legislature",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": "Racial Equity Working Group"
+    }
+   },
+   "2021-S2987-10": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "(d) one member appointed by the speaker of the assembly; (e) one member appointed by the temporary president of the senate; (f) one member appointed by the minority leader of the assembly;",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State Legislature",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": "Racial Equity Working Group"
+    }
+   },
+   "2021-S2987-11": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "(e) one member appointed by the temporary president of the senate; (f) one member appointed by the minority leader of the assembly; and (g) one member appointed by the minority leader of the senate.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State Legislature",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": "Racial Equity Working Group"
+    }
+   },
+   "2021-S2987-12": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "(f) one member appointed by the minority leader of the assembly; and (g) one member appointed by the minority leader of the senate.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "State Legislature",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": "Racial Equity Working Group"
+    }
+   }
+  },
+  "missed": [
+   {
+    "blind": "b1",
+    "quote": "There is hereby established within the department of health a working group to be known as the \"racial equity working group\".",
+    "kind": "duty",
+    "agency": "DOH",
+    "dropped_by": "designation_no_actor",
+    "note": "Establishment of a body inside a named agency; 2021-S1594-01 (\"hereby established in the department\") is stored as a DOH duty for the same shape."
+   }
+  ],
+  "effective_date": {
+   "stored": "2022-01-21",
+   "computed": "2022-01-21",
+   "verdict": "correct",
+   "note": "signed 2021-12-22, thirtieth day after = 2022-01-21."
+  }
+ },
+ "2021-S6546": {
+  "records": {
+   "2021-S6546-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner of transportation shall provide for the installation and maintenance of adequate signing of the state highway system as designated pursuant to section one of this act.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "NYSDOT",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2021-10-08",
+   "computed": "2021-10-08",
+   "verdict": "correct",
+   "note": "immediately on signing date"
+  }
+ },
+ "2021-S6702": {
+  "records": {},
+  "missed": [],
+  "effective_date": {
+   "stored": "2021-08-02",
+   "computed": "2021-08-02",
+   "verdict": "correct",
+   "note": "immediately on signing date"
+  }
+ },
+ "2021-S7772": {
+  "records": {
+   "2021-S7772-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Subject to amounts available by appropriation therefor, the corporation shall develop a housing our neighbors with dignity program (hereinafter referred to as \"the program\"), which shall provide a mechanism for the state to finance the acquisition and/or conversion of distressed hotels and commercial office properties by appropriate nonprofit organizations",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Housing Trust Fund Corporation",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2021-S7772-02": {
+    "verdict": "wrong",
+    "criteria": [
+     "2"
+    ],
+    "fields": {
+     "quote": "The state may finance the purchase, acquisition, conversion and/or holding by appropriate nonprofit organizations of distressed hotel or commercial office properties in any part of the state"
+    },
+    "quote": "conversion and/or holding by appropriate nonprofit organizations of distressed hotel or commercial office properties in any part of the state",
+    "note": "Quote starts mid-sentence and omits the operative words \"The state may finance the purchase, acquisition\"."
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2021-08-13",
+   "computed": "2021-08-13",
+   "verdict": "correct",
+   "note": "same as chapter 396 of 2021 (S5257), effective 2021-08-13 per chapter_index; amendment signed 2022-07-21 leaves it standing."
+  }
+ },
+ "2021-S6294": {
+  "records": {
+   "2021-S6294-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The developmental disabilities advisory council shall produce a report to review the impact and the state's response to the COVID-19 state disaster emergency, as declared by executive order two hundred two of two thousand twenty, as it relates to individuals with intellectual or developmental disabilities.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "OPWDD",
+     "kind": "duty",
+     "deadline_kind": "days_after_effective",
+     "extends_existing": false,
+     "agency_unit": "Developmental Disabilities Advisory Council"
+    }
+   },
+   "2021-S6294-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The office and the department of health shall provide technical assistance and access to data as is required for the council to effectuate such review and produce such report.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "OPWDD",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S6294-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The office and the department of health shall provide technical assistance and access to data as is required for the council to effectuate such review and produce such report.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "OPWDD",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S6294-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The developmental disabilities advisory council shall also evaluate policies, procedures, and programs that were implemented during the course of the COVID-19 pandemic to determine the efficacy on safety.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "OPWDD",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": "Developmental Disabilities Advisory Council"
+    }
+   },
+   "2021-S6294-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The developmental disabilities advisory council shall provide recommendations of changes to any laws or regulations that impeded response to COVID-19 to the legislature.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "OPWDD",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": "Developmental Disabilities Advisory Council"
+    }
+   },
+   "2021-S6294-06": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "Such report shall be submitted to the governor, the temporary president of the senate and the speaker of the assembly no later than nine months from the effective date of this subdivision and shall be made publicly available online.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "OPWDD",
+     "kind": "duty",
+     "deadline_kind": "days_after_effective",
+     "extends_existing": false,
+     "agency_unit": "Developmental Disabilities Advisory Council"
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2021-12-21",
+   "computed": "2021-12-21",
+   "verdict": "correct",
+   "note": "immediately on signing date"
+  }
+ },
+ "2021-S7764": {
+  "records": {
+   "2021-S7764-01": {
+    "verdict": "not_real",
+    "criteria": [
+     "1",
+     "7"
+    ],
+    "fields": {},
+    "quote": "There is hereby created a temporary construction industry advisory council on public contracting reform (the \"advisory council\"), which shall consider and advise on matters concerning the improvement of the current public works contracting process in New York state.",
+    "note": "Only new matter is \"{{temporary}}\" in \"There is hereby created a {{temporary}} construction industry advisory council\"; the creation is reprinted and the word narrows, so no widening record (extends_existing true is wrong too)."
+   },
+   "2021-S7764-02": {
+    "verdict": "wrong",
+    "criteria": [
+     "5"
+    ],
+    "fields": {
+     "deadline_date": "2022-02-20"
+    },
+    "quote": "The members shall include twelve members appointed by the governor as follows: five members representing the various state agencies and authorities, including the commissioner of labor or his or her designee, two members representing minority- and women-owned business enterprises",
+    "note": "\"To the extent possible appointments shall be made within 60 days of the effective date of this act\": deadline_kind days_after_effective but deadline_date null; effective 2021-12-22 + 60 days = 2022-02-20."
+   },
+   "2021-S7764-03": {
+    "verdict": "not_real",
+    "criteria": [
+     "1"
+    ],
+    "fields": {},
+    "quote": "Vacancies in the advisory council shall be filled in the same manner.",
+    "note": "\"Vacancies in the advisory council shall be filled in the same manner.\" is reprinted text outside {{ }}."
+   },
+   "2021-S7764-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "No later than 365 days after the effective date of this act, the advisory council shall, by a majority, issue a report of its findings, including any recommendations for legislative, executive or regulatory action",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Construction Industry Advisory Council on Public Contracting Reform",
+     "kind": "duty",
+     "deadline_kind": "days_after_effective",
+     "extends_existing": true,
+     "agency_unit": null
+    }
+   },
+   "2021-S7764-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The report shall also include a summary of the positions advanced by the members of the advisory council regarding these subject matters.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "Construction Industry Advisory Council on Public Contracting Reform",
+     "kind": "duty",
+     "deadline_kind": "days_after_effective",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [
+   {
+    "blind": "b2",
+    "quote": "four members upon the recommendation of the temporary president of the senate, to include one member representing minority- and women-owned business enterprises",
+    "kind": "duty",
+    "agency": "State Legislature",
+    "dropped_by": null,
+    "note": "Appointment clause in new matter (Rulings Nov 24 2026): one duty per appointing actor."
+   },
+   {
+    "blind": "b3",
+    "quote": "four members upon the recommendation of the speaker of the assembly, to include one member representing minority- and women-owned business enterprises",
+    "kind": "duty",
+    "agency": "State Legislature",
+    "dropped_by": null,
+    "note": "Appointment clause in new matter (Rulings Nov 24 2026): one duty per appointing actor."
+   },
+   {
+    "blind": "b4",
+    "quote": "one member upon the recommendation of the minority leader of the senate",
+    "kind": "duty",
+    "agency": "State Legislature",
+    "dropped_by": null,
+    "note": "Appointment clause in new matter (Rulings Nov 24 2026): one duty per appointing actor."
+   },
+   {
+    "blind": "b5",
+    "quote": "one member upon the recommendation of the minority leader of the assembly",
+    "kind": "duty",
+    "agency": "State Legislature",
+    "dropped_by": null,
+    "note": "Appointment clause in new matter (Rulings Nov 24 2026): one duty per appointing actor."
+   },
+   {
+    "blind": "b6",
+    "quote": "and one member upon the recommendation of the comptroller",
+    "kind": "duty",
+    "agency": "State Comptroller",
+    "dropped_by": null,
+    "note": "Appointment clause in new matter (Rulings Nov 24 2026): one duty per appointing actor."
+   }
+  ],
+  "effective_date": {
+   "stored": "2021-12-22",
+   "computed": "2021-12-22",
+   "verdict": "correct",
+   "note": "same as chapter 782 of 2021 (S4323), effective 2021-12-22; amendment signed 2022-02-24."
+  }
+ },
+ "2009-A4687": {
+  "records": {
+   "2009-A4687-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "on and after July first in the year next succeeding the year in which this sentence shall take effect, the authority shall consist of two additional members who shall be appointed by the mayor.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "New York City",
+     "kind": "duty",
+     "deadline_kind": "fixed_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   }
+  },
+  "missed": [],
+  "effective_date": {
+   "stored": "2010-09-17",
+   "computed": "2010-09-17",
+   "verdict": "correct",
+   "note": "immediately on signing date"
+  }
+ },
+ "2021-S1594": {
+  "records": {
+   "2021-S1594-01": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The living donor support program is hereby established in the department.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOH",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S1594-02": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "the program shall pay the living donor expenses for living donors who are residents of the state and make a living donation in which the ultimate recipient, either directly or through paired donation is a resident of the state.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOH",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S1594-03": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner through regulations shall establish eligible living donor expenses that are eligible for reimbursement under the program which shall include at a minimum:",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOH",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S1594-04": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner may by regulation impose a limitation on: (i) the amount of lost wages for a living donor making an income in excess of an annual rate of one hundred twenty-five thousand dollars; or (ii) the amount of living donor expenses above fourteen thousand dollars for any single living donor;",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOH",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S1594-05": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The program shall not pay reimbursement for expenses paid or required to be paid for by any third-party payer",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOH",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S1594-07": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner may contract for the administration of reimbursement under the program.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOH",
+     "kind": "power",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S1594-09": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "The commissioner shall make regulations to implement this section.",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOH",
+     "kind": "duty",
+     "deadline_kind": "on_effective_date",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S1594-10": {
+    "verdict": "correct",
+    "criteria": [],
+    "fields": {},
+    "quote": "In implementing this paragraph, the department shall consult with the transplant council in the department",
+    "note": "",
+    "fields_at_audit": {
+     "agency": "DOH",
+     "kind": "duty",
+     "deadline_kind": "none",
+     "extends_existing": false,
+     "agency_unit": null
+    }
+   },
+   "2021-S1594-11": {
+    "verdict": "wrong",
+    "criteria": [
+     "3"
+    ],
+    "fields": {
+     "actor_raw": "the department of health (medical assistance program under social services law article 5)"
+    },
+    "quote": "Services for that person covered under that section that would otherwise be health care services under this article shall be paid for under this article and not under such section, provided federal financial participation is available.",
+    "note": "actor_raw \"Services\" is the passive subject of \"Services ... shall be paid for under this article\"; agency DOH is right."
+   }
+  },
+  "missed": [
+   {
+    "blind": "b5",
+    "quote": "and may include additional living donor expenses including reimbursement for costs of care performed by relatives or family members of the living donor.",
+    "kind": "power",
+    "agency": "DOH",
+    "dropped_by": null,
+    "note": "Second power of the commissioner in sec 4371(2)(a); stored -04 quote stops before it."
+   },
+   {
+    "blind": "b12",
+    "quote": "including living donation}}, including information about being registered as an organ and tissue donor ... {{; and information to increase patient understanding about the medical option of transplant and its desirability",
+    "kind": "duty",
+    "agency": "DOH",
+    "dropped_by": null,
+    "note": "Widens the department's Public Health Law 207(1)(d) education content (extends_existing true); lead-in of 207(1) not reprinted in the law, so the holder is inferred from \"In implementing this paragraph, the department shall consult\". Needs judgment."
+   }
+  ],
+  "effective_date": {
+   "stored": "2023-04-01",
+   "computed": "2023-04-01",
+   "verdict": "correct",
+   "note": "signed 2022-12-29, first of April next succeeding = 2023-04-01."
+  }
+ }
+}

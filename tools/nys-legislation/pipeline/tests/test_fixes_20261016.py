@@ -59,7 +59,7 @@ saved = (ed.EXTRACTED, ed.TEXT_MARKED, ed.dedupe_law, dict(ed.EFFECTIVE))
 try:
     ed.EXTRACTED, ed.TEXT_MARKED = tmp / "x", tmp / "t"
     ed.EFFECTIVE["2099-S1"] = {"rule": "immediately", "effective_date": "2099-01-01", "expires_date": None, "raw_clause": "This act shall take effect immediately.", "section_dates": []}
-    ed.dedupe_law = lambda lst: lst[:1] if len(lst) > 1 else lst      # a merge path that records no rule: the safety net must list the lost id
+    ed.dedupe_law = lambda lst, text=None: lst[:1] if len(lst) > 1 else lst      # a merge path that records no rule: the safety net must list the lost id
     duties, powers, excluded = ed.build_records([law])
 finally:
     ed.EXTRACTED, ed.TEXT_MARKED, ed.dedupe_law = saved[0], saved[1], saved[2]
